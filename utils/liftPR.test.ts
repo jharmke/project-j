@@ -16,6 +16,8 @@ function check(name: string, cond: boolean, got?: any) {
 
 // ── fixture helpers ───────────────────────────────────────────────────────────────────────────────
 const set = (weight: number | null, reps: number | null, done = true) => ({ weight, reps, rest: null, done });
+// A held (time) set: durationSec + optional weight (null = bodyweight). reps stays null.
+const hold = (durationSec: number, weight: number | null = null, done = true) => ({ weight, reps: null, rest: null, done, durationSec });
 const resolver = (progByDay: Record<string, { id: string; name: string }[]>): ResolveDay =>
   (d: string) => progByDay[d] || [];
 // unit-aware resolver for the lb/kg mixing tests
@@ -158,6 +160,36 @@ console.log('\nlift PR engine\n');
   const prog = resolver(backedPriorProg);
   const r = recomputeLiftPR(BENCH, { ...backedPriorLogs, [TODAY]: { b1: [set(150, 5)] } }, prog, {}, {}, TODAY, NOW);
   check('lb-only: value still 150, unit stamped lb', r.prs[KEY].bestWeight?.value === 150 && r.prs[KEY].bestWeight?.unit === 'lb', r.prs[KEY].bestWeight);
+}
+
+// ── 12. Longest-hold PR (bodyweight plank): 1:15 beats a 0:45 prior, backed by time-only history ─────
+{
+  const prog = resolverU({ [PRIOR]: [{ id: 'p1', name: 'Plank' }], [TODAY]: [{ id: 't1', name: 'Plank' }] });
+  const logs: SetLogs = { [PRIOR]: { p1: [hold(45)] }, [TODAY]: { t1: [hold(75)] } };
+  const r = recomputeLiftPR('Plank', logs, prog, {}, {}, TODAY, NOW);
+  check('hold: 1:15 beats 0:45 -> duration PR', !!r.hit && r.hit.durationPR === true, r.hit);
+  check('hold: record duration 75s', r.prs['plank'].bestDuration?.value === 75, r.prs['plank'].bestDuration?.value);
+  check('hold: "up from" is 45', r.hit?.prevDurationVal === 45, r.hit?.prevDurationVal);
+  check('hold: a bodyweight hold makes NO weight PR', !r.hit?.weightPR, r.hit?.weightPR);
+  check('hold: time-only day counts as backed history', liftSessionHistory('Plank', logs, prog).length === 2, liftSessionHistory('Plank', logs, prog).length);
+}
+
+// ── 13. Weighted carry: duration is the trophy, weight (kg) is stored as context ─────────────────────
+{
+  const prog = resolverU({ [TODAY]: [{ id: 'c1', name: 'Farmer Carry', weightUnit: 'kg' }] });
+  const r = recomputeLiftPR('Farmer Carry', { [TODAY]: { c1: [hold(50, 32)] } }, prog, {}, {}, TODAY, NOW);
+  check('carry: duration PR of 50s', !!r.hit && r.hit.durationPR === true && r.hit.durationVal === 50, r.hit);
+  check('carry: weight context 32 kg on the record', r.prs['farmer carry'].bestDuration?.weight === 32 && r.prs['farmer carry'].bestDuration?.unit === 'kg', r.prs['farmer carry'].bestDuration);
+}
+
+// ── 14. Uncheck the hold -> duration record rolls back to the prior best ─────────────────────────────
+{
+  const prog = resolverU({ [PRIOR]: [{ id: 'p1', name: 'Plank' }], [TODAY]: [{ id: 't1', name: 'Plank' }] });
+  let r = recomputeLiftPR('Plank', { [PRIOR]: { p1: [hold(45)] }, [TODAY]: { t1: [hold(75)] } }, prog, {}, {}, TODAY, NOW);
+  check('rollback setup: 75 banked', r.prs['plank'].bestDuration?.value === 75);
+  r = recomputeLiftPR('Plank', { [PRIOR]: { p1: [hold(45)] }, [TODAY]: { t1: [hold(75, null, false)] } }, prog, r.prs, r.hits, TODAY, NOW);
+  check('rollback: unchecked -> record back to 45', r.prs['plank'].bestDuration?.value === 45, r.prs['plank'].bestDuration?.value);
+  check('rollback: today hold hit revoked', r.revoked === true && r.hit === null, { revoked: r.revoked, hit: r.hit });
 }
 
 console.log(`\n${failed === 0 ? '✅ ALL PASS' : '❌ FAILURES'} — ${passed} passed, ${failed} failed`);

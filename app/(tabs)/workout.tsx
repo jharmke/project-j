@@ -967,6 +967,11 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
         const from = hit.prevE1rmVal != null ? `, up from ${hit.prevE1rmVal}${hit.prevE1rmUnit && hit.prevE1rmUnit !== hit.unit ? ' ' + weightUnitLabel(hit.prevE1rmUnit) : ''}` : '';
         parts.push(`Est. 1-rep max ${hit.e1rmVal} ${u}${from}`);
       }
+      if (hit.durationPR) {
+        const wctx = hit.durationWeight != null && hit.durationWeight > 0 ? ` at ${hit.durationWeight} ${u}` : '';
+        const from = hit.prevDurationVal != null ? `, up from ${formatHold(hit.prevDurationVal)}` : '';
+        parts.push(`Longest hold ${formatHold(hit.durationVal)}${wctx}${from}`);
+      }
       const id = `pr_${activeDay}_${normalizeLiftName(hit.name)}`;
       await clearNotification(id);
       await addNotification({
@@ -2697,6 +2702,11 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                           {pr.e1rmPR && (
                             <Text style={{ fontSize: 12, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>
                               New estimated 1-rep max: {pr.e1rmVal} {weightUnitLabel(pr.unit)}
+                            </Text>
+                          )}
+                          {pr.durationPR && (
+                            <Text style={{ fontSize: 12, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>
+                              New longest hold: {formatHold(pr.durationVal)}{pr.durationWeight != null && pr.durationWeight > 0 ? ` at ${pr.durationWeight} ${weightUnitLabel(pr.unit)}` : ''}
                             </Text>
                           )}
                         </View>

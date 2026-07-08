@@ -10,6 +10,7 @@ import type { SetEntry, PRRecord } from '../workoutData';
 
 export type BestW = PRRecord['bestWeight'];
 export type BestE = PRRecord['bestE1RM'];
+export type BestD = PRRecord['bestDuration'];
 export type SetLogs = Record<string, Record<string, SetEntry[]>>;
 export type PRMap = Record<string, PRRecord>;
 export type HitMap = Record<string, Record<string, any>>;
@@ -39,6 +40,11 @@ export const higherE = (a: BestE, b: BestE): BestE => {
   if (!a) return b; if (!b) return a;
   return toKg(b.value, b.unit) > toKg(a.value, a.unit) ? b : a;
 };
+// Pick the longer of two hold records (duration is the trophy; tie broken by heavier weight in kg); null-safe.
+export const longer = (a: BestD, b: BestD): BestD => {
+  if (!a) return b; if (!b) return a;
+  return (b.value > a.value || (b.value === a.value && toKg(b.weight || 0, b.unit) > toKg(a.weight || 0, a.unit))) ? b : a;
+};
 
 // Scan logged history for one lift and return its best weight + best est. 1RM. `opts.beforeDate`
 // restricts to days strictly before a cutoff (the "prior best"); `opts.onlyDay` restricts to one day.
@@ -47,10 +53,10 @@ export const computeLiftBest = (
   logs: SetLogs,
   resolveDay: ResolveDay,
   opts?: { beforeDate?: string; onlyDay?: string },
-): { bestWeight: BestW; bestE1RM: BestE } => {
+): { bestWeight: BestW; bestE1RM: BestE; bestDuration: BestD } => {
   const target = normalizeLiftName(name);
-  if (!target) return { bestWeight: null, bestE1RM: null };
-  let bw: BestW = null, be: BestE = null;
+  if (!target) return { bestWeight: null, bestE1RM: null, bestDuration: null };
+  let bw: BestW = null, be: BestE = null, bd: BestD = null;
   for (const d of Object.keys(logs)) {
     if (opts?.beforeDate && !(d < opts.beforeDate)) continue;
     if (opts?.onlyDay && d !== opts.onlyDay) continue;
@@ -62,14 +68,19 @@ export const computeLiftBest = (
       if (!sets) continue;
       const u = ex.weightUnit || 'lb';
       for (const s of sets) {
+        if (!s.done) continue;
         const w = s.weight || 0, r = s.reps || 0;
-        if (!s.done || w <= 0 || r <= 0) continue;
-        bw = heavier(bw, { value: w, reps: r, dateKey: d, unit: u });
-        if (r <= 12) be = higherE(be, { value: Math.round(epley(w, r)), weight: w, reps: r, dateKey: d, unit: u });
+        if (w > 0 && r > 0) {
+          bw = heavier(bw, { value: w, reps: r, dateKey: d, unit: u });
+          if (r <= 12) be = higherE(be, { value: Math.round(epley(w, r)), weight: w, reps: r, dateKey: d, unit: u });
+        }
+        // Time (held) set -> feeds the longest-hold record. Weight is context; bodyweight = null.
+        const dur = s.durationSec || 0;
+        if (dur > 0) bd = longer(bd, { value: dur, weight: w > 0 ? w : null, unit: u, dateKey: d });
       }
     }
   }
-  return { bestWeight: bw, bestE1RM: be };
+  return { bestWeight: bw, bestE1RM: be, bestDuration: bd };
 };
 
 // Does a given day actually hold a logged (mapped) set for this lift? If NOT, a stored PR pointing at
@@ -99,9 +110,10 @@ export interface LiftSession {
   topReps: number;
   e1rm: number | null;
   unit?: 'lb' | 'kg'; // the unit topWeight / e1rm were lifted in (missing = 'lb')
+  topDuration?: number | null; // that day's longest hold (time sets), seconds
 }
 
-// Every day this lift was logged (done + weighted), newest first, with that day's heaviest set.
+// Every day this lift was logged (done set with reps OR a hold), newest first, with that day's best set.
 export const liftSessionHistory = (name: string, logs: SetLogs, resolveDay: ResolveDay): LiftSession[] => {
   const target = normalizeLiftName(name);
   if (!target) return [];
@@ -111,20 +123,25 @@ export const liftSessionHistory = (name: string, logs: SetLogs, resolveDay: Reso
     if (!dayLogs) continue;
     let top: { w: number; r: number; u: 'lb' | 'kg' } | null = null;
     let bestE: number | null = null, bestEk = -1;
+    let topDur: number | null = null;
     for (const ex of resolveDay(d)) {
       if (normalizeLiftName(ex.name) !== target) continue;
       const sets = dayLogs[ex.id];
       if (!sets) continue;
       const u = ex.weightUnit || 'lb';
       for (const s of sets) {
+        if (!s.done) continue;
         const w = s.weight || 0, r = s.reps || 0;
-        if (!s.done || w <= 0 || r <= 0) continue;
-        const wk = toKg(w, u);
-        if (!top || wk > toKg(top.w, top.u) || (wk === toKg(top.w, top.u) && r > top.r)) top = { w, r, u };
-        if (r <= 12) { const e = Math.round(epley(w, r)); const ek = toKg(e, u); if (bestE === null || ek > bestEk) { bestE = e; bestEk = ek; } }
+        if (w > 0 && r > 0) {
+          const wk = toKg(w, u);
+          if (!top || wk > toKg(top.w, top.u) || (wk === toKg(top.w, top.u) && r > top.r)) top = { w, r, u };
+          if (r <= 12) { const e = Math.round(epley(w, r)); const ek = toKg(e, u); if (bestE === null || ek > bestEk) { bestE = e; bestEk = ek; } }
+        }
+        const dur = s.durationSec || 0;
+        if (dur > 0 && (topDur === null || dur > topDur)) topDur = dur;
       }
     }
-    if (top) out.push({ dateKey: d, topWeight: top.w, topReps: top.r, e1rm: bestE, unit: top.u });
+    if (top || topDur !== null) out.push({ dateKey: d, topWeight: top?.w ?? 0, topReps: top?.r ?? 0, e1rm: bestE, unit: top?.u ?? 'lb', topDuration: topDur });
   }
   return out.sort((a, b) => (a.dateKey < b.dateKey ? 1 : a.dateKey > b.dateKey ? -1 : 0));
 };
@@ -153,6 +170,7 @@ export const recomputeLiftPR = (
   // Protected floor: keep a stored best the logs can't explain, but only if it predates judgeDay.
   const floorW: BestW = (stored?.bestWeight && stored.bestWeight.dateKey < judgeDay && !dayHasLoggedLift(key, stored.bestWeight.dateKey, logs, resolveDay)) ? stored.bestWeight : null;
   const floorE: BestE = (stored?.bestE1RM && stored.bestE1RM.dateKey < judgeDay && !dayHasLoggedLift(key, stored.bestE1RM.dateKey, logs, resolveDay)) ? stored.bestE1RM : null;
+  const floorD: BestD = (stored?.bestDuration && stored.bestDuration.dateKey < judgeDay && !dayHasLoggedLift(key, stored.bestDuration.dateKey, logs, resolveDay)) ? stored.bestDuration : null;
 
   const all = computeLiftBest(name, logs, resolveDay);
   const before = computeLiftBest(name, logs, resolveDay, { beforeDate: judgeDay });
@@ -160,12 +178,14 @@ export const recomputeLiftPR = (
 
   const finalW = heavier(all.bestWeight, floorW);
   const finalE = higherE(all.bestE1RM, floorE);
+  const finalD = longer(all.bestDuration, floorD);
   const priorW = heavier(before.bestWeight, floorW); // true best BEFORE judgeDay -> honest "up from"
   const priorE = higherE(before.bestE1RM, floorE);
+  const priorD = longer(before.bestDuration, floorD);
 
   let nextPrs = currentPrs;
-  if (finalW || finalE) {
-    nextPrs = { ...currentPrs, [key]: { name, bestWeight: finalW, bestE1RM: finalE, updatedAt: judgeDay } };
+  if (finalW || finalE || finalD) {
+    nextPrs = { ...currentPrs, [key]: { name, bestWeight: finalW, bestE1RM: finalE, bestDuration: finalD, updatedAt: judgeDay } };
   } else if (stored) {
     nextPrs = { ...currentPrs }; delete nextPrs[key]; // nothing supports a record anymore -> drop it
   }
@@ -173,15 +193,17 @@ export const recomputeLiftPR = (
   // Compare today vs the prior best in kg so a unit switch between sessions is judged honestly.
   const weightPR = !!(today.bestWeight && (!priorW || toKg(today.bestWeight.value, today.bestWeight.unit) > toKg(priorW.value, priorW.unit)));
   const e1rmPR = !!(today.bestE1RM && (!priorE || toKg(today.bestE1RM.value, today.bestE1RM.unit) > toKg(priorE.value, priorE.unit)));
+  const durationPR = !!(today.bestDuration && (!priorD || today.bestDuration.value > priorD.value));
   const hadHit = !!currentHits[judgeDay]?.[key];
   let hit: any = null, nextHits = currentHits;
-  if (weightPR || e1rmPR) {
+  if (weightPR || e1rmPR || durationPR) {
     hit = {
-      name, weightPR, e1rmPR,
+      name, weightPR, e1rmPR, durationPR,
       weightVal: today.bestWeight?.value, weightReps: today.bestWeight?.reps,
       e1rmVal: today.bestE1RM?.value,
-      unit: today.bestWeight?.unit || today.bestE1RM?.unit || 'lb', // unit of today's weightVal / e1rmVal
-      prevWeightVal: priorW?.value, prevE1rmVal: priorE?.value,
+      durationVal: today.bestDuration?.value, durationWeight: today.bestDuration?.weight ?? null,
+      unit: today.bestWeight?.unit || today.bestE1RM?.unit || today.bestDuration?.unit || 'lb', // unit of today's values
+      prevWeightVal: priorW?.value, prevE1rmVal: priorE?.value, prevDurationVal: priorD?.value,
       prevWeightUnit: priorW?.unit, prevE1rmUnit: priorE?.unit,   // prior best may be in a different unit
       at: now,
     };

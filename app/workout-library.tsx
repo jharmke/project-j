@@ -2075,7 +2075,7 @@ export default function WorkoutLibraryScreen() {
   // The sorted PR list for the All-PRs modal. A record only shows if it is still backed by surviving
   // logged history (so a PR from a deleted/ghost workout does not linger here forever).
   const prList = Object.values(prs)
-    .filter(p => p && (p.bestWeight || p.bestE1RM) && liftSessionHistory(p.name, wSetLogs, prResolveDay).length > 0)
+    .filter(p => p && (p.bestWeight || p.bestE1RM || p.bestDuration) && liftSessionHistory(p.name, wSetLogs, prResolveDay).length > 0)
     .sort((a, b) => {
       if (prSort === 'az') return a.name.localeCompare(b.name);
       if (prSort === 'za') return b.name.localeCompare(a.name);
@@ -3103,11 +3103,21 @@ export default function WorkoutLibraryScreen() {
                 const history = liftSessionHistory(selectedEx.name, wSetLogs, prResolveDay);
                 // Only credit a record when surviving logged history backs it (ghost PRs from deleted
                 // workouts read as "no records yet" instead of a phantom best).
-                const hasPR = !!(pr && (pr.bestWeight || pr.bestE1RM)) && history.length > 0;
+                const hasPR = !!(pr && (pr.bestWeight || pr.bestE1RM || pr.bestDuration)) && history.length > 0;
                 return (
                   <View style={{ marginBottom: 16 }}>
                     <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 10 }}>RECORDS & HISTORY</Text>
                     {hasPR ? (
+                      pr.bestDuration && !pr.bestWeight ? (
+                        // Time-tracked lift: longest hold is the record (weight is context for carries).
+                        <View style={{ flexDirection: 'row', gap: 8, marginBottom: history.length ? 14 : 0 }}>
+                          <View style={{ flex: 1, backgroundColor: theme.accentAmber + '14', borderWidth: 1, borderColor: theme.accentAmber + '33', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 }}>
+                            <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 4 }}>Longest hold</Text>
+                            <Text style={{ color: theme.textSecondary, fontSize: 15, fontFamily: 'DMSans_700Bold' }}>{formatHold(pr.bestDuration.value)}{pr.bestDuration.weight != null && pr.bestDuration.weight > 0 ? ` · ${pr.bestDuration.weight} ${weightUnitLabel(pr.bestDuration.unit)}` : ''}</Text>
+                            <Text style={{ color: theme.textDim, fontSize: 10, fontFamily: 'DMSans_500Medium', marginTop: 2 }}>{fmtPRDate(pr.bestDuration.dateKey)}</Text>
+                          </View>
+                        </View>
+                      ) : (
                       <View style={{ flexDirection: 'row', gap: 8, marginBottom: history.length ? 14 : 0 }}>
                         <View style={{ flex: 1, backgroundColor: theme.accentAmber + '14', borderWidth: 1, borderColor: theme.accentAmber + '33', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 }}>
                           <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 4 }}>Heaviest set</Text>
@@ -3120,11 +3130,12 @@ export default function WorkoutLibraryScreen() {
                           {pr.bestE1RM ? <Text style={{ color: theme.textDim, fontSize: 10, fontFamily: 'DMSans_500Medium', marginTop: 2 }}>{fmtPRDate(pr.bestE1RM.dateKey)}</Text> : null}
                         </View>
                       </View>
+                      )
                     ) : (
                       <View style={{ alignItems: 'center', paddingVertical: 16, marginBottom: 4 }}>
                         <Ionicons name="trophy-outline" size={22} color={theme.textDim} />
                         <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_600SemiBold', marginTop: 6 }}>No records yet</Text>
-                        <Text style={{ color: theme.textDim, fontSize: 12, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>Log a weighted set to start tracking.</Text>
+                        <Text style={{ color: theme.textDim, fontSize: 12, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>Log a set to start tracking.</Text>
                       </View>
                     )}
                     {history.length > 0 && (

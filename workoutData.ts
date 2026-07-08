@@ -64,6 +64,9 @@ export interface PRRecord {
   // as lb and never move). The PR engine compares in kg internally but stores + displays this raw value.
   bestWeight: { value: number; reps: number; dateKey: string; unit?: 'lb' | 'kg' } | null;
   bestE1RM:  { value: number; weight: number; reps: number; dateKey: string; unit?: 'lb' | 'kg' } | null;
+  // Longest logged hold for a TIME-tracked lift (planks/carries). Duration is the record; weight is
+  // shown as context for weighted holds (null = bodyweight). Missing on every pre-existing record.
+  bestDuration?: { value: number; weight: number | null; unit?: 'lb' | 'kg'; dateKey: string } | null;
   updatedAt: string;
 }
 

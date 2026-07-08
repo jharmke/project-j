@@ -111,6 +111,7 @@ export interface LiftSession {
   e1rm: number | null;
   unit?: 'lb' | 'kg'; // the unit topWeight / e1rm were lifted in (missing = 'lb')
   topDuration?: number | null; // that day's longest hold (time sets), seconds
+  sets?: { weight: number; reps: number; durationSec: number | null; unit: 'lb' | 'kg' }[]; // every counted set that day, in logged order (drives the full History list)
 }
 
 // Every day this lift was logged (done set with reps OR a hold), newest first, with that day's best set.
@@ -124,6 +125,7 @@ export const liftSessionHistory = (name: string, logs: SetLogs, resolveDay: Reso
     let top: { w: number; r: number; u: 'lb' | 'kg' } | null = null;
     let bestE: number | null = null, bestEk = -1;
     let topDur: number | null = null;
+    const daySets: { weight: number; reps: number; durationSec: number | null; unit: 'lb' | 'kg' }[] = [];
     for (const ex of resolveDay(d)) {
       if (normalizeLiftName(ex.name) !== target) continue;
       const sets = dayLogs[ex.id];
@@ -132,16 +134,18 @@ export const liftSessionHistory = (name: string, logs: SetLogs, resolveDay: Reso
       for (const s of sets) {
         if (!s.done) continue;
         const w = s.weight || 0, r = s.reps || 0;
+        const dur = s.durationSec || 0;
         if (w > 0 && r > 0) {
           const wk = toKg(w, u);
           if (!top || wk > toKg(top.w, top.u) || (wk === toKg(top.w, top.u) && r > top.r)) top = { w, r, u };
           if (r <= 12) { const e = Math.round(epley(w, r)); const ek = toKg(e, u); if (bestE === null || ek > bestEk) { bestE = e; bestEk = ek; } }
         }
-        const dur = s.durationSec || 0;
         if (dur > 0 && (topDur === null || dur > topDur)) topDur = dur;
+        // Keep the actual set for the History list (a weighted set OR a hold; skip empty/unfilled sets).
+        if ((w > 0 && r > 0) || dur > 0) daySets.push({ weight: w, reps: r, durationSec: dur > 0 ? dur : null, unit: u });
       }
     }
-    if (top || topDur !== null) out.push({ dateKey: d, topWeight: top?.w ?? 0, topReps: top?.r ?? 0, e1rm: bestE, unit: top?.u ?? 'lb', topDuration: topDur });
+    if (top || topDur !== null) out.push({ dateKey: d, topWeight: top?.w ?? 0, topReps: top?.r ?? 0, e1rm: bestE, unit: top?.u ?? 'lb', topDuration: topDur, sets: daySets });
   }
   return out.sort((a, b) => (a.dateKey < b.dateKey ? 1 : a.dateKey > b.dateKey ? -1 : 0));
 };

@@ -3141,12 +3141,20 @@ export default function WorkoutLibraryScreen() {
                     {history.length > 0 && (
                       <>
                         <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 4 }}>HISTORY</Text>
-                        {history.slice(0, 12).map((h, i) => (
-                          <View key={h.dateKey} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 7, borderTopWidth: i === 0 ? 0 : 0.5, borderTopColor: theme.borderCard }}>
-                            <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily: 'DMSans_500Medium' }}>{fmtPRDate(h.dateKey)}</Text>
-                            <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>{h.topWeight > 0 ? `${h.topWeight} ${weightUnitLabel(h.unit)} × ${h.topReps}` : h.topDuration ? formatHold(h.topDuration) : '—'}</Text>
-                          </View>
-                        ))}
+                        {history.slice(0, 12).map((h, i) => {
+                          // Show every set that day (weighted set or hold), capped at 6 with a "+N" tail.
+                          const shown = (h.sets ?? []).slice(0, 6);
+                          const setStr = shown.length
+                            ? shown.map(s => s.durationSec ? formatHold(s.durationSec) : `${s.weight} ${weightUnitLabel(s.unit)} × ${s.reps}`).join('  ·  ')
+                            : (h.topWeight > 0 ? `${h.topWeight} ${weightUnitLabel(h.unit)} × ${h.topReps}` : h.topDuration ? formatHold(h.topDuration) : '—');
+                          const extra = (h.sets?.length ?? 0) > 6 ? (h.sets!.length - 6) : 0;
+                          return (
+                            <View key={h.dateKey} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, paddingVertical: 7, borderTopWidth: i === 0 ? 0 : 0.5, borderTopColor: theme.borderCard }}>
+                              <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium', paddingTop: 1 }}>{fmtPRDate(h.dateKey)}</Text>
+                              <Text style={{ flex: 1, textAlign: 'right', color: theme.textSecondary, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>{setStr}{extra ? `  +${extra}` : ''}</Text>
+                            </View>
+                          );
+                        })}
                         {history.length > 12 && <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', marginTop: 8, textAlign: 'center' }}>Showing your last 12 sessions</Text>}
                       </>
                     )}

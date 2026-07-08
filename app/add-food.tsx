@@ -1094,7 +1094,11 @@ const openFoodDetail = async (food: SearchResult) => {
 
     // Resolve missing fsId for stale diary/recent entries logged before fsId was stored.
     // Order: favorites (in-memory, instant) -> myFoods (in-memory, instant) -> FatSecret name search (API).
-    if (!fsId && !isCustomFood && food.description) {
+    // AI-estimated foods stay pure to their estimate (cals + big 3). Skipping the name-search
+    // stops the app silently stapling a name-matched FatSecret product's label (serving size +
+    // fiber/sodium/micros) onto a meal the AI never produced that data for. The stale-food
+    // recovery below still runs for every non-AI food that lost its fsId.
+    if (!fsId && !isCustomFood && !(food as any).aiEstimated && food.description) {
       const foodName = (food as any).fullName || food.description;
       // 1. Check favorites
       const favMatch = favorites.find(f => f.name === foodName || f.name === food.description);
@@ -1719,6 +1723,8 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
     fsId: (f as any).fsId || null,
     type: f.type || 'food',
     brand: (f as any).brand || null,
+    // Carry the AI flag through so openFoodDetail skips the FatSecret name-search for it.
+    aiEstimated: (f as any).aiEstimated || false,
   });
   const regularFavs = applySortToFoodItems(favorites.filter(f => f.type !== 'supplement').map(mapFav));
   const suppFavs = applySortToFoodItems(favorites.filter(f => f.type === 'supplement').map(mapFav));

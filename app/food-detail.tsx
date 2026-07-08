@@ -369,8 +369,10 @@ const isTutorialMode = tutorialMode === 'true';
       if (food?.fsId) {
         // Has fsId -- fetch servings directly
         servings = await fetchFatSecretServings(food.fsId).catch(() => []);
-      } else if (!food?.isCustom && !food?.isMyFood && !isEditing && food?.description) {
-        // No fsId (stale entry) -- search by name and use top result's servings
+      } else if (!food?.isCustom && !food?.isMyFood && !isEditing && !food?.aiEstimated && food?.description) {
+        // No fsId (stale entry) -- search by name and use top result's servings.
+        // AI-estimated foods are excluded: they stay pure to their own estimate and must never
+        // be snapped onto a name-matched FatSecret product's serving/macros.
         servings = await fetchFatSecretByName(food.description).catch(() => []);
       }
       if (servings.length > 0) {
@@ -546,6 +548,12 @@ const isTutorialMode = tutorialMode === 'true';
           return Math.round((n?.value || 0) * 10) / 10;
         };
         const labelCal = labelServing ? labelServing.calories : calories;
+        // Flat/AI-estimated entries carry macros in flat fields, not a label serving or a
+        // foodNutrients array, so getN() finds nothing and returns 0 (calories already dodge
+        // this by falling back to `calories`). Mirror that fallback for the macros: when there's
+        // no label serving AND no foodNutrients list, use the live on-screen macro values.
+        // FatSecret + custom foods (which always have one of those sources) are untouched.
+        const isFlatEntry = !labelServing && !(food.foodNutrients && food.foodNutrients.length > 0);
         favs.push({
           id: Math.random().toString(36).slice(2) + Date.now().toString(36),
           name: food.description,
@@ -553,9 +561,9 @@ const isTutorialMode = tutorialMode === 'true';
           isMyFood: food?.isMyFood || false,
           isCustom: food?.isCustom || false,
           cal: labelCal,
-          protein: getN('Protein'),
-          carbs: getN('Carbohydrate, by difference'),
-          fat: getN('Total lipid (fat)'),
+          protein: isFlatEntry ? protein : getN('Protein'),
+          carbs: isFlatEntry ? carbs : getN('Carbohydrate, by difference'),
+          fat: isFlatEntry ? fat : getN('Total lipid (fat)'),
           fiber: getN('Fiber, total dietary'),
           sugar: getN('Sugars, total including NLEA'),
           sodium: getN('Sodium, Na', 'MG'),
@@ -567,6 +575,9 @@ const isTutorialMode = tutorialMode === 'true';
           fatPer100g: food.fatPer100g || 0,
           foodNutrients: food.foodNutrients || [],
           fsId: food.fsId || null,
+          // Persist the AI flag so a re-logged AI favorite isn't mistaken for a stale
+          // FatSecret food and silently name-search enriched with a stranger's label.
+          aiEstimated: food.aiEstimated || false,
         });
         showToast('Added to favorites', food.description, 'success');
       }

@@ -23,7 +23,9 @@ const ARCHIVE_WINDOW_DAYS = 90;
 // third category with the real Recovery Score when present (sleep is the fallback).
 // v4 rebalanced weights to Nutrition 35 / Activity 30 / Recovery 35 and dropped the
 // sleep floor (the third-category fallback is now the raw sleep score).
-const DAYSCORE_VERSION = 4;
+// v5 drops Nutrition entirely on under-logged days (consumed < 50% BMR, or < 500 when BMR
+// is unknown) so a half-logged day can no longer score a fake calorie hit.
+const DAYSCORE_VERSION = 5;
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function dayNameFromKey(dateKey: string): string {
@@ -173,6 +175,9 @@ export async function buildDayScoreInput(dateKey: string, computedAt: string): P
     weightGoal: snap?.weightGoal ?? (profile.weightGoal || 'maintain'),
     hasFood,
     consumed,
+    // Live per-day flag (not frozen in the snapshot): the user asserted a low-calorie day
+    // was fully logged, so the incomplete-log gate is bypassed and Nutrition scores normally.
+    logConfirmedComplete: day.dietLogComplete === true,
     dayData: day,
     dayBmr: snap?.bmr ?? bmr,
     calTarget: snap?.calTarget ?? calTarget,
@@ -239,6 +244,7 @@ function dataSigFromInput(input: DayScoreInput): string {
     input.waterExcluded ? 1 : 0,
     input.exerciseExcluded ? 1 : 0,
     input.excluded ? 1 : 0,
+    input.logConfirmedComplete ? 1 : 0,
   ];
   return simpleHash(parts.join('|'));
 }
@@ -372,6 +378,21 @@ export async function excludeDayFromAverages(dateKey: string): Promise<void> {
   const merged: any = { ...day, excluded: { ...prevEx, diet: true, water: true, exercise: true } };
   if (day.dayScore) merged.dayScore = { ...day.dayScore, excludedFromAverages: true };
   await storageSet(`pj_${dateKey}`, JSON.stringify(merged));
+}
+
+// The user asserts a low-calorie day was genuinely fully logged (not under-logged). Read-then-
+// merge a per-day flag onto the record, then recompute so Nutrition scores normally instead of
+// dropping. Never replaces the day record. Returns the refreshed score for the caller to render.
+export async function markDietLogComplete(dateKey: string): Promise<DayScore | null> {
+  const raw = await AsyncStorage.getItem(`pj_${dateKey}`);
+  if (!raw) return null;
+  let day: any;
+  try { day = JSON.parse(raw); } catch { return null; }
+  if (day.dietLogComplete !== true) {
+    await storageSet(`pj_${dateKey}`, JSON.stringify({ ...day, dietLogComplete: true }));
+  }
+  // Force a fresh compute (the flag is in the data signature) so Nutrition returns.
+  return computeAndStoreDayScore(dateKey, new Date().toISOString());
 }
 
 // Ensures yesterday is scored (every call) and, at most once per calendar day,

@@ -232,8 +232,9 @@ export async function generateWeeklySummary(weekStart: string): Promise<WeeklySu
   let weekCardioRecovery: number | null = null;
 
   // Active calories of the day BEFORE the week starts (Saturday), so day 0 (Sunday)
-  // has a prior-day activity value for the recovery "Prev. Activity" factor. Raw (not
-  // burn-adjusted), matching recoveryScore.ts. Days 1-6 read their prior day from dayMap.
+  // has a prior-day activity value for the recovery "Prev. Activity" factor. Burn-accuracy
+  // adjusted at push time (below) to match the recovery SCORE, which adjusts yesterday's load
+  // before scoring. Days 1-6 read their prior day from dayMap.
   let prevDayBeforeWeekActive = 0;
   try {
     const beforeKey = dateKeyFromSunday(weekStart, -1);
@@ -331,7 +332,7 @@ export async function generateWeeklySummary(weekStart: string): Promise<WeeklySu
     const prevActiveRaw = i > 0
       ? (dayMap[dateKeys[i - 1]]?.activeCalories ?? dayMap[dateKeys[i - 1]]?.caloriesBurned ?? 0)
       : prevDayBeforeWeekActive;
-    if (prevActiveRaw > 0) prevActivityList.push(Math.round(prevActiveRaw));
+    if (prevActiveRaw > 0) prevActivityList.push(Math.round(prevActiveRaw * burnAccuracyPct / 100));
 
     if (dayScore.activityDetail) {
       if (typeof dayScore.activityDetail.activeCalScore === 'number') {

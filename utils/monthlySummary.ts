@@ -228,8 +228,9 @@ export async function generateMonthlySummary(monthKey: string): Promise<MonthlyS
   let monthCardioRecovery: number | null = null;
 
   // Active calories of the day BEFORE the month starts, so day 1 has a prior-day
-  // activity value for the recovery "Prev. Activity" factor. Raw (not burn-adjusted),
-  // matching recoveryScore.ts. Other days read their prior day from dayMap.
+  // activity value for the recovery "Prev. Activity" factor. Burn-accuracy adjusted at push
+  // time (below) to match the recovery SCORE, which adjusts yesterday's load before scoring.
+  // Other days read their prior day from dayMap.
   let dayBeforeMonthKey = '';
   let dayBeforeMonthActive = 0;
   try {
@@ -330,7 +331,7 @@ export async function generateMonthlySummary(monthKey: string): Promise<MonthlyS
     const prevActiveRaw = dayMap[prevKey]
       ? (dayMap[prevKey].activeCalories ?? dayMap[prevKey].caloriesBurned ?? 0)
       : (prevKey === dayBeforeMonthKey ? dayBeforeMonthActive : 0);
-    if (prevActiveRaw > 0) prevActivityList.push(Math.round(prevActiveRaw));
+    if (prevActiveRaw > 0) prevActivityList.push(Math.round(prevActiveRaw * burnAccuracyPct / 100));
 
     if (dayScore.activityDetail) {
       if (typeof dayScore.activityDetail.activeCalScore === 'number') {

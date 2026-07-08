@@ -26,8 +26,8 @@ import { useToast } from '../components/Toast';
 import { ScoreRing } from '../components/DaySummaryModal';
 import { CardWash } from '../components/GradientCard';
 import { DayScore, DayScoreInput, scoreLabel, StyleMode, CATEGORY_WEIGHTS } from '../utils/dayScore';
-import { buildDayScoreInput, excludeDayFromAverages, ensureFreshDayScore } from '../utils/dayScoreStore';
-import { contextLine as computeContextLine, hadFaithEntryOn } from '../utils/daySummaryCopy';
+import { buildDayScoreInput, excludeDayFromAverages, ensureFreshDayScore, markDietLogComplete } from '../utils/dayScoreStore';
+import { contextLine as computeContextLine, hadFaithEntryOn, underLoggedNutritionLine } from '../utils/daySummaryCopy';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { useTutorial } from '../context/TutorialContext';
 import { refreshDayCoachTip, resolveTipBody } from '../utils/coachAI';
@@ -94,6 +94,18 @@ export default function DaySummaryScreen() {
     router.back();
   };
 
+  // "This was my full day": the user asserts a low-calorie day was genuinely fully logged.
+  // Write the flag, recompute, and refresh in place so Nutrition scores instead of nudging.
+  const handleMarkComplete = async () => {
+    if (!date) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    const sc = await markDietLogComplete(date);
+    if (sc) setScore(sc);
+    const inp = await buildDayScoreInput(date, new Date().toISOString());
+    setInput(inp);
+    showToast('Day counted', 'Nutrition scored for this day', 'success');
+  };
+
   useEffect(() => {
     (async () => {
       if (!date) { setLoading(false); return; }
@@ -112,8 +124,10 @@ export default function DaySummaryScreen() {
         const inp = await buildDayScoreInput(date, new Date().toISOString());
         setInput(inp);
 
-        // Prior-day active calories for the Recovery card's "Prev. Activity" factor
-        // (recovery uses yesterday's load, raw, matching recoveryScore.ts).
+        // Prior-day active calories for the Recovery card's "Prev. Activity" factor. Burn-accuracy
+        // adjusted (x burnAccuracyPct) to match the recovery SCORE -- the score already adjusts
+        // yesterday's load before scoring, so showing the RAW value here was inconsistent (e.g. it
+        // displayed 832 where the score used 666 at 80%, and where the day's own detail shows 666).
         try {
           const [py, pm, pd] = date.split('-').map(Number);
           const prevDt = new Date(py, pm - 1, pd);
@@ -121,8 +135,9 @@ export default function DaySummaryScreen() {
           const prevKey = `${prevDt.getFullYear()}-${String(prevDt.getMonth() + 1).padStart(2, '0')}-${String(prevDt.getDate()).padStart(2, '0')}`;
           const prevRaw = await AsyncStorage.getItem(`pj_${prevKey}`);
           const prevDay = prevRaw ? JSON.parse(prevRaw) : null;
+          const acc = (inp?.burnAccuracyPct ?? 100) / 100;
           const pac = prevDay ? (prevDay.activeCalories ?? prevDay.caloriesBurned ?? null) : null;
-          setPrevActiveCal(typeof pac === 'number' ? pac : null);
+          setPrevActiveCal(typeof pac === 'number' ? Math.round(pac * acc) : null);
         } catch {}
 
         // Per-exercise cardio/lift counts for the Activity card display.
@@ -464,9 +479,23 @@ export default function DaySummaryScreen() {
           </SectionCard>
         ) : (
           <SectionCard label="Nutrition" icon="restaurant" value={null} innerRef={nutritionRef} categoryColor="#0d9268">
-            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 4 }}>
-              {dietExcluded || waterExcluded ? 'Nutrition was excluded for this day.' : 'No food logged this day.'}
-            </Text>
+            {score.nutritionIncomplete && !dietExcluded && !waterExcluded ? (
+              <View style={{ paddingVertical: 4, gap: 10 }}>
+                <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', lineHeight: 18 }}>
+                  {underLoggedNutritionLine(isMindful)}
+                </Text>
+                <TouchableOpacity
+                  onPress={handleMarkComplete}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  style={{ alignSelf: 'flex-start', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 }}>
+                  <Text style={{ fontSize: 12, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>This was my full day</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 4 }}>
+                {dietExcluded || waterExcluded ? 'Nutrition was excluded for this day.' : 'No food logged this day.'}
+              </Text>
+            )}
           </SectionCard>
         )}
 

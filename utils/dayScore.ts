@@ -52,6 +52,10 @@ export interface DayScoreInput {
   // Nutrition
   hasFood: boolean;              // any food entries logged for the day
   consumed: number;              // sum of entries[].cal
+  // User assertion (per-day) that a low-calorie day was fully logged, not under-logged.
+  // When true, the incomplete-log gate is bypassed and the day scores normally. Optional
+  // so older callers/builders that never set it default to false (gate applies).
+  logConfirmedComplete?: boolean;
   dayData: any;                  // the pj_ daily record (active/burn fields)
   dayBmr: number;
   calTarget: number;
@@ -111,6 +115,10 @@ export interface DayScore {
   // null = no third-category data. Additive: absent on days scored before this.
   recoveryCategoryScore?: number | null;
   recoveryCategorySource?: 'recovery' | 'sleep' | null;
+  // True when food was logged but the day is under-logged (below the incomplete-log floor), so
+  // Nutrition was dropped. Lets the UI show a "log more of your day" explainer instead of a bare
+  // dash. Additive: absent on days scored before this existed.
+  nutritionIncomplete?: boolean;
   computedAt: string;
   excludedFromAverages: boolean;
   version?: number;              // stamped by the store; bump to force recompute
@@ -205,10 +213,26 @@ function calorieSubScore(input: DayScoreInput): { score: number; hit: boolean } 
   return { score, hit: false };
 }
 
-// Nutrition category (0 to 100). Null when the day has no food data, or when no
-// sub-component can be graded (no calorie target, no protein goal, no water goal).
+// Incomplete-log floor: a day with food but implausibly few calories is under-LOGGED, not
+// genuinely low. Below 50% of BMR (or below 500 kcal when BMR is unknown) we can't trust the
+// food data, so Nutrition is dropped rather than graded -- calorie AND protein both derive from
+// the same partial log, so a half-logged day must never score a clean calorie "hit". Mirrors
+// Smart Tips' `consumed < 0.5 * bmr` filter so the two never disagree. Skipped when diet is
+// excluded (food isn't being graded that day) or when no food was logged at all.
+function underLoggedFloor(input: DayScoreInput): number {
+  return input.dayBmr > 0 ? 0.5 * input.dayBmr : 500;
+}
+export function isNutritionUnderLogged(input: DayScoreInput): boolean {
+  return input.hasFood && !input.dietExcluded && !input.logConfirmedComplete
+    && input.consumed < underLoggedFloor(input);
+}
+
+// Nutrition category (0 to 100). Null when the day has no food data, when the day is
+// under-logged (see isNutritionUnderLogged), or when no sub-component can be graded
+// (no calorie target, no protein goal, no water goal).
 function nutritionScore(input: DayScoreInput): { score: number; detail: NonNullable<DayScore['nutritionDetail']> } | null {
   if (!input.hasFood) return null;
+  if (isNutritionUnderLogged(input)) return null;
 
   // Calorie + protein are diet sub-components: excluding diet drops them both.
   // Calorie also needs a target to grade against (no target, no calorie sub).
@@ -394,6 +418,7 @@ export function computeDayScore(input: DayScoreInput): DayScore | null {
     sleepDetail: sleep ? sleep.detail : null,
     recoveryCategoryScore: thirdScore !== null ? round1(thirdScore) : null,
     recoveryCategorySource: thirdSource,
+    nutritionIncomplete: isNutritionUnderLogged(input),
     computedAt: input.computedAt,
     excludedFromAverages: !!input.excluded,
   };

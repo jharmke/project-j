@@ -8,6 +8,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DayScore } from './dayScore';
 import { loadRecentComposites } from './dayScoreStore';
 
+// Explainer shown when a day was under-logged (food logged but below the incomplete-log
+// floor), so Nutrition was dropped rather than scored. Mode-aware: Discipline/Balanced is
+// direct, Mindful is gentle and free of "score" pressure. In the UI it pairs with a
+// "This was my full day" override the user can tap to score the day normally.
+export function underLoggedNutritionLine(mindful: boolean): string {
+  return mindful
+    ? "Looks like just part of this day is logged, so nutrition wasn't scored. Add the rest whenever you're ready."
+    : "Only part of this day is logged, so nutrition wasn't scored. Log the rest to score it.";
+}
+
 // ── Win-line / coach-note copy ───────────────────────────────────────────────
 const WIN_STD: Record<string, string> = {
   calorie: 'You nailed your calorie target.',

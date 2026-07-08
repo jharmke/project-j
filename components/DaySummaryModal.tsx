@@ -21,7 +21,7 @@ import { CardWash } from './GradientCard';
 import { ToastRenderer, useToast } from './Toast';
 import { DayScore, scoreLabel } from '../utils/dayScore';
 import { excludeDayFromAverages } from '../utils/dayScoreStore';
-import { winAndCoachLines, contextLine as computeContextLine, hadFaithEntryOn } from '../utils/daySummaryCopy';
+import { winAndCoachLines, contextLine as computeContextLine, hadFaithEntryOn, underLoggedNutritionLine } from '../utils/daySummaryCopy';
 
 const AnimCircle = Reanimated.createAnimatedComponent(Circle);
 
@@ -252,6 +252,12 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
                 </View>
               ))}
             </View>
+
+            {/* Under-logged nudge: food logged but below the incomplete-log floor, so Nutrition
+                was dropped. The "This was my full day" override lives on the Full Breakdown page. */}
+            {score.nutritionIncomplete && (
+              <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 14, lineHeight: 17 }}>{underLoggedNutritionLine(isMindful)}</Text>
+            )}
 
             {/* Win line (app coach voice: regular weight, italic, accent) */}
             {!!winLine && (

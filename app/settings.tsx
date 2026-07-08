@@ -27,7 +27,7 @@ import { setFloatingBarHeight } from '../utils/floatingBar';
 import { DEFAULT_ORDER, DEFAULT_VISIBLE, DISCIPLINE_ORDER, MINDFUL_ORDER, MINDFUL_VISIBLE, type CardId } from './(tabs)/index';
 import { resolveMaxHR, zoneBounds, timeInZones, fmtZoneTime, ageFromBirthday, tanakaMaxHR } from '../utils/hrZones';
 import { generateDiagnosticReport, ReportWindow, dumpWindowComparison } from '../utils/diagnosticReport';
-import { dumpDayScoreWithRecovery } from '../utils/dayScoreStore';
+import { dumpDayScoreWithRecovery, ensureFreshDayScore } from '../utils/dayScoreStore';
 import { buildCompanionStats } from '../utils/companionStats';
 import { probeStreakExclusions } from '../utils/streakExclusion';
 import { startVacation, endVacationEarly, cancelVacationFully, describeVacation, getVacation, vacationTodayKey, addDaysKey, MAX_VACATION_DAYS, VacationState } from '../utils/vacationMode';
@@ -2451,6 +2451,72 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Gives Bench Press (135x5) and Barbell Squat (185x5) a prior best to beat, so you can log a heavier set in Workout and watch the real PR flow fire (bank + Otto + recap). Read-then-merge, never overwrites an existing PR.</Text>
               </View>
               <Ionicons name="barbell-outline" size={18} color={theme.accentGreen} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              try {
+                const pad = (n: number) => String(n).padStart(2, '0');
+                const today = new Date();
+                // Find a genuinely EMPTY in-window date (40..88 days back) so we never clobber real data.
+                let target: string | null = null;
+                for (let i = 40; i <= 88; i++) {
+                  const d = new Date(today); d.setDate(d.getDate() - i);
+                  const key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+                  const existing = await AsyncStorage.getItem(`pj_${key}`);
+                  if (!existing) { target = key; break; }
+                }
+                if (!target) { Alert.alert('No empty date found', 'Every date from 40 to 88 days back already has data, so seeding could touch real data. Aborted.'); return; }
+                // 320 cal is below the incomplete-log floor; activeCalories + steps so the day still
+                // scores (off Activity) and is therefore openable -- Nutrition then shows the explainer.
+                const rec = {
+                  entries: [{ name: 'Dev Test Meal', cal: 320, protein: 15, carbs: 30, fat: 12, meal: 'ms_morning', timestamp: Date.now(), _devSeed: true }],
+                  steps: 6200,
+                  activeCalories: 400,
+                  _devSeed: true,
+                };
+                await storageSet(`pj_${target}`, JSON.stringify(rec));
+                await AsyncStorage.setItem('pj_dev_underlog_testdate', target);
+                await ensureFreshDayScore(target);
+                Alert.alert(
+                  'Under-logged day seeded',
+                  `Created ${target}: a 320-cal log (under the floor) plus activity so the day still scores. Its Nutrition should show the "log more / This was my full day" explainer. Tap Open it, then use Remove under-logged test day when done.`,
+                  [
+                    { text: 'Later', style: 'cancel' },
+                    { text: 'Open it', onPress: () => router.push(`/day-summary?date=${target}`) },
+                  ],
+                );
+              } catch (e) { Alert.alert('Error', String(e)); }
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentGreen }]}>Seed under-logged test day (dev)</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Creates a throwaway completed day on an empty in-window date: a tiny 320-cal log (below the incomplete-log floor) plus activity so the day still scores. Lets you see the Nutrition under-logged explainer + the This was my full day override. Only writes to a genuinely empty date; never touches your data.</Text>
+              </View>
+              <Ionicons name="flask-outline" size={18} color={theme.accentGreen} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              try {
+                const key = await AsyncStorage.getItem('pj_dev_underlog_testdate');
+                if (!key) { Alert.alert('Nothing to remove', 'No seeded under-logged test day on record.'); return; }
+                const raw = await AsyncStorage.getItem(`pj_${key}`);
+                const day = raw ? JSON.parse(raw) : null;
+                if (day && day._devSeed === true) {
+                  await AsyncStorage.removeItem(`pj_${key}`);
+                  await AsyncStorage.removeItem('pj_dev_underlog_testdate');
+                  Alert.alert('Removed', `Test day ${key} deleted. That date is empty again.`);
+                } else {
+                  await AsyncStorage.removeItem('pj_dev_underlog_testdate');
+                  Alert.alert('Not a seeded day', `${key} has no dev marker, so it was left untouched (real data is never deleted). Cleared the pointer.`);
+                }
+              } catch (e) { Alert.alert('Error', String(e)); }
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Remove under-logged test day (dev)</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Deletes the seeded test day (only if it carries the dev marker) and clears the pointer. Safe: never deletes a real logged day.</Text>
+              </View>
+              <Ionicons name="trash-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {

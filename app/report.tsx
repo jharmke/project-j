@@ -754,12 +754,33 @@ function BodyMeasurements({ entries, unit, startKey, endKey, theme }: { entries:
   );
 }
 
-// Achievements earned within the range, newest first (name + category + date unlocked).
+// Bronze/silver/gold/platinum/diamond metal colors (mirrors the Achievements screen's TIER_CONFIG).
+const TIER_METAL: Record<string, { main: string; dark: string }> = {
+  bronze: { main: '#cd7f32', dark: '#8b5220' },
+  silver: { main: '#a8a8c0', dark: '#6a6a88' },
+  gold: { main: '#d4860a', dark: '#8a5200' },
+  platinum: { main: '#bfdbfe', dark: '#4f8fb8' },
+  diamond: { main: '#e0f2fe', dark: '#38bdf8' },
+};
+// Same tier mapping the Achievements screen uses.
+function displayTierOf(def: any): string {
+  if (def.displayTier) return def.displayTier;
+  if (def.tier === 'small') return 'bronze';
+  if (def.tier === 'medium') return 'silver';
+  if (def.tier === 'diamond') return 'diamond';
+  return 'gold';
+}
+
+// Achievements earned within the range, newest first. Keeps each badge's SUBJECT icon, but tinted by its
+// TIER (bronze/silver/gold/platinum/diamond) on a soft tier-colored chip.
 function AchievementsEarned({ store, startKey, endKey, theme }: { store: AchievementsStore; startKey: string; endKey: string; theme: any }) {
   const rows = useMemo(() => {
     const s = store || {};
     return ACHIEVEMENTS.filter(a => s[a.id])
-      .map(a => ({ name: a.name, category: String(a.category), icon: a.icon, iconColor: a.iconColor, bgColor: a.bgColor, date: String(s[a.id].unlockedAt || '').slice(0, 10) }))
+      .map(a => {
+        const m = TIER_METAL[displayTierOf(a)] || TIER_METAL.gold;
+        return { name: a.name, category: String(a.category), icon: a.icon, tint: m.dark, chip: m.main + '2e', date: String(s[a.id].unlockedAt || '').slice(0, 10) };
+      })
       .filter(r => r.date && r.date >= startKey && r.date <= endKey)
       .sort((x, y) => y.date.localeCompare(x.date));
   }, [store, startKey, endKey]);
@@ -768,8 +789,8 @@ function AchievementsEarned({ store, startKey, endKey, theme }: { store: Achieve
     <View style={{ gap: 9 }}>
       {rows.map((r, i) => (
         <View key={r.name + i} style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
-          <View style={{ width: 30, height: 30, borderRadius: 9, backgroundColor: r.bgColor || theme.bgInset, alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name={(r.icon as any) || 'trophy'} size={15} color={r.iconColor || theme.accentAmber} />
+          <View style={{ width: 30, height: 30, borderRadius: 9, backgroundColor: r.chip, alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name={(r.icon as any) || 'trophy'} size={15} color={r.tint} />
           </View>
           <View style={{ flex: 1 }}>
             <Text numberOfLines={1} style={{ fontSize: 13.5, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{r.name}</Text>

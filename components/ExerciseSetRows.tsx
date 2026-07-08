@@ -193,7 +193,7 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
               {isTime ? (
                 // Display (plain Text) + invisible input on top: the box you SEE is never the box you
                 // TYPE into, so the formatted clock can't flicker as it reformats each keystroke.
-                <View style={[inputStyle(s.done), { justifyContent: 'center', alignItems: 'center' }]}>
+                <View style={[inputStyle(s.done), { justifyContent: 'center', alignItems: 'center' }, holdActive && { borderColor: t.accentBlue, backgroundColor: t.accentBlue + '1f' }]}>
                   <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: holdSec != null ? t.textSecondary : t.textDim }} numberOfLines={1}>
                     {holdSec != null ? formatHold(holdSec) : (pd != null ? formatHold(pd) : '—')}
                   </Text>
@@ -201,8 +201,8 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
                     value={holdActive ? holdEdit.raw : holdDigitsFor(s.durationSec)}
                     onFocus={() => setHoldEdit({ i, raw: holdDigitsFor(s.durationSec) })}
                     onChangeText={txt => { const d = txt.replace(/\D/g, '').slice(-4); setHoldEdit({ i, raw: d }); edit(i, { durationSec: d === '' ? null : parseHoldInput(d) }); }}
-                    onEndEditing={() => { setHoldEdit(null); onPersist(sets); }}
-                    onBlur={() => setHoldEdit(null)}
+                    onEndEditing={() => { setHoldEdit(prev => (prev && prev.i === i ? null : prev)); onPersist(sets); }}
+                    onBlur={() => setHoldEdit(prev => (prev && prev.i === i ? null : prev))}
                     keyboardType="number-pad"
                     caretHidden
                     returnKeyType="done"

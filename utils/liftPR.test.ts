@@ -18,6 +18,9 @@ function check(name: string, cond: boolean, got?: any) {
 const set = (weight: number | null, reps: number | null, done = true) => ({ weight, reps, rest: null, done });
 const resolver = (progByDay: Record<string, { id: string; name: string }[]>): ResolveDay =>
   (d: string) => progByDay[d] || [];
+// unit-aware resolver for the lb/kg mixing tests
+const resolverU = (progByDay: Record<string, { id: string; name: string; weightUnit?: 'lb' | 'kg' }[]>): ResolveDay =>
+  (d: string) => progByDay[d] || [];
 
 const BENCH = 'Bench Press';
 const KEY = 'bench press';
@@ -128,6 +131,33 @@ console.log('\nlift PR engine\n');
   check('history: top set per day (heaviest)', hist[0].topWeight === 50 && hist[0].topReps === 5, { w: hist[0].topWeight, r: hist[0].topReps });
   check('history: unchecked sets excluded', hist[1].topWeight === 45 && hist[1].topReps === 5, hist[1]);
   check('history: est-1RM computed per day', hist[0].e1rm !== null && hist[0].e1rm >= 55, hist[0].e1rm);
+}
+
+// ── 9. Mixed units: 100 kg beats a 200 lb prior (100kg = 220.5lb) -> PR, record stored in kg ─────────
+{
+  const prog = resolverU({ [PRIOR]: [{ id: 'p1', name: BENCH, weightUnit: 'lb' }], [TODAY]: [{ id: 'b1', name: BENCH, weightUnit: 'kg' }] });
+  const logs: SetLogs = { [PRIOR]: { p1: [set(200, 3)] }, [TODAY]: { b1: [set(100, 3)] } };
+  const r = recomputeLiftPR(BENCH, logs, prog, {}, {}, TODAY, NOW);
+  check('kg/lb: 100kg (220lb) beats 200lb prior -> weight PR', !!r.hit && r.hit.weightPR === true, r.hit);
+  check('kg/lb: record stores the ENTERED value 100 (not converted)', r.prs[KEY].bestWeight?.value === 100, r.prs[KEY].bestWeight?.value);
+  check('kg/lb: record stores unit kg', r.prs[KEY].bestWeight?.unit === 'kg', r.prs[KEY].bestWeight?.unit);
+  check('kg/lb: hit unit kg, prev unit lb', r.hit?.unit === 'kg' && r.hit?.prevWeightUnit === 'lb', { u: r.hit?.unit, p: r.hit?.prevWeightUnit });
+}
+
+// ── 10. Mixed units the other way: 200 lb does NOT beat a 100 kg (220 lb) prior ──────────────────────
+{
+  const prog = resolverU({ [PRIOR]: [{ id: 'p1', name: BENCH, weightUnit: 'kg' }], [TODAY]: [{ id: 'b1', name: BENCH, weightUnit: 'lb' }] });
+  const logs: SetLogs = { [PRIOR]: { p1: [set(100, 3)] }, [TODAY]: { b1: [set(200, 3)] } };
+  const r = recomputeLiftPR(BENCH, logs, prog, {}, {}, TODAY, NOW);
+  check('kg/lb: 200lb < 100kg prior -> no PR', r.hit === null, r.hit);
+  check('kg/lb: all-time best stays the 100kg record', r.prs[KEY].bestWeight?.value === 100 && r.prs[KEY].bestWeight?.unit === 'kg', r.prs[KEY].bestWeight);
+}
+
+// ── 11. lb-only regression: value unchanged, unit now stamped 'lb' ───────────────────────────────────
+{
+  const prog = resolver(backedPriorProg);
+  const r = recomputeLiftPR(BENCH, { ...backedPriorLogs, [TODAY]: { b1: [set(150, 5)] } }, prog, {}, {}, TODAY, NOW);
+  check('lb-only: value still 150, unit stamped lb', r.prs[KEY].bestWeight?.value === 150 && r.prs[KEY].bestWeight?.unit === 'lb', r.prs[KEY].bestWeight);
 }
 
 console.log(`\n${failed === 0 ? '✅ ALL PASS' : '❌ FAILURES'} — ${passed} passed, ${failed} failed`);

@@ -16,17 +16,29 @@ export type HitMap = Record<string, Record<string, any>>;
 
 // Maps a date key to the exercises logged/programmed that day, so a set (keyed by exerciseId) can be
 // traced back to a lift name. A day that has been deleted from the program simply resolves to [].
-export type ResolveDay = (dateKey: string) => { id: string; name: string; isCardio?: boolean }[];
+export type ResolveDay = (dateKey: string) => { id: string; name: string; isCardio?: boolean; weightUnit?: 'lb' | 'kg' }[];
 
 export const normalizeLiftName = (name: string) => (name || '').trim().toLowerCase().replace(/\s+/g, ' ');
 export const epley = (w: number, r: number) => w * (1 + r / 30);
 
-// Pick the heavier of two best-weight records (tie broken by reps); null-safe.
-export const heavier = (a: BestW, b: BestW): BestW =>
-  !a ? b : !b ? a : (b.value > a.value || (b.value === a.value && (b.reps || 0) > (a.reps || 0))) ? b : a;
-// Pick the higher of two est-1RM records; null-safe.
-export const higherE = (a: BestE, b: BestE): BestE =>
-  !a ? b : !b ? a : (b.value > a.value ? b : a);
+// Canonical comparison unit is kg. Every weight is converted to kg ONLY to decide which set is heavier
+// / has the higher est-1RM, so a user who mixes lb and kg on one lift never breaks a record. The value
+// the user actually entered (plus its unit) is what gets stored and displayed -- a converted number is
+// never shown. Missing unit = 'lb', so all pre-existing lb-only history compares exactly as before.
+export const LB_PER_KG = 2.2046226218;
+export const toKg = (w: number, unit?: 'lb' | 'kg') => (unit === 'kg' ? w : w / LB_PER_KG);
+
+// Pick the heavier of two best-weight records (compared in kg; tie broken by reps); null-safe.
+export const heavier = (a: BestW, b: BestW): BestW => {
+  if (!a) return b; if (!b) return a;
+  const ak = toKg(a.value, a.unit), bk = toKg(b.value, b.unit);
+  return (bk > ak || (bk === ak && (b.reps || 0) > (a.reps || 0))) ? b : a;
+};
+// Pick the higher of two est-1RM records (compared in kg); null-safe.
+export const higherE = (a: BestE, b: BestE): BestE => {
+  if (!a) return b; if (!b) return a;
+  return toKg(b.value, b.unit) > toKg(a.value, a.unit) ? b : a;
+};
 
 // Scan logged history for one lift and return its best weight + best est. 1RM. `opts.beforeDate`
 // restricts to days strictly before a cutoff (the "prior best"); `opts.onlyDay` restricts to one day.
@@ -48,11 +60,12 @@ export const computeLiftBest = (
       if (normalizeLiftName(ex.name) !== target) continue;
       const sets = dayLogs[ex.id];
       if (!sets) continue;
+      const u = ex.weightUnit || 'lb';
       for (const s of sets) {
         const w = s.weight || 0, r = s.reps || 0;
         if (!s.done || w <= 0 || r <= 0) continue;
-        bw = heavier(bw, { value: w, reps: r, dateKey: d });
-        if (r <= 12) be = higherE(be, { value: Math.round(epley(w, r)), weight: w, reps: r, dateKey: d });
+        bw = heavier(bw, { value: w, reps: r, dateKey: d, unit: u });
+        if (r <= 12) be = higherE(be, { value: Math.round(epley(w, r)), weight: w, reps: r, dateKey: d, unit: u });
       }
     }
   }
@@ -85,6 +98,7 @@ export interface LiftSession {
   topWeight: number;
   topReps: number;
   e1rm: number | null;
+  unit?: 'lb' | 'kg'; // the unit topWeight / e1rm were lifted in (missing = 'lb')
 }
 
 // Every day this lift was logged (done + weighted), newest first, with that day's heaviest set.
@@ -95,20 +109,22 @@ export const liftSessionHistory = (name: string, logs: SetLogs, resolveDay: Reso
   for (const d of Object.keys(logs)) {
     const dayLogs = logs[d];
     if (!dayLogs) continue;
-    let top: { w: number; r: number } | null = null;
-    let bestE: number | null = null;
+    let top: { w: number; r: number; u: 'lb' | 'kg' } | null = null;
+    let bestE: number | null = null, bestEk = -1;
     for (const ex of resolveDay(d)) {
       if (normalizeLiftName(ex.name) !== target) continue;
       const sets = dayLogs[ex.id];
       if (!sets) continue;
+      const u = ex.weightUnit || 'lb';
       for (const s of sets) {
         const w = s.weight || 0, r = s.reps || 0;
         if (!s.done || w <= 0 || r <= 0) continue;
-        if (!top || w > top.w || (w === top.w && r > top.r)) top = { w, r };
-        if (r <= 12) { const e = Math.round(epley(w, r)); if (bestE === null || e > bestE) bestE = e; }
+        const wk = toKg(w, u);
+        if (!top || wk > toKg(top.w, top.u) || (wk === toKg(top.w, top.u) && r > top.r)) top = { w, r, u };
+        if (r <= 12) { const e = Math.round(epley(w, r)); const ek = toKg(e, u); if (bestE === null || ek > bestEk) { bestE = e; bestEk = ek; } }
       }
     }
-    if (top) out.push({ dateKey: d, topWeight: top.w, topReps: top.r, e1rm: bestE });
+    if (top) out.push({ dateKey: d, topWeight: top.w, topReps: top.r, e1rm: bestE, unit: top.u });
   }
   return out.sort((a, b) => (a.dateKey < b.dateKey ? 1 : a.dateKey > b.dateKey ? -1 : 0));
 };
@@ -154,8 +170,9 @@ export const recomputeLiftPR = (
     nextPrs = { ...currentPrs }; delete nextPrs[key]; // nothing supports a record anymore -> drop it
   }
 
-  const weightPR = !!(today.bestWeight && (!priorW || today.bestWeight.value > priorW.value));
-  const e1rmPR = !!(today.bestE1RM && (!priorE || today.bestE1RM.value > priorE.value));
+  // Compare today vs the prior best in kg so a unit switch between sessions is judged honestly.
+  const weightPR = !!(today.bestWeight && (!priorW || toKg(today.bestWeight.value, today.bestWeight.unit) > toKg(priorW.value, priorW.unit)));
+  const e1rmPR = !!(today.bestE1RM && (!priorE || toKg(today.bestE1RM.value, today.bestE1RM.unit) > toKg(priorE.value, priorE.unit)));
   const hadHit = !!currentHits[judgeDay]?.[key];
   let hit: any = null, nextHits = currentHits;
   if (weightPR || e1rmPR) {
@@ -163,7 +180,10 @@ export const recomputeLiftPR = (
       name, weightPR, e1rmPR,
       weightVal: today.bestWeight?.value, weightReps: today.bestWeight?.reps,
       e1rmVal: today.bestE1RM?.value,
-      prevWeightVal: priorW?.value, prevE1rmVal: priorE?.value, at: now,
+      unit: today.bestWeight?.unit || today.bestE1RM?.unit || 'lb', // unit of today's weightVal / e1rmVal
+      prevWeightVal: priorW?.value, prevE1rmVal: priorE?.value,
+      prevWeightUnit: priorW?.unit, prevE1rmUnit: priorE?.unit,   // prior best may be in a different unit
+      at: now,
     };
     nextHits = { ...currentHits, [judgeDay]: { ...(currentHits[judgeDay] || {}), [key]: hit } };
   } else if (hadHit) {

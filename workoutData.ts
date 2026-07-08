@@ -33,8 +33,10 @@ export interface SetEntry {
 // record rolls back if the set that earned it is unchecked/edited/deleted. Beating a prior best = a PR.
 export interface PRRecord {
   name: string; // display name as last seen
-  bestWeight: { value: number; reps: number; dateKey: string } | null;
-  bestE1RM:  { value: number; weight: number; reps: number; dateKey: string } | null;
+  // unit = the unit the record was actually lifted in (missing = 'lb', so all pre-existing records read
+  // as lb and never move). The PR engine compares in kg internally but stores + displays this raw value.
+  bestWeight: { value: number; reps: number; dateKey: string; unit?: 'lb' | 'kg' } | null;
+  bestE1RM:  { value: number; weight: number; reps: number; dateKey: string; unit?: 'lb' | 'kg' } | null;
   updatedAt: string;
 }
 

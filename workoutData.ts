@@ -226,8 +226,8 @@ export const PRESET_PROGRAMS: PresetProgram[] = [
   },
 ];
 
-const pe = (id: string, name: string, sets: string, reps: string, rest: string, isCardio?: boolean, duration?: string): Exercise => ({
-  id, name, sets, reps, rest, note: '', ...(isCardio ? { isCardio: true } : {}), ...(duration ? { duration } : {}),
+const pe = (id: string, name: string, sets: string, reps: string, rest: string, isCardio?: boolean, duration?: string, trackingType?: 'reps' | 'time'): Exercise => ({
+  id, name, sets, reps, rest, note: '', ...(isCardio ? { isCardio: true } : {}), ...(duration ? { duration } : {}), ...(trackingType === 'time' ? { trackingType: 'time' } : {}),
 });
 
 export const PRESET_ROUTINES: Routine[] = [
@@ -326,7 +326,7 @@ export const PRESET_ROUTINES: Routine[] = [
       pe('pr_legs_std_2', 'Hamstring Curl', '3', '12', '45s'),
       pe('pr_legs_std_3', 'Leg Extension (Machine)', '3', '12–15', '45s'),
       pe('pr_legs_std_4', 'Glute Kickback (Cable)', '3', '15 each', '30s'),
-      pe('pr_legs_std_5', 'Plank', '3', '30–45s hold', '30s'),
+      pe('pr_legs_std_5', 'Plank', '3', '45', '30s', false, undefined, 'time'),
     ],
   },
   {
@@ -366,7 +366,7 @@ export const PRESET_ROUTINES: Routine[] = [
     exercises: [
       pe('pr_core_std_1', 'Dead Bug', '3', '10 each side', '30s'),
       pe('pr_core_std_2', 'Cable Crunch', '3', '15', '30s'),
-      pe('pr_core_std_3', 'Plank', '3', '30–45s hold', '30s'),
+      pe('pr_core_std_3', 'Plank', '3', '45', '30s', false, undefined, 'time'),
     ],
   },
   {
@@ -379,7 +379,7 @@ export const PRESET_ROUTINES: Routine[] = [
       pe('pr_core_int_1', 'Ab Wheel Rollout', '3', '10–12', '45s'),
       pe('pr_core_int_2', 'Hanging Leg Raise', '3', '12–15', '45s'),
       pe('pr_core_int_3', 'Russian Twist', '3', '20 total', '30s'),
-      pe('pr_core_int_4', 'Side Plank', '3', '30s each side', '30s'),
+      pe('pr_core_int_4', 'Side Plank', '3', '30', '30s', false, undefined, 'time'),
     ],
   },
   {
@@ -417,7 +417,7 @@ export const PRESET_ROUTINES: Routine[] = [
       pe('pr_fb_std_2', 'Bench Press', '4', '8–10', '90s'),
       pe('pr_fb_std_3', 'Lat Pulldown (Wide Grip)', '3', '10–12', '60s'),
       pe('pr_fb_std_4', 'Machine Shoulder Press', '3', '10–12', '60s'),
-      pe('pr_fb_std_5', 'Plank', '3', '30–45s hold', '30s'),
+      pe('pr_fb_std_5', 'Plank', '3', '45', '30s', false, undefined, 'time'),
     ],
   },
   {
@@ -431,7 +431,7 @@ export const PRESET_ROUTINES: Routine[] = [
       pe('pr_fb_cmp_2', 'Bench Press', '4', '8–10', '90s'),
       pe('pr_fb_cmp_3', 'Barbell Row (Bent Over)', '4', '8–10', '90s'),
       pe('pr_fb_cmp_4', 'Barbell Overhead Press', '3', '6–10', '90s'),
-      pe('pr_fb_cmp_5', 'Plank', '3', '30–45s hold', '30s'),
+      pe('pr_fb_cmp_5', 'Plank', '3', '45', '30s', false, undefined, 'time'),
     ],
   },
 ];

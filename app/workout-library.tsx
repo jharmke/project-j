@@ -14,7 +14,7 @@ import { ToastRenderer, useToast } from '../components/Toast';
 import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
 import { checkWorkoutAchievements, getCelebTier } from '../achievementData';
-import { PRESET_PROGRAMS, PRESET_ROUTINES, PresetProgram, DayProgram, Exercise, Routine, TAG_COLOR_PALETTE, WorkoutTag, DEFAULT_TAGS, PRRecord, SetEntry, weightUnitLabel } from '../workoutData';
+import { PRESET_PROGRAMS, PRESET_ROUTINES, PresetProgram, DayProgram, Exercise, Routine, TAG_COLOR_PALETTE, WorkoutTag, DEFAULT_TAGS, PRRecord, SetEntry, weightUnitLabel, formatHold } from '../workoutData';
 import { normalizeLiftName, liftSessionHistory } from '../utils/liftPR';
 import { useTheme } from '../theme';
 import MuscleMap from '../components/MuscleMap';
@@ -2920,7 +2920,7 @@ export default function WorkoutLibraryScreen() {
                               <Text style={{ color: theme.textSecondary, fontSize: 12, fontFamily: 'DMSans_400Regular', flex: 1 }} numberOfLines={1}>{ex.name}</Text>
                               {(ex.sets || ex.reps) ? (
                                 <Text style={{ color: theme.textDim, fontSize: 10, fontFamily: 'DMSans_500Medium', marginLeft: 8, flexShrink: 0 }}>
-                                  {[ex.sets && `${ex.sets}×`, ex.reps].filter(Boolean).join('')}
+                                  {[ex.sets && `${ex.sets}×`, ex.trackingType === 'time' ? formatHold(parseInt(ex.reps) || 0) : ex.reps].filter(Boolean).join('')}
                                 </Text>
                               ) : null}
                             </View>
@@ -2998,7 +2998,7 @@ export default function WorkoutLibraryScreen() {
                                 <Text style={{ color: theme.textSecondary, fontSize: 12, fontFamily: 'DMSans_400Regular', flex: 1 }} numberOfLines={1}>{ex.name}</Text>
                                 {(ex.sets || ex.reps) ? (
                                   <Text style={{ color: theme.textDim, fontSize: 10, fontFamily: 'DMSans_500Medium', marginLeft: 8, flexShrink: 0 }}>
-                                    {[ex.sets && `${ex.sets}×`, ex.reps].filter(Boolean).join('')}
+                                    {[ex.sets && `${ex.sets}×`, ex.trackingType === 'time' ? formatHold(parseInt(ex.reps) || 0) : ex.reps].filter(Boolean).join('')}
                                   </Text>
                                 ) : null}
                               </View>

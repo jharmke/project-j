@@ -23,7 +23,7 @@ import * as Notifications from 'expo-notifications';
 import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import { useHealthKit } from '../../useHealthKit';
-import { BLANK_DAY, DEFAULT_TAGS, DayProgram, Exercise, PRRecord, Routine, SetEntry, TAG_COLOR_PALETTE, WorkoutTag, PRESET_ROUTINES, weightUnitLabel, formatHold } from '../../workoutData';
+import { BLANK_DAY, DEFAULT_TAGS, DayProgram, Exercise, PRRecord, Routine, SetEntry, TAG_COLOR_PALETTE, WorkoutTag, PRESET_ROUTINES, weightUnitLabel, formatHold, parseHoldInput } from '../../workoutData';
 import MuscleMap from '../../components/MuscleMap';
 import ExerciseSetRows from '../../components/ExerciseSetRows';
 import HRZoneModal, { HRZoneData } from '../../components/HRZoneModal';
@@ -182,7 +182,7 @@ const [weeklyTemplate, setWeeklyTemplate] = useState<Record<string, DayProgram>>
   const { registerScrollView, unregisterScrollView, registerTutorialAction, unregisterTutorialAction } = useTutorial();
   const hasScrolled = useRef(false);
 const [labelInput, setLabelInput] = useState('');
-  const [form, setForm] = useState({ name: '', sets: '', reps: '', rest: '', note: '', isCardio: false, weightUnit: 'lb' as 'lb' | 'kg', duration: '', distance: '', speed: '', incline: '', resistance: '', hr: '', calories: ''});
+  const [form, setForm] = useState({ name: '', sets: '', reps: '', rest: '', note: '', isCardio: false, weightUnit: 'lb' as 'lb' | 'kg', trackingType: 'reps' as 'reps' | 'time', duration: '', distance: '', speed: '', incline: '', resistance: '', hr: '', calories: ''});
 const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   // Manual workout timer per day. startedAt = epoch ms while running (null when stopped); elapsedSec =
   // banked seconds from prior run segments. Opt-in; only relevant on days WITHOUT an Apple strength
@@ -346,6 +346,7 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
         note: exercise.note,
         isCardio: exercise.isCardio ?? false,
         weightUnit: (exercise.weightUnit ?? 'lb') as 'lb' | 'kg',
+        trackingType: (exercise.trackingType ?? 'reps') as 'reps' | 'time',
         duration: exercise.duration ?? '',
         distance: exercise.distance ?? '',
         speed: exercise.speed ?? '',
@@ -357,7 +358,7 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
       setForm(editValues);
       originalForm.current = editValues;
     } else {
-      setForm({ name: '', sets: '', reps: '', rest: '', note: '', isCardio: false, weightUnit: 'lb', duration: '', distance: '', speed: '', incline: '', resistance: '', hr: '', calories: '' });
+      setForm({ name: '', sets: '', reps: '', rest: '', note: '', isCardio: false, weightUnit: 'lb', trackingType: 'reps', duration: '', distance: '', speed: '', incline: '', resistance: '', hr: '', calories: '' });
       originalForm.current = null;
     }
     setShowAddModal(true);
@@ -673,6 +674,7 @@ useEffect(() => {
       note: ex.note,
       isCardio: ex.isCardio,
       weightUnit: (ex.weightUnit ?? 'lb') as 'lb' | 'kg',
+      trackingType: (ex.trackingType ?? 'reps') as 'reps' | 'time',
       duration: '',
       distance: '',
       speed: '',
@@ -926,8 +928,10 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
     if (stored && stored.length) return stored;
     const n = Math.max(1, Math.min(10, parseInt(ex.sets) || 3));
     const rest = parseInt(ex.rest) || null;
-    const reps = parseInt(ex.reps) || null; // pre-fill target reps so a fresh lift shows its rep target
-    return Array.from({ length: n }, () => ({ weight: null, reps, rest, done: false }));
+    const isTime = ex.trackingType === 'time';
+    const target = parseInt(ex.reps) || null; // ex.reps holds the target: seconds for time, reps otherwise
+    // Pre-fill the target so a fresh lift shows its planned reps / hold (time seeds durationSec, not reps).
+    return Array.from({ length: n }, () => ({ weight: null, reps: isTime ? null : target, rest, done: false, durationSec: isTime ? target : undefined }));
   };
 
   // PR engine lives in utils/liftPR.ts (pure + unit-tested). This resolver is the only glue: it maps a
@@ -1401,12 +1405,15 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
     const stored = setLogs[modalDay]?.[exId];
     if (stored && stored.length) {
       const targetN = Math.max(1, Math.min(10, parseInt(form.sets) || stored.length));
-      const targetReps = parseInt(form.reps) || null;
+      const isTime = form.trackingType === 'time';
+      const target = parseInt(form.reps) || null; // seconds for time, reps otherwise
+      const targetReps = isTime ? null : target;
       const targetRest = parseInt(form.rest) || null;
       const isLogged = (s: SetEntry) => s.done || s.weight != null;
-      let rows: SetEntry[] = stored.map(s => isLogged(s) ? s : { ...s, reps: targetReps, rest: targetRest });
+      const blank = () => (isTime ? { weight: null, reps: null, rest: targetRest, done: false, durationSec: target } : { weight: null, reps: targetReps, rest: targetRest, done: false });
+      let rows: SetEntry[] = stored.map(s => isLogged(s) ? s : (isTime ? { ...s, reps: null, rest: targetRest, durationSec: s.durationSec ?? target } : { ...s, reps: targetReps, rest: targetRest }));
       while (rows.length > targetN && !isLogged(rows[rows.length - 1])) rows = rows.slice(0, -1);
-      while (rows.length < targetN) rows.push({ weight: null, reps: targetReps, rest: targetRest, done: false });
+      while (rows.length < targetN) rows.push(blank());
       newSetLogs = { ...setLogs, [modalDay]: { ...(setLogs[modalDay] || {}), [exId]: rows } };
       const allDone = rows.length > 0 && rows.every(s => s.done);
       const dayChecksNow = checks[modalDay] || {};
@@ -1860,9 +1867,10 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
               <View ref={ex.id === 'tutorial_demo_bench' ? firstSetsRepsRef : undefined} collapsable={false}>
                 {(() => {
                   const restSec = parseRestSeconds(ex.rest);
+                  const repsLabel = ex.reps ? (ex.trackingType === 'time' ? `${formatHold(parseInt(ex.reps) || 0)} hold` : `${ex.reps} reps`) : null;
                   return (ex.reps || restSec) ? (
                     <Text style={[styles.exerciseMeta, { color: theme.textMuted }]}>
-                      {[ex.reps ? `${ex.reps} reps` : null, restSec ? `Rest ${formatRest(restSec)}` : null].filter(Boolean).join(' · ')}
+                      {[repsLabel, restSec ? `Rest ${formatRest(restSec)}` : null].filter(Boolean).join(' · ')}
                     </Text>
                   ) : null;
                 })()}
@@ -2714,23 +2722,39 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                     </>
                   ) : (
                     <>
-                    {/* Weight unit for this lift (lb/kg). Mirrors the inline set-row picker; defaults to lb. */}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                      <Text style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: theme.textMuted, fontFamily: 'DMSans_700Bold', width: 56 }}>Weight</Text>
-                      <TouchableOpacity
-                        style={[styles.modalCancelBtn, { flex: 1, backgroundColor: theme.bgInput, borderColor: theme.borderInput }, form.weightUnit !== 'kg' && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
-                        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setForm(p => ({ ...p, weightUnit: 'lb' })); }}>
-                        <Text style={[styles.modalCancelBtnText, { color: theme.textMuted }, form.weightUnit !== 'kg' && { color: theme.accentBlue }]}>LB</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.modalCancelBtn, { flex: 1, backgroundColor: theme.bgInput, borderColor: theme.borderInput }, form.weightUnit === 'kg' && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
-                        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setForm(p => ({ ...p, weightUnit: 'kg' })); }}>
-                        <Text style={[styles.modalCancelBtnText, { color: theme.textMuted }, form.weightUnit === 'kg' && { color: theme.accentBlue }]}>KG</Text>
-                      </TouchableOpacity>
-                    </View>
+                    {/* Weight unit (lb/kg) + tracking type (reps/time), two compact segmented groups sharing a row.
+                        Both default to lb/reps; mirror the inline set-row header toggles. */}
+                    {(() => {
+                      const segBtn = (active: boolean) => [{ flex: 1, borderWidth: 1, borderRadius: 10, paddingVertical: 9, alignItems: 'center' as const, backgroundColor: active ? theme.accentBlueBg : theme.bgInput, borderColor: active ? theme.accentBlueBorder : theme.borderInput }];
+                      const segTxt = (active: boolean) => [{ fontSize: 13, fontFamily: 'DMSans_700Bold' as const, color: active ? theme.accentBlue : theme.textMuted }];
+                      const cap = { fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase' as const, color: theme.textMuted, fontFamily: 'DMSans_700Bold' as const, marginBottom: 5 };
+                      const set = (patch: any) => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setForm(p => ({ ...p, ...patch })); };
+                      return (
+                        <View style={{ flexDirection: 'row', gap: 12, marginBottom: 10 }}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={cap}>Weight</Text>
+                            <View style={{ flexDirection: 'row', gap: 6 }}>
+                              <TouchableOpacity style={segBtn(form.weightUnit !== 'kg')} onPress={() => set({ weightUnit: 'lb' })}><Text style={segTxt(form.weightUnit !== 'kg')}>LB</Text></TouchableOpacity>
+                              <TouchableOpacity style={segBtn(form.weightUnit === 'kg')} onPress={() => set({ weightUnit: 'kg' })}><Text style={segTxt(form.weightUnit === 'kg')}>KG</Text></TouchableOpacity>
+                            </View>
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={cap}>Track</Text>
+                            <View style={{ flexDirection: 'row', gap: 6 }}>
+                              <TouchableOpacity style={segBtn(form.trackingType !== 'time')} onPress={() => set({ trackingType: 'reps' })}><Text style={segTxt(form.trackingType !== 'time')}>Reps</Text></TouchableOpacity>
+                              <TouchableOpacity style={segBtn(form.trackingType === 'time')} onPress={() => set({ trackingType: 'time' })}><Text style={segTxt(form.trackingType === 'time')}>Time</Text></TouchableOpacity>
+                            </View>
+                          </View>
+                        </View>
+                      );
+                    })()}
                     <View style={styles.modalRow}>
                       <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1 }]} placeholder="Sets" placeholderTextColor={theme.textPlaceholder} keyboardType="number-pad" value={form.sets || ''} onChangeText={v => setForm(p => ({ ...p, sets: v.replace(/[^0-9]/g, '') }))} />
-                      <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1 }]} placeholder="Reps" placeholderTextColor={theme.textPlaceholder} keyboardType="number-pad" value={form.reps || ''} onChangeText={v => setForm(p => ({ ...p, reps: v.replace(/[^0-9]/g, '') }))} />
+                      {form.trackingType === 'time' ? (
+                        <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1 }]} placeholder="Hold 0:45" placeholderTextColor={theme.textPlaceholder} keyboardType="number-pad" value={form.reps ? formatHold(parseInt(form.reps) || 0) : ''} onChangeText={v => { const d = v.replace(/\D/g, ''); setForm(p => ({ ...p, reps: d === '' ? '' : String(parseHoldInput(d)) })); }} />
+                      ) : (
+                        <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1 }]} placeholder="Reps" placeholderTextColor={theme.textPlaceholder} keyboardType="number-pad" value={form.reps || ''} onChangeText={v => setForm(p => ({ ...p, reps: v.replace(/[^0-9]/g, '') }))} />
+                      )}
                       <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1 }]} placeholder="Rest" placeholderTextColor={theme.textPlaceholder} keyboardType="number-pad" value={form.rest || ''} onChangeText={v => setForm(p => ({ ...p, rest: v.replace(/[^0-9]/g, '') }))} />
                     </View>
                     </>
@@ -3082,7 +3106,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                                       <Text style={{ color: theme.textPrimary, fontSize: 12, fontFamily: 'DMSans_400Regular', flex: 1 }}>{ex.name}</Text>
                                     </View>
                                     <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: 'DMSans_400Regular' }}>
-                                      {ex.isCardio ? `${ex.duration}min` : `${ex.sets}×${ex.reps}`}
+                                      {ex.isCardio ? `${ex.duration}min` : ex.trackingType === 'time' ? `${ex.sets}× ${formatHold(parseInt(ex.reps) || 0)}` : `${ex.sets}×${ex.reps}`}
                                     </Text>
                                   </View>
                                 ))}

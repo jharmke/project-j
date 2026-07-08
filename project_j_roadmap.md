@@ -191,6 +191,8 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 - Calorie target transparency -- (i) tooltip explaining how the recommendation is calculated (BMR/lifestyle/pace). settings.tsx.
 
 ### Workout
+- Per-exercise weight unit (lb/kg) toggle -- currently the unit is a GLOBAL all-or-nothing setting. Power/Olympic lifters use kg on main lifts + lb on accessories, so make the unit a per-exercise dropdown (on the lb field) instead. (Cengiz feedback 2026-07-08.)
+- Reps -> Time column toggle -- let an exercise track DURATION instead of reps (planks, holds, carries) via a dropdown on the "reps" column. (Cengiz feedback 2026-07-08.)
 - Load routine modal polish -- editable/deletable presets are a bigger dedicated-session item.
 - Workout tab muscle group breakdown -- aggregated session-level summary (MuscleMap is per-exercise only).
 - Daily exercise + active-calorie goal progress display -- goals settable + celebration fires, but no home progress display. Design decision: Fitness Metrics card vs Activity Rings vs under Steps.

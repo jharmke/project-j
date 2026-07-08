@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '../../components/Toast';
 import { saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
+import { computeCalorieFloor } from '../../utils/calorieFloor';
 import { setFloatingBarHeight } from '../../utils/floatingBar';
 import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
@@ -314,6 +315,15 @@ export default function ProfileScreen() {
   const bmr = calcBMR();
   const tdee = calcTDEE();
   const suggested = calcGoalTarget();
+  // Low-target safeguard (SPEC_calorie_floor.md): classify the SHOWN target so the card can
+  // caution when it's low. Pure + never clamps -- the number above stays as-is.
+  const calorieFloor = computeCalorieFloor({
+    calTarget: suggested,
+    sex: profile.sex,
+    weightGoal: profile.weightGoal,
+    lifestyleActivity: profile.lifestyleActivity,
+    trainingFrequency: profile.trainingFrequency,
+  });
 
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
@@ -477,6 +487,11 @@ export default function ProfileScreen() {
                 <Text style={[styles.statSub, { color: theme.textMuted }]}>{GOAL_LABELS[profile.weightGoal] || 'Goal based'}</Text>
               </View>
             </View>
+            {calorieFloor.zone !== 'green' && (
+              <Text style={{ fontSize: 12, color: theme.statusWarn, fontFamily: 'DMSans_500Medium', marginTop: 10, lineHeight: 17 }}>
+                This target is on the low side. Prioritize protein and nutrient-dense foods to fuel and recover well.
+              </Text>
+            )}
           </ProfileSection>
         )}
 
@@ -529,6 +544,14 @@ export default function ProfileScreen() {
               <Text style={[styles.activityLabel, { color: theme.textMuted }, profile.weightGoal === key && { color: theme.textPrimary }]}>{label}</Text>
             </TouchableOpacity>
           ))}
+
+          {/* Low-target caution at the point of action (mirrors the Your Estimates card) so it's
+              seen the moment an aggressive pace is picked, even if Estimates is collapsed. */}
+          {calorieFloor.zone !== 'green' && (
+            <Text style={{ fontSize: 12, color: theme.statusWarn, fontFamily: 'DMSans_500Medium', marginTop: 12, lineHeight: 17 }}>
+              This target is on the low side. Prioritize protein and nutrient-dense foods to fuel and recover well.
+            </Text>
+          )}
 
           {(() => {
             const projected = calcProjectedDate();

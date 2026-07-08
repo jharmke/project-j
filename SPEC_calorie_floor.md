@@ -117,9 +117,15 @@ Buttons: [Set to maintenance] [I understand, continue]
 - "Set to maintenance": sets weightGoal to maintain (Case 4's one honest actionable option).
 - "I understand, continue": acknowledges, keeps the real target, dismisses. Persisted (see below).
 
-## Inline whisper caution (WHISPER zone)
-Small warning-colored text under the TARGET number on the Your Estimates card. Also shown
-persistently after a MODAL is acknowledged. Exact copy + exact placement: TBD.
+## Inline caution (WHISPER + MODAL zones) -- BUILT (Slice 2)
+Small amber (theme.statusWarn) line shown whenever the target zone is not green. Copy (LOCKED,
+ED-safe, generic, one line for both low zones):
+  "This target is on the low side. Prioritize protein and nutrient-dense foods to fuel and recover well."
+Placement: shown in BOTH spots so it can't be missed regardless of which collapsible section is open:
+  1. Under the BMR/TDEE/Target row on the Your Estimates card (the official readout).
+  2. Under the Weekly Pace picker in the Weight Goal section (the POINT OF ACTION -- this is the fix
+     for the original "warning orphaned in a collapsed section" bug; the modal will also fire from here).
+Lives in app/(tabs)/profile.tsx, classified via computeCalorieFloor on the shown target.
 
 ## Acknowledgment persistence
 "I understand, continue" is remembered so the modal does not nag every time. Proposed store:

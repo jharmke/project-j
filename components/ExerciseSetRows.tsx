@@ -19,6 +19,7 @@ interface Props {
   onPersist: (sets: SetEntry[]) => void;
   onSetChecked?: (restSeconds: number | null) => void; // fired when a set is checked ON (starts rest)
   unit?: 'lb' | 'kg'; // weight unit for this exercise (missing = lb)
+  onUnitPress?: () => void; // tap the weight-column header to open the lb/kg picker (parent-owned modal)
   theme: any;
 }
 
@@ -36,7 +37,7 @@ const COL = { set: 0.6, prev: 1.3, input: 1.5 };
 const CHECK_W = 34;
 const X_W = 22;
 
-export default function ExerciseSetRows({ initialSets, previousSets, defaultRest, onPersist, onSetChecked, unit, theme: t }: Props) {
+export default function ExerciseSetRows({ initialSets, previousSets, defaultRest, onPersist, onSetChecked, unit, onUnitPress, theme: t }: Props) {
   const [sets, setSets] = useState<SetEntry[]>(initialSets);
   const atMax = sets.length >= MAX_SETS;
 
@@ -91,7 +92,14 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
         <Text style={[headerCell, { flex: COL.set }]}>Set</Text>
         <Text style={[headerCell, { flex: COL.prev }]}>Prev</Text>
-        <Text style={[headerCell, { flex: COL.input }]}>{weightUnitHeader(unit)}</Text>
+        <TouchableOpacity
+          style={{ flex: COL.input, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2 }}
+          onPress={onUnitPress}
+          disabled={!onUnitPress}
+          hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}>
+          <Text style={headerCell}>{weightUnitHeader(unit)}</Text>
+          {onUnitPress ? <Ionicons name="chevron-down" size={9} color={t.textMuted} style={{ marginTop: 1 }} /> : null}
+        </TouchableOpacity>
         <Text style={[headerCell, { flex: COL.input }]}>Reps</Text>
         <View style={{ width: CHECK_W }} />
         <View style={{ width: X_W }} />

@@ -229,6 +229,14 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   const durationCardOpacity = useSharedValue(0);
   const durationOverlayStyle = useAnimatedStyle(() => ({ opacity: durationOverlay.value }));
   const durationCardStyle = useAnimatedStyle(() => ({ transform: [{ scale: durationCardScale.value }], opacity: durationCardOpacity.value }));
+  // Per-exercise weight-unit (lb/kg) picker: opened from a set-row's weight-column header.
+  const [unitPickerExId, setUnitPickerExId] = useState<string | null>(null);
+  const unitPickerOverlay = useSharedValue(0);
+  const unitPickerScale = useSharedValue(0.85);
+  const unitPickerOpacity = useSharedValue(0);
+  const unitPickerOverlayStyle = useAnimatedStyle(() => ({ opacity: unitPickerOverlay.value }));
+  const unitPickerCardStyle = useAnimatedStyle(() => ({ transform: [{ scale: unitPickerScale.value }], opacity: unitPickerOpacity.value }));
+  const closeUnitPicker = () => { setUnitPickerExId(null); unitPickerOverlay.value = 0; unitPickerScale.value = 0.85; unitPickerOpacity.value = 0; };
   const fabScale = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const originalForm = useRef<typeof form | null>(null);
@@ -993,6 +1001,35 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
       }
     }
     saveState(newChecks, cardioComplete, programs, workoutNotes, cardioLogs, weeklyTemplate, activeProgramName, workoutNoteNames, next, nextPrs, exerciseDoneAt, workoutTimers, nextHits);
+  };
+
+  // Set a single exercise's weight unit (lb/kg) from the inline column-header picker. Additive: only the
+  // exercise's weightUnit label changes -- logged weight NUMBERS are never rewritten. Materializes the
+  // active day into programs[activeDay] (same as the pencil edit), recomputes that lift's PR (unit changes
+  // how its logged weights compare), and re-mounts the rows so the header relabels.
+  const setExerciseUnit = (exId: string, unit: 'lb' | 'kg') => {
+    const base = programs[activeDay] || weeklyTemplate[activeDayName] || BLANK_DAY;
+    const ex = (base.exercises || []).find(e => e.id === exId);
+    closeUnitPicker();
+    if (!ex || (ex.weightUnit || 'lb') === unit) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    clearFinished();
+    const newExercises = (base.exercises || []).map(e => e.id === exId ? { ...e, weightUnit: unit } : e);
+    const newPrograms = { ...programs, [activeDay]: { ...base, exercises: newExercises } };
+    setPrograms(newPrograms);
+    let nextPrs = prs, nextHits = prHitsByDay;
+    if (!ex.isCardio) {
+      const r = recomputeLiftPR(ex.name, setLogs, makeDayResolver(newPrograms), prs, prHitsByDay, activeDay, Date.now());
+      nextPrs = r.prs; nextHits = r.hits;
+      setPrs(nextPrs); setPrHitsByDay(nextHits);
+      if (activeDay === todayKey) {
+        if (r.hit) firePRNotification(r.hit);
+        else if (r.revoked) clearNotification(`pr_${activeDay}_${normalizeLiftName(ex.name)}`);
+      }
+    }
+    saveState(checks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate, activeProgramName, workoutNoteNames, setLogs, nextPrs, exerciseDoneAt, workoutTimers, nextHits);
+    setSetRowsVersion(v => ({ ...v, [exId]: (v[exId] || 0) + 1 }));
+    showToast('Unit updated', unit === 'kg' ? 'Kilograms (kg)' : 'Pounds (lb)', 'success');
   };
 
   // Big per-exercise checkmark on a LIFT marks every set done / undone at once (filling empties
@@ -1794,6 +1831,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                   onPersist={(sets) => saveSetsForExercise(ex.id, sets)}
                   onSetChecked={() => handleSetChecked(ex)}
                   unit={ex.weightUnit}
+                  onUnitPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setUnitPickerExId(ex.id); }}
                   theme={theme}
                 />
               </View>
@@ -2568,6 +2606,44 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
             </View>
           </Reanimated.View>
         </KeyboardAvoidingView>
+        <ToastRenderer />
+      </Modal>
+
+      {/* Weight unit (lb/kg) picker -- opened from a set row's weight-column header */}
+      <Modal visible={!!unitPickerExId} transparent animationType="none" statusBarTranslucent onRequestClose={closeUnitPicker}
+        onShow={() => {
+          unitPickerOverlay.value = withTiming(1, { duration: 150 });
+          unitPickerScale.value = withSpring(1, { damping: 24, stiffness: 320, overshootClamping: true });
+          unitPickerOpacity.value = withTiming(1, { duration: 150 });
+        }}>
+        <Reanimated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.overlayBg }, unitPickerOverlayStyle]} pointerEvents="none" />
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeUnitPicker} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 28 }} pointerEvents="box-none">
+          {(() => {
+            const cur = exercises.find(e => e.id === unitPickerExId)?.weightUnit || 'lb';
+            const opt = (val: 'lb' | 'kg', label: string, sub: string) => (
+              <TouchableOpacity key={val} onPress={() => setExerciseUnit(unitPickerExId!, val)}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: cur === val ? theme.accentBlue + '22' : theme.bgInput, borderWidth: 1, borderColor: cur === val ? theme.accentBlue + '77' : theme.borderInput, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16, marginBottom: 10 }}>
+                <View>
+                  <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: cur === val ? theme.accentBlue : theme.textSecondary }}>{label}</Text>
+                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_500Medium', color: theme.textMuted, marginTop: 2 }}>{sub}</Text>
+                </View>
+                {cur === val ? <Ionicons name="checkmark-circle" size={20} color={theme.accentBlue} /> : null}
+              </TouchableOpacity>
+            );
+            return (
+              <Reanimated.View pointerEvents="auto" style={[{ width: '100%', maxWidth: 340, backgroundColor: theme.bgSheet, borderRadius: 18, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, padding: 22, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 20, elevation: 10 }, unitPickerCardStyle]}>
+                <View style={{ alignItems: 'center', marginBottom: 14 }}>
+                  <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
+                </View>
+                <Text style={{ fontSize: 12, letterSpacing: 2.5, color: theme.accentBlue, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', textAlign: 'center', marginBottom: 6 }}>Weight Unit</Text>
+                <Text style={{ fontSize: 13, fontFamily: 'DMSans_500Medium', color: theme.textMuted, textAlign: 'center', marginBottom: 16 }}>Pick the unit for this exercise. Your logged numbers stay exactly as entered.</Text>
+                {opt('lb', 'Pounds (lb)', 'Standard for most lifters')}
+                {opt('kg', 'Kilograms (kg)', 'Common for main barbell lifts')}
+              </Reanimated.View>
+            );
+          })()}
+        </View>
         <ToastRenderer />
       </Modal>
 

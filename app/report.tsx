@@ -9,8 +9,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Defs, LinearGradient as SvgGradient, Stop, Line as SvgLine, Circle, Text as SvgText } from 'react-native-svg';
-import { captureRef } from 'react-native-view-shot';
-import * as Sharing from 'expo-sharing';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
@@ -158,6 +156,17 @@ export default function ReportScreen() {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     setExporting(true);
     try {
+      // Lazy-require the native modules so the app still launches on a build that predates them (they
+      // only exist after the next dev build). On an old build this throws and we show a friendly toast.
+      let captureRef: any, Sharing: any;
+      try {
+        captureRef = require('react-native-view-shot').captureRef;
+        Sharing = require('expo-sharing');
+      } catch {
+        showToast('Update needed', 'Export needs the latest app build. Rebuild to enable it.', 'error');
+        setExporting(false);
+        return;
+      }
       if (libraryOpen) setLibraryOpen(false); // don't capture edit controls
       await new Promise(r => setTimeout(r, 60)); // let any layout settle
       const uri = await captureRef(shotRef, { format: 'png', quality: 0.98, result: 'tmpfile' });

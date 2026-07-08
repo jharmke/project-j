@@ -138,15 +138,18 @@ Lives in app/(tabs)/profile.tsx, classified via computeCalorieFloor on the shown
 activity / pace inputs CHANGE and produce a NEW target still below the modal line. Exact re-fire
 rule + AsyncStorage shape: TBD (confirm before building).
 
-## Mindful (LOCKED)
-The modal SHOWS in every coaching mode. A safety heads-up about under-fueling is CARE, not
-judgment, so Mindful does not hide it. Only the TONE softens (less directive wording). No separate
-logic - just a Mindful copy pass on the four cases. (Mindful wording: TBD.)
+## Mindful (LOCKED 2026-07-08: NO separate variant)
+The modal + inline caution SHOW in every coaching mode (a safety heads-up about under-fueling is
+CARE, not judgment). Justin decided to LEAVE OUT a Mindful-specific tone pass, so the copy is
+identical in all modes. There is no Slice 4.
 
 ## Related but SEPARATE items (do not fold into this spec)
-- Pace granularity: add .25 / .5 / .75 lb/week options so smaller / lower-TDEE users can pick a
-  gentle deficit instead of jumping between too-slow and too-aggressive. Separate enhancement;
-  affects the PACE-lever definition (gentlest available pace) when built.
+- Pace granularity: DONE 2026-07-08. Added lose_0_75 (-375) and lose_0_25 (-125) to the loss ladder
+  (loss only, Justin's call). New floor: lose_0_25 is the gentlest (not a pace lever), lose_0_5 is now
+  adjustable. Updated GOAL_DEFICITS in calorieTarget/profile/index/goalHit/settings, GOAL_LABELS +
+  slower-pace jump list in profile, PACE_LEVER/LOSS sets in calorieFloor (+tests), PACE_LABELS in
+  smartTips. Onboarding your-style left on its curated pill set. NOTE: this surfaced that GOAL_DEFICITS
+  is DUPLICATED across 6 files -- flagged a centralization cleanup (see roadmap Infrastructure).
 - Activity nudge near the Activity Level control (small copy, only when target <= floor AND activity
   sedentary/unset). May be redundant with Case 1/3's modal advice - decide when building.
 - ONBOARDING activity-level wording: the field should clearly mean "what you do NOW," not aspirational
@@ -166,6 +169,6 @@ logic - just a Mindful copy pass on the four cases. (Mindful wording: TBD.)
 ## Build order (proposed, slice by slice)
 1. Zone computation in calorieTarget.ts (whisper/modal/green + lever flags). No UI yet.
 2. Inline whisper caution on Your Estimates.
-3. The modal (4 lever-branched cases + buttons + persistence).
-4. Mindful copy pass.
+3. The modal (4 lever-branched cases + buttons + persistence). >> SLICES 1-3 DONE 2026-07-08.
+4. (No Mindful pass -- decided out; copy is mode-agnostic.)
 5. (Separate) pace granularity, activity nudge, onboarding wording.

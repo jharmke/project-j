@@ -81,8 +81,8 @@ are separate pre-submission checklists, NOT part of this menu.
   Estimates card AND under the Weekly Pace picker (both spots); (3) components/CalorieFloorModal 4-case branched modal
   off the pace picker, buttons wired (slower-pace jumps to fastest safe pace, adjust-activity scrolls, set-maintenance,
   continue = ack), persistence pj_calorie_warning_acknowledged (only re-asks if target drops BELOW what was okayed).
-  REMAINING: Slice 4 Mindful tone pass on the modal cases; then separate follow-ons: pace granularity (.25/.75),
-  activity nudge, onboarding activity wording. Full detail: SPEC_calorie_floor.md.
+  Core is COMPLETE (no Mindful variant -- decided out, copy is mode-agnostic). Separate follow-ons: pace granularity
+  (.25/.75), activity nudge, onboarding activity wording. Full detail: SPEC_calorie_floor.md.
 - [TRACK, design LOCKED 2026-07-07] Apple Workouts in the Exercise Library (lean "Synced Workouts"
   history) -- give Apple-synced cardio a home in the library, keyed by activity type + indoor flag,
   auto-created on first sync, rename = editable label (never re-keys), green "Apple Health" badge,
@@ -277,6 +277,7 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 - Sign-in logo entrance animation -- logo pops instead of fading. Verify on TestFlight first.
 
 ### Infrastructure
+- [DRIFT CLEANUP] GOAL_DEFICITS is duplicated across 6 files (calorieTarget, profile, index, goalHit, settings, onboarding/your-style). Centralize into ONE exported source (calorieTarget already exports it) so pace/deficit changes can't drift. Surfaced 2026-07-08 adding pace granularity -- had to hand-edit 5 copies. (Justin flagged drift as a standing concern.)
 - Firestore migration -- move primary data from AsyncStorage to Firestore (auth already done). Big item.
 - State restoration on launch -- save active tab + scroll position, restore on cold launch.
 - HealthKit source detection -- show "via Garmin/Whoop/Oura" labels on sleep/HRV data.

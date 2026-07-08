@@ -157,7 +157,7 @@ const PROGRAM: Record<string, any> = {
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 // Signed daily calorie delta per pace (negative = deficit, positive = surplus).
 // Single source of truth for the calTarget calc (loadData), the on-pace target, and the projected-date calc.
-const GOAL_DEFICITS: Record<string, number> = { lose_2: -1000, lose_1_5: -750, lose_1: -500, lose_0_5: -250, maintain: 0, gain_0_5: 250, gain_1: 500 };
+const GOAL_DEFICITS: Record<string, number> = { lose_2: -1000, lose_1_5: -750, lose_1: -500, lose_0_75: -375, lose_0_5: -250, lose_0_25: -125, maintain: 0, gain_0_5: 250, gain_1: 500 };
 // VERSES and the daily rotation picker now live in data/verses.ts, shared with the Faith
 // tab so both tabs show the same verse and the no-repeat rotation never double advances.
 

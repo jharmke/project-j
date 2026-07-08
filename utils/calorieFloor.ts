@@ -23,10 +23,10 @@ export interface CalorieFloor {
   modalCase: 1 | 2 | 3 | 4 | null;  // modal branch (SPEC 4 cases); null unless zone === 'modal'
 }
 
-// Loss goals that still have a slower loss pace below them. lose_0_5 is the gentlest loss
-// today, so it is NOT a pace lever (stepping further down means maintain, i.e. not losing).
-const PACE_LEVER_GOALS = new Set(['lose_1', 'lose_1_5', 'lose_2']);
-const LOSS_GOALS = new Set(['lose_0_5', 'lose_1', 'lose_1_5', 'lose_2']);
+// Loss goals that still have a slower loss pace below them. lose_0_25 is the gentlest loss,
+// so it is NOT a pace lever (stepping further down means maintain, i.e. not losing).
+const PACE_LEVER_GOALS = new Set(['lose_0_5', 'lose_0_75', 'lose_1', 'lose_1_5', 'lose_2']);
+const LOSS_GOALS = new Set(['lose_0_25', 'lose_0_5', 'lose_0_75', 'lose_1', 'lose_1_5', 'lose_2']);
 
 // Given the resolved target + profile settings, classify the floor zone, which levers are
 // available, and the resulting modal branch. Never mutates the target.

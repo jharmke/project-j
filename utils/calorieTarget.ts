@@ -7,7 +7,8 @@ import { computeCalorieFloor, CalorieFloor } from './calorieFloor';
 // TRAINING values, same Mifflin-St Jeor BMR, same robust birthday parser).
 
 export const GOAL_DEFICITS: Record<string, number> = {
-  lose_2: -1000, lose_1_5: -750, lose_1: -500, lose_0_5: -250, maintain: 0, gain_0_5: 250, gain_1: 500,
+  lose_2: -1000, lose_1_5: -750, lose_1: -500, lose_0_75: -375, lose_0_5: -250, lose_0_25: -125,
+  maintain: 0, gain_0_5: 250, gain_1: 500,
 };
 const LIFESTYLE_MULTIPLIERS: Record<string, number> = {
   sedentary: 1.2, light: 1.3, active: 1.45, very_active: 1.6,

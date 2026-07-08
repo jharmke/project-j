@@ -77,7 +77,8 @@ type FaithJourney = 'rooted' | 'exploring' | 'notrightnow';
 
 // ── Goal calculation constants (mirrors profile.tsx) ──────────────────────────
 const GOAL_DEFICITS: Record<string, number> = {
-  lose_2: -1000, lose_1_5: -750, lose_1: -500, lose_0_5: -250, maintain: 0, gain_0_5: 250, gain_1: 500,
+  lose_2: -1000, lose_1_5: -750, lose_1: -500, lose_0_75: -375, lose_0_5: -250, lose_0_25: -125,
+  maintain: 0, gain_0_5: 250, gain_1: 500,
 };
 const LIFESTYLE_OPTIONS = [
   { key: 'sedentary',   multiplier: 1.2  },

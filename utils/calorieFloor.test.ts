@@ -46,7 +46,9 @@ check('gain never warns even at 900', f({ calTarget: 900, weightGoal: 'gain_0_5'
 check('calTarget 0 (incomplete stats) -> green', f({ calTarget: 0, weightGoal: 'lose_2' }).zone === 'green');
 
 // ── Lever flags ─────────────────────────────────────────────────────────────────
-check('lose_0_5 -> paceIsLever false (gentlest loss)', f({ weightGoal: 'lose_0_5' }).paceIsLever === false);
+check('lose_0_25 -> paceIsLever false (gentlest loss)', f({ weightGoal: 'lose_0_25' }).paceIsLever === false);
+check('lose_0_5 -> paceIsLever true (0.25 exists below it)', f({ weightGoal: 'lose_0_5' }).paceIsLever === true);
+check('lose_0_75 -> paceIsLever true', f({ weightGoal: 'lose_0_75' }).paceIsLever === true);
 check('lose_1 -> paceIsLever true', f({ weightGoal: 'lose_1' }).paceIsLever === true);
 check('lose_2 -> paceIsLever true', f({ weightGoal: 'lose_2' }).paceIsLever === true);
 check('maintain -> paceIsLever false', f({ weightGoal: 'maintain' }).paceIsLever === false);
@@ -59,9 +61,9 @@ const c1 = f({ calTarget: 950, sex: 'female', weightGoal: 'lose_2', lifestyleAct
 check('case 1: aggressive + sedentary -> both levers, modalCase 1', c1.zone === 'modal' && c1.modalCase === 1, c1);
 const c2 = f({ calTarget: 1150, sex: 'male', weightGoal: 'lose_2', lifestyleActivity: 'active', trainingFrequency: '3x' });
 check('case 2: aggressive + active -> pace only, modalCase 2', c2.modalCase === 2, c2);
-const c3 = f({ calTarget: 950, sex: 'female', weightGoal: 'lose_0_5', lifestyleActivity: 'sedentary', trainingFrequency: 'none' });
+const c3 = f({ calTarget: 950, sex: 'female', weightGoal: 'lose_0_25', lifestyleActivity: 'sedentary', trainingFrequency: 'none' });
 check('case 3: gentle + sedentary -> activity only, modalCase 3', c3.modalCase === 3, c3);
-const c4 = f({ calTarget: 950, sex: 'female', weightGoal: 'lose_0_5', lifestyleActivity: 'active', trainingFrequency: '3x' });
+const c4 = f({ calTarget: 950, sex: 'female', weightGoal: 'lose_0_25', lifestyleActivity: 'active', trainingFrequency: '3x' });
 check('case 4: gentle + active -> no lever, modalCase 4', c4.modalCase === 4, c4);
 
 // modalCase is null outside the modal zone

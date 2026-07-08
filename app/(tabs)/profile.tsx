@@ -49,7 +49,9 @@ const GOAL_DEFICITS: Record<string, number> = {
   lose_2: -1000,
   lose_1_5: -750,
   lose_1: -500,
+  lose_0_75: -375,
   lose_0_5: -250,
+  lose_0_25: -125,
   maintain: 0,
   gain_0_5: 250,
   gain_1: 500,
@@ -59,7 +61,9 @@ const GOAL_LABELS: Record<string, string> = {
   lose_2: 'Lose 2 lb / week',
   lose_1_5: 'Lose 1.5 lb / week',
   lose_1: 'Lose 1 lb / week',
+  lose_0_75: 'Lose 0.75 lb / week',
   lose_0_5: 'Lose 0.5 lb / week',
+  lose_0_25: 'Lose 0.25 lb / week',
   maintain: 'Maintain weight',
   gain_0_5: 'Gain 0.5 lb / week',
   gain_1: 'Gain 1 lb / week',
@@ -352,8 +356,8 @@ export default function ProfileScreen() {
   // (least slowdown that's still safe), or the gentlest available if none clear.
   const floorSlowerPace = () => {
     const tdee = calcTDEE();
-    const order = ['lose_2', 'lose_1_5', 'lose_1', 'lose_0_5'];
-    let pick = 'lose_0_5';
+    const order = ['lose_2', 'lose_1_5', 'lose_1', 'lose_0_75', 'lose_0_5', 'lose_0_25'];
+    let pick = 'lose_0_25';
     if (floorModal) {
       for (const p of order) {
         if (tdee + (GOAL_DEFICITS[p] ?? 0) >= floorModal.modalLine) { pick = p; break; }

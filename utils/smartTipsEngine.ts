@@ -39,8 +39,8 @@ export function isCrossSignalRule(ruleId: string): boolean {
 
 const PACE_LABELS: Record<string, string> = {
   lose_2: 'Lose 2 lb/wk', lose_1_5: 'Lose 1.5 lb/wk', lose_1: 'Lose 1 lb/wk',
-  lose_0_5: 'Lose 0.5 lb/wk', maintain: 'Maintain',
-  gain_0_5: 'Gain 0.5 lb/wk', gain_1: 'Gain 1 lb/wk',
+  lose_0_75: 'Lose 0.75 lb/wk', lose_0_5: 'Lose 0.5 lb/wk', lose_0_25: 'Lose 0.25 lb/wk',
+  maintain: 'Maintain', gain_0_5: 'Gain 0.5 lb/wk', gain_1: 'Gain 1 lb/wk',
 };
 
 // ── Types ─────────────────────────────────────────────────────────────────────

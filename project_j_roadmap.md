@@ -69,6 +69,15 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
+- [TRACK, DESIGN LOCKED 2026-07-08, ready to build in slices] CALORIE FLOOR / low-target safeguard
+  (gym #1, the health-safety gap). NEVER hard-blocks -- Option B "warn + consent," the real target
+  always shows. Three zones via two sex-based lines (Men whisper<1500 / modal<1200, Women whisper<1200
+  / modal<1000): green = silent, whisper = inline caution under the target, modal = one-time
+  acknowledgment. The modal only ever offers a fix that's REAL for that person (pace lever + activity
+  lever) -> 4 branch cases, copy LOCKED + ED-aware (never references body size). Loss goals only;
+  manual targets warn not block. Full spec + the 4 modal scripts: SPEC_calorie_floor.md. Build order in
+  the spec (zone calc in calorieTarget.ts first, then inline caution, then modal). Separate follow-ons:
+  pace granularity (.25/.75), activity nudge, onboarding activity wording.
 - [TRACK, design LOCKED 2026-07-07] Apple Workouts in the Exercise Library (lean "Synced Workouts"
   history) -- give Apple-synced cardio a home in the library, keyed by activity type + indoor flag,
   auto-created on first sync, rename = editable label (never re-keys), green "Apple Health" badge,
@@ -153,6 +162,7 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 ## 🗂️ OPEN BACKLOG BY AREA (open/future only; shipped history is in the archive)
 
 ### Onboarding
+- Activity-level wording -- the field should read as "what you do NOW," not aspirational ("I'll go to the gym every day from now on"), so the TDEE calc isn't built on an intention that never happens. A wrong guess self-corrects over weeks via adaptive TDEE + real weight trend, but the copy should set the honest expectation. (Justin's dad flagged this during onboarding.) See SPEC_calorie_floor.md "related items."
 - Mindful onboarding -- encouragement language + Mindful-specific Screen 4 copy (graph/presets already gated off). Copy pass.
 - Macro presets -- Screen 4, Discipline/Balanced only. Also settable in Settings.
 - Progress bar on onboarding screens -- segmented step indicator, screens 2-7.
@@ -274,7 +284,7 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 Every major feature has a SPEC_*.md in the repo root. Active ones tied to open work above:
 - Wearable / TDEE: SPEC_wearable_robustness.md | Otto hub: SPEC_otto_notifications.md | Push notifications: SPEC_notifications.md
 - Sleep/Recovery: SPEC_sleep.md, SPEC_recovery_coach.md, SPEC_hr_zones.md | Lifting: SPEC_lifting_log.md | Workout sessions: SPEC_workout_sessions.md
-- Nutrition: SPEC_nutrition.md, SPEC_calorie_goal_hit.md, SPEC_ai_meal_estimator.md | Day/Reports: SPEC_day_score_and_summary.md, SPEC_weekly_summary.md, SPEC_monthly_summary.md, SPEC_evr_redesign.md, SPEC_comparison_challenge.md, SPEC_custom_reports.md
+- Nutrition: SPEC_nutrition.md, SPEC_calorie_goal_hit.md, SPEC_calorie_floor.md, SPEC_ai_meal_estimator.md | Day/Reports: SPEC_day_score_and_summary.md, SPEC_weekly_summary.md, SPEC_monthly_summary.md, SPEC_evr_redesign.md, SPEC_comparison_challenge.md, SPEC_custom_reports.md
 - Faith/Coach: SPEC_faith_ai.md, SPEC_faith_tab.md, SPEC_smart_tips.md, SMART_COACH_SPEC.md, TRIGGER_LIBRARY.md | Cards: SPEC_card_gradient.md | Vacation: SPEC_vacation_mode.md | Tutorials: tutorial_system_spec.md
 - Body: SPEC_body_measurements.md, SPEC_body_progress.md
 - App Store: APP_STORE_CHECKLIST.md, COMPLIANCE_SCAN_findings.md

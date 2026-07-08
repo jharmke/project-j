@@ -11,6 +11,61 @@
 
 ---
 
+## 🏋️ WORKOUT UNITS + TIME TRACKING (Cengiz feedback, SHIPPED 2026-07-08, HEAD 6e15e85)
+Two features, one flow, built 8 steps top-down (each device-verified along the way). Spec + data-integrity
+checklist: SPEC_workout_units_and_time.md. Core principle throughout: FULLY ADDITIVE to pj_workout_state.
+Existing logged sets are bare {weight, reps} -- missing unit reads as lb, missing type reads as reps, and
+nothing in pj_workout_state is ever converted, reshaped, or rewritten (read-then-merge only). Honest numbers:
+we only ever DISPLAY the number + unit the user actually entered; the kg<->lb converter runs internally, purely
+to decide which set is heavier. No Mindful variant (unit + tracking type are neutral/factual -- decided out).
+
+FEATURE 1 -- PER-EXERCISE WEIGHT UNIT (lb/kg), mixable within a session:
+- Inline: the LBS column header on the log row is a tappable dropdown LBS/KGS; picking one sets that exercise's
+  weightUnit and relabels the column live. Modal: Weight[LB|KG] segmented toggle.
+- Every hardcoded "lb" display made unit-aware (set rows header, recap top-set, summaries, Otto).
+- Volume tile with mixed units: SPLIT per unit (Lbs Volume / Kg Volume), no conversion -- single-unit session
+  shows one tile (identical to before), mixed shows both. Time holds have no reps -> contribute 0 to volume.
+- PR engine (utils/liftPR.ts): compares in a single canonical unit (kg) so mixed logging never breaks a record.
+  toKg(w, unit) = unit==='kg' ? w : w/2.2046226218. heavier()/higherE() compare on the kg-equivalent float
+  (full precision, no rounding until display); the winning record keeps its ORIGINAL entered value + unit.
+  resolveDay extended to also return each exercise's weightUnit (only signature change; callers default lb).
+  Existing PRRecords (no unit) treated as lb, re-derived + stamped on next recompute -- all existing data is lb,
+  so no record moves. e1RM (Epley) is linear in weight so converting for comparison is exact.
+
+FEATURE 2 -- REPS -> TIME (holds: planks, dead hangs, loaded carries, wall sits):
+- Inline REPS-dropdown flips the exercise to Time; modal Track[Reps|Time] segmented toggle relabels "Reps" ->
+  "Hold Time". Clock-style M:SS input (iOS-timer-style, digits fill from the right), MIN:SEC caption in modal.
+- SetEntry.durationSec (integer seconds) = the logged hold length; the exercise's reps string holds the target
+  seconds when trackingType='time'. Columns become SET | PREV | LBS | TIME | check | x (weight column stays:
+  blank for bodyweight holds, real for weighted holds/carries). Time set contributes 0 to volume.
+- THE HOLD TIMER: the existing rest-timer pill's twin -- ONE pill, two modes (HOLD and REST are mutually
+  exclusive in time). Tapping play starts the hold + raises the pill in HOLD mode (identity label HOLD-PLANK-
+  SET-N); the row shows active state but NO ticking number in the cell (pill is the only live clock). Target
+  present -> counts DOWN from target, at zero buzz + auto-log target to durationSec + auto-check + flip to REST
+  mode (existing rest handoff runs). No target -> counts UP. Rest timer left unchanged this build.
+- Built-in hold presets (Plank, Side Plank, "...s hold") flipped to trackingType:'time' in workoutData.ts.
+- LONGEST-HOLD PR (new PRRecord.bestDuration): record = longest logged durationSec for that lift (done sets
+  only), derived from history like the other records (recomputes/rolls back on edit/uncheck/delete). ONE-
+  dimensional on purpose: duration is the trophy, weight is shown as context ("New longest loaded carry: 0:50
+  at 32 kg, up from 0:42" / bodyweight "New longest plank: 1:15, up from 0:58"). Weight context carries its own
+  unit. Surfaced in the recap trophy block, All-PRs home, per-lift Records/History, summaries, and Otto. The
+  engine scans time sets for bestDuration in parallel with scanning rep sets for weight/e1RM; a lift is only
+  ever one type at a time, so the two never collide.
+
+LATER STEPS: step 8 wired hold-time DISPLAY into library history rows + All-PRs card + report Records/Workout-
+History (duration branch mirroring the Records tile). Then post-step UX polish: TIME box centered under header
+(play button in its own 24px slot); flicker-free hold-time entry via a transparent input over a text clock;
+focused hold box gets an accent border + faint fill; guarded focus-state clear so tapping straight from one time
+box to another works; digits always fill from the RIGHT (caret pinned to end) + a blinking cursor bar while
+focused. liftSessionHistory now carries the full per-day set list so library History rows render EVERY set per
+day (weighted W x R or hold M:SS), capped at 6 with a +N tail.
+
+OPEN TAILS at ship: (a) device-eyeball the newest time-box right-fill behavior + the blinking cursor (6e15e85 --
+typecheck-clean, not yet seen on device: tap the left of a 0:40 box, press 2, expect 4:02 not 2:42). (b) EXPLAINER
+FRESHNESS for the TIME half -- step 8 taught cardio records only; the hold timer, time/duration tracking, and the
+longest-hold PR still need coverage in tooltipRegistry.ts (personal_records), data/tutorials.ts (workout logging),
+and Otto's KB (functions/src/assistantAppKnowledge.ts, redeploy). Units half also uncovered in tutorials/Otto.
+
 ## 🏋️ PR REVOKE + HONESTY (records follow-up #1, shipped 2026-07-04)
 The problem: Piece A banked a lift PR the instant a qualifying set was checked, and it STUCK -- uncheck/
 edit-down/delete the set and the record stayed. It only stored the current best, not the chain, so there

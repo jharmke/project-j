@@ -1114,9 +1114,9 @@ export const TUTORIALS: Tutorial[] = [
         targetKey: 'workout_sets_reps',
         title: 'SETS, REPS, REST',
         body: {
-          discipline: 'Tap the set/rep/rest fields on any exercise to enter your working weights and reps. This data feeds your progress tracking over time.',
-          balanced: 'Tap the sets, reps, or rest fields on any exercise to fill in your working numbers. They save automatically.',
-          mindful: 'Tap any field to add your sets, reps, or rest time. Fill in what you want. Nothing is required.',
+          discipline: 'Tap the set, rep, or rest fields to enter your working numbers; this data feeds your progress tracking over time. Tap the LBS header to switch that exercise between pounds and kilograms. Tap the REPS header to track a timed hold instead of reps (planks, carries): the play button raises a hold timer that logs the hold and checks the set for you.',
+          balanced: 'Tap the sets, reps, or rest fields to fill in your working numbers; they save automatically. Tap the LBS header to switch that exercise to kilograms, or the REPS header to track a timed hold instead of reps, where a hold timer counts it out and logs it.',
+          mindful: 'Tap any field to add your sets, reps, or rest. Tap the LBS header if you would rather log in kilograms, or the REPS header to track a hold by time instead of reps. Fill in what you want. Nothing is required.',
         },
       },
       {

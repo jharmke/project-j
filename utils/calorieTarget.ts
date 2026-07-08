@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { computeCalorieFloor, CalorieFloor } from './calorieFloor';
 
 // Single source of truth for the daily calorie target + BMR math. Used by the home
 // Calories card (index.tsx) and the log Today's Total card (log.tsx) so the two can
@@ -19,6 +20,7 @@ export interface CalorieTargets {
   bmr: number;          // full Mifflin-St Jeor BMR (0 when stats are incomplete)
   calTarget: number;    // daily calorie target (auto = TDEE - deficit, or the manual value)
   paceDeficit: number;  // signed daily delta for the user's weight goal (negative = deficit)
+  floor: CalorieFloor;  // low-target safeguard zone + levers (SPEC_calorie_floor.md)
 }
 
 // Age from a birthday stored as ISO (YYYY-MM-DD) or US (MM/DD/YYYY). Matches settings.tsx.
@@ -90,5 +92,12 @@ export async function loadCalorieTargets(dateKey: string): Promise<CalorieTarget
     const tdee = Math.round((bmr * (LIFESTYLE_MULTIPLIERS[profile.lifestyleActivity] ?? 1.2)) + (TRAINING_BONUSES[profile.trainingFrequency] ?? 0));
     calTarget = tdee + paceDeficit;
   }
-  return { bmr, calTarget, paceDeficit };
+  const floor = computeCalorieFloor({
+    calTarget,
+    sex: profile.sex,
+    weightGoal: profile.weightGoal,
+    lifestyleActivity: profile.lifestyleActivity,
+    trainingFrequency: profile.trainingFrequency,
+  });
+  return { bmr, calTarget, paceDeficit, floor };
 }

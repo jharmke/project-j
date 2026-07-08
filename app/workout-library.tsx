@@ -3144,7 +3144,7 @@ export default function WorkoutLibraryScreen() {
                         {history.slice(0, 12).map((h, i) => (
                           <View key={h.dateKey} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 7, borderTopWidth: i === 0 ? 0 : 0.5, borderTopColor: theme.borderCard }}>
                             <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily: 'DMSans_500Medium' }}>{fmtPRDate(h.dateKey)}</Text>
-                            <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>{h.topWeight} {weightUnitLabel(h.unit)} × {h.topReps}</Text>
+                            <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>{h.topWeight > 0 ? `${h.topWeight} ${weightUnitLabel(h.unit)} × ${h.topReps}` : h.topDuration ? formatHold(h.topDuration) : '—'}</Text>
                           </View>
                         ))}
                         {history.length > 12 && <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', marginTop: 8, textAlign: 'center' }}>Showing your last 12 sessions</Text>}
@@ -3277,7 +3277,7 @@ export default function WorkoutLibraryScreen() {
               {prList.length > 0 ? (
                 <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={{ maxHeight: Dimensions.get('window').height * 0.68 }} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}>
                   {prList.map(p => {
-                    const dateKey = p.bestWeight?.dateKey || p.bestE1RM?.dateKey || p.updatedAt;
+                    const dateKey = p.bestWeight?.dateKey || p.bestE1RM?.dateKey || p.bestDuration?.dateKey || p.updatedAt;
                     return (
                       <TouchableOpacity key={p.name} activeOpacity={0.7}
                         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openLiftDetailByName(p.name); }}
@@ -3286,6 +3286,15 @@ export default function WorkoutLibraryScreen() {
                           <Text style={{ flex: 1, color: theme.textSecondary, fontSize: 15, fontFamily: 'DMSans_700Bold', marginRight: 8 }} numberOfLines={1}>{p.name}</Text>
                           {dateKey ? <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_500Medium' }}>{fmtPRDate(dateKey)}</Text> : null}
                         </View>
+                        {p.bestDuration && !p.bestWeight ? (
+                          // Time-tracked lift: longest hold is the record (weight is context for loaded carries).
+                          <View style={{ flexDirection: 'row', gap: 8 }}>
+                            <View style={{ flex: 1, backgroundColor: theme.bgSheet, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, paddingVertical: 8, paddingHorizontal: 10 }}>
+                              <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 3 }}>Longest hold</Text>
+                              <Text style={{ color: theme.textSecondary, fontSize: 14, fontFamily: 'DMSans_700Bold' }}>{formatHold(p.bestDuration.value)}{p.bestDuration.weight != null && p.bestDuration.weight > 0 ? ` · ${p.bestDuration.weight} ${weightUnitLabel(p.bestDuration.unit)}` : ''}</Text>
+                            </View>
+                          </View>
+                        ) : (
                         <View style={{ flexDirection: 'row', gap: 8 }}>
                           <View style={{ flex: 1, backgroundColor: theme.bgSheet, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, paddingVertical: 8, paddingHorizontal: 10 }}>
                             <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 3 }}>Heaviest set</Text>
@@ -3296,6 +3305,7 @@ export default function WorkoutLibraryScreen() {
                             <Text style={{ color: theme.textSecondary, fontSize: 14, fontFamily: 'DMSans_700Bold' }}>{p.bestE1RM ? `${p.bestE1RM.value} ${weightUnitLabel(p.bestE1RM.unit)}` : '—'}</Text>
                           </View>
                         </View>
+                        )}
                       </TouchableOpacity>
                     );
                   })}

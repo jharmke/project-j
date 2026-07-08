@@ -16,7 +16,7 @@ import { useTheme } from '../theme';
 import { useToast } from '../components/Toast';
 import { fetchTrendData, TrendData, EMPTY_TREND_DATA } from '../utils/statsData';
 import { liftSessionHistory } from '../utils/liftPR';
-import { weightUnitLabel } from '../workoutData';
+import { weightUnitLabel, formatHold } from '../workoutData';
 import { loadMealSlots, getMealDisplayName } from '../utils/mealSlots';
 import { loadMeasurements, loadBodyMeasureSettings, toDisplay, unitLabel, MEASURE_FIELDS, type MeasurementUnit } from '../utils/bodyMeasurements';
 import { ACHIEVEMENTS, loadAchievements, type AchievementsStore } from '../achievementData';
@@ -535,8 +535,8 @@ function Records({ workoutState, theme }: { workoutState: any; theme: any }) {
     return Object.values(prs)
       // Only records still backed by SURVIVING logged history -- filters out ghost PRs from lifts that
       // were deleted (matches app/workout-library.tsx). A protected floor otherwise keeps them forever.
-      .filter((p: any) => p && (p.bestWeight || p.bestE1RM) && liftSessionHistory(p.name, setLogs, resolveDay).length > 0)
-      .map((p: any) => ({ name: String(p.name || 'Lift'), bw: p.bestWeight, e1: p.bestE1RM, date: (p.bestWeight?.dateKey || p.bestE1RM?.dateKey || '') }))
+      .filter((p: any) => p && (p.bestWeight || p.bestE1RM || p.bestDuration) && liftSessionHistory(p.name, setLogs, resolveDay).length > 0)
+      .map((p: any) => ({ name: String(p.name || 'Lift'), bw: p.bestWeight, e1: p.bestE1RM, bd: p.bestDuration, date: (p.bestWeight?.dateKey || p.bestE1RM?.dateKey || p.bestDuration?.dateKey || '') }))
       .sort((a: any, b: any) => b.date.localeCompare(a.date));
   }, [workoutState]);
   if (!rows.length) return emptyList(theme, 'No lift records yet. Log a weighted set to start.');
@@ -549,8 +549,14 @@ function Records({ workoutState, theme }: { workoutState: any; theme: any }) {
             {r.date ? <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted, marginTop: 1 }}>{FULL_DATE(r.date)}</Text> : null}
           </View>
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{r.bw ? `${r.bw.value} ${weightUnitLabel(r.bw.unit)} × ${r.bw.reps}` : '—'}</Text>
-            {r.e1 ? <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>Est. 1RM {r.e1.value} {weightUnitLabel(r.e1.unit)}</Text> : null}
+            {r.bd && !r.bw ? (
+              <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{formatHold(r.bd.value)}{r.bd.weight != null && r.bd.weight > 0 ? ` · ${r.bd.weight} ${weightUnitLabel(r.bd.unit)}` : ''}</Text>
+            ) : (
+              <>
+                <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{r.bw ? `${r.bw.value} ${weightUnitLabel(r.bw.unit)} × ${r.bw.reps}` : '—'}</Text>
+                {r.e1 ? <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>Est. 1RM {r.e1.value} {weightUnitLabel(r.e1.unit)}</Text> : null}
+              </>
+            )}
           </View>
         </View>
       ))}
@@ -589,8 +595,9 @@ function WorkoutHistory({ workoutState, startKey, endKey, theme }: { workoutStat
         const doneSets = sets.filter((s: any) => s.done);
         const u: 'lb' | 'kg' = e.weightUnit === 'kg' ? 'kg' : 'lb';
         let top: { w: number; r: number } | null = null;
-        for (const s of doneSets) { const w = s.weight || 0, r = s.reps || 0; if (u === 'kg') volKg += w * r; else volLb += w * r; if (w > 0 && r > 0 && (!top || w > top.w)) top = { w, r }; }
-        return { name: String(e.name || 'Exercise'), isCardio: !!e.isCardio, setCount: doneSets.length, top, unit: u, duration: e.duration, distance: e.distance, calories: e.calories };
+        let topDur = 0;
+        for (const s of doneSets) { const w = s.weight || 0, r = s.reps || 0; if (u === 'kg') volKg += w * r; else volLb += w * r; if (w > 0 && r > 0 && (!top || w > top.w)) top = { w, r }; const dur = s.durationSec || 0; if (dur > topDur) topDur = dur; }
+        return { name: String(e.name || 'Exercise'), isCardio: !!e.isCardio, setCount: doneSets.length, top, topDur, unit: u, duration: e.duration, distance: e.distance, calories: e.calories };
       });
       out.push({ date: k, focus: String(prog.focus || 'Workout'), volLb: Math.round(volLb), volKg: Math.round(volKg), prCount: Object.keys(prHits[k] || {}).length, items });
     }
@@ -628,7 +635,7 @@ function WorkoutHistory({ workoutState, startKey, endKey, theme }: { workoutStat
                   <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
                     <Text numberOfLines={1} style={{ flex: 1, fontSize: 12.5, fontFamily: 'DMSans_400Regular', color: theme.textSecondary }}>{it.name}</Text>
                     <Text style={{ fontSize: 11.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>
-                      {it.isCardio ? cardioDetail(it) : it.top ? `${it.top.w} ${weightUnitLabel(it.unit)} × ${it.top.r}${it.setCount > 1 ? ` · ${it.setCount} sets` : ''}` : `${it.setCount || 1} set${(it.setCount || 1) === 1 ? '' : 's'}`}
+                      {it.isCardio ? cardioDetail(it) : it.top ? `${it.top.w} ${weightUnitLabel(it.unit)} × ${it.top.r}${it.setCount > 1 ? ` · ${it.setCount} sets` : ''}` : it.topDur ? `${formatHold(it.topDur)}${it.setCount > 1 ? ` · ${it.setCount} sets` : ''}` : `${it.setCount || 1} set${(it.setCount || 1) === 1 ? '' : 's'}`}
                     </Text>
                   </View>
                 ))}

@@ -9,6 +9,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Defs, LinearGradient as SvgGradient, Stop, Line as SvgLine, Circle, Text as SvgText } from 'react-native-svg';
+import { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
@@ -44,7 +46,9 @@ export default function ReportScreen() {
   const [loading, setLoading] = useState(true);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [exporting, setExporting] = useState(false);
   const nameRef = useRef<TextInput>(null);
+  const shotRef = useRef<View>(null);
 
   // Load or create the report config.
   useEffect(() => {
@@ -148,12 +152,35 @@ export default function ReportScreen() {
   const rename = (name: string) => { if (report) setReport({ ...report, name }); };
   const commitName = () => { if (report) persist({ ...report, name: report.name.trim() || 'Untitled Report' }); };
 
+  // Export: capture the report document region as an image and hand it to the share sheet.
+  const onExport = async () => {
+    if (exporting) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    setExporting(true);
+    try {
+      if (libraryOpen) setLibraryOpen(false); // don't capture edit controls
+      await new Promise(r => setTimeout(r, 60)); // let any layout settle
+      const uri = await captureRef(shotRef, { format: 'png', quality: 0.98, result: 'tmpfile' });
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Share report', UTI: 'public.png' });
+      } else {
+        showToast('Sharing unavailable', 'Export is not available on this device.', 'error');
+      }
+    } catch (e) {
+      showToast('Export failed', 'Could not create the report image.', 'error');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (!report) {
     return <View style={{ flex: 1, backgroundColor: theme.bgPrimary, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={theme.accentBlue} /></View>;
   }
 
   const activeBlocks = report.blockIds.map(getReportBlock).filter(Boolean) as ReportBlock[];
   const rangeBounds = resolveRange(report.range);
+  const genDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
@@ -162,16 +189,13 @@ export default function ReportScreen() {
         <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Ionicons name="chevron-back" size={26} color={theme.textSecondary} />
         </TouchableOpacity>
-        <TextInput
-          ref={nameRef}
-          value={report.name}
-          onChangeText={rename}
-          onBlur={commitName}
-          placeholder="Report name"
-          placeholderTextColor={theme.textDim}
-          style={{ flex: 1, fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.textSecondary, paddingVertical: 2 }}
-        />
-        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); nameRef.current?.focus(); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ padding: 4 }}>
+        <View style={{ flex: 1 }} />
+        {activeBlocks.length > 0 && (
+          <TouchableOpacity onPress={onExport} disabled={exporting} hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }} style={{ padding: 4 }}>
+            {exporting ? <ActivityIndicator size="small" color={theme.accentBlue} /> : <Ionicons name="share-social" size={20} color={theme.accentBlue} />}
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); nameRef.current?.focus(); }} hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }} style={{ padding: 4 }}>
           <Ionicons name="pencil" size={17} color={theme.textMuted} />
         </TouchableOpacity>
       </View>
@@ -201,15 +225,26 @@ export default function ReportScreen() {
         {loading ? (
           <View style={{ paddingVertical: 50, alignItems: 'center' }}><ActivityIndicator color={theme.accentBlue} /></View>
         ) : activeBlocks.length > 0 ? (
-          <View style={{ marginTop: 14, gap: 12 }}>
-            {activeBlocks.map((b, i) => (
-              <BlockCard key={b.id} block={b} data={data} prior={prior} foodDays={foodDays} workoutState={workoutState}
-                mealSlots={mealCtx.slots} slotCache={mealCtx.cache} bodyEntries={bodyCtx.entries} bodyUnit={bodyCtx.unit}
-                achieveStore={achieveStore} challengeRows={challengeRows} startKey={rangeBounds.startKey} endKey={rangeBounds.endKey} theme={theme}
-                collapsed={collapsed.has(b.id)} onToggle={() => toggleCollapse(b.id)}
-                editMode={libraryOpen} isFirst={i === 0} isLast={i === activeBlocks.length - 1}
-                onUp={() => moveBlock(b.id, -1)} onDown={() => moveBlock(b.id, 1)} onRemove={() => toggleBlock(b.id)} />
-            ))}
+          <View ref={shotRef} collapsable={false} style={{ backgroundColor: theme.bgPrimary, marginTop: 14 }}>
+            {/* Document header -- captured into the export image */}
+            <View style={{ marginBottom: 14 }}>
+              <TextInput ref={nameRef} value={report.name} onChangeText={rename} onBlur={commitName} placeholder="Report name" placeholderTextColor={theme.textDim}
+                style={{ fontSize: 26, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.textSecondary, padding: 0 }} />
+              <Text style={{ fontSize: 11.5, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted, marginTop: 3 }}>
+                {RANGE_LABELS[report.range.preset]} · Generated {genDate} · Project J
+              </Text>
+            </View>
+            <View style={{ gap: 12 }}>
+              {activeBlocks.map((b, i) => (
+                <BlockCard key={b.id} block={b} data={data} prior={prior} foodDays={foodDays} workoutState={workoutState}
+                  mealSlots={mealCtx.slots} slotCache={mealCtx.cache} bodyEntries={bodyCtx.entries} bodyUnit={bodyCtx.unit}
+                  achieveStore={achieveStore} challengeRows={challengeRows} startKey={rangeBounds.startKey} endKey={rangeBounds.endKey} theme={theme}
+                  collapsed={collapsed.has(b.id)} onToggle={() => toggleCollapse(b.id)}
+                  editMode={libraryOpen} isFirst={i === 0} isLast={i === activeBlocks.length - 1}
+                  onUp={() => moveBlock(b.id, -1)} onDown={() => moveBlock(b.id, 1)} onRemove={() => toggleBlock(b.id)} />
+              ))}
+            </View>
+            <Text style={{ fontSize: 11, color: theme.textDim, textAlign: 'center', marginTop: 18, fontFamily: 'DMSans_400Regular' }}>For informational purposes only. Not medical advice.</Text>
           </View>
         ) : !libraryOpen ? (
           <TemplateChooser onPick={applyTemplate} onCustom={() => setLibraryOpen(true)} theme={theme} />
@@ -261,8 +296,6 @@ export default function ReportScreen() {
             })}
           </View>
         )}
-
-        <Text style={{ fontSize: 11, color: theme.textDim, textAlign: 'center', marginTop: 20, fontFamily: 'DMSans_400Regular' }}>For informational purposes only. Not medical advice.</Text>
       </ScrollView>
     </View>
   );

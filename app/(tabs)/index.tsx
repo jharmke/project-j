@@ -1334,7 +1334,7 @@ export default function HomeScreen() {
         if (seen === WHATS_NEW.releaseId) return;
         await addNotification({
           id: 'whats_new', lifecycle: 'replace', category: 'whats_new',
-          title: "What's New", body: `See what changed in the ${WHATS_NEW.version}.`,
+          title: "What's New", body: `${WHATS_NEW.version} is here. See what changed.`,
           icon: 'sparkles', iconColor: '#d4860a',
           route: { pathname: '/whats-new' },
         });

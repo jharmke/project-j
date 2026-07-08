@@ -89,6 +89,15 @@ are separate pre-submission checklists, NOT part of this menu.
      templates, per-chapter faith-tier/wearable gating in the picker, tooltip + Otto KB. Device-verify pending.
 - [x] Otto on-demand data access thread -- COMPLETE 2026-07-05 (one dataset at a time, conditional-injection pattern from utils/companionPRs.ts). SHIPPED: PR values + real-exercise recognition + per-lift TREND + recent-workouts (30-day sessions) + food log (30-day totals + named-day items) + sleep + recovery (30-day nights + named-night detail) + body measurements (per-field value/age/delta + Navy BF% + history) + achievements (earned set + live badge progress via shared achievementProgress scan) + journal/prayer (recent entries + prayers, privacy + faith-tier gated). All device-verified. OPTIONAL later add: full per-metric streak tiles (needs the Stats streak engine extracted into a shared util first). Did NOT build true LLM tool-use (Haiku too flaky); revisit only if Otto moves to a stronger model.
 - [x] FAB contrast/border (GLOBAL) -- COMPLETE 2026-07-05. "bg ring" recipe = borderWidth: 3, borderColor: theme.bgPrimary on the FAB circle (invisible moat over the page, visible ring the moment it overlaps a same-accent button). DONE across every real page FAB: Otto FAB (AssistantFAB) + Workout tab (main + 2 subs) + workout-library (main + 3 subs) + stats (main + 3 subs) + add-food (main + 3 subs) + body-measurements + bible + journal + prayer + Halo (CompanionFAB, SVG special case: drawn page-colored Circle ring at r=DISC/2-1.5 instead of a border, now theme-aware). The other roadmap-listed files had NO floating page FAB (settings/profile/AssistantOverlay = the global Otto FAB already done + save bars; ai-meal-estimator/AddPrayerModal = none; CompanionChat/AssistantChat send buttons = in-bar, not overlap-prone, intentionally excluded). Awaiting 5-theme x all-accent device audit before fully closing the visual gate.
+- [ ] [FIX, data-integrity, needs reinstall verify] Achievement unlockedAt reinstall hardening. Badges
+  stamp unlockedAt = new Date() at award time (achievementData.ts:1420); on a reinstall before the cloud
+  restore lands, a check can first-unlock against an empty store and re-stamp the whole earned set to
+  "today" (this is the June-22 clump on Justin's test account). Achievements ALREADY sync via storageSet +
+  the reinstall auto-restore + checkAndUnlock is idempotent, so a proper restore preserves dates -- the
+  residual is a RACE. FIX: gate achievement checks behind the restore-complete flag so no scan runs until
+  the restore lands. Optional belt-and-suspenders: backfill unlockedAt from goal-day history for count-
+  based badges. Touches the sync/restore/achievement flow -> do deliberately + verify with a device
+  reinstall. (Surfaced via the Custom Reports "Achievements earned" block 2026-07-07.)
 - [ ] QUICK WINS (small, grab-when-convenient): none queued right now -- add here as they come up. (DONE 2026-07-07: FAB text-label rings app-wide · inline Add Exercise button · the whole gym list.)
 
 ---

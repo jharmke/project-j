@@ -19,6 +19,7 @@ import { liftSessionHistory } from '../utils/liftPR';
 import { loadMealSlots, getMealDisplayName } from '../utils/mealSlots';
 import { loadMeasurements, loadBodyMeasureSettings, toDisplay, unitLabel, MEASURE_FIELDS, type MeasurementUnit } from '../utils/bodyMeasurements';
 import { ACHIEVEMENTS, loadAchievements, type AchievementsStore } from '../achievementData';
+import { loadChallengeHistory, computeChallengeProgress, challengeTitle } from '../utils/challenges';
 import { loadReports, saveReport, newReportId, resolveRange, RANGE_LABELS, Report, ReportRangePreset } from '../utils/reports';
 import { REPORT_CHAPTERS, REPORT_BLOCKS, blocksForChapter, getReportBlock, ReportBlock, REPORT_TEMPLATES, ReportTemplate } from '../utils/reportBlocks';
 
@@ -39,6 +40,7 @@ export default function ReportScreen() {
   const [mealCtx, setMealCtx] = useState<{ slots: any[]; cache: any }>({ slots: [], cache: {} });
   const [bodyCtx, setBodyCtx] = useState<{ entries: any[]; unit: MeasurementUnit }>({ entries: [], unit: 'in' });
   const [achieveStore, setAchieveStore] = useState<AchievementsStore>({});
+  const [challengeRows, setChallengeRows] = useState<{ id: string; title: string; startKey: string; endKey: string; won: boolean; tier: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -81,7 +83,16 @@ export default function ReportScreen() {
         try { const be = await loadMeasurements(); const bs = await loadBodyMeasureSettings(); bc = { entries: be, unit: bs.unit }; } catch {}
         let ach: AchievementsStore = {};
         try { ach = await loadAchievements(); } catch {}
-        if (!cancelled) { setData(cur); setPrior(prev); setFoodDays(fd); setWorkoutState(ws); setMealCtx(mc); setBodyCtx(bc); setAchieveStore(ach); }
+        let chRows: { id: string; title: string; startKey: string; endKey: string; won: boolean; tier: string }[] = [];
+        try {
+          const hist = await loadChallengeHistory();
+          chRows = await Promise.all(hist.map(async ch => {
+            let won = false, tier = 'partial';
+            try { const p = await computeChallengeProgress(ch); won = p.won; tier = p.tier; } catch {}
+            return { id: ch.id, title: challengeTitle(ch), startKey: ch.startKey, endKey: ch.endKey, won, tier };
+          }));
+        } catch {}
+        if (!cancelled) { setData(cur); setPrior(prev); setFoodDays(fd); setWorkoutState(ws); setMealCtx(mc); setBodyCtx(bc); setAchieveStore(ach); setChallengeRows(chRows); }
       } catch { if (!cancelled) { setData(EMPTY_TREND_DATA); setPrior(EMPTY_TREND_DATA); setFoodDays([]); } }
       if (!cancelled) setLoading(false);
     })();
@@ -194,7 +205,7 @@ export default function ReportScreen() {
             {activeBlocks.map((b, i) => (
               <BlockCard key={b.id} block={b} data={data} prior={prior} foodDays={foodDays} workoutState={workoutState}
                 mealSlots={mealCtx.slots} slotCache={mealCtx.cache} bodyEntries={bodyCtx.entries} bodyUnit={bodyCtx.unit}
-                achieveStore={achieveStore} startKey={rangeBounds.startKey} endKey={rangeBounds.endKey} theme={theme}
+                achieveStore={achieveStore} challengeRows={challengeRows} startKey={rangeBounds.startKey} endKey={rangeBounds.endKey} theme={theme}
                 collapsed={collapsed.has(b.id)} onToggle={() => toggleCollapse(b.id)}
                 editMode={libraryOpen} isFirst={i === 0} isLast={i === activeBlocks.length - 1}
                 onUp={() => moveBlock(b.id, -1)} onDown={() => moveBlock(b.id, 1)} onRemove={() => toggleBlock(b.id)} />
@@ -291,11 +302,12 @@ const FULL_DATE = (key: string) => {
 interface BlockCardProps {
   block: ReportBlock; data: TrendData; prior: TrendData; foodDays: FoodDay[]; workoutState: any;
   mealSlots: any[]; slotCache: any; bodyEntries: any[]; bodyUnit: MeasurementUnit; achieveStore: AchievementsStore;
+  challengeRows: { id: string; title: string; startKey: string; endKey: string; won: boolean; tier: string }[];
   startKey: string; endKey: string; theme: any;
   collapsed: boolean; onToggle: () => void; editMode: boolean; isFirst: boolean; isLast: boolean;
   onUp: () => void; onDown: () => void; onRemove: () => void;
 }
-function BlockCard({ block, data, prior, foodDays, workoutState, mealSlots, slotCache, bodyEntries, bodyUnit, achieveStore, startKey, endKey, theme, collapsed, onToggle, editMode, isFirst, isLast, onUp, onDown, onRemove }: BlockCardProps) {
+function BlockCard({ block, data, prior, foodDays, workoutState, mealSlots, slotCache, bodyEntries, bodyUnit, achieveStore, challengeRows, startKey, endKey, theme, collapsed, onToggle, editMode, isFirst, isLast, onUp, onDown, onRemove }: BlockCardProps) {
   // For a trend block, surface its latest value in the header (clean) instead of floating it in the chart.
   const trendLatest = block.form === 'lineTrend' ? latestOf(seriesFor(block.dataKey, data)) : null;
   return (
@@ -336,6 +348,7 @@ function BlockCard({ block, data, prior, foodDays, workoutState, mealSlots, slot
           {block.form === 'sleepStages' && <SleepStages data={data} theme={theme} />}
           {block.form === 'bodyMeasurements' && <BodyMeasurements entries={bodyEntries} unit={bodyUnit} startKey={startKey} endKey={endKey} theme={theme} />}
           {block.form === 'achievements' && <AchievementsEarned store={achieveStore} startKey={startKey} endKey={endKey} theme={theme} />}
+          {block.form === 'challengeHistory' && <ChallengeHistory rows={challengeRows} startKey={startKey} endKey={endKey} theme={theme} />}
         </>
       )}
     </View>
@@ -799,6 +812,36 @@ function AchievementsEarned({ store, startKey, endKey, theme }: { store: Achieve
           <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.textDim }}>{FULL_DATE(r.date)}</Text>
         </View>
       ))}
+    </View>
+  );
+}
+
+// Challenges that ENDED within the range, newest first, with their outcome tier.
+function ChallengeHistory({ rows, startKey, endKey, theme }: { rows: { id: string; title: string; startKey: string; endKey: string; won: boolean; tier: string }[]; startKey: string; endKey: string; theme: any }) {
+  const list = useMemo(() => rows.filter(r => r.endKey >= startKey && r.endKey <= endKey).sort((a, b) => b.endKey.localeCompare(a.endKey)), [rows, startKey, endKey]);
+  if (!list.length) return emptyList(theme, 'No challenges completed in this range.');
+  const meta = (tier: string): { label: string; color: string; icon: any } => {
+    if (tier === 'perfect') return { label: 'Perfect', color: '#0d9268', icon: 'trophy' };
+    if (tier === 'complete') return { label: 'Complete', color: '#0d9268', icon: 'checkmark-circle' };
+    return { label: 'Partial', color: theme.textMuted, icon: 'remove-circle' };
+  };
+  return (
+    <View style={{ gap: 9 }}>
+      {list.map((r, i) => {
+        const m = meta(r.tier);
+        return (
+          <View key={r.id + i} style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
+            <View style={{ width: 30, height: 30, borderRadius: 9, backgroundColor: m.color + '22', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name={m.icon} size={15} color={m.color} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text numberOfLines={1} style={{ fontSize: 13.5, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{r.title}</Text>
+              <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted, marginTop: 1 }}>{fmtDateKey(r.startKey)} – {fmtDateKey(r.endKey)}</Text>
+            </View>
+            <Text style={{ fontSize: 11.5, fontFamily: 'DMSans_700Bold', color: m.color }}>{m.label}</Text>
+          </View>
+        );
+      })}
     </View>
   );
 }

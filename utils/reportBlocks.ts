@@ -44,7 +44,8 @@ export type BlockForm =
   | 'exerciseFrequency' // most-performed exercises, ranked (drill-down)
   | 'sleepStages'   // avg deep/REM/core breakdown
   | 'bodyMeasurements' // tape measurements, session by session (drill-down)
-  | 'achievements'; // badges earned in the range (drill-down)
+  | 'achievements'  // badges earned in the range (drill-down)
+  | 'challengeHistory'; // challenges completed in the range (drill-down)
 
 export interface ReportBlock {
   id: string;
@@ -66,6 +67,7 @@ export interface ReportBlock {
 export const REPORT_BLOCKS: ReportBlock[] = [
   // Overview
   { id: 'achievements_earned', chapter: 'overview', title: 'Achievements earned', desc: 'Badges you unlocked in this range', form: 'achievements', tier: 'core' },
+  { id: 'challenge_history', chapter: 'overview', title: 'Challenge history', desc: 'Challenges you completed in this range', form: 'challengeHistory', tier: 'core' },
 
   // Nutrition -- drill-down lists lead (the stuff you can't get anywhere else in the app)
   { id: 'top_foods',         chapter: 'nutrition', title: 'Most-logged foods',  desc: 'Your most frequent foods, ranked',     form: 'topFoods',              tier: 'core' },

@@ -8,7 +8,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { useState } from 'react';
 import { Text, TextInput, TouchableOpacity, View } from 'react-native';
 import type { SetEntry } from '../workoutData';
-import { weightUnitHeader } from '../workoutData';
+import { weightUnitHeader, formatHold, parseHoldInput } from '../workoutData';
 
 const MAX_SETS = 10;
 
@@ -19,12 +19,21 @@ interface Props {
   onPersist: (sets: SetEntry[]) => void;
   onSetChecked?: (restSeconds: number | null) => void; // fired when a set is checked ON (starts rest)
   unit?: 'lb' | 'kg'; // weight unit for this exercise (missing = lb)
-  onUnitPress?: () => void; // tap the weight-column header to open the lb/kg picker (parent-owned modal)
+  onUnitPress?: () => void; // tap the weight-column header to toggle lb/kg
+  trackingType?: 'reps' | 'time'; // 'time' turns the reps column into a held-duration (M:SS) column
+  onTrackingTypePress?: () => void; // tap the reps/time header to toggle reps <-> time
   theme: any;
 }
 
-const prevLabel = (p: SetEntry | undefined) => {
+// Prior-session label. In time mode the second value is the held duration (M:SS) instead of reps.
+const prevLabel = (p: SetEntry | undefined, time: boolean) => {
   if (!p) return null;
+  if (time) {
+    if (p.weight != null && p.durationSec != null) return `${p.weight} × ${formatHold(p.durationSec)}`;
+    if (p.durationSec != null) return formatHold(p.durationSec);
+    if (p.weight != null) return `${p.weight}`;
+    return null;
+  }
   if (p.weight != null && p.reps != null) return `${p.weight} × ${p.reps}`;
   if (p.weight != null) return `${p.weight}`;
   if (p.reps != null) return `${p.reps} reps`;
@@ -37,9 +46,10 @@ const COL = { set: 0.6, prev: 1.3, input: 1.5 };
 const CHECK_W = 34;
 const X_W = 22;
 
-export default function ExerciseSetRows({ initialSets, previousSets, defaultRest, onPersist, onSetChecked, unit, onUnitPress, theme: t }: Props) {
+export default function ExerciseSetRows({ initialSets, previousSets, defaultRest, onPersist, onSetChecked, unit, onUnitPress, trackingType, onTrackingTypePress, theme: t }: Props) {
   const [sets, setSets] = useState<SetEntry[]>(initialSets);
   const atMax = sets.length >= MAX_SETS;
+  const isTime = trackingType === 'time';
 
   const numStr = (n: number | null) => (n != null ? String(n) : '');
 
@@ -56,14 +66,16 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
     commit(sets.map((s, idx) => {
       if (idx !== i) return s;
       if (s.done) return { ...s, done: false, doneAt: undefined };
-      // Checking an empty row auto-fills weight/reps from last session, so a repeat set is one tap.
+      // Checking an empty row auto-fills from last session, so a repeat set is one tap. Time mode fills
+      // the held duration; reps mode fills reps. Weight is filled in either mode.
       const p = previousSets?.[i];
       return {
         ...s,
         done: true,
         doneAt: Date.now(),
         weight: s.weight == null && p ? p.weight : s.weight,
-        reps: s.reps == null && p ? p.reps : s.reps,
+        reps: !isTime && s.reps == null && p ? p.reps : s.reps,
+        durationSec: isTime && s.durationSec == null && p ? p.durationSec : s.durationSec,
       };
     }));
     if (turningOn) onSetChecked?.(sets[i].rest ?? defaultRest);
@@ -100,13 +112,21 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
           <Text style={headerCell}>{weightUnitHeader(unit)}</Text>
           {onUnitPress ? <Ionicons name="swap-horizontal" size={11} color={t.textMuted} /> : null}
         </TouchableOpacity>
-        <Text style={[headerCell, { flex: COL.input }]}>Reps</Text>
+        <TouchableOpacity
+          style={{ flex: COL.input, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2 }}
+          onPress={onTrackingTypePress}
+          disabled={!onTrackingTypePress}
+          hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}>
+          <Text style={headerCell}>{isTime ? 'Time' : 'Reps'}</Text>
+          {onTrackingTypePress ? <Ionicons name="swap-horizontal" size={11} color={t.textMuted} /> : null}
+        </TouchableOpacity>
         <View style={{ width: CHECK_W }} />
         <View style={{ width: X_W }} />
       </View>
 
       {sets.map((s, i) => {
-        const prev = prevLabel(previousSets?.[i]);
+        const prev = prevLabel(previousSets?.[i], isTime);
+        const pd = previousSets?.[i]?.durationSec;
         return (
           <View
             key={i}
@@ -133,16 +153,29 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
               />
             </View>
             <View style={{ flex: COL.input, paddingHorizontal: 4 }}>
-              <TextInput
-                style={inputStyle(s.done)}
-                value={numStr(s.reps)}
-                onChangeText={txt => edit(i, { reps: txt === '' ? null : (parseInt(txt) || 0) })}
-                onEndEditing={() => onPersist(sets)}
-                keyboardType="number-pad"
-                placeholder={previousSets?.[i]?.reps != null ? String(previousSets[i].reps) : '—'}
-                placeholderTextColor={t.textDim}
-                returnKeyType="done"
-              />
+              {isTime ? (
+                <TextInput
+                  style={inputStyle(s.done)}
+                  value={s.durationSec != null ? formatHold(s.durationSec) : ''}
+                  onChangeText={txt => { const d = txt.replace(/\D/g, ''); edit(i, { durationSec: d === '' ? null : parseHoldInput(d) }); }}
+                  onEndEditing={() => onPersist(sets)}
+                  keyboardType="number-pad"
+                  placeholder={pd != null ? formatHold(pd) : '0:45'}
+                  placeholderTextColor={t.textDim}
+                  returnKeyType="done"
+                />
+              ) : (
+                <TextInput
+                  style={inputStyle(s.done)}
+                  value={numStr(s.reps)}
+                  onChangeText={txt => edit(i, { reps: txt === '' ? null : (parseInt(txt) || 0) })}
+                  onEndEditing={() => onPersist(sets)}
+                  keyboardType="number-pad"
+                  placeholder={previousSets?.[i]?.reps != null ? String(previousSets[i].reps) : '—'}
+                  placeholderTextColor={t.textDim}
+                  returnKeyType="done"
+                />
+              )}
             </View>
             <TouchableOpacity onPress={() => toggle(i)} style={{ width: CHECK_W, alignItems: 'center' }} hitSlop={{ top: 8, bottom: 8, left: 4, right: 2 }}>
               <View style={{

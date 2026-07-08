@@ -23,7 +23,7 @@ import * as Notifications from 'expo-notifications';
 import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import { useHealthKit } from '../../useHealthKit';
-import { BLANK_DAY, DEFAULT_TAGS, DayProgram, Exercise, PRRecord, Routine, SetEntry, TAG_COLOR_PALETTE, WorkoutTag, PRESET_ROUTINES, weightUnitLabel } from '../../workoutData';
+import { BLANK_DAY, DEFAULT_TAGS, DayProgram, Exercise, PRRecord, Routine, SetEntry, TAG_COLOR_PALETTE, WorkoutTag, PRESET_ROUTINES, weightUnitLabel, formatHold } from '../../workoutData';
 import MuscleMap from '../../components/MuscleMap';
 import ExerciseSetRows from '../../components/ExerciseSetRows';
 import HRZoneModal, { HRZoneData } from '../../components/HRZoneModal';
@@ -148,7 +148,7 @@ const [finishSummary, setFinishSummary] = useState<{
   totalVolume: number; volumeLb?: number; volumeKg?: number; doneSets: number; doneExercises: number; prHits: any[]; cardioPrHits: CardioPRHit[]; mindful: boolean;
   hasLifts: boolean; liftDurationSec: number | null;
   liftCalories: number | null; liftAvgHr: number | null; liftMaxHr: number | null;
-  liftItems: { name: string; volume: number; sets: { weight: number; reps: number }[]; unit?: 'lb' | 'kg' }[];
+  liftItems: { name: string; volume: number; sets: { weight: number; reps: number; durationSec?: number | null }[]; unit?: 'lb' | 'kg'; trackingType?: 'reps' | 'time' }[];
   cardio: { count: number; distanceMi: number; durationSec: number; calories: number; avgHr: number | null; maxHr: number | null; items?: { name: string; durationSec: number; distanceMi: number; calories: number; avgHr: number | null; maxHr: number | null }[] } | null;
   totalCalories: number;
 } | null>(null);
@@ -1025,6 +1025,33 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
     showToast('Unit updated', unit === 'kg' ? 'Kilograms (kg)' : 'Pounds (lb)', 'success');
   };
 
+  // Toggle a lift between REPS and TIME tracking (planks/holds). Additive: only the exercise's
+  // trackingType changes; logged set data is never rewritten. Time sets carry durationSec instead of reps,
+  // so they fall out of the weight/e1RM PR math on their own. Recompute + re-mount rows to relabel.
+  const setExerciseTrackingType = (exId: string, type: 'reps' | 'time') => {
+    const base = programs[activeDay] || weeklyTemplate[activeDayName] || BLANK_DAY;
+    const ex = (base.exercises || []).find(e => e.id === exId);
+    if (!ex || (ex.trackingType || 'reps') === type) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    clearFinished();
+    const newExercises = (base.exercises || []).map(e => e.id === exId ? { ...e, trackingType: type } : e);
+    const newPrograms = { ...programs, [activeDay]: { ...base, exercises: newExercises } };
+    setPrograms(newPrograms);
+    let nextPrs = prs, nextHits = prHitsByDay;
+    if (!ex.isCardio) {
+      const r = recomputeLiftPR(ex.name, setLogs, makeDayResolver(newPrograms), prs, prHitsByDay, activeDay, Date.now());
+      nextPrs = r.prs; nextHits = r.hits;
+      setPrs(nextPrs); setPrHitsByDay(nextHits);
+      if (activeDay === todayKey) {
+        if (r.hit) firePRNotification(r.hit);
+        else if (r.revoked) clearNotification(`pr_${activeDay}_${normalizeLiftName(ex.name)}`);
+      }
+    }
+    saveState(checks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate, activeProgramName, workoutNoteNames, setLogs, nextPrs, exerciseDoneAt, workoutTimers, nextHits);
+    setSetRowsVersion(v => ({ ...v, [exId]: (v[exId] || 0) + 1 }));
+    showToast('Tracking updated', type === 'time' ? 'Time (hold duration)' : 'Reps', 'success');
+  };
+
   // Big per-exercise checkmark on a LIFT marks every set done / undone at once (filling empties
   // from last session when completing). A version bump re-mounts the set rows so they re-seed from
   // the updated log. Cardio keeps its manual toggleExercise.
@@ -1034,8 +1061,12 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
     const current = getSeededSets(ex);
     const prev = done ? getPreviousSets(ex) : null;
     const stamp = Date.now();
+    const isTime = ex.trackingType === 'time';
     const nextSets = current.map((s, i) => done
-      ? { ...s, done: true, doneAt: stamp, weight: s.weight == null && prev?.[i] ? prev[i].weight : s.weight, reps: s.reps == null && prev?.[i] ? prev[i].reps : s.reps }
+      ? { ...s, done: true, doneAt: stamp,
+          weight: s.weight == null && prev?.[i] ? prev[i].weight : s.weight,
+          reps: !isTime && s.reps == null && prev?.[i] ? prev[i].reps : s.reps,
+          durationSec: isTime && s.durationSec == null && prev?.[i] ? prev[i].durationSec : s.durationSec }
       : { ...s, done: false, doneAt: undefined });
     saveSetsForExercise(ex.id, nextSets);
     setSetRowsVersion(v => ({ ...v, [ex.id]: (v[ex.id] || 0) + 1 }));
@@ -1122,12 +1153,13 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
       doneExercises++;
       doneSets += done.length;
       let exVolume = 0;
-      const itemSets: { weight: number; reps: number }[] = [];
-      for (const s of done) { exVolume += (s.weight || 0) * (s.reps || 0); itemSets.push({ weight: s.weight || 0, reps: s.reps || 0 }); }
+      const itemSets: { weight: number; reps: number; durationSec?: number | null }[] = [];
+      for (const s of done) { exVolume += (s.weight || 0) * (s.reps || 0); itemSets.push({ weight: s.weight || 0, reps: s.reps || 0, durationSec: s.durationSec ?? null }); }
       totalVolume += exVolume;
       // Volume can't sum across units, so accumulate per unit (kg lifts into volumeKg, everything else lb).
+      // Time holds have no reps, so exVolume is 0 for them -- they add nothing to volume, by design.
       if (ex.weightUnit === 'kg') volumeKg += exVolume; else volumeLb += exVolume;
-      liftItems.push({ name: ex.name || 'Lift', volume: exVolume, sets: itemSets, unit: ex.weightUnit || 'lb' });
+      liftItems.push({ name: ex.name || 'Lift', volume: exVolume, sets: itemSets, unit: ex.weightUnit || 'lb', trackingType: ex.trackingType || 'reps' });
     }
     // Lift session duration. Priority: Apple Watch strength session (measured, ground truth) > manual
     // workout timer (no-watch users) > nothing. The old first-to-last checked-set span is RETIRED: it
@@ -1646,9 +1678,15 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
 
   // Sets summary for a recap lift row: "50 × 10  ·  50 × 10", "10 reps" for bodyweight-with-reps,
   // and "3 sets" when a lift was checked off with no weight/reps entered.
-  const formatLiftSets = (sets: { weight: number; reps: number }[], unit?: 'lb' | 'kg'): string => {
+  const formatLiftSets = (sets: { weight: number; reps: number; durationSec?: number | null }[], unit?: 'lb' | 'kg', trackingType?: 'reps' | 'time'): string => {
     const u = weightUnitLabel(unit);
+    const time = trackingType === 'time';
     const parts = sets.map(s => {
+      if (time) {
+        const d = s.durationSec ?? 0;
+        if (d <= 0) return null;
+        return s.weight > 0 ? `${s.weight} ${u} × ${formatHold(d)}` : formatHold(d);
+      }
       if (s.weight > 0 && s.reps > 0) return `${s.weight} ${u} × ${s.reps}`;
       if (s.reps > 0) return `${s.reps} reps`;
       return null;
@@ -1837,6 +1875,8 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                   onSetChecked={() => handleSetChecked(ex)}
                   unit={ex.weightUnit}
                   onUnitPress={() => setExerciseUnit(ex.id, (ex.weightUnit === 'kg' ? 'lb' : 'kg'))}
+                  trackingType={ex.trackingType}
+                  onTrackingTypePress={() => setExerciseTrackingType(ex.id, (ex.trackingType === 'time' ? 'reps' : 'time'))}
                   theme={theme}
                 />
               </View>
@@ -2462,7 +2502,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                           {fs.liftItems.map((it, idx) => (
                             <View key={idx} style={{ backgroundColor: theme.bgInset, borderWidth: 0.5, borderLeftWidth: 2.5, borderColor: theme.borderCard, borderLeftColor: theme.accentBlue, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 }}>
                               <Text numberOfLines={1} style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary }}>{it.name}</Text>
-                              <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textSecondary, marginTop: 6 }}>{formatLiftSets(it.sets, it.unit)}</Text>
+                              <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textSecondary, marginTop: 6 }}>{formatLiftSets(it.sets, it.unit, it.trackingType)}</Text>
                             </View>
                           ))}
                         </View>

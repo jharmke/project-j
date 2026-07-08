@@ -12,6 +12,9 @@ export interface Exercise {
   // Per-exercise weight unit for lifting. Missing = 'lb' (every pre-existing exercise reads as lb, so
   // nothing changes until a user picks kg). Additive; the logged weight number is stored as-entered.
   weightUnit?: 'lb' | 'kg';
+  // How the middle column is tracked. Missing = 'reps' (every pre-existing lift is reps). 'time' turns
+  // the reps column into a held-duration column (planks, dead hangs, loaded carries). Weight stays usable.
+  trackingType?: 'reps' | 'time';
   duration?: string;
   distance?: string;
   speed?: string;
@@ -25,6 +28,20 @@ export interface Exercise {
 export const weightUnitLabel = (u?: 'lb' | 'kg') => (u === 'kg' ? 'kg' : 'lb');   // inline: "140 lb"
 export const weightUnitHeader = (u?: 'lb' | 'kg') => (u === 'kg' ? 'Kgs' : 'Lbs'); // column header
 
+// Format a held duration (seconds) as clock-style M:SS for display. Missing/0 -> "0:00".
+export const formatHold = (sec?: number | null): string => {
+  const s = Math.max(0, Math.round(sec || 0));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+};
+// Parse clock-style typed digits into seconds (iOS-timer style: last two digits = seconds, rest = minutes).
+// "45" -> 45, "130" -> 90, "230" -> 150. formatHold normalizes any seconds >= 60 on the way back out.
+export const parseHoldInput = (digits: string): number => {
+  const d = (digits || '').replace(/\D/g, '').slice(-4);
+  if (!d) return 0;
+  const n = parseInt(d, 10);
+  return Math.floor(n / 100) * 60 + (n % 100);
+};
+
 // One logged set of a lift: actual weight x reps, the per-set rest target, and the done check.
 // Stored in pj_workout_state.setLogs[dateKey][exerciseId]. weight/reps null = not entered yet.
 export interface SetEntry {
@@ -33,6 +50,9 @@ export interface SetEntry {
   rest: number | null;
   done: boolean;
   doneAt?: number; // epoch ms the set was checked on (cleared when unchecked). Optional: pre-existing logs have none.
+  // Held duration in seconds for a TIME-tracked set (planks/carries). On a time set reps stays null and
+  // weight stays usable. Missing on every pre-existing (reps) set. Additive.
+  durationSec?: number | null;
 }
 
 // All-time personal records per lift (keyed by normalized exercise name in pj_workout_state.prs).

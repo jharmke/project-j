@@ -76,8 +76,13 @@ are separate pre-submission checklists, NOT part of this menu.
   acknowledgment. The modal only ever offers a fix that's REAL for that person (pace lever + activity
   lever) -> 4 branch cases, copy LOCKED + ED-aware (never references body size). Loss goals only;
   manual targets warn not block. Full spec + the 4 modal scripts: SPEC_calorie_floor.md. Build order in
-  the spec (zone calc in calorieTarget.ts first, then inline caution, then modal). Separate follow-ons:
-  pace granularity (.25/.75), activity nudge, onboarding activity wording.
+  the spec. >> SLICES 1-3 BUILT + device-verified 2026-07-08 (pure JS): (1) utils/calorieFloor classifier + 31 unit
+  tests, wired into loadCalorieTargets (additive, calTarget unchanged); (2) inline amber caution on profile Your
+  Estimates card AND under the Weekly Pace picker (both spots); (3) components/CalorieFloorModal 4-case branched modal
+  off the pace picker, buttons wired (slower-pace jumps to fastest safe pace, adjust-activity scrolls, set-maintenance,
+  continue = ack), persistence pj_calorie_warning_acknowledged (only re-asks if target drops BELOW what was okayed).
+  REMAINING: Slice 4 Mindful tone pass on the modal cases; then separate follow-ons: pace granularity (.25/.75),
+  activity nudge, onboarding activity wording. Full detail: SPEC_calorie_floor.md.
 - [TRACK, design LOCKED 2026-07-07] Apple Workouts in the Exercise Library (lean "Synced Workouts"
   history) -- give Apple-synced cardio a home in the library, keyed by activity type + indoor flag,
   auto-created on first sync, rename = editable label (never re-keys), green "Apple Health" badge,

@@ -13,6 +13,7 @@ import { useToast } from '../../components/Toast';
 import { saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
 import { computeCalorieFloor } from '../../utils/calorieFloor';
+import CalorieFloorModal from '../../components/CalorieFloorModal';
 import { setFloatingBarHeight } from '../../utils/floatingBar';
 import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
@@ -164,6 +165,8 @@ export default function ProfileScreen() {
   useScrollToTop(scrollRef);
   const scrollOffset = useRef(0);
   const goalWeightInputY = useRef(0);
+  const activityLevelY = useRef(0);
+  const [floorModal, setFloorModal] = useState<{ modalCase: 1 | 2 | 3 | 4; target: number; modalLine: number } | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const hasChangesRef = useRef(false);
 
@@ -325,6 +328,58 @@ export default function ProfileScreen() {
     trainingFrequency: profile.trainingFrequency,
   });
 
+  // Fire the low-target modal when a newly-picked pace lands the target in the modal zone,
+  // unless the user already acknowledged a target this low or lower (only re-ask if it drops
+  // further -- SPEC_calorie_floor.md persistence). Never blocks: it's warn + consent.
+  const maybeShowFloorModal = async (newGoal: string) => {
+    const tdee = calcTDEE();
+    if (!tdee) return;
+    const newTarget = tdee + (GOAL_DEFICITS[newGoal] ?? -500);
+    const fl = computeCalorieFloor({
+      calTarget: newTarget, sex: profile.sex, weightGoal: newGoal,
+      lifestyleActivity: profile.lifestyleActivity, trainingFrequency: profile.trainingFrequency,
+    });
+    if (fl.zone !== 'modal' || !fl.modalCase) return;
+    try {
+      const raw = await AsyncStorage.getItem('pj_calorie_warning_acknowledged');
+      const ack = raw ? JSON.parse(raw) : null;
+      if (ack && typeof ack.target === 'number' && newTarget >= ack.target) return; // same or safer, no nag
+    } catch {}
+    setFloorModal({ modalCase: fl.modalCase, target: newTarget, modalLine: fl.modalLine });
+  };
+
+  // "Choose a slower pace": jump to the FASTEST loss pace whose target clears the modal line
+  // (least slowdown that's still safe), or the gentlest available if none clear.
+  const floorSlowerPace = () => {
+    const tdee = calcTDEE();
+    const order = ['lose_2', 'lose_1_5', 'lose_1', 'lose_0_5'];
+    let pick = 'lose_0_5';
+    if (floorModal) {
+      for (const p of order) {
+        if (tdee + (GOAL_DEFICITS[p] ?? 0) >= floorModal.modalLine) { pick = p; break; }
+      }
+    }
+    updateField('weightGoal', pick);
+    setFloorModal(null);
+  };
+
+  const floorAdjustActivity = () => {
+    setFloorModal(null);
+    setTimeout(() => scrollRef.current?.scrollTo({ y: Math.max(0, activityLevelY.current - 12), animated: true }), 160);
+  };
+
+  const floorSetMaintenance = () => {
+    updateField('weightGoal', 'maintain');
+    setFloorModal(null);
+  };
+
+  const floorContinue = async () => {
+    if (floorModal) {
+      try { await storageSet('pj_calorie_warning_acknowledged', JSON.stringify({ target: floorModal.target, date: new Date().toISOString() })); } catch {}
+    }
+    setFloorModal(null);
+  };
+
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
@@ -426,6 +481,7 @@ export default function ProfileScreen() {
           </View>
         </ProfileSection>
 
+        <View onLayout={e => { activityLevelY.current = e.nativeEvent.layout.y; }} />
         <ProfileSection label="Activity Level" subtitle="Lifestyle & training frequency" theme={theme}>
           <Text style={[styles.fieldLabel, { color: theme.textMuted, marginTop: 0 }]}>LIFESTYLE</Text>
           <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', color: theme.textMuted, marginBottom: 8 }}>Your day-to-day movement, not counting workouts.</Text>
@@ -539,7 +595,7 @@ export default function ProfileScreen() {
             <TouchableOpacity
               key={key}
               style={[styles.activityBtn, profile.weightGoal === key && { backgroundColor: theme.accentBlueBg }]}
-              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateField('weightGoal', key); }}>
+              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateField('weightGoal', key); maybeShowFloorModal(key); }}>
               <View style={[styles.activityDot, { backgroundColor: theme.textDim }, profile.weightGoal === key && { backgroundColor: theme.accentBlue }]} />
               <Text style={[styles.activityLabel, { color: theme.textMuted }, profile.weightGoal === key && { color: theme.textPrimary }]}>{label}</Text>
             </TouchableOpacity>
@@ -668,6 +724,18 @@ export default function ProfileScreen() {
         </View>
       </Animated.View>
       </KeyboardAvoidingView>
+
+      {floorModal && (
+        <CalorieFloorModal
+          theme={theme}
+          modalCase={floorModal.modalCase}
+          target={floorModal.target}
+          onSlowerPace={floorSlowerPace}
+          onAdjustActivity={floorAdjustActivity}
+          onSetMaintenance={floorSetMaintenance}
+          onContinue={floorContinue}
+        />
+      )}
 
     </LinearGradient>
   );

@@ -98,7 +98,7 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
           disabled={!onUnitPress}
           hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}>
           <Text style={headerCell}>{weightUnitHeader(unit)}</Text>
-          {onUnitPress ? <Ionicons name="chevron-down" size={9} color={t.textMuted} style={{ marginTop: 1 }} /> : null}
+          {onUnitPress ? <Ionicons name="swap-horizontal" size={11} color={t.textMuted} /> : null}
         </TouchableOpacity>
         <Text style={[headerCell, { flex: COL.input }]}>Reps</Text>
         <View style={{ width: CHECK_W }} />

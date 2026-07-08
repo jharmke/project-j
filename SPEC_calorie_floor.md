@@ -148,8 +148,9 @@ identical in all modes. There is no Slice 4.
   (loss only, Justin's call). New floor: lose_0_25 is the gentlest (not a pace lever), lose_0_5 is now
   adjustable. Updated GOAL_DEFICITS in calorieTarget/profile/index/goalHit/settings, GOAL_LABELS +
   slower-pace jump list in profile, PACE_LEVER/LOSS sets in calorieFloor (+tests), PACE_LABELS in
-  smartTips. Onboarding your-style left on its curated pill set. NOTE: this surfaced that GOAL_DEFICITS
-  is DUPLICATED across 6 files -- flagged a centralization cleanup (see roadmap Infrastructure).
+  smartTips, and onboarding your-style (PACE_PILLS "Moderate"/"Very Gradual" + its deficit/label maps).
+  Profile's Weekly Pace is now a wrapping PILL GRID (was a 9-row column). NOTE: GOAL_DEFICITS is
+  DUPLICATED across 6 files (all now consistent) -- centralization cleanup flagged (roadmap Infrastructure).
 - Activity nudge near the Activity Level control (small copy, only when target <= floor AND activity
   sedentary/unset). May be redundant with Case 1/3's modal advice - decide when building.
 - ONBOARDING activity-level wording: the field should clearly mean "what you do NOW," not aspirational

@@ -593,17 +593,32 @@ export default function ProfileScreen() {
           </View>
 
           <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, marginTop: 14, marginBottom: 10 }} />
-          <Text style={[styles.fieldLabel, { color: theme.textMuted, marginTop: 0, marginBottom: 6 }]}>Weekly Pace</Text>
+          <Text style={[styles.fieldLabel, { color: theme.textMuted, marginTop: 0, marginBottom: 8 }]}>Weekly Pace (lb / week)</Text>
 
-          {Object.entries(GOAL_LABELS).map(([key, label]) => (
-            <TouchableOpacity
-              key={key}
-              style={[styles.activityBtn, profile.weightGoal === key && { backgroundColor: theme.accentBlueBg }]}
-              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateField('weightGoal', key); maybeShowFloorModal(key); }}>
-              <View style={[styles.activityDot, { backgroundColor: theme.textDim }, profile.weightGoal === key && { backgroundColor: theme.accentBlue }]} />
-              <Text style={[styles.activityLabel, { color: theme.textMuted }, profile.weightGoal === key && { color: theme.textPrimary }]}>{label}</Text>
-            </TouchableOpacity>
-          ))}
+          {/* Wrapping pill grid -- keeps 9 options compact instead of a long column. */}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {Object.entries(GOAL_LABELS).map(([key, label]) => {
+              const selected = profile.weightGoal === key;
+              const short = label.replace(' lb / week', '').replace('Maintain weight', 'Maintain');
+              return (
+                <TouchableOpacity
+                  key={key}
+                  hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+                  onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateField('weightGoal', key); maybeShowFloorModal(key); }}
+                  style={{
+                    paddingHorizontal: 14, paddingVertical: 11, borderRadius: 20, borderWidth: 1,
+                    backgroundColor: selected ? theme.accentBlueBg : theme.bgInset,
+                    borderColor: selected ? theme.accentBlue : theme.borderCard,
+                  }}>
+                  <Text style={{
+                    fontSize: 13,
+                    fontFamily: selected ? 'DMSans_700Bold' : 'DMSans_600SemiBold',
+                    color: selected ? theme.accentBlue : theme.textSecondary,
+                  }}>{short}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
 
           {/* Low-target caution at the point of action (mirrors the Your Estimates card) so it's
               seen the moment an aggressive pace is picked, even if Estimates is collapsed. */}

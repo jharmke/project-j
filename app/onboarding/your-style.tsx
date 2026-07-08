@@ -20,7 +20,9 @@ const PACE_PILLS = [
   { key: 'lose_2',   label: '−2 lbs/wk',   name: 'Aggressive' },
   { key: 'lose_1_5', label: '−1.5 lbs/wk', name: 'Fast'       },
   { key: 'lose_1',   label: '−1 lb/wk',    name: 'Steady'     },
+  { key: 'lose_0_75',label: '−0.75 lbs/wk',name: 'Moderate'   },
   { key: 'lose_0_5', label: '−0.5 lbs/wk', name: 'Gradual'    },
+  { key: 'lose_0_25',label: '−0.25 lbs/wk',name: 'Very Gradual' },
   { key: 'maintain', label: 'Maintain',     name: 'Maintain'   },
   { key: 'gain_0_5', label: '+0.5 lbs/wk', name: 'Slow Build' },
   { key: 'gain_1',   label: '+1 lb/wk',    name: 'Build'      },
@@ -216,7 +218,7 @@ const AnimatedPath = Animated.createAnimatedComponent(Path);
 const theme = THEMES['light'];
 
 const GOAL_DEFICITS: Record<string, number> = {
-  lose_2: -1000, lose_1_5: -750, lose_1: -500, lose_0_5: -250,
+  lose_2: -1000, lose_1_5: -750, lose_1: -500, lose_0_75: -375, lose_0_5: -250, lose_0_25: -125,
   maintain: 0, gain_0_5: 250, gain_1: 500,
 };
 
@@ -224,7 +226,9 @@ const GOAL_LABELS: Record<string, string> = {
   lose_2:   'Lose 2 lbs / week',
   lose_1_5: 'Lose 1.5 lbs / week',
   lose_1:   'Lose 1 lb / week',
+  lose_0_75:'Lose 0.75 lbs / week',
   lose_0_5: 'Lose 0.5 lbs / week',
+  lose_0_25:'Lose 0.25 lbs / week',
   maintain: 'Maintain weight',
   gain_0_5: 'Gain 0.5 lbs / week',
   gain_1:   'Gain 1 lb / week',

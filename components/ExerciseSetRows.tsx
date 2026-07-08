@@ -5,8 +5,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
-import { useState } from 'react';
-import { Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import type { SetEntry } from '../workoutData';
 import { weightUnitHeader, formatHold, parseHoldInput } from '../workoutData';
 
@@ -63,6 +63,19 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
   const [holdEdit, setHoldEdit] = useState<{ i: number; raw: string } | null>(null);
   const holdDigitsFor = (sec: number | null | undefined) => (sec ? String(Math.floor(sec / 60) * 100 + (sec % 60)) : '');
   const isTime = trackingType === 'time';
+
+  // Blinking cursor for the focused time box. The real caret is hidden (the box you SEE is a formatted
+  // clock, the box you TYPE into is a transparent raw-digit input), so we draw our own blink after the
+  // digits to show the box is live. Native-driver opacity loop, cheap enough to just always run.
+  const caretBlink = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(caretBlink, { toValue: 0, duration: 480, useNativeDriver: true }),
+      Animated.timing(caretBlink, { toValue: 1, duration: 480, useNativeDriver: true }),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, []);
 
   const numStr = (n: number | null) => (n != null ? String(n) : '');
 
@@ -194,11 +207,17 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
                 // Display (plain Text) + invisible input on top: the box you SEE is never the box you
                 // TYPE into, so the formatted clock can't flicker as it reformats each keystroke.
                 <View style={[inputStyle(s.done), { justifyContent: 'center', alignItems: 'center' }, holdActive && { borderColor: t.accentBlue, backgroundColor: t.accentBlue + '1f' }]}>
-                  <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: holdSec != null ? t.textSecondary : t.textDim }} numberOfLines={1}>
-                    {holdSec != null ? formatHold(holdSec) : (pd != null ? formatHold(pd) : '—')}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: holdSec != null ? t.textSecondary : t.textDim }} numberOfLines={1}>
+                      {holdSec != null ? formatHold(holdSec) : (pd != null ? formatHold(pd) : '—')}
+                    </Text>
+                    {holdActive ? <Animated.View style={{ opacity: caretBlink, width: 2, height: 17, borderRadius: 1, backgroundColor: t.accentBlue, marginLeft: 2 }} /> : null}
+                  </View>
                   <TextInput
                     value={holdActive ? holdEdit.raw : holdDigitsFor(s.durationSec)}
+                    // Pin the caret to the end so a digit always enters on the RIGHT and shifts the rest
+                    // left (clock fill), no matter where in the box the user tapped.
+                    selection={holdActive ? { start: holdEdit.raw.length, end: holdEdit.raw.length } : undefined}
                     onFocus={() => setHoldEdit({ i, raw: holdDigitsFor(s.durationSec) })}
                     onChangeText={txt => { const d = txt.replace(/\D/g, '').slice(-4); setHoldEdit({ i, raw: d }); edit(i, { durationSec: d === '' ? null : parseHoldInput(d) }); }}
                     onEndEditing={() => { setHoldEdit(prev => (prev && prev.i === i ? null : prev)); onPersist(sets); }}

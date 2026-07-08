@@ -138,6 +138,15 @@ const restEndRef = useRef(0);
 const restIntervalRef = useRef<any>(null);
 const restNotifIdRef = useRef<string | null>(null);
 const restBuzzedRef = useRef(false);
+// Hold timer (sibling of the rest timer): live count-down from a target / count-up from empty for a
+// TIME set. On completion it logs durationSec + checks the set, then hands off to the rest timer.
+const [holdTimer, setHoldTimer] = useState<{ exId: string; exName: string; setIndex: number; mode: 'down' | 'up'; secondsLeft: number; elapsed: number } | null>(null);
+const [holdComplete, setHoldComplete] = useState<{ exId: string; setIndex: number; seconds: number; ex: any } | null>(null);
+const holdStartRef = useRef(0);
+const holdTargetRef = useRef(0); // seconds; 0 = count up
+const holdIntervalRef = useRef<any>(null);
+const holdBuzzedRef = useRef(false);
+const holdInfoRef = useRef<{ exId: string; setIndex: number; ex: any } | null>(null);
 // All-time PRs per lift (keyed by normalized name). Banked the moment a qualifying set is checked.
 const [prs, setPrs] = useState<Record<string, PRRecord>>({});
 // PRs actually HIT per day: prHitsByDay[dateKey][normalizedLiftName] = hit. Recorded the instant a
@@ -1140,6 +1149,70 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
     startRest(rest, ex.name);
   };
 
+  // ── Hold timer (TIME sets) ───────────────────────────────────────────────────
+  const clearHold = () => { if (holdIntervalRef.current) { clearInterval(holdIntervalRef.current); holdIntervalRef.current = null; } };
+  // finishHold hands the held seconds to the completion effect (which has fresh state to log the set).
+  const finishHold = (seconds: number) => {
+    clearHold();
+    const info = holdInfoRef.current;
+    setHoldTimer(null);
+    if (info) setHoldComplete({ exId: info.exId, setIndex: info.setIndex, seconds: Math.max(1, Math.round(seconds)), ex: info.ex });
+  };
+  // Start a hold for one set. targetSec > 0 -> count DOWN from it (buzz + auto-log at zero); else count UP.
+  const startHold = (ex: any, setIndex: number, targetSec: number | null) => {
+    clearHold();
+    clearRest(); setRestTimer(null); // hold and rest never share the pill slot
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    holdBuzzedRef.current = false;
+    holdStartRef.current = Date.now();
+    holdTargetRef.current = targetSec && targetSec > 0 ? targetSec : 0;
+    holdInfoRef.current = { exId: ex.id, setIndex, ex };
+    const down = holdTargetRef.current > 0;
+    setHoldTimer({ exId: ex.id, exName: ex.name || 'Hold', setIndex, mode: down ? 'down' : 'up', secondsLeft: holdTargetRef.current, elapsed: 0 });
+    holdIntervalRef.current = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - holdStartRef.current) / 1000);
+      if (holdTargetRef.current > 0) {
+        const left = holdTargetRef.current - elapsed;
+        if (left > 0) { setHoldTimer(prev => (prev ? { ...prev, secondsLeft: left, elapsed } : prev)); }
+        else {
+          if (!holdBuzzedRef.current) {
+            holdBuzzedRef.current = true;
+            triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+            setTimeout(() => triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy), 140);
+            setTimeout(() => triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy), 280);
+          }
+          finishHold(holdTargetRef.current); // auto-log the full target
+        }
+      } else {
+        setHoldTimer(prev => (prev ? { ...prev, elapsed } : prev));
+      }
+    }, 250);
+  };
+  const addHoldTime = (delta: number) => { // +15s on a count-down target
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    holdTargetRef.current = Math.max(1, holdTargetRef.current + delta);
+    holdBuzzedRef.current = false;
+    const elapsed = Math.floor((Date.now() - holdStartRef.current) / 1000);
+    setHoldTimer(prev => (prev ? { ...prev, secondsLeft: Math.max(1, holdTargetRef.current - elapsed) } : prev));
+  };
+  const stopHold = () => { finishHold(Math.floor((Date.now() - holdStartRef.current) / 1000)); }; // log the time actually held
+  const cancelHold = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); clearHold(); setHoldTimer(null); holdInfoRef.current = null; };
+  useEffect(() => () => clearHold(), []);
+
+  // Apply a completed hold with FRESH state (escapes the interval's stale closure): log the held seconds
+  // onto that set, mark it done, then hand off to the rest timer. Reads current sets (persisted on tap).
+  useEffect(() => {
+    if (!holdComplete) return;
+    const { exId, setIndex, seconds, ex } = holdComplete;
+    const stored = setLogs[activeDay]?.[exId];
+    const base: SetEntry[] = (stored && stored.length) ? stored : getSeededSets(ex);
+    const updated = base.map((s, i) => i === setIndex ? { ...s, durationSec: seconds, done: true, doneAt: Date.now() } : s);
+    saveSetsForExercise(exId, updated);
+    setSetRowsVersion(v => ({ ...v, [exId]: (v[exId] || 0) + 1 }));
+    handleSetChecked(ex);
+    setHoldComplete(null);
+  }, [holdComplete]);
+
   // ── View Summary recap (volume / sets / per-lift breakdown) ──
   // PRs are NOT computed here anymore: they bank + roll back live as each set changes (see the PR
   // engine in utils/liftPR.ts). This just builds the recap and reads the recorded day-hits for the trophy.
@@ -1885,6 +1958,8 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                   onUnitPress={() => setExerciseUnit(ex.id, (ex.weightUnit === 'kg' ? 'lb' : 'kg'))}
                   trackingType={ex.trackingType}
                   onTrackingTypePress={() => setExerciseTrackingType(ex.id, (ex.trackingType === 'time' ? 'reps' : 'time'))}
+                  onStartHold={(i, target) => startHold(ex, i, target)}
+                  activeHoldIndex={holdTimer?.exId === ex.id ? holdTimer.setIndex : null}
                   theme={theme}
                 />
               </View>
@@ -2436,6 +2511,45 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
           </TouchableOpacity>
           <TouchableOpacity onPress={skipRest} style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8 }} hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
             <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.bgPrimary }}>Skip</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Hold timer pill (TIME sets) -- sibling of the rest pill, green. Counts down from a target or up
+          from empty; Done logs the held time + checks the set; X discards. */}
+      {holdTimer && (
+        <View style={{ position: 'absolute', left: 12, right: 12, bottom: 64 + insets.bottom + 10, zIndex: 50,
+          backgroundColor: theme.bgSheet, borderRadius: 14, borderWidth: 1, borderColor: theme.accentGreenBorder,
+          flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 14, gap: 10,
+          shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 }}>
+          {(() => {
+            const down = holdTimer.mode === 'down';
+            const secs = Math.max(0, down ? holdTimer.secondsLeft : holdTimer.elapsed);
+            const num = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+            return (
+              <>
+                <Ionicons name="stopwatch-outline" size={20} color={theme.accentGreen} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.textPrimary }}>
+                    {num}
+                  </Text>
+                  <Text style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted }} numberOfLines={1}>
+                    Hold · {holdTimer.exName} · Set {holdTimer.setIndex + 1}
+                  </Text>
+                </View>
+              </>
+            );
+          })()}
+          {holdTimer.mode === 'down' && (
+            <TouchableOpacity onPress={() => addHoldTime(15)} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 7 }} hitSlop={{ top: 6, bottom: 6, left: 2, right: 2 }}>
+              <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>+15s</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={cancelHold} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7 }} hitSlop={{ top: 6, bottom: 6, left: 2, right: 2 }}>
+            <Ionicons name="close" size={14} color={theme.textSecondary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={stopHold} style={{ backgroundColor: theme.accentGreen, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8 }} hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
+            <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.bgPrimary }}>Done</Text>
           </TouchableOpacity>
         </View>
       )}

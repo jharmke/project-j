@@ -22,6 +22,8 @@ interface Props {
   onUnitPress?: () => void; // tap the weight-column header to toggle lb/kg
   trackingType?: 'reps' | 'time'; // 'time' turns the reps column into a held-duration (M:SS) column
   onTrackingTypePress?: () => void; // tap the reps/time header to toggle reps <-> time
+  onStartHold?: (setIndex: number, targetSec: number | null) => void; // tap the play button to run the hold timer
+  activeHoldIndex?: number | null; // the set index whose hold timer is currently running (shows active state)
   theme: any;
 }
 
@@ -46,7 +48,7 @@ const COL = { set: 0.6, prev: 1.3, input: 1.5 };
 const CHECK_W = 34;
 const X_W = 22;
 
-export default function ExerciseSetRows({ initialSets, previousSets, defaultRest, onPersist, onSetChecked, unit, onUnitPress, trackingType, onTrackingTypePress, theme: t }: Props) {
+export default function ExerciseSetRows({ initialSets, previousSets, defaultRest, onPersist, onSetChecked, unit, onUnitPress, trackingType, onTrackingTypePress, onStartHold, activeHoldIndex, theme: t }: Props) {
   const [sets, setSets] = useState<SetEntry[]>(initialSets);
   const atMax = sets.length >= MAX_SETS;
   const isTime = trackingType === 'time';
@@ -154,16 +156,25 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
             </View>
             <View style={{ flex: COL.input, paddingHorizontal: 4 }}>
               {isTime ? (
-                <TextInput
-                  style={inputStyle(s.done)}
-                  value={s.durationSec != null ? formatHold(s.durationSec) : ''}
-                  onChangeText={txt => { const d = txt.replace(/\D/g, ''); edit(i, { durationSec: d === '' ? null : parseHoldInput(d) }); }}
-                  onEndEditing={() => onPersist(sets)}
-                  keyboardType="number-pad"
-                  placeholder={pd != null ? formatHold(pd) : '0:45'}
-                  placeholderTextColor={t.textDim}
-                  returnKeyType="done"
-                />
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                  {onStartHold ? (
+                    <TouchableOpacity
+                      onPress={() => { if (activeHoldIndex === i) return; onPersist(sets); onStartHold(i, s.durationSec ?? null); }}
+                      hitSlop={{ top: 8, bottom: 8, left: 4, right: 0 }}>
+                      <Ionicons name={activeHoldIndex === i ? 'radio-button-on' : 'play-circle'} size={22} color={activeHoldIndex === i ? t.accentGreen : t.accentBlue} />
+                    </TouchableOpacity>
+                  ) : null}
+                  <TextInput
+                    style={[inputStyle(s.done), { width: undefined, flex: 1 }]}
+                    value={s.durationSec != null ? formatHold(s.durationSec) : ''}
+                    onChangeText={txt => { const d = txt.replace(/\D/g, ''); edit(i, { durationSec: d === '' ? null : parseHoldInput(d) }); }}
+                    onEndEditing={() => onPersist(sets)}
+                    keyboardType="number-pad"
+                    placeholder={pd != null ? formatHold(pd) : '0:45'}
+                    placeholderTextColor={t.textDim}
+                    returnKeyType="done"
+                  />
+                </View>
               ) : (
                 <TextInput
                   style={inputStyle(s.done)}

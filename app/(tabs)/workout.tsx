@@ -48,10 +48,10 @@ const parseRestSeconds = (raw: any): number | null => {
   if (!s) return null;
   if (s.includes(':')) {
     const [m, sec] = s.split(':');
-    return ((parseInt(m) || 0) * 60 + (parseInt(sec) || 0)) || null;
+    return (parseInt(m) || 0) * 60 + (parseInt(sec) || 0); // "0:00" -> 0 (explicit no-rest), not null
   }
-  if (s.includes('m')) { const n = parseFloat(s); return n ? Math.round(n * 60) : null; }
-  return parseInt(s) || null;
+  if (s.includes('m')) { const n = parseFloat(s); return isNaN(n) ? null : Math.round(n * 60); }
+  const n = parseInt(s); return isNaN(n) ? null : n; // explicit "0" -> 0, unparseable -> null
 };
 const formatRest = (sec: number): string => (sec < 60 ? `${sec}s` : `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`);
 
@@ -133,7 +133,9 @@ const [exerciseDoneAt, setExerciseDoneAt] = useState<Record<string, Record<strin
 // samples (same source as HR Zones). Null while loading or when no HR data exists.
 const [sessionHR, setSessionHR] = useState<{ avgHr: number | null; maxHr: number | null }>({ avgHr: null, maxHr: null });
 // Rest timer (auto-starts on checking a set; dismissible; buzzes + notifies at zero, then counts up).
-const [restTimer, setRestTimer] = useState<{ secondsLeft: number; overtime: number; label: string } | null>(null);
+// countUp: an open-ended rest STOPWATCH (blank rest) that counts elapsed up from 0 -- no target, no
+// buzz, no notification. Distinct from a countdown that later goes into overtime.
+const [restTimer, setRestTimer] = useState<{ secondsLeft: number; overtime: number; label: string; countUp?: boolean } | null>(null);
 const restEndRef = useRef(0);
 const restIntervalRef = useRef<any>(null);
 const restNotifIdRef = useRef<string | null>(null);
@@ -1044,8 +1046,9 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
   };
 
   // Toggle a lift between REPS and TIME tracking (planks/holds). Additive: only the exercise's
-  // trackingType changes; logged set data is never rewritten. Time sets carry durationSec instead of reps,
-  // so they fall out of the weight/e1RM PR math on their own. Recompute + re-mount rows to relabel.
+  // trackingType changes. Reps and hold-duration are mutually exclusive per mode, so switching relabels
+  // this day's logged sets: null the metric that no longer applies (read-then-merge, never wipes the
+  // log) so a value typed in the old mode can't linger as a ghost. Recompute + re-mount rows to relabel.
   const setExerciseTrackingType = (exId: string, type: 'reps' | 'time') => {
     const base = programs[activeDay] || weeklyTemplate[activeDayName] || BLANK_DAY;
     const ex = (base.exercises || []).find(e => e.id === exId);
@@ -1055,9 +1058,17 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
     const newExercises = (base.exercises || []).map(e => e.id === exId ? { ...e, trackingType: type } : e);
     const newPrograms = { ...programs, [activeDay]: { ...base, exercises: newExercises } };
     setPrograms(newPrograms);
+    // Relabel today's logged sets to the new mode (time -> drop reps, reps -> drop hold duration).
+    let nextLogs = setLogs;
+    const daySets = setLogs[activeDay]?.[exId];
+    if (daySets && daySets.length) {
+      const cleaned = daySets.map(s => type === 'time' ? { ...s, reps: null } : { ...s, durationSec: null });
+      nextLogs = { ...setLogs, [activeDay]: { ...(setLogs[activeDay] || {}), [exId]: cleaned } };
+      setSetLogs(nextLogs);
+    }
     let nextPrs = prs, nextHits = prHitsByDay;
     if (!ex.isCardio) {
-      const r = recomputeLiftPR(ex.name, setLogs, makeDayResolver(newPrograms), prs, prHitsByDay, activeDay, Date.now());
+      const r = recomputeLiftPR(ex.name, nextLogs, makeDayResolver(newPrograms), prs, prHitsByDay, activeDay, Date.now());
       nextPrs = r.prs; nextHits = r.hits;
       setPrs(nextPrs); setPrHitsByDay(nextHits);
       if (activeDay === todayKey) {
@@ -1065,7 +1076,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
         else if (r.revoked) clearNotification(`pr_${activeDay}_${normalizeLiftName(ex.name)}`);
       }
     }
-    saveState(checks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate, activeProgramName, workoutNoteNames, setLogs, nextPrs, exerciseDoneAt, workoutTimers, nextHits);
+    saveState(checks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate, activeProgramName, workoutNoteNames, nextLogs, nextPrs, exerciseDoneAt, workoutTimers, nextHits);
     setSetRowsVersion(v => ({ ...v, [exId]: (v[exId] || 0) + 1 }));
     showToast('Tracking updated', type === 'time' ? 'Time (hold duration)' : 'Reps', 'success');
   };
@@ -1083,8 +1094,10 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
     const nextSets = current.map((s, i) => done
       ? { ...s, done: true, doneAt: stamp,
           weight: s.weight == null && prev?.[i] ? prev[i].weight : s.weight,
-          reps: !isTime && s.reps == null && prev?.[i] ? prev[i].reps : s.reps,
-          durationSec: isTime && s.durationSec == null && prev?.[i] ? prev[i].durationSec : s.durationSec }
+          // Store ONLY the metric this mode tracks so the other can't linger as a ghost (matches the
+          // per-set toggle in ExerciseSetRows). Time -> reps null; Reps -> durationSec null.
+          reps: isTime ? null : (s.reps == null && prev?.[i] ? prev[i].reps : s.reps),
+          durationSec: isTime ? (s.durationSec == null && prev?.[i] ? prev[i].durationSec : s.durationSec) : null }
       : { ...s, done: false, doneAt: undefined });
     saveSetsForExercise(ex.id, nextSets);
     setSetRowsVersion(v => ({ ...v, [ex.id]: (v[ex.id] || 0) + 1 }));
@@ -1129,6 +1142,18 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
       }
     }, 500);
   };
+  // Open-ended rest stopwatch: counts elapsed UP from 0 with no target. Used when rest is left blank
+  // so you can see how long you have actually rested without inventing a countdown to beat or dismiss.
+  const startRestStopwatch = (label: string) => {
+    clearRest();
+    restBuzzedRef.current = false;
+    restEndRef.current = Date.now(); // start time (count UP from here)
+    setRestTimer({ secondsLeft: 0, overtime: 0, label, countUp: true });
+    restIntervalRef.current = setInterval(() => {
+      const secs = Math.max(0, Math.round((Date.now() - restEndRef.current) / 1000));
+      setRestTimer(prev => (prev ? { ...prev, overtime: secs } : prev));
+    }, 500);
+  };
   const skipRest = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); clearRest(); setRestTimer(null); };
   const adjustRest = (delta: number) => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
@@ -1149,9 +1174,12 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
       if (members.length && members[members.length - 1].id !== ex.id) return;
     }
     // Always read the exercise's CURRENT rest (not the value frozen onto the set when it was
-    // created); default to 90s when none is set so a timer always shows.
-    const rest = parseRestSeconds(ex.rest) || 90;
-    startRest(rest, ex.name);
+    // created). Rule: explicit 0 = no timer at all (your escape hatch); blank = open count-up
+    // stopwatch (see how long you rested, no invented target); a real value = countdown.
+    const rest = parseRestSeconds(ex.rest);
+    if (rest === 0) return;
+    if (rest == null) startRestStopwatch(ex.name);
+    else startRest(rest, ex.name);
   };
 
   // ── Hold timer (TIME sets) ───────────────────────────────────────────────────
@@ -1225,7 +1253,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
     const dayLogs = setLogs[activeDay] || {};
     let totalVolume = 0, volumeLb = 0, volumeKg = 0, doneSets = 0, doneExercises = 0;
     // Per-lift breakdown so the recap lists each lift's sets (mirrors the per-cardio HR breakdown).
-    const liftItems: { name: string; volume: number; sets: { weight: number; reps: number }[]; unit?: 'lb' | 'kg' }[] = [];
+    const liftItems: { name: string; volume: number; sets: { weight: number; reps: number; durationSec?: number | null }[]; unit?: 'lb' | 'kg'; trackingType?: 'reps' | 'time' }[] = [];
     for (const ex of exercises) {
       if (ex.isCardio) continue;
       const sets = dayLogs[ex.id];
@@ -1964,7 +1992,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                   trackingType={ex.trackingType}
                   onTrackingTypePress={() => setExerciseTrackingType(ex.id, (ex.trackingType === 'time' ? 'reps' : 'time'))}
                   onStartHold={(i, target) => startHold(ex, i, target)}
-                  activeHoldIndex={holdTimer?.exId === ex.id ? holdTimer.setIndex : null}
+                  activeHoldIndex={holdTimer && holdTimer.exId === ex.id ? holdTimer.setIndex : null}
                   theme={theme}
                 />
               </View>
@@ -2491,12 +2519,13 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
           flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 14, gap: 10,
           shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 }}>
           {(() => {
-            const over = restTimer.overtime > 0;
-            const secs = over ? restTimer.overtime : restTimer.secondsLeft;
+            const countUp = !!restTimer.countUp;
+            const over = !countUp && restTimer.overtime > 0;
+            const secs = countUp ? restTimer.overtime : (over ? restTimer.overtime : restTimer.secondsLeft);
             const num = `${over ? '+' : ''}${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
             return (
               <>
-                <Ionicons name="timer-outline" size={20} color={over ? theme.accentRed : theme.accentBlue} />
+                <Ionicons name={countUp ? 'stopwatch-outline' : 'timer-outline'} size={20} color={over ? theme.accentRed : theme.accentBlue} />
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: over ? theme.accentRed : theme.textPrimary }}>
                     {num}
@@ -2508,14 +2537,19 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
               </>
             );
           })()}
-          <TouchableOpacity onPress={() => adjustRest(-15)} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 7 }} hitSlop={{ top: 6, bottom: 6, left: 2, right: 2 }}>
-            <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>−15s</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => adjustRest(15)} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 7 }} hitSlop={{ top: 6, bottom: 6, left: 2, right: 2 }}>
-            <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>+15s</Text>
-          </TouchableOpacity>
+          {/* +/-15 only make sense against a countdown target -- an open stopwatch has none. */}
+          {!restTimer.countUp && (
+            <>
+              <TouchableOpacity onPress={() => adjustRest(-15)} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 7 }} hitSlop={{ top: 6, bottom: 6, left: 2, right: 2 }}>
+                <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>−15s</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => adjustRest(15)} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 7 }} hitSlop={{ top: 6, bottom: 6, left: 2, right: 2 }}>
+                <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>+15s</Text>
+              </TouchableOpacity>
+            </>
+          )}
           <TouchableOpacity onPress={skipRest} style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8 }} hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
-            <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.bgPrimary }}>Skip</Text>
+            <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.bgPrimary }}>{restTimer.countUp ? 'Done' : 'Skip'}</Text>
           </TouchableOpacity>
         </View>
       )}

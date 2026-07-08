@@ -76,8 +76,11 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
         done: true,
         doneAt: Date.now(),
         weight: s.weight == null && p ? p.weight : s.weight,
-        reps: !isTime && s.reps == null && p ? p.reps : s.reps,
-        durationSec: isTime && s.durationSec == null && p ? p.durationSec : s.durationSec,
+        // Reps and duration are mutually exclusive per the column mode. Store ONLY the metric this
+        // set is tracked by, so a value typed in the other mode (e.g. a rep typed before switching
+        // to Time) can't linger as a ghost. What shows is exactly what saves.
+        reps: isTime ? null : (s.reps == null && p ? p.reps : s.reps),
+        durationSec: isTime ? (s.durationSec == null && p ? p.durationSec : s.durationSec) : null,
       };
     }));
     if (turningOn) onSetChecked?.(sets[i].rest ?? defaultRest);

@@ -4,6 +4,7 @@
 // snapshot. Otto then does the fuzzy lift-name matching itself ("bench" -> "Bench Press", typos and all).
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { PRRecord, SetEntry, DayProgram } from '../workoutData';
+import { weightUnitLabel } from '../workoutData';
 import { liftSessionHistory, type ResolveDay } from './liftPR';
 
 const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -51,8 +52,8 @@ export const buildPRContextIfRelevant = async (message: string): Promise<string 
 
   const lines = backed.map(p => {
     const parts: string[] = [];
-    if (p.bestWeight) parts.push(`heaviest set ${p.bestWeight.value} lb x ${p.bestWeight.reps}`);
-    if (p.bestE1RM) parts.push(`estimated 1-rep max ${p.bestE1RM.value} lb`);
+    if (p.bestWeight) parts.push(`heaviest set ${p.bestWeight.value} ${weightUnitLabel(p.bestWeight.unit)} x ${p.bestWeight.reps}`);
+    if (p.bestE1RM) parts.push(`estimated 1-rep max ${p.bestE1RM.value} ${weightUnitLabel(p.bestE1RM.unit)}`);
     const dateKey = p.bestWeight?.dateKey || p.bestE1RM?.dateKey || p.updatedAt;
     return `- ${p.name}: ${parts.join('; ')}${dateKey ? ` (set ${fmtDate(dateKey)})` : ''}`;
   });
@@ -87,7 +88,7 @@ export const buildPRContextIfRelevant = async (message: string): Promise<string 
     if (!named) continue;
     const sessions = liftSessionHistory(p.name, setLogs, resolveDay).slice(0, 8);
     if (!sessions.length) continue;
-    historyLines.push(`- ${p.name} (newest first): ${sessions.map(h => `${fmtDate(h.dateKey)} ${h.topWeight} lb x ${h.topReps}`).join(', ')}`);
+    historyLines.push(`- ${p.name} (newest first): ${sessions.map(h => `${fmtDate(h.dateKey)} ${h.topWeight} ${weightUnitLabel(h.unit)} x ${h.topReps}`).join(', ')}`);
   }
 
   const out: string[] = [

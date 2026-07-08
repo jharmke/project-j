@@ -9,6 +9,9 @@ export interface Exercise {
   isCardio?: boolean;
   // Consecutive lift exercises sharing this id render as one superset block. Additive/optional.
   supersetGroup?: string;
+  // Per-exercise weight unit for lifting. Missing = 'lb' (every pre-existing exercise reads as lb, so
+  // nothing changes until a user picks kg). Additive; the logged weight number is stored as-entered.
+  weightUnit?: 'lb' | 'kg';
   duration?: string;
   distance?: string;
   speed?: string;
@@ -17,6 +20,10 @@ export interface Exercise {
   hr?: string;
   calories?: string;
 }
+
+// Display labels for a lifting weight unit. Missing unit = lb.
+export const weightUnitLabel = (u?: 'lb' | 'kg') => (u === 'kg' ? 'kg' : 'lb');   // inline: "140 lb"
+export const weightUnitHeader = (u?: 'lb' | 'kg') => (u === 'kg' ? 'Kgs' : 'Lbs'); // column header
 
 // One logged set of a lift: actual weight x reps, the per-set rest target, and the done check.
 // Stored in pj_workout_state.setLogs[dateKey][exerciseId]. weight/reps null = not entered yet.

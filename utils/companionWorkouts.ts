@@ -9,6 +9,7 @@
 // last chest day are always intact, and only the tail of the month is ever dropped.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { SetEntry, DayProgram, Exercise } from '../workoutData';
+import { weightUnitLabel } from '../workoutData';
 
 const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const WEEKDAY_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -115,7 +116,7 @@ export const buildWorkoutContextIfRelevant = async (message: string): Promise<st
           const w = s.weight || 0, r = s.reps || 0;
           if (!top || w > (top.weight || 0) || (w === (top.weight || 0) && r > (top.reps || 0))) top = s;
         }
-        const topStr = top ? ((top.weight || 0) > 0 ? `${top.weight} lb x ${top.reps}` : `${top.reps} reps`) : '';
+        const topStr = top ? ((top.weight || 0) > 0 ? `${top.weight} ${weightUnitLabel(ex.weightUnit)} x ${top.reps}` : `${top.reps} reps`) : '';
         lines.push(`  - ${ex.name || 'Lift'}: ${done.length} set${done.length === 1 ? '' : 's'}${topStr ? `, top ${topStr}` : ''}`);
       }
     }

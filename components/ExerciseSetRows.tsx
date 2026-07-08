@@ -8,6 +8,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { useState } from 'react';
 import { Text, TextInput, TouchableOpacity, View } from 'react-native';
 import type { SetEntry } from '../workoutData';
+import { weightUnitHeader } from '../workoutData';
 
 const MAX_SETS = 10;
 
@@ -17,6 +18,7 @@ interface Props {
   defaultRest: number | null;
   onPersist: (sets: SetEntry[]) => void;
   onSetChecked?: (restSeconds: number | null) => void; // fired when a set is checked ON (starts rest)
+  unit?: 'lb' | 'kg'; // weight unit for this exercise (missing = lb)
   theme: any;
 }
 
@@ -34,7 +36,7 @@ const COL = { set: 0.6, prev: 1.3, input: 1.5 };
 const CHECK_W = 34;
 const X_W = 22;
 
-export default function ExerciseSetRows({ initialSets, previousSets, defaultRest, onPersist, onSetChecked, theme: t }: Props) {
+export default function ExerciseSetRows({ initialSets, previousSets, defaultRest, onPersist, onSetChecked, unit, theme: t }: Props) {
   const [sets, setSets] = useState<SetEntry[]>(initialSets);
   const atMax = sets.length >= MAX_SETS;
 
@@ -89,7 +91,7 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
         <Text style={[headerCell, { flex: COL.set }]}>Set</Text>
         <Text style={[headerCell, { flex: COL.prev }]}>Prev</Text>
-        <Text style={[headerCell, { flex: COL.input }]}>Lbs</Text>
+        <Text style={[headerCell, { flex: COL.input }]}>{weightUnitHeader(unit)}</Text>
         <Text style={[headerCell, { flex: COL.input }]}>Reps</Text>
         <View style={{ width: CHECK_W }} />
         <View style={{ width: X_W }} />

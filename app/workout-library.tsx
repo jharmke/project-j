@@ -14,7 +14,7 @@ import { ToastRenderer, useToast } from '../components/Toast';
 import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
 import { checkWorkoutAchievements, getCelebTier } from '../achievementData';
-import { PRESET_PROGRAMS, PRESET_ROUTINES, PresetProgram, DayProgram, Exercise, Routine, TAG_COLOR_PALETTE, WorkoutTag, DEFAULT_TAGS, PRRecord, SetEntry } from '../workoutData';
+import { PRESET_PROGRAMS, PRESET_ROUTINES, PresetProgram, DayProgram, Exercise, Routine, TAG_COLOR_PALETTE, WorkoutTag, DEFAULT_TAGS, PRRecord, SetEntry, weightUnitLabel } from '../workoutData';
 import { normalizeLiftName, liftSessionHistory } from '../utils/liftPR';
 import { useTheme } from '../theme';
 import MuscleMap from '../components/MuscleMap';
@@ -3111,12 +3111,12 @@ export default function WorkoutLibraryScreen() {
                       <View style={{ flexDirection: 'row', gap: 8, marginBottom: history.length ? 14 : 0 }}>
                         <View style={{ flex: 1, backgroundColor: theme.accentAmber + '14', borderWidth: 1, borderColor: theme.accentAmber + '33', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 }}>
                           <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 4 }}>Heaviest set</Text>
-                          <Text style={{ color: theme.textSecondary, fontSize: 15, fontFamily: 'DMSans_700Bold' }}>{pr.bestWeight ? `${pr.bestWeight.value} lb × ${pr.bestWeight.reps}` : '—'}</Text>
+                          <Text style={{ color: theme.textSecondary, fontSize: 15, fontFamily: 'DMSans_700Bold' }}>{pr.bestWeight ? `${pr.bestWeight.value} ${weightUnitLabel(pr.bestWeight.unit)} × ${pr.bestWeight.reps}` : '—'}</Text>
                           {pr.bestWeight ? <Text style={{ color: theme.textDim, fontSize: 10, fontFamily: 'DMSans_500Medium', marginTop: 2 }}>{fmtPRDate(pr.bestWeight.dateKey)}</Text> : null}
                         </View>
                         <View style={{ flex: 1, backgroundColor: theme.accentAmber + '14', borderWidth: 1, borderColor: theme.accentAmber + '33', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 }}>
                           <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 4 }}>Est. 1-rep max</Text>
-                          <Text style={{ color: theme.textSecondary, fontSize: 15, fontFamily: 'DMSans_700Bold' }}>{pr.bestE1RM ? `${pr.bestE1RM.value} lb` : '—'}</Text>
+                          <Text style={{ color: theme.textSecondary, fontSize: 15, fontFamily: 'DMSans_700Bold' }}>{pr.bestE1RM ? `${pr.bestE1RM.value} ${weightUnitLabel(pr.bestE1RM.unit)}` : '—'}</Text>
                           {pr.bestE1RM ? <Text style={{ color: theme.textDim, fontSize: 10, fontFamily: 'DMSans_500Medium', marginTop: 2 }}>{fmtPRDate(pr.bestE1RM.dateKey)}</Text> : null}
                         </View>
                       </View>
@@ -3133,7 +3133,7 @@ export default function WorkoutLibraryScreen() {
                         {history.slice(0, 12).map((h, i) => (
                           <View key={h.dateKey} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 7, borderTopWidth: i === 0 ? 0 : 0.5, borderTopColor: theme.borderCard }}>
                             <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily: 'DMSans_500Medium' }}>{fmtPRDate(h.dateKey)}</Text>
-                            <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>{h.topWeight} lb × {h.topReps}</Text>
+                            <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>{h.topWeight} {weightUnitLabel(h.unit)} × {h.topReps}</Text>
                           </View>
                         ))}
                         {history.length > 12 && <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', marginTop: 8, textAlign: 'center' }}>Showing your last 12 sessions</Text>}
@@ -3278,11 +3278,11 @@ export default function WorkoutLibraryScreen() {
                         <View style={{ flexDirection: 'row', gap: 8 }}>
                           <View style={{ flex: 1, backgroundColor: theme.bgSheet, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, paddingVertical: 8, paddingHorizontal: 10 }}>
                             <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 3 }}>Heaviest set</Text>
-                            <Text style={{ color: theme.textSecondary, fontSize: 14, fontFamily: 'DMSans_700Bold' }}>{p.bestWeight ? `${p.bestWeight.value} lb × ${p.bestWeight.reps}` : '—'}</Text>
+                            <Text style={{ color: theme.textSecondary, fontSize: 14, fontFamily: 'DMSans_700Bold' }}>{p.bestWeight ? `${p.bestWeight.value} ${weightUnitLabel(p.bestWeight.unit)} × ${p.bestWeight.reps}` : '—'}</Text>
                           </View>
                           <View style={{ flex: 1, backgroundColor: theme.bgSheet, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, paddingVertical: 8, paddingHorizontal: 10 }}>
                             <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 3 }}>Est. 1-rep max</Text>
-                            <Text style={{ color: theme.textSecondary, fontSize: 14, fontFamily: 'DMSans_700Bold' }}>{p.bestE1RM ? `${p.bestE1RM.value} lb` : '—'}</Text>
+                            <Text style={{ color: theme.textSecondary, fontSize: 14, fontFamily: 'DMSans_700Bold' }}>{p.bestE1RM ? `${p.bestE1RM.value} ${weightUnitLabel(p.bestE1RM.unit)}` : '—'}</Text>
                           </View>
                         </View>
                       </TouchableOpacity>

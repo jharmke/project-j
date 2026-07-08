@@ -16,6 +16,7 @@ import { useTheme } from '../theme';
 import { useToast } from '../components/Toast';
 import { fetchTrendData, TrendData, EMPTY_TREND_DATA } from '../utils/statsData';
 import { liftSessionHistory } from '../utils/liftPR';
+import { weightUnitLabel } from '../workoutData';
 import { loadMealSlots, getMealDisplayName } from '../utils/mealSlots';
 import { loadMeasurements, loadBodyMeasureSettings, toDisplay, unitLabel, MEASURE_FIELDS, type MeasurementUnit } from '../utils/bodyMeasurements';
 import { ACHIEVEMENTS, loadAchievements, type AchievementsStore } from '../achievementData';
@@ -548,8 +549,8 @@ function Records({ workoutState, theme }: { workoutState: any; theme: any }) {
             {r.date ? <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted, marginTop: 1 }}>{FULL_DATE(r.date)}</Text> : null}
           </View>
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{r.bw ? `${r.bw.value} lb × ${r.bw.reps}` : '—'}</Text>
-            {r.e1 ? <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>Est. 1RM {r.e1.value} lb</Text> : null}
+            <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{r.bw ? `${r.bw.value} ${weightUnitLabel(r.bw.unit)} × ${r.bw.reps}` : '—'}</Text>
+            {r.e1 ? <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>Est. 1RM {r.e1.value} {weightUnitLabel(r.e1.unit)}</Text> : null}
           </View>
         </View>
       ))}
@@ -582,15 +583,16 @@ function WorkoutHistory({ workoutState, startKey, endKey, theme }: { workoutStat
       const dc = checks[k] || {}; const dl = setLogs[k] || {};
       const done = exs.filter((e: any) => dc[e.id]);
       if (!done.length) continue;
-      let volume = 0;
+      let volLb = 0, volKg = 0;
       const items = done.map((e: any) => {
         const sets = Array.isArray(dl[e.id]) ? dl[e.id] : [];
         const doneSets = sets.filter((s: any) => s.done);
+        const u: 'lb' | 'kg' = e.weightUnit === 'kg' ? 'kg' : 'lb';
         let top: { w: number; r: number } | null = null;
-        for (const s of doneSets) { const w = s.weight || 0, r = s.reps || 0; volume += w * r; if (w > 0 && r > 0 && (!top || w > top.w)) top = { w, r }; }
-        return { name: String(e.name || 'Exercise'), isCardio: !!e.isCardio, setCount: doneSets.length, top, duration: e.duration, distance: e.distance, calories: e.calories };
+        for (const s of doneSets) { const w = s.weight || 0, r = s.reps || 0; if (u === 'kg') volKg += w * r; else volLb += w * r; if (w > 0 && r > 0 && (!top || w > top.w)) top = { w, r }; }
+        return { name: String(e.name || 'Exercise'), isCardio: !!e.isCardio, setCount: doneSets.length, top, unit: u, duration: e.duration, distance: e.distance, calories: e.calories };
       });
-      out.push({ date: k, focus: String(prog.focus || 'Workout'), volume: Math.round(volume), prCount: Object.keys(prHits[k] || {}).length, items });
+      out.push({ date: k, focus: String(prog.focus || 'Workout'), volLb: Math.round(volLb), volKg: Math.round(volKg), prCount: Object.keys(prHits[k] || {}).length, items });
     }
     return out.sort((a, b) => b.date.localeCompare(a.date));
   }, [workoutState, startKey, endKey]);
@@ -618,7 +620,7 @@ function WorkoutHistory({ workoutState, startKey, endKey, theme }: { workoutStat
                   <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_700Bold', color: theme.accentAmber }}>{d.prCount}</Text>
                 </View>
               )}
-              {d.volume > 0 && <Text style={{ fontSize: 11.5, fontFamily: 'DMSans_700Bold', color: theme.accentBlue }}>{d.volume.toLocaleString('en-US')} lb</Text>}
+              {(d.volLb > 0 || d.volKg > 0) && <Text style={{ fontSize: 11.5, fontFamily: 'DMSans_700Bold', color: theme.accentBlue }}>{[d.volLb > 0 ? `${d.volLb.toLocaleString('en-US')} lb` : null, d.volKg > 0 ? `${d.volKg.toLocaleString('en-US')} kg` : null].filter(Boolean).join(' · ')}</Text>}
             </TouchableOpacity>
             {isOpen && (
               <View style={{ gap: 5, paddingHorizontal: 12, paddingBottom: 12 }}>
@@ -626,7 +628,7 @@ function WorkoutHistory({ workoutState, startKey, endKey, theme }: { workoutStat
                   <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
                     <Text numberOfLines={1} style={{ flex: 1, fontSize: 12.5, fontFamily: 'DMSans_400Regular', color: theme.textSecondary }}>{it.name}</Text>
                     <Text style={{ fontSize: 11.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>
-                      {it.isCardio ? cardioDetail(it) : it.top ? `${it.top.w} × ${it.top.r}${it.setCount > 1 ? ` · ${it.setCount} sets` : ''}` : `${it.setCount || 1} set${(it.setCount || 1) === 1 ? '' : 's'}`}
+                      {it.isCardio ? cardioDetail(it) : it.top ? `${it.top.w} ${weightUnitLabel(it.unit)} × ${it.top.r}${it.setCount > 1 ? ` · ${it.setCount} sets` : ''}` : `${it.setCount || 1} set${(it.setCount || 1) === 1 ? '' : 's'}`}
                     </Text>
                   </View>
                 ))}

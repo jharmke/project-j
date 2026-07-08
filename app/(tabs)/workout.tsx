@@ -23,7 +23,7 @@ import * as Notifications from 'expo-notifications';
 import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import { useHealthKit } from '../../useHealthKit';
-import { BLANK_DAY, DEFAULT_TAGS, DayProgram, Exercise, PRRecord, Routine, SetEntry, TAG_COLOR_PALETTE, WorkoutTag, PRESET_ROUTINES } from '../../workoutData';
+import { BLANK_DAY, DEFAULT_TAGS, DayProgram, Exercise, PRRecord, Routine, SetEntry, TAG_COLOR_PALETTE, WorkoutTag, PRESET_ROUTINES, weightUnitLabel } from '../../workoutData';
 import MuscleMap from '../../components/MuscleMap';
 import ExerciseSetRows from '../../components/ExerciseSetRows';
 import HRZoneModal, { HRZoneData } from '../../components/HRZoneModal';
@@ -145,10 +145,10 @@ const [prs, setPrs] = useState<Record<string, PRRecord>>({});
 // notification survive even if the user never opens the summary. Additive on pj_workout_state.
 const [prHitsByDay, setPrHitsByDay] = useState<Record<string, Record<string, any>>>({});
 const [finishSummary, setFinishSummary] = useState<{
-  totalVolume: number; doneSets: number; doneExercises: number; prHits: any[]; cardioPrHits: CardioPRHit[]; mindful: boolean;
+  totalVolume: number; volumeLb?: number; volumeKg?: number; doneSets: number; doneExercises: number; prHits: any[]; cardioPrHits: CardioPRHit[]; mindful: boolean;
   hasLifts: boolean; liftDurationSec: number | null;
   liftCalories: number | null; liftAvgHr: number | null; liftMaxHr: number | null;
-  liftItems: { name: string; volume: number; sets: { weight: number; reps: number }[] }[];
+  liftItems: { name: string; volume: number; sets: { weight: number; reps: number }[]; unit?: 'lb' | 'kg' }[];
   cardio: { count: number; distanceMi: number; durationSec: number; calories: number; avgHr: number | null; maxHr: number | null; items?: { name: string; durationSec: number; distanceMi: number; calories: number; avgHr: number | null; maxHr: number | null }[] } | null;
   totalCalories: number;
 } | null>(null);
@@ -942,8 +942,16 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
   const firePRNotification = async (hit: any) => {
     try {
       const parts: string[] = [];
-      if (hit.weightPR) parts.push(hit.prevWeightVal != null ? `${hit.weightVal} lb × ${hit.weightReps}, up from ${hit.prevWeightVal}` : `${hit.weightVal} lb × ${hit.weightReps}`);
-      if (hit.e1rmPR) parts.push(hit.prevE1rmVal != null ? `Est. 1-rep max ${hit.e1rmVal} lb, up from ${hit.prevE1rmVal}` : `Est. 1-rep max ${hit.e1rmVal} lb`);
+      // "up from" shows the prior best's own unit only when it differs from today's (a mid-lift unit switch).
+      const u = weightUnitLabel(hit.unit);
+      if (hit.weightPR) {
+        const from = hit.prevWeightVal != null ? `, up from ${hit.prevWeightVal}${hit.prevWeightUnit && hit.prevWeightUnit !== hit.unit ? ' ' + weightUnitLabel(hit.prevWeightUnit) : ''}` : '';
+        parts.push(`${hit.weightVal} ${u} × ${hit.weightReps}${from}`);
+      }
+      if (hit.e1rmPR) {
+        const from = hit.prevE1rmVal != null ? `, up from ${hit.prevE1rmVal}${hit.prevE1rmUnit && hit.prevE1rmUnit !== hit.unit ? ' ' + weightUnitLabel(hit.prevE1rmUnit) : ''}` : '';
+        parts.push(`Est. 1-rep max ${hit.e1rmVal} ${u}${from}`);
+      }
       const id = `pr_${activeDay}_${normalizeLiftName(hit.name)}`;
       await clearNotification(id);
       await addNotification({
@@ -1072,9 +1080,9 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
   // engine in utils/liftPR.ts). This just builds the recap and reads the recorded day-hits for the trophy.
   const finishWorkout = async () => {
     const dayLogs = setLogs[activeDay] || {};
-    let totalVolume = 0, doneSets = 0, doneExercises = 0;
+    let totalVolume = 0, volumeLb = 0, volumeKg = 0, doneSets = 0, doneExercises = 0;
     // Per-lift breakdown so the recap lists each lift's sets (mirrors the per-cardio HR breakdown).
-    const liftItems: { name: string; volume: number; sets: { weight: number; reps: number }[] }[] = [];
+    const liftItems: { name: string; volume: number; sets: { weight: number; reps: number }[]; unit?: 'lb' | 'kg' }[] = [];
     for (const ex of exercises) {
       if (ex.isCardio) continue;
       const sets = dayLogs[ex.id];
@@ -1087,7 +1095,9 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
       const itemSets: { weight: number; reps: number }[] = [];
       for (const s of done) { exVolume += (s.weight || 0) * (s.reps || 0); itemSets.push({ weight: s.weight || 0, reps: s.reps || 0 }); }
       totalVolume += exVolume;
-      liftItems.push({ name: ex.name || 'Lift', volume: exVolume, sets: itemSets });
+      // Volume can't sum across units, so accumulate per unit (kg lifts into volumeKg, everything else lb).
+      if (ex.weightUnit === 'kg') volumeKg += exVolume; else volumeLb += exVolume;
+      liftItems.push({ name: ex.name || 'Lift', volume: exVolume, sets: itemSets, unit: ex.weightUnit || 'lb' });
     }
     // Lift session duration. Priority: Apple Watch strength session (measured, ground truth) > manual
     // workout timer (no-watch users) > nothing. The old first-to-last checked-set span is RETIRED: it
@@ -1167,7 +1177,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
     const summary = {
       // PRs bank + roll back live as each set changes (see the PR engine), so the recap just reads the
       // RECORDED day-hits rather than re-detecting (which would double-count or resurrect a revoked PR).
-      totalVolume, doneSets, doneExercises, prHits: Object.values(prHitsByDay[activeDay] || {}), cardioPrHits, mindful,
+      totalVolume, volumeLb, volumeKg, doneSets, doneExercises, prHits: Object.values(prHitsByDay[activeDay] || {}), cardioPrHits, mindful,
       hasLifts: doneSets > 0,
       liftDurationSec,
       liftCalories, liftAvgHr, liftMaxHr, liftItems,
@@ -1594,9 +1604,10 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
 
   // Sets summary for a recap lift row: "50 × 10  ·  50 × 10", "10 reps" for bodyweight-with-reps,
   // and "3 sets" when a lift was checked off with no weight/reps entered.
-  const formatLiftSets = (sets: { weight: number; reps: number }[]): string => {
+  const formatLiftSets = (sets: { weight: number; reps: number }[], unit?: 'lb' | 'kg'): string => {
+    const u = weightUnitLabel(unit);
     const parts = sets.map(s => {
-      if (s.weight > 0 && s.reps > 0) return `${s.weight} lb × ${s.reps}`;
+      if (s.weight > 0 && s.reps > 0) return `${s.weight} ${u} × ${s.reps}`;
       if (s.reps > 0) return `${s.reps} reps`;
       return null;
     }).filter(Boolean) as string[];
@@ -1782,6 +1793,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                   defaultRest={parseRestSeconds(ex.rest)}
                   onPersist={(sets) => saveSetsForExercise(ex.id, sets)}
                   onSetChecked={() => handleSetChecked(ex)}
+                  unit={ex.weightUnit}
                   theme={theme}
                 />
               </View>
@@ -2349,7 +2361,14 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
               const liftStats: { icon: any; value: string; label: string }[] = [];
               if (fs.hasLifts) {
                 if (fs.liftDurationSec != null) liftStats.push({ icon: 'stopwatch-outline', value: formatDuration(fs.liftDurationSec), label: 'Duration' });
-                if (fs.totalVolume > 0) liftStats.push({ icon: 'barbell-outline', value: Math.round(fs.totalVolume).toLocaleString(), label: 'Lbs Volume' });
+                // Split volume by unit (can't sum lb + kg). Old snapshots lack volumeLb/Kg -> fall back to
+                // totalVolume as lb, exactly as before. New snapshots show one tile per unit actually lifted.
+                {
+                  const volLb = fs.volumeLb ?? fs.totalVolume ?? 0;
+                  const volKg = fs.volumeKg ?? 0;
+                  if (volLb > 0) liftStats.push({ icon: 'barbell-outline', value: Math.round(volLb).toLocaleString(), label: 'Lbs Volume' });
+                  if (volKg > 0) liftStats.push({ icon: 'barbell-outline', value: Math.round(volKg).toLocaleString(), label: 'Kgs Volume' });
+                }
                 liftStats.push({ icon: 'layers-outline', value: String(fs.doneSets), label: 'Sets' });
                 liftStats.push({ icon: 'list-outline', value: String(fs.doneExercises), label: 'Exercises' });
                 // Apple Watch strength-session envelope (only present when a strength session is on the day).
@@ -2400,7 +2419,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                           {fs.liftItems.map((it, idx) => (
                             <View key={idx} style={{ backgroundColor: theme.bgInset, borderWidth: 0.5, borderLeftWidth: 2.5, borderColor: theme.borderCard, borderLeftColor: theme.accentBlue, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 }}>
                               <Text numberOfLines={1} style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary }}>{it.name}</Text>
-                              <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textSecondary, marginTop: 6 }}>{formatLiftSets(it.sets)}</Text>
+                              <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textSecondary, marginTop: 6 }}>{formatLiftSets(it.sets, it.unit)}</Text>
                             </View>
                           ))}
                         </View>
@@ -2467,12 +2486,12 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                           <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, marginBottom: 2 }}>{pr.name}</Text>
                           {pr.weightPR && (
                             <Text style={{ fontSize: 12, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>
-                              New heaviest set: {pr.weightVal} lb × {pr.weightReps}
+                              New heaviest set: {pr.weightVal} {weightUnitLabel(pr.unit)} × {pr.weightReps}
                             </Text>
                           )}
                           {pr.e1rmPR && (
                             <Text style={{ fontSize: 12, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>
-                              New estimated 1-rep max: {pr.e1rmVal} lb
+                              New estimated 1-rep max: {pr.e1rmVal} {weightUnitLabel(pr.unit)}
                             </Text>
                           )}
                         </View>

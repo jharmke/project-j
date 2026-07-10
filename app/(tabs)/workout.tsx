@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Animated, AppState, Dimensions, Keyboard, KeyboardAvoidingView, Modal, PanResponder, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import Reanimated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, runOnJS } from 'react-native-reanimated';
+import Reanimated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, runOnJS, FadeIn, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastRenderer, useToast } from '../../components/Toast';
 import { showAchievementToast } from '../../components/AchievementToast';
@@ -136,6 +136,8 @@ const [sessionHR, setSessionHR] = useState<{ avgHr: number | null; maxHr: number
 // countUp: an open-ended rest STOPWATCH (blank rest) that counts elapsed up from 0 -- no target, no
 // buzz, no notification. Distinct from a countdown that later goes into overtime.
 const [restTimer, setRestTimer] = useState<{ secondsLeft: number; overtime: number; label: string; countUp?: boolean } | null>(null);
+// The compact rest chip (between the Otto + "+" FABs) shows time + Skip; tapping it reveals the ±15 row.
+const [restExpanded, setRestExpanded] = useState(false);
 const restEndRef = useRef(0);
 const restIntervalRef = useRef<any>(null);
 const restNotifIdRef = useRef<string | null>(null);
@@ -1128,6 +1130,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
   const startRest = (seconds: number, label: string) => {
     clearRest();
     restBuzzedRef.current = false;
+    setRestExpanded(false);
     restEndRef.current = Date.now() + seconds * 1000;
     setRestTimer({ secondsLeft: seconds, overtime: 0, label });
     scheduleRestNotif(seconds, label);
@@ -1155,6 +1158,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
   const startRestStopwatch = (label: string) => {
     clearRest();
     restBuzzedRef.current = false;
+    setRestExpanded(false);
     restEndRef.current = Date.now(); // start time (count UP from here)
     setRestTimer({ secondsLeft: 0, overtime: 0, label, countUp: true });
     restIntervalRef.current = setInterval(() => {
@@ -1177,6 +1181,10 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
   // A set was checked -> start the rest timer. For a superset, only rest after the LAST exercise of
   // the group (you alternate between members, so the rest belongs after a full round).
   const handleSetChecked = (ex: any) => {
+    // A live hold owns the single timer slot. If a set is checked while a hold is running, don't stack a
+    // rest timer on top of it (they'd overlap). The set still completes; the hold hands off to its own
+    // rest when it finishes.
+    if (holdTimer) return;
     if (ex.supersetGroup) {
       const members = exercises.filter((e: any) => e.supersetGroup === ex.supersetGroup);
       if (members.length && members[members.length - 1].id !== ex.id) return;
@@ -1236,7 +1244,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
     const elapsed = Math.floor((Date.now() - holdStartRef.current) / 1000);
     setHoldTimer(prev => (prev ? { ...prev, secondsLeft: Math.max(1, holdTargetRef.current - elapsed) } : prev));
   };
-  const stopHold = () => { finishHold(Math.floor((Date.now() - holdStartRef.current) / 1000)); }; // log the time actually held
+  const stopHold = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); finishHold(Math.floor((Date.now() - holdStartRef.current) / 1000)); }; // log the time actually held
   const cancelHold = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); clearHold(); setHoldTimer(null); holdInfoRef.current = null; };
   useEffect(() => () => clearHold(), []);
 
@@ -1510,56 +1518,84 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
     }
   }
   // Fix A: reflect the edited target sets/reps onto the per-set rows. Reconcile UNLOGGED rows only so
-  // real logged data is never lost: pre-fill the target reps on blank rows and grow/shrink the blank-row
-  // count toward the new sets target. Rows that are checked or carry a weight are preserved untouched.
-  let newSetLogs = setLogs;
-  let newChecks = checks;
-  if (editingExercise && !form.isCardio) {
-    const exId = editingExercise.id;
-    const stored = setLogs[modalDay]?.[exId];
+  // real logged data is never lost. `overwriteTime` decides, for a TIME exercise, whether un-done rows'
+  // durationSec is REPLACED by the new target (true) or PRESERVED (false) -- see the option-C prompt below.
+  const finalize = (overwriteTime: boolean) => {
+    let newSetLogs = setLogs;
+    let newChecks = checks;
+    if (editingExercise && !form.isCardio) {
+      const exId = editingExercise.id;
+      const stored = setLogs[modalDay]?.[exId];
+      if (stored && stored.length) {
+        const targetN = Math.max(1, Math.min(10, parseInt(form.sets) || stored.length));
+        const isTime = form.trackingType === 'time';
+        const target = parseInt(form.reps) || null; // seconds for time, reps otherwise
+        const targetReps = isTime ? null : target;
+        const targetRest = parseInt(form.rest) || null;
+        const isLogged = (s: SetEntry) => s.done || s.weight != null;
+        const blank = () => (isTime ? { weight: null, reps: null, rest: targetRest, done: false, durationSec: target } : { weight: null, reps: targetReps, rest: targetRest, done: false });
+        let rows: SetEntry[] = stored.map(s => isLogged(s) ? s : (isTime ? { ...s, reps: null, rest: targetRest, durationSec: (overwriteTime && target != null) ? target : (s.durationSec ?? target) } : { ...s, reps: targetReps, rest: targetRest }));
+        while (rows.length > targetN && !isLogged(rows[rows.length - 1])) rows = rows.slice(0, -1);
+        while (rows.length < targetN) rows.push(blank());
+        newSetLogs = { ...setLogs, [modalDay]: { ...(setLogs[modalDay] || {}), [exId]: rows } };
+        const allDone = rows.length > 0 && rows.every(s => s.done);
+        const dayChecksNow = checks[modalDay] || {};
+        if (!!dayChecksNow[exId] !== allDone) newChecks = { ...checks, [modalDay]: { ...dayChecksNow, [exId]: allDone } };
+      }
+      setSetRowsVersion(v => ({ ...v, [exId]: (v[exId] || 0) + 1 })); // re-mount rows so they re-seed
+    }
+    if (newSetLogs !== setLogs) setSetLogs(newSetLogs);
+    if (newChecks !== checks) setChecks(newChecks);
+    setPrograms(newPrograms);
+    setDayLabel(newPrograms[activeDay]?.customLabel || '');
+    // Editing a lift can change its weight unit (or set targets), which changes how its logged sets compare,
+    // so recompute that lift's PR now -- keeps the record + displayed unit honest, same as the inline picker.
+    let nextPrs = prs, nextHits = prHitsByDay;
+    if (editingExercise && !form.isCardio) {
+      const r = recomputeLiftPR(form.name, newSetLogs, makeDayResolver(newPrograms), prs, prHitsByDay, modalDay, Date.now());
+      nextPrs = r.prs; nextHits = r.hits;
+      setPrs(nextPrs); setPrHitsByDay(nextHits);
+      if (modalDay === todayKey) {
+        if (r.hit) firePRNotification(r.hit);
+        else if (r.revoked) clearNotification(`pr_${modalDay}_${normalizeLiftName(form.name)}`);
+      }
+    }
+    saveState(newChecks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate, activeProgramName, workoutNoteNames, newSetLogs, nextPrs, exerciseDoneAt, workoutTimers, nextHits);
+    closeAddExerciseModal();
+    if (editingExercise) showToast('Exercise updated', form.name, 'success');
+    checkWorkoutAchievements(true).then(unlocked => {
+      for (const def of unlocked) {
+        showCelebration(getCelebTier(def), def.name, def);
+        showAchievementToast(def);
+      }
+    });
+  };
+
+  // Option C: only ASK before overwriting per-set times when a TIME exercise's UNFINISHED sets currently
+  // hold DIFFERENT durations (the only case where a silent overwrite wipes intentional per-set variation).
+  // Uniform / single un-done times have nothing to lose, so apply silently. Finished sets never change.
+  const isTimeEdit = form.trackingType === 'time';
+  const editTarget = parseInt(form.reps) || null;
+  let promptApply = false;
+  if (editingExercise && !form.isCardio && isTimeEdit && editTarget != null) {
+    const stored = setLogs[modalDay]?.[editingExercise.id];
     if (stored && stored.length) {
-      const targetN = Math.max(1, Math.min(10, parseInt(form.sets) || stored.length));
-      const isTime = form.trackingType === 'time';
-      const target = parseInt(form.reps) || null; // seconds for time, reps otherwise
-      const targetReps = isTime ? null : target;
-      const targetRest = parseInt(form.rest) || null;
-      const isLogged = (s: SetEntry) => s.done || s.weight != null;
-      const blank = () => (isTime ? { weight: null, reps: null, rest: targetRest, done: false, durationSec: target } : { weight: null, reps: targetReps, rest: targetRest, done: false });
-      let rows: SetEntry[] = stored.map(s => isLogged(s) ? s : (isTime ? { ...s, reps: null, rest: targetRest, durationSec: s.durationSec ?? target } : { ...s, reps: targetReps, rest: targetRest }));
-      while (rows.length > targetN && !isLogged(rows[rows.length - 1])) rows = rows.slice(0, -1);
-      while (rows.length < targetN) rows.push(blank());
-      newSetLogs = { ...setLogs, [modalDay]: { ...(setLogs[modalDay] || {}), [exId]: rows } };
-      const allDone = rows.length > 0 && rows.every(s => s.done);
-      const dayChecksNow = checks[modalDay] || {};
-      if (!!dayChecksNow[exId] !== allDone) newChecks = { ...checks, [modalDay]: { ...dayChecksNow, [exId]: allDone } };
-    }
-    setSetRowsVersion(v => ({ ...v, [exId]: (v[exId] || 0) + 1 })); // re-mount rows so they re-seed
-  }
-  if (newSetLogs !== setLogs) setSetLogs(newSetLogs);
-  if (newChecks !== checks) setChecks(newChecks);
-  setPrograms(newPrograms);
-  setDayLabel(newPrograms[activeDay]?.customLabel || '');
-  // Editing a lift can change its weight unit (or set targets), which changes how its logged sets compare,
-  // so recompute that lift's PR now -- keeps the record + displayed unit honest, same as the inline picker.
-  let nextPrs = prs, nextHits = prHitsByDay;
-  if (editingExercise && !form.isCardio) {
-    const r = recomputeLiftPR(form.name, newSetLogs, makeDayResolver(newPrograms), prs, prHitsByDay, modalDay, Date.now());
-    nextPrs = r.prs; nextHits = r.hits;
-    setPrs(nextPrs); setPrHitsByDay(nextHits);
-    if (modalDay === todayKey) {
-      if (r.hit) firePRNotification(r.hit);
-      else if (r.revoked) clearNotification(`pr_${modalDay}_${normalizeLiftName(form.name)}`);
+      const undone = stored.filter(s => !(s.done || s.weight != null));
+      promptApply = new Set(undone.map(s => String(s.durationSec ?? ''))).size > 1;
     }
   }
-  saveState(newChecks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate, activeProgramName, workoutNoteNames, newSetLogs, nextPrs, exerciseDoneAt, workoutTimers, nextHits);
-  closeAddExerciseModal();
-  if (editingExercise) showToast('Exercise updated', form.name, 'success');
-  checkWorkoutAchievements(true).then(unlocked => {
-    for (const def of unlocked) {
-      showCelebration(getCelebTier(def), def.name, def);
-      showAchievementToast(def);
-    }
-  });
+  if (promptApply) {
+    Alert.alert(
+      'Apply to all sets?',
+      `Set every unfinished set to ${formatHold(editTarget!)}? Your different per-set times will be replaced. Finished sets are never changed.`,
+      [
+        { text: 'Just new sets', onPress: () => finalize(false) },
+        { text: 'Apply to all', onPress: () => finalize(true) },
+      ],
+    );
+  } else {
+    finalize(true);
+  }
 };
 
   const removeExercise = (day: string, id: string) => {
@@ -2001,6 +2037,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                   onTrackingTypePress={() => setExerciseTrackingType(ex.id, (ex.trackingType === 'time' ? 'reps' : 'time'))}
                   onStartHold={(i, target) => startHold(ex, i, target)}
                   activeHoldIndex={holdTimer && holdTimer.exId === ex.id ? holdTimer.setIndex : null}
+                  onStopHold={stopHold}
                   theme={theme}
                 />
               </View>
@@ -2521,85 +2558,77 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
       </ScrollView>
 
       {/* Rest timer bar -- floats above the tab bar while resting */}
-      {restTimer && (
-        <View style={{ position: 'absolute', left: 12, right: 12, bottom: 64 + insets.bottom + 10, zIndex: 50,
-          backgroundColor: theme.bgSheet, borderRadius: 14, borderWidth: 1, borderColor: theme.accentBlueBorder,
-          flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 14, gap: 10,
-          shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 }}>
-          {(() => {
-            const countUp = !!restTimer.countUp;
-            const over = !countUp && restTimer.overtime > 0;
-            const secs = countUp ? restTimer.overtime : (over ? restTimer.overtime : restTimer.secondsLeft);
-            const num = `${over ? '+' : ''}${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
-            return (
-              <>
-                <Ionicons name={countUp ? 'stopwatch-outline' : 'timer-outline'} size={20} color={over ? theme.accentRed : theme.accentBlue} />
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: over ? theme.accentRed : theme.textPrimary }}>
-                    {num}
-                  </Text>
-                  <Text style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: over ? theme.accentRed : theme.textMuted }} numberOfLines={1}>
-                    {over ? 'Over rest' : 'Rest'}{restTimer.label ? ` · ${restTimer.label}` : ''}
-                  </Text>
-                </View>
-              </>
-            );
-          })()}
-          {/* +/-15 only make sense against a countdown target -- an open stopwatch has none. */}
-          {!restTimer.countUp && (
-            <>
-              <TouchableOpacity onPress={() => adjustRest(-15)} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 7 }} hitSlop={{ top: 6, bottom: 6, left: 2, right: 2 }}>
-                <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>−15s</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => adjustRest(15)} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 7 }} hitSlop={{ top: 6, bottom: 6, left: 2, right: 2 }}>
-                <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>+15s</Text>
-              </TouchableOpacity>
-            </>
-          )}
-          <TouchableOpacity onPress={skipRest} style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8 }} hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
-            <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.bgPrimary }}>{restTimer.countUp ? 'Done' : 'Skip'}</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      {/* Rest timer: compact chip docked between the Otto FAB (left) and the "+" FAB (right), aligned to
+          the FAB row (bottom:16). left/right:90 clears both 56px discs. Shows time + Skip; tapping the
+          time reveals a ±15 row above it (countdown only -- an open stopwatch has no target to nudge). */}
+      {restTimer && !holdTimer && (() => {
+        const countUp = !!restTimer.countUp;
+        const over = !countUp && restTimer.overtime > 0;
+        const secs = countUp ? restTimer.overtime : (over ? restTimer.overtime : restTimer.secondsLeft);
+        const num = `${over ? '+' : ''}${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+        const CHIP_H = 66; // two-row chip; the ±15 popover sits just above it
+        return (
+          <>
+            {restExpanded && !countUp && (
+              <View style={{ position: 'absolute', left: 90, right: 90, bottom: 16 + CHIP_H + 8, zIndex: 51, flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity onPress={() => adjustRest(-15)} style={{ flex: 1, backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 12, paddingVertical: 11, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 6 }} hitSlop={{ top: 4, bottom: 4 }}>
+                  <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>−15s</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => adjustRest(15)} style={{ flex: 1, backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 12, paddingVertical: 11, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 6 }} hitSlop={{ top: 4, bottom: 4 }}>
+                  <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>+15s</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            <Reanimated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(200)} style={{ position: 'absolute', left: 90, right: 90, bottom: 16, height: CHIP_H, zIndex: 50, backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 1, borderColor: theme.accentBlue, justifyContent: 'center', paddingHorizontal: 14, gap: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 }}>
+              {/* Row 1: time + Skip. Tapping the time area toggles the ±15 popover (countdown only). */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <TouchableOpacity
+                  disabled={countUp}
+                  activeOpacity={0.7}
+                  onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setRestExpanded(v => !v); }}
+                  style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                  hitSlop={{ top: 12, bottom: 4 }}>
+                  <Ionicons name={countUp ? 'stopwatch-outline' : 'timer-outline'} size={20} color={over ? theme.accentRed : theme.accentBlue} />
+                  <Text style={{ fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: over ? theme.accentRed : theme.textPrimary }}>{num}</Text>
+                  {!countUp && <Ionicons name={restExpanded ? 'chevron-down' : 'chevron-up'} size={14} color={theme.textMuted} />}
+                </TouchableOpacity>
+                <TouchableOpacity onPress={skipRest} style={{ backgroundColor: theme.accentBlue, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 9 }} hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}>
+                  <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.bgPrimary }}>{countUp ? 'Done' : 'Skip'}</Text>
+                </TouchableOpacity>
+              </View>
+              {/* Row 2: full-width label (left-aligned to stack under the time) so the exercise name fits. */}
+              <Text numberOfLines={1} style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', textAlign: 'center', fontFamily: 'DMSans_700Bold', color: over ? theme.accentRed : theme.textMuted }}>{over ? 'Over' : 'Rest'}{restTimer.label ? ` · ${restTimer.label}` : ''}</Text>
+            </Reanimated.View>
+          </>
+        );
+      })()}
 
-      {/* Hold timer pill (TIME sets) -- sibling of the rest pill, green. Counts down from a target or up
-          from empty; Done logs the held time + checks the set; X discards. */}
-      {holdTimer && (
-        <View style={{ position: 'absolute', left: 12, right: 12, bottom: 64 + insets.bottom + 10, zIndex: 50,
-          backgroundColor: theme.bgSheet, borderRadius: 14, borderWidth: 1, borderColor: theme.accentGreenBorder,
-          flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 14, gap: 10,
-          shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 }}>
-          {(() => {
-            const down = holdTimer.mode === 'down';
-            const secs = Math.max(0, down ? holdTimer.secondsLeft : holdTimer.elapsed);
-            const num = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
-            return (
-              <>
-                <Ionicons name="stopwatch-outline" size={20} color={theme.accentGreen} />
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.textPrimary }}>
-                    {num}
-                  </Text>
-                  <Text style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted }} numberOfLines={1}>
-                    Hold · {holdTimer.exName} · Set {holdTimer.setIndex + 1}
-                  </Text>
-                </View>
-              </>
-            );
-          })()}
-          {holdTimer.mode === 'down' && (
-            <TouchableOpacity onPress={() => addHoldTime(15)} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 7 }} hitSlop={{ top: 6, bottom: 6, left: 2, right: 2 }}>
-              <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>+15s</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity onPress={cancelHold} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7 }} hitSlop={{ top: 6, bottom: 6, left: 2, right: 2 }}>
-            <Ionicons name="close" size={14} color={theme.textSecondary} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={stopHold} style={{ backgroundColor: theme.accentGreen, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8 }} hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
-            <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.bgPrimary }}>Done</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      {/* Hold timer (TIME sets): compact chip docked between the FABs like the rest chip, but green.
+          Counts down from a target (auto-logs at zero) or up from empty; Done logs the held time + checks
+          the set; X discards. No +15 -- you don't tap mid-hold; set a longer target instead. */}
+      {holdTimer && (() => {
+        const down = holdTimer.mode === 'down';
+        const secs = Math.max(0, down ? holdTimer.secondsLeft : holdTimer.elapsed);
+        const num = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+        const CHIP_H = 66;
+        return (
+          <Reanimated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(200)} style={{ position: 'absolute', left: 90, right: 90, bottom: 16, height: CHIP_H, zIndex: 50, backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 1, borderColor: theme.accentGreen, justifyContent: 'center', paddingHorizontal: 14, gap: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 }}>
+            {/* Row 1: time + Cancel + Done. */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="stopwatch-outline" size={20} color={theme.accentGreen} />
+              <Text style={{ flex: 1, fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.textPrimary }}>{num}</Text>
+              <TouchableOpacity onPress={cancelHold} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9 }} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
+                <Ionicons name="close" size={15} color={theme.textSecondary} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={stopHold} style={{ backgroundColor: theme.accentGreen, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 9 }} hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}>
+                <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.bgPrimary }}>Done</Text>
+              </TouchableOpacity>
+            </View>
+            {/* Row 2: full-width label (left-aligned to stack under the time). */}
+            <Text numberOfLines={1} style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', textAlign: 'center', fontFamily: 'DMSans_700Bold', color: theme.textMuted }}>Hold · {holdTimer.exName} · Set {holdTimer.setIndex + 1}</Text>
+          </Reanimated.View>
+        );
+      })()}
 
       {/* Finish Workout summary */}
       <Modal visible={!!finishSummary} transparent animationType="none" statusBarTranslucent onRequestClose={closeFinishSummary}>

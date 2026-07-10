@@ -24,6 +24,7 @@ interface Props {
   onTrackingTypePress?: () => void; // tap the reps/time header to toggle reps <-> time
   onStartHold?: (setIndex: number, targetSec: number | null) => void; // tap the play button to run the hold timer
   activeHoldIndex?: number | null; // the set index whose hold timer is currently running (shows active state)
+  onStopHold?: () => void; // tapping the CHECK circle of the actively-holding set finishes the hold (= chip Done)
   theme: any;
 }
 
@@ -53,7 +54,7 @@ const PLAY_SLOT = 24;
 const CHECK_W = 34;
 const X_W = 22;
 
-export default function ExerciseSetRows({ initialSets, previousSets, defaultRest, onPersist, onSetChecked, unit, onUnitPress, trackingType, onTrackingTypePress, onStartHold, activeHoldIndex, theme: t }: Props) {
+export default function ExerciseSetRows({ initialSets, previousSets, defaultRest, onPersist, onSetChecked, unit, onUnitPress, trackingType, onTrackingTypePress, onStartHold, activeHoldIndex, onStopHold, theme: t }: Props) {
   const [sets, setSets] = useState<SetEntry[]>(initialSets);
   const atMax = sets.length >= MAX_SETS;
 
@@ -241,7 +242,7 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
                 />
               )}
             </View>
-            <TouchableOpacity onPress={() => toggle(i)} style={{ width: CHECK_W, alignItems: 'center' }} hitSlop={{ top: 8, bottom: 8, left: 4, right: 2 }}>
+            <TouchableOpacity onPress={() => { if (activeHoldIndex === i && onStopHold) { onStopHold(); return; } toggle(i); }} style={{ width: CHECK_W, alignItems: 'center' }} hitSlop={{ top: 8, bottom: 8, left: 4, right: 2 }}>
               <View style={{
                 width: 24, height: 24, borderRadius: 12, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center',
                 backgroundColor: s.done ? t.accentGreen : 'transparent',

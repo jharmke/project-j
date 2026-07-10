@@ -22,6 +22,7 @@ import { app, auth, db, saveToFirebase } from '../firebaseConfig';
 import { shouldSync, uploadAllLocal, resetRestoreGate, verifyBackup } from '../services/syncService';
 import { backfillAllPhotos } from '../utils/foodPhotos';
 import { storageSet } from '../utils/storage';
+import { saveWeightForDate, deleteWeightForDate, gatherWeightHistory, startingWeighIn, validateWeight } from '../utils/weightHistory';
 import { setOnboardingPreview } from '../utils/onboardingPreview';
 import { setFloatingBarHeight } from '../utils/floatingBar';
 import { DEFAULT_ORDER, DEFAULT_VISIBLE, DISCIPLINE_ORDER, MINDFUL_ORDER, MINDFUL_VISIBLE, type CardId } from './(tabs)/index';
@@ -2518,6 +2519,80 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Deletes the seeded test day (only if it carries the dev marker) and clears the pointer. Safe: never deletes a real logged day.</Text>
               </View>
               <Ionicons name="trash-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              const pad = (n: number) => String(n).padStart(2, '0');
+              const today = new Date();
+              const tKey = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+              const results: { name: string; pass: boolean }[] = [];
+              const created: string[] = []; // dates WE created on empty slots -> safe to delete on cleanup
+              try {
+                // Find 3 genuinely EMPTY far-back dates (200..240 days) so we never touch real data.
+                const dates: string[] = [];
+                for (let i = 200; i <= 240 && dates.length < 3; i++) {
+                  const d = new Date(today); d.setDate(d.getDate() - i);
+                  const key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+                  const existing = await AsyncStorage.getItem(`pj_${key}`);
+                  if (!existing) dates.push(key); // ascending i => dates[0] newest, dates[2] oldest
+                }
+                if (dates.length < 3) { Alert.alert('Not enough empty dates', 'Could not find 3 empty dates 200-240 days back to run the test safely. Aborted.'); return; }
+                const canary = dates[0];
+
+                // Seed the canary LOCALLY (no cloud) with food + water + a weight. Proves the writers
+                // preserve a day's other data. Local-only so we never push dev food/water to the cloud.
+                await AsyncStorage.setItem(`pj_${canary}`, JSON.stringify({
+                  entries: [{ name: 'Dev Meal', cal: 300, protein: 20, carbs: 30, fat: 10, meal: 'ms_morning', timestamp: Date.now(), _devSeed: true }],
+                  water: 40, waterEntries: [{ amount: 40, sign: 'add', timestamp: String(Date.now()) }],
+                  weight: 190, _devSeed: true,
+                }));
+                created.push(canary);
+
+                // 1) EDIT keeps food + water (read-then-merge only touches .weight)
+                await saveWeightForDate(canary, 185, tKey);
+                const afterEdit = JSON.parse((await AsyncStorage.getItem(`pj_${canary}`)) || '{}');
+                results.push({ name: 'Edit weight keeps food + water', pass: afterEdit.weight === 185 && Array.isArray(afterEdit.entries) && afterEdit.entries.length === 1 && afterEdit.water === 40 });
+
+                // 2) DELETE removes only .weight, keeps food + water
+                await deleteWeightForDate(canary);
+                const afterDel = JSON.parse((await AsyncStorage.getItem(`pj_${canary}`)) || '{}');
+                results.push({ name: 'Delete weight keeps food + water', pass: !('weight' in afterDel) && Array.isArray(afterDel.entries) && afterDel.entries.length === 1 && afterDel.water === 40 });
+
+                // 3) A back-dated weigh-in EARLIER than everything (incl. your real history) = starting weight
+                await saveWeightForDate(dates[1], 200, tKey); created.push(dates[1]);
+                await saveWeightForDate(dates[2], 220, tKey); created.push(dates[2]); // dates[2] is the oldest
+                const hist = await gatherWeightHistory();
+                const start = startingWeighIn(hist);
+                results.push({ name: 'Oldest back-dated entry = starting weight', pass: !!start && start.date === dates[2] && start.weight === 220 });
+
+                // 4) Validation refuses blank / 0 / negative
+                results.push({ name: 'Refuses blank / 0 / negative', pass: !validateWeight('').ok && !validateWeight('0').ok && !validateWeight('-5').ok });
+
+                // 5) Refuses a future date (writer rejects before writing)
+                const fut = new Date(today); fut.setDate(fut.getDate() + 2);
+                const futKey = `${fut.getFullYear()}-${pad(fut.getMonth() + 1)}-${pad(fut.getDate())}`;
+                const futRes = await saveWeightForDate(futKey, 180, tKey);
+                results.push({ name: 'Refuses a future date', pass: futRes.ok === false });
+              } catch (e) {
+                results.push({ name: 'Threw an error: ' + String(e), pass: false });
+              } finally {
+                // Clean up EVERYTHING we created (local record + null the cloud weight we synced).
+                for (const k of created) {
+                  try { await AsyncStorage.removeItem(`pj_${k}`); await saveToFirebase(k, 'weight', null); } catch {}
+                }
+              }
+              const allPass = results.length > 0 && results.every(r => r.pass);
+              Alert.alert(
+                allPass ? 'Weight History: ALL PASSED' : 'Weight History: SOME FAILED',
+                results.map(r => `${r.pass ? 'PASS' : 'FAIL'}  ${r.name}`).join('\n') + '\n\nSeeded/edited/deleted throwaway dates 200-240 days back and cleaned them up. Your real data was never touched.',
+              );
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentGreen }]}>Weight History self-test (dev)</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>One tap: seeds a throwaway day (food + water + weight) on empty dates 200-240 days back, runs the real edit/delete/add writers, and checks that editing or deleting a weigh-in never touches that day's food/water, that an older back-dated entry becomes the starting weight, and that garbage/future values are refused. Auto-cleans. Never touches your real data.</Text>
+              </View>
+              <Ionicons name="flask-outline" size={18} color={theme.accentGreen} />
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {

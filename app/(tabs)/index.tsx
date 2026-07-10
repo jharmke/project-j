@@ -48,6 +48,8 @@ import { DayScore } from '../../utils/dayScore';
 import DaySummaryModal from '../../components/DaySummaryModal';
 import SummaryReadyModal from '../../components/SummaryReadyModal';
 import DayScoreDisclaimerModal from '../../components/DayScoreDisclaimerModal';
+import WeightHistoryModal from '../../components/WeightHistoryModal';
+import { gatherWeightHistory, startingWeighIn } from '../../utils/weightHistory';
 import { StatsGraphCard } from '../../components/StatsGraphCard';
 import { StatsCardEditModal } from '../../components/StatsCardEditModal';
 import { saveStatsCards } from '../../statsCardRegistry';
@@ -670,6 +672,7 @@ export default function HomeScreen() {
   const [earliestWeight,  setEarliestWeight]  = useState<number|null>(null);
   const [lastKnownWeight, setLastKnownWeight] = useState<{ val: number; daysAgo: number } | null>(null);
   const [weightInput,    setWeightInput]    = useState('');
+  const [weightHistoryVisible, setWeightHistoryVisible] = useState(false);
   const [dailyNote,      setDailyNote]      = useState('');
   const [savedDailyNoteText, setSavedDailyNoteText] = useState('');
   const [totalCals,      setTotalCals]      = useState(0);
@@ -1938,6 +1941,29 @@ export default function HomeScreen() {
     }).catch(() => {});
   }, []));
 
+  // Re-read the true weight history and refresh the card's derived numbers after the Weight
+  // History modal edits/adds/deletes a weigh-in. Uses the uncapped util (fixes the >365-day
+  // earliest edge case). Milestone recompute lands in the next slice; milestones never revoke,
+  // so display-only refresh here is safe.
+  const refreshWeightCardState = async () => {
+    const hist = await gatherWeightHistory(); // newest-first
+    const startw = startingWeighIn(hist);
+    setEarliestWeight(startw ? startw.weight : null);
+    const todayEntry = hist.find(h => h.date === todayKey);
+    setWeight(todayEntry ? todayEntry.weight : null);
+    const yd = new Date(); yd.setDate(yd.getDate() - 1);
+    const yKey = getDateKey(yd);
+    const yEntry = hist.find(h => h.date === yKey);
+    setYesterdayWeight(yEntry ? yEntry.weight : null);
+    const prior = hist.find(h => h.date < todayKey);
+    if (prior) {
+      const diffDays = Math.round((Date.parse(todayKey) - Date.parse(prior.date)) / 86400000);
+      setLastKnownWeight(diffDays <= 30 ? { val: prior.weight, daysAgo: diffDays } : null);
+    } else {
+      setLastKnownWeight(null);
+    }
+  };
+
   // ── Weight log ───────────────────────────────────────────────────────────────
   const logWeight = async () => {
     const val = parseFloat(weightInput);
@@ -2278,9 +2304,14 @@ export default function HomeScreen() {
   const renderWeightCard = () => (
     <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden' }]}>
         <Ionicons name="body" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
-      <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:10 }}>
-        <Ionicons name="trending-down-outline" size={11} color={theme.textMuted} />
-        <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Weight</Text>
+      <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+        <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
+          <Ionicons name="trending-down-outline" size={11} color={theme.textMuted} />
+          <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Weight</Text>
+        </View>
+        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setWeightHistoryVisible(true); }} hitSlop={{ top:12, bottom:12, left:12, right:12 }}>
+          <Ionicons name="settings" size={16} color={theme.textMuted} />
+        </TouchableOpacity>
       </View>
       <View style={styles.weightRow}>
         <View style={styles.weightStat}>
@@ -4396,6 +4427,14 @@ export default function HomeScreen() {
         item={macroDrilldownItem}
         entries={todayEntries}
         defaultShowNet={showNetCarbs}
+      />
+
+      <WeightHistoryModal
+        visible={weightHistoryVisible}
+        onClose={() => setWeightHistoryVisible(false)}
+        styleMode={styleMode}
+        goalWeight={goalWeight ?? null}
+        onChange={refreshWeightCardState}
       />
 
       {/* Morning Day Summary pop-up (yesterday's Day Score) */}

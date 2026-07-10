@@ -152,6 +152,27 @@ are separate pre-submission checklists, NOT part of this menu.
   read-then-merge the `pj_<date>.weight` scalar (never clobber that day's food/water), plausibility-guarded,
   Firebase-synced, milestone recompute (never revokes). Mindful = neutral. Explainers REQUIRED same session:
   tooltipRegistry + tutorials + Otto KB (redeploy). Full spec + build slices: SPEC_weight_history.md.
+  DECISION 2026-07-10: history editor just SAVES a big/odd correction (no confirm, no block) -- it's a fix-it
+  tool; only blank/0/negative/future are refused, and the milestone-typo guard stays at the call site.
+  >> SLICE 1 BUILT 2026-07-10 (pure JS, no UI yet): utils/weightHistory.ts -- uncapped gatherWeightHistory
+     (getAllKeys, fixes the >365-day earliest-weight edge case) + read-then-merge saveWeightForDate /
+     deleteWeightForDate (touch ONLY .weight, Firebase-synced) + pure validate/parse/starting-weigh-in
+     helpers. 32 unit tests (npm run test:weight) all pass.
+  >> SLICE 2 BUILT 2026-07-10 (pure JS, device-testable): components/WeightHistoryModal.tsx to full modal
+     standard (centered card, handle, accent top border, spring 0.85->1 + opacity onShow, ToastRenderer
+     inside, tap-outside dismiss, KeyboardAvoidingView). Starting-weight block (tap to edit) + "measured from
+     here" caption + micro disclaimer + editable history rows (pencil edit overlay / trash inline-confirm,
+     heavy haptic) + "+ Add a past weigh-in" (DateTimePicker date-mode, maximumDate blocks future) + read-only
+     goal line. Mindful softens value color. Wired a gear onto the home Weight card header that opens it; on
+     any change, refreshWeightCardState re-reads the uncapped history and refreshes weight/yesterday/earliest/
+     lastKnown in place. tsc clean (touched files). POLISH PASS (dad device feedback 2026-07-10): matched card
+     gear icon (settings/16, was settings-sharp), dropped "(Total)" from caption, removed the KeyboardAvoiding
+     wrapper that broke centering + made the modal jump when the keypad opened, tightened the edit-overlay
+     handle, gave the edit input + starting-weight card visible borders, auto-scroll-to-end when "Add a past
+     weigh-in" expands, capitalized "Change in Profile". Modal stays neutral (no colors) in all modes by design.
+     REMAINING: slice 3 milestone recompute on change (never
+     revokes) + final card-recompute rigor, slice 4 explainers (tooltip+tutorials+Otto KB redeploy), slice 5
+     device verify (incl. 5-theme x accent + read-then-merge food/water safety).
 - [FOLLOW-ON TO DISCUSS, from Repeat a Meal which SHIPPED 2026-07-10] "SAVE AS A MEAL" = save a group of
   distinct foods as a named, reusable one-tapper (Justin curious). Differs from a Recipe: a recipe BLENDS
   ingredients into ONE food line (single entry, loses the items); a meal keeps the foods as SEPARATE

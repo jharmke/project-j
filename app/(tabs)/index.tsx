@@ -2302,10 +2302,27 @@ export default function HomeScreen() {
           <Text style={[styles.weightLbl, { color: theme.textMuted }]}>vs Yesterday</Text>
         </View>
         <View style={styles.weightStat}>
-          <Text style={[styles.weightVal, { color: styleMode === 'mindful' ? theme.textSecondary : (weight||lastKnownWeight?.val)&&earliestWeight ? earliestWeight-(weight||lastKnownWeight!.val)>0 ? theme.statusGood : earliestWeight-(weight||lastKnownWeight!.val)<0 ? theme.statusBad : theme.textPrimary : theme.textPrimary }]}>
-            {(weight||lastKnownWeight?.val)&&earliestWeight ? `${Math.round((earliestWeight-(weight||lastKnownWeight!.val))*10)/10} lbs` : '--'}
-          </Text>
-          <Text style={[styles.weightLbl, { color: theme.textMuted }]}>Total Lost</Text>
+          {(() => {
+            // Total change since the earliest logged weigh-in. diff > 0 = gained, < 0 = lost.
+            // The label flips (Lost/Gained) and shows the MAGNITUDE so a gain never reads as a
+            // negative "Total Lost" (which contradicted the vs-Yesterday stat). Mindful stays
+            // neutral: signed value, "Total Change" label, no red/green.
+            const currentW = weight || lastKnownWeight?.val || null;
+            const hasData = currentW != null && earliestWeight != null;
+            const diff = hasData ? Math.round((currentW! - earliestWeight!) * 10) / 10 : 0;
+            const isMindful = styleMode === 'mindful';
+            const valColor = isMindful
+              ? theme.textSecondary
+              : !hasData ? theme.textPrimary : diff < 0 ? theme.statusGood : diff > 0 ? theme.statusBad : theme.textPrimary;
+            const label = isMindful ? 'Total Change' : diff > 0 ? 'Total Gained' : 'Total Lost';
+            const valText = !hasData ? '--' : isMindful ? `${diff > 0 ? '+' : ''}${diff} lbs` : `${Math.abs(diff)} lbs`;
+            return (
+              <>
+                <Text style={[styles.weightVal, { color: valColor }]}>{valText}</Text>
+                <Text style={[styles.weightLbl, { color: theme.textMuted }]}>{label}</Text>
+              </>
+            );
+          })()}
         </View>
       </View>
       {goalWeight && (() => {

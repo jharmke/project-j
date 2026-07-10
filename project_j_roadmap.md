@@ -11,6 +11,16 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-10 ONBOARDING training-frequency wording (dad feedback): screen 4 subline now reads "How often you
+  actually train these days, not what you're aiming for. You can change it in your Profile anytime." (was "How
+  often you do structured workouts"). Kills the aspirational-answer trap that inflated TDEE (training freq adds
+  up to +400 cal/day). Copy-only, your-style.tsx. Lifestyle Activity + Profile field left as-is (decided out).
+- 2026-07-10 [BUG FIX] Home Weight card "Total Lost" contradicted "vs Yesterday" (commit aea7aec). It computed
+  earliestWeight - today, so a GAIN showed a negative number under a static "Total Lost" label (opposite sign
+  from the +N vs-Yesterday stat) -- dad gained 187->188 but saw "-1 Total Lost". Now the label flips Total
+  Lost/Total Gained by direction + shows the magnitude (agrees with vs Yesterday); Mindful = neutral "Total
+  Change". Baseline unchanged (earliest LOGGED weigh-in; the earliest-vs-onboarding-starting-weight baseline is
+  a separate open design question, NOT a bug). index.tsx, pure JS, tsc clean.
 - 2026-07-10 REPEAT A MEAL + per-meal CLEAR ALL SHIPPED + device-verified (commit 016315d, pure JS). Re-log a
   previous day's meal-slot entries into the viewed day by exact-cloning (no saved object; photos/macros/extended
   nutrition carry verbatim, AI items safe). White-outline pills on empty slots ("Repeat Yesterday · N kcal"
@@ -202,7 +212,6 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 ## 🗂️ OPEN BACKLOG BY AREA (open/future only; shipped history is in the archive)
 
 ### Onboarding
-- Activity-level wording -- the field should read as "what you do NOW," not aspirational ("I'll go to the gym every day from now on"), so the TDEE calc isn't built on an intention that never happens. A wrong guess self-corrects over weeks via adaptive TDEE + real weight trend, but the copy should set the honest expectation. (Justin's dad flagged this during onboarding.) See SPEC_calorie_floor.md "related items."
 - Mindful onboarding -- encouragement language + Mindful-specific Screen 4 copy (graph/presets already gated off). Copy pass.
 - Macro presets -- Screen 4, Discipline/Balanced only. Also settable in Settings.
 - Progress bar on onboarding screens -- segmented step indicator, screens 2-7.
@@ -211,6 +220,10 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 - Daily Intention card for Not Right Now users -- Today's Message morphs for NRN. Low priority.
 
 ### Home / UX
+- [DESIGN Q] Home Weight card "Total" baseline -- currently measures from the earliest LOGGED daily weigh-in.
+  Consider switching to the onboarding STARTING weight (MFP-style "since start") so "total" reflects true
+  progress from day one. Same for a brand-new user; diverges long-term. Surfaced 2026-07-10 with the Total
+  Lost/Gained label fix (which was baseline-agnostic). Decide the intended baseline before changing.
 - Primary button audit -- all primary CTAs to full accent fill; transparent bordered = secondary only.
 - Day detail BMR row -- add estimated BMR to the calorie breakdown (Consumed/Burned/Net).
 - Exclusions polish -- first-use callout on calendar dot; help article; excluded-list view (view + un-exclude); three entry points.

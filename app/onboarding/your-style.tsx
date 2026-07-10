@@ -592,7 +592,7 @@ export default function YourStyleScreen() {
 
           {/* Training Frequency -- compact 2-col grid */}
           <Text style={[styles.sectionLabel, { color: theme.textMuted, marginTop: 20 }]}>TRAINING FREQUENCY</Text>
-          <Text style={[styles.sectionSub, { color: theme.textDim, marginBottom: 8 }]}>How often you do structured workouts.</Text>
+          <Text style={[styles.sectionSub, { color: theme.textDim, marginBottom: 8 }]}>How often you actually train these days, not what you're aiming for. You can change it in your Profile anytime.</Text>
           <View style={{ gap: 8 }}>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               {TRAINING_OPTIONS.slice(0, 2).map(o => {

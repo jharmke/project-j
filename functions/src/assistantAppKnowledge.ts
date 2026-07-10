@@ -76,14 +76,14 @@ WORKOUT TAB
   save + load routines) and a (?) icon (Toolkit + tutorials).
 - Today's Training / Today's Effort: the day's planned workout + completion.
 - LIFTING LOG: per-set logging (weight x reps + check), a "previous" column (last time you did the
-  lift), supersets (link/unlink pills), a rest timer (auto-starts on check, 90s default, follow-bar
-  above the tab bar, skip / -15s / +15s). Each exercise picks its own WEIGHT UNIT (lb or kg): tap the
+  lift), supersets (link/unlink pills), a rest timer (auto-starts on check, 90s default; shows as a
+  compact timer chip docked between the on-screen buttons near the bottom, skip / -15s / +15s). Each exercise picks its own WEIGHT UNIT (lb or kg): tap the
   LBS/KGS column header on the log row or set it in the Add/Edit modal. Units are mixable across a session
   and only ever displayed in the unit the user actually entered (nothing is converted). An exercise can
   also track a HELD DURATION instead of reps (planks, dead hangs, loaded carries, wall sits): tap the REPS
   header (or Track: Time in the Add/Edit modal) to switch it, enter a clock-style M:SS hold time, and the
-  play button raises a HOLD timer that counts down from the target (or up from empty), then buzzes, logs
-  the hold, and auto-checks the set. Reorder exercises with the up/down arrows on the left:
+  play button raises a HOLD timer (in that same compact chip slot) that counts down from the target (or up
+  from empty), then buzzes, logs the hold, and auto-checks the set. Reorder exercises with the up/down arrows on the left:
   fully free order when no Apple strength session is present, otherwise lifts stay grouped together
   and cardio outside.
 - VIEW SUMMARY: the button under the workout says "View Summary" (a viewer, NOT a save gate: your sets
@@ -230,6 +230,27 @@ LOG TAB (FOOD DIARY)
     CREATE FOOD. (Also reachable inline via the Custom Food Creator inside Add Food / My Foods.)
 - RECIPES: from the Food Library (Log tab > LIBRARY button) tap the FAB > CREATE RECIPE (opens the
   Recipe Builder). Log a saved recipe from the Recipes tab in Add Food, or the Recipe Log.
+- REPEAT A MEAL: fast way to re-log a meal you eat often (e.g. the same breakfast daily). When a meal
+  slot is EMPTY and there's matching history in the last 14 days, controls appear on that slot. THERE ARE
+  TWO SEPARATE CONTROLS, do not conflate them:
+  (1) the "Repeat Yesterday · <kcal>" pill = a ONE-TAP button that instantly re-logs YESTERDAY's same
+      meal. It does NOT open a picker or let you choose a day; it just adds yesterday's meal.
+  (2) the "Pick a Day" button (a small calendar icon + the words "Pick a Day") next to it = THIS is what
+      opens the picker to choose ANY other past day (last 14 days).
+  So to copy a day that is NOT yesterday (e.g. "last Tuesday", "last week"), tell the user to tap "PICK A
+  DAY", never "tap the Repeat pill." The ONLY exception: if yesterday's slot is empty there's no one-tap
+  target, so the single pill instead reads "Repeat a Previous Meal" and tapping IT opens the picker.
+  In the picker you choose any day and check/uncheck individual items before adding (the running total +
+  macros update live as you toggle). It CLONES the stored entries exactly (servings, calories, macros,
+  extended nutrition, even the food photo carry over; nothing is re-searched or re-estimated), and the
+  foods land as SEPARATE editable entries. You pull FROM any meal via the chips at the top, but items
+  always add to the slot you tapped. Different from a Recipe (a recipe blends ingredients into one food
+  line; Repeat re-logs separate entries from a past day). There is no saved/named object: it just reads
+  your history.
+- CLEAR A WHOLE MEAL: to remove everything logged to one meal at once (instead of deleting item by item),
+  expand that meal on the Log tab and tap the small "Clear all" link at the bottom of its item list. It
+  asks to confirm, then removes only that meal's entries for the day (other meals untouched). Handy after
+  repeating the wrong day. It can't be undone.
 - IMPORTANT: there is NO "Add Food" button on the Log tab itself. Food is added via the PLUS sign on
   a mealtime card, or via the LIBRARY button (Food Library). Never tell a user to "tap Add Food" on
   the Log tab.
@@ -503,6 +524,13 @@ COMMON "HOW DO I..." QUICK INDEX
 - Scan a barcode: Add Food screen > barcode icon.
 - Use the AI meal estimator: Add Food header AI icon, the Log-tab estimator card, or the Food
   Library FAB.
+- Repeat YESTERDAY's meal (one tap): Log tab > tap the "Repeat Yesterday" pill on an EMPTY meal slot
+  (shows only when that meal has history in the last 14 days). It instantly re-logs yesterday's same meal.
+- Repeat a meal from ANOTHER past day: Log tab > on an empty meal slot tap the "Pick a Day" button (the
+  calendar icon next to the Repeat pill), choose the day, check/uncheck items, add. (Not the Repeat
+  Yesterday pill: that one only ever adds yesterday.)
+- Clear a whole meal at once: Log tab > expand the meal > tap the "Clear all" link at the bottom of its
+  item list (one confirm, removes only that meal's entries for the day).
 - Build a recipe: Log tab > Library > FAB > Create Recipe (opens the Recipe Builder).
 - Create a custom food: Log tab > Library > FAB > Create Food.
 - Log water: Home Water card presets, or the identical Water card on the Log tab.

@@ -10,6 +10,8 @@ import { Alert, Animated, Easing, Keyboard, KeyboardAvoidingView, Modal, Platfor
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import PressableButton from '../../components/PressableButton';
 import { DEFAULT_MEAL_SLOTS, MealSlot, findSlotForMeal, loadMealSlots, saveMealSlots } from '../../utils/mealSlots';
+import { getRepeatSummary, logRepeatedItems, SlotRepeatInfo } from '../../utils/repeatMeal';
+import RepeatMealModal from '../../components/RepeatMealModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
@@ -225,6 +227,10 @@ export default function LogScreen() {
   const [waterGoalInput, setWaterGoalInput] = useState('');
   const [mealSlots, setMealSlots] = useState<MealSlot[]>(DEFAULT_MEAL_SLOTS);
   const [slotNameCache, setSlotNameCache] = useState<Record<string, string>>({});
+  // Repeat a Meal: per-slot history summary (drives the empty-slot pill + one-tap fast path)
+  // and the launch slot for the modal (null = closed).
+  const [repeatSummary, setRepeatSummary] = useState<Record<string, SlotRepeatInfo>>({});
+  const [repeatModalSlot, setRepeatModalSlot] = useState<MealSlot | null>(null);
   const [showEditMeals, setShowEditMeals] = useState(false);
   const [editMealsTutorialMode, setEditMealsTutorialMode] = useState(false);
   const editMealsAnim = useRef(new Animated.Value(0)).current;
@@ -773,6 +779,73 @@ export default function LogScreen() {
     setTotalFat(Math.round(newEntries.reduce((s, e) => s + (e.fat || 0), 0) * 10) / 10);
     saveField('entries', newEntries);
     saveToFirebase(activeDate, 'entries', newEntries);
+  };
+
+  // Repeat a Meal ────────────────────────────────────────────────────────────────────────────────
+  // Scan the 14 days before the viewed day (once, all slots) so each empty slot knows whether to
+  // show the Repeat pill and whether a one-tap "repeat yesterday" target exists. Depends only on the
+  // viewed day + slot set (it reads PAST records), so today's edits don't need to retrigger it.
+  useEffect(() => {
+    let alive = true;
+    getRepeatSummary(mealSlots, activeDate).then(summary => { if (alive) setRepeatSummary(summary); });
+    return () => { alive = false; };
+  }, [activeDate, mealSlots]);
+
+  // Shared apply path for both the one-tap fast path and the modal: adopt the merged entries list
+  // (already persisted to storage by logRepeatedItems), refresh totals, push to Firebase.
+  const applyMergedEntries = (merged: any[]) => {
+    setEntries(merged);
+    setTotalProtein(Math.round(merged.reduce((s, e) => s + (e.protein || 0), 0) * 10) / 10);
+    setTotalCarbs(Math.round(merged.reduce((s, e) => s + (e.carbs || 0), 0) * 10) / 10);
+    setTotalFat(Math.round(merged.reduce((s, e) => s + (e.fat || 0), 0) * 10) / 10);
+    saveToFirebase(activeDate, 'entries', merged);
+  };
+
+  // One-tap fast path: clone yesterday's same-slot items straight into the viewed day.
+  const repeatYesterday = async (slot: MealSlot) => {
+    const info = repeatSummary[slot.id];
+    if (!info || info.yesterdayItems.length === 0) return;
+    try {
+      const merged = await logRepeatedItems(activeDate, slot.id, info.yesterdayItems);
+      applyMergedEntries(merged);
+      triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+      showToast(`${slot.name} added`, `${info.yesterdayItems.length} ${info.yesterdayItems.length === 1 ? 'item' : 'items'} · ${info.yesterdayTotal} kcal`, 'success');
+    } catch {
+      showToast('Could not add', 'Please try again', 'error');
+    }
+  };
+
+  const openRepeatModal = (slot: MealSlot) => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    setRepeatModalSlot(slot);
+  };
+
+  // Clear every entry logged to one meal slot on the viewed day (one confirm for the whole batch,
+  // instead of deleting item-by-item). Read-then-merge: only this slot's entries are removed; other
+  // meals and all other day fields are untouched.
+  const clearMeal = (slot: MealSlot) => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    const mealEntries = entries.filter(e => e.meal === slot.id || e.meal === slot.name);
+    const count = mealEntries.length;
+    if (count === 0) return;
+    Alert.alert(
+      `Clear ${slot.name}?`,
+      `This removes all ${count} ${count === 1 ? 'item' : 'items'} logged to ${slot.name} on this day. It can't be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Clear', style: 'destructive', onPress: () => {
+          triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+          const remaining = entries.filter(e => !(e.meal === slot.id || e.meal === slot.name));
+          setEntries(remaining);
+          setTotalProtein(Math.round(remaining.reduce((s, e) => s + (e.protein || 0), 0) * 10) / 10);
+          setTotalCarbs(Math.round(remaining.reduce((s, e) => s + (e.carbs || 0), 0) * 10) / 10);
+          setTotalFat(Math.round(remaining.reduce((s, e) => s + (e.fat || 0), 0) * 10) / 10);
+          saveField('entries', remaining);
+          saveToFirebase(activeDate, 'entries', remaining);
+          showToast(`${slot.name} cleared`, `${count} ${count === 1 ? 'item' : 'items'} removed`, 'success');
+        }},
+      ]
+    );
   };
 
   useEffect(() => {
@@ -1386,6 +1459,16 @@ export default function LogScreen() {
         entries={entries}
         defaultShowNet={showNetCarbs}
       />
+      {repeatModalSlot && (
+        <RepeatMealModal
+          visible={!!repeatModalSlot}
+          onClose={() => setRepeatModalSlot(null)}
+          slots={mealSlots}
+          launchSlot={repeatModalSlot}
+          viewedKey={activeDate}
+          onAdded={applyMergedEntries}
+        />
+      )}
 
       {/* Meal Sections */}
       {mealSlots.map((slot, mealIdx) => {
@@ -1411,7 +1494,8 @@ export default function LogScreen() {
             <TouchableOpacity ref={entries.some(e => e.tutorialEntry) ? (slot.id === 'ms_lunch' ? (mealTotalRef as any) : undefined) : (mealIdx === 0 ? (mealTotalRef as any) : undefined)} style={[styles.mealInfo, { flexDirection: 'row', alignItems: 'center' }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); toggleMeal(slot.id); }}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.mealName, { color: theme.textSecondary }]}>{slot.name}</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2, opacity: mealTotal > 0 ? 1 : 0 }}>
+                {mealTotal > 0 && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                     <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#0d9268' }} />
                     <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{mealProtein}g</Text>
@@ -1425,6 +1509,7 @@ export default function LogScreen() {
                     <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{mealFat}g</Text>
                   </View>
                 </View>
+                )}
               </View>
               {mealTotal > 0 && (
                 <View style={{ alignItems: 'flex-end', marginRight: 4 }}>
@@ -1438,6 +1523,46 @@ export default function LogScreen() {
             <TouchableOpacity style={styles.mealChevron} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); toggleMeal(slot.id); }}>
               <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={theme.textMuted} />
             </TouchableOpacity>
+
+            {/* Repeat a Meal pill -- only on an EMPTY slot that has copyable history in the window */}
+            {mealEntries.length === 0 && repeatSummary[slot.id]?.hasHistory && (
+              <View style={{ width: '100%', paddingLeft: 50, paddingRight: 16, paddingBottom: 12, marginTop: -8, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                {repeatSummary[slot.id].yesterdayItems.length > 0 ? (
+                  <>
+                    <TouchableOpacity
+                      onPress={() => repeatYesterday(slot)}
+                      activeOpacity={0.85}
+                      hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                      style={{ flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.accentBlue, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 7 }}>
+                      <Ionicons name="repeat" size={13} color={theme.accentBlue} />
+                      <Text numberOfLines={1} style={{ flexShrink: 1, color: theme.accentBlue, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>
+                        Repeat Yesterday · {repeatSummary[slot.id].yesterdayTotal} kcal
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => openRepeatModal(slot)}
+                      activeOpacity={0.7}
+                      hitSlop={{ top: 8, bottom: 8, left: 6, right: 8 }}
+                      accessibilityLabel="Pick a day to repeat a meal from"
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.accentBlue, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 7 }}>
+                      <Ionicons name="calendar" size={13} color={theme.accentBlue} />
+                      <Text style={{ color: theme.accentBlue, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Pick a Day</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <TouchableOpacity
+                    onPress={() => openRepeatModal(slot)}
+                    activeOpacity={0.85}
+                    hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                    style={{ flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.accentBlue, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 7 }}>
+                    <Ionicons name="repeat" size={13} color={theme.accentBlue} />
+                    <Text numberOfLines={1} style={{ flexShrink: 1, color: theme.accentBlue, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>
+                      Repeat a Previous Meal
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
 
             {/* Expanded food list */}
             {visibleMeals[slot.id] && (
@@ -1577,6 +1702,17 @@ export default function LogScreen() {
                       </View>
                     </TouchableOpacity>
                   ))
+                )}
+                {/* Clear all -- quiet link, only when the meal has items; one confirm for the batch */}
+                {mealEntries.length >= 1 && (
+                  <TouchableOpacity
+                    onPress={() => clearMeal(slot)}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4, paddingTop: 8, paddingBottom: 2, paddingRight: 2 }}>
+                    <Ionicons name="trash-outline" size={13} color={theme.accentRed} />
+                    <Text style={{ fontSize: 12, color: theme.accentRed, fontFamily: 'DMSans_600SemiBold' }}>Clear all</Text>
+                  </TouchableOpacity>
                 )}
               </View>
               </Animated.View>

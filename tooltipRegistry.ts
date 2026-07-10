@@ -25,6 +25,18 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     ],
   },
   {
+    key: 'repeat_a_meal',
+    category: 'Nutrition',
+    title: 'Repeat a Meal',
+    body: 'Eat the same breakfast most mornings? Repeat a Meal re-logs a previous day\'s meal into the day you\'re viewing, so you don\'t re-add the same foods over and over.\n\nWhen a meal slot is empty and you\'ve logged that meal before, a "Repeat" pill appears on it. If yesterday\'s same meal has food, the pill reads "Repeat Yesterday" and one tap copies the whole thing in. To pull from a different day, tap "Pick a Day" (the calendar button next to it) to open the picker; if yesterday is empty the pill itself opens the picker. There you can choose any day from the last two weeks and check or uncheck individual items before adding.\n\nEverything copies exactly: servings, calories, macros, all the extended nutrition, even the food photo. Nothing is re-searched or re-estimated, so the numbers match the original meal precisely. The foods land as separate entries you can still edit or delete one by one.\n\nLogged the wrong meal? Expand it and tap "Clear all" at the bottom of its item list to remove the whole meal at once.',
+    definitions: [
+      { term: 'Where it goes', explanation: 'The copied foods always land in the meal slot you tapped the pill on. You can pull FROM a different meal (say, yesterday\'s Lunch) using the chips at the top of the picker, but they still get added to the slot you started from.' },
+      { term: 'Which days show up', explanation: 'The picker scans the last 14 days and lists every day that has food in the meal you\'re pulling from, newest first. A day with nothing in that meal simply doesn\'t appear.' },
+      { term: 'Pick and choose', explanation: 'In the picker, every item starts checked. Uncheck anything you don\'t want today, and the count, calories, and macros update live as you toggle.' },
+      { term: 'Clear a whole meal', explanation: 'To wipe everything logged to one meal at once instead of deleting item by item, expand that meal and tap "Clear all" at the bottom. It confirms first, then removes only that meal\'s entries for the day.' },
+    ],
+  },
+  {
     key: 'notification_hub',
     category: 'Habits',
     title: 'Notifications',

@@ -11,6 +11,45 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-10 REPEAT A MEAL built (slices 1-5, pure JS, no rebuild). Re-log a previous day's meal-slot
+  entries into the day you're VIEWING by deep-cloning the stored entries (meal + incremented timestamps
+  the only changes; servings/macros/extended-nutrition/photo all carry verbatim, no re-search/re-estimate,
+  AI items included safely). New utils/repeatMeal.ts (getRepeatSummary one-pass all-slots, getRepeatDays
+  per-slot accordion, buildClones, read-then-merge logRepeatedItems) + 25 passing unit tests (npm run
+  test:repeat). components/RepeatMealModal.tsx = full modal standard (centered card, handle pill, 2.5px
+  accent TOP border, spring 0.85->1 + opacity on onShow, ToastRenderer inside, source-slot chips defaulting
+  to launch slot, newest-day-pre-expanded accordion, all-checked-by-default per-item checkboxes, live
+  dim/accent Add button; med haptic add / light toggles). Log tab: blue "Repeat" pill on EMPTY slots only
+  (history-gated, decision b = on the collapsed row) -- one-tap "Repeat yesterday's <slot> · <kcal>" +
+  "Other days" -> modal (or pill opens modal when yesterday empty). DESTINATION ALWAYS = launch slot;
+  source switchable. 14-day window. Explainers all done: tooltipRegistry 'repeat_a_meal' + tutorials Logging
+  QUICK TIPS step + Otto KB (deployed, appCompanion). tsc clean (0 new errors). OPEN TAIL: (a) device verify
+  = slice 6 (same-slot, cross-slot Dinner<-Lunch, per-item uncheck, AI item, photo carries, extended-nutrient
+  exactness, empty-slot gating, 14-day edge, viewing a PAST day lands there, 5-theme x accent); (b) optional
+  polish: food-photo thumbnails in the modal (skipped for now, marked optional in spec). Spec: SPEC_repeat_meal.md.
+  >> AESTHETIC POLISH PASS 2026-07-10 (Justin's device review, pure JS): (1) killed the phantom macro-dot row
+  on EMPTY log slots (was rendered at opacity 0, holding dead space above the pill) so the pill tucks under
+  the meal name; (2) pill = matched pair now (filled primary "Repeat yesterday's <slot> · N kcal" + a
+  border-matched "Other days ›" chip, was floating text); pill got its unit ("· 200" -> "· 200 kcal");
+  (3) no-yesterday variant reworded "Repeat a previous meal" (was the ungrammatical "Repeat a previous
+  Supplements"); (4) modal day cards now separate from the sheet on every theme via borderCardTop + a
+  shadow, and the EXPANDED card is accent-tinted (accentBlueBg + accentBlueBorder) so the open one is
+  obvious; (5) each day card shows LIVE macro dots (P/C/F) + a big KCAL value that track the checked
+  selection (uncheck an item -> header macros + kcal + Add button all drop together); (6) "CAL" column
+  header over the per-item numbers; (7) tidyFoodName rounds over-precise gram weights in displayed names
+  (see the upstream float bug now in Food & Log backlog). 30 unit tests pass. tsc clean. Device re-verify pending.
+  >> POLISH ROUND 2 2026-07-10 (2nd device review, pure JS): primary pill shortened to "Repeat Yesterday ·
+  N kcal" (dropped redundant slot name -> no more text cutoff; R/Y capped); "Other days" TEXT replaced by a
+  compact CALENDAR ICON button (both pill + icon got hitSlop for 44pt); no-yesterday variant "Repeat a
+  Previous Meal". Modal: switching the source chip now CROSSFADES the body (bodyOpacity, spinner only on
+  first load) so the card no longer collapses/re-centers ("closes and reopens" bug), and scroll resets to
+  top on switch. Killed the redundant "CAL" column header (the KCAL total sits right above it). Day-card
+  date now matches the day-name weight/color (was dim). NEW: per-meal CLEAR ALL -- quiet "Clear all" trash
+  link at the bottom of an expanded meal's item list (only when >=1 item), one confirm removes just that
+  meal's entries for the viewed day (read-then-merge, heavy haptic, toast); solves the "repeated the wrong
+  day -> 16 taps to undo" pain. Otto KB refreshed (calendar-icon wording, Clear All, timer-chip location)
+  + redeployed; tooltipRegistry 'repeat_a_meal' updated (calendar icon + Clear All). tsc clean, 30 tests pass.
+  Otto verify-questions handed to Justin. Device re-verify still pending (incl. crossfade + Clear All + 5-theme).
 - 2026-07-10 WORKOUT TIMER RELOCATION + polish (Cengiz feedback: the full-width rest banner blocked
   scrolling/tapping between sets). Rest + hold timers now live in a compact TWO-ROW chip docked between the
   Otto and "+" FABs (left/right:90 clears both 56px discs; time+buttons row over a full-width centered
@@ -127,27 +166,12 @@ are separate pre-submission checklists, NOT part of this menu.
      from fetchTrendData) + Stats > Reports entry card. 3 starter blocks: Weight trend, Nutrition headline,
      Macro split. REMAINING: more blocks (grow the ~55), custom date range UI, export (PDF/share),
      templates, per-chapter faith-tier/wearable gating in the picker, tooltip + Otto KB. Device-verify pending.
-- [TRACK, DESIGN LOCKED 2026-07-10, ready to build] REPEAT A MEAL (Cengiz + dad feedback: fast
-  re-logging of a repeated meal, e.g. the same breakfast every day). NO saved object -- it re-reads a
-  previous day's meal slot and re-logs those entries into today by CLONING the stored entry exactly
-  (serving/amount, cals, macros, all extended nutrition carry over; photos come free -- keyed to the food
-  via fsId/myFoodId, not the entry). Cloning (not re-resolving) also sidesteps AI-item + stale-food
-  name-match bugs. ENTRY POINT = subtle accent PILL on the EMPTY meal slot, only renders when history
-  exists. ONE-TAP FAST PATH: if yesterday's same slot has food the pill logs it all in one tap ("Repeat
-  yesterday's morning") + an "Other days" control opens the modal; no-yesterday = the pill opens the modal
-  directly. MODAL = source-slot chip row (defaults to the slot you launched from) + day accordion (newest
-  pre-expanded; collapsed row = date + total kcal on line 1, truncated food-name preview on line 2) +
-  per-item CHECKBOXES all checked by default (uncheck to exclude; Add button shows live count + kcal).
-  🔒 DESTINATION IS ALWAYS THE LAUNCH SLOT (Dinner can pull yesterday's Lunch into today's Dinner).
-  Window = scan 14 days, show every matching day newest-first (no "show more"). AI-estimated items are
-  INCLUDED (clone = safe). Timestamps incremented per item (order + uniqueness). Reuse the existing
-  id-or-name slot matcher. Mindful = no variance (neutral toast copy). Full modal aesthetic standard
-  (handle pill near top, accent top border, scale+opacity spring on onShow, ToastRenderer inside, medium
-  haptic on add / light on toggles). >> FOLLOW-ON TO DISCUSS (Justin curious, NOT part of this build):
-  "SAVE AS A MEAL" = save a group of distinct foods as a named, reusable one-tapper. Differs from a
-  Recipe: a recipe BLENDS ingredients into ONE food line (single entry, loses the items); a meal keeps the
-  foods as SEPARATE entries logged together. Needs its own design pass (how it looks/behaves, how it lives
-  alongside recipes). Full spec: SPEC_repeat_meal.md.
+- [FOLLOW-ON TO DISCUSS, from Repeat a Meal which SHIPPED 2026-07-10] "SAVE AS A MEAL" = save a group of
+  distinct foods as a named, reusable one-tapper (Justin curious). Differs from a Recipe: a recipe BLENDS
+  ingredients into ONE food line (single entry, loses the items); a meal keeps the foods as SEPARATE
+  entries logged together. Repeat a Meal already re-logs separate entries from history; this would persist
+  a named bundle. Needs its own design pass (look/behavior, where it's saved + surfaced, how it lives
+  alongside recipes without confusing the two). Full spec context: SPEC_repeat_meal.md bottom section.
 - [x] Otto on-demand data access thread -- COMPLETE 2026-07-05 (one dataset at a time, conditional-injection pattern from utils/companionPRs.ts). SHIPPED: PR values + real-exercise recognition + per-lift TREND + recent-workouts (30-day sessions) + food log (30-day totals + named-day items) + sleep + recovery (30-day nights + named-night detail) + body measurements (per-field value/age/delta + Navy BF% + history) + achievements (earned set + live badge progress via shared achievementProgress scan) + journal/prayer (recent entries + prayers, privacy + faith-tier gated). All device-verified. OPTIONAL later add: full per-metric streak tiles (needs the Stats streak engine extracted into a shared util first). Did NOT build true LLM tool-use (Haiku too flaky); revisit only if Otto moves to a stronger model.
 - [x] FAB contrast/border (GLOBAL) -- COMPLETE 2026-07-05. "bg ring" recipe = borderWidth: 3, borderColor: theme.bgPrimary on the FAB circle (invisible moat over the page, visible ring the moment it overlaps a same-accent button). DONE across every real page FAB: Otto FAB (AssistantFAB) + Workout tab (main + 2 subs) + workout-library (main + 3 subs) + stats (main + 3 subs) + add-food (main + 3 subs) + body-measurements + bible + journal + prayer + Halo (CompanionFAB, SVG special case: drawn page-colored Circle ring at r=DISC/2-1.5 instead of a border, now theme-aware). The other roadmap-listed files had NO floating page FAB (settings/profile/AssistantOverlay = the global Otto FAB already done + save bars; ai-meal-estimator/AddPrayerModal = none; CompanionChat/AssistantChat send buttons = in-bar, not overlap-prone, intentionally excluded). Awaiting 5-theme x all-accent device audit before fully closing the visual gate.
 - [ ] [FIX, data-integrity, needs reinstall verify] Achievement unlockedAt reinstall hardening. Badges
@@ -232,6 +256,12 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 - Custom profile pictures -- user-set avatar via image picker (HeaderAvatar). QoL/aesthetic bump, likely small.
 
 ### Food & Log
+- [BUG, low, data-cosmetic] Over-precise gram weight baked into some food-entry NAMES, e.g.
+  "Lightly Breaded Chicken Dino Nuggets (108.5000000031g)" -- a float-rounding slip at log time writes
+  the ugly decimal into the stored name string. Surfaced 2026-07-10 in the Repeat a Meal previews;
+  worked around there by rounding at DISPLAY (utils/repeatMeal.tidyFoodName), but the real fix is
+  upstream where the serving gram weight gets formatted into the name (round to <=1 decimal before it's
+  stored). Find the name-build site (add-food / food-detail serving math) and round there.
 - Big 3 macro presets -- quick protein/carb/fat picker from the macro gear icon and/or Settings.
 - %DV entry in Create Food -- bidirectional amount/%DV fields. Full spec: SPEC_nutrition.md.
 - Food search fuzzy matching -- local results use exact substring only; add fuzzy/Levenshtein. add-food.tsx.

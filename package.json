@@ -9,7 +9,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "test:pr": "tsc utils/liftPR.ts utils/liftPR.test.ts --outDir .pr-test --module commonjs --target es2019 --esModuleInterop --skipLibCheck --rootDir . && node .pr-test/utils/liftPR.test.js"
+    "test:pr": "tsc utils/liftPR.ts utils/liftPR.test.ts --outDir .pr-test --module commonjs --target es2019 --esModuleInterop --skipLibCheck --rootDir . && node .pr-test/utils/liftPR.test.js",
+    "test:repeat": "tsc utils/repeatMeal.ts utils/repeatMeal.test.ts --outDir .repeat-test --module commonjs --target es2019 --esModuleInterop --skipLibCheck --rootDir . && node .repeat-test/utils/repeatMeal.test.js"
   },
   "dependencies": {
     "@expo-google-fonts/bebas-neue": "^0.4.1",

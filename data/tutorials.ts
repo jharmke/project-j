@@ -736,9 +736,9 @@ export const TUTORIALS: Tutorial[] = [
         targetKey: 'none',
         title: 'QUICK TIPS',
         body: {
-          discipline: 'Demo entry removed. Recents tab: your last 15 logged foods, fastest re-log. Favorites tab: star any food for instant access.',
-          balanced: 'Done. The demo entry has been removed. The Recents tab shows your last 15 logged foods. Star any food to save it in Favorites.',
-          mindful: 'All cleaned up. The Recents and Favorites tabs make re-logging easier over time. Use whichever feels right.',
+          discipline: 'Demo entry removed. Recents tab: your last 15 logged foods, fastest re-log. Favorites tab: star any food for instant access. And when a meal slot is empty, a "Repeat" pill copies a previous day\'s meal in with a tap.',
+          balanced: 'Done. The demo entry has been removed. The Recents tab shows your last 15 logged foods, and starring a food saves it in Favorites. Eat the same thing often? An empty meal slot shows a "Repeat" pill that re-logs a previous day\'s meal for you.',
+          mindful: 'All cleaned up. The Recents and Favorites tabs make re-logging easier over time. And if you eat the same meal a lot, the "Repeat" pill on an empty slot brings a previous day\'s meal back with one tap. Use whichever feels right.',
         },
       },
     ],
@@ -764,9 +764,9 @@ export const TUTORIALS: Tutorial[] = [
         targetKey: 'log_delete_btn',
         title: 'REMOVING AN ENTRY',
         body: {
-          discipline: 'Tap the X on an entry row to delete it. The macro totals recalculate immediately. No confirmation needed; undo by re-logging.',
-          balanced: 'Tap the X on any food entry to remove it from your log. Your totals update instantly.',
-          mindful: 'Tap the X to remove an entry. If you change your mind, just log the food again.',
+          discipline: 'Tap the X on an entry row to delete it. The macro totals recalculate immediately. No confirmation needed; undo by re-logging. To wipe a whole meal at once, use "Clear all" at the bottom of the expanded meal.',
+          balanced: 'Tap the X on any food entry to remove it from your log. Your totals update instantly. Need to clear a whole meal? Tap "Clear all" at the bottom of the expanded meal to remove everything in it at once.',
+          mindful: 'Tap the X to remove an entry. If you change your mind, just log the food again. To clear a whole meal in one go, there\'s a "Clear all" at the bottom of the expanded meal.',
         },
       },
       {

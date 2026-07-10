@@ -45,6 +45,9 @@ google-services.json
 # PR engine test build output (npm run test:pr)
 .pr-test/
 
+# Repeat-a-meal test build output (npm run test:repeat)
+.repeat-test/
+
 app-example
 
 # generated native folders

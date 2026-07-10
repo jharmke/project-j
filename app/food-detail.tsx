@@ -832,10 +832,14 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           }
         });
       }
+      // Round the gram/oz weight shown in the NAME to <=1 decimal so a serving-count conversion can't bake
+      // a float artifact into the stored name (e.g. 1.3333 servings -> "113.33304999999999g"). Display-only:
+      // loggedAmount below keeps the precise value, so edit math is unaffected.
+      const nameAmount = (() => { const n = parseFloat(amount); return isFinite(n) ? String(Math.round(n * 10) / 10) : amount; })();
       const newEntry = {
   // Serving-only recipe entries rebuild the name in servings (amount tracks the serving count), so an
   // edited count is reflected; everything else rebuilds from the edited amount + unit.
-  name: isServingOnlyRecipe ? `${food.description} (${amount} ${amount === '1' ? 'serving' : 'servings'})` : `${food.description} (${amount}${unit})`,
+  name: isServingOnlyRecipe ? `${food.description} (${amount} ${amount === '1' ? 'serving' : 'servings'})` : `${food.description} (${nameAmount}${unit})`,
   cal: calories,
   meal: currentMeal,
   protein,

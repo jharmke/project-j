@@ -10,7 +10,7 @@ import { Alert, Animated, Easing, Keyboard, KeyboardAvoidingView, Modal, Platfor
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import PressableButton from '../../components/PressableButton';
 import { DEFAULT_MEAL_SLOTS, MealSlot, findSlotForMeal, loadMealSlots, saveMealSlots } from '../../utils/mealSlots';
-import { getRepeatSummary, logRepeatedItems, SlotRepeatInfo } from '../../utils/repeatMeal';
+import { getRepeatSummary, logRepeatedItems, SlotRepeatInfo, tidyFoodName } from '../../utils/repeatMeal';
 import RepeatMealModal from '../../components/RepeatMealModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
@@ -1646,7 +1646,9 @@ export default function LogScreen() {
                           const foodName = parts[0];
                           const brand = parts.length > 1 ? parts.slice(1).join(' · ') : null;
                           const amountMatch = entry.name.match(/\((\d+\.?\d*(?:g|oz|serving))\)$/);
-                          const amountLabel = amountMatch ? amountMatch[1] : null;
+                          // Round any over-precise gram/oz weight baked into the stored name for display, e.g.
+                          // "113.33304999999999g" -> "113.3g". Display-only; the stored entry is untouched.
+                          const amountLabel = amountMatch ? tidyFoodName(amountMatch[1]) : null;
                           return (
                             <>
                               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>

@@ -11,6 +11,12 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-10 [BUG FIX, data-cosmetic] Over-precise gram weight in food-entry NAMES (e.g. "Italian Style
+  Meatballs (113.33304999999999g)" from logging 1.3333 servings). Two-part fix: (1) DISPLAY: the Log tab meal
+  rows now round the parsed gram/oz label via the shared utils/repeatMeal.tidyFoodName (>=3-decimal numbers ->
+  1 decimal), which cleans EXISTING ugly entries too; (2) UPSTREAM: food-detail.tsx name-build rounds the
+  gram/oz amount to <=1 decimal before storing, so NEW entries are clean (loggedAmount stays precise -> edit
+  math unaffected). Pure JS, tsc clean (no new errors). Was the parked Food & Log backlog bug.
 - 2026-07-10 WEIGHT HISTORY + STARTING WEIGHT SHIPPED (gear on the home Weight card; all 5 slices; device +
   8-check dev self-test verified; Otto deployed). Editable weigh-in history (edit/delete per day + back-dated
   "add a past weigh-in", today-or-earlier), starting weight = earliest weigh-in (tap to correct; an earlier add
@@ -241,12 +247,6 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 - Custom profile pictures -- user-set avatar via image picker (HeaderAvatar). QoL/aesthetic bump, likely small.
 
 ### Food & Log
-- [BUG, low, data-cosmetic] Over-precise gram weight baked into some food-entry NAMES, e.g.
-  "Lightly Breaded Chicken Dino Nuggets (108.5000000031g)" -- a float-rounding slip at log time writes
-  the ugly decimal into the stored name string. Surfaced 2026-07-10 in the Repeat a Meal previews;
-  worked around there by rounding at DISPLAY (utils/repeatMeal.tidyFoodName), but the real fix is
-  upstream where the serving gram weight gets formatted into the name (round to <=1 decimal before it's
-  stored). Find the name-build site (add-food / food-detail serving math) and round there.
 - Big 3 macro presets -- quick protein/carb/fat picker from the macro gear icon and/or Settings.
 - %DV entry in Create Food -- bidirectional amount/%DV fields. Full spec: SPEC_nutrition.md.
 - Food search fuzzy matching -- local results use exact substring only; add fuzzy/Levenshtein. add-food.tsx.

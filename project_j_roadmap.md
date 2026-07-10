@@ -11,6 +11,18 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-10 WORKOUT TIMER RELOCATION + polish (Cengiz feedback: the full-width rest banner blocked
+  scrolling/tapping between sets). Rest + hold timers now live in a compact TWO-ROW chip docked between the
+  Otto and "+" FABs (left/right:90 clears both 56px discs; time+buttons row over a full-width centered
+  label; fade in/out via Reanimated; thin 1px accent border -- blue rest / green hold; bigger Done). Also
+  fixed: hold Done haptic (was silent -> Medium); double-timer overlap (a live hold owns the single slot so
+  checking another set no longer stacks a rest; tapping the holding set's own check circle now acts as Done
+  and logs the ACTUAL elapsed hold, so an accidental circle-tap does the right thing); edit-exercise TIME
+  sync (option C -- editing a time exercise applies the new duration to un-done sets, silent when uniform,
+  prompts "Apply to all?" only when un-done sets differ, finished sets never touched). Cut the hold +15
+  (you don't tap mid-hold). Dev-verified (fade/haptics/layout/double-timer/prompt). OPEN TAILS: (a) 5-theme
+  x accent audit (tested Light/cyan only); (b) release/TestFlight feel-verify; (c) PARKED optional -- a
+  countdown hold could roll into overtime instead of auto-ending at the target (removes any need for +15).
 - 2026-07-10 [PERF BUG FIX, dev-verified] Add-exercise cold-remounted the whole Workout tab. Picking a
   library exercise did router.push('/(tabs)/workout', {pendingExercise}) -> a PUSH spawned a brand-new
   Workout screen every time (full cold mount: June-carousel flash, empty exercises, default avatar, 5-10s

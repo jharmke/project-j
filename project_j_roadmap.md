@@ -143,6 +143,15 @@ are separate pre-submission checklists, NOT part of this menu.
      from fetchTrendData) + Stats > Reports entry card. 3 starter blocks: Weight trend, Nutrition headline,
      Macro split. REMAINING: more blocks (grow the ~55), custom date range UI, export (PDF/share),
      templates, per-chapter faith-tier/wearable gating in the picker, tooltip + Otto KB. Device-verify pending.
+- [TRACK, DESIGN LOCKED 2026-07-10, ready to build] WEIGHT HISTORY + STARTING WEIGHT (home Weight card gear
+  modal). Follow-on to the dad weight-card fix. Adds a gear on the home Weight card opening a modal with:
+  starting weight up top (= the earliest weigh-in, what Total is measured from, tap to correct), an editable
+  history of past weigh-ins (edit/delete per day, water-log style), and a "+ add a past weigh-in" (back-dated,
+  never future). "Starting weight" is just the earliest history entry (no new field, no baseline change --
+  onboarding already seeds it into the log). Goal weight shown read-only (edit stays in Profile). All writes
+  read-then-merge the `pj_<date>.weight` scalar (never clobber that day's food/water), plausibility-guarded,
+  Firebase-synced, milestone recompute (never revokes). Mindful = neutral. Explainers REQUIRED same session:
+  tooltipRegistry + tutorials + Otto KB (redeploy). Full spec + build slices: SPEC_weight_history.md.
 - [FOLLOW-ON TO DISCUSS, from Repeat a Meal which SHIPPED 2026-07-10] "SAVE AS A MEAL" = save a group of
   distinct foods as a named, reusable one-tapper (Justin curious). Differs from a Recipe: a recipe BLENDS
   ingredients into ONE food line (single entry, loses the items); a meal keeps the foods as SEPARATE
@@ -220,10 +229,11 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 - Daily Intention card for Not Right Now users -- Today's Message morphs for NRN. Low priority.
 
 ### Home / UX
-- [DESIGN Q] Home Weight card "Total" baseline -- currently measures from the earliest LOGGED daily weigh-in.
-  Consider switching to the onboarding STARTING weight (MFP-style "since start") so "total" reflects true
-  progress from day one. Same for a brand-new user; diverges long-term. Surfaced 2026-07-10 with the Total
-  Lost/Gained label fix (which was baseline-agnostic). Decide the intended baseline before changing.
+- [RESOLVED 2026-07-10 -> now the WEIGHT HISTORY track in NEXT UP] The "Total" baseline question: turned out
+  onboarding already SEEDS the starting weight into the log (your-style.tsx:373-380), so the earliest logged
+  weigh-in already IS the onboarding weight -- no baseline change needed. The real gap was that past weigh-ins
+  aren't editable, so a bad starting weight can't be fixed. Fix = an editable weight-history modal. See
+  SPEC_weight_history.md.
 - Primary button audit -- all primary CTAs to full accent fill; transparent bordered = secondary only.
 - Day detail BMR row -- add estimated BMR to the calorie breakdown (Consumed/Burned/Net).
 - Exclusions polish -- first-use callout on calendar dot; help article; excluded-list view (view + un-exclude); three entry points.
@@ -346,7 +356,7 @@ Every major feature has a SPEC_*.md in the repo root. Active ones tied to open w
 - Sleep/Recovery: SPEC_sleep.md, SPEC_recovery_coach.md, SPEC_hr_zones.md | Lifting: SPEC_lifting_log.md | Workout sessions: SPEC_workout_sessions.md
 - Nutrition: SPEC_nutrition.md, SPEC_calorie_goal_hit.md, SPEC_calorie_floor.md, SPEC_ai_meal_estimator.md | Day/Reports: SPEC_day_score_and_summary.md, SPEC_weekly_summary.md, SPEC_monthly_summary.md, SPEC_evr_redesign.md, SPEC_comparison_challenge.md, SPEC_custom_reports.md
 - Faith/Coach: SPEC_faith_ai.md, SPEC_faith_tab.md, SPEC_smart_tips.md, SMART_COACH_SPEC.md, TRIGGER_LIBRARY.md | Cards: SPEC_card_gradient.md | Vacation: SPEC_vacation_mode.md | Tutorials: tutorial_system_spec.md
-- Body: SPEC_body_measurements.md, SPEC_body_progress.md
+- Body: SPEC_body_measurements.md, SPEC_body_progress.md, SPEC_weight_history.md
 - App Store: APP_STORE_CHECKLIST.md, COMPLIANCE_SCAN_findings.md
 
 ## 📎 ARCHIVES

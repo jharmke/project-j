@@ -5,7 +5,7 @@ import { useScrollToTop } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Animated, AppState, Dimensions, Keyboard, KeyboardAvoidingView, Modal, PanResponder, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -668,35 +668,43 @@ const generate21Days = () => {
 const DATES = generate21Days();
 const DAY_NAMES_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-const params = useLocalSearchParams<{ pendingExercise?: string; pendingDay?: string }>();
-
-useEffect(() => {
-  if (params.pendingExercise && params.pendingDay) {
-    const ex = JSON.parse(params.pendingExercise);
-    const targetDay = params.pendingDay;
-    setActiveDay(targetDay);
-    setModalDay(targetDay);
-    setEditingExercise(null);
-    setForm({
-      name: ex.name,
-      sets: ex.sets,
-      reps: ex.reps,
-      rest: ex.rest,
-      note: ex.note,
-      isCardio: ex.isCardio,
-      weightUnit: (ex.weightUnit ?? 'lb') as 'lb' | 'kg',
-      trackingType: (ex.trackingType ?? 'reps') as 'reps' | 'time',
-      duration: '',
-      distance: '',
-      speed: '',
-      incline: '',
-      resistance: '',
-      hr: '',
-      calories: '',
-    });
-    setShowAddModal(true);
-  }
-}, [params.pendingExercise]);
+// An exercise picked in the library is handed off via the pj_pending_exercise storage slot + router.back()
+// (NOT a param push/navigate, which spawned a fresh Workout screen = remount/flash/slowdown). Read + clear
+// it on focus and open the add modal. Fires once (slot cleared immediately); a normal focus finds nothing.
+useFocusEffect(
+  useCallback(() => {
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem('pj_pending_exercise');
+        if (!raw) return;
+        await AsyncStorage.removeItem('pj_pending_exercise');
+        const ex = JSON.parse(raw);
+        const targetDay = ex.day || getWorkoutDateKey();
+        setActiveDay(targetDay);
+        setModalDay(targetDay);
+        setEditingExercise(null);
+        setForm({
+          name: ex.name,
+          sets: ex.sets ?? '',
+          reps: ex.reps ?? '',
+          rest: ex.rest ?? '',
+          note: ex.note ?? '',
+          isCardio: ex.isCardio ?? false,
+          weightUnit: (ex.weightUnit ?? 'lb') as 'lb' | 'kg',
+          trackingType: (ex.trackingType ?? 'reps') as 'reps' | 'time',
+          duration: '',
+          distance: '',
+          speed: '',
+          incline: '',
+          resistance: '',
+          hr: '',
+          calories: '',
+        });
+        setShowAddModal(true);
+      } catch {}
+    })();
+  }, [])
+);
   const activeDateObj = DATES.find(d => d.key === activeDay);
 const activeDayName = activeDateObj?.dayName || 'Mon';
 const program = programs[activeDay] || weeklyTemplate[activeDayName] || BLANK_DAY;

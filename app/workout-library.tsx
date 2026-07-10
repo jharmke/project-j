@@ -2520,21 +2520,23 @@ export default function WorkoutLibraryScreen() {
   const selectExercise = async (ex: LibraryExercise, targetDay?: string) => {
     const updated = library.map(e => e.id === ex.id ? { ...e, recentlyUsed: Date.now() } : e);
     await saveLibrary(updated);
-    router.push({
-      pathname: '/(tabs)/workout',
-      params: {
-        pendingExercise: JSON.stringify({
-          id: Math.random().toString(36).substr(2, 9),
-          name: ex.name,
-          sets: '',
-          reps: '',
-          rest: '',
-          note: ex.note || '',
-          isCardio: ex.type === 'cardio',
-        }),
-        pendingDay: targetDay || day,
-      }
-    });
+    // Hand the picked exercise to the ALREADY-MOUNTED workout tab via a storage slot, then router.back().
+    // back() just pops THIS library screen off and reveals the workout screen that was underneath the
+    // whole time -> zero remount. (Both push and navigate to /(tabs)/workout spawned a fresh Workout
+    // instance = the June-carousel flash / 5-10s hydrate / stacked-screen slowdown.) The workout tab
+    // reads + clears this slot on focus to open the add modal.
+    await AsyncStorage.setItem('pj_pending_exercise', JSON.stringify({
+      id: Math.random().toString(36).substr(2, 9),
+      name: ex.name,
+      sets: '',
+      reps: '',
+      rest: '',
+      note: ex.note || '',
+      isCardio: ex.type === 'cardio',
+      day: targetDay || day,
+    }));
+    if (router.canGoBack()) router.back();
+    else router.navigate('/(tabs)/workout');
   };
 
   useEffect(() => {

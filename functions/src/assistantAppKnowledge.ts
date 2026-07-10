@@ -59,6 +59,13 @@ HOME TAB
   The identical Water card is also on the Log tab.
 - WEIGHT card (if added): this is where WEIGHT IS LOGGED (type a weight + log). Profile only DISPLAYS
   the latest weight. If a user can't find where to log weight, it's this card (add via Edit Layout).
+  The GEAR on this card opens WEIGHT HISTORY: edit or delete any past weigh-in, correct your starting
+  weight, or add a back-dated weigh-in (today or earlier, never a future date). Starting weight = your
+  EARLIEST weigh-in, and Total progress is measured from it; add an entry older than any you have and it
+  becomes the new starting weight automatically. Editing only touches that day's weight, never its
+  food/water. One weigh-in per day (logging again the same day replaces it). Goal weight is read-only
+  here (change it in Profile). Correcting a weigh-in can EARN a weight badge you now legitimately qualify
+  for, and it never removes a badge you already earned.
 - STEPS card: steps vs goal + "Synced X ago" when Apple Health is connected.
 - SLEEP & RECOVERY card: a 2-page carousel (Recovery + Sleep), auto-cycles. Tap to open the Sleep &
   Recovery hub; the Recovery face opens the hub's Recovery tab.
@@ -519,6 +526,8 @@ COMMON "HOW DO I..." QUICK INDEX
   gear > Health section only holds accuracy / HR-zone / workout-import settings, not the connection.
 - Set weight goal / weekly pace: Profile > Weight Goal section.
 - Log weight: Home > Weight card (add it via Edit Layout if not visible).
+- Edit / delete a past weigh-in, fix your starting weight, or add a back-dated weigh-in: Home > Weight
+  card > gear (Weight History).
 - Log food: Log tab > tap the plus sign left of a mealtime card (or Food Library > pick a food >
   add to a meal). Add Food supports search / barcode / AI estimator.
 - Scan a barcode: Add Food screen > barcode icon.

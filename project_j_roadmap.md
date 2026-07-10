@@ -170,9 +170,24 @@ are separate pre-submission checklists, NOT part of this menu.
      wrapper that broke centering + made the modal jump when the keypad opened, tightened the edit-overlay
      handle, gave the edit input + starting-weight card visible borders, auto-scroll-to-end when "Add a past
      weigh-in" expands, capitalized "Change in Profile". Modal stays neutral (no colors) in all modes by design.
-     REMAINING: slice 3 milestone recompute on change (never
-     revokes) + final card-recompute rigor, slice 4 explainers (tooltip+tutorials+Otto KB redeploy), slice 5
-     device verify (incl. 5-theme x accent + read-then-merge food/water safety).
+  >> SLICE 3 BUILT 2026-07-10 (pure JS): milestone recompute wired into the modal's onChange
+     (refreshWeightCardState in index.tsx). After any edit/add/delete it re-runs logWeight's exact achievement
+     block keyed off the fresh history's earliest (starting) + newest (current) weigh-in, so a corrected or
+     back-dated weight can GRANT a newly-legit weight badge (first weigh-in / 5-lb loss+gain milestones / goal
+     weight). ADD-ONLY by construction (checkAndUnlock idempotent; getWeightMilestonesCrossed returns only
+     not-yet-earned crossings) so it never revokes an earned badge; typo guard (weightEntryIsPlausible on the
+     newest vs prior weigh-in) blocks a >20-lb-jump edit from minting a fake badge. Dev self-test extended with
+     3 PURE badge checks (grant / never-revoke / goal-hit) against in-memory stores -- never touches real
+     pj_achievements. tsc clean.
+  >> SLICE 4 BUILT + DEPLOYED 2026-07-10 (explainers): NEW tooltipRegistry 'weight_card' entry (Fitness; Today/
+     vs Yesterday, Total, Starting weight = earliest, editing history, read-only goal) + a (i) TooltipIcon added
+     to the home Weight card header (hideTour: no weight tutorial exists to launch). Otto KB
+     (functions/src/assistantAppKnowledge.ts) WEIGHT-card section + quick-reference taught the gear/Weight History (edit/delete/
+     correct-starting/back-dated, one-per-day, food+water untouched, goal read-only, badges can be earned never
+     revoked); appCompanion built + REDEPLOYED, live. NOTE: tutorials.ts intentionally NOT touched -- there is no
+     existing Weight-card tutorial to keep fresh (nothing stale); a full weight-card tutorial is a separate opt-in
+     build if Justin wants one. REMAINING: slice 5 device verify (i-tooltip copy + 5-theme x accent + read-then-
+     merge food/water safety + a real badge popping on a legit corrected weigh-in + Otto answers).
 - [FOLLOW-ON TO DISCUSS, from Repeat a Meal which SHIPPED 2026-07-10] "SAVE AS A MEAL" = save a group of
   distinct foods as a named, reusable one-tapper (Justin curious). Differs from a Recipe: a recipe BLENDS
   ingredients into ONE food line (single entry, loses the items); a meal keeps the foods as SEPARATE

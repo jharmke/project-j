@@ -15,7 +15,7 @@ import { BLANK_DAY, WorkoutTag } from '../workoutData';
 import CelebrationOverlay from '../components/CelebrationOverlay';
 import FeedbackModal from '../components/FeedbackModal';
 import { showAchievementToast } from '../components/AchievementToast';
-import { ACHIEVEMENTS, loadAchievements, checkAndUnlock, loadGoalHitCounts, checkSleepAchievements, checkNutritionAchievements, checkMomentumAchievements, checkWorkoutAchievements, checkFaithAchievements } from '../achievementData';
+import { ACHIEVEMENTS, loadAchievements, checkAndUnlock, loadGoalHitCounts, checkSleepAchievements, checkNutritionAchievements, checkMomentumAchievements, checkWorkoutAchievements, checkFaithAchievements, getWeightMilestonesCrossed, isGoalWeightHit } from '../achievementData';
 import { collection, getDocs } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app, auth, db, saveToFirebase } from '../firebaseConfig';
@@ -2574,6 +2574,16 @@ export default function SettingsScreen() {
                 const futKey = `${fut.getFullYear()}-${pad(fut.getMonth() + 1)}-${pad(fut.getDate())}`;
                 const futRes = await saveWeightForDate(futKey, 180, tKey);
                 results.push({ name: 'Refuses a future date', pass: futRes.ok === false });
+
+                // 6-8) Milestone rules -- PURE checks against throwaway in-memory stores.
+                // These never read or write your real pj_achievements; they only exercise the
+                // grant/never-revoke/goal logic the modal now runs after an edit.
+                const grant = getWeightMilestonesCrossed(180, 175, 165, {} as any); // 5 lb loss, fresh
+                results.push({ name: 'A 5 lb loss grants the 5 lb badge', pass: grant.includes('weight_loss_5') });
+                const heldStore: any = { weight_loss_5: { count: 1, unlockedAt: '2026-01-01', lastUnlockedAt: '2026-01-01' } };
+                const afterDownEdit = getWeightMilestonesCrossed(180, 178, 165, heldStore); // now only 2 lb loss
+                results.push({ name: 'Editing weight down never revokes an earned badge', pass: afterDownEdit.length === 0 && !!heldStore['weight_loss_5'] });
+                results.push({ name: 'Reaching goal weight registers a hit', pass: isGoalWeightHit(165, 165, 180, {} as any) === true && isGoalWeightHit(170, 165, 180, {} as any) === false });
               } catch (e) {
                 results.push({ name: 'Threw an error: ' + String(e), pass: false });
               } finally {
@@ -2590,7 +2600,7 @@ export default function SettingsScreen() {
             }}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowTitle, { color: theme.accentGreen }]}>Weight History self-test (dev)</Text>
-                <Text style={[styles.rowSub, { color: theme.textMuted }]}>One tap: seeds a throwaway day (food + water + weight) on empty dates 200-240 days back, runs the real edit/delete/add writers, and checks that editing or deleting a weigh-in never touches that day's food/water, that an older back-dated entry becomes the starting weight, and that garbage/future values are refused. Auto-cleans. Never touches your real data.</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>One tap: seeds a throwaway day (food + water + weight) on empty dates 200-240 days back, runs the real edit/delete/add writers, and checks that editing or deleting a weigh-in never touches that day's food/water, that an older back-dated entry becomes the starting weight, garbage/future values are refused, and the weight-badge rules hold (a real loss grants the badge; editing down never revokes one; goal-hit registers). Auto-cleans. Never touches your real data.</Text>
               </View>
               <Ionicons name="flask-outline" size={18} color={theme.accentGreen} />
             </TouchableOpacity>

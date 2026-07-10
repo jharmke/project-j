@@ -201,6 +201,34 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
       },
     ],
   },
+  {
+    key: 'weight_card',
+    category: 'Fitness',
+    title: 'Weight',
+    body: 'Log a weigh-in, see how today compares to yesterday, and track your total change since you started. Tap the gear to open your full weigh-in history.',
+    definitions: [
+      {
+        term: 'Today / vs Yesterday',
+        explanation: 'The most recent weigh-in and how it compares to your previous one. There is one weigh-in per day: logging again on the same day replaces it.',
+      },
+      {
+        term: 'Total',
+        explanation: 'Your change since your starting weight. Everything is measured from that first weigh-in, so this is your whole journey at a glance.',
+      },
+      {
+        term: 'Starting weight',
+        explanation: 'Simply your earliest weigh-in on record. Open the gear to correct it if it is wrong. If you add a weigh-in dated earlier than any you have, that one becomes your new starting weight automatically.',
+      },
+      {
+        term: 'Editing your history',
+        explanation: 'The gear opens every weigh-in you have logged, newest first. Edit or delete any day, or add a past weigh-in for a date you missed (today or earlier, never a future date). Editing only changes the weight: that day\'s food, water, and everything else stay untouched.',
+      },
+      {
+        term: 'Goal weight',
+        explanation: 'Shown here for reference only. Change your goal weight in Profile.',
+      },
+    ],
+  },
   // 'fitness_metrics' tooltip RETIRED 2026-06-17 with the home card (data duplicated the
   // Recovery card). Restore alongside the card if it comes back. See backlog.
   // 'vs_yesterday' tooltip RETIRED 2026-06-18 with the You vs Yesterday card (replaced

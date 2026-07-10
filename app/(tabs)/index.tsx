@@ -1962,6 +1962,56 @@ export default function HomeScreen() {
     } else {
       setLastKnownWeight(null);
     }
+
+    // Weight milestone recompute (slice 3). Mirrors logWeight's achievement block, but keyed
+    // off the freshly-gathered history: earliest (starting) + newest (current) weigh-in. So a
+    // corrected or back-dated weight can GRANT a newly-legit badge. This can only ADD badges:
+    // checkAndUnlock is idempotent and getWeightMilestonesCrossed returns only NOT-yet-earned
+    // crossings, so an edit that "un-crosses" a milestone leaves the earned badge intact (the
+    // app-wide never-revoke rule). Typo guard: skip granting if the newest weigh-in is an
+    // implausible jump (>20 lb) from the prior one -- matches logWeight's plausibility gate.
+    if (hist.length && startw) {
+      const earliest = startw.weight;
+      const current = hist[0].weight;
+      const priorW = hist[1]?.weight ?? null;
+      if (weightEntryIsPlausible(current, priorW)) {
+        let store = achievementStore;
+        if (!store['weight_first']) {
+          const { newlyUnlocked, updatedStore } = await checkAndUnlock('weight_first', store);
+          if (newlyUnlocked) {
+            store = updatedStore;
+            setAchievementStore(store);
+            const d = ACHIEVEMENTS.find(a => a.id === 'weight_first');
+            if (d) showAchievementToast(d);
+          }
+        }
+        const crossed = getWeightMilestonesCrossed(earliest, current, goalWeight ?? 0, store);
+        if (crossed.length > 0) {
+          const { newlyUnlocked, updatedStore } = await checkAndUnlock(crossed[0], store);
+          if (newlyUnlocked) {
+            store = updatedStore;
+            setAchievementStore(store);
+            const def = ACHIEVEMENTS.find(a => a.id === crossed[0]);
+            showCelebration(def ? getCelebTier(def) : 'medium', def?.name, def ?? undefined);
+          }
+          for (let i = 1; i < crossed.length; i++) {
+            const { updatedStore: s } = await checkAndUnlock(crossed[i], store);
+            store = s;
+          }
+          setAchievementStore(store);
+        }
+        if (goalWeight && isGoalWeightHit(current, goalWeight, earliest, store)) {
+          const { newlyUnlocked, updatedStore } = await checkAndUnlock('weight_goal', store);
+          if (newlyUnlocked) {
+            store = updatedStore;
+            setAchievementStore(store);
+            const isFirst = updatedStore['weight_goal'].count === 1;
+            const gd = ACHIEVEMENTS.find(a => a.id === 'weight_goal');
+            showCelebration(isFirst ? 'diamond' : 'large', gd?.name ?? 'GOAL WEIGHT', isFirst ? gd : undefined);
+          }
+        }
+      }
+    }
   };
 
   // ── Weight log ───────────────────────────────────────────────────────────────
@@ -2308,6 +2358,7 @@ export default function HomeScreen() {
         <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
           <Ionicons name="trending-down-outline" size={11} color={theme.textMuted} />
           <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Weight</Text>
+          <TooltipIcon tooltipKey="weight_card" hideTour />
         </View>
         <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setWeightHistoryVisible(true); }} hitSlop={{ top:12, bottom:12, left:12, right:12 }}>
           <Ionicons name="settings" size={16} color={theme.textMuted} />

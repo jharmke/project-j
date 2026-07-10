@@ -154,7 +154,7 @@ export default function ChallengeCreateScreen() {
           <TouchableOpacity onPress={() => { if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1); } else { setCalMonth(m => m - 1); } }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="chevron-back" size={20} color={accent} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>
+          <Text style={{ fontSize: 15, color: theme.textSecondary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>
             {CAL_MONTHS[calMonth]} {calYear}
           </Text>
           <TouchableOpacity onPress={() => { if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1); } else { setCalMonth(m => m + 1); } }} disabled={!calCanGoNext()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
@@ -275,7 +275,7 @@ export default function ChallengeCreateScreen() {
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: sel ? `${accent}14` : theme.bgCard, borderWidth: 1, borderColor: sel ? `${accent}80` : theme.borderCard, borderRadius: 12, padding: 14 }}>
                 <Ionicons name={opt.icon as any} size={22} color={sel ? accent : theme.textSecondary} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: sel ? accent : theme.textPrimary }}>{opt.title}</Text>
+                  <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: sel ? accent : theme.textSecondary }}>{opt.title}</Text>
                   <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, marginTop: 2, lineHeight: 17 }}>{opt.sub}</Text>
                 </View>
               </TouchableOpacity>

@@ -11,45 +11,12 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
-- 2026-07-10 REPEAT A MEAL built (slices 1-5, pure JS, no rebuild). Re-log a previous day's meal-slot
-  entries into the day you're VIEWING by deep-cloning the stored entries (meal + incremented timestamps
-  the only changes; servings/macros/extended-nutrition/photo all carry verbatim, no re-search/re-estimate,
-  AI items included safely). New utils/repeatMeal.ts (getRepeatSummary one-pass all-slots, getRepeatDays
-  per-slot accordion, buildClones, read-then-merge logRepeatedItems) + 25 passing unit tests (npm run
-  test:repeat). components/RepeatMealModal.tsx = full modal standard (centered card, handle pill, 2.5px
-  accent TOP border, spring 0.85->1 + opacity on onShow, ToastRenderer inside, source-slot chips defaulting
-  to launch slot, newest-day-pre-expanded accordion, all-checked-by-default per-item checkboxes, live
-  dim/accent Add button; med haptic add / light toggles). Log tab: blue "Repeat" pill on EMPTY slots only
-  (history-gated, decision b = on the collapsed row) -- one-tap "Repeat yesterday's <slot> · <kcal>" +
-  "Other days" -> modal (or pill opens modal when yesterday empty). DESTINATION ALWAYS = launch slot;
-  source switchable. 14-day window. Explainers all done: tooltipRegistry 'repeat_a_meal' + tutorials Logging
-  QUICK TIPS step + Otto KB (deployed, appCompanion). tsc clean (0 new errors). OPEN TAIL: (a) device verify
-  = slice 6 (same-slot, cross-slot Dinner<-Lunch, per-item uncheck, AI item, photo carries, extended-nutrient
-  exactness, empty-slot gating, 14-day edge, viewing a PAST day lands there, 5-theme x accent); (b) optional
-  polish: food-photo thumbnails in the modal (skipped for now, marked optional in spec). Spec: SPEC_repeat_meal.md.
-  >> AESTHETIC POLISH PASS 2026-07-10 (Justin's device review, pure JS): (1) killed the phantom macro-dot row
-  on EMPTY log slots (was rendered at opacity 0, holding dead space above the pill) so the pill tucks under
-  the meal name; (2) pill = matched pair now (filled primary "Repeat yesterday's <slot> · N kcal" + a
-  border-matched "Other days ›" chip, was floating text); pill got its unit ("· 200" -> "· 200 kcal");
-  (3) no-yesterday variant reworded "Repeat a previous meal" (was the ungrammatical "Repeat a previous
-  Supplements"); (4) modal day cards now separate from the sheet on every theme via borderCardTop + a
-  shadow, and the EXPANDED card is accent-tinted (accentBlueBg + accentBlueBorder) so the open one is
-  obvious; (5) each day card shows LIVE macro dots (P/C/F) + a big KCAL value that track the checked
-  selection (uncheck an item -> header macros + kcal + Add button all drop together); (6) "CAL" column
-  header over the per-item numbers; (7) tidyFoodName rounds over-precise gram weights in displayed names
-  (see the upstream float bug now in Food & Log backlog). 30 unit tests pass. tsc clean. Device re-verify pending.
-  >> POLISH ROUND 2 2026-07-10 (2nd device review, pure JS): primary pill shortened to "Repeat Yesterday ·
-  N kcal" (dropped redundant slot name -> no more text cutoff; R/Y capped); "Other days" TEXT replaced by a
-  compact CALENDAR ICON button (both pill + icon got hitSlop for 44pt); no-yesterday variant "Repeat a
-  Previous Meal". Modal: switching the source chip now CROSSFADES the body (bodyOpacity, spinner only on
-  first load) so the card no longer collapses/re-centers ("closes and reopens" bug), and scroll resets to
-  top on switch. Killed the redundant "CAL" column header (the KCAL total sits right above it). Day-card
-  date now matches the day-name weight/color (was dim). NEW: per-meal CLEAR ALL -- quiet "Clear all" trash
-  link at the bottom of an expanded meal's item list (only when >=1 item), one confirm removes just that
-  meal's entries for the viewed day (read-then-merge, heavy haptic, toast); solves the "repeated the wrong
-  day -> 16 taps to undo" pain. Otto KB refreshed (calendar-icon wording, Clear All, timer-chip location)
-  + redeployed; tooltipRegistry 'repeat_a_meal' updated (calendar icon + Clear All). tsc clean, 30 tests pass.
-  Otto verify-questions handed to Justin. Device re-verify still pending (incl. crossfade + Clear All + 5-theme).
+- 2026-07-10 REPEAT A MEAL + per-meal CLEAR ALL SHIPPED + device-verified (commit 016315d, pure JS). Re-log a
+  previous day's meal-slot entries into the viewed day by exact-cloning (no saved object; photos/macros/extended
+  nutrition carry verbatim, AI items safe). White-outline pills on empty slots ("Repeat Yesterday · N kcal"
+  one-tap + "Pick a Day" picker), live-macro accordion modal w/ crossfade, destination always = launch slot.
+  Clear all = quiet red link to wipe a whole meal in one confirm. utils/repeatMeal + 30 tests; explainers +
+  Otto KB all updated/deployed. Full post-mortem in archive. Spec: SPEC_repeat_meal.md.
 - 2026-07-10 WORKOUT TIMER RELOCATION + polish (Cengiz feedback: the full-width rest banner blocked
   scrolling/tapping between sets). Rest + hold timers now live in a compact TWO-ROW chip docked between the
   Otto and "+" FABs (left/right:90 clears both 56px discs; time+buttons row over a full-width centered

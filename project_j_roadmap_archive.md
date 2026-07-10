@@ -11,6 +11,61 @@
 
 ---
 
+## 🍽️ REPEAT A MEAL + per-meal CLEAR ALL (Cengiz + dad feedback, SHIPPED + device-verified 2026-07-10, commit 016315d)
+Fast re-logging of a meal you eat often. NO saved object -- reads a previous day's meal-slot entries and
+re-logs them into the day you're VIEWING (not hard "today") by EXACT-CLONING the stored entries: only `meal`
+(-> launch slot id) + `timestamp` (incremented now, now+1... for order + delete-uniqueness) change; servings/
+amount, cals, macros, all extended nutrition, fsId/myFoodId, aiEstimated carry verbatim. Photos come free
+(keyed to the food's fsId/myFoodId, not the entry). Cloning (never re-resolving) also sidesteps the AI-item +
+stale-food name-match bugs. AI-estimated items INCLUDED (clone = safe). Spec: SPEC_repeat_meal.md.
+
+Engine -- utils/repeatMeal.ts (pure logic lazy-requires AsyncStorage/storageSet so the node test can load it):
+- getRepeatSummary(slots, viewedKey, 14): ONE pass over the 14 day-records before the viewed day, bucketed per
+  slot -> {hasHistory, yesterdayItems, yesterdayTotal}. Drives the log-tab pill cheaply for all slots at once.
+- getRepeatDays(sourceSlot, viewedKey, 14): full accordion for one slot, newest-first, days with >=1 item only.
+- buildClones(items, destSlotId, baseTs): deep clone (JSON), override meal+timestamp, strip tutorialEntry.
+- logRepeatedItems(viewedKey, destSlotId, items): read-then-merge the day record, append clones (never replace).
+- matchSlotEntries reuses the Log's id-OR-legacy-name matcher; tidyFoodName rounds over-precise gram weights in
+  displayed names ("108.5000000031g" -> "108.5g", display-only; upstream storage bug logged to Food & Log backlog).
+- 30 unit tests (npm run test:repeat), all green.
+
+Modal -- components/RepeatMealModal.tsx (full modal standard: centered card, handle pill, 2.5px accent TOP
+border, spring 0.85->1 + opacity on onShow, ToastRenderer inside, Modal+ScrollView dismiss pattern):
+- Source-slot chip row (defaults to launch slot). DESTINATION IS ALWAYS THE LAUNCH SLOT (Dinner can pull
+  yesterday's Lunch into today's Dinner); source is switchable, destination is locked ("Adds to <slot>").
+- Day accordion: newest pre-expanded; collapsed row = day name + date (matched weight) + big KCAL + food preview;
+  each day card separated from the sheet via borderCardTop + shadow, the EXPANDED card accent-tinted.
+- Per-item checkboxes, all checked by default. Header macro dots (P/C/F) + KCAL AND the Add button are all LIVE
+  to the checked selection (uncheck an item and everything drops together). Dim/accent Add button.
+- Switching the source chip CROSSFADES the body (sequenced: full fade-out -> swap data + scroll-reset -> fade-in;
+  had to sequence because AsyncStorage resolves in ms and an un-sequenced fade-in raced the fade-out = instant
+  swap with no visible animation). Spinner only on first load. Med haptic on add / light on toggles+chips.
+
+Log tab entry point -- WHITE-OUTLINE pills on EMPTY slots only, history-gated (killed the phantom opacity-0
+macro row that used to hold dead space above them). If yesterday's same slot has food: "Repeat Yesterday · N
+kcal" one-tap pill + a "Pick a Day" calendar button (opens the picker for any other day). No yesterday: single
+"Repeat a Previous Meal" pill opens the picker directly. Both pills bgSheet + accent border + accent text/icon
+(theme.accentBlue already resolves to the button-safe color for light accents); hitSlop -> 44pt, positioned
+clear of the +/expand hitboxes.
+
+Per-meal CLEAR ALL (same session, solves "repeated the wrong day -> 16 taps to undo"): a quiet red "Clear all"
+trash link at the bottom of an expanded meal's item list (only when >=1 item). Light haptic on tap -> one
+confirm for the whole batch -> removes ONLY that slot's entries for the viewed day (read-then-merge, other
+meals + all other day fields untouched), heavy haptic + toast.
+
+Design iteration (4 device-review rounds, all logged here so the reasoning survives): (1) pill layout: dropped
+the redundant slot name from the primary to fix truncation; "Other days" text -> calendar -> "Pick a Day"
+calendar button; matched both pills to a white-outline style. (2) modal: added live macros, card separation +
+expanded-accent-tint, removed a redundant "CAL" column header once the KCAL total sat right above it, matched
+the date weight to the day name. (3) crossfade made actually visible by sequencing. (4) Clear all pushed from a
+loud full-width red button down to a quiet red link. Explainers all kept in lockstep: tooltipRegistry
+'repeat_a_meal' (+ Clear all), tutorials (Logging QUICK TIPS + manage_log REMOVING AN ENTRY -> Clear all), Otto
+KB (appCompanion, redeployed 3x: feature, then the two-control "Pick a Day picks other days / Repeat Yesterday
+only one-taps yesterday" clarification, plus a light rest/hold timer-chip-location note). tsc clean throughout.
+
+FOLLOW-ON PARKED (Justin curious, own design pass): "Save as a Meal" -- persist a NAMED bundle of separate
+foods for one-tap reuse (vs a Recipe, which blends ingredients into ONE food line). In NEXT UP as a discuss item.
+
 ## 🏋️ WORKOUT UNITS + TIME TRACKING (Cengiz feedback, SHIPPED 2026-07-08, HEAD 6e15e85)
 Two features, one flow, built 8 steps top-down (each device-verified along the way). Spec + data-integrity
 checklist: SPEC_workout_units_and_time.md. Core principle throughout: FULLY ADDITIVE to pj_workout_state.

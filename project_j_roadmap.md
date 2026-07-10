@@ -122,6 +122,14 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
+- [TRACK, LAUNCH-CRITICAL, spec drafted 2026-07-10] MONETIZATION / "Support the Mission" (Pro/Member/
+  Supporter). Must be BUILT + functional before public release. Model = Free (95% of app, generous, faith
+  always free) + ONE cheap Supporter sub (~$5-10/mo, perks = unlimited AI + reports + Day-vs-Day + badge,
+  framed as SUPPORT not unlock, universal/non-faith mission line) + a one-time in-app TIP JAR (consumable IAP,
+  "give more", no fake feature tier). Reality: NO paywall/purchase flow exists yet -- "Pro" is faked by the
+  Settings dev toggle; building the money layer for the first time. Resolves REVERT #2-#5 (devProUnlocked,
+  AI/companion caps, REPORTS_BETA_OPEN). Names/prices/limits/copy/badge all OPEN. Full detail, code audit,
+  iOS/IAP rules, build checklist: SPEC_monetization.md.
 - [TRACK, DESIGN LOCKED 2026-07-08, ready to build in slices] CALORIE FLOOR / low-target safeguard
   (gym #1, the health-safety gap). NEVER hard-blocks -- Option B "warn + consent," the real target
   always shows. Three zones via two sex-based lines (Men whisper<1500 / modal<1200, Women whisper<1200

@@ -105,6 +105,27 @@ are separate pre-submission checklists, NOT part of this menu.
      from fetchTrendData) + Stats > Reports entry card. 3 starter blocks: Weight trend, Nutrition headline,
      Macro split. REMAINING: more blocks (grow the ~55), custom date range UI, export (PDF/share),
      templates, per-chapter faith-tier/wearable gating in the picker, tooltip + Otto KB. Device-verify pending.
+- [TRACK, DESIGN LOCKED 2026-07-10, ready to build] REPEAT A MEAL (Cengiz + dad feedback: fast
+  re-logging of a repeated meal, e.g. the same breakfast every day). NO saved object -- it re-reads a
+  previous day's meal slot and re-logs those entries into today by CLONING the stored entry exactly
+  (serving/amount, cals, macros, all extended nutrition carry over; photos come free -- keyed to the food
+  via fsId/myFoodId, not the entry). Cloning (not re-resolving) also sidesteps AI-item + stale-food
+  name-match bugs. ENTRY POINT = subtle accent PILL on the EMPTY meal slot, only renders when history
+  exists. ONE-TAP FAST PATH: if yesterday's same slot has food the pill logs it all in one tap ("Repeat
+  yesterday's morning") + an "Other days" control opens the modal; no-yesterday = the pill opens the modal
+  directly. MODAL = source-slot chip row (defaults to the slot you launched from) + day accordion (newest
+  pre-expanded; collapsed row = date + total kcal on line 1, truncated food-name preview on line 2) +
+  per-item CHECKBOXES all checked by default (uncheck to exclude; Add button shows live count + kcal).
+  🔒 DESTINATION IS ALWAYS THE LAUNCH SLOT (Dinner can pull yesterday's Lunch into today's Dinner).
+  Window = scan 14 days, show every matching day newest-first (no "show more"). AI-estimated items are
+  INCLUDED (clone = safe). Timestamps incremented per item (order + uniqueness). Reuse the existing
+  id-or-name slot matcher. Mindful = no variance (neutral toast copy). Full modal aesthetic standard
+  (handle pill near top, accent top border, scale+opacity spring on onShow, ToastRenderer inside, medium
+  haptic on add / light on toggles). >> FOLLOW-ON TO DISCUSS (Justin curious, NOT part of this build):
+  "SAVE AS A MEAL" = save a group of distinct foods as a named, reusable one-tapper. Differs from a
+  Recipe: a recipe BLENDS ingredients into ONE food line (single entry, loses the items); a meal keeps the
+  foods as SEPARATE entries logged together. Needs its own design pass (how it looks/behaves, how it lives
+  alongside recipes). Full spec: SPEC_repeat_meal.md.
 - [x] Otto on-demand data access thread -- COMPLETE 2026-07-05 (one dataset at a time, conditional-injection pattern from utils/companionPRs.ts). SHIPPED: PR values + real-exercise recognition + per-lift TREND + recent-workouts (30-day sessions) + food log (30-day totals + named-day items) + sleep + recovery (30-day nights + named-night detail) + body measurements (per-field value/age/delta + Navy BF% + history) + achievements (earned set + live badge progress via shared achievementProgress scan) + journal/prayer (recent entries + prayers, privacy + faith-tier gated). All device-verified. OPTIONAL later add: full per-metric streak tiles (needs the Stats streak engine extracted into a shared util first). Did NOT build true LLM tool-use (Haiku too flaky); revisit only if Otto moves to a stronger model.
 - [x] FAB contrast/border (GLOBAL) -- COMPLETE 2026-07-05. "bg ring" recipe = borderWidth: 3, borderColor: theme.bgPrimary on the FAB circle (invisible moat over the page, visible ring the moment it overlaps a same-accent button). DONE across every real page FAB: Otto FAB (AssistantFAB) + Workout tab (main + 2 subs) + workout-library (main + 3 subs) + stats (main + 3 subs) + add-food (main + 3 subs) + body-measurements + bible + journal + prayer + Halo (CompanionFAB, SVG special case: drawn page-colored Circle ring at r=DISC/2-1.5 instead of a border, now theme-aware). The other roadmap-listed files had NO floating page FAB (settings/profile/AssistantOverlay = the global Otto FAB already done + save bars; ai-meal-estimator/AddPrayerModal = none; CompanionChat/AssistantChat send buttons = in-bar, not overlap-prone, intentionally excluded). Awaiting 5-theme x all-accent device audit before fully closing the visual gate.
 - [ ] [FIX, data-integrity, needs reinstall verify] Achievement unlockedAt reinstall hardening. Badges

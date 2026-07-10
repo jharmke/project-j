@@ -11,6 +11,14 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-10 WEIGHT HISTORY + STARTING WEIGHT SHIPPED (gear on the home Weight card; all 5 slices; device +
+  8-check dev self-test verified; Otto deployed). Editable weigh-in history (edit/delete per day + back-dated
+  "add a past weigh-in", today-or-earlier), starting weight = earliest weigh-in (tap to correct; an earlier add
+  becomes the new start), read-then-merge on pj_<date>.weight so food/water are never touched, plausibility
+  guard, Firebase sync, milestone recompute that GRANTS but never revokes badges, Mindful-neutral. Explainers:
+  new 'weight_card' tooltip + card (i) + Otto KB. utils/weightHistory + 32 unit tests (npm run test:weight).
+  Dev self-test in Settings is DEV-ONLY (added to REVERT BEFORE LAUNCH). Full post-mortem in archive; spec
+  SPEC_weight_history.md.
 - 2026-07-10 ONBOARDING training-frequency wording (dad feedback): screen 4 subline now reads "How often you
   actually train these days, not what you're aiming for. You can change it in your Profile anytime." (was "How
   often you do structured workouts"). Kills the aspirational-answer trap that inflated TDEE (training freq adds
@@ -143,51 +151,6 @@ are separate pre-submission checklists, NOT part of this menu.
      from fetchTrendData) + Stats > Reports entry card. 3 starter blocks: Weight trend, Nutrition headline,
      Macro split. REMAINING: more blocks (grow the ~55), custom date range UI, export (PDF/share),
      templates, per-chapter faith-tier/wearable gating in the picker, tooltip + Otto KB. Device-verify pending.
-- [TRACK, DESIGN LOCKED 2026-07-10, ready to build] WEIGHT HISTORY + STARTING WEIGHT (home Weight card gear
-  modal). Follow-on to the dad weight-card fix. Adds a gear on the home Weight card opening a modal with:
-  starting weight up top (= the earliest weigh-in, what Total is measured from, tap to correct), an editable
-  history of past weigh-ins (edit/delete per day, water-log style), and a "+ add a past weigh-in" (back-dated,
-  never future). "Starting weight" is just the earliest history entry (no new field, no baseline change --
-  onboarding already seeds it into the log). Goal weight shown read-only (edit stays in Profile). All writes
-  read-then-merge the `pj_<date>.weight` scalar (never clobber that day's food/water), plausibility-guarded,
-  Firebase-synced, milestone recompute (never revokes). Mindful = neutral. Explainers REQUIRED same session:
-  tooltipRegistry + tutorials + Otto KB (redeploy). Full spec + build slices: SPEC_weight_history.md.
-  DECISION 2026-07-10: history editor just SAVES a big/odd correction (no confirm, no block) -- it's a fix-it
-  tool; only blank/0/negative/future are refused, and the milestone-typo guard stays at the call site.
-  >> SLICE 1 BUILT 2026-07-10 (pure JS, no UI yet): utils/weightHistory.ts -- uncapped gatherWeightHistory
-     (getAllKeys, fixes the >365-day earliest-weight edge case) + read-then-merge saveWeightForDate /
-     deleteWeightForDate (touch ONLY .weight, Firebase-synced) + pure validate/parse/starting-weigh-in
-     helpers. 32 unit tests (npm run test:weight) all pass.
-  >> SLICE 2 BUILT 2026-07-10 (pure JS, device-testable): components/WeightHistoryModal.tsx to full modal
-     standard (centered card, handle, accent top border, spring 0.85->1 + opacity onShow, ToastRenderer
-     inside, tap-outside dismiss, KeyboardAvoidingView). Starting-weight block (tap to edit) + "measured from
-     here" caption + micro disclaimer + editable history rows (pencil edit overlay / trash inline-confirm,
-     heavy haptic) + "+ Add a past weigh-in" (DateTimePicker date-mode, maximumDate blocks future) + read-only
-     goal line. Mindful softens value color. Wired a gear onto the home Weight card header that opens it; on
-     any change, refreshWeightCardState re-reads the uncapped history and refreshes weight/yesterday/earliest/
-     lastKnown in place. tsc clean (touched files). POLISH PASS (dad device feedback 2026-07-10): matched card
-     gear icon (settings/16, was settings-sharp), dropped "(Total)" from caption, removed the KeyboardAvoiding
-     wrapper that broke centering + made the modal jump when the keypad opened, tightened the edit-overlay
-     handle, gave the edit input + starting-weight card visible borders, auto-scroll-to-end when "Add a past
-     weigh-in" expands, capitalized "Change in Profile". Modal stays neutral (no colors) in all modes by design.
-  >> SLICE 3 BUILT 2026-07-10 (pure JS): milestone recompute wired into the modal's onChange
-     (refreshWeightCardState in index.tsx). After any edit/add/delete it re-runs logWeight's exact achievement
-     block keyed off the fresh history's earliest (starting) + newest (current) weigh-in, so a corrected or
-     back-dated weight can GRANT a newly-legit weight badge (first weigh-in / 5-lb loss+gain milestones / goal
-     weight). ADD-ONLY by construction (checkAndUnlock idempotent; getWeightMilestonesCrossed returns only
-     not-yet-earned crossings) so it never revokes an earned badge; typo guard (weightEntryIsPlausible on the
-     newest vs prior weigh-in) blocks a >20-lb-jump edit from minting a fake badge. Dev self-test extended with
-     3 PURE badge checks (grant / never-revoke / goal-hit) against in-memory stores -- never touches real
-     pj_achievements. tsc clean.
-  >> SLICE 4 BUILT + DEPLOYED 2026-07-10 (explainers): NEW tooltipRegistry 'weight_card' entry (Fitness; Today/
-     vs Yesterday, Total, Starting weight = earliest, editing history, read-only goal) + a (i) TooltipIcon added
-     to the home Weight card header (hideTour: no weight tutorial exists to launch). Otto KB
-     (functions/src/assistantAppKnowledge.ts) WEIGHT-card section + quick-reference taught the gear/Weight History (edit/delete/
-     correct-starting/back-dated, one-per-day, food+water untouched, goal read-only, badges can be earned never
-     revoked); appCompanion built + REDEPLOYED, live. NOTE: tutorials.ts intentionally NOT touched -- there is no
-     existing Weight-card tutorial to keep fresh (nothing stale); a full weight-card tutorial is a separate opt-in
-     build if Justin wants one. REMAINING: slice 5 device verify (i-tooltip copy + 5-theme x accent + read-then-
-     merge food/water safety + a real badge popping on a legit corrected weigh-in + Otto answers).
 - [FOLLOW-ON TO DISCUSS, from Repeat a Meal which SHIPPED 2026-07-10] "SAVE AS A MEAL" = save a group of
   distinct foods as a named, reusable one-tapper (Justin curious). Differs from a Recipe: a recipe BLENDS
   ingredients into ONE food line (single entry, loses the items); a meal keeps the foods as SEPARATE
@@ -216,6 +179,7 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 3. ⚠️ AI ESTIMATOR QUOTA RAISED. PRO_LIMIT bumped to effectively unlimited (services/aiMealEstimator.ts). Before launch: restore real caps.
 4. ⚠️ BETA CAPS RAISED (2026-07-01). Otto FREE_DAILY_CAP 10->100/day; Halo 5->50/day; AI Meal Estimator FREE_LIMIT 3->100/month. All marked with loud BETA HACK comments. Before launch: revert to 10 / 5 / 3 (or final caps).
 5. ⚠️ CUSTOM REPORTS OPEN TO ALL (2026-07-07). Reports is a Pro feature but REPORTS_BETA_OPEN=true in app/reports.tsx grants every TestFlight user full access. Before launch: gate on the real subscription + set false (the Pro-gate architecture is already in place, so it's a one-line flip).
+6. [DEV TOOL, not user-facing] "Weight History self-test (dev)" row in app/settings.tsx dev tools (added 2026-07-10). One-tap self-test that seeds/edits/deletes throwaway far-back dates + asserts data-integrity/badge rules, auto-cleans. Same class as the other "(dev)" seed tools -- remove or gate them all behind a dev flag before public launch. Safe (only writes to confirmed-empty dates) but should not ship visible.
 
 ---
 
@@ -265,11 +229,6 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 - Daily Intention card for Not Right Now users -- Today's Message morphs for NRN. Low priority.
 
 ### Home / UX
-- [RESOLVED 2026-07-10 -> now the WEIGHT HISTORY track in NEXT UP] The "Total" baseline question: turned out
-  onboarding already SEEDS the starting weight into the log (your-style.tsx:373-380), so the earliest logged
-  weigh-in already IS the onboarding weight -- no baseline change needed. The real gap was that past weigh-ins
-  aren't editable, so a bad starting weight can't be fixed. Fix = an editable weight-history modal. See
-  SPEC_weight_history.md.
 - Primary button audit -- all primary CTAs to full accent fill; transparent bordered = secondary only.
 - Day detail BMR row -- add estimated BMR to the calorie breakdown (Consumed/Burned/Net).
 - Exclusions polish -- first-use callout on calendar dot; help article; excluded-list view (view + un-exclude); three entry points.

@@ -11,6 +11,53 @@
 
 ---
 
+## ⚖️ WEIGHT HISTORY + STARTING WEIGHT (home Weight card gear, SHIPPED 2026-07-10, commits b7da232 + b11fe03)
+Follow-on to the dad weight-card "Total Lost/Gained" label fix (aea7aec). The gap it closed: past weigh-ins
+weren't editable, so a wrong starting weight couldn't be corrected. Design locked in SPEC_weight_history.md.
+Body weight is a per-day SCALAR (`pj_<YYYY-MM-DD>.weight`, one weigh-in per day), NOT a per-entry array like
+water. Onboarding already seeds the starting weight into the log (your-style.tsx:373-380), so the earliest
+logged weigh-in already IS the starting weight -- no new field, no baseline change.
+
+CORE MODEL: "Starting weight" = the EARLIEST weigh-in. Correcting it = editing that entry; adding an earlier
+back-dated entry makes IT the new earliest automatically. One weigh-in per day (a same-day re-log replaces it).
+
+KEY DECISION (2026-07-10): the history editor just SAVES a big/odd correction -- no confirm, no block. It's a
+fix-it tool, and a legit correction can be a large jump. Only blank / 0 / negative / future are refused. The
+milestone-typo guard (>20 lb jump vs the prior weigh-in) lives at the milestone step, never blocks the save.
+
+BUILT IN 5 SLICES:
+- Slice 1: utils/weightHistory.ts -- uncapped gatherWeightHistory (getAllKeys, fixes the >365-day earliest-
+  weight edge case the home card's day-scan had) + read-then-merge saveWeightForDate / deleteWeightForDate
+  (touch ONLY .weight; delete strips just that field; Firebase-synced via lazy-required saveToFirebase) +
+  pure validate/parse/starting-weigh-in helpers. 32 unit tests (npm run test:weight).
+- Slice 2: components/WeightHistoryModal.tsx to full modal standard (centered card, handle, accent top border,
+  spring 0.85->1 + opacity onShow, ToastRenderer inside, tap-outside dismiss). Starting-weight block (tap to
+  edit) + "measured from here" caption + micro disclaimer + editable history rows (pencil -> edit overlay,
+  trash -> inline confirm w/ heavy haptic) + "+ Add a past weigh-in" (DateTimePicker date-mode, maximumDate
+  blocks future) + read-only goal line. Gear wired onto the home Weight card; onChange (refreshWeightCardState)
+  re-reads the uncapped history and refreshes weight/yesterday/earliest/lastKnown in place. DAD DEVICE-FEEDBACK
+  POLISH PASS: matched the card gear icon (settings/16), dropped "(Total)" from the caption, removed a stray
+  KeyboardAvoidingView that broke centering + made the modal jump when the keypad opened, tightened the edit-
+  overlay handle, gave the edit input + starting-weight block an accent wash/border so they don't blend into
+  white on Light, auto-scroll-to-end when "Add a past weigh-in" expands, red Cancel, "Change in Profile" caps.
+- Slice 3: milestone recompute appended to refreshWeightCardState -- mirrors logWeight's exact achievement
+  block keyed off the fresh history's earliest (start) + newest (current) weigh-in, so a corrected/back-dated
+  weight GRANTS a newly-legit weight badge (first weigh-in / 5-lb loss+gain milestones / goal weight). ADD-ONLY
+  by construction (checkAndUnlock idempotent; getWeightMilestonesCrossed returns only not-yet-earned crossings)
+  => never revokes an earned badge. Typo guard = weightEntryIsPlausible(newest, prior).
+- Slice 4 (explainers, same session): NEW tooltipRegistry 'weight_card' entry (Fitness) + a (i) TooltipIcon on
+  the Weight card header (hideTour -- no weight tutorial exists). Otto KB (assistantAppKnowledge.ts) WEIGHT-card
+  section + quick-reference taught the gear/Weight History flow; appCompanion REDEPLOYED + Otto-verified. NOTE:
+  tutorials.ts deliberately NOT touched -- no existing Weight-card tutorial to keep fresh (nothing stale).
+- Slice 5: device-verified (themes fine, Mindful neutral) + an 8-check dev self-test ("Weight History self-test
+  (dev)" in Settings) proving read-then-merge on edit, delete-keeps-food/water, oldest-back-dated=starting,
+  refuses blank/0/neg + future, and the badge rules (grant / never-revoke / goal-hit -- via THROWAWAY in-memory
+  stores, never real pj_achievements). Auto-cleans; only writes to confirmed-empty far-back dates. The dev row
+  is on the REVERT BEFORE LAUNCH list.
+
+OUT OF SCOPE (this build): goal-weight editing (stays in Profile, read-only here), HealthKit weight auto-pull,
+kg body-weight units, multiple weigh-ins in one day.
+
 ## 🍽️ REPEAT A MEAL + per-meal CLEAR ALL (Cengiz + dad feedback, SHIPPED + device-verified 2026-07-10, commit 016315d)
 Fast re-logging of a meal you eat often. NO saved object -- reads a previous day's meal-slot entries and
 re-logs them into the day you're VIEWING (not hard "today") by EXACT-CLONING the stored entries: only `meal`

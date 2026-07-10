@@ -1,6 +1,7 @@
 # SPEC: Weight History + Starting Weight (home Weight card gear modal)
 
-Status: DESIGN LOCKED 2026-07-10. Ready to build.
+Status: SHIPPED 2026-07-10 (all 5 slices; commits b7da232 + b11fe03; Otto deployed). Full post-mortem in
+project_j_roadmap_archive.md. This spec is kept as the design reference.
 Origin: dad flagged the home Weight card's "Total" looked wrong -> the LABEL bug (a gain showing as
 "-1 Total Lost") was fixed + shipped (commit aea7aec). This is the follow-on: there is currently NO way
 to edit a past weigh-in or correct a wrong starting weight ("poison" risk), so we add an editable weight

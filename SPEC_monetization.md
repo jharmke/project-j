@@ -84,12 +84,14 @@ This doc is the single source of truth for monetization. Keep the roadmap to one
    - ACCURACY: say "the core / the essentials are free," NOT "the app is free" (Reports, Day-vs-Day, and the
      higher AI caps are Supporter-only, so "all free" would overclaim). Only list GENUINELY-free features in the
      contrast (barcode scanner, full macro tracking, sleep & recovery scores) -- NOT the estimator/Reports/Day-vs-Day.
-   - NEAR-FINAL "WHY" COPY (draft; final polish in the copy pass, follows the no-dash rule):
-     "A lot of apps lock the basics behind a paywall: the barcode scanner, full macro tracking, even your sleep
-     and recovery scores. Here, all of that is free, and it's staying that way. The AI is the one part that
-     genuinely costs me money to run, and I won't pretend the bills don't sting a bit. So if this app's been good
-     to you, a little support keeps it alive. If you believe in where it's headed, you can help push it forward
-     right here. Either way, thank you for being part of this."
+   - "WHY" COPY (APPROVED 2026-07-11 -- VOICELESS to match the app: NO first person. Justin: one screen suddenly
+     using "I" stuck out against a first-person-free app, so we dropped it):
+     "A lot of apps hide the basics behind a paywall: the barcode scanner, full macro tracking, even your sleep
+     and recovery scores. Here, they stay free. The one piece with a real cost to run is the AI, the smarts behind
+     Otto and Halo, your coaching, and the meal estimator. So if the app's been good to you, a little support keeps
+     it alive and moving forward. Either way, thank you for being part of this."
+     NOTE: it names Halo when DESCRIBING what the AI powers (honest -- Halo is AI that costs money), but Halo is
+     NOT a paid perk (faith is never upcharged). Describing-the-AI and selling-a-perk are different places.
    - "Do tips affect the badge?" -> folded into the Badge decision (#5); Apple wants a tip to grant a small
      acknowledgment (the badge / thank-you), which doubles as the tip-jar "not paying for literally nothing"
      bulletproofing.
@@ -233,8 +235,17 @@ Currently beta-inflated (see REVERT list). Final caps:
 - Replaces the generic "Unlock Pro" concept. Warm, gratitude-forward, universal (non-faith) mission line, then
   "here's what your support does," then perks as a thank-you list, then the price + Tip Jar option.
 - Reached from: the soft upsell touchpoints (below) + a permanent entry in Settings.
-- Copy is OPEN and must be drafted + reviewed. The approved DIRECTION (not wording) is the "one person / no
-  ads / data not sold / nothing real locked away / chip in to keep it going" vibe.
+- STATE-AWARE (LOCKED 2026-07-11): the screen renders TWO states.
+  (a) NOT a Supporter -> the full pitch (why + Become a Supporter + tip jar).
+  (b) Supporter (comped OR real subscriber) -> a warm "You're a Supporter, thank you" state INSTEAD of the pitch:
+      status + thank-you + the gold sprout, a "Manage subscription" link (Apple requires it), and the tip jar
+      STAYS (a Supporter can still tip). No "buy" button shown when already in.
+- TESTFLIGHT TESTER ACCESS (LOCKED 2026-07-11): comp testers a free RevenueCat promotional Supporter entitlement
+  (per-account, keyed to Firebase uid, manual in the RC dashboard -- nobody comped by default) so testers keep
+  FULL access when the real gates go live. Keep ONE uncomped test account (Justin's iPad) to run the real sandbox
+  buy/restore/tip flow for free. This is the "dev-only entitlement path" from Build Checklist #2.
+- Copy: the "why" paragraph is APPROVED (DECISIONS #4). Remaining strings (tier labels, upsell one-liners,
+  thank-you note, buttons, Settings row) are being drafted in the copy pass.
 
 ## UPSELL TOUCHPOINTS (low stakes -- only ~2 real ones)
 Because 95% is free, there are very few walls. Keep every one honest + non-naggy, no core-flow interruption:

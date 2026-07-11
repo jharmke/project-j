@@ -120,6 +120,18 @@ This doc is the single source of truth for monetization. Keep the roadmap to one
      doesn't depend on email and feels special in-app; switch if hand-emailing volume becomes a burden.
    - PARKED (don't lose): the in-app "Supporters" thank-you WALL (Concept C) -- needs opt-in + looks thin at
      launch; revisit once there's a real list to show.
+6. PATRON TIER = DEFERRED (LOCKED 2026-07-11). Do NOT ship a second recurring tier at launch. Launch = the one
+   Supporter sub + the one-time tip jar. Add a recurring "Patron" (higher price, SAME perks + shinier recognition,
+   gratitude not features) ONLY if real post-launch demand appears. Never ship an arbitrary higher FEATURE tier.
+7. PAYMENT INFRA = RevenueCat (LOCKED 2026-07-11), not raw StoreKit. RevenueCat wraps Apple IAP and handles
+   receipt validation, restore-purchases, subscription-state tracking, offline entitlement caching, and the
+   webhooks the thank-you system (#5) depends on -- the exact risky plumbing a solo dev shouldn't hand-roll.
+   COST (verified on revenuecat.com/pricing 2026-07-11): $0 until $2,500/mo tracked revenue (MTR); then 1% of
+   tracked revenue. MTR is PRE-Apple-cut (gross). No monthly minimum, no per-transaction fee. That 1% is the ONLY
+   extra vs StoreKit, and only past $2,500/mo (~350+ Supporters at $6.99), so it's effectively $0 at launch for
+   the foreseeable future. Apple's 30% (15% after 12 retained months) is unavoidable EITHER way. Still need App
+   Store Connect products (1 sub + 4 tips) regardless of RC vs StoreKit. (Confirm the exact all-vs-above-$2,500
+   calc on their FAQ at setup; rounds to nothing at our scale either way.)
 
 ---
 
@@ -308,12 +320,12 @@ DECISION (2026-07-11): ship Tier 1 for launch; build Tier 2 as part of this mone
 - [LOCKED 2026-07-11] PRICE = $6.99/mo + $69.99/yr, no launch trial. See LOCKED DECISIONS above.
 - [LOCKED 2026-07-11] Tip Jar = $2.99/$4.99/$9.99 + $24.99, Concept C, first-person voice (DECISIONS #4). STILL
   OPEN: exact tier labels (copy pass) + whether tips affect the badge (folded into Badge decision #5).
-- Whether to ship the optional recurring "Patron" tier at launch or defer.
+- [LOCKED 2026-07-11] Patron tier = DEFERRED (launch is sub + tip jar only). See DECISIONS #6.
 - [LOCKED 2026-07-11] Free + Supporter caps set (Otto 10/25, Halo 25/25, Estimator 5/100). See DECISIONS #3.
 - [LOCKED 2026-07-11] Badge = gold sprout on avatar + gold ring; flat; gold-thread cosmetics; thank-you Option 1;
   faith cross skin for Rooted. See DECISIONS #5. (Exact badge pixels still to design at build.)
 - All COPY: mission line, perks list, upsell messages, thank-you.
-- StoreKit direct vs RevenueCat.
+- [LOCKED 2026-07-11] Payment infra = RevenueCat (free to ~$2,500/mo MTR, then 1%). See DECISIONS #7.
 
 ## CROSS-REFERENCES
 - project_j_roadmap.md REVERT BEFORE LAUNCH #2-#5 (the beta hacks this build resolves) + LAUNCH BLOCKERS

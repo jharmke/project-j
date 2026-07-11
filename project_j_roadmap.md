@@ -122,14 +122,16 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
-- [TRACK, LAUNCH-CRITICAL, spec drafted 2026-07-10] MONETIZATION / "Support the Mission" (Pro/Member/
-  Supporter). Must be BUILT + functional before public release. Model = Free (95% of app, generous, faith
-  always free) + ONE cheap Supporter sub (~$5-10/mo, perks = unlimited AI + reports + Day-vs-Day + badge,
-  framed as SUPPORT not unlock, universal/non-faith mission line) + a one-time in-app TIP JAR (consumable IAP,
-  "give more", no fake feature tier). Reality: NO paywall/purchase flow exists yet -- "Pro" is faked by the
-  Settings dev toggle; building the money layer for the first time. Resolves REVERT #2-#5 (devProUnlocked,
-  AI/companion caps, REPORTS_BETA_OPEN). Names/prices/limits/copy/badge all OPEN. Full detail, code audit,
-  iOS/IAP rules, build checklist: SPEC_monetization.md.
+- [TRACK, LAUNCH-CRITICAL, decisions LOCKED 2026-07-11, ready to BUILD] MONETIZATION / "Support the Mission."
+  Must be built + functional before public release; NO purchase flow exists yet ("Pro" is faked by the Settings
+  dev toggle). LOCKED: name = Supporter; price = $6.99/mo + $69.99/yr (no trial); caps = Otto 10/25, Halo 25/25
+  (faith never upcharged), Estimator 5/100, Reports + Day-vs-Day Supporter-only, Smart Coach free-for-all; tip
+  jar = $2.99/$4.99/$9.99 + $24.99 (Concept C, first-person humble voice, "why" copy drafted); recognition =
+  gold sprout badge + gold-thread cosmetics (app icon/avatar ring/badge) + flat + hand-written thank-you
+  (RevenueCat webhook -> email Justin), faith cross skin for Rooted; Patron DEFERRED; payment infra = RevenueCat
+  (free to ~$2,500/mo, then 1%); Tier-1 usage monitoring launch-required + Tier-2 cost rollup to build. Resolves
+  REVERT #2-#5. STILL OPEN: the COPY pass (final user-facing strings) + the actual BUILD. Full detail, cost math,
+  build checklist, monitoring plan: SPEC_monetization.md.
 - [TRACK, DESIGN LOCKED 2026-07-08, ready to build in slices] CALORIE FLOOR / low-target safeguard
   (gym #1, the health-safety gap). NEVER hard-blocks -- Option B "warn + consent," the real target
   always shows. Three zones via two sex-based lines (Men whisper<1500 / modal<1200, Women whisper<1200
@@ -182,6 +184,12 @@ are separate pre-submission checklists, NOT part of this menu.
   the restore lands. Optional belt-and-suspenders: backfill unlockedAt from goal-day history for count-
   based badges. Touches the sync/restore/achievement flow -> do deliberately + verify with a device
   reinstall. (Surfaced via the Custom Reports "Achievements earned" block 2026-07-07.)
+- [ ] STARTER CHALLENGE -> theme unlocks (Slate / Warm / Blush). The 3 non-default themes are meant to be EARNED
+  by completing a short starter challenge (per CLAUDE.md theme system), but the unlock mechanic needs building /
+  verifying. FIRST STEP = state-check what already exists (are the themes actually gated? does any challenge
+  exist?) before building, so we don't assume. Keep the "no theme is EVER paid" rule intact -- these are earned,
+  never bought (distinct from the monetization track). Surfaced 2026-07-11 (Justin flagged it during the
+  monetization thread so it would not get forgotten).
 - [ ] QUICK WINS (small, grab-when-convenient): none queued right now -- add here as they come up. (DONE 2026-07-07: FAB text-label rings app-wide · inline Add Exercise button · the whole gym list.)
 
 ---

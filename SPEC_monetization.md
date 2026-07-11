@@ -45,6 +45,27 @@ This doc is the single source of truth for monetization. Keep the roadmap to one
    later if conversion needs a nudge). Rationale: covers a typical Supporter's AI cost ~1.5-2x over and the
    average Supporter far more; the free CAPS + the account spend cap (NOT the price) are what bound worst-case
    cost. Existing subscribers keep their rate if the price ever rises.
+3. FREE + SUPPORTER CAPS (LOCKED 2026-07-11):
+   - Otto (Haiku, general): free 10/day, Supporter 25/day. 50/day was rejected -- 50 x 30 ~= 1,500 msgs ~=
+     $12/mo, ~2.5x the ~$4.89 net; 25/day keeps a single-feature whale near break-even and no normal user hits it.
+   - Halo (Haiku, FAITH): 25/day for EVERYONE, free and Supporter identical. NOT a Supporter perk. Deliberately
+     the MOST generous cap in the app (free Otto 10 vs free Halo 25 encodes "faith is what we're most generous
+     with"). 8 was too low -- deep faith conversations run 15-30 turns and walling mid-conversation is the worst
+     moment to wall. Biggest single free-tier cost lever (~$6/mo if maxed daily, realistically $1-2); a deliberate,
+     on-brand place to spend generosity since faith is never upcharged (Chick-fil-A model).
+   - AI Meal Estimator (Sonnet, the pricey call): free 5/month, Supporter 100/month. Free 5 = a real taste (full
+     free food logging via search/barcode/manual already exists; the AI photo estimate is the convenience layer).
+     Supporter 100 covers "every meal, 3x/day, 30 days" (~90) + headroom; ~$2-3/mo cost, more than covered by the
+     sub (a maxed estimator user is still net-positive to us).
+   - Custom Reports: free locked, Supporter full (no per-call AI cost -- deterministic renderers; pure power perk).
+     Day-vs-Day: free locked, Supporter on.
+   - Smart Coach (Sonnet, auto-fires, NOT gated): FREE FOR ALL. Biggest free-tier Sonnet exposure; watch on the
+     monitoring dashboard. If cost runs hot post-launch, lever = only the home tip auto-generates AI (sleep/
+     recovery/day-summary generate on open).
+   - PHILOSOPHY: cheap Haiku features stay generous; the expensive Sonnet estimator is tighter-free / generous-paid.
+     Supporter caps are HIGH but BOUNDED (never literally unlimited) so no single feature can run away; the rare
+     max-everything whale (~$10-12/mo) is subsidized by the many light Supporters + the account-cap backstop.
+     Always describe perks as "greatly expanded," never "unlimited," so a bounded cap is never a broken promise.
 
 ---
 
@@ -111,25 +132,26 @@ Three layers:
      framed as gratitude not features, self-selected. Lead with the one-time tip first; only add Patron if
      there's demand. Do NOT ship an arbitrary higher feature tier.
 
-## PERKS LIST (what Supporter unlocks -- maps to the existing gates)
-- AI Meal Estimator: free = small monthly allowance (intended 3/mo); Supporter = unlimited/raised.
-- Otto (appCompanion): free = 10/day (intended); Supporter = unlimited/raised.
-- Halo (faithCompanion): free = 5/day (intended); Supporter = unlimited/raised.
+## PERKS LIST (what Supporter unlocks -- exact caps in LOCKED DECISIONS #3)
+- AI Meal Estimator: free 5/month; Supporter 100/month (Sonnet; most defensible paid line -- real $/call).
+- Otto (appCompanion): free 10/day; Supporter 25/day (Haiku).
+- Halo (faithCompanion): 25/day for EVERYONE -- NOT a Supporter perk. Listed here only to record that faith was
+  deliberately EXCLUDED from the paid tier (never upcharged).
 - Custom Reports (app/reports.tsx): free = no access; Supporter = full.
 - Day-vs-Day comparison (app/comparison-report.tsx): free = locked; Supporter = on.
 - Supporter badge / recognition: Supporter (and Tip givers) only.
 - NOTE: the AI features are the most DEFENSIBLE paid line because they cost real money per call (Anthropic +
   FatSecret bills). Framing = "this costs me money to run," which is honest, not withholding.
 
-## FREE-TIER LIMITS (the real numbers to restore at launch -- the decision with teeth)
-Currently beta-inflated. Intended real free caps (confirm/adjust here before launch):
-- AI Meal Estimator: 3 / month (FREE_LIMIT).
-- Otto: 10 / day (FREE_DAILY_CAP).
-- Halo: 5 / day (FREE_DAILY_CAP).
-- Custom Reports: locked (REPORTS_BETA_OPEN -> false).
-- Day-vs-Day: locked.
-OPEN: are 3/mo estimator + 10/5 companion right, or do they feel stingy now that we're "support" not "extract"?
-Lean is to keep them (95% free is already the generosity) but revisit once real usage is known.
+## FREE-TIER LIMITS + SUPPORTER CAPS (LOCKED 2026-07-11 -- set these at launch; full rationale in DECISIONS #3)
+Currently beta-inflated (see REVERT list). Final caps:
+- AI Meal Estimator (FREE_LIMIT / PRO_LIMIT, services/aiMealEstimator.ts): free 5/month, Supporter 100/month.
+- Otto (FREE_DAILY_CAP, functions/src/appCompanion.ts): free 10/day, Supporter 25/day.
+- Halo (FREE_DAILY_CAP, functions/src/faithCompanion.ts): 25/day for EVERYONE (free = Supporter; faith not
+  upcharged). NOTE: this RAISES Halo from the old intended 5/day -- 8 was too low for real faith conversations.
+- Custom Reports: free locked (REPORTS_BETA_OPEN -> false), Supporter full.
+- Day-vs-Day: free locked, Supporter on.
+- Smart Coach (Sonnet via aiProxy): free for all, not gated; monitor as the top free-tier Sonnet cost.
 
 ## SUPPORTER BADGE / RECOGNITION (liked, specifics TBD)
 - A small, tasteful visible "thank you" for supporters (and optionally tip-givers). NOT a status flex over
@@ -232,7 +254,7 @@ DECISION (2026-07-11): ship Tier 1 for launch; build Tier 2 as part of this mone
 - [LOCKED 2026-07-11] PRICE = $6.99/mo + $69.99/yr, no launch trial. See LOCKED DECISIONS above.
 - Tip Jar amounts + labels; whether tips affect the badge.
 - Whether to ship the optional recurring "Patron" tier at launch or defer.
-- Final free caps (keep 3/mo + 10/5, or adjust).
+- [LOCKED 2026-07-11] Free + Supporter caps set (Otto 10/25, Halo 25/25, Estimator 5/100). See DECISIONS #3.
 - Badge/recognition form.
 - All COPY: mission line, perks list, upsell messages, thank-you.
 - StoreKit direct vs RevenueCat.

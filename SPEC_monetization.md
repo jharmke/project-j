@@ -164,6 +164,11 @@ VISUAL / POLISH (agreed -- just need building):
    GOLD SPROUT (decided in DECISIONS #5, NOT built yet -- that's why it's never been seen). Build a real custom
    SVG sprout (react-native-svg) for the badge feature later. For the PERK-ROW icon of "Custom Badge & Icon", use
    Ionicons "medal" (DECIDED 2026-07-11).
+   >> SPROUT SVG BUILT 2026-07-11: components/SproutIcon.tsx -- an asymmetric "reach" sprout (variant C, Justin-
+   approved from a 4-way visual preview), size + color props, scales down to ~15px. Currently rendered in the
+   Membership settings row in amber (real gold comes with the badge system). Reuse this same component for the
+   Profile entry + the support-screen badge. STILL OPEN on the support screen: delete the HERO leaf (#1) and
+   switch the "Custom Badge & Icon" perk-row icon to Ionicons "medal".
 3. MISSION PARAGRAPH reads plain/boring/out-of-place as naked body text between the big title and the first card.
    Give it an intentional treatment (soft container OR an editorial/lead style). Design call OPEN.
 4. TIP CARD ("A one-time chip in") needs a SHORT subline for parity with the Supporter card's "As a thank you,
@@ -379,9 +384,17 @@ DECISION (2026-07-11): ship Tier 1 for launch; build Tier 2 as part of this mone
 5. Build the "Support the Mission" screen (copy final) + Settings entry. >> SCREEN BUILT 2026-07-11
    (app/support.tsx; route registered in app/_layout.tsx; reachable via Settings > Help > Support). Renders ALL
    locked copy, adapts to every theme/accent (live tokens), price pills toggle; PURCHASE BUTTONS ARE STUBBED
-   (fire a "coming soon" toast) until RevenueCat is wired. Pure JS, tsc clean, no rebuild. REMAINING: real
-   purchases (RevenueCat), the Supporter-STATE of the screen, and relocate the Settings entry to its own
-   prominent status-aware spot (it's temporarily in Help so the screen is reachable/testable now).
+   (fire a "coming soon" toast) until RevenueCat is wired. Pure JS, tsc clean, no rebuild.
+   SETTINGS ENTRY RELOCATED 2026-07-11: pulled out of Help into its own prominent, status-aware "Membership"
+   section (2nd position, directly under Appearance). Status-aware row using the new custom sprout glyph
+   (components/SproutIcon.tsx, variant C) + a title-height amber tick (matches the Health section labels) +
+   amber title + amber chevron. Copy: free = "Support the Mission" / "Help keep the app going"; supporter =
+   "Thanks for your support" / "Active Supporter". Status currently keys off the devProUnlocked dev toggle.
+   DEFERRED WIRING (Membership row, do when RevenueCat lands): (1) swap devProUnlocked -> the real Supporter
+   entitlement; (2) "Active Supporter" -> "Renews on [real date]" (NO faked date -- honest-numbers rule, so it
+   stays "Active Supporter" until RC provides the real renewal date); (3) sprout amber -> the real gold when the
+   badge system is built. REMAINING: real purchases (RevenueCat) + the Supporter-STATE of the support screen
+   itself + a Profile entry (next).
 6. Build the Tip Jar (consumable purchase flow) + thank-you.
 7. Supporter badge / recognition.
 8. Restore purchases + lapsed-subscription handling + entitlement caching (works offline).

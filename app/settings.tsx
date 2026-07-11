@@ -53,6 +53,7 @@ import { TOOLTIP_REGISTRY } from '../tooltipRegistry';
 import TooltipModal from '../components/TooltipModal';
 import TooltipIcon from '../components/TooltipIcon';
 import ToggleSwitch from '../components/ToggleSwitch';
+import SproutIcon from '../components/SproutIcon';
 import PrayerRequestModal from '../components/PrayerRequestModal';
 import { useToast } from '../components/Toast';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -1249,6 +1250,32 @@ export default function SettingsScreen() {
           <View style={{ paddingBottom: 4 }} />
         </CollapsibleSection>
 
+        {/* ── Membership ── */}
+        {/* Status source is devProUnlocked for now (the dev toggle). When RevenueCat lands,
+            swap this one flag for the real Supporter entitlement and both states just work. */}
+        <CollapsibleSection label="Membership" subtitle="Support the Mission" defaultOpen={false} theme={theme}>
+          <TouchableOpacity
+            style={[styles.row, { borderTopColor: theme.borderCard }]}
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/support' as any); }}
+            activeOpacity={0.7}
+          >
+            <View style={{ flex: 1 }}>
+              {/* sprout + amber tick + title inline; tick sized to the TITLE only (matches the Health section labels) */}
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <SproutIcon size={22} color={theme.accentAmber} />
+                <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentAmber, paddingLeft: 10, marginLeft: 12 }}>
+                  <Text style={[styles.rowTitle, { color: theme.accentAmber, fontFamily: 'DMSans_700Bold', fontSize: 15 }]}>
+                    {devProUnlocked ? 'Thanks for your support' : 'Support the Mission'}
+                  </Text>
+                </View>
+              </View>
+              {/* Supporter sub = "Active Supporter" placeholder; swap to "Renews on [date]" once RevenueCat provides it. */}
+              <Text style={[styles.rowSub, { color: theme.textMuted, paddingLeft: 47 }]}>{devProUnlocked ? 'Active Supporter' : 'Help keep the app going'}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={theme.accentAmber} />
+          </TouchableOpacity>
+        </CollapsibleSection>
+
         {/* ── Goals ── */}
         <CollapsibleSection label="Goals" subtitle="Fitness · Nutrition" defaultOpen={deepLinkSection === 'goals'} forceOpen={goalsForceOpen} theme={theme}>
           <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
@@ -2060,16 +2087,6 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>What makes this app different</Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
-            </TouchableOpacity>
-            <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 16, marginBottom: 8 }}>
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Support</Text>
-            </View>
-            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/support' as any); }} activeOpacity={0.7}>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Support the Mission</Text>
-                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Help keep the app going</Text>
-              </View>
-              <Ionicons name="leaf" size={15} color={theme.accentAmber} />
             </TouchableOpacity>
             <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 16, marginBottom: 8 }}>
               <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Tutorials</Text>

@@ -154,6 +154,37 @@ This doc is the single source of truth for monetization. Keep the roadmap to one
 
 ---
 
+## NEXT SESSION -- OPEN ITEMS (Support screen live-review + the perks question, 2026-07-11)
+The Support the Mission screen (app/support.tsx) is BUILT + on-device tested. Below is Justin's live-review
+feedback. NONE of it is coded yet (only the committed screen exists). Address these next session.
+
+VISUAL / POLISH (agreed -- just need building):
+1. DELETE the hero leaf icon at the top of the screen (looks orphaned / out of place).
+2. SPROUT ICON: Ionicons has NO sprout, so the current "leaf" is a bad stand-in. The actual Supporter badge is a
+   GOLD SPROUT (decided in DECISIONS #5, NOT built yet -- that's why it's never been seen). Build a real custom
+   SVG sprout (react-native-svg) for the badge feature later. For the PERK-ROW icon of "Custom Badge & Icon", use
+   Ionicons "medal" (DECIDED 2026-07-11).
+3. MISSION PARAGRAPH reads plain/boring/out-of-place as naked body text between the big title and the first card.
+   Give it an intentional treatment (soft container OR an editorial/lead style). Design call OPEN.
+4. TIP CARD ("A one-time chip in") needs a SHORT subline for parity with the Supporter card's "As a thank you,
+   Supporters get:". Premium + short; NOT "no perks just thanks" (already rejected). Copy OPEN.
+5. TIP TILES feel off, two problems: (a) the 3 blue tiles have dead vertical space / weak alignment; (b) "Back
+   the mission" is bigger + bolder so it reads like we're STEERING people to it. Fix: tighten the tiles AND make
+   "Back the mission" CONSISTENT (gold-colored but same size/weight) -- an option, not a push. Design OPEN.
+6. OTTO FAB covers the bottom disclaimer line when scrolled to the end. Add bottom padding so the disclaimer
+   clears the Otto FAB. Easy.
+
+STRATEGIC -- THE BIG OPEN QUESTION (resolve BEFORE finalizing the Supporter card, it changes the content):
+7. THE SUPPORTER PERKS FEEL NOT WORTH IT. Justin: Custom Reports + Day-by-Day "don't move the needle." Root cause
+   = the 95%-free-BY-DESIGN model leaves very little to gate, so the paid perks are inherently thin (AI room +
+   Reports + Day-vs-Day). REJECTED: "early access" as a bolt-on perk (do NOT re-propose). AI is already the first
+   perk. This needs a REAL answer, not a cosmetic reshuffle. Levers still on the table: (a) genuinely
+   strengthen/repackage the AI value as the hero; (b) find something that can legitimately join the tier without
+   breaking the generous-free philosophy; (c) accept thin perks and make the MISSION + recognition the real draw
+   (the original thesis -- support, not a feature unlock). This is the crux to solve first next session.
+
+---
+
 ## CURRENT STATE IN CODE (verified 2026-07-10 -- what actually exists)
 There is NO paywall screen, NO purchase flow, NO real subscription system. "Pro" is entirely faked by a dev
 toggle. A real user who hits a wall today CANNOT upgrade -- the paying half was never built. So adopting any of

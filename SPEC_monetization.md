@@ -75,7 +75,9 @@ This doc is the single source of truth for monetization. Keep the roadmap to one
      humble jar / looks grabby; save real headroom for a possible future recurring Patron tier. TIER LABELS
      (LOCKED 2026-07-11): $2.99 "Pitch in" / $4.99 "Add some fuel" / $9.99 "Power it forward" / $24.99 "Back the
      mission" (fuel/momentum vibe, casual entry -> grand finish; a label-free bare-amounts option was considered
-     then set aside). Tip section header = "Or chip in one time." No features attached, pure gratitude.
+     then set aside). Tip section header (reworded 2026-07-11 to fit the card's eyebrow+heading format, matching the
+     Supporter card's "Support monthly"): eyebrow "Support once" + heading "A one-time chip in" (was the earlier
+     "Or chip in one time"). No features attached, pure gratitude.
    - VOICE = first-person singular "I / me" for the maker; the app is "it / this app"; the word "we" NEVER
      appears on this screen (it breaks the solo-dev spell / sounds like a company). App CHROME elsewhere stays
      neutral / second-person; the Support screen is the ONE place the maker speaks as themselves.
@@ -95,7 +97,7 @@ This doc is the single source of truth for monetization. Keep the roadmap to one
      NOTE: it names Halo when DESCRIBING what the AI powers (honest -- Halo is AI that costs money), but Halo is
      NOT a paid perk (faith is never upcharged). Describing-the-AI and selling-a-perk are different places.
    - SUPPORTER SECTION COPY (APPROVED 2026-07-11): heading "Become a Supporter". Perk list = Format B (bold Title
-     + short description), header "As a thank-you, Supporters get:"
+     + short description), header "As a thank you, Supporters get:"
        * More AI Room -- big bumps to your Otto and meal-estimate limits.
        * Custom Reports -- built from the stats that matter most to you.
        * Day-by-Day -- compare any two days and see exactly what changed.
@@ -103,8 +105,10 @@ This doc is the single source of truth for monetization. Keep the roadmap to one
      (Halo deliberately NOT listed as a perk -- faith is not upcharged. It IS already named in the why paragraph
      ("the smarts behind Otto and Halo"), so faith is not omitted. A separate "faith stays free for everyone"
      mission line was considered and DROPPED 2026-07-11 as forced; someday-maybe it could live as a small line at
-     the bottom of the screen, not now. Price line / button copy still to confirm: "$6.99/month · $69.99/year
-     (2 months free)" + a "Become a Supporter" button are the working defaults.)
+     the bottom of the screen, not now. Price display (LOCKED 2026-07-11): show just the two
+     prices "$6.99/month" and "$69.99/year", NO discount callout (no "2 months free", no "save $X" -- too salesy
+     for the humble vibe). Button "Become a Supporter". A standard Apple-required "Restore Purchases" link sits at
+     the bottom of the screen.)
    - "Do tips affect the badge?" -> folded into the Badge decision (#5); Apple wants a tip to grant a small
      acknowledgment (the badge / thank-you), which doubles as the tip-jar "not paying for literally nothing"
      bulletproofing.
@@ -257,8 +261,12 @@ Currently beta-inflated (see REVERT list). Final caps:
   (per-account, keyed to Firebase uid, manual in the RC dashboard -- nobody comped by default) so testers keep
   FULL access when the real gates go live. Keep ONE uncomped test account (Justin's iPad) to run the real sandbox
   buy/restore/tip flow for free. This is the "dev-only entitlement path" from Build Checklist #2.
-- Copy: the "why" paragraph is APPROVED (DECISIONS #4). Remaining strings (tier labels, upsell one-liners,
-  thank-you note, buttons, Settings row) are being drafted in the copy pass.
+- Copy: the "why" paragraph is APPROVED (DECISIONS #4). Remaining strings (upsell one-liners, thank-you note,
+  Settings row) are being drafted in the copy pass.
+- MOCKUP (Light theme / cyan accent, free-user state, 2026-07-11): https://claude.ai/code/artifact/d81bbbfd-9a6d-4537-ba7f-cf5077d30a6c
+  Faithful proxy for LAYOUT + COLORS (pulled from theme.tsx) + COPY; the real app will differ on TYPE (DM Sans +
+  Bebas Neue on the big amounts) + native polish (shadows/animations/haptics) + the real gold sprout (not emoji).
+  Justin approved the layout 2026-07-11 ("fine, can tweak more when it's actually built").
 
 ## UPSELL TOUCHPOINTS (low stakes -- only ~2 real ones)
 Because 95% is free, there are very few walls. Keep every one honest + non-naggy, no core-flow interruption:

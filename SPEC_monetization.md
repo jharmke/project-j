@@ -30,6 +30,24 @@ This doc is the single source of truth for monetization. Keep the roadmap to one
 
 ---
 
+## LOCKED DECISIONS (this thread -- 2026-07-11)
+1. NAME = "Supporter" (LOCKED 2026-07-11). The single recurring paid tier is "Supporter." "Support the
+   Mission" stays the paywall/screen name. One tier name, one entitlement, one product family.
+   - "Patron" is NOT approved for anything. It is only PARKED as a possible name IF a higher recurring tier is
+     ever built later. Do NOT use it for the base tier and do NOT treat it as decided.
+   - PARKED -- faith-flavored badge skin (Rooted only): optionally render a Rooted Supporter's badge/
+     recognition with a faith flavor (e.g. "Believer" wording and/or the Halo gold-cross treatment). Display
+     SKIN ONLY on the same Supporter entitlement, shown only to Rooted users, never seen by Exploring/
+     NotRightNow. NOT a separate tier, NOT a separate IAP product, NOT a separate price. Ties into the Badge
+     decision below. The universal mission line is unaffected -- this is post-purchase recognition, not the pitch.
+2. PRICE = $6.99/mo + $69.99/yr (LOCKED 2026-07-11). Annual is ~2 months free (~$69.99 vs $83.88). NO free
+   trial at launch (keeps the build + entitlement logic simple; an intro/first-month discount can be added
+   later if conversion needs a nudge). Rationale: covers a typical Supporter's AI cost ~1.5-2x over and the
+   average Supporter far more; the free CAPS + the account spend cap (NOT the price) are what bound worst-case
+   cost. Existing subscribers keep their rate if the price ever rises.
+
+---
+
 ## CURRENT STATE IN CODE (verified 2026-07-10 -- what actually exists)
 There is NO paywall screen, NO purchase flow, NO real subscription system. "Pro" is entirely faked by a dev
 toggle. A real user who hits a wall today CANNOT upgrade -- the paying half was never built. So adopting any of
@@ -118,6 +136,10 @@ Lean is to keep them (95% free is already the generosity) but revisit once real 
   free users. Faith audiences especially respond to being THANKED, not just charged.
 - Options to decide: a profile/header badge, a one-time thank-you screen, name in an in-app "Supporters" /
   credits list, a subtle app-icon or theme accent, tiered by tip amount, etc. Keep it warm, not braggy.
+- PARKED (Justin idea 2026-07-11): a personalized thank-you / reach-out EMAIL to Supporters (and maybe
+  tip-givers). Warm, human, on-brand for "support the mission." CAVEAT: Apple IAP does NOT hand us the buyer's
+  email, so this can only ride on the user's Firebase auth account email (only works if they have one on file);
+  needs a consent/preference so it isn't unsolicited. Nice-to-have, not launch-blocking.
 
 ## THE "SUPPORT THE MISSION" SCREEN (the paywall, reframed)
 - Replaces the generic "Unlock Pro" concept. Warm, gratitude-forward, universal (non-faith) mission line, then
@@ -149,6 +171,43 @@ Because 95% is free, there are very few walls. Keep every one honest + non-naggy
 
 ---
 
+## USAGE MONITORING & DIAGNOSTICS (post-launch cost visibility -- the plan, DECIDED 2026-07-11)
+WHY: the account spend cap is a FIRE ALARM, not a throttle. Monitoring is what keeps it from ever ringing --
+watch the trend and act (tighten per-user caps, or raise the cap deliberately) BEFORE anything hard-stops. The
+per-USER daily caps ("out of messages today, resets tomorrow") are the graceful day-to-day throttle; the
+ACCOUNT cap sits generously above realistic spend and should never fire in a normal month. Flying blind is the
+only way the ugly mid-month hard-stop happens; this plan is the fix.
+
+WHAT ALREADY EXISTS (verified 2026-07-11): every AI feature already writes a per-user, per-day counter to
+Firestore -- Otto = `ai_usage_companion`, Halo = `ai_usage`, Smart Coach = `ai_usage_coach`, AI Estimator =
+`ai_usage_estimator` (all via atomic check-and-increment). TWO gaps: (1) each doc holds only TODAY's count per
+user (a new day overwrites it) so no history is retained; (2) they are COUNTS, not cost -- the Cloud Functions
+receive `response.usage` (real input/output/cache tokens) from Anthropic and currently discard it.
+
+MODELS/COST DRIVERS (verified 2026-07-11, for reading the dashboards): Estimator + Smart Coach = Sonnet 4.6
+($3/$15 per M tokens) via aiProxy; Otto + Halo = Haiku 4.5 ($1/$5 per M) via appCompanion/faithCompanion. So on
+the Anthropic console the Sonnet line ~= estimator + coach and the Haiku line ~= Otto + Halo. Rough per-call:
+estimator ~$0.02 (photo+prompt), coach tip ~$0.02 (big uncached rulebook, 300-tok out), Otto/Halo ~$0.007-0.01
+(cached stable system block, 800-tok out). A free user maxing EVERY cap every day ~= $7/mo ceiling; realistic
+average free user is pennies.
+
+THE PLAN (tiered):
+- TIER 1 -- LAUNCH-REQUIRED, zero build: Anthropic Console is the money ground-truth (spend + tokens by model by
+  day). Set the hard monthly cap AND usage alerts (~50% / ~80%) so you are emailed BEFORE anything stops. Check
+  daily the first week, then weekly.
+- TIER 2 -- RECOMMENDED BUILD (do with this monetization work): in aiProxy + appCompanion + faithCompanion,
+  capture the `response.usage` already returned and write a compact per-call event / daily rollup keyed by
+  day x feature (calls, input/output tokens, estimated $, unique users) into an `ai_daily_summary/{date}` doc via
+  a once-daily scheduled function; optional one-line email digest. This is the per-feature/per-user cost
+  attribution the Anthropic console CANNOT give (one key = lumped tokens) and is required to tune the free caps
+  on real data instead of guessing.
+- TIER 3 -- LATER, optional: a dev-only in-app admin screen that reads the `ai_daily_summary` docs so the numbers
+  are viewable on device. Nice-to-have, not launch.
+
+DECISION (2026-07-11): ship Tier 1 for launch; build Tier 2 as part of this monetization work; defer Tier 3.
+
+---
+
 ## BUILD CHECKLIST (before public launch -- required + functional)
 1. Payment infra: RevenueCat (or StoreKit) integration; define products (1 sub + N consumable tips).
 2. Real `isPro` source: replace `__DEV__ || devProUnlocked` with the real entitlement; REMOVE the dev toggle
@@ -161,13 +220,16 @@ Because 95% is free, there are very few walls. Keep every one honest + non-naggy
 6. Build the Tip Jar (consumable purchase flow) + thank-you.
 7. Supporter badge / recognition.
 8. Restore purchases + lapsed-subscription handling + entitlement caching (works offline).
-9. Anthropic console hard monthly spend cap (launch blocker).
-10. Explainers if any user-facing behavior/wording changes (tooltip/tutorials/Otto KB per standing rule).
-11. QA across themes + Mindful + faith tiers; verify free vs supporter paths end-to-end on a real device.
+9. Anthropic console hard monthly spend cap + usage alerts at ~50%/80% (launch blocker). See Usage Monitoring.
+10. Usage monitoring: Tier 1 (Anthropic console + alerts) LAUNCH-REQUIRED; Tier 2 (per-feature cost rollup from
+    response.usage -> ai_daily_summary) built with this work so caps tune on real data. Full plan: Usage
+    Monitoring & Diagnostics section above.
+11. Explainers if any user-facing behavior/wording changes (tooltip/tutorials/Otto KB per standing rule).
+12. QA across themes + Mindful + faith tiers; verify free vs supporter paths end-to-end on a real device.
 
 ## OPEN DECISIONS (need Justin)
-- NAME of the paid tier: Supporter / Member / Partner / Patron / other. (Justin likes the rename; language TBD.)
-- PRICE of the sub: ~$5-10/mo (annual option? intro price?).
+- [LOCKED 2026-07-11] NAME of the paid tier = "Supporter." See LOCKED DECISIONS above (+ parked faith badge skin).
+- [LOCKED 2026-07-11] PRICE = $6.99/mo + $69.99/yr, no launch trial. See LOCKED DECISIONS above.
 - Tip Jar amounts + labels; whether tips affect the badge.
 - Whether to ship the optional recurring "Patron" tier at launch or defer.
 - Final free caps (keep 3/mo + 10/5, or adjust).

@@ -93,6 +93,33 @@ This doc is the single source of truth for monetization. Keep the roadmap to one
    - "Do tips affect the badge?" -> folded into the Badge decision (#5); Apple wants a tip to grant a small
      acknowledgment (the badge / thank-you), which doubles as the tip-jar "not paying for literally nothing"
      bulletproofing.
+5. BADGE / RECOGNITION (LOCKED 2026-07-11; exact badge pixels still to design at build):
+   - FORM = a warm one-time THANK-YOU MOMENT at purchase/tip (short personal note from the maker) + a quiet
+     PERSISTENT badge. Both Supporters AND tip-givers get it (also Apple's "a tip must grant something"
+     bulletproofing). Self-facing by nature -- the app has no social layer, so a badge can never be a flex.
+   - BADGE = a small GOLD SPROUT glyph on the avatar corner + a gold ring around the avatar. Small glyph, NOT a
+     text banner (whisper, don't brag); NO lettering (app name/logo not locked; a glyph is timeless). Sprout over
+     heart because the app ALREADY uses the heart for favorites (pj_favorites / heart-tap / Bible favorites) -- a
+     heart badge would collide; sprout also says "you help this grow" (wellness + quiet sowing resonance, echoes
+     the "Sown" name DNA). Home base = Profile; the gold avatar ring is the subtle app-wide signature (rides with
+     HeaderAvatar wherever it shows). Exact pixels TBD at build.
+   - FAITH SKIN (the parked "Believer" idea): base badge is SECULAR (sprout); Rooted Supporters get a GOLD CROSS
+     variant (Halo's mark). Same entitlement, Rooted-only, nobody else sees it. Ship if easy; not launch-critical.
+   - COSMETIC "GOLD THREAD" = gold alternate APP ICON + gold avatar ring + gold badge (one cohesive "gold =
+     supporter" identity). GUARDRAIL: keep to that cohesive thread; do NOT sprawl into an unlockable-skins store
+     (that's the MFP "pay for cosmetics" energy we position against). Stays within the "themes/accents NEVER paid"
+     rule because an APP ICON is outside the theme system. CAVEAT: alternate app icons need bundled assets +
+     Info.plist config, trigger an iOS "you changed the icon" popup, and REQUIRE A REBUILD (not pure JS).
+   - FLAT (LOCKED): everyone who supports gets the SAME badge -- no dollar-ranked hierarchy (that turns generosity
+     into a leaderboard / ranks people by money). The thank-you MESSAGE may warmly name the gift ("thanks for the
+     coffee" vs "thanks for backing the mission"), but the visible badge does NOT tier by amount.
+   - THANK-YOU SYSTEM = Option 1 at launch: a RevenueCat webhook (set up anyway for entitlements) -> Cloud
+     Function -> emails JUSTIN the new-supporter details -> he PERSONALLY hand-writes the thank-you from the public
+     support address. Near-zero build, genuinely personal, feasible at launch volumes (Apple "Hide My Email" relay
+     still forwards). UPGRADE (post-launch): an in-app "note from the maker" inbox + push (targeted by uid) so it
+     doesn't depend on email and feels special in-app; switch if hand-emailing volume becomes a burden.
+   - PARKED (don't lose): the in-app "Supporters" thank-you WALL (Concept C) -- needs opt-in + looks thin at
+     launch; revisit once there's a real list to show.
 
 ---
 
@@ -181,15 +208,14 @@ Currently beta-inflated (see REVERT list). Final caps:
 - Day-vs-Day: free locked, Supporter on.
 - Smart Coach (Sonnet via aiProxy): free for all, not gated; monitor as the top free-tier Sonnet cost.
 
-## SUPPORTER BADGE / RECOGNITION (liked, specifics TBD)
-- A small, tasteful visible "thank you" for supporters (and optionally tip-givers). NOT a status flex over
-  free users. Faith audiences especially respond to being THANKED, not just charged.
-- Options to decide: a profile/header badge, a one-time thank-you screen, name in an in-app "Supporters" /
-  credits list, a subtle app-icon or theme accent, tiered by tip amount, etc. Keep it warm, not braggy.
-- PARKED (Justin idea 2026-07-11): a personalized thank-you / reach-out EMAIL to Supporters (and maybe
-  tip-givers). Warm, human, on-brand for "support the mission." CAVEAT: Apple IAP does NOT hand us the buyer's
-  email, so this can only ride on the user's Firebase auth account email (only works if they have one on file);
-  needs a consent/preference so it isn't unsolicited. Nice-to-have, not launch-blocking.
+## SUPPORTER BADGE / RECOGNITION (DECIDED 2026-07-11 -- full detail in LOCKED DECISIONS #5)
+- FORM: a warm one-time thank-you moment + a quiet persistent gold SPROUT badge on the avatar (+ gold ring),
+  self-facing, FLAT (no dollar-ranked tiers). Supporters AND tip-givers get it. Faith skin = gold cross for
+  Rooted. Cosmetic "gold thread" = gold app icon + avatar ring + badge (tasteful, never a skins store).
+- Faith audiences especially respond to being THANKED, not just charged. NOT a status flex over free users.
+- THANK-YOU EMAIL (was parked; now the LAUNCH plan = Option 1): RevenueCat webhook -> alert Justin -> he
+  hand-writes a personal thank-you. Apple IAP does NOT give the buyer's email, but Firebase auth email (incl. the
+  Apple Hide-My-Email relay, which forwards) covers most; an in-app "note from the maker" is the post-launch upgrade.
 
 ## THE "SUPPORT THE MISSION" SCREEN (the paywall, reframed)
 - Replaces the generic "Unlock Pro" concept. Warm, gratitude-forward, universal (non-faith) mission line, then
@@ -284,7 +310,8 @@ DECISION (2026-07-11): ship Tier 1 for launch; build Tier 2 as part of this mone
   OPEN: exact tier labels (copy pass) + whether tips affect the badge (folded into Badge decision #5).
 - Whether to ship the optional recurring "Patron" tier at launch or defer.
 - [LOCKED 2026-07-11] Free + Supporter caps set (Otto 10/25, Halo 25/25, Estimator 5/100). See DECISIONS #3.
-- Badge/recognition form.
+- [LOCKED 2026-07-11] Badge = gold sprout on avatar + gold ring; flat; gold-thread cosmetics; thank-you Option 1;
+  faith cross skin for Rooted. See DECISIONS #5. (Exact badge pixels still to design at build.)
 - All COPY: mission line, perks list, upsell messages, thank-you.
 - StoreKit direct vs RevenueCat.
 

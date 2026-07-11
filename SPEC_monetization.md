@@ -345,7 +345,12 @@ DECISION (2026-07-11): ship Tier 1 for launch; build Tier 2 as part of this mone
    (`REPORTS_BETA_OPEN -> false`, REVERT #5).
 4. Restore real free caps: AI Estimator FREE_LIMIT + PRO_LIMIT (REVERT #3), Otto/Halo FREE_DAILY_CAP (REVERT
    #4) to the locked numbers above.
-5. Build the "Support the Mission" screen (copy final) + Settings entry.
+5. Build the "Support the Mission" screen (copy final) + Settings entry. >> SCREEN BUILT 2026-07-11
+   (app/support.tsx; route registered in app/_layout.tsx; reachable via Settings > Help > Support). Renders ALL
+   locked copy, adapts to every theme/accent (live tokens), price pills toggle; PURCHASE BUTTONS ARE STUBBED
+   (fire a "coming soon" toast) until RevenueCat is wired. Pure JS, tsc clean, no rebuild. REMAINING: real
+   purchases (RevenueCat), the Supporter-STATE of the screen, and relocate the Settings entry to its own
+   prominent status-aware spot (it's temporarily in Help so the screen is reachable/testable now).
 6. Build the Tip Jar (consumable purchase flow) + thank-you.
 7. Supporter badge / recognition.
 8. Restore purchases + lapsed-subscription handling + entitlement caching (works offline).

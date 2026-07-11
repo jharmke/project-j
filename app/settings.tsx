@@ -2062,6 +2062,16 @@ export default function SettingsScreen() {
               <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
             </TouchableOpacity>
             <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 16, marginBottom: 8 }}>
+              <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Support</Text>
+            </View>
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/support' as any); }} activeOpacity={0.7}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Support the Mission</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Help keep the app going</Text>
+              </View>
+              <Ionicons name="leaf" size={15} color={theme.accentAmber} />
+            </TouchableOpacity>
+            <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 16, marginBottom: 8 }}>
               <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Tutorials</Text>
             </View>
             <TouchableOpacity

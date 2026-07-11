@@ -66,6 +66,33 @@ This doc is the single source of truth for monetization. Keep the roadmap to one
      Supporter caps are HIGH but BOUNDED (never literally unlimited) so no single feature can run away; the rare
      max-everything whale (~$10-12/mo) is subsidized by the many light Supporters + the account-cap backstop.
      Always describe perks as "greatly expanded," never "unlimited," so a bounded cap is never a broken promise.
+4. TIP JAR + SUPPORT-SCREEN PRESENTATION (LOCKED 2026-07-11; labels + tips-affect-badge still open):
+   - CONCEPT C (hybrid): a short humble first-person "why" up top, then a small coffee-vibe tip ladder, then ONE
+     visually set-apart "back the mission" tier. Warm, low-pressure, PULL not push (lives in Settings / the
+     Support screen; never a popup, never interrupts a flow, never nags).
+   - TIERS = consumable IAPs (Apple allows NO open-ended/type-your-own amount, so fixed tiers only): $2.99 /
+     $4.99 / $9.99 (small "coffee" rungs) + a set-apart $24.99 "back the mission" tier. 4 tiers total. $29.99+
+     rejected -- clashes with the humble jar / looks grabby; save real headroom for a possible future recurring
+     Patron tier. Labels NOT locked (placeholders; wordsmith in the copy pass). No features attached, pure gratitude.
+   - VOICE = first-person singular "I / me" for the maker; the app is "it / this app"; the word "we" NEVER
+     appears on this screen (it breaks the solo-dev spell / sounds like a company). App CHROME elsewhere stays
+     neutral / second-person; the Support screen is the ONE place the maker speaks as themselves.
+   - HUMILITY RULES: state "one person" as context (explains the AI costs), never as a labor flex; give first
+     (the core is free), invite second; release them out loud (fine to never give); thank them for being here,
+     not just for paying; keep a little lightness; never quantify effort ("countless hours"). Contrast MFP-style
+     paywalls but NEVER name a competitor (allude, "a lot of apps" -- lands harder, avoids petty/legal risk).
+   - ACCURACY: say "the core / the essentials are free," NOT "the app is free" (Reports, Day-vs-Day, and the
+     higher AI caps are Supporter-only, so "all free" would overclaim). Only list GENUINELY-free features in the
+     contrast (barcode scanner, full macro tracking, sleep & recovery scores) -- NOT the estimator/Reports/Day-vs-Day.
+   - NEAR-FINAL "WHY" COPY (draft; final polish in the copy pass, follows the no-dash rule):
+     "A lot of apps lock the basics behind a paywall: the barcode scanner, full macro tracking, even your sleep
+     and recovery scores. Here, all of that is free, and it's staying that way. The AI is the one part that
+     genuinely costs me money to run, and I won't pretend the bills don't sting a bit. So if this app's been good
+     to you, a little support keeps it alive. If you believe in where it's headed, you can help push it forward
+     right here. Either way, thank you for being part of this."
+   - "Do tips affect the badge?" -> folded into the Badge decision (#5); Apple wants a tip to grant a small
+     acknowledgment (the badge / thank-you), which doubles as the tip-jar "not paying for literally nothing"
+     bulletproofing.
 
 ---
 
@@ -128,6 +155,7 @@ Three layers:
    sub. NO features attached -- pure gratitude. This is the honest answer to "someone wants to give more" WITHOUT
    a weird fake $20 feature tier: you're openly saying "give what you want, when you want," not pretending more
    money buys more app. Optionally bumps the badge / adds them to a thank-you list.
+   [LOCKED 2026-07-11: $2.99/$4.99/$9.99 + set-apart $24.99; Concept C hybrid screen; first-person voice. See DECISIONS #4.]
    - OPTIONAL FUTURE: a recurring "Patron" tier (higher price, SAME perks + a shinier badge/recognition),
      framed as gratitude not features, self-selected. Lead with the one-time tip first; only add Patron if
      there's demand. Do NOT ship an arbitrary higher feature tier.
@@ -252,7 +280,8 @@ DECISION (2026-07-11): ship Tier 1 for launch; build Tier 2 as part of this mone
 ## OPEN DECISIONS (need Justin)
 - [LOCKED 2026-07-11] NAME of the paid tier = "Supporter." See LOCKED DECISIONS above (+ parked faith badge skin).
 - [LOCKED 2026-07-11] PRICE = $6.99/mo + $69.99/yr, no launch trial. See LOCKED DECISIONS above.
-- Tip Jar amounts + labels; whether tips affect the badge.
+- [LOCKED 2026-07-11] Tip Jar = $2.99/$4.99/$9.99 + $24.99, Concept C, first-person voice (DECISIONS #4). STILL
+  OPEN: exact tier labels (copy pass) + whether tips affect the badge (folded into Badge decision #5).
 - Whether to ship the optional recurring "Patron" tier at launch or defer.
 - [LOCKED 2026-07-11] Free + Supporter caps set (Otto 10/25, Halo 25/25, Estimator 5/100). See DECISIONS #3.
 - Badge/recognition form.

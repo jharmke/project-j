@@ -71,9 +71,11 @@ This doc is the single source of truth for monetization. Keep the roadmap to one
      visually set-apart "back the mission" tier. Warm, low-pressure, PULL not push (lives in Settings / the
      Support screen; never a popup, never interrupts a flow, never nags).
    - TIERS = consumable IAPs (Apple allows NO open-ended/type-your-own amount, so fixed tiers only): $2.99 /
-     $4.99 / $9.99 (small "coffee" rungs) + a set-apart $24.99 "back the mission" tier. 4 tiers total. $29.99+
-     rejected -- clashes with the humble jar / looks grabby; save real headroom for a possible future recurring
-     Patron tier. Labels NOT locked (placeholders; wordsmith in the copy pass). No features attached, pure gratitude.
+     $4.99 / $9.99 (small rungs) + a set-apart $24.99 tier. 4 tiers total. $29.99+ rejected -- clashes with the
+     humble jar / looks grabby; save real headroom for a possible future recurring Patron tier. TIER LABELS
+     (LOCKED 2026-07-11): $2.99 "Pitch in" / $4.99 "Add some fuel" / $9.99 "Power it forward" / $24.99 "Back the
+     mission" (fuel/momentum vibe, casual entry -> grand finish; a label-free bare-amounts option was considered
+     then set aside). Tip section header = "Or chip in one time." No features attached, pure gratitude.
    - VOICE = first-person singular "I / me" for the maker; the app is "it / this app"; the word "we" NEVER
      appears on this screen (it breaks the solo-dev spell / sounds like a company). App CHROME elsewhere stays
      neutral / second-person; the Support screen is the ONE place the maker speaks as themselves.
@@ -92,6 +94,17 @@ This doc is the single source of truth for monetization. Keep the roadmap to one
      it alive and moving forward. Either way, thank you for being part of this."
      NOTE: it names Halo when DESCRIBING what the AI powers (honest -- Halo is AI that costs money), but Halo is
      NOT a paid perk (faith is never upcharged). Describing-the-AI and selling-a-perk are different places.
+   - SUPPORTER SECTION COPY (APPROVED 2026-07-11): heading "Become a Supporter". Perk list = Format B (bold Title
+     + short description), header "As a thank-you, Supporters get:"
+       * More AI Room -- big bumps to your Otto and meal-estimate limits.
+       * Custom Reports -- built from the stats that matter most to you.
+       * Day-by-Day -- compare any two days and see exactly what changed.
+       * Custom Badge & Icon -- a token of thanks for helping keep this going.
+     (Halo deliberately NOT listed as a perk -- faith is not upcharged. It IS already named in the why paragraph
+     ("the smarts behind Otto and Halo"), so faith is not omitted. A separate "faith stays free for everyone"
+     mission line was considered and DROPPED 2026-07-11 as forced; someday-maybe it could live as a small line at
+     the bottom of the screen, not now. Price line / button copy still to confirm: "$6.99/month · $69.99/year
+     (2 months free)" + a "Become a Supporter" button are the working defaults.)
    - "Do tips affect the badge?" -> folded into the Badge decision (#5); Apple wants a tip to grant a small
      acknowledgment (the badge / thank-you), which doubles as the tip-jar "not paying for literally nothing"
      bulletproofing.
@@ -329,8 +342,9 @@ DECISION (2026-07-11): ship Tier 1 for launch; build Tier 2 as part of this mone
 ## OPEN DECISIONS (need Justin)
 - [LOCKED 2026-07-11] NAME of the paid tier = "Supporter." See LOCKED DECISIONS above (+ parked faith badge skin).
 - [LOCKED 2026-07-11] PRICE = $6.99/mo + $69.99/yr, no launch trial. See LOCKED DECISIONS above.
-- [LOCKED 2026-07-11] Tip Jar = $2.99/$4.99/$9.99 + $24.99, Concept C, first-person voice (DECISIONS #4). STILL
-  OPEN: exact tier labels (copy pass) + whether tips affect the badge (folded into Badge decision #5).
+- [LOCKED 2026-07-11] Tip Jar = $2.99/$4.99/$9.99 + $24.99, Concept C, VOICELESS screen voice; tier labels locked
+  (Pitch in / Add some fuel / Power it forward / Back the mission). Tips grant the same recognition as a sub
+  (flat, DECISIONS #5). See DECISIONS #4.
 - [LOCKED 2026-07-11] Patron tier = DEFERRED (launch is sub + tip jar only). See DECISIONS #6.
 - [LOCKED 2026-07-11] Free + Supporter caps set (Otto 10/25, Halo 25/25, Estimator 5/100). See DECISIONS #3.
 - [LOCKED 2026-07-11] Badge = gold sprout on avatar + gold ring; flat; gold-thread cosmetics; thank-you Option 1;

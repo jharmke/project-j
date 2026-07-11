@@ -270,10 +270,19 @@ Currently beta-inflated (see REVERT list). Final caps:
 
 ## UPSELL TOUCHPOINTS (low stakes -- only ~2 real ones)
 Because 95% is free, there are very few walls. Keep every one honest + non-naggy, no core-flow interruption:
-- AI Estimator limit reached: "You've used this month's free AI estimates. Support the mission to keep going
-  (and help cover the cost)." (copy TBD)
-- Locked report / Day-vs-Day: a gentle "this is a Supporter perk" with a link to the screen.
-- Permanent, non-intrusive entry in Settings.
+- AI Estimator limit reached (INLINE on the estimator screen + a "Support the Mission" link/button beneath it,
+  NOT a modal -- calmer, non-naggy). COPY LOCKED 2026-07-11: "You've used all your free estimates this month.
+  Become a Supporter to keep going, or check back August 1 for a fresh batch." ([reset date] auto-fills from
+  nextResetLabel() = the 1st of next month.)
+- Locked Custom Reports / Day-vs-Day (a gentle locked state + a "Support the Mission" link, not interruptive).
+  COPY LOCKED 2026-07-11: Reports = "Building your own reports is a Supporter perk. Become a Supporter to get
+  started." · Day-vs-Day = "Comparing any two days is a Supporter perk. Become a Supporter to get started."
+  ALSO reword the existing code's "Pro" -> "Supporter" (comparison-report.tsx toast + pill; reports.tsx gate).
+- POST-PURCHASE THANK-YOU (COPY LOCKED 2026-07-11, voiceless, the warm moment after a successful purchase):
+  Sub = "Thank you for backing the mission and becoming a Supporter. It keeps this going and moving forward."
+  Tip = "Thank you for chipping in. It genuinely means a lot and keeps this moving forward."
+- Permanent, non-intrusive Settings entry (its OWN row/section, high-ish in Settings, status-aware). COPY LOCKED
+  2026-07-11: free = "Support the Mission"; Supporter (already in) = "Thanks for your support 🌱".
 (Justin not fully sold on softening wording -- low stakes, finalize with the screen copy.)
 
 ## PAYMENT / iOS CONSTRAINTS (must-know for the build)

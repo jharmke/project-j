@@ -32,9 +32,33 @@ This doc is the single source of truth for monetization. Keep the roadmap to one
 
 ## SESSION HANDOFF (2026-07-12) -- READ THIS FIRST TO PICK UP SEAMLESSLY
 
->>> STATUS AS OF END OF 2026-07-12 (read this first): **APP-SIDE MONETIZATION IS COMPLETE.** Everything left on
->>> the whole track is the REVENUECAT BLOCK, and it is BLOCKED ON JUSTIN'S NON-CODE PREREQS (see "NEXT UP" item 1
->>> below + the full prereq list). Do NOT start app-side monetization work; there is none left.
+>>> REVENUECAT PREREQS: ALL 5 DONE 2026-07-12 (non-code, in App Store Connect / RevenueCat / Anthropic console).
+>>> Config for the code phase (use these EXACT identifiers):
+>>>   - Apple Paid Apps Agreement: ACTIVE (W-9 + bank done; DSA/EU trader DEFERRED = app not distributed in EU,
+>>>     intentional to keep Justin's home address private; revisit EU later w/ PO box or LLC).
+>>>   - Bundle ID: com.jharmke.projectj (locked).
+>>>   - App Store Connect PRODUCTS (6): subs `supporter_monthly` ($6.99/mo) + `supporter_annual` ($69.99/yr) in a
+>>>     subscription group "Supporter"; consumable tips `tip_pitchin` ($2.99) `tip_addfuel` ($4.99)
+>>>     `tip_powerforward` ($9.99) `tip_backmission` ($24.99). Subs show "Missing Metadata", tips "Draft" -- NORMAL
+>>>     (not submitted for review; fully usable in sandbox). Product IDs are PERMANENT (tip_1 was burned+deleted).
+>>>   - RevenueCat: project "Project J", platform React Native, iOS app on bundle ID above, In-App Purchase KEY
+>>>     (P8) uploaded. ENTITLEMENT identifier = `supporter` (2 subs attached, NO tips). OFFERING = `default`
+>>>     (packages `$rc_monthly`->supporter_monthly, `$rc_annual`->supporter_annual). Tips are NOT in the offering /
+>>>     NOT in the entitlement -- fetch them by product ID in code for the tip jar; badge-for-tippers is app-side
+>>>     purchase-history logic, NOT the entitlement (a $2.99 tip must never grant ongoing Supporter perks).
+>>>   - Sandbox tester created (email uses a hyphen not a + alias, so not deliverable -- fine, sandbox rarely needs
+>>>     verification; remake with a + alias if Apple ever asks).
+>>>   - Anthropic console: $50/mo hard cap + email alerts at $25 & $40. NOTE: $50 is a pre-launch backstop; RAISE it
+>>>     at real launch to sit above expected real-user spend (launch-blocker recalc).
+>>> STILL TO GET for code: RevenueCat PUBLIC API KEY (RevenueCat > Project settings > API keys > iOS public key).
+>>> DEFERRED to launch-hardening (tracked, not missed): App Store Connect API key (AuthKey -- enables price sync +
+>>> refund handling + Apple->RevenueCat server notifications); product review screenshots/metadata for App Review;
+>>> ⭐ APPLE SMALL BUSINESS PROGRAM enrollment (30%->15% cut, Justin qualifies, real money -- do before launch).
+>>> 5 QUICK VERIFICATIONS Justin to eyeball (flagged 2026-07-12): all 6 prices set; annual duration = 1 YEAR;
+>>> availability = all/US; sandbox region = US; `default` offering marked CURRENT.
+>>>
+>>> STATUS AS OF END OF 2026-07-12 (read this first): **APP-SIDE MONETIZATION IS COMPLETE + REVENUECAT PREREQS DONE.**
+>>> Next is the CODE phase (SDK install + real entitlement wiring; needs the native rebuild). See "NEXT UP" item 1.
 >>> Finished today, on top of the list below: #5 EvR frosted-glass Supporter lock (ranked feed 1-free/rest-locked
 >>> + Patterns fully locked, real expo-blur -> needs a native build); the PERKS QUESTION resolved (support model,
 >>> Path A, no new gates -- see OPEN ITEMS #7); ALL SIX Support-screen polish items; MONTHLY summaries decided FREE

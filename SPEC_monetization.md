@@ -32,6 +32,26 @@ This doc is the single source of truth for monetization. Keep the roadmap to one
 
 ## SESSION HANDOFF (2026-07-12) -- READ THIS FIRST TO PICK UP SEAMLESSLY
 
+>>> LATEST STATUS (end of 2026-07-12, session 2) -- READ THIS FIRST:
+>>> RevenueCat is BUILT + WORKING. A native dev build was made (react-native-purchases + expo-blur) and a REAL
+>>> SANDBOX SUBSCRIPTION was purchased end-to-end on device: sheet appeared, purchase completed, entitlement
+>>> granted, isSupporter flipped true, gates UNLOCKED, CTA -> soft "You're a Supporter" thank-you card. All
+>>> committed. Sandbox account is jtharmke+SANDBOX@gmail.com (a PLUS alias, NOT hyphen -- the hyphen one failed).
+>>> WHAT'S STILL TO VERIFY ON DEVICE (Justin, quick, no rebuild -- pure test): (1) a TIP purchase (tap a tip tile
+>>> -> sandbox sheet -> confirm), (2) RESTORE PURCHASES, (3) the LOCKED state -- we only visually confirmed
+>>> UNLOCKED; when the sandbox sub lapses (~mins) OR via the dev toggle OFF (only works once no real entitlement
+>>> is active), navigate Comparison/EvR and confirm they LOCK, and that the app re-locks when the sub lapses.
+>>> WHAT'S NEXT (code/backend, NO client rebuild needed): (A) the WEBHOOK -- a Cloud Function receiving RevenueCat
+>>> webhook events (INITIAL_PURCHASE + tips) -> email Justin the new-supporter/tipper info for the hand-written
+>>> thank-you; then set the webhook URL in the RC dashboard. (B) POLISH: switch the Support screen price display to
+>>> LIVE priceString from the offering (currently hardcoded $6.99/$69.99/tips -- matches, but should be live); the
+>>> FULLER Supporter-state screen (hide the price boxes/perks for a subscriber, show plan + member-since + renews-on
+>>> from RC customerInfo -- needs the real dates); a missing haptic on the subscribe tap (minor). (C) LAUNCH-ONLY
+>>> (do NOT do now, would break current testers): revert beta caps (Otto 100->10/25, Halo 50->25/25, Estimator
+>>> 100->5/100) + REPORTS_BETA_OPEN=false + REMOVE the dev toggle (REVERT #2) + the deferred launch-hardening
+>>> (App Store Connect API/AuthKey for server notifications+refunds, Apple Small Business Program 30->15%, product
+>>> review screenshots, gold alternate app icon, Otto free-user nudge wiring). Full detail below.
+>>>
 >>> REVENUECAT PREREQS: ALL 5 DONE 2026-07-12 (non-code, in App Store Connect / RevenueCat / Anthropic console).
 >>> Config for the code phase (use these EXACT identifiers):
 >>>   - Apple Paid Apps Agreement: ACTIVE (W-9 + bank done; DSA/EU trader DEFERRED = app not distributed in EU,

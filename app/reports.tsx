@@ -13,6 +13,7 @@ import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '../theme';
 import { useToast } from '../components/Toast';
@@ -20,7 +21,7 @@ import { loadReports, deleteReport, newReportId, RANGE_LABELS, Report } from '..
 
 // 🚧 BETA HACK (revert before App Store launch): Reports is a Pro feature, but every TestFlight user gets
 // full access during beta. Flip to false (or gate on the real subscription) before public release.
-const REPORTS_BETA_OPEN = true;
+export const REPORTS_BETA_OPEN = true;
 
 export default function ReportsHub() {
   const { theme } = useTheme();
@@ -30,6 +31,16 @@ export default function ReportsHub() {
 
   const refresh = useCallback(() => { loadReports().then(setReports); }, []);
   useFocusEffect(refresh);
+
+  // Supporter gate. Reports is Supporter-only, but REPORTS_BETA_OPEN keeps it open to all during beta.
+  const [isPro, setIsPro] = useState(__DEV__);
+  useFocusEffect(useCallback(() => {
+    AsyncStorage.getItem('pj_settings').then(raw => {
+      if (!raw) return;
+      try { const s = JSON.parse(raw); if (s.devProUnlocked) setIsPro(true); } catch {}
+    });
+  }, []));
+  const hasAccess = REPORTS_BETA_OPEN || isPro;
 
   const startNew = () => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
@@ -52,6 +63,37 @@ export default function ReportsHub() {
       } },
     ]);
   };
+
+  // Whole Reports tool is a Supporter feature (dormant until REPORTS_BETA_OPEN flips false with RevenueCat).
+  if (!hasAccess) {
+    return (
+      <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
+        <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 18, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="chevron-back" size={26} color={theme.textSecondary} />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.textSecondary }}>REPORTS</Text>
+        </View>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <View style={{ backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 14, padding: 20, alignItems: 'center' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <Ionicons name="lock-closed" size={16} color={theme.textMuted} />
+              <View style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+                <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.accentBlue }}>SUPPORTER</Text>
+              </View>
+            </View>
+            <Text style={{ fontSize: 17, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', textAlign: 'center', marginBottom: 8 }}>Custom Reports is a Supporter feature</Text>
+            <Text style={{ fontSize: 14, color: theme.textMuted, fontFamily: 'DMSans_400Regular', lineHeight: 21, textAlign: 'center', marginBottom: 18 }}>
+              Build your own report from any period, with the stats that matter most to you.
+            </Text>
+            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/support'); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ paddingVertical: 8 }}>
+              <Text style={{ fontSize: 15, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>Become a Supporter →</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>

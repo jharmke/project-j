@@ -30,6 +30,77 @@ This doc is the single source of truth for monetization. Keep the roadmap to one
 
 ---
 
+## SESSION HANDOFF (2026-07-12) -- READ THIS FIRST TO PICK UP SEAMLESSLY
+All work below is COMMITTED. `isPro` is still `__DEV__ || devProUnlocked` everywhere (real entitlement =
+RevenueCat, NOT built yet). None of the new locked states show on Justin's dev device (dev forces isPro true) --
+they only appear for real free users in a release build.
+
+DONE THIS SESSION (in order, committed):
+1. COACH INSIGHT = FREE everywhere. Removed the 3 Coach Insight "PRO" locked branches (weekly-summary,
+   monthly-summary, diagnostic-report-view). Coaching is free for all, permanently.
+2. PRO -> SUPPORTER user-facing rename COMPLETE. Gate chips (Day-vs-Day, Patterns, Monthly-Summaries-in-Stats)
+   now read "SUPPORTER"; estimator modal + Day-vs-Day toast reworded. Left alone on purpose: settings.tsx
+   dev-toggle label (dies at launch) + reports.tsx code comments (not user-facing).
+3. ESTIMATOR (B): killed the out-of-estimates POPUP -> calm INLINE card (app/ai-meal-estimator.tsx). FREE:
+   "You've used all your free estimates this month." / "Your free batch refreshes on [reset date]." / tappable
+   "Become a Supporter to keep going ->". SUPPORTER (hit 100): "You've used all your estimates this month." /
+   "They refresh on [reset date]." / no link. No lock icon. Dead popup code removed.
+4. OTTO/HALO cap messages name the assistant (killed "It" -> "Otto resets tomorrow" / "Halo resets tomorrow" on
+   both the 0-left and 1-left lines). Otto FREE-USER nudge copy LOCKED but PARKED (wiring needs the real
+   entitlement -- Otto has no free-vs-Supporter awareness yet): "Supporters get more time with Otto each day.
+   Become a Supporter ->". Halo NEVER gets a nudge (faith not upcharged). Full detail in CAP-REACHED COPY section.
+5. COMPARISON now WHOLE-tool Supporter-locked (was only the Day-vs-Day mode). Screen-level guard in
+   comparison-report.tsx (covers the Stats card button AND the FAB shortcut) + Stats "Comparison" card gets a
+   SUPPORTER chip and its button -> "Become a Supporter" routing to /support. Support-page perk renamed
+   "Day-by-Day" -> "Comparison" with new copy ("Pick your time frames, line them up side by side, and see exactly
+   how you compared.") + swap-horizontal icon. Locked-screen copy: "Comparison is a Supporter feature" + that same
+   line + "Become a Supporter ->".
+6. REPORTS (C): screen-level locked state in reports.tsx, DORMANT behind REPORTS_BETA_OPEN (activates when the
+   flag flips false with RevenueCat, REVERT #5). Stats "Custom Reports" card gets a SUPPORTER chip + Support route
+   (also dormant during beta). Copy: "Custom Reports is a Supporter feature" / "Build your own report from any
+   period, with the stats that matter most to you." / "Become a Supporter ->". REPORTS_BETA_OPEN is now EXPORTED
+   from reports.tsx and imported into stats.tsx for the card gate.
+
+NEXT UP (EXACT ORDER -- start at the top):
+1. [#5, PURE JS, the LAST copy/gating piece] EvR card gating in app/diagnostic-report-view.tsx:
+   - Coach Insight headline stays FREE (already done).
+   - RANKED diagnostic feed: show 1 card FREE, LOCK the rest (Supporter). THIS GATE DOES NOT EXIST YET -- new
+     build (today every ranked card is free; the feed is mapped with no gate).
+   - "PATTERNS IN YOUR DATA" cross-signal cards: FULLY locked (today it's 1-free/rest-blurred via TIPS_GATED &&
+     idx>0 in InsightTipCard).
+   - LOCKED-CARD LOOK (both): readable HEADER/title + blurred body/graphic + lock + "SUPPORTER" chip + an explicit
+     "Become a Supporter to unlock" line + whole card taps to /support. NO gray-skeleton shell.
+2. [REVENUECAT BLOCK -- needs Justin's non-code prereqs FIRST: create RC account + App Store Connect products
+   (1 sub + 4 consumable tips) + set the Anthropic hard monthly spend cap] #6 RevenueCat SDK -> real entitlement
+   (replaces __DEV__/devProUnlocked, REMOVE the dev toggle, REVERT #2; needs a native build). THEN #7: revert beta
+   caps (Otto 100->10/25, Halo 50->25/25, Estimator 100->5/100) + set REPORTS_BETA_OPEN=false. THEN wire the Otto
+   free-user nudge (entitlement now exists).
+3. #8 Tip jar purchase flow + RevenueCat webhook -> Cloud Function -> email Justin the new-supporter/tipper
+   details for the hand-written thank-you.
+4. #9 Support screen "You're a Supporter" state (can start against devProUnlocked now; finalize plan/dates w/ RC).
+5. #10 Supporter badge (gold sprout + avatar ring via HeaderAvatar; gold alternate app icon needs a rebuild).
+6. #11 Update Otto KB (functions/src/assistantAppKnowledge.ts + redeploy) + tooltipRegistry.ts + data/tutorials.ts
+   for ALL the changed wording. #12 Full QA (5 themes + accents, Mindful, 3 faith tiers, free vs Supporter on a
+   real device incl. the sandbox buy/restore/tip test).
+
+OPEN NOTES / IDEAS -- DO NOT LOSE:
+- SUPPORT-SCREEN VISUAL PUNCH LIST (separate polish task, NOT started): DELETE the hero leaf at the top of
+  app/support.tsx; the "Custom Badge & Icon" PERK icon is currently a LEAF but should be the GOLD SPROUT
+  (components/SproutIcon.tsx) since the badge IS a sprout, not a leaf; plus mission paragraph, tip tiles, bottom
+  padding (see "NEXT SESSION -- OPEN ITEMS" below).
+- 2 EvR BUGS parked in roadmap NEXT UP (handle AFTER monetization): (a) EvR Coach Insight may be rendering the RAW
+  deterministic template instead of the AI voice (flagged from a 2026-07-12 report); (b) ranked diagnostic card
+  body copy is "word slop," needs a clarity rewrite.
+- MONTHLY-SUMMARY WHOLE-SURFACE gating is UNRESOLVED: SPEC_monthly_summary.md says the ENTIRE monthly surface is
+  Pro-gated, which conflicts with "coaching free." The stats.tsx Monthly-Summaries chip was renamed to SUPPORTER,
+  but whether the whole monthly surface stays Supporter-only is still Justin's open call.
+- DEAD CODE (harmless, cleanup later): the old Day-vs-Day-only gate INSIDE comparison-report.tsx is now unreachable
+  (whole tool locked at entry). Left in place to keep the change small.
+- KNOWN PRE-EXISTING (not ours): app/(tabs)/stats.tsx has 4 TouchableOpacity+ref tsc errors (confirmed present
+  before this session's edits). All our edits are tsc-clean.
+
+---
+
 ## LOCKED DECISIONS (this thread -- 2026-07-11)
 1. NAME = "Supporter" (LOCKED 2026-07-11). The single recurring paid tier is "Supporter." "Support the
    Mission" stays the paywall/screen name. One tier name, one entitlement, one product family.
@@ -58,7 +129,9 @@ This doc is the single source of truth for monetization. Keep the roadmap to one
      Supporter 100 covers "every meal, 3x/day, 30 days" (~90) + headroom; ~$2-3/mo cost, more than covered by the
      sub (a maxed estimator user is still net-positive to us).
    - Custom Reports: free locked, Supporter full (no per-call AI cost -- deterministic renderers; pure power perk).
-     Day-vs-Day: free locked, Supporter on.
+     Comparison (the WHOLE tool -- all period presets AND Day-vs-Day): free locked, Supporter on. (EXPANDED
+     2026-07-12 from just Day-vs-Day to the entire Comparison feature; gated at the comparison-report screen +
+     the Stats entry card. Built 2026-07-12.)
    - Smart Coach (Sonnet, auto-fires, NOT gated): FREE FOR ALL. Biggest free-tier Sonnet exposure; watch on the
      monitoring dashboard. If cost runs hot post-launch, lever = only the home tip auto-generates AI (sleep/
      recovery/day-summary generate on open).
@@ -100,7 +173,8 @@ This doc is the single source of truth for monetization. Keep the roadmap to one
      + short description), header "As a thank you, Supporters get:"
        * More AI Room -- big bumps to your Otto and meal-estimate limits.
        * Custom Reports -- built from the stats that matter most to you.
-       * Day-by-Day -- compare any two days and see exactly what changed.
+       * Comparison -- pick your time frames, line them up side by side, and see exactly how you compared.
+         (RENAMED 2026-07-12 from "Day-by-Day"; the perk is the WHOLE Comparison tool, not just day-vs-day.)
        * Custom Badge & Icon -- a token of thanks for helping keep this going.
      (Halo deliberately NOT listed as a perk -- faith is not upcharged. It IS already named in the why paragraph
      ("the smarts behind Otto and Halo"), so faith is not omitted. A separate "faith stays free for everyone"

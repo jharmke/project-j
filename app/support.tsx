@@ -20,7 +20,7 @@ type Perk = { icon: string; title: string; body: string; gold?: boolean };
 const PERKS: Perk[] = [
   { icon: 'sparkles', title: 'More AI Room', body: 'Big bumps to your Otto and meal-estimate limits.' },
   { icon: 'bar-chart', title: 'Custom Reports', body: 'Built from the stats that matter most to you.' },
-  { icon: 'calendar', title: 'Day-by-Day', body: 'Compare any two days and see exactly what changed.' },
+  { icon: 'swap-horizontal', title: 'Comparison', body: 'Pick your time frames, line them up side by side, and see exactly how you compared.' },
   { icon: 'leaf', title: 'Custom Badge & Icon', body: 'A token of thanks for helping keep this going.', gold: true },
 ];
 

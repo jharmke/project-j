@@ -5,6 +5,7 @@ import { useScrollToTop } from '@react-navigation/native';
 import { triggerHaptic } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
+import { REPORTS_BETA_OPEN } from '../reports';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Animated, Dimensions, Easing, Keyboard, LayoutAnimation, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -326,6 +327,17 @@ export default function StatsScreen() {
     const hist = await loadChallengeHistory();
     setChallengeHistCount(hist.length);
   }, []);
+  // Supporter entitlement (Comparison is Supporter-only). __DEV__ / devProUnlocked stand-in until RevenueCat.
+  const [isPro, setIsPro] = useState(__DEV__);
+  useFocusEffect(useCallback(() => {
+    AsyncStorage.getItem('pj_settings').then(raw => {
+      if (!raw) return;
+      try { const s = JSON.parse(raw); if (s.devProUnlocked) setIsPro(true); } catch {}
+    });
+  }, []));
+
+  const reportsLocked = !(REPORTS_BETA_OPEN || isPro);
+
   useFocusEffect(useCallback(() => { loadChallengeSection(); }, [loadChallengeSection]));
 
   const [creatorVisible, setCreatorVisible] = useState(false);
@@ -2177,14 +2189,21 @@ export default function StatsScreen() {
               <View key={section.id} onLayout={e => { reportsLayoutY.current = e.nativeEvent.layout.y; }}>
               <CollapsibleSection label={section.label} subtitle="Custom Reports, Summaries, Comparison and Effort vs. Results" defaultOpen={isFirst} theme={theme} first={isFirst} forceOpen={reportsSectionForceOpen}>
                 {/* Custom Reports (Pro; beta-open to all testers) -- build-your-own report */}
-                <TouchableOpacity activeOpacity={0.8} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/reports'); }}
+                <TouchableOpacity activeOpacity={0.8} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push(reportsLocked ? '/support' : '/reports'); }}
                   style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden', marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 13 }]}>
                   <Ionicons name="documents" size={120} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -22, bottom: -26, opacity: 0.10 }} />
                   <View style={{ width: 42, height: 42, borderRadius: 11, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, alignItems: 'center', justifyContent: 'center' }}>
                     <Ionicons name="document-text" size={22} color={theme.accentBlue} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.cardLabel, { color: theme.textMuted }]}>CUSTOM REPORTS</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Text style={[styles.cardLabel, { color: theme.textMuted }]}>CUSTOM REPORTS</Text>
+                      {reportsLocked && (
+                        <View style={{ backgroundColor: `${theme.accentBlueRaw}20`, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+                          <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.accentBlueRaw }}>SUPPORTER</Text>
+                        </View>
+                      )}
+                    </View>
                     <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 18, marginTop: 4 }}>Build your own: pick a date range and the blocks you care about.</Text>
                   </View>
                   <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
@@ -2224,7 +2243,14 @@ export default function StatsScreen() {
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setComparisonCardOpen(o => !o); }}
                     style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: comparisonCardOpen ? 8 : 0 }}
                   >
-                    <Text style={[styles.cardLabel, { color: theme.textMuted }]}>COMPARISON</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Text style={[styles.cardLabel, { color: theme.textMuted }]}>COMPARISON</Text>
+                      {!isPro && (
+                        <View style={{ backgroundColor: `${theme.accentBlueRaw}20`, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+                          <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.accentBlueRaw }}>SUPPORTER</Text>
+                        </View>
+                      )}
+                    </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                       <TooltipIcon tooltipKey="comparison_report" />
                       <Ionicons name={comparisonCardOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textMuted} />
@@ -2236,10 +2262,10 @@ export default function StatsScreen() {
                         Compare two periods side by side: this week vs last week, this month vs last month, and more. Just the numbers, no scores.
                       </Text>
                       <TouchableOpacity
-                        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/comparison-report'); }}
+                        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push(isPro ? '/comparison-report' : '/support'); }}
                         style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingVertical: 12, alignItems: 'center' }}
                       >
-                        <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: '#fff' }}>New Comparison</Text>
+                        <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: '#fff' }}>{isPro ? 'New Comparison' : 'Become a Supporter'}</Text>
                       </TouchableOpacity>
                     </>
                   )}

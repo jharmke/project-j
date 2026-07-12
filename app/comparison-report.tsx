@@ -289,6 +289,38 @@ export default function ComparisonReportScreen() {
     );
   };
 
+  // Whole Comparison tool is a Supporter feature. Free users get a locked screen (covers every entry
+  // point: the Stats card button + the FAB shortcut).
+  if (!isPro) {
+    return (
+      <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
+        <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={{ padding: 4 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="chevron-back" size={24} color={accent} />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: accent, flex: 1 }}>COMPARISON</Text>
+        </View>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <View style={{ backgroundColor: theme.bgCard, borderWidth: 1, borderColor: `${accent}40`, borderRadius: 14, padding: 20, alignItems: 'center' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <Ionicons name="lock-closed" size={16} color={theme.textMuted} />
+              <View style={{ backgroundColor: `${accent}20`, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+                <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: accent }}>SUPPORTER</Text>
+              </View>
+            </View>
+            <Text style={{ fontSize: 17, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', textAlign: 'center', marginBottom: 8 }}>Comparison is a Supporter feature</Text>
+            <Text style={{ fontSize: 14, color: theme.textMuted, fontFamily: 'DMSans_400Regular', lineHeight: 21, textAlign: 'center', marginBottom: 18 }}>
+              Pick your time frames, line them up side by side, and see exactly how you compared.
+            </Text>
+            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/support'); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ paddingVertical: 8 }}>
+              <Text style={{ fontSize: 15, color: accent, fontFamily: 'DMSans_600SemiBold' }}>Become a Supporter →</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
       {/* Header */}

@@ -237,28 +237,57 @@ The Support the Mission screen (app/support.tsx) is BUILT + on-device tested. Be
 feedback. NONE of it is coded yet (only the committed screen exists). Address these next session.
 
 VISUAL / POLISH (agreed -- just need building):
-1. DELETE the hero leaf icon at the top of the screen (looks orphaned / out of place).
-2. SPROUT ICON: Ionicons has NO sprout, so the current "leaf" is a bad stand-in. The actual Supporter badge is a
-   GOLD SPROUT (decided in DECISIONS #5, NOT built yet -- that's why it's never been seen). Build a real custom
-   SVG sprout (react-native-svg) for the badge feature later. For the PERK-ROW icon of "Custom Badge & Icon", use
-   Ionicons "medal" (DECIDED 2026-07-11).
+1. [DONE 2026-07-12] DELETED the hero leaf icon at the top of the screen. Title "Support the Mission" stays.
+2. [DONE 2026-07-12 -- SPROUT, not the medal] SPROUT ICON. REVERSED the earlier "use Ionicons medal for the perk
+   row" call: now that components/SproutIcon.tsx exists (the medal was only a stand-in because the sprout didn't),
+   the "Custom Badge & Icon" perk row renders the REAL SproutIcon -- it previews the exact badge you get, which is
+   more honest than a medal. Wired via a `sprout?: boolean` flag on the Perk type (other 3 rows stay Ionicons).
+   Rendered at size 20 (Ionicons rows are 15, but the sprout art has more internal whitespace so it needs to be
+   bigger to match visual weight in the 30x30 tile). Also recentered SproutIcon globally: viewBox x-origin 0 ->
+   -1.2 (the big left leaf made it read left-of-center) -- improves the Settings + Profile rows too. COLOR = AMBER
+   (t.accentAmber) is a DELIBERATE PLACEHOLDER, same as the Settings/Profile rows; the REAL GOLD is defined ONCE
+   with the badge system (checklist #7 / roadmap #10) and flips all three sprouts together. Do NOT introduce a
+   one-off gold here -- it would leave a half-gold/half-amber inconsistency until the badge work.
    >> SPROUT SVG BUILT 2026-07-11: components/SproutIcon.tsx -- an asymmetric "reach" sprout (variant C, Justin-
-   approved from a 4-way visual preview), size + color props, scales down to ~15px. Currently rendered in the
-   Membership settings row in amber (real gold comes with the badge system). Reuse this same component for the
-   Profile entry + the support-screen badge. STILL OPEN on the support screen: delete the HERO leaf (#1) and
-   switch the "Custom Badge & Icon" perk-row icon to Ionicons "medal".
-3. MISSION PARAGRAPH reads plain/boring/out-of-place as naked body text between the big title and the first card.
-   Give it an intentional treatment (soft container OR an editorial/lead style). Design call OPEN.
-4. TIP CARD ("A one-time chip in") needs a SHORT subline for parity with the Supporter card's "As a thank you,
-   Supporters get:". Premium + short; NOT "no perks just thanks" (already rejected). Copy OPEN.
-5. TIP TILES feel off, two problems: (a) the 3 blue tiles have dead vertical space / weak alignment; (b) "Back
-   the mission" is bigger + bolder so it reads like we're STEERING people to it. Fix: tighten the tiles AND make
-   "Back the mission" CONSISTENT (gold-colored but same size/weight) -- an option, not a push. Design OPEN.
-6. OTTO FAB covers the bottom disclaimer line when scrolled to the end. Add bottom padding so the disclaimer
-   clears the Otto FAB. Easy.
+   approved from a 4-way visual preview), size + color props, scales down to ~15px. Rendered in the Membership
+   settings row, Profile entry, AND the support-screen perk row, all in amber (real gold comes with the badge
+   system).
+3. [DONE 2026-07-12] MISSION PARAGRAPH treatment. Wrapped in a full amber-bordered soft card (borderWidth 1,
+   accentAmber+'66' border, accentAmber+'10' wash -- verse-card family). Justin rejected the left-rule-only look;
+   full border chosen. Added a centered amber caps header "The Promise" (missionTitle). Body bumped Regular ->
+   Medium (DMSans_500Medium), CENTERED (Justin's call, over the readability caution), with 3 key phrases bolded in
+   AMBER for warmth + rhythm ("they stay free", "the AI", "a little support"). Final thank-you sentence pulled out
+   as a centered amber sign-off (missionClose). Warmth comes from the amber emphasis + closer, NOT a full-amber
+   body (kept textSecondary for contrast/readability). Copy unchanged. NOTE: locked copy still says "a little
+   support keeps IT alive" -- flagged to Justin (violates the new no-"it"-for-the-app rule) but left pending his
+   reword call.
+4. [DONE 2026-07-12] TIP CARD subline added under "A one-time chip in" (styles.sub, parity with the monthly card):
+   "No subscription, no commitment. Every bit helps." (no "it").
+5. [DONE 2026-07-12] TIP TILES redone as a 2x2 GRID (Justin's call) -- all four equal-size tiles (flexBasis 47%
+   wrap), same label+amount format, tightened padding (killed the 2-line dead space). "Back the mission" $24.99 is
+   now a 4th tile, kept GOLD (amber bg/border/label/amount) as an option not a push (dropped its leaf icon + the
+   old full-width hero). The 3 blue tip AMOUNTS use textSecondary (match the subscription prices); only the gold
+   amount stays amber (Justin's option B). All 4 tiles + the 2 subscription price boxes now share the PressScale
+   press-scale animation (0.97 timing, generalized with a wrapperStyle prop so it works in the flex-wrap grid);
+   tiles already had Medium haptic + coming-soon toast, so the buy-wire just swaps the handler later.
+6. [DONE 2026-07-12] OTTO FAB padding: scroll paddingBottom 40 -> 100 so the App Store disclaimer clears the FAB.
+   >> ALL SIX SUPPORT-SCREEN POLISH ITEMS DONE 2026-07-12. Pure JS. Remaining Support-screen work is the
+   SUPPORTER-STATE (needs RevenueCat) + real purchase wiring.
 
 STRATEGIC -- THE BIG OPEN QUESTION (resolve BEFORE finalizing the Supporter card, it changes the content):
-7. THE SUPPORTER PERKS FEEL NOT WORTH IT. Justin: Custom Reports + Day-by-Day "don't move the needle." Root cause
+7. [RESOLVED 2026-07-12] THE SUPPORTER PERKS FEEL NOT WORTH IT -> answered by committing to the SUPPORT model
+   (the "Path A" the app was already on). DECISION: we do NOT hunt for more features to gate. Justin's own
+   reasoning locked it: the only thing FAIR to charge for is the thing that COSTS money to provide (the AI --
+   real dollars per Otto msg / meal photo), because gating a free-to-run basic like the barcode scanner is the
+   scummy MFP move he refuses. So the tier is honestly "AI headroom + a real thank-you," with Reports/Comparison
+   as small bonuses riding along, NOT the reason. Consequences accepted: (a) perks don't need to feel "worth it"
+   on feature-value -- that pressure is gone; (b) the pitch is "help keep this alive," not "unlock these"; (c)
+   MOST people won't pay and that's the DESIGN, supporters carry it on goodwill. REFINEMENT INSIDE PATH A (not a
+   new gate): on the Support screen make the AI perk read as the clear HERO and make the recognition/thank-you
+   feel genuinely good -- that's how A lands without adding anything. NOTE: nothing structural changes in code
+   (the app was already Path A); this decision just CLOSES the "find a 4th perk" rabbit hole and unblocks the
+   Support-screen polish. Original problem statement kept below for context.
+   -- THE FEEL NOT WORTH IT (original): Custom Reports + Day-by-Day "don't move the needle." Root cause
    = the 95%-free-BY-DESIGN model leaves very little to gate, so the paid perks are inherently thin (AI room +
    Reports + Day-vs-Day). REJECTED: "early access" as a bolt-on perk (do NOT re-propose). AI is already the first
    perk. This needs a REAL answer, not a cosmetic reshuffle. Levers still on the table: (a) genuinely

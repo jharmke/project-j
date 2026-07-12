@@ -17,7 +17,7 @@ interface SproutIconProps {
 
 export default function SproutIcon({ size = 20, color = '#d9a441' }: SproutIconProps) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Svg width={size} height={size} viewBox="-1.2 0 24 24">
       {/* stem */}
       <Path
         d="M12 21 C 12.3 17 11.3 15 11.9 13"

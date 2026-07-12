@@ -2,11 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Animated, Easing, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
 import { useToast } from '../components/Toast';
+import SproutIcon from '../components/SproutIcon';
 
 // ─── Support the Mission (the reframed paywall) ──────────────────────────────
 // Copy locked in SPEC_monetization.md (DECISIONS #4). This renders the FREE-user
@@ -15,21 +16,37 @@ import { useToast } from '../components/Toast';
 // Uses live theme tokens so it adapts across all 5 themes + accents.
 // Mode-agnostic (no health data / scores), so no Mindful or faith-tier variant.
 
-type Perk = { icon: string; title: string; body: string; gold?: boolean };
+type Perk = { icon: string; title: string; body: string; gold?: boolean; sprout?: boolean };
 
 const PERKS: Perk[] = [
   { icon: 'sparkles', title: 'More AI Room', body: 'Big bumps to your Otto and meal-estimate limits.' },
   { icon: 'bar-chart', title: 'Custom Reports', body: 'Built from the stats that matter most to you.' },
   { icon: 'swap-horizontal', title: 'Comparison', body: 'Pick your time frames, line them up side by side, and see exactly how you compared.' },
-  { icon: 'leaf', title: 'Custom Badge & Icon', body: 'A token of thanks for helping keep this going.', gold: true },
+  // sprout: renders the real gold Supporter sprout (the actual badge), not an Ionicon -- previews the exact perk.
+  { icon: 'leaf', sprout: true, title: 'Custom Badge & Icon', body: 'A token of thanks for helping keep this going.', gold: true },
 ];
 
-type Tip = { label: string; amount: string };
+type Tip = { label: string; amount: string; gold?: boolean };
 const TIPS: Tip[] = [
   { label: 'Pitch in', amount: '$2.99' },
   { label: 'Add some fuel', amount: '$4.99' },
   { label: 'Power it forward', amount: '$9.99' },
+  { label: 'Back the mission', amount: '$24.99', gold: true },
 ];
+
+// Press-scale wrapper: dips to 0.97 on press-in, back to 1 on release (timing, not spring --
+// matches the app's card-press standard). Gives the price boxes a tactile feel instead of a flat tap.
+function PressScale({ onPress, style, wrapperStyle, children }: { onPress: () => void; style: any; wrapperStyle?: any; children: React.ReactNode }) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const to = (v: number) => Animated.timing(scale, { toValue: v, duration: 90, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  return (
+    <Animated.View style={[wrapperStyle ?? { flex: 1 }, { transform: [{ scale }] }]}>
+      <TouchableOpacity activeOpacity={0.9} onPressIn={() => to(0.97)} onPressOut={() => to(1)} onPress={onPress} style={style}>
+        {children}
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
 
 export default function SupportScreen() {
   const insets = useSafeAreaInsets();
@@ -40,6 +57,8 @@ export default function SupportScreen() {
   // Derived gold (amber) tints from the theme token so it tracks the active theme.
   const goldBg = t.accentAmber + '18';
   const goldBorder = t.accentAmber + '44';
+  // Emphasis run inside the mission paragraph: amber + semibold for warmth + rhythm on the key beats.
+  const emph = { fontFamily: 'DMSans_600SemiBold' as const, color: t.accentAmber };
 
   // Stubbed purchase handlers until RevenueCat is integrated.
   const comingSoon = () => {
@@ -65,22 +84,28 @@ export default function SupportScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Hero */}
         <View style={styles.hero}>
-          <Ionicons name="leaf" size={20} color={t.accentAmber} style={{ marginBottom: 6 }} />
           <Text style={[styles.heroTitle, { color: t.accentBlueRaw }]}>Support the Mission</Text>
         </View>
 
-        {/* Mission paragraph */}
-        <Text style={[styles.mission, { color: t.textSecondary }]}>
-          A lot of apps hide the basics behind a paywall: the barcode scanner, full macro tracking, even your
-          sleep and recovery scores. Here, they stay free. The one piece with a real cost to run is the AI, the
-          smarts behind Otto and Halo, your coaching, and the meal estimator. So if the app's been good to you,
-          a little support keeps it alive and moving forward. Either way, thank you for being part of this.
-        </Text>
+        {/* Mission paragraph -- treated as a personal note: amber left rule + soft wash, distinct from the
+            feature cards below (which have full borders) so the "why" reads as intentional, not filler. */}
+        <View style={[styles.missionCard, { backgroundColor: t.accentAmber + '10', borderColor: t.accentAmber + '66' }]}>
+          <Text style={[styles.missionTitle, { color: t.accentAmber }]}>The Promise</Text>
+          <Text style={[styles.mission, { color: t.textSecondary, paddingHorizontal: 0, marginBottom: 0 }]}>
+            A lot of apps hide the basics behind a paywall: the barcode scanner, full macro tracking, even your
+            sleep and recovery scores. Here,{' '}
+            <Text style={emph}>they stay free</Text>. The one piece with a real cost to run is{' '}
+            <Text style={emph}>the AI</Text>, the smarts behind Otto and Halo, your coaching, and the meal
+            estimator. So if the app's been good to you,{' '}
+            <Text style={emph}>a little support</Text> keeps it alive and moving forward.
+          </Text>
+          <Text style={[styles.missionClose, { color: t.accentAmber }]}>Either way, thank you for being part of this.</Text>
+        </View>
 
         {/* Become a Supporter */}
         <View style={[styles.cardShadow, { shadowColor: '#000' }]}>
@@ -96,7 +121,9 @@ export default function SupportScreen() {
                     backgroundColor: p.gold ? goldBg : t.accentBlueBg,
                     borderColor: p.gold ? goldBorder : t.accentBlueBorder,
                   }]}>
-                    <Ionicons name={p.icon as any} size={15} color={p.gold ? t.accentAmber : t.accentBlue} />
+                    {p.sprout
+                      ? <SproutIcon size={20} color={p.gold ? t.accentAmber : t.accentBlue} />
+                      : <Ionicons name={p.icon as any} size={15} color={p.gold ? t.accentAmber : t.accentBlue} />}
                   </View>
                   <View style={styles.perkText}>
                     <Text style={[styles.perkTitle, { color: t.textSecondary }]}>{p.title}</Text>
@@ -108,8 +135,7 @@ export default function SupportScreen() {
 
             {/* Price selection */}
             <View style={styles.prices}>
-              <TouchableOpacity
-                activeOpacity={0.85}
+              <PressScale
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setPlan('monthly'); }}
                 style={[styles.price, {
                   borderColor: plan === 'monthly' ? t.accentBlue : t.borderCard,
@@ -118,9 +144,8 @@ export default function SupportScreen() {
               >
                 <Text style={[styles.priceAmt, { color: t.textSecondary }]}>$6.99</Text>
                 <Text style={[styles.pricePer, { color: plan === 'monthly' ? t.accentBlue : t.textMuted }]}>per month</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                activeOpacity={0.85}
+              </PressScale>
+              <PressScale
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setPlan('annual'); }}
                 style={[styles.price, {
                   borderColor: plan === 'annual' ? t.accentBlue : t.borderCard,
@@ -129,7 +154,7 @@ export default function SupportScreen() {
               >
                 <Text style={[styles.priceAmt, { color: t.textSecondary }]}>$69.99</Text>
                 <Text style={[styles.pricePer, { color: plan === 'annual' ? t.accentBlue : t.textMuted }]}>per year</Text>
-              </TouchableOpacity>
+              </PressScale>
             </View>
 
             <TouchableOpacity activeOpacity={0.85} onPress={comingSoon} style={[styles.cta, { backgroundColor: t.accentBlue }]}>
@@ -143,32 +168,25 @@ export default function SupportScreen() {
           <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw }]}>
             <Text style={[styles.eyebrow, { color: t.textMuted }]}>Support once</Text>
             <Text style={[styles.heading, { color: t.accentBlueRaw }]}>A one-time chip in</Text>
+            <Text style={[styles.sub, { color: t.textMuted }]}>No subscription, no commitment. Every bit helps.</Text>
 
+            {/* 2x2 grid: all four tiles equal size/format; the $24.99 stays gold as an option, not a push. */}
             <View style={styles.tipTiles}>
               {TIPS.map((tip) => (
-                <TouchableOpacity
+                <PressScale
                   key={tip.label}
-                  activeOpacity={0.85}
                   onPress={comingSoon}
-                  style={[styles.tipTile, { backgroundColor: t.accentBlueBg, borderColor: t.accentBlueBorder }]}
+                  wrapperStyle={styles.tipTileWrap}
+                  style={[styles.tipTile, {
+                    backgroundColor: tip.gold ? goldBg : t.accentBlueBg,
+                    borderColor: tip.gold ? goldBorder : t.accentBlueBorder,
+                  }]}
                 >
-                  <Text style={[styles.tipLabel, { color: t.textMuted }]}>{tip.label}</Text>
-                  <Text style={[styles.tipAmt, { color: t.accentBlue }]}>{tip.amount}</Text>
-                </TouchableOpacity>
+                  <Text style={[styles.tipLabel, { color: tip.gold ? t.accentAmber : t.textMuted }]}>{tip.label}</Text>
+                  <Text style={[styles.tipAmt, { color: tip.gold ? t.accentAmber : t.textSecondary }]}>{tip.amount}</Text>
+                </PressScale>
               ))}
             </View>
-
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={comingSoon}
-              style={[styles.tipHero, { backgroundColor: goldBg, borderColor: goldBorder }]}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Ionicons name="leaf" size={16} color={t.accentAmber} />
-                <Text style={[styles.tipHeroLabel, { color: t.accentAmber }]}>Back the mission</Text>
-              </View>
-              <Text style={[styles.tipHeroAmt, { color: t.accentAmber }]}>$24.99</Text>
-            </TouchableOpacity>
           </View>
         </View>
 
@@ -191,7 +209,10 @@ const styles = StyleSheet.create({
   hero: { paddingHorizontal: 4, paddingBottom: 2 },
   heroTitle: { fontSize: 46, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, lineHeight: 50 },
 
-  mission: { fontSize: 14.5, fontFamily: 'DMSans_400Regular', lineHeight: 23, paddingHorizontal: 4, marginBottom: 2 },
+  mission: { fontSize: 14.5, fontFamily: 'DMSans_500Medium', lineHeight: 23, paddingHorizontal: 4, marginBottom: 2, textAlign: 'center' },
+  missionCard: { borderWidth: 1, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16 },
+  missionTitle: { fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 2.5, textTransform: 'uppercase', textAlign: 'center', marginBottom: 10 },
+  missionClose: { fontSize: 14, fontFamily: 'DMSans_600SemiBold', lineHeight: 20, textAlign: 'center', marginTop: 12 },
 
   cardShadow: { borderRadius: 14, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 },
   card: { borderRadius: 14, borderWidth: 0.5, borderTopWidth: 1.5, padding: 16, overflow: 'hidden' },
@@ -215,14 +236,12 @@ const styles = StyleSheet.create({
   cta: { borderRadius: 13, paddingVertical: 15, alignItems: 'center' },
   ctaText: { fontSize: 15, fontFamily: 'DMSans_700Bold', letterSpacing: 0.3, color: '#ffffff' },
 
-  tipTiles: { flexDirection: 'row', gap: 9, marginTop: 16, marginBottom: 10 },
-  tipTile: { flex: 1, borderRadius: 14, borderWidth: 1, paddingVertical: 15, alignItems: 'center', gap: 6 },
-  tipLabel: { fontSize: 10.5, fontFamily: 'DMSans_600SemiBold', textAlign: 'center', minHeight: 26 },
-  tipAmt: { fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5 },
+  tipTiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, marginTop: 0, marginBottom: 10 },
+  tipTileWrap: { flexBasis: '47%', flexGrow: 1 },
+  tipTile: { borderRadius: 14, borderWidth: 1, paddingVertical: 11, paddingHorizontal: 6, alignItems: 'center', gap: 2 },
+  tipLabel: { fontSize: 11, fontFamily: 'DMSans_600SemiBold', textAlign: 'center', lineHeight: 14, minHeight: 15 },
+  tipAmt: { fontSize: 23, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5 },
 
-  tipHero: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, borderRadius: 14, borderWidth: 1, paddingVertical: 15 },
-  tipHeroLabel: { fontSize: 15, fontFamily: 'DMSans_700Bold' },
-  tipHeroAmt: { fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5 },
 
   restoreBtn: { alignSelf: 'center', paddingTop: 6 },
   restore: { fontSize: 13.5, fontFamily: 'DMSans_600SemiBold' },

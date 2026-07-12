@@ -31,6 +31,18 @@ This doc is the single source of truth for monetization. Keep the roadmap to one
 ---
 
 ## SESSION HANDOFF (2026-07-12) -- READ THIS FIRST TO PICK UP SEAMLESSLY
+
+>>> STATUS AS OF END OF 2026-07-12 (read this first): **APP-SIDE MONETIZATION IS COMPLETE.** Everything left on
+>>> the whole track is the REVENUECAT BLOCK, and it is BLOCKED ON JUSTIN'S NON-CODE PREREQS (see "NEXT UP" item 1
+>>> below + the full prereq list). Do NOT start app-side monetization work; there is none left.
+>>> Finished today, on top of the list below: #5 EvR frosted-glass Supporter lock (ranked feed 1-free/rest-locked
+>>> + Patterns fully locked, real expo-blur -> needs a native build); the PERKS QUESTION resolved (support model,
+>>> Path A, no new gates -- see OPEN ITEMS #7); ALL SIX Support-screen polish items; MONTHLY summaries decided FREE
+>>> (killed the dormant TIPS_GATED lock); and the EXPLAINER SYNC (Otto KB + tooltips, deployed + Otto-verified).
+>>> NOTE: several remaining items (Supporter-state screen, badge, membership summary w/ real dates) COULD be
+>>> started against the dev toggle but are DELIBERATELY HELD until RevenueCat -- without the real entitlement they
+>>> render fake/empty dates, which reads broken and breaks the honest-numbers rule. Do them WITH the RC work.
+
 All work below is COMMITTED. `isPro` is still `__DEV__ || devProUnlocked` everywhere (real entitlement =
 RevenueCat, NOT built yet). None of the new locked states show on Justin's dev device (dev forces isPro true) --
 they only appear for real free users in a release build.
@@ -74,8 +86,20 @@ DONE THIS SESSION (in order, committed):
    gates (comparison/reports) are full-screen door gates with no inline content to frost.
 
 NEXT UP (EXACT ORDER -- start at the top):
-1. [REVENUECAT BLOCK -- needs Justin's non-code prereqs FIRST: create RC account + App Store Connect products
-   (1 sub + 4 consumable tips) + set the Anthropic hard monthly spend cap] #6 RevenueCat SDK -> real entitlement
+1. [REVENUECAT BLOCK -- NEEDS JUSTIN'S NON-CODE PREREQS FIRST. Justin wants to do these TOGETHER, ONE STEP AT A
+   TIME, walked through. FULL corrected list (the old one was incomplete):
+     (a) APPLE PAID APPS AGREEMENT -- sign "Agreements, Tax, and Banking" in App Store Connect (banking + tax).
+         HARD BLOCKER: no IAP works at all, not even in sandbox, until this is active. This was MISSING from the
+         original prereq list.
+     (b) APP STORE CONNECT PRODUCTS -- note "1 sub" is really TWO SKUs in one subscription group: Supporter
+         Monthly $6.99 + Supporter Annual $69.99, PLUS 4 consumable tips ($2.99/$4.99/$9.99/$24.99) = 6 products.
+     (c) SANDBOX TESTER account (Users and Access > Sandbox) for the buy/restore/tip test.
+     (d) REVENUECAT ACCOUNT + dashboard config: connect to App Store Connect (IAP key + app-specific shared
+         secret), create the ENTITLEMENT (e.g. "supporter"), create an OFFERING, attach all 6 products.
+     (e) ANTHROPIC hard monthly spend cap + usage alerts (~50%/80%) in the console (launch blocker).
+     ALSO CONFIRM: the App Store Connect app record has IAP capability enabled (app record exists via TestFlight,
+     but IAP is a separate checkbox -- verify when starting).]
+   #6 RevenueCat SDK -> real entitlement
    (replaces __DEV__/devProUnlocked, REMOVE the dev toggle, REVERT #2; needs a native build). THEN #7: revert beta
    caps (Otto 100->10/25, Halo 50->25/25, Estimator 100->5/100) + set REPORTS_BETA_OPEN=false. THEN wire the Otto
    free-user nudge (entitlement now exists).

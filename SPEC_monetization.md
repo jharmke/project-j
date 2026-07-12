@@ -142,8 +142,17 @@ NEXT UP (EXACT ORDER -- start at the top):
    100->5/100) + set REPORTS_BETA_OPEN=false. REASON: flipping these before the purchase flow is live would drop
    current TestFlight testers to the low real caps / lock Reports with NO way to upgrade -- breaks the beta. These
    land in the actual launch build alongside the working purchase flow.
-2. #8 Tip jar purchase flow + RevenueCat webhook -> Cloud Function -> email Justin the new-supporter/tipper
-   details for the hand-written thank-you.
+2. #8 purchase flow + RevenueCat webhook -> Cloud Function -> email Justin the new-supporter/tipper details.
+   >> CLIENT PURCHASE FLOW DONE 2026-07-12 (pure JS on the installed SDK, NO extra native build):
+      MembershipContext exposes offering/tipProducts + purchasePackage/purchaseTip/restore (all guarded).
+      Support screen wired: Become-a-Supporter buys the selected monthly/annual package (offering.monthly/.annual);
+      the 4 tip tiles buy their consumables (config TIP_PRODUCT_IDS); Restore restores; CTA shows "You're a
+      Supporter" when entitled. Toasts on success/error, silent on user-cancel. Prices still displayed hardcoded
+      ($6.99/$69.99/tips) -- matches the store; switching to live priceString is a polish follow-up.
+   >> STILL TODO: the WEBHOOK (backend, no client build) -- a Cloud Function that receives RevenueCat webhook
+      events (INITIAL_PURCHASE / NON_RENEWING_PURCHASE for tips) and emails Justin the new-supporter/tipper info
+      for the hand-written thank-you; then set the webhook URL in the RevenueCat dashboard. Do this AFTER the
+      native build verifies sandbox purchases actually fire (the webhook triggers on those events).
 3. #9 Support screen "You're a Supporter" state (can start against devProUnlocked now; finalize plan/dates w/ RC).
 4. #10 Supporter badge (gold sprout + avatar ring via HeaderAvatar; gold alternate app icon needs a rebuild).
 5. [#11 EXPLAINER SYNC DONE 2026-07-12, device-verified via Otto] Otto KB (assistantAppKnowledge.ts) +

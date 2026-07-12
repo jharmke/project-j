@@ -83,9 +83,16 @@ NEXT UP (EXACT ORDER -- start at the top):
    details for the hand-written thank-you.
 3. #9 Support screen "You're a Supporter" state (can start against devProUnlocked now; finalize plan/dates w/ RC).
 4. #10 Supporter badge (gold sprout + avatar ring via HeaderAvatar; gold alternate app icon needs a rebuild).
-5. #11 Update Otto KB (functions/src/assistantAppKnowledge.ts + redeploy) + tooltipRegistry.ts + data/tutorials.ts
-   for ALL the changed wording. #12 Full QA (5 themes + accents, Mindful, 3 faith tiers, free vs Supporter on a
-   real device incl. the sandbox buy/restore/tip test).
+5. [#11 EXPLAINER SYNC DONE 2026-07-12, device-verified via Otto] Otto KB (assistantAppKnowledge.ts) +
+   tooltipRegistry.ts updated for all current gating wording + REDEPLOYED (appCompanion). Fixes: whole Comparison
+   tool is Supporter (was "day-vs-day only"); EvR deeper cards + Patterns Supporter, Coach Insight free;
+   Day/Weekly/Monthly summaries + coaching explicitly FREE; estimator tooltip 3/Pro30 -> 5/Supporter100; comparison
+   tooltip drops stale free/Pro tags. tutorials.ts had no pricing refs (nothing to change). 8 Otto test Qs all
+   passed. REMAINING under #11: a small explainer touch-up once the RevenueCat-dependent copy lands (Supporter-state
+   screen, real dates). #12 Full QA (5 themes + accents, Mindful, 3 faith tiers, free vs Supporter on a real device
+   incl. the sandbox buy/restore/tip test) still pending -- do with the RevenueCat build.
+   >>> APP-SIDE MONETIZATION IS COMPLETE as of 2026-07-12. Everything left on the track needs RevenueCat + Justin's
+   Apple/RC prereqs (the sit-down session): items 1-4 above + #12 QA.
 
 OPEN NOTES / IDEAS -- DO NOT LOSE:
 - SUPPORT-SCREEN VISUAL PUNCH LIST (separate polish task, NOT started): DELETE the hero leaf at the top of

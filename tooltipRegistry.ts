@@ -17,7 +17,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     key: 'ai_meal_estimator',
     category: 'Nutrition',
     title: 'AI Meal Estimator',
-    body: 'For meals you cannot log precisely, like a restaurant plate with no nutrition info, a home-cooked dish, or food someone else made, the AI Meal Estimator gives a close estimate from a photo, a text description, or both. It returns an editable breakdown of calories and macros per item. You review, adjust, and confirm before anything is logged.\n\nThis is a "pretty close" tool, not precise tracking. Portions are assumed when unknown, and accuracy depends on the detail you give. Adding a description gives a sharper result than a photo alone.\n\nFree members get 3 estimates a month, Pro members get 30. A use is only counted when a result is successfully shown to you. Estimates you generate are kept for the rest of the day, so you can reopen one if you lose the screen.',
+    body: 'For meals you cannot log precisely, like a restaurant plate with no nutrition info, a home-cooked dish, or food someone else made, the AI Meal Estimator gives a close estimate from a photo, a text description, or both. It returns an editable breakdown of calories and macros per item. You review, adjust, and confirm before anything is logged.\n\nThis is a "pretty close" tool, not precise tracking. Portions are assumed when unknown, and accuracy depends on the detail you give. Adding a description gives a sharper result than a photo alone.\n\nFree members get 5 estimates a month, Supporters get 100. A use is only counted when a result is successfully shown to you. Estimates you generate are kept for the rest of the day, so you can reopen one if you lose the screen.',
     definitions: [
       { term: 'Possibly Not Included', explanation: 'Hidden additions the AI flags but does not add to the numbers, like cooking oils, butter, or sauces. They are there to prompt you, not to inflate the estimate. Edit an item up if you think something was missed.' },
       { term: 'Needs Your Review', explanation: 'Items the AI was genuinely unsure about. You confirm, edit, or remove each one before the meal can be added to your log.' },
@@ -126,8 +126,9 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     title: 'Comparison Report',
     body: 'Pick two periods and see them side by side across your 7 core metrics. Just the numbers: no score, no winner declared, no coaching. The stronger value in each row is highlighted in accent, but there is no overall tally and the other side is never marked as "bad."\n\nMulti-day periods show a daily average, and each metric only averages the days that actually have data for it, so two metrics on the same side can span different day counts (shown under each value). Excluded days are removed, and today is never included, since a half-logged today would skew the average. Weight is shown as net change across the period, first weigh-in to last, so it needs at least two weigh-ins.\n\nNet Cals highlights the side closest to your pace target. Everything else highlights the higher value, except Weight, which highlights the bigger change in your goal direction. An exact match is a tie, with no buffer.',
     definitions: [
-      { term: 'Presets', explanation: 'This week vs last week, this month vs last month, last 7 days vs the 7 before, and last 30 vs the 30 before. Free for everyone.' },
-      { term: 'Day vs Day', explanation: 'Compare any two single days (Pro). Each column is one day, so there are no day counts to show.' },
+      { term: 'Supporter feature', explanation: 'The whole Comparison Report is part of Supporter. The presets and Day vs Day are both included.' },
+      { term: 'Presets', explanation: 'This week vs last week, this month vs last month, last 7 days vs the 7 before, and last 30 vs the 30 before.' },
+      { term: 'Day vs Day', explanation: 'Compare any two single days. Each column is one day, so there are no day counts to show.' },
       { term: 'Not enough data', explanation: 'A preset you have not logged enough days for shows greyed with a hint. A metric with no data on a side shows a dash on that row.' },
     ],
   },
@@ -405,6 +406,10 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     body: 'This report compares what your logged data predicts against what actually happened. It looks at five areas: calorie deficit vs actual weight change, burn accuracy, logging consistency, macro quality, and sleep. Each section only fires when there\'s enough data to say something real.\n\nThe report can\'t see what you didn\'t log. Inconsistent logging, untracked meals, or excluded days all affect what it can tell you.',
     definitions: [
       {
+        term: 'Free and Supporter',
+        explanation: 'The Coach Insight headline at the top is free for everyone. The deeper ranked diagnostic cards after the first one, and the Patterns section, are a Supporter feature.',
+      },
+      {
         term: 'Data quality matters',
         explanation: 'The report works with what you\'ve logged. If food wasn\'t tracked on certain days, weight wasn\'t recorded, or days were excluded, those gaps show up in the analysis. The more consistently you log, the more accurate the findings.',
       },
@@ -525,6 +530,10 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     title: 'Patterns in Your Data',
     body: 'Correlations show patterns between two different habits in your data, and why that pattern matters for your results. Unlike averages, correlations reveal cause-and-effect relationships specific to you.\n\nNot every correlation fires every report. One only surfaces when the pattern is strong enough; there\'s a minimum delta required for each type.',
     definitions: [
+      {
+        term: 'Supporter feature',
+        explanation: 'The Patterns section is part of Supporter. The Coach Insight headline on the report stays free for everyone.',
+      },
       {
         term: 'For you specifically',
         explanation: 'A generic tip says "poor sleep increases appetite." A correlation says "in your data, the days after poor sleep you ate 220 more calories." That\'s the difference. These are drawn from your logged data, not population averages.',

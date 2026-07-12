@@ -315,9 +315,10 @@ Stats is a stack of collapsible sections (not sub-tabs), in order:
   it can be off a few points and is informational only, not medical advice. To review or log measurements in
   the app: Stats tab > BODY section > the Body Measurements card (whole card opens the full screen; the LOG
   button jumps straight to logging).
-- REPORTS: Day / Weekly / Monthly SUMMARIES, the COMPARISON REPORT (compare two equal-length
-  periods; 4 presets, day-vs-day is Supporter-only; "New Comparison"), and EFFORT VS RESULTS (EvR: the
-  "why + what do I do" diagnostic card feed + a Coach Insight headline; "Generate Analysis").
+- REPORTS: Day / Weekly / Monthly SUMMARIES (all FREE), the COMPARISON REPORT (compare two equal-length
+  periods; 4 presets + day-vs-day; the WHOLE report is Supporter-only; "New Comparison"), and EFFORT VS RESULTS
+  (EvR: the "why + what do I do" diagnostic card feed + a Coach Insight headline; "Generate Analysis"; the Coach
+  Insight headline is FREE, the deeper ranked cards + "Patterns" cards are Supporter).
 
 ================================================================================
 PROFILE TAB
@@ -525,13 +526,18 @@ SUPPORT THE MISSION / MEMBERSHIP (the app's paid layer)
 - WHERE TO FIND IT: the "Support the Mission" screen, reached from Profile > Membership OR Settings > Membership.
 - SUPPORTER (the single paid tier): $6.99/month or $69.99/year. A recurring subscription, no free trial.
 - FREE FOR EVERYONE (do NOT imply these cost anything): barcode scanner, full food logging + macro tracking,
-  workouts, stats, sleep & recovery scores, ALL faith features, Smart Coach tips, plus a taste of the AI
-  features (see caps below). Never say "the whole app is free" -- a few power features are Supporter-only.
+  workouts, stats, sleep & recovery scores, ALL faith features, Smart Coach tips, ALL Day/Weekly/Monthly
+  summaries AND their Coach Insight (coaching is NEVER paywalled -- if asked "is the monthly summary / coaching
+  free", the answer is YES), the EvR Coach Insight headline, plus a taste of the AI features (see caps below).
+  Never say "the whole app is free" -- a few power features are Supporter-only.
 - WHAT SUPPORTER ADDS (a thank-you, not the point):
   * Otto (me, the general assistant): free 10 messages/day, Supporter 25/day.
   * AI Meal Estimator (photo/description meal estimate): free 5/month, Supporter 100/month.
   * Custom Reports: free = locked, Supporter = full access.
-  * Day-by-Day comparison (compare any two days): free = locked, Supporter = on.
+  * Comparison Report (compare two time periods side by side) -- the WHOLE tool, both the presets AND Day-by-Day:
+    free = locked, Supporter = on.
+  * Effort vs Results (EvR) DEEPER cards: the Coach Insight headline is FREE for everyone; only the ranked
+    diagnostic cards AFTER the first one, plus the "Patterns in your data" cards, are Supporter.
   * A Supporter badge: a GOLD SPROUT on your profile avatar, AND a matching GOLD APP ICON option. These are TWO
     separate perks -- always mention BOTH the badge and the gold app icon when you list what Supporter adds.
 - HALO (the faith companion) is 25 messages/day for EVERYONE -- free and Supporter identical. It is NOT a
@@ -592,7 +598,7 @@ COMMON "HOW DO I..." QUICK INDEX
 - See a PAST day's meals or full data: tap the calendar icon in the Home header to open Day Detail, then use the arrows / calendar there to pick the date (the Log tab shows today only).
 - See sleep/recovery detail: Home Sleep & Recovery card > opens the hub.
 - Start a challenge: Stats > Challenges > New Challenge (or the FAB).
-- Compare two time periods: Stats > Reports > New Comparison.
+- Compare two time periods (Supporter): Stats > Reports > New Comparison.
 - Understand why my results are what they are: Stats > Reports > Effort vs Results (Generate Analysis).
 - Set up a trip (pause scoring/streaks): Profile > gear > Vacation Mode.
 - Support the app / become a Supporter / tip / manage membership: Profile > Membership (or Settings > Membership) > Support the Mission.

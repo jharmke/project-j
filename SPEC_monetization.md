@@ -60,26 +60,30 @@ DONE THIS SESSION (in order, committed):
    (also dormant during beta). Copy: "Custom Reports is a Supporter feature" / "Build your own report from any
    period, with the stats that matter most to you." / "Become a Supporter ->". REPORTS_BETA_OPEN is now EXPORTED
    from reports.tsx and imported into stats.tsx for the card gate.
+7. [#5 DONE 2026-07-12] EvR card gating in app/diagnostic-report-view.tsx. Added isPro (__DEV__ ||
+   pj_settings.devProUnlocked, same shape as comparison-report.tsx). RANKED diagnostic feed: card 0 free, cards
+   1+ locked for free users. "PATTERNS IN YOUR DATA": fully locked for free users (dropped the old TIPS_GATED &&
+   idx>0 path; removed the now-unused TIPS_GATED import). Coach Insight headline stays free (untouched). New shared
+   LockedInsightCard: crisp header label + real title on top, REAL body content frosted behind a REAL expo-blur
+   BlurView (tint = 'dark' only on the Dark theme, else 'light'), lock + SUPPORTER chip, centered "Become a
+   Supporter to unlock ->", whole card taps to /support. NO gray-skeleton shell. Tutorial mode always shows all
+   cards (evr_card_0 spotlight unaffected). CHOSE REAL FROSTED GLASS over a pure-JS faux-blur (Justin's call) ->
+   added expo-blur (native) so this needs a NEW DEV BUILD; rides along with the RevenueCat build coming next.
+   Locked states are invisible on Justin's dev device (isPro forced true) -- only render for real free users once
+   RevenueCat lands. tsc-clean (no new errors in the file). Frosted glass is EvR-specific: the other Supporter
+   gates (comparison/reports) are full-screen door gates with no inline content to frost.
 
 NEXT UP (EXACT ORDER -- start at the top):
-1. [#5, PURE JS, the LAST copy/gating piece] EvR card gating in app/diagnostic-report-view.tsx:
-   - Coach Insight headline stays FREE (already done).
-   - RANKED diagnostic feed: show 1 card FREE, LOCK the rest (Supporter). THIS GATE DOES NOT EXIST YET -- new
-     build (today every ranked card is free; the feed is mapped with no gate).
-   - "PATTERNS IN YOUR DATA" cross-signal cards: FULLY locked (today it's 1-free/rest-blurred via TIPS_GATED &&
-     idx>0 in InsightTipCard).
-   - LOCKED-CARD LOOK (both): readable HEADER/title + blurred body/graphic + lock + "SUPPORTER" chip + an explicit
-     "Become a Supporter to unlock" line + whole card taps to /support. NO gray-skeleton shell.
-2. [REVENUECAT BLOCK -- needs Justin's non-code prereqs FIRST: create RC account + App Store Connect products
+1. [REVENUECAT BLOCK -- needs Justin's non-code prereqs FIRST: create RC account + App Store Connect products
    (1 sub + 4 consumable tips) + set the Anthropic hard monthly spend cap] #6 RevenueCat SDK -> real entitlement
    (replaces __DEV__/devProUnlocked, REMOVE the dev toggle, REVERT #2; needs a native build). THEN #7: revert beta
    caps (Otto 100->10/25, Halo 50->25/25, Estimator 100->5/100) + set REPORTS_BETA_OPEN=false. THEN wire the Otto
    free-user nudge (entitlement now exists).
-3. #8 Tip jar purchase flow + RevenueCat webhook -> Cloud Function -> email Justin the new-supporter/tipper
+2. #8 Tip jar purchase flow + RevenueCat webhook -> Cloud Function -> email Justin the new-supporter/tipper
    details for the hand-written thank-you.
-4. #9 Support screen "You're a Supporter" state (can start against devProUnlocked now; finalize plan/dates w/ RC).
-5. #10 Supporter badge (gold sprout + avatar ring via HeaderAvatar; gold alternate app icon needs a rebuild).
-6. #11 Update Otto KB (functions/src/assistantAppKnowledge.ts + redeploy) + tooltipRegistry.ts + data/tutorials.ts
+3. #9 Support screen "You're a Supporter" state (can start against devProUnlocked now; finalize plan/dates w/ RC).
+4. #10 Supporter badge (gold sprout + avatar ring via HeaderAvatar; gold alternate app icon needs a rebuild).
+5. #11 Update Otto KB (functions/src/assistantAppKnowledge.ts + redeploy) + tooltipRegistry.ts + data/tutorials.ts
    for ALL the changed wording. #12 Full QA (5 themes + accents, Mindful, 3 faith tiers, free vs Supporter on a
    real device incl. the sandbox buy/restore/tip test).
 

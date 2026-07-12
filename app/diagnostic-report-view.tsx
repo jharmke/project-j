@@ -5,6 +5,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ActivityIndicator, Alert, Animated, Easing, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastRenderer, useToast } from '../components/Toast';
 import TooltipIcon from '../components/TooltipIcon';
@@ -23,7 +24,6 @@ import {
   SmartTipsStore,
   StoredTip,
   CoachTipCache,
-  TIPS_GATED,
   computeAndStoreSmartTips,
   isCrossSignalRule,
   loadCoachTipCache,
@@ -463,6 +463,45 @@ function InsightTipCard({ tip, isBlurred, theme, shadowStyle }: { tip: StoredTip
   );
 }
 
+// Frosted-glass Supporter lock. Used by BOTH the ranked diagnostic feed (cards past the first)
+// and the "Patterns in your data" section. The header + title stay crisp so the user sees a REAL
+// insight is here; the body is the real content behind a BlurView frost with a centered unlock CTA.
+// Whole card taps to /support. No gray-skeleton shell. tint follows the theme (dark only on 'dark').
+function LockedInsightCard({ label, title, body, theme, shadowStyle, isDarkTheme }: { label: string; title: string; body: string; theme: any; shadowStyle: any; isDarkTheme: boolean }) {
+  return (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/support'); }}
+      style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}
+    >
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <ChipLabel label={label} theme={theme} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Ionicons name="lock-closed" size={12} color={theme.textMuted} />
+          <View style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+            <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.accentBlueRaw }}>SUPPORTER</Text>
+          </View>
+        </View>
+      </View>
+      <Text style={{ fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, lineHeight: 21, marginBottom: 10 }}>
+        {title}
+      </Text>
+      {/* Real content, frosted. overflow:hidden clips the blur to the rounded body box. */}
+      <View style={{ position: 'relative', borderRadius: 10, overflow: 'hidden' }}>
+        <View style={{ padding: 12 }}>
+          <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 20 }}>
+            {body}
+          </Text>
+        </View>
+        <BlurView intensity={28} tint={isDarkTheme ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+        <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
+          <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlueRaw }}>Become a Supporter to unlock →</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 function SmartTipCard({ tip, theme, shadowStyle }: { tip: StoredTip; theme: any; shadowStyle: any }) {
   const borderColor = tip.positive ? theme.statusGood : tip.tier === 'urgent' ? theme.statusBad : theme.statusWarn;
   const chipLabel = tip.positive ? 'POSITIVE' : tip.tier.toUpperCase();
@@ -525,7 +564,7 @@ const TUTORIAL_DEMO_REPORT: DiagnosticReport = {
 
 export default function DiagnosticReportViewScreen() {
   const insets = useSafeAreaInsets();
-  const { theme: t } = useTheme();
+  const { theme: t, themeId } = useTheme();
   const { showToast } = useToast();
   const { id, tutorial } = useLocalSearchParams<{ id?: string; tutorial?: string }>();
   const isTutorialMode = tutorial === '1';
@@ -540,6 +579,10 @@ export default function DiagnosticReportViewScreen() {
 
   const [report, setReport]       = useState<DiagnosticReport | null>(isTutorialMode ? TUTORIAL_DEMO_REPORT : null);
   const [styleMode, setStyleMode] = useState<'Discipline' | 'Balanced' | 'Mindful'>('Balanced');
+  // Supporter entitlement (same shape as comparison-report.tsx): dev forces true, else read the
+  // devProUnlocked dev-toggle. Real entitlement swaps in with RevenueCat. Free users see the frosted
+  // locked cards; Supporters (and dev) see everything.
+  const [isPro, setIsPro] = useState(__DEV__);
   const [showAllSuggestions, setShowAllSuggestions] = useState(false);
   const [notFound, setNotFound]   = useState(false);
   const [smartTips, setSmartTips] = useState<SmartTipsStore | null>(null);
@@ -579,7 +622,7 @@ export default function DiagnosticReportViewScreen() {
         let mode: 'Discipline' | 'Balanced' | 'Mindful' = 'Balanced';
         try {
           const s = await AsyncStorage.getItem('pj_settings');
-          if (s) { const d = JSON.parse(s); if (d.styleMode) { setStyleMode(d.styleMode); mode = d.styleMode; } }
+          if (s) { const d = JSON.parse(s); if (d.styleMode) { setStyleMode(d.styleMode); mode = d.styleMode; } if (d.devProUnlocked) setIsPro(true); }
         } catch {}
         if (!id) { setNotFound(true); return; }
         const reports = await loadSavedReports();
@@ -797,11 +840,25 @@ export default function DiagnosticReportViewScreen() {
                     ))}
                   </>
                 ) : (voicedCards ?? report.cards ?? []).length > 0 ? (
-                  (voicedCards ?? report.cards ?? []).map((c, i) => (
-                    isTutorialMode && i === 0
+                  (voicedCards ?? report.cards ?? []).map((c, i) => {
+                    // Free users: first card free, the rest frosted (Supporter). Tutorial always shows all.
+                    if (!isTutorialMode && !isPro && i > 0) {
+                      return (
+                        <LockedInsightCard
+                          key={`${c.id}-${i}`}
+                          label={(c.window || '').toUpperCase()}
+                          title={c.claim}
+                          body={[c.proof, c.lever].filter(Boolean).join('  ')}
+                          theme={t}
+                          shadowStyle={shadowStyle}
+                          isDarkTheme={themeId === 'dark'}
+                        />
+                      );
+                    }
+                    return isTutorialMode && i === 0
                       ? <View key={`${c.id}-${i}`} ref={firstCardRef} collapsable={false}><DiagnosticFeedCard card={c} theme={t} shadowStyle={shadowStyle} isMindful={isMindful} /></View>
-                      : <DiagnosticFeedCard key={`${c.id}-${i}`} card={c} theme={t} shadowStyle={shadowStyle} isMindful={isMindful} />
-                  ))
+                      : <DiagnosticFeedCard key={`${c.id}-${i}`} card={c} theme={t} shadowStyle={shadowStyle} isMindful={isMindful} />;
+                  })
                 ) : (
                   <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: 'rgba(255,255,255,0.1)', ...shadowStyle }]}>
                     <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: t.textSecondary, lineHeight: 20 }}>
@@ -820,9 +877,22 @@ export default function DiagnosticReportViewScreen() {
                 return (
                   <View ref={correlationsRef} collapsable={false}>
                     <Text style={[styles.sectionLabel, { color: t.textMuted }]}>PATTERNS IN YOUR DATA</Text>
-                    {insightTips.map((tip, idx) => {
-                      const isBlurred = TIPS_GATED && idx > 0;
-                      return <InsightTipCard key={tip.id} tip={tip} isBlurred={isBlurred} theme={t} shadowStyle={shadowStyle} />;
+                    {insightTips.map((tip) => {
+                      // Patterns are FULLY Supporter-locked for free users (tutorial always shows all).
+                      if (!isTutorialMode && !isPro) {
+                        return (
+                          <LockedInsightCard
+                            key={tip.id}
+                            label="INSIGHT"
+                            title={tip.title}
+                            body={tip.body}
+                            theme={t}
+                            shadowStyle={shadowStyle}
+                            isDarkTheme={themeId === 'dark'}
+                          />
+                        );
+                      }
+                      return <InsightTipCard key={tip.id} tip={tip} isBlurred={false} theme={t} shadowStyle={shadowStyle} />;
                     })}
                   </View>
                 );

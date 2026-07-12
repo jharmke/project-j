@@ -179,9 +179,19 @@ export default function SupportScreen() {
               </PressScale>
             </View>
 
-            <TouchableOpacity activeOpacity={0.85} onPress={handleSubscribe} style={[styles.cta, { backgroundColor: t.accentBlue }]}>
-              <Text style={styles.ctaText}>{isSupporter ? "You're a Supporter" : 'Become a Supporter'}</Text>
-            </TouchableOpacity>
+            {isSupporter ? (
+              <View style={[styles.supporterState, { backgroundColor: goldBg, borderColor: goldBorder }]}>
+                <SproutIcon size={20} color={t.accentAmber} />
+                <View>
+                  <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: t.accentAmber }}>You're a Supporter</Text>
+                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: t.textMuted, marginTop: 1 }}>Thank you for keeping this going</Text>
+                </View>
+              </View>
+            ) : (
+              <TouchableOpacity activeOpacity={0.85} onPress={handleSubscribe} style={[styles.cta, { backgroundColor: t.accentBlue }]}>
+                <Text style={styles.ctaText}>Become a Supporter</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
@@ -257,6 +267,7 @@ const styles = StyleSheet.create({
 
   cta: { borderRadius: 13, paddingVertical: 15, alignItems: 'center' },
   ctaText: { fontSize: 15, fontFamily: 'DMSans_700Bold', letterSpacing: 0.3, color: '#ffffff' },
+  supporterState: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, borderRadius: 13, borderWidth: 1, paddingVertical: 13, paddingHorizontal: 16 },
 
   tipTiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, marginTop: 0, marginBottom: 10 },
   tipTileWrap: { flexBasis: '47%', flexGrow: 1 },

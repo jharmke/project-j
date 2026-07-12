@@ -190,12 +190,17 @@ are separate pre-submission checklists, NOT part of this menu.
   exist?) before building, so we don't assume. Keep the "no theme is EVER paid" rule intact -- these are earned,
   never bought (distinct from the monetization track). Surfaced 2026-07-11 (Justin flagged it during the
   monetization thread so it would not get forgotten).
-- [ ] [BUG, flagged 2026-07-12, handle AFTER today's monetization work] EvR Coach Insight may be rendering the
-  RAW deterministic template instead of the AI-voiced version. On a report generated 2026-07-12 the headline read
-  "Sodium has been running high on most days this week, above 3450mg on 5 of your last 7 logged days" -- that's
-  the templated fallback voice, not the conversational coachAI voice. INVESTIGATE whether the AI voicing is
-  silently failing / falling back to the raw string. Files: app/diagnostic-report-view.tsx (coachBody /
-  refreshCoachTip path), utils/smartTipsEngine.ts, coachAI. Confirm from code before declaring it broken.
+- [RESOLVED 2026-07-12] EvR/home Coach Insight was rendering the 1-sentence deterministic FALLBACK instead of
+  the AI voice. ROOT CAUSE: the coach tip's client-side timeout (API_TIMEOUT_MS) was 8s, too tight for the
+  aiProxy round-trip (frequent Firebase cold starts + the large uncached RULEBOOK system prompt), so the callable
+  timed out CLIENT-side and fell back, even though the Anthropic call SUCCEEDED server-side (aiProxy logs showed
+  zero errors). The feed voicer survived because it uses a 20s timeout. Fix = raise the coach timeout to 20s
+  (utils/coachAI.ts). Device-confirmed: full multi-sentence insights now generate. NOT the model, not a render
+  truncation, not the snapshot logic. NOTE for testing: the EvR report SNAPSHOTS its coachInsight at generation
+  (frozen forever), so an OLD report never updates; must generate a NEW report + use the "Reset Coach Tip Cache"
+  dev tool to force a fresh regen. Also observed + explained (not a bug): after a fresh regen the headline
+  rotated sodium -> carbs because selectByPrioritySpine applies a fatigue penalty to the recently-led topic (the
+  anti-repeat rotation), which was invisible while the coach was stuck on the sodium fallback every day.
 - [ ] [COPY, flagged 2026-07-12, handle AFTER today's monetization work] EvR ranked diagnostic card copy reads as
   "word slop." Example (report 2026-07-12): the "Missed sleep is showing up as missed workouts" card body -- "When
   sleep is cut short, your body raises perceived effort and lowers motivation, so the session that felt optional

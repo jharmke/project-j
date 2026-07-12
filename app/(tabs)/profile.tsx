@@ -16,6 +16,7 @@ import { computeCalorieFloor } from '../../utils/calorieFloor';
 import CalorieFloorModal from '../../components/CalorieFloorModal';
 import { setFloatingBarHeight } from '../../utils/floatingBar';
 import { useTheme } from '../../theme';
+import { useMembership } from '../../MembershipContext';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import SproutIcon from '../../components/SproutIcon';
 
@@ -164,9 +165,8 @@ export default function ProfileScreen() {
   const [tempBirthday, setTempBirthday] = useState<Date | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [savedProfile, setSavedProfile] = useState<Profile | null>(null);
-  // Supporter status for the Membership section. Keys off devProUnlocked (the dev toggle) for now;
-  // swap for the real RevenueCat entitlement when it lands (same seam as the Settings Membership row).
-  const [isSupporter, setIsSupporter] = useState(false);
+  // Supporter status for the Membership section, from the real RevenueCat entitlement.
+  const { isSupporter } = useMembership();
   const SAVE_BAR_HEIGHT = 76;
   const floatAnim = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<ScrollView>(null);
@@ -201,8 +201,6 @@ export default function ProfileScreen() {
           setProfile(parsed);
           setSavedProfile(parsed);
         }
-        const settingsRaw = await AsyncStorage.getItem('pj_settings');
-        if (settingsRaw) setIsSupporter(!!JSON.parse(settingsRaw).devProUnlocked);
       } catch (e) {
         console.log('Load profile error', e);
       }
@@ -224,8 +222,6 @@ export default function ProfileScreen() {
               if (data.weight) { setCurrentWeight(data.weight); break; }
             }
           }
-          const settingsRaw = await AsyncStorage.getItem('pj_settings');
-          if (settingsRaw) setIsSupporter(!!JSON.parse(settingsRaw).devProUnlocked);
           // Reload profile on focus to pick up goal changes saved from Settings
           if (!hasChangesRef.current) {
             const data = await AsyncStorage.getItem('pj_profile');

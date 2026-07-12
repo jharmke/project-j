@@ -16,6 +16,7 @@ import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '../theme';
+import { useMembership } from '../MembershipContext';
 import { useToast } from '../components/Toast';
 import { loadReports, deleteReport, newReportId, RANGE_LABELS, Report } from '../utils/reports';
 
@@ -32,14 +33,8 @@ export default function ReportsHub() {
   const refresh = useCallback(() => { loadReports().then(setReports); }, []);
   useFocusEffect(refresh);
 
-  // Supporter gate. Reports is Supporter-only, but REPORTS_BETA_OPEN keeps it open to all during beta.
-  const [isPro, setIsPro] = useState(__DEV__);
-  useFocusEffect(useCallback(() => {
-    AsyncStorage.getItem('pj_settings').then(raw => {
-      if (!raw) return;
-      try { const s = JSON.parse(raw); if (s.devProUnlocked) setIsPro(true); } catch {}
-    });
-  }, []));
+  // Supporter gate from RevenueCat. Reports is Supporter-only, but REPORTS_BETA_OPEN keeps it open to all during beta.
+  const { isSupporter: isPro } = useMembership();
   const hasAccess = REPORTS_BETA_OPEN || isPro;
 
   const startNew = () => {

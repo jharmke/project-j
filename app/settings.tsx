@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Dimensions, Easing, InteractionManager, Keyboard, KeyboardAvoidingView, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ACCENT_PALETTES, THEME_ORDER, ThemeId, THEMES, useTheme } from '../theme';
+import { useMembership } from '../MembershipContext';
 import { useHealthKit, restoreAppleWorkoutHistory } from '../useHealthKit';
 import { useAuth } from '../AuthContext';
 import { BLANK_DAY, WorkoutTag } from '../workoutData';
@@ -453,6 +454,9 @@ export default function SettingsScreen() {
   const [devUnlocked, setDevUnlocked] = useState(false);
   const [devForceSleepManual, setDevForceSleepManual] = useState(false);
   const [devProUnlocked, setDevProUnlocked] = useState(false);
+  // Real Supporter status from RevenueCat (drives the Membership row copy). devProUnlocked below is the
+  // DEV-ONLY test toggle that, in dev, feeds this via MembershipContext's override.
+  const { isSupporter } = useMembership();
   const [importRange, setImportRange] = useState<14 | 30 | 90>(30);
   const [importing, setImporting] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -1251,8 +1255,9 @@ export default function SettingsScreen() {
         </CollapsibleSection>
 
         {/* ── Membership ── */}
-        {/* Status source is devProUnlocked for now (the dev toggle). When RevenueCat lands,
-            swap this one flag for the real Supporter entitlement and both states just work. */}
+        {/* Status now sourced from the real RevenueCat entitlement (isSupporter). In dev, the dev toggle
+            below feeds it via MembershipContext. The "Active Supporter" sub is still a placeholder until
+            RevenueCat provides real plan/renewal dates. */}
         <CollapsibleSection label="Membership" subtitle="Support the Mission" defaultOpen={false} theme={theme}>
           <TouchableOpacity
             style={[styles.row, { borderTopColor: theme.borderCard }]}
@@ -1265,12 +1270,12 @@ export default function SettingsScreen() {
                 <SproutIcon size={22} color={theme.accentAmber} />
                 <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentAmber, paddingLeft: 10, marginLeft: 12 }}>
                   <Text style={[styles.rowTitle, { color: theme.accentAmber, fontFamily: 'DMSans_700Bold', fontSize: 15 }]}>
-                    {devProUnlocked ? 'Thanks for your support' : 'Support the Mission'}
+                    {isSupporter ? 'Thanks for your support' : 'Support the Mission'}
                   </Text>
                 </View>
               </View>
               {/* Supporter sub = "Active Supporter" placeholder; swap to "Renews on [date]" once RevenueCat provides it. */}
-              <Text style={[styles.rowSub, { color: theme.textMuted, paddingLeft: 47 }]}>{devProUnlocked ? 'Active Supporter' : 'Help keep the app going'}</Text>
+              <Text style={[styles.rowSub, { color: theme.textMuted, paddingLeft: 47 }]}>{isSupporter ? 'Active Supporter' : 'Help keep the app going'}</Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color={theme.accentAmber} />
           </TouchableOpacity>

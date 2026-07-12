@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastRenderer, useToast } from '../components/Toast';
 import { saveToFirebase } from '../firebaseConfig';
 import { useTheme } from '../theme';
+import { useMembership } from '../MembershipContext';
 import { triggerHaptic } from '../utils/haptics';
 import { DEFAULT_MEAL_SLOTS, MealSlot, getMealDisplayName, loadMealSlots } from '../utils/mealSlots';
 import { storageSet } from '../utils/storage';
@@ -120,7 +121,8 @@ export default function AIMealEstimatorScreen() {
   const [mealSlots, setMealSlots] = useState<MealSlot[]>(DEFAULT_MEAL_SLOTS);
   const [slotNameCache, setSlotNameCache] = useState<Record<string, string>>({});
   const [remaining, setRemaining] = useState<number | null>(null);
-  const [isPro, setIsPro] = useState(__DEV__);
+  // Supporter status from RevenueCat (aliased to isPro). Drives the estimator quota tier.
+  const { isSupporter: isPro } = useMembership();
 
   // Input state
   const [description, setDescription] = useState('');
@@ -154,22 +156,15 @@ export default function AIMealEstimatorScreen() {
 
   useEffect(() => {
     (async () => {
-      let proMode = __DEV__;
       try {
         const raw = await AsyncStorage.getItem('pj_settings');
-        if (raw) {
-          const s = JSON.parse(raw);
-          setMindful(s.styleMode === 'Mindful');
-          proMode = __DEV__ || !!s.devProUnlocked;
-          setIsPro(proMode);
-        }
+        if (raw) setMindful(JSON.parse(raw).styleMode === 'Mindful');
       } catch {}
       const { mealSlots: ms, slotNameCache: sc } = await loadMealSlots();
       setMealSlots(ms);
       setSlotNameCache(sc);
       setTargetSlot(launchMeal || ms[0]?.id || DEFAULT_MEAL_SLOTS[0].id);
       setTargetDate(launchDate || toDateKey(new Date()));
-      setRemaining(await getRemainingUses(proMode));
       // Recover today's stashed estimates (failsafe). Anything from a prior day
       // is ignored and overwritten on the next successful estimate.
       try {
@@ -183,6 +178,11 @@ export default function AIMealEstimatorScreen() {
       } catch {}
     })();
   }, []);
+
+  // Remaining uses depend on the Supporter tier; recompute whenever the entitlement resolves/changes.
+  useEffect(() => {
+    getRemainingUses(isPro).then(setRemaining).catch(() => {});
+  }, [isPro]);
 
   // ── Image ───────────────────────────────────────────────────────────────────
 

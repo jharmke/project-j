@@ -11,6 +11,7 @@ import { ToastRenderer, useToast } from '../components/Toast';
 import TooltipIcon from '../components/TooltipIcon';
 import { CardWash } from '../components/GradientCard';
 import { useTheme } from '../theme';
+import { useMembership } from '../MembershipContext';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import {
@@ -579,10 +580,9 @@ export default function DiagnosticReportViewScreen() {
 
   const [report, setReport]       = useState<DiagnosticReport | null>(isTutorialMode ? TUTORIAL_DEMO_REPORT : null);
   const [styleMode, setStyleMode] = useState<'Discipline' | 'Balanced' | 'Mindful'>('Balanced');
-  // Supporter entitlement (same shape as comparison-report.tsx): dev forces true, else read the
-  // devProUnlocked dev-toggle. Real entitlement swaps in with RevenueCat. Free users see the frosted
-  // locked cards; Supporters (and dev) see everything.
-  const [isPro, setIsPro] = useState(__DEV__);
+  // Supporter status from RevenueCat (aliased to isPro). Free users see the frosted locked cards;
+  // Supporters (and, in dev, the devProUnlocked override) see everything.
+  const { isSupporter: isPro } = useMembership();
   const [showAllSuggestions, setShowAllSuggestions] = useState(false);
   const [notFound, setNotFound]   = useState(false);
   const [smartTips, setSmartTips] = useState<SmartTipsStore | null>(null);
@@ -622,7 +622,7 @@ export default function DiagnosticReportViewScreen() {
         let mode: 'Discipline' | 'Balanced' | 'Mindful' = 'Balanced';
         try {
           const s = await AsyncStorage.getItem('pj_settings');
-          if (s) { const d = JSON.parse(s); if (d.styleMode) { setStyleMode(d.styleMode); mode = d.styleMode; } if (d.devProUnlocked) setIsPro(true); }
+          if (s) { const d = JSON.parse(s); if (d.styleMode) { setStyleMode(d.styleMode); mode = d.styleMode; } }
         } catch {}
         if (!id) { setNotFound(true); return; }
         const reports = await loadSavedReports();

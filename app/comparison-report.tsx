@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '../theme';
+import { useMembership } from '../MembershipContext';
 import { useToast } from '../components/Toast';
 import TooltipIcon from '../components/TooltipIcon';
 import {
@@ -157,14 +158,8 @@ export default function ComparisonReportScreen() {
   const maxPickDate = useMemo(() => addDays(new Date(), -1), []);
   const [calYear, setCalYear] = useState(() => addDays(new Date(), -1).getFullYear());
   const [calMonth, setCalMonth] = useState(() => addDays(new Date(), -1).getMonth());
-  const [isPro, setIsPro] = useState(__DEV__);
-
-  useEffect(() => {
-    AsyncStorage.getItem('pj_settings').then(raw => {
-      if (!raw) return;
-      try { const s = JSON.parse(raw); if (s.devProUnlocked) setIsPro(true); } catch {}
-    });
-  }, []);
+  // Supporter status from RevenueCat (aliased to isPro to keep the rest of the file unchanged).
+  const { isSupporter: isPro } = useMembership();
 
   useEffect(() => {
     (async () => {

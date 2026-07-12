@@ -13,6 +13,7 @@ import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-nativ
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { DayDetailContent } from '../day-detail';
 import { useTheme } from '../../theme';
+import { useMembership } from '../../MembershipContext';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import { CardPeriod, ChartType, DATA_KEY_CATEGORIES, DATA_KEY_META, DataKey, DEFAULT_STATS_CARDS, StatsCard, availableChartTypes, generateCardId, loadStatsCards, saveStatsCards } from '../../statsCardRegistry';
 import HRZonesStatsCard from '../../components/HRZonesStatsCard';
@@ -326,14 +327,8 @@ export default function StatsScreen() {
     const hist = await loadChallengeHistory();
     setChallengeHistCount(hist.length);
   }, []);
-  // Supporter entitlement (Comparison is Supporter-only). __DEV__ / devProUnlocked stand-in until RevenueCat.
-  const [isPro, setIsPro] = useState(__DEV__);
-  useFocusEffect(useCallback(() => {
-    AsyncStorage.getItem('pj_settings').then(raw => {
-      if (!raw) return;
-      try { const s = JSON.parse(raw); if (s.devProUnlocked) setIsPro(true); } catch {}
-    });
-  }, []));
+  // Supporter status from RevenueCat (Comparison + Custom Reports are Supporter-only).
+  const { isSupporter: isPro } = useMembership();
 
   const reportsLocked = !(REPORTS_BETA_OPEN || isPro);
 

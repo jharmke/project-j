@@ -17,6 +17,7 @@ import CalorieFloorModal from '../../components/CalorieFloorModal';
 import { setFloatingBarHeight } from '../../utils/floatingBar';
 import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
+import SproutIcon from '../../components/SproutIcon';
 
 interface Profile {
   name: string;
@@ -163,6 +164,9 @@ export default function ProfileScreen() {
   const [tempBirthday, setTempBirthday] = useState<Date | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [savedProfile, setSavedProfile] = useState<Profile | null>(null);
+  // Supporter status for the Membership section. Keys off devProUnlocked (the dev toggle) for now;
+  // swap for the real RevenueCat entitlement when it lands (same seam as the Settings Membership row).
+  const [isSupporter, setIsSupporter] = useState(false);
   const SAVE_BAR_HEIGHT = 76;
   const floatAnim = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<ScrollView>(null);
@@ -197,6 +201,8 @@ export default function ProfileScreen() {
           setProfile(parsed);
           setSavedProfile(parsed);
         }
+        const settingsRaw = await AsyncStorage.getItem('pj_settings');
+        if (settingsRaw) setIsSupporter(!!JSON.parse(settingsRaw).devProUnlocked);
       } catch (e) {
         console.log('Load profile error', e);
       }
@@ -218,6 +224,8 @@ export default function ProfileScreen() {
               if (data.weight) { setCurrentWeight(data.weight); break; }
             }
           }
+          const settingsRaw = await AsyncStorage.getItem('pj_settings');
+          if (settingsRaw) setIsSupporter(!!JSON.parse(settingsRaw).devProUnlocked);
           // Reload profile on focus to pick up goal changes saved from Settings
           if (!hasChangesRef.current) {
             const data = await AsyncStorage.getItem('pj_profile');
@@ -483,6 +491,36 @@ export default function ProfileScreen() {
               <Text style={[styles.toggleBtnText, { color: theme.textMuted }, profile.sex === 'female' && { color: theme.accentBlue }]}>Female</Text>
             </TouchableOpacity>
           </View>
+        </ProfileSection>
+
+        <ProfileSection label="Membership" subtitle={isSupporter ? 'Active Supporter' : 'Support the Mission'} defaultOpen={true} theme={theme}>
+          <TouchableOpacity
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/support' as any); }}
+            activeOpacity={0.7}
+            style={{
+              flexDirection: 'row', alignItems: 'center', marginTop: 2,
+              backgroundColor: theme.bgInput, borderWidth: 1, borderColor: 'rgba(212,134,10,0.4)',
+              borderRadius: 12, paddingVertical: 14, paddingHorizontal: 14,
+              shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              {/* sprout + amber tick + title inline; tick sized to the TITLE only (matches Settings Membership row) */}
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <SproutIcon size={22} color={theme.accentAmber} />
+                <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentAmber, paddingLeft: 10, marginLeft: 12 }}>
+                  <Text style={{ color: theme.accentAmber, fontFamily: 'DMSans_700Bold', fontSize: 15 }}>
+                    {isSupporter ? 'Thanks for your support' : 'Support the Mission'}
+                  </Text>
+                </View>
+              </View>
+              {/* Supporter sub = "Active Supporter" placeholder; swap to "Renews on [date]" once RevenueCat provides it. */}
+              <Text style={{ color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontSize: 12, paddingLeft: 47, marginTop: 3 }}>
+                {isSupporter ? 'Active Supporter' : 'Help keep the app going'}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={theme.accentAmber} />
+          </TouchableOpacity>
         </ProfileSection>
 
         <View onLayout={e => { activityLevelY.current = e.nativeEvent.layout.y; }} />

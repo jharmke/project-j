@@ -393,8 +393,16 @@ DECISION (2026-07-11): ship Tier 1 for launch; build Tier 2 as part of this mone
    DEFERRED WIRING (Membership row, do when RevenueCat lands): (1) swap devProUnlocked -> the real Supporter
    entitlement; (2) "Active Supporter" -> "Renews on [real date]" (NO faked date -- honest-numbers rule, so it
    stays "Active Supporter" until RC provides the real renewal date); (3) sprout amber -> the real gold when the
-   badge system is built. REMAINING: real purchases (RevenueCat) + the Supporter-STATE of the support screen
-   itself + a Profile entry (next).
+   badge system is built; (4) FLESH OUT the supporter-state Membership card (Profile + Settings) into a real
+   membership summary -- plan (Monthly/Annual), "Member since [date]", "Renews on [date]" (Justin 2026-07-11: the
+   bare "Active Supporter" card feels too thin). ALL of these need RevenueCat (member-since = purchase date,
+   renews-on = next bill, plan = the product bought); there is NO honest source without it, so building it now =
+   empty labels that read as broken to TestFlight testers. HOLD the build until RC lands, then do layout + real
+   values together. The FREE-state card stays the simple CTA (a free user has no subscription info to show).
+   REMAINING: real purchases (RevenueCat) + the Supporter-STATE of the support screen itself.
+   PROFILE ENTRY BUILT 2026-07-11: a collapsible "Membership" ProfileSection (2nd, under Basic Info, default
+   open), the sprout row wrapped in a card (bgInput + Verse-card amber-tint border rgba(212,134,10,0.4) + subtle
+   shadow) to match Profile's boxed content; status keys off devProUnlocked, refreshed on focus.
 6. Build the Tip Jar (consumable purchase flow) + thank-you.
 7. Supporter badge / recognition.
 8. Restore purchases + lapsed-subscription handling + entitlement caching (works offline).

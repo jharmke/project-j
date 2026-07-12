@@ -28,7 +28,11 @@ import { app } from '../firebaseConfig';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
 const COACH_TIP_KEY = 'pj_coach_tip';
-const API_TIMEOUT_MS = 8000;
+// Coach-tip client timeout. Was 8000, which was too tight: the aiProxy round-trip (frequent Firebase
+// cold starts + the large uncached RULEBOOK system prompt) regularly exceeded 8s, so the callable timed
+// out on the client and every coach tip fell back to the 1-sentence template, even though the Anthropic
+// call succeeded server-side. Raised to 20s to match the feed voicer's proven budget (voiceDiagnosticCards).
+const API_TIMEOUT_MS = 20000;
 const MODEL = 'claude-sonnet-4-6';
 
 // ── RULEBOOK ──────────────────────────────────────────────────────────────────

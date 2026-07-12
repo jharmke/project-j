@@ -305,7 +305,7 @@ export default function StatsScreen() {
   // Reports card collapse state (each card individually collapsible).
   // All archives collapse by default; only EvR opens (the marquee interactive tool).
   const [daySummariesOpen, setDaySummariesOpen] = useState(false);
-  const [evrCardOpen, setEvrCardOpen] = useState(true);
+  const [evrCardOpen, setEvrCardOpen] = useState(false);
   const [comparisonCardOpen, setComparisonCardOpen] = useState(false);
   const [weeklyCardOpen, setWeeklyCardOpen] = useState(false);
   // Weekly Summaries card: loaded from storage, grouped by month.
@@ -2188,7 +2188,7 @@ export default function StatsScreen() {
                   </View>
                   <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
                 </TouchableOpacity>
-                <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden' }]}>
+                <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden', marginTop: 12 }]}>
                   {evrCardOpen && <Ionicons name="analytics" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />}
                   <TouchableOpacity
                     activeOpacity={0.7}

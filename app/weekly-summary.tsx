@@ -294,33 +294,8 @@ export default function WeeklySummaryScreen() {
             </View>
           )}
 
-          {/* Coach Insight card */}
-          {TIPS_GATED ? (
-            <View style={{ marginBottom: 12 }}>
-              <View style={[shadowStyle, {
-                backgroundColor: `${accent}12`, borderRadius: 12, borderWidth: 1,
-                borderColor: `${accent}50`, padding: 14,
-              }]}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Ionicons name="sparkles" size={13} color={accent} />
-                    <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Coach Insight</Text>
-                  </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Ionicons name="lock-closed" size={12} color={theme.textMuted} />
-                    <View style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
-                      <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: accent }}>PRO</Text>
-                    </View>
-                  </View>
-                </View>
-                <View style={{ gap: 6 }}>
-                  <View style={{ height: 10, backgroundColor: theme.textMuted + '30', borderRadius: 4, width: '100%' }} />
-                  <View style={{ height: 10, backgroundColor: theme.textMuted + '30', borderRadius: 4, width: '82%' }} />
-                  <View style={{ height: 10, backgroundColor: theme.textMuted + '20', borderRadius: 4, width: '65%' }} />
-                </View>
-              </View>
-            </View>
-          ) : daysScored < 4 ? (
+          {/* Coach Insight card (always free -- coaching is free for all, per monetization spec) */}
+          {daysScored < 4 ? (
             <View style={[shadowStyle, {
               backgroundColor: `${accent}12`, borderRadius: 12, borderWidth: 1,
               borderColor: `${accent}50`, padding: 14, marginBottom: 12,

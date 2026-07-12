@@ -383,12 +383,22 @@ comparison-report.tsx:160. In the DEV build __DEV__ is true, so everything reads
 locked states or "Pro" strings below are ever visible on-device right now -- they only appear in a release build /
 for a real free user. "It looks wired" is partly the dev build masking the gaps.
 
-1. "PRO" -> "SUPPORTER" USER-FACING RENAME (confirmed spots):
+1. "PRO" -> "SUPPORTER" USER-FACING RENAME. [DONE 2026-07-12] All user-facing spots handled: the 3 Coach Insight
+   locked branches REMOVED (coaching is free, see #4 Rule 1); the Day-vs-Day pill, Patterns pill, and Monthly
+   Summaries pill now show a "SUPPORTER" chip (chip label decided via a live light/dark mockup); the estimator
+   limit modal now reads "Supporters get {N} estimates a month."; the Day-vs-Day toast now reads "Day vs Day is a
+   Supporter feature". LEFT ALONE on purpose: settings.tsx:3749 dev-toggle label (dies at launch, REVERT #2) +
+   reports.tsx code comments (not user-facing). STILL PENDING (separate, the locked-copy polish in #2, NOT the
+   rename): the estimator message becoming a calm INLINE message + "Support the Mission" link instead of a modal,
+   and the Day-vs-Day toast becoming the fuller locked copy. Original confirmed spots (for reference):
    - comparison-report.tsx:214  toast "Day vs Day is a Pro feature"  -> "...Supporter..."
    - comparison-report.tsx:354  "PRO" pill  -> "SUPPORTER" (or the locked treatment)
    - ai-meal-estimator.tsx:867  "Pro members get {N} estimates a month."  -> "Supporter"
    - weekly-summary.tsx:312, monthly-summary.tsx:400, stats.tsx:1323, diagnostic-report-view.tsx:436 + :764 --
-     "PRO" pills on the COACH INSIGHT card (resolve #4 FIRST, then reword)
+     "PRO" pills on the COACH INSIGHT card. [RESOLVED 2026-07-12, see #4 Rule 1] Coach Insight is now FREE, so these
+     pills are REMOVED (not reworded to Supporter) and the TIPS_GATED lock comes off the Coach Insight card. The
+     Supporter gating instead moves to the EvR ranked feed (1 free, rest locked -- NEW build) + "Patterns In Your
+     Data" (fully locked). See #4 for the full three-rule split + locked-state visual treatment.
    - settings.tsx:3749  "Unlock Pro Features" (the devProUnlocked dev toggle; dies with the toggle at launch, REVERT #2)
 
 2. LOCKED UPSELL COPY NOT IMPLEMENTED (strings are already LOCKED in this spec; the app doesn't use them yet):
@@ -407,11 +417,30 @@ for a real free user. "It looks wired" is partly the dev build masking the gaps.
    view (status + thank-you + gold sprout + Manage Subscription link; tip jar stays; no buy button). CAN key off
    devProUnlocked NOW (like the Membership rows) -- does not strictly need RevenueCat, though it finalizes with it.
 
-4. CONSISTENCY DECISION NEEDED (Justin's call): the weekly/monthly/EvR "Coach Insight" card is Pro-gated
-   (TIPS_GATED), but DECISIONS #3 locked "Smart Coach = FREE FOR ALL." Either (a) that summary Coach Insight is a
-   deliberately-separate Supporter perk (keep the gate, reword PRO->Supporter, add it to the perk list), or
-   (b) it contradicts the free-Smart-Coach decision and the gate should be removed. RESOLVE before touching the
-   "PRO" pills in #1's summary/stats/diagnostic spots.
+4. [RESOLVED 2026-07-12] EvR / summary coaching gating. Investigating the code showed the single TIPS_GATED
+   switch actually controls THREE different things, so the a/b framing was too blunt. Justin's decision, a clean
+   three-rule split:
+   - RULE 1 -- COACH INSIGHT (the blue headline blurb) = FREE for everyone, everywhere it appears (home, day,
+     weekly, monthly, EvR). Honors DECISIONS #3 "Smart Coach = free for all." ACTION: remove the TIPS_GATED lock on
+     the Coach Insight card so it never shows the locked shell; the "PRO" pills on those cards go AWAY (not reworded
+     to Supporter). Cheap to give away (weekly/monthly generated once per period + cached; EvR reuses the home cache).
+   - RULE 2 -- EvR RANKED DIAGNOSTIC FEED (the "finding + proof + lever" cards) = FREE users see 1 card, the REST
+     are locked (Supporter). NOTE: this gate DOES NOT EXIST in code yet -- today every ranked card is free to all
+     (diagnostic-report-view.tsx maps the full feed with no gate). This is a small BUILD, not a switch flip.
+   - RULE 3 -- EvR "PATTERNS IN YOUR DATA" (cross-signal correlation cards) = LOCKED for free users (Supporter).
+     Today it's built as "first one free, rest blurred (idx > 0)"; change to FULLY locked per Justin.
+   - LOCKED-STATE VISUAL TREATMENT (applies to Rules 2 + 3): real HEADER / title stays readable (enticing, shows
+     it's about THEIR data) + body text and any graphic BLURRED (visibly there, unreadable) + a lock icon +
+     "SUPPORTER" chip + an explicit "Become a Supporter to unlock" CTA line so the tap target is obvious + the whole
+     card taps through to the Support the Mission screen. NO full gray-skeleton shell (reads as broken/empty, not
+     premium). Exact CTA wording still Justin's to finalize.
+   - OPEN TAIL (don't lose): the deeper EvR insights (Rules 2 + 3) are now a Supporter perk NOT named in the locked
+     perk list (More AI Room / Custom Reports / Day-by-Day / Custom Badge). Decide whether to add a perk line or
+     fold it into an existing one before finalizing perk copy.
+   - FLAG (separate, unresolved): SPEC_monthly_summary.md still says the ENTIRE monthly summary surface is
+     Pro-gated (not just its Coach Insight). That conflicts with Rule 1 freeing the monthly Coach Insight. Resolve
+     the monthly-whole-surface question on its own; today's decision only covers the Coach Insight card + the two
+     EvR sections.
 
 5. (RevenueCat-coupled, already on the checklist below) real isPro source replacing __DEV__/devProUnlocked; beta
    caps revert (Otto 100->10/25, Halo 50->25/25, Estimator 100->5/100); REPORTS_BETA_OPEN -> false.

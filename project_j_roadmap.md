@@ -190,6 +190,17 @@ are separate pre-submission checklists, NOT part of this menu.
   exist?) before building, so we don't assume. Keep the "no theme is EVER paid" rule intact -- these are earned,
   never bought (distinct from the monetization track). Surfaced 2026-07-11 (Justin flagged it during the
   monetization thread so it would not get forgotten).
+- [ ] [BUG, flagged 2026-07-12, handle AFTER today's monetization work] EvR Coach Insight may be rendering the
+  RAW deterministic template instead of the AI-voiced version. On a report generated 2026-07-12 the headline read
+  "Sodium has been running high on most days this week, above 3450mg on 5 of your last 7 logged days" -- that's
+  the templated fallback voice, not the conversational coachAI voice. INVESTIGATE whether the AI voicing is
+  silently failing / falling back to the raw string. Files: app/diagnostic-report-view.tsx (coachBody /
+  refreshCoachTip path), utils/smartTipsEngine.ts, coachAI. Confirm from code before declaring it broken.
+- [ ] [COPY, flagged 2026-07-12, handle AFTER today's monetization work] EvR ranked diagnostic card copy reads as
+  "word slop." Example (report 2026-07-12): the "Missed sleep is showing up as missed workouts" card body -- "When
+  sleep is cut short, your body raises perceived effort and lowers motivation, so the session that felt optional
+  the night before simply does not happen." Needs a drastic clarity rewrite. Broader: audit the ranked diagnostic
+  card body copy for plain, premium wording. Source strings live in utils/diagnosticReport.ts / smartTipsEngine.
 - [ ] QUICK WINS (small, grab-when-convenient): none queued right now -- add here as they come up. (DONE 2026-07-07: FAB text-label rings app-wide · inline Add Exercise button · the whole gym list.)
 
 ---

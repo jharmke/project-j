@@ -144,7 +144,6 @@ export default function AIMealEstimatorScreen() {
   const [draft, setDraft] = useState({ name: '', portion: '', cal: '', p: '', c: '', f: '', mult: 1 });
 
   // Modals
-  const [showLimit, setShowLimit] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [todayEstimates, setTodayEstimates] = useState<TodayEstimate[]>([]);
   const [showRecent, setShowRecent] = useState(false);
@@ -252,8 +251,8 @@ export default function AIMealEstimatorScreen() {
     const rem = await getRemainingUses(isPro);
     setRemaining(rem);
     if (rem <= 0) {
+      // Out of estimates: the inline out-of-estimates card (in place of the Estimate button) takes over. No popup.
       triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
-      setShowLimit(true);
       return;
     }
 
@@ -579,18 +578,40 @@ export default function AIMealEstimatorScreen() {
                   />
                 </View>
 
-                {/* Submit */}
-                <TouchableOpacity
-                  onPress={handleSubmit}
-                  disabled={!canSubmit}
-                  style={{ marginTop: 12, borderRadius: 12, paddingVertical: 16, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, backgroundColor: canSubmit ? theme.accentBlue : theme.bgInput, borderWidth: 1, borderColor: canSubmit ? theme.accentBlue : theme.borderInput, opacity: canSubmit ? 1 : 0.5 }}
-                >
-                  <Ionicons name="sparkles" size={18} color={canSubmit ? '#ffffff' : theme.textMuted} />
-                  <Text style={{ fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: canSubmit ? '#ffffff' : theme.textMuted }}>Estimate My Meal</Text>
-                </TouchableOpacity>
-                <Text style={{ marginTop: 10, textAlign: 'center', fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>
-                  {remaining === null ? ' ' : `${remaining} ${remaining === 1 ? 'estimate' : 'estimates'} remaining this month`}
-                </Text>
+                {/* Submit, or the calm inline "out of estimates" state (replaces the old popup) */}
+                {remaining !== null && remaining <= 0 ? (
+                  <View style={{ marginTop: 12, borderRadius: 12, borderWidth: 1, borderColor: `${theme.accentBlue}33`, backgroundColor: `${theme.accentBlue}12`, padding: 16, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', lineHeight: 21, textAlign: 'center' }}>
+                      {isPro ? "You've used all your estimates this month." : "You've used all your free estimates this month."}
+                    </Text>
+                    <Text style={{ marginTop: 6, fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular', lineHeight: 19, textAlign: 'center' }}>
+                      {isPro ? `They refresh on ${nextResetLabel()}.` : `Your free batch refreshes on ${nextResetLabel()}.`}
+                    </Text>
+                    {!isPro && (
+                      <TouchableOpacity
+                        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/support'); }}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        style={{ marginTop: 12, paddingVertical: 8 }}
+                      >
+                        <Text style={{ fontSize: 14, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>Become a Supporter to keep going →</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ) : (
+                  <>
+                    <TouchableOpacity
+                      onPress={handleSubmit}
+                      disabled={!canSubmit}
+                      style={{ marginTop: 12, borderRadius: 12, paddingVertical: 16, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, backgroundColor: canSubmit ? theme.accentBlue : theme.bgInput, borderWidth: 1, borderColor: canSubmit ? theme.accentBlue : theme.borderInput, opacity: canSubmit ? 1 : 0.5 }}
+                    >
+                      <Ionicons name="sparkles" size={18} color={canSubmit ? '#ffffff' : theme.textMuted} />
+                      <Text style={{ fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: canSubmit ? '#ffffff' : theme.textMuted }}>Estimate My Meal</Text>
+                    </TouchableOpacity>
+                    <Text style={{ marginTop: 10, textAlign: 'center', fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>
+                      {remaining === null ? ' ' : `${remaining} ${remaining === 1 ? 'estimate' : 'estimates'} remaining this month`}
+                    </Text>
+                  </>
+                )}
                 <Text style={{ marginTop: 14, textAlign: 'center', fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>
                   For informational purposes only. Not medical advice.
                 </Text>
@@ -770,7 +791,6 @@ export default function AIMealEstimatorScreen() {
           </ScrollView>
       )}
 
-      {renderLimitModal()}
       {renderConfirmModal()}
       {renderRecentModal()}
     </View>
@@ -855,24 +875,6 @@ export default function AIMealEstimatorScreen() {
   }
 
   // ── Modals ────────────────────────────────────────────────────────────────────
-  function renderLimitModal() {
-    return (
-      <CenteredModal visible={showLimit} onClose={() => setShowLimit(false)} theme={theme} insets={insets}>
-        <Text style={{ fontSize: 20, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginBottom: 10 }}>Monthly Limit Reached</Text>
-        <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_400Regular', lineHeight: 21, marginBottom: 8 }}>
-          You have used all {limitFor(isPro)} AI estimates for this month. Resets on {nextResetLabel()}.
-        </Text>
-        {!isPro && (
-          <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular', lineHeight: 20, marginBottom: 8 }}>
-            Pro members get {limitFor(true)} estimates a month.
-          </Text>
-        )}
-        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowLimit(false); }} style={{ marginTop: 10, borderRadius: 10, paddingVertical: 13, alignItems: 'center', backgroundColor: theme.accentBlue }}>
-          <Text style={{ fontSize: 14, color: '#ffffff', fontFamily: 'DMSans_600SemiBold' }}>Got it</Text>
-        </TouchableOpacity>
-      </CenteredModal>
-    );
-  }
 
   function renderConfirmModal() {
     const todayK = toDateKey(new Date());

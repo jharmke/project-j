@@ -433,7 +433,7 @@ function InsightTipCard({ tip, isBlurred, theme, shadowStyle }: { tip: StoredTip
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Ionicons name="lock-closed" size={12} color={theme.textMuted} />
             <View style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
-              <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.accentBlueRaw }}>PRO</Text>
+              <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.accentBlueRaw }}>SUPPORTER</Text>
             </View>
           </View>
         </View>
@@ -743,33 +743,6 @@ export default function DiagnosticReportViewScreen() {
                     <Text style={{ fontSize: 14, color: t.textSecondary, fontFamily: 'DMSans_600SemiBold', lineHeight: 22, fontStyle: 'italic', textAlign: 'center' }}>
                       Your weekend pattern is the main lever. Close that gap and your deficit holds most weeks.
                     </Text>
-                  </View>
-                </View>
-              ) : TIPS_GATED ? (
-                <View style={{ marginBottom: 12 }}>
-                  <Text style={[styles.sectionLabel, { color: t.textMuted }]}>COACH INSIGHT</Text>
-                  <View style={[shadowStyle, {
-                    backgroundColor: t.bgCard, borderRadius: 14, borderWidth: 0.5,
-                    borderColor: t.borderCard, borderTopColor: 'rgba(255,255,255,0.1)',
-                    borderLeftWidth: 3, borderLeftColor: t.accentBlueRaw, padding: 16, paddingLeft: 15,
-                  }]}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Ionicons name="sparkles" size={13} color={t.accentBlueRaw} />
-                        <Text style={{ fontSize: 9, letterSpacing: 3, color: t.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Coach Insight</Text>
-                      </View>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Ionicons name="lock-closed" size={12} color={t.textMuted} />
-                        <View style={{ backgroundColor: t.accentBlueBg, borderWidth: 1, borderColor: t.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
-                          <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: t.accentBlueRaw }}>PRO</Text>
-                        </View>
-                      </View>
-                    </View>
-                    <View style={{ gap: 6 }}>
-                      <View style={{ height: 10, backgroundColor: t.textMuted + '30', borderRadius: 4, width: '100%' }} />
-                      <View style={{ height: 10, backgroundColor: t.textMuted + '30', borderRadius: 4, width: '82%' }} />
-                      <View style={{ height: 10, backgroundColor: t.textMuted + '20', borderRadius: 4, width: '65%' }} />
-                    </View>
                   </View>
                 </View>
               ) : (coachLoading || !!coachBody) && (() => {

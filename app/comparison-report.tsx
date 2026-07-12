@@ -211,7 +211,7 @@ export default function ComparisonReportScreen() {
 
   const onDayVsDayChip = () => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-    if (!isPro) { showToast('Day vs Day is a Pro feature', undefined, 'info'); return; }
+    if (!isPro) { showToast('Day vs Day is a Supporter feature', undefined, 'info'); return; }
     runDayVsDay(dayA, dayB);
   };
 
@@ -351,7 +351,7 @@ export default function ComparisonReportScreen() {
           <Ionicons name={isPro ? 'calendar-outline' : 'lock-closed'} size={16} color={mode === 'dayvsday' ? accent : theme.textSecondary} />
           <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: mode === 'dayvsday' ? accent : theme.textSecondary }}>Day vs Day</Text>
           {!isPro && <View style={{ backgroundColor: `${accent}20`, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
-            <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: accent }}>PRO</Text>
+            <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: accent }}>SUPPORTER</Text>
           </View>}
         </TouchableOpacity>
 

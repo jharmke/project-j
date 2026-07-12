@@ -6,3 +6,6 @@ export const REVENUECAT_IOS_KEY = 'appl_ERlhWDvhjeFzEczUcOgBiOyAGER';
 
 // The RevenueCat entitlement identifier that grants Supporter status (created in the RC dashboard).
 export const SUPPORTER_ENTITLEMENT_ID = 'supporter';
+
+// The 4 one-time consumable tip product IDs (App Store Connect + RevenueCat), low -> high.
+export const TIP_PRODUCT_IDS = ['tip_pitchin', 'tip_addfuel', 'tip_powerforward', 'tip_backmission'] as const;

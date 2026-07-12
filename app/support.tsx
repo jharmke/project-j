@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
 import { useToast } from '../components/Toast';
 import SproutIcon from '../components/SproutIcon';
+import { useMembership } from '../MembershipContext';
 
 // ─── Support the Mission (the reframed paywall) ──────────────────────────────
 // Copy locked in SPEC_monetization.md (DECISIONS #4). This renders the FREE-user
@@ -26,12 +27,12 @@ const PERKS: Perk[] = [
   { icon: 'leaf', sprout: true, title: 'Custom Badge & Icon', body: 'A token of thanks for helping keep this going.', gold: true },
 ];
 
-type Tip = { label: string; amount: string; gold?: boolean };
+type Tip = { label: string; amount: string; gold?: boolean; productId: string };
 const TIPS: Tip[] = [
-  { label: 'Pitch in', amount: '$2.99' },
-  { label: 'Add some fuel', amount: '$4.99' },
-  { label: 'Power it forward', amount: '$9.99' },
-  { label: 'Back the mission', amount: '$24.99', gold: true },
+  { label: 'Pitch in', amount: '$2.99', productId: 'tip_pitchin' },
+  { label: 'Add some fuel', amount: '$4.99', productId: 'tip_addfuel' },
+  { label: 'Power it forward', amount: '$9.99', productId: 'tip_powerforward' },
+  { label: 'Back the mission', amount: '$24.99', gold: true, productId: 'tip_backmission' },
 ];
 
 // Press-scale wrapper: dips to 0.97 on press-in, back to 1 on release (timing, not spring --
@@ -60,14 +61,35 @@ export default function SupportScreen() {
   // Emphasis run inside the mission paragraph: amber + semibold for warmth + rhythm on the key beats.
   const emph = { fontFamily: 'DMSans_600SemiBold' as const, color: t.accentAmber };
 
-  // Stubbed purchase handlers until RevenueCat is integrated.
-  const comingSoon = () => {
+  const { isSupporter, offering, tipProducts, purchasePackage, purchaseTip, restore: restorePurchases } = useMembership();
+
+  // Subscribe to the selected plan (monthly / annual).
+  const handleSubscribe = async () => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
-    showToast('Purchases are coming soon', 'Payment setup is still being built', 'info');
+    if (isSupporter) { showToast("You're already a Supporter", 'Thank you for keeping this going', 'success'); return; }
+    const pkg = plan === 'monthly' ? offering?.monthly : offering?.annual;
+    if (!pkg) { showToast("Purchases aren't available right now", 'Please try again in a moment', 'info'); return; }
+    const res = await purchasePackage(pkg);
+    if (res === 'success') showToast('Thank you for becoming a Supporter', 'Your support keeps this going', 'success');
+    else if (res === 'error') showToast("Purchase didn't go through", 'Please try again', 'error');
+    // cancelled = silent (the user backed out)
   };
-  const restore = () => {
+
+  // One-time tip (consumable).
+  const handleTip = async (productId: string) => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    const product = tipProducts.find(p => p.identifier === productId);
+    if (!product) { showToast("Tips aren't available right now", 'Please try again in a moment', 'info'); return; }
+    const res = await purchaseTip(product);
+    if (res === 'success') showToast('Thank you for chipping in', 'Every bit helps keep this going', 'success');
+    else if (res === 'error') showToast("Purchase didn't go through", 'Please try again', 'error');
+  };
+
+  const restore = async () => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-    showToast('Nothing to restore yet', undefined, 'info');
+    const ok = await restorePurchases();
+    if (ok) showToast('Purchases restored', 'Welcome back, Supporter', 'success');
+    else showToast('Nothing to restore', 'No active Supporter purchase found', 'info');
   };
 
   return (
@@ -157,8 +179,8 @@ export default function SupportScreen() {
               </PressScale>
             </View>
 
-            <TouchableOpacity activeOpacity={0.85} onPress={comingSoon} style={[styles.cta, { backgroundColor: t.accentBlue }]}>
-              <Text style={styles.ctaText}>Become a Supporter</Text>
+            <TouchableOpacity activeOpacity={0.85} onPress={handleSubscribe} style={[styles.cta, { backgroundColor: t.accentBlue }]}>
+              <Text style={styles.ctaText}>{isSupporter ? "You're a Supporter" : 'Become a Supporter'}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -175,7 +197,7 @@ export default function SupportScreen() {
               {TIPS.map((tip) => (
                 <PressScale
                   key={tip.label}
-                  onPress={comingSoon}
+                  onPress={() => handleTip(tip.productId)}
                   wrapperStyle={styles.tipTileWrap}
                   style={[styles.tipTile, {
                     backgroundColor: tip.gold ? goldBg : t.accentBlueBg,

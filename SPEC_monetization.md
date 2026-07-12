@@ -373,6 +373,51 @@ DECISION (2026-07-11): ship Tier 1 for launch; build Tier 2 as part of this mone
 
 ---
 
+## MEMBERSHIP AUDIT FINDINGS (2026-07-11) -- NON-REVENUECAT GAPS TO CLEAR TOMORROW WITH THE RC BUILD
+Justin asked "besides RevenueCat, is anything else about membership unfinished?" A real code audit found the
+below. NONE are done yet. All pure-JS except where noted. Do these WITH the RevenueCat session (shared testing;
+the gates only actually fire for free users in a RELEASE build).
+
+CRITICAL CONTEXT (why it all "looks fine" today): isPro = useState(__DEV__) in ai-meal-estimator.tsx:123 and
+comparison-report.tsx:160. In the DEV build __DEV__ is true, so everything reads as Pro and NONE of the free/
+locked states or "Pro" strings below are ever visible on-device right now -- they only appear in a release build /
+for a real free user. "It looks wired" is partly the dev build masking the gaps.
+
+1. "PRO" -> "SUPPORTER" USER-FACING RENAME (confirmed spots):
+   - comparison-report.tsx:214  toast "Day vs Day is a Pro feature"  -> "...Supporter..."
+   - comparison-report.tsx:354  "PRO" pill  -> "SUPPORTER" (or the locked treatment)
+   - ai-meal-estimator.tsx:867  "Pro members get {N} estimates a month."  -> "Supporter"
+   - weekly-summary.tsx:312, monthly-summary.tsx:400, stats.tsx:1323, diagnostic-report-view.tsx:436 + :764 --
+     "PRO" pills on the COACH INSIGHT card (resolve #4 FIRST, then reword)
+   - settings.tsx:3749  "Unlock Pro Features" (the devProUnlocked dev toggle; dies with the toggle at launch, REVERT #2)
+
+2. LOCKED UPSELL COPY NOT IMPLEMENTED (strings are already LOCKED in this spec; the app doesn't use them yet):
+   - AI Estimator limit: current modal (ai-meal-estimator.tsx ~858-874) says "Pro members get..." with NO link to
+     the Support screen. Replace with the LOCKED copy: "You've used all your free estimates this month. Become a
+     Supporter to keep going, or check back [reset date] for a fresh batch." Spec also wants it INLINE on the
+     estimator screen + a "Support the Mission" link/button, NOT a centered modal (calmer / non-naggy).
+   - Reports locked state: LOCKED copy "Building your own reports is a Supporter perk. Become a Supporter to get
+     started." + a Support link. (reports.tsx currently gates only via REPORTS_BETA_OPEN=true; wire the real locked
+     UI when flipping it false, REVERT #5.)
+   - Day-vs-Day locked state: LOCKED copy "Comparing any two days is a Supporter perk. Become a Supporter to get
+     started." + a Support link (replaces the bare "Pro feature" toast at comparison-report.tsx:214).
+
+3. SUPPORT SCREEN HAS NO SUPPORTER-STATE: app/support.tsx always renders the "Become a Supporter" pitch + the
+   (stubbed) buy button, even for someone already IN. Build the LOCKED state-aware "You're a Supporter, thank you"
+   view (status + thank-you + gold sprout + Manage Subscription link; tip jar stays; no buy button). CAN key off
+   devProUnlocked NOW (like the Membership rows) -- does not strictly need RevenueCat, though it finalizes with it.
+
+4. CONSISTENCY DECISION NEEDED (Justin's call): the weekly/monthly/EvR "Coach Insight" card is Pro-gated
+   (TIPS_GATED), but DECISIONS #3 locked "Smart Coach = FREE FOR ALL." Either (a) that summary Coach Insight is a
+   deliberately-separate Supporter perk (keep the gate, reword PRO->Supporter, add it to the perk list), or
+   (b) it contradicts the free-Smart-Coach decision and the gate should be removed. RESOLVE before touching the
+   "PRO" pills in #1's summary/stats/diagnostic spots.
+
+5. (RevenueCat-coupled, already on the checklist below) real isPro source replacing __DEV__/devProUnlocked; beta
+   caps revert (Otto 100->10/25, Halo 50->25/25, Estimator 100->5/100); REPORTS_BETA_OPEN -> false.
+
+---
+
 ## BUILD CHECKLIST (before public launch -- required + functional)
 1. Payment infra: RevenueCat (or StoreKit) integration; define products (1 sub + N consumable tips).
 2. Real `isPro` source: replace `__DEV__ || devProUnlocked` with the real entitlement; REMOVE the dev toggle

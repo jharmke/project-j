@@ -447,6 +447,23 @@ for a real free user. "It looks wired" is partly the dev build masking the gaps.
 
 ---
 
+## CAP-REACHED / OUT-OF-QUOTA COPY (app-wide, LOCKED 2026-07-12)
+Rule: maxed FREE -> gentle Supporter nudge; maxed PAID -> calm come-back, no nudge; HALO -> calm come-back for
+EVERYONE, NEVER a nudge (faith is never upcharged).
+- HALO (25/25 for all): "That's all for today. Halo resets tomorrow." + "1 message left today. Halo resets
+  tomorrow." NO upsell, ever. DONE (already correct; the "1-left" line renamed off "It" -> "Halo" 2026-07-12).
+- OTTO (free 10 / Supporter 25): "That's all for today. Otto resets tomorrow." + "1 message left today. Otto
+  resets tomorrow." DONE 2026-07-12. PLUS a FREE-USER-ONLY nudge line under the reset message -- LOCKED copy,
+  wiring PENDING the real entitlement (Otto has no free-vs-Supporter awareness yet): "Supporters get more time
+  with Otto each day. Become a Supporter →" (taps to /support). Deliberately NO hard number so copy can't break
+  if caps retune. A Supporter who maxes out sees only the reset line, no nudge.
+- ESTIMATOR (free 5 / Supporter 100): inline out-of-estimates card (replaced the old popup). FREE: "You've used
+  all your free estimates this month." / "Your free batch refreshes on [reset date]." / "Become a Supporter to
+  keep going →". SUPPORTER: "You've used all your estimates this month." / "They refresh on [reset date]." / no
+  link. No lock icon. DONE 2026-07-12 (shows for real free users once the entitlement replaces __DEV__).
+
+---
+
 ## BUILD CHECKLIST (before public launch -- required + functional)
 1. Payment infra: RevenueCat (or StoreKit) integration; define products (1 sub + N consumable tips).
 2. Real `isPro` source: replace `__DEV__ || devProUnlocked` with the real entitlement; REMOVE the dev toggle

@@ -539,7 +539,7 @@ export default function CompanionChat({
   const quotaLabel =
     remaining === null ? ''
       : remaining === 0 ? "That's all for today. Halo resets tomorrow."
-      : remaining === 1 ? '1 message left today. It resets tomorrow.'
+      : remaining === 1 ? '1 message left today. Halo resets tomorrow.'
       : `${remaining} of ${quota!.cap} messages left today.`;
 
   const send = async () => {

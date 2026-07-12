@@ -472,8 +472,8 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
   const quotaLow = remaining !== null && remaining <= 1;
   const quotaLabel =
     remaining === null ? ''
-      : remaining === 0 ? "That's all for today. It resets tomorrow."
-      : remaining === 1 ? '1 message left today. It resets tomorrow.'
+      : remaining === 0 ? "That's all for today. Otto resets tomorrow."
+      : remaining === 1 ? '1 message left today. Otto resets tomorrow.'
       : `${remaining} of ${quota!.cap} messages left today.`;
 
   const send = async () => {

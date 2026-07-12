@@ -31,6 +31,7 @@ import LaunchSplash from '../components/LaunchSplash';
 import { TutorialProvider } from '../context/TutorialContext';
 import { ThemeProvider, useTheme } from '../theme';
 import { AuthProvider, useAuth } from '../AuthContext';
+import { MembershipProvider } from '../MembershipContext';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import AssistantOverlay from '../components/AssistantOverlay';
 
@@ -239,6 +240,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
     <AuthProvider>
+    <MembershipProvider>
     <ThemeProvider>
     <ToastProvider>
     <AchievementToastProvider>
@@ -250,6 +252,7 @@ export default function RootLayout() {
     </AchievementToastProvider>
     </ToastProvider>
     </ThemeProvider>
+    </MembershipProvider>
     </AuthProvider>
     </SafeAreaProvider>
     </GestureHandlerRootView>

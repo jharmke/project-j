@@ -123,10 +123,25 @@ NEXT UP (EXACT ORDER -- start at the top):
      (e) ANTHROPIC hard monthly spend cap + usage alerts (~50%/80%) in the console (launch blocker).
      ALSO CONFIRM: the App Store Connect app record has IAP capability enabled (app record exists via TestFlight,
      but IAP is a separate checkbox -- verify when starting).]
-   #6 RevenueCat SDK -> real entitlement
-   (replaces __DEV__/devProUnlocked, REMOVE the dev toggle, REVERT #2; needs a native build). THEN #7: revert beta
-   caps (Otto 100->10/25, Halo 50->25/25, Estimator 100->5/100) + set REPORTS_BETA_OPEN=false. THEN wire the Otto
-   free-user nudge (entitlement now exists).
+   #6 RevenueCat SDK -> real entitlement.
+   >> DONE 2026-07-12 (committed, tsc-clean, INERT until the native rebuild):
+      - react-native-purchases installed (autolinks, no config-plugin entry needed). Needs a native EAS build.
+      - config.ts: REVENUECAT_IOS_KEY (appl_ERlhWDvhjeFzEczUcOgBiOyAGER, public) + SUPPORTER_ENTITLEMENT_ID='supporter'.
+      - MembershipContext.tsx (NEW): configures RC once, Purchases.logIn(firebase uid) for cross-device restore,
+        reactively tracks the 'supporter' entitlement, exposes useMembership()->{isSupporter, loading, refresh}.
+        Keeps a __DEV__-ONLY override that reads pj_settings.devProUnlocked so the Settings dev toggle still lets
+        Justin test free-vs-Supporter without a purchase. HEAVILY GUARDED: cannot crash the current build (no
+        native module yet) -- isSupporter just falls back to the dev override/false. Wired into app/_layout.tsx
+        inside AuthProvider.
+      - GATES MIGRATED to useMembership().isSupporter (aliased to isPro): comparison-report, stats (Comparison+
+        Reports), diagnostic-report-view (EvR frosted cards), reports, ai-meal-estimator (quota tier, remaining
+        recomputes via an isPro-keyed effect). Membership STATUS rows on profile + settings also read isSupporter.
+        The Settings dev toggle STAYS (it's the __DEV__ override; REMOVE at final launch = REVERT #2).
+   >> STILL TODO in #6: nothing code-side until the native build verifies it. Then wire the Otto free-user nudge.
+   #7 [DEFERRED TO THE LAUNCH BUILD, do NOT do now] revert beta caps (Otto 100->10/25, Halo 50->25/25, Estimator
+   100->5/100) + set REPORTS_BETA_OPEN=false. REASON: flipping these before the purchase flow is live would drop
+   current TestFlight testers to the low real caps / lock Reports with NO way to upgrade -- breaks the beta. These
+   land in the actual launch build alongside the working purchase flow.
 2. #8 Tip jar purchase flow + RevenueCat webhook -> Cloud Function -> email Justin the new-supporter/tipper
    details for the hand-written thank-you.
 3. #9 Support screen "You're a Supporter" state (can start against devProUnlocked now; finalize plan/dates w/ RC).

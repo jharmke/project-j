@@ -30,7 +30,6 @@ import { effectiveExerciseMinutes } from '../../utils/exerciseMinutes';
 import { loadDayScoreArchive, findMostRecentTourDay, ArchiveWeek, ArchiveDay } from '../../utils/dayScoreStore';
 import { loadWeeklySummary, WeeklySummaryData } from '../../utils/weeklySummary';
 import { loadMonthlySummary, MonthlySummaryData } from '../../utils/monthlySummary';
-import { TIPS_GATED } from '../../utils/smartTipsEngine';
 import { archiveNav } from '../../utils/archiveNav';
 import { loadActiveChallenge, loadChallengeHistory, computeChallengeProgress, challengeTitle, Challenge, ChallengeProgress } from '../../utils/challenges';
 import { streakHeldByExclusion } from '../../utils/streakExclusion';
@@ -1324,27 +1323,8 @@ export default function StatsScreen() {
   };
 
   const renderMonthlyCard = () => {
-    if (TIPS_GATED) {
-      return (
-        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginTop: 12 }]}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <Text style={[styles.cardLabel, { color: theme.textMuted }]}>MONTHLY SUMMARIES</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Ionicons name="lock-closed" size={12} color={theme.textMuted} />
-              <View style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
-                <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.accentBlue }}>SUPPORTER</Text>
-              </View>
-            </View>
-          </View>
-          <View style={{ gap: 6, paddingBottom: 4 }}>
-            <View style={{ height: 10, backgroundColor: theme.textMuted + '30', borderRadius: 4, width: '100%' }} />
-            <View style={{ height: 10, backgroundColor: theme.textMuted + '30', borderRadius: 4, width: '75%' }} />
-            <View style={{ height: 10, backgroundColor: theme.textMuted + '20', borderRadius: 4, width: '55%' }} />
-          </View>
-        </View>
-      );
-    }
-
+    // Monthly Summaries are FREE, same as Day + Weekly (decided 2026-07-12): gating a free-to-run recap
+    // is the exact thin/petty gate Path A rejects, and it clashed with free daily/weekly recaps. No lock.
     return (
       <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginTop: 12 }]}>
         <TouchableOpacity

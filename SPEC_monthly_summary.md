@@ -24,7 +24,11 @@ Monthly Summary is a completed-month reflection surface. It shows an averaged co
 
 This is NOT a live or rolling surface. It is a completed-month archive, generated once and saved forever.
 
-Monthly Summary is Pro-only. The entire surface is gated. Free users cannot view any data. Unlike Weekly (data free, only Coach Insight gated), the Monthly gate applies to everything.
+[OVERRIDDEN 2026-07-12] Monthly Summary is FREE, same as Day + Weekly. The earlier "Pro-only / entire surface gated"
+plan below is DEAD: gating a free-to-run recap is the thin/petty gate the monetization "Path A" support model
+rejects, and free daily/weekly + paid monthly was inconsistent. The dormant TIPS_GATED lock in stats.tsx
+renderMonthlyCard was removed; the detail screen was never gated. Ignore the "Pro gate" references throughout this
+doc (kept for history). See SPEC_monetization.md for the decision.
 
 ---
 

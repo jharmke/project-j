@@ -95,9 +95,11 @@ OPEN NOTES / IDEAS -- DO NOT LOSE:
 - 2 EvR BUGS parked in roadmap NEXT UP (handle AFTER monetization): (a) EvR Coach Insight may be rendering the RAW
   deterministic template instead of the AI voice (flagged from a 2026-07-12 report); (b) ranked diagnostic card
   body copy is "word slop," needs a clarity rewrite.
-- MONTHLY-SUMMARY WHOLE-SURFACE gating is UNRESOLVED: SPEC_monthly_summary.md says the ENTIRE monthly surface is
-  Pro-gated, which conflicts with "coaching free." The stats.tsx Monthly-Summaries chip was renamed to SUPPORTER,
-  but whether the whole monthly surface stays Supporter-only is still Justin's open call.
+- [RESOLVED 2026-07-12] MONTHLY-SUMMARY gating -> MONTHLY IS FREE, same as Day + Weekly. Killed the dormant
+  TIPS_GATED lock branch in stats.tsx renderMonthlyCard (removed the now-dead TIPS_GATED import there too); the
+  monthly-summary SCREEN was never gated. Rationale: gating a free-to-run recap is the thin/petty gate Path A
+  rejects, and free daily/weekly + paid monthly was inconsistent. SPEC_monthly_summary.md's "entire surface is
+  Pro-gated" line is overridden by this. Day / Weekly / Monthly summaries are all FREE, permanently.
 - DEAD CODE (harmless, cleanup later): the old Day-vs-Day-only gate INSIDE comparison-report.tsx is now unreachable
   (whole tool locked at entry). Left in place to keep the change small.
 - KNOWN PRE-EXISTING (not ours): app/(tabs)/stats.tsx has 4 TouchableOpacity+ref tsc errors (confirmed present

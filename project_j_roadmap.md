@@ -201,11 +201,20 @@ are separate pre-submission checklists, NOT part of this menu.
   dev tool to force a fresh regen. Also observed + explained (not a bug): after a fresh regen the headline
   rotated sodium -> carbs because selectByPrioritySpine applies a fatigue penalty to the recently-led topic (the
   anti-repeat rotation), which was invisible while the coach was stuck on the sodium fallback every day.
-- [ ] [COPY, flagged 2026-07-12, handle AFTER today's monetization work] EvR ranked diagnostic card copy reads as
-  "word slop." Example (report 2026-07-12): the "Missed sleep is showing up as missed workouts" card body -- "When
-  sleep is cut short, your body raises perceived effort and lowers motivation, so the session that felt optional
-  the night before simply does not happen." Needs a drastic clarity rewrite. Broader: audit the ranked diagnostic
-  card body copy for plain, premium wording. Source strings live in utils/diagnosticReport.ts / smartTipsEngine.
+- [PARKED 2026-07-12, known limitation, do not keep prompt-tweaking] EvR ranked diagnostic card INSIGHT (the middle
+  "why" sentence) occasionally comes out rambling/circular -- e.g. the sleep->workout card kept landing on "...the
+  session you planned simply does not happen," which just restates the claim+proof and reads weird. INVESTIGATED:
+  the insight is AI-voiced fresh each report (utils/coachAI.ts voiceDiagnosticCards + FEED_VOICE_RULEBOOK), so
+  there is NO fixed string to edit; it varies (good version seen: "your body treats poor sleep as a recovery debt,
+  skipped sessions are the first thing it trades away to pay it"). Root of the weird ones: on cards where claim +
+  proof already state the outcome, the AI pads the insight by re-stating that outcome. TRIED TWICE (2026-07-12):
+  two FEED_VOICE_RULEBOOK nudges (ban mechanisms/filler; then a coherence/no-ramble nudge that even quoted the bad
+  sentence) -- BOTH slipped through; prompt-steering can't GUARANTEE an LLM avoids a phrasing. Both reverted; code
+  is at the clean baseline. Justin chose to leave as-is (2026-07-12), accept the variance. IF revisited, the only
+  RELIABLE (deterministic) fixes are: (a) a post-generation filter in the voicer that rejects insights matching
+  bad patterns (whack-a-mole), or (b) DROP the insight sentence on these cards entirely (claim+proof+lever already
+  stand strong) -- trade-off is losing the occasional good insight. Not a copy-string audit; it's an AI-output
+  problem. Files: utils/coachAI.ts (FEED_VOICE_RULEBOOK, voiceDiagnosticCards, sanitizeVoicedLine).
 - [ ] QUICK WINS (small, grab-when-convenient): none queued right now -- add here as they come up. (DONE 2026-07-07: FAB text-label rings app-wide · inline Add Exercise button · the whole gym list.)
 
 ---

@@ -464,39 +464,92 @@ function InsightTipCard({ tip, isBlurred, theme, shadowStyle }: { tip: StoredTip
   );
 }
 
+// Subject of a locked card, keyed off the card's stable id (diagnostic feed) or ruleId
+// (cross-signal Smart Tips). The locked card shows the SUBJECT and frosts everything else,
+// so a free user learns what the finding is ABOUT without being handed the verdict.
+const LOCKED_TOPICS: Record<string, string> = {
+  // Ranked diagnostic feed (utils/diagnosticReport.ts card ids)
+  deficit: 'Deficit',
+  burn_accuracy: 'Burn Accuracy',
+  protein: 'Protein',
+  protein_good: 'Protein',
+  fiber: 'Fiber',
+  fiber_good: 'Fiber',
+  consistency_good: 'Consistency',
+  consistency_gaps: 'Consistency',
+  sleep_good: 'Sleep',
+  sleep_nextday_cals: 'Sleep & Appetite',
+  highburn_nextday: 'Big Burn Days',
+  weekend_weekday: 'Weekends',
+  water_cals: 'Water',
+  sodium_weight: 'Sodium',
+  steps_sleep: 'Steps & Sleep',
+  workout_vs_rest_cals: 'Training Days',
+  sleep_workout: 'Sleep & Training',
+  surplus_nextday: 'Surplus Days',
+  // Cross-signal Smart Tips (utils/smartTipsEngine.ts CROSS_SIGNAL_RULES)
+  cross_protein_sleep: 'Protein & Sleep',
+  cross_sodium_scale: 'Sodium',
+  cross_high_burn_overeating: 'Big Burn Days',
+  cross_sleep_intake: 'Sleep & Appetite',
+  cross_workout_intake: 'Training Days',
+  cross_steps_sleep: 'Steps & Sleep',
+  cross_fiber_calorie: 'Fiber',
+};
+const lockedTopic = (id: string) => LOCKED_TOPICS[id] ?? 'Pattern';
+
 // Frosted-glass Supporter lock. Used by BOTH the ranked diagnostic feed (cards past the first)
-// and the "Patterns in your data" section. The header + title stay crisp so the user sees a REAL
-// insight is here; the body is the real content behind a BlurView frost with a centered unlock CTA.
+// and the "Patterns in your data" section. The header + the SUBJECT stay crisp so the user knows a
+// REAL insight is here and what it concerns; the title (the verdict) and the body are the real
+// content behind a BlurView frost with a centered unlock CTA. Showing the title crisp gave the whole
+// finding away for free, which made the lock pointless.
 // Whole card taps to /support. No gray-skeleton shell. tint follows the theme (dark only on 'dark').
-function LockedInsightCard({ label, title, body, theme, shadowStyle, isDarkTheme }: { label: string; title: string; body: string; theme: any; shadowStyle: any; isDarkTheme: boolean }) {
+function LockedInsightCard({ topic, accent, title, body, theme, shadowStyle, isDarkTheme }: { topic: string; accent: string; title: string; body: string; theme: any; shadowStyle: any; isDarkTheme: boolean }) {
   return (
     <TouchableOpacity
       activeOpacity={0.85}
       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/support'); }}
-      style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}
+      style={[styles.card, {
+        backgroundColor: theme.bgCard,
+        borderColor: theme.borderCard,
+        borderTopColor: theme.borderCardTop,
+        borderTopWidth: 0.5,
+        overflow: 'hidden',   // clips the full-bleed frost to the card's rounded corners
+        ...shadowStyle, marginBottom: 12,
+      }]}
     >
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-        <ChipLabel label={label} theme={theme} />
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Ionicons name="lock-closed" size={12} color={theme.textMuted} />
-          <View style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
-            <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.accentBlueRaw }}>SUPPORTER</Text>
+      {/* Wash + tone accent, same as the unlocked card (DiagnosticFeedCard), so a locked card is the
+          REAL card frosted over -- not a dead gray shell. No watermark: behind a frost the hero icon
+          is just noise.
+          THE WHOLE CARD IS BLURRED, wash and all. A partial blur always shows its own bounds as a hard
+          square edge against the un-blurred area (tried inset, then full-bleed -- the top/bottom seams
+          survived both). Frosting edge to edge leaves no seam to see, and the chip / lock / Unlock ride
+          crisply ON TOP of the frost. */}
+      <CardWash color={accent} scored radius={14} />
+      <View style={{ paddingTop: 30, paddingBottom: 26 }}>
+        <Text style={{ fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, lineHeight: 21, marginBottom: 8 }}>
+          {title}
+        </Text>
+        <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 20 }}>
+          {body}
+        </Text>
+      </View>
+      <BlurView intensity={26} tint={isDarkTheme ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+      {/* Crisp layer above the frost: the SUBJECT chip (the time window is dropped while locked --
+          it's context for a finding you can actually read) and the quiet tap affordance. */}
+      <View style={[StyleSheet.absoluteFill, { padding: 16, justifyContent: 'space-between' }]} pointerEvents="none">
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <ChipLabel label={topic.toUpperCase()} theme={theme} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Ionicons name="lock-closed" size={12} color={theme.textMuted} />
+            <View style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+              <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.accentBlueRaw }}>SUPPORTER</Text>
+            </View>
           </View>
         </View>
-      </View>
-      <Text style={{ fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, lineHeight: 21, marginBottom: 10 }}>
-        {title}
-      </Text>
-      {/* Real content, frosted. overflow:hidden clips the blur to the rounded body box. */}
-      <View style={{ position: 'relative', borderRadius: 10, overflow: 'hidden' }}>
-        <View style={{ padding: 12 }}>
-          <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 20 }}>
-            {body}
-          </Text>
-        </View>
-        <BlurView intensity={28} tint={isDarkTheme ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
-        <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
-          <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlueRaw }}>Become a Supporter to unlock →</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
+          <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlueRaw }}>Unlock</Text>
+          <Ionicons name="arrow-forward" size={12} color={theme.accentBlueRaw} />
         </View>
       </View>
     </TouchableOpacity>
@@ -736,7 +789,7 @@ export default function DiagnosticReportViewScreen() {
       )}
 
       {report && (
-        <ScrollView ref={scrollRef} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]} showsVerticalScrollIndicator={false}>
+        <ScrollView ref={scrollRef} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 120 }]} showsVerticalScrollIndicator={false}>
 
           {/* Title + window info */}
           <View style={{ paddingHorizontal: 4, marginBottom: 8, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
@@ -843,10 +896,15 @@ export default function DiagnosticReportViewScreen() {
                   (voicedCards ?? report.cards ?? []).map((c, i) => {
                     // Free users: first card free, the rest frosted (Supporter). Tutorial always shows all.
                     if (!isTutorialMode && !isPro && i > 0) {
+                      // Same tone accent the unlocked card would use, so the lock keeps the card's identity.
+                      const lockedAccent = c.positive
+                        ? t.statusGood
+                        : (isMindful ? t.accentBlueRaw : (c.tone === 'factor' ? t.statusBad : t.statusWarn));
                       return (
                         <LockedInsightCard
                           key={`${c.id}-${i}`}
-                          label={(c.window || '').toUpperCase()}
+                          topic={lockedTopic(c.id)}
+                          accent={lockedAccent}
                           title={c.claim}
                           body={[c.proof, c.lever].filter(Boolean).join('  ')}
                           theme={t}
@@ -883,7 +941,8 @@ export default function DiagnosticReportViewScreen() {
                         return (
                           <LockedInsightCard
                             key={tip.id}
-                            label="INSIGHT"
+                            topic={lockedTopic(tip.ruleId)}
+                            accent={tip.positive ? t.statusGood : t.statusWarn}
                             title={tip.title}
                             body={tip.body}
                             theme={t}

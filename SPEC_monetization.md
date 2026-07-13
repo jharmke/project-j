@@ -62,6 +62,53 @@ This doc is the single source of truth for monetization. Keep the roadmap to one
 >>> never see the free/locked state again (the dev override can only ADD Supporter, never remove a real
 >>> entitlement). He stays un-granted as the one account that can test BOTH sides.
 >>>
+>>> ✅ SUPPORTER STATE + THE GOLD SYSTEM DONE 2026-07-13 (session 4). Device-verified across all 5 themes.
+>>> WHAT SHIPPED:
+>>>   - MEMBERSHIP DATA LAYER: MembershipContext now exposes `details` = { plan, memberSince, periodEnd,
+>>>     willRenew }, read off the RevenueCat entitlement. NULL whenever there's no real entitlement (free
+>>>     user, or Justin's __DEV__ toggle) so surfaces render NOTHING rather than a placeholder date. One
+>>>     applyCustomerInfo() is the single place customer info lands, so entitlement + details can't drift.
+>>>   - HONESTY RULE, live: if a user CANCELS, RevenueCat sets willRenew=false and every surface flips
+>>>     "Renews on" -> "Ends on". Saying "Renews" to someone who cancelled would be a lie. (Seen working:
+>>>     Justin's cancelled sandbox sub correctly reads "Ends Jul 13, 2026".)
+>>>   - SUPPORT SCREEN Supporter state: the pitch (perks + price boxes + CTA) is REPLACED by a membership
+>>>     card -- plan / member since / renews-on|ends-on -- plus a "Switch to Annual" ROW for monthly members
+>>>     that states the REAL saving (monthly x 12 - annual, computed from live store prices; hidden entirely
+>>>     if either price is missing). Mission paragraph + tip jar + restore + legal all stay. NO thank-you
+>>>     subline (decided: the mission card above already says it; a third thank-you inside the receipt is sappy).
+>>>   - LIVE PRICES everywhere (priceString from the offering). Hardcoded strings would keep showing an old
+>>>     price while Apple charged the new one.
+>>>   - PLAN CHANGE: monthly -> annual is Apple's own flow via the same purchasePackage call (same subscription
+>>>     group). ⚠️ App Store Connect ranking was CORRECTED this session: annual is now Level 1 (higher service
+>>>     level), monthly Level 2, so switching is an UPGRADE = takes effect immediately + Apple credits the
+>>>     unused part of the current month. Before the swap it was a downgrade (deferred to next renewal).
+>>>     NOT yet device-tested (Justin was mid-lapse) -- test a monthly->annual switch in sandbox.
+>>>   - PROFILE + SETTINGS membership rows: replaced by ONE shared components/MembershipCard so they can't
+>>>     drift. Supporter = foil hallmark + Bebas title + a MONTHLY/ANNUAL pill + the real date. Free = the same
+>>>     object in the user's accent. Both TINTED (champagne / accent) -- a plain card fill made the free card
+>>>     the same color as its container on Settings (a settings section IS a card) and it vanished on
+>>>     Slate/Warm/Blush. Killed the old amber sprout + the "Active Supporter" placeholder line.
+>>> THE GOLD SYSTEM (components/SupporterFoil.tsx = the ONE source of truth; do not re-define gold anywhere):
+>>>   - GOLD IS A MATERIAL, NOT A COLOR. It only reads as gold when a light-to-dark gradient fakes a specular
+>>>     highlight. There is NO flat hex that reads as gold -- painted flat on a light card it is, literally,
+>>>     mustard (we shipped that, it was). So gold appears ONLY as gradient surfaces: FoilChip (the hallmark)
+>>>     and FoilEdge (the struck edge on a card), plus GOLD_TINT (a champagne wash = a tint of the card, never
+>>>     a gold fill). Never flat gold text, never a flat gold fill.
+>>>   - THE RULE: **gold means MEMBERSHIP. Never a lock, never a paywall, never a price.** The moment gold also
+>>>     marks restriction, the badge stops being a thank-you and becomes the color of the thing blocking you.
+>>>     Locked states stay neutral + accent. (We built a full-gold $24.99 tip tile, then cut it: it made the most
+>>>     expensive ask the loudest object on a page whose whole philosophy is "an option, not a push.")
+>>>   - It was previously wearing `theme.accentAmber` -- which is the app's WARNING color. The membership
+>>>     surfaces were literally painted in caution paint.
+>>> NEW SHARED COMPONENTS (reuse these; don't re-implement):
+>>>   - components/SupporterFoil.tsx -- gold constants + FoilChip + FoilEdge.
+>>>   - components/MembershipCard.tsx -- the Profile + Settings membership card, both states.
+>>>   - components/PrimaryCTA.tsx -- the app's primary solid-fill button standard. See the roadmap item for
+>>>     the app-wide rollout task.
+>>> STILL OPEN on this track: the Otto free-user nudge wiring; the gold app icon (Justin is making it) and the
+>>> "Custom Badge & Icon" perk illustration that depends on it; a monthly->annual sandbox switch test; and the
+>>> LAUNCH-ONLY reverts (which are gated behind the PINNED tester-entitlement sequence above).
+>>>
 >>> ✅ WEBHOOK DONE + VERIFIED 2026-07-12 (session 3). functions/src/revenueCatWebhook.ts (deployed).
 >>> URL: https://us-central1-projectj-5d024.cloudfunctions.net/revenueCatWebhook
 >>> Emails Justin (dev.harmke@gmail.com, via the same nodemailer/GMAIL_APP_PASSWORD setup the prayer-request

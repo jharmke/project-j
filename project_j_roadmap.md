@@ -10,6 +10,23 @@
 
 ---
 
+## 🔴 DO THIS NEXT (time-boxed, do not let it slide)
+- [ ] **ROTATE THE ANTHROPIC API KEY. Target: ~2026-07-18 (5 days after the 2026-07-13 TestFlight push).**
+  The key was bundled client-side in every build before 2026-07-01. The CODE is fixed (all calls go through the
+  aiProxy Cloud Function) but **the exposed key is still live** -- anyone holding an old build can extract it and
+  spend Justin's money. Checked 2026-07-13: Anthropic usage shows NO abuse (the spikes line up exactly with
+  Justin's own dev sessions), and the $50/mo cap bounds the damage. But it has been open since 2026-07-01.
+  WHY IT WASN'T DONE IMMEDIATELY: testers on OLD builds still use that key, so rotating breaks their Otto, Halo,
+  and meal estimator. The 2026-07-13 TestFlight build (which routes through the proxy) went out on that date with
+  "please install this week, AI stops working on the old build" in the release notes.
+  DO NOT WAIT FOR 100% OF TESTERS. Check App Store Connect > TestFlight > the build for the install count, give it
+  ~5 days, then rotate regardless. Anyone still on an old build simply loses AI until they update -- which is the
+  nudge. Nothing else breaks for them.
+  STEPS: regenerate the key in the Anthropic console -> `firebase functions:secrets:set ANTHROPIC_API_KEY` ->
+  redeploy the functions that use it (aiProxy, appCompanion, faithCompanion) -> REVOKE the old key.
+
+---
+
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
 - 2026-07-13 MONETIZATION / "SUPPORT THE MISSION" **COMPLETE + DEVICE-VERIFIED.** The whole track: RevenueCat
   purchases (subscribe monthly/annual, monthly->annual upgrade, tips, restore), Supporter gates, the membership

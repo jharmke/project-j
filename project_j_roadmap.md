@@ -224,6 +224,10 @@ are separate pre-submission checklists, NOT part of this menu.
   bad patterns (whack-a-mole), or (b) DROP the insight sentence on these cards entirely (claim+proof+lever already
   stand strong) -- trade-off is losing the occasional good insight. Not a copy-string audit; it's an AI-output
   problem. Files: utils/coachAI.ts (FEED_VOICE_RULEBOOK, voiceDiagnosticCards, sanitizeVoicedLine).
+- [ ] [PINNED 2026-07-13, do BEFORE the next TestFlight push] WHAT'S NEW screen is STALE. It was not updated for
+  the monetization work (Supporter/purchases, the gold system + gold app icon, the membership card, the launch
+  splash, the Log-tab repeat pills). Its content lives in the app BUNDLE, so it can only change with a new build --
+  the 2026-07-13 TestFlight build went out without it. Write the entries, then it rides the next build.
 - [QUICK-ISH WIN, raised 2026-07-13, Justin loved the result] PRIMARY BUTTON ROLLOUT. The Support screen's
   "Become a Supporter" CTA was rebuilt and is now the app's button standard, extracted to components/
   PrimaryCTA.tsx: a MOLDED look (true vertical light->dark gradient overlay, so it works with every accent

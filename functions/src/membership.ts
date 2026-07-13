@@ -1,4 +1,9 @@
 import * as admin from 'firebase-admin';
+import { defineSecret } from 'firebase-functions/params';
+
+// RevenueCat's SECRET REST key (never the public SDK key). Set with:
+//   firebase functions:secrets:set REVENUECAT_SECRET_KEY
+export const REVENUECAT_SECRET_KEY = defineSecret('REVENUECAT_SECRET_KEY');
 
 // ─── Server-side Supporter truth ─────────────────────────────────────────────
 // The AI caps are enforced on the server, so the server has to know who is a Supporter. It must NEVER
@@ -25,24 +30,67 @@ const SUPPORTER_ENTITLEMENT_ID = 'supporter';
 const membershipDoc = (uid: string) => admin.firestore().collection('memberships').doc(uid);
 
 export interface MembershipRecord {
-  expiresAtMs: number;       // when the current paid period ends
+  expiresAtMs: number;       // when the current paid period ends (0 = not a Supporter)
   willRenew: boolean;        // false once they cancel (access still runs to expiresAtMs)
   productId: string;
   environment: string;       // SANDBOX | PRODUCTION
   lastEventType: string;
   lastEventAtMs: number;     // the EVENT's own timestamp -- see the out-of-order note below
   updatedAtMs: number;
+  checkedAtMs?: number;      // last time we asked RevenueCat directly (see the cache note below)
 }
 
-// Is this user a Supporter RIGHT NOW? Fails CLOSED: any error, missing record, or unreadable doc
-// returns false. A bug here can only ever make someone LESS generous, never hand out free AI.
+// How long we trust a "not a Supporter" answer before asking RevenueCat again.
+const NEGATIVE_CACHE_MS = 6 * 60 * 60 * 1000;   // 6 hours
+
+// ─── FIRESTORE IS A CACHE. REVENUECAT IS THE TRUTH. ──────────────────────────
+// Webhooks alone are not enough. Proven live 2026-07-13: a PROMOTIONAL grant (how we hand testers a free
+// Supporter entitlement) reaches RevenueCat but never lands here as a usable subscription event -- so a
+// webhook-only design would have told every granted tester they were a Supporter in the app while the
+// SERVER quietly gave them free-tier AI limits. Silent, and hell to diagnose.
+//
+// So on a cache MISS we ask RevenueCat directly and store the answer. That covers promotional grants,
+// transfers, and any webhook that is ever dropped, delayed, or shaped differently than we expected.
+// Webhooks still do the fast path; this is the safety net underneath them.
+async function fetchFromRevenueCat(uid: string): Promise<number> {
+  try {
+    const res = await fetch(`https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(uid)}`, {
+      headers: { Authorization: `Bearer ${REVENUECAT_SECRET_KEY.value()}` },
+    });
+    if (!res.ok) return 0;
+    const body: any = await res.json();
+    const ent = body?.subscriber?.entitlements?.[SUPPORTER_ENTITLEMENT_ID];
+    if (!ent?.expires_date) return 0;
+    const ms = new Date(ent.expires_date).getTime();
+    return isNaN(ms) ? 0 : ms;
+  } catch (e) {
+    console.error('RevenueCat lookup failed (defaulting to free):', uid, e);
+    return 0;
+  }
+}
+
+// Is this user a Supporter RIGHT NOW?
+// FAILS CLOSED: any error, missing record, or unreachable RevenueCat returns false. A bug here can only
+// ever make someone LESS generous, never hand out free AI on Justin's bill.
 export async function isSupporter(uid: string): Promise<boolean> {
+  const now = Date.now();
   try {
     const snap = await membershipDoc(uid).get();
-    if (!snap.exists) return false;
-    const m = snap.data() as MembershipRecord | undefined;
-    if (!m?.expiresAtMs) return false;
-    return m.expiresAtMs > Date.now();     // derived, not stored -- see note above
+    const m = snap.exists ? (snap.data() as MembershipRecord | undefined) : undefined;
+
+    // Fast path: a live entitlement we already know about. No network call.
+    if (m?.expiresAtMs && m.expiresAtMs > now) return true;
+
+    // We think they're NOT a Supporter. Trust that only briefly -- they may have just been granted one.
+    if (m?.checkedAtMs && now - m.checkedAtMs < NEGATIVE_CACHE_MS) return false;
+
+    // Cache miss (or stale negative): ask RevenueCat itself.
+    const expiresAtMs = await fetchFromRevenueCat(uid);
+    await membershipDoc(uid).set(
+      { expiresAtMs, checkedAtMs: now, updatedAtMs: now, lastEventType: 'API_LOOKUP' },
+      { merge: true },
+    );
+    return expiresAtMs > now;
   } catch (e) {
     console.error('isSupporter lookup failed (defaulting to free):', uid, e);
     return false;

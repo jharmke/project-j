@@ -3,7 +3,7 @@ import { defineSecret } from 'firebase-functions/params';
 import * as admin from 'firebase-admin';
 import Anthropic from '@anthropic-ai/sdk';
 import { screenForCrisis } from './crisis';
-import { isSupporter } from './membership';
+import { isSupporter, REVENUECAT_SECRET_KEY } from './membership';
 import {
   buildCompanionStable,
   buildCompanionVolatile,
@@ -31,9 +31,9 @@ import { ASSISTANT_APP_KNOWLEDGE } from './assistantAppKnowledge';
 
 const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
 
-// Messages per user per day, by tier. Supporter status comes from OUR OWN Firestore record (written by
-// the RevenueCat webhook), never from the client -- a client that could simply claim "I'm a Supporter"
-// would let anyone run up the Anthropic bill. See membership.ts.
+// Messages per user per day, by tier. Supporter status is resolved SERVER-SIDE (Firestore cache, backed
+// by a direct RevenueCat lookup on a miss) and NEVER taken from the client -- a client that could simply
+// claim "I'm a Supporter" would let anyone run up the Anthropic bill. See membership.ts.
 //
 // 🚨 BETA HACK (2026-07-01): both tiers are raised so email-invited TestFlight testers can exercise Otto
 // freely. REVERT AT LAUNCH to the locked caps: FREE 10 / SUPPORTER 25. See LAUNCH_CHECKLIST.md (2.1).
@@ -92,7 +92,7 @@ async function refundMessage(uid: string): Promise<void> {
 }
 
 export const appCompanion = onCall(
-  { secrets: [ANTHROPIC_API_KEY], maxInstances: 10 },
+  { secrets: [ANTHROPIC_API_KEY, REVENUECAT_SECRET_KEY], maxInstances: 10 },
   async (request) => {
     // 1. Auth.
     if (!request.auth) {

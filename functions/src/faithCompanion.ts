@@ -4,7 +4,7 @@ import * as admin from 'firebase-admin';
 import Anthropic from '@anthropic-ai/sdk';
 import { screenForCrisis } from './crisis';
 import { buildSystemPrompt, FaithTier } from './faithSystemPrompt';
-import { isSupporter } from './membership';
+import { isSupporter, REVENUECAT_SECRET_KEY } from './membership';
 
 // NOTE: admin.initializeApp() is already called once in index.ts. Do NOT call it again here.
 //
@@ -86,7 +86,7 @@ async function refundMessage(uid: string): Promise<void> {
 }
 
 export const faithCompanion = onCall(
-  { secrets: [ANTHROPIC_API_KEY], maxInstances: 10 },
+  { secrets: [ANTHROPIC_API_KEY, REVENUECAT_SECRET_KEY], maxInstances: 10 },
   async (request) => {
     // 1. Auth.
     if (!request.auth) {

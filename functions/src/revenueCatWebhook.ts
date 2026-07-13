@@ -2,7 +2,7 @@ import { onRequest } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import * as admin from 'firebase-admin';
 import * as nodemailer from 'nodemailer';
-import { recordMembershipEvent } from './membership';
+import { recordMembershipEvent, REVENUECAT_SECRET_KEY } from './membership';
 
 // ─── RevenueCat webhook -> email Justin ──────────────────────────────────────
 // Fires when someone becomes a Supporter or leaves a tip, so the thank-you can be hand-written.
@@ -52,7 +52,7 @@ async function describeBuyer(appUserId: string | undefined): Promise<string> {
 }
 
 export const revenueCatWebhook = onRequest(
-  { secrets: [GMAIL_APP_PASSWORD, REVENUECAT_WEBHOOK_TOKEN] },
+  { secrets: [GMAIL_APP_PASSWORD, REVENUECAT_WEBHOOK_TOKEN, REVENUECAT_SECRET_KEY] },
   async (req, res) => {
     if (req.method !== 'POST') {
       res.status(405).send('Method not allowed');
@@ -80,6 +80,14 @@ export const revenueCatWebhook = onRequest(
     // events we don't email about, but whose state the caps absolutely depend on. Tips are ignored here:
     // they aren't in the `supporter` entitlement, so recordMembershipEvent skips them.
     await recordMembershipEvent(event);
+
+    // PROMOTIONAL grants (how testers are handed a free Supporter entitlement) arrive as
+    // NON_RENEWING_PURCHASE -- the same event type as a TIP. Without this guard, granting testers emails
+    // Justin "Someone left a tip... $0... time to write the thank-you" once per tester. Seen live.
+    if (event.store === 'PROMOTIONAL' || String(event.product_id || '').startsWith('rc_promo_')) {
+      res.status(200).send('Promotional grant: recorded, no email');
+      return;
+    }
 
     if (type !== INITIAL_PURCHASE && type !== NON_RENEWING_PURCHASE) {
       // Recorded above; nothing to email. Acknowledge so RevenueCat doesn't retry.

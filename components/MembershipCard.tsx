@@ -136,7 +136,7 @@ export function GoldIconRow() {
       <View style={{ flex: 1 }}>
         <Text style={{ fontSize: 13.5, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>Gold App Icon</Text>
         <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 1 }}>
-          Turn it on in Appearance
+          Turn it on in Settings &gt; Appearance
         </Text>
       </View>
       <Ionicons name="chevron-forward" size={15} color={theme.textMuted} />

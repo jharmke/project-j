@@ -23,6 +23,10 @@ export { fatSecretProxy } from './fatSecretProxy';
 // Anthropic key server-side so it is no longer bundled in the app. See aiProxy.ts.
 export { aiProxy } from './aiProxy';
 
+// RevenueCat webhook -> emails Justin when someone becomes a Supporter or leaves a tip, so the
+// thank-you can be hand-written. See revenueCatWebhook.ts.
+export { revenueCatWebhook } from './revenueCatWebhook';
+
 const APPLE_PRIVATE_KEY = defineSecret('APPLE_PRIVATE_KEY');
 const GMAIL_APP_PASSWORD = defineSecret('GMAIL_APP_PASSWORD');
 

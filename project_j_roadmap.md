@@ -224,6 +224,25 @@ are separate pre-submission checklists, NOT part of this menu.
   bad patterns (whack-a-mole), or (b) DROP the insight sentence on these cards entirely (claim+proof+lever already
   stand strong) -- trade-off is losing the occasional good insight. Not a copy-string audit; it's an AI-output
   problem. Files: utils/coachAI.ts (FEED_VOICE_RULEBOOK, voiceDiagnosticCards, sanitizeVoicedLine).
+- [EXPLORE, unspecced -- raised 2026-07-13 from the gym. Do AFTER the monetization/Support track closes.]
+  Four raw ideas, ranked by how real they are. NONE are specced; each needs a design pass before any code.
+  1. [MOST REAL] GOAL WEIGHT + GOAL DATE ("by when"). Today the user picks a PACE and the app derives the date.
+     Invert it: let them pick a TARGET DATE too (e.g. "175 -> 162 by late January, when the baby comes") and the
+     app back-solves the weekly pace + calorie target to land on that date. Uses math that already exists (pace <->
+     deficit <-> target), just run backwards. CRITICAL SAFETY TIE-IN: an aggressive date can demand a deficit that
+     drops the target under the calorie floor -- utils/calorieFloor + CalorieFloorModal ALREADY handle exactly this
+     (warn + consent, never hard-block, offer the fastest SAFE pace), so the branch is built. Surfaces: onboarding
+     + Profile. Open questions: what happens as the date approaches and they're off-pace (silently re-solve? nudge?),
+     and the Mindful variant (a countdown to a weight is the most judgment-heavy thing in the app -- probably neutral
+     or off). See SPEC_calorie_floor.md.
+  2. COFFEE-SHOP DRINK BUILDER (Starbucks/Dunkin). A little calculator for custom drinks: pick the base + milk +
+     syrup/sauce PUMPS, since calories per pump are fairly standard. Justin has hand-built these in Cronometer many
+     times -- a real, repeated, personal pain point. Open: where does it live (Add Food? a mini-tool?), and where do
+     the per-pump numbers come from (hand-curated table vs FatSecret).
+  3. RESEARCH: MENUFIT (restaurant menus). Explore -- big fitness accounts rave about it. Figure out what it
+     actually does well and what's worth stealing for restaurant logging.
+  4. RESEARCH: TRAINERIZE. Explore/compare -- heard good things, never used it. Understand where it overlaps and
+     where Project J is different.
 - [ ] QUICK WINS (small, grab-when-convenient): none queued right now -- add here as they come up. (DONE 2026-07-07: FAB text-label rings app-wide · inline Add Exercise button · the whole gym list.)
 
 ---

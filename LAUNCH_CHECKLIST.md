@@ -128,8 +128,14 @@ Every one of these is currently making the app more generous than it should be a
 
 ## 💰 PHASE 4 — MONEY / APP STORE BUSINESS
 
-- [ ] **4.1 — ⭐ Apple Small Business Program.** Takes Apple's cut from **30% → 15%**. Justin qualifies. This is
-      real money on every single sale and it is pure paperwork. Do it before the first dollar comes in.
+- [x] **4.1 — ⭐ Apple Small Business Program. ENROLLED 2026-07-13, awaiting Apple's approval.**
+      Takes Apple's cut from **30% → 15%** on every sale, forever. Prerequisite (the Paid Apps agreement) was
+      already signed 2026-07-12. Ownership/control questions were all "No" (solo dev, one account).
+      ⚠️ **The rate is NOT live yet.** It takes effect **15 days after the end of the fiscal month in which the
+      enrollment is APPROVED** -- so a July approval means it activates around mid-August. This is exactly why it
+      was done early: if you launch and sell before it activates, Apple takes 30% of those sales.
+      TODO: confirm the approval email lands, and confirm the 15% rate is showing in App Store Connect before
+      any real revenue arrives.
 - [ ] **4.2 — App Store Connect API key (AuthKey).** Enables price sync, refund handling, and Apple→RevenueCat
       server notifications. Deferred during the build; needed for a healthy production subscription.
 - [ ] **4.3 — Product review screenshots + metadata** for the 6 IAP products (2 subs + 4 tips). Required by App

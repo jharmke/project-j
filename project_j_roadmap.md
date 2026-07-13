@@ -307,7 +307,10 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 ---
 
 ## 🚧 LAUNCH BLOCKERS
-- App name + logo -- finalize from shortlist (Prevail, Steadfast, Worthy, Haven, Witness, Sown). Verify App Store + TikTok handle availability. Prevail is strongest.
+- App name -- ⚠️ OLD SHORTLIST KILLED 2026-07-13 (Prevail/Steadfast/Worthy/Haven/Witness/Sown -- Justin: "those
+  aren't good"). Do NOT resurrect it. Starting fresh. Check App Store + TikTok/IG handle + domain availability on
+  any candidate. THIS BLOCKS the whole App Store listing (description, screenshots, URLs). Logo already exists
+  (assets/images/icon.png + the gold variant).
 - App Store Connect setup -- privacy label, age rating, URLs, description, screenshots, review notes. No code. Do after name is locked.
 - Verification scan -- production build, device install, all flows confirmed before submitting.
 - Anthropic account spend limit -- hard monthly spend cap in the console so AI cost can never run away (the final "sleep at night" switch on top of per-user daily caps).

@@ -147,9 +147,11 @@ Every one of these is currently making the app more generous than it should be a
 
 ## 📱 PHASE 5 — THE APP STORE LISTING
 
-- [ ] **5.1 — App name + logo.** Finalize from the shortlist (Prevail, Steadfast, Worthy, Haven, Witness, Sown).
-      Verify App Store + TikTok handle availability. Prevail is the current favorite. **Everything else in this
-      phase is blocked on this.**
+- [ ] **5.1 — App name.** ⚠️ The old shortlist (Prevail / Steadfast / Worthy / Haven / Witness / Sown) is **DEAD**
+      as of 2026-07-13 — Justin's verdict: *"those aren't good."* Do not resurrect it. Starting fresh.
+      For any candidate, check: App Store name availability, TikTok/Instagram handle, and a domain.
+      **Everything else in this phase is blocked on this.** (The logo already exists — assets/images/icon.png,
+      plus the gold Supporter variant.)
 - [ ] **5.2 — App Store Connect listing:** privacy label, age rating, URLs, description, keywords, screenshots,
       review notes.
 - [ ] **5.3 — privacy.html** — confirm it covers every data type the app now collects (standing rule: update it

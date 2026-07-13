@@ -161,12 +161,18 @@ export default function BodyMeasurementsCard() {
         </>
       )}
 
-      {/* LOG button */}
+      {/* LOG button -- house interactive-button recipe (tinted fill + accent border + accent text).
+          Solid accent fill is reserved for the app's one primary CTA (Support screen). */}
       <TouchableOpacity
+        activeOpacity={0.85}
         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); router.push('/body-measurement-log'); }}
-        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: accent, borderRadius: 8, paddingVertical: 11, marginTop: 12 }}>
-        <Ionicons name="add" size={17} color="#fff" />
-        <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: '#fff' }}>Log Measurements</Text>
+        style={{
+          flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+          backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
+          borderRadius: 8, paddingVertical: 11, marginTop: 12,
+        }}>
+        <Ionicons name="add" size={17} color={theme.accentBlue} />
+        <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.accentBlue }}>Log Measurements</Text>
       </TouchableOpacity>
 
       {/* Slot picker -- house-standard centered modal */}

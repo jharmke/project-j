@@ -3,7 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Animated, Easing, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Animated, Easing, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
 import { useToast } from '../components/Toast';
@@ -63,33 +63,56 @@ export default function SupportScreen() {
 
   const { isSupporter, offering, tipProducts, purchasePackage, purchaseTip, restore: restorePurchases } = useMembership();
 
+  // Which purchase action is in flight: 'sub' | 'restore' | a tip product id. StoreKit takes a beat to
+  // fetch the product and build the sheet (seconds on a cold/slow network), and without this the button
+  // looked dead -- so people tap it twice. `busy` both drives the spinner AND locks out a second tap.
+  const [busy, setBusy] = useState<string | null>(null);
+
   // Subscribe to the selected plan (monthly / annual).
   const handleSubscribe = async () => {
+    if (busy) return;
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     if (isSupporter) { showToast("You're already a Supporter", 'Thank you for keeping this going', 'success'); return; }
     const pkg = plan === 'monthly' ? offering?.monthly : offering?.annual;
     if (!pkg) { showToast("Purchases aren't available right now", 'Please try again in a moment', 'info'); return; }
-    const res = await purchasePackage(pkg);
-    if (res === 'success') showToast('Thank you for becoming a Supporter', 'Your support keeps this going', 'success');
-    else if (res === 'error') showToast("Purchase didn't go through", 'Please try again', 'error');
-    // cancelled = silent (the user backed out)
+    setBusy('sub');
+    try {
+      const res = await purchasePackage(pkg);
+      if (res === 'success') showToast('Thank you for becoming a Supporter', 'Your support keeps this going', 'success');
+      else if (res === 'error') showToast("Purchase didn't go through", 'Please try again', 'error');
+      // cancelled = silent (the user backed out)
+    } finally {
+      setBusy(null);
+    }
   };
 
   // One-time tip (consumable).
   const handleTip = async (productId: string) => {
+    if (busy) return;
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     const product = tipProducts.find(p => p.identifier === productId);
     if (!product) { showToast("Tips aren't available right now", 'Please try again in a moment', 'info'); return; }
-    const res = await purchaseTip(product);
-    if (res === 'success') showToast('Thank you for chipping in', 'Every bit helps keep this going', 'success');
-    else if (res === 'error') showToast("Purchase didn't go through", 'Please try again', 'error');
+    setBusy(productId);
+    try {
+      const res = await purchaseTip(product);
+      if (res === 'success') showToast('Thank you for chipping in', 'Every bit helps keep this going', 'success');
+      else if (res === 'error') showToast("Purchase didn't go through", 'Please try again', 'error');
+    } finally {
+      setBusy(null);
+    }
   };
 
   const restore = async () => {
+    if (busy) return;
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-    const ok = await restorePurchases();
-    if (ok) showToast('Purchases restored', 'Welcome back, Supporter', 'success');
-    else showToast('Nothing to restore', 'No active Supporter purchase found', 'info');
+    setBusy('restore');
+    try {
+      const ok = await restorePurchases();
+      if (ok) showToast('Purchases restored', 'Welcome back, Supporter', 'success');
+      else showToast('Nothing to restore', 'No active Supporter purchase found', 'info');
+    } finally {
+      setBusy(null);
+    }
   };
 
   return (
@@ -188,9 +211,27 @@ export default function SupportScreen() {
                 </View>
               </View>
             ) : (
-              <TouchableOpacity activeOpacity={0.85} onPress={handleSubscribe} style={[styles.cta, { backgroundColor: t.accentBlue }]}>
-                <Text style={styles.ctaText}>Become a Supporter</Text>
-              </TouchableOpacity>
+              /* The one solid-fill CTA in the app. Lifted off the flat slab it used to be: a top-light
+                 sheen for depth, an accent-tinted glow instead of a generic black shadow, and the sprout
+                 (the Supporter mark) beside the label. */
+              <View style={[styles.ctaGlow, { shadowColor: t.accentBlueRaw }]}>
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={handleSubscribe}
+                  disabled={!!busy}
+                  style={[styles.cta, { backgroundColor: t.accentBlue, opacity: busy && busy !== 'sub' ? 0.5 : 1 }]}
+                >
+                  <View style={styles.ctaSheen} pointerEvents="none" />
+                  {busy === 'sub'
+                    ? <ActivityIndicator size="small" color="#ffffff" />
+                    : (
+                      <View style={styles.ctaRow}>
+                        <SproutIcon size={18} color="#ffffff" />
+                        <Text style={styles.ctaText}>Become a Supporter</Text>
+                      </View>
+                    )}
+                </TouchableOpacity>
+              </View>
             )}
           </View>
         </View>
@@ -212,18 +253,28 @@ export default function SupportScreen() {
                   style={[styles.tipTile, {
                     backgroundColor: tip.gold ? goldBg : t.accentBlueBg,
                     borderColor: tip.gold ? goldBorder : t.accentBlueBorder,
+                    opacity: busy && busy !== tip.productId ? 0.5 : 1,
                   }]}
                 >
                   <Text style={[styles.tipLabel, { color: tip.gold ? t.accentAmber : t.textMuted }]}>{tip.label}</Text>
-                  <Text style={[styles.tipAmt, { color: tip.gold ? t.accentAmber : t.textSecondary }]}>{tip.amount}</Text>
+                  {busy === tip.productId
+                    ? <ActivityIndicator size="small" color={tip.gold ? t.accentAmber : t.accentBlue} style={styles.tipSpinner} />
+                    : <Text style={[styles.tipAmt, { color: tip.gold ? t.accentAmber : t.textSecondary }]}>{tip.amount}</Text>}
                 </PressScale>
               ))}
             </View>
           </View>
         </View>
 
-        <TouchableOpacity onPress={restore} style={styles.restoreBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Text style={[styles.restore, { color: t.accentBlue }]}>Restore Purchases</Text>
+        <TouchableOpacity
+          onPress={restore}
+          disabled={!!busy}
+          style={[styles.restoreBtn, { opacity: busy && busy !== 'restore' ? 0.5 : 1 }]}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          {busy === 'restore'
+            ? <ActivityIndicator size="small" color={t.accentBlue} />
+            : <Text style={[styles.restore, { color: t.accentBlue }]}>Restore Purchases</Text>}
         </TouchableOpacity>
         <Text style={[styles.legal, { color: t.textDim }]}>Payments are handled by the App Store. Cancel anytime in Settings.</Text>
       </ScrollView>
@@ -265,7 +316,13 @@ const styles = StyleSheet.create({
   priceAmt: { fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5 },
   pricePer: { fontSize: 11, fontFamily: 'DMSans_600SemiBold', marginTop: 1 },
 
-  cta: { borderRadius: 13, paddingVertical: 15, alignItems: 'center' },
+  // Accent-tinted glow (shadowColor is set per-theme at the call site) -- lives on a WRAPPER because
+  // the button itself needs overflow:hidden to clip the sheen, which would clip a shadow too.
+  ctaGlow: { shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 4 },
+  cta: { borderRadius: 13, paddingVertical: 15, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  // Soft top-light: a translucent white band across the upper half reads as a sheen on the fill.
+  ctaSheen: { position: 'absolute', top: 0, left: 0, right: 0, height: '50%', backgroundColor: 'rgba(255,255,255,0.13)' },
+  ctaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   ctaText: { fontSize: 15, fontFamily: 'DMSans_700Bold', letterSpacing: 0.3, color: '#ffffff' },
   supporterState: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, borderRadius: 13, borderWidth: 1, paddingVertical: 13, paddingHorizontal: 16 },
 
@@ -274,6 +331,8 @@ const styles = StyleSheet.create({
   tipTile: { borderRadius: 14, borderWidth: 1, paddingVertical: 11, paddingHorizontal: 6, alignItems: 'center', gap: 2 },
   tipLabel: { fontSize: 11, fontFamily: 'DMSans_600SemiBold', textAlign: 'center', lineHeight: 14, minHeight: 15 },
   tipAmt: { fontSize: 23, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5 },
+  // Matches the tipAmt line box so swapping in the spinner doesn't resize the tile.
+  tipSpinner: { height: 28 },
 
 
   restoreBtn: { alignSelf: 'center', paddingTop: 6 },

@@ -2085,9 +2085,16 @@ export default function StatsScreen() {
                           ? 'Grow past a previous week or month, or set a higher daily target for a stretch. Track it gently on your home screen.'
                           : 'Outperform a past week or month, or set a higher daily target for a stretch. Track it live on your home screen.'}
                       </Text>
-                      <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/challenge-create'); }}
-                        style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingVertical: 12, alignItems: 'center' }}>
-                        <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: '#fff' }}>New Challenge</Text>
+                      <TouchableOpacity
+                        activeOpacity={0.85}
+                        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/challenge-create'); }}
+                        style={{
+                          flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+                          backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
+                          borderRadius: 8, paddingVertical: 12,
+                        }}>
+                        <Ionicons name="flag" size={14} color={theme.accentBlue} />
+                        <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>New Challenge</Text>
                       </TouchableOpacity>
                     </>
                   )}
@@ -2202,10 +2209,16 @@ export default function StatsScreen() {
                         Compare your logged data against your actual results. See what's working, what's not, and get specific suggestions.
                       </Text>
                       <TouchableOpacity
+                        activeOpacity={0.85}
                         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/diagnostic-report'); }}
-                        style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingVertical: 12, alignItems: 'center' }}
+                        style={{
+                          flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+                          backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
+                          borderRadius: 8, paddingVertical: 12,
+                        }}
                       >
-                        <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: '#fff' }}>Open Analysis</Text>
+                        <Ionicons name="analytics" size={14} color={theme.accentBlue} />
+                        <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>Open Analysis</Text>
                       </TouchableOpacity>
                     </>
                   )}
@@ -2236,11 +2249,20 @@ export default function StatsScreen() {
                       <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 20, marginBottom: 14 }}>
                         Compare two periods side by side: this week vs last week, this month vs last month, and more. Just the numbers, no scores.
                       </Text>
+                      {/* House interactive-button recipe (tinted fill + accent border + accent text), not a
+                          solid slab. This is a doorway into the tool, not the purchase itself -- the one
+                          solid-fill CTA lives on the Support screen. */}
                       <TouchableOpacity
+                        activeOpacity={0.85}
                         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push(isPro ? '/comparison-report' : '/support'); }}
-                        style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingVertical: 12, alignItems: 'center' }}
+                        style={{
+                          flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+                          backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
+                          borderRadius: 8, paddingVertical: 12,
+                        }}
                       >
-                        <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: '#fff' }}>{isPro ? 'New Comparison' : 'Become a Supporter'}</Text>
+                        <Ionicons name={isPro ? 'swap-horizontal' : 'lock-open'} size={14} color={theme.accentBlue} />
+                        <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>{isPro ? 'New Comparison' : 'Become a Supporter'}</Text>
                       </TouchableOpacity>
                     </>
                   )}

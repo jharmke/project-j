@@ -26,6 +26,8 @@ export default function PrimaryCTA({
   icon,
   busy = false,
   disabled = false,
+  compact = false,
+  wrapperStyle,
   haptic = Haptics.ImpactFeedbackStyle.Medium,
 }: {
   label: string;
@@ -33,6 +35,11 @@ export default function PrimaryCTA({
   icon?: React.ReactNode;          // rendered left of the label (already colored white by the caller)
   busy?: boolean;                  // swaps the label for a spinner and blocks presses
   disabled?: boolean;
+  // COMPACT: the same molded button at pill scale. Bebas caps at 19px is right for a screen's one big
+  // CTA, but it can't carry a label like "Repeat Yesterday · 566 kcal" inside half a row -- so compact
+  // keeps the molding, glow and press-scale, and drops to DMSans at 13 so the label always fits.
+  compact?: boolean;
+  wrapperStyle?: any;              // e.g. { flex: 1 } to let a button share a row
   haptic?: Haptics.ImpactFeedbackStyle;
 }) {
   const { theme, themeId } = useTheme();
@@ -52,7 +59,12 @@ export default function PrimaryCTA({
   const blocked = busy || disabled;
 
   return (
-    <View style={[styles.glow, { shadowColor: theme.accentBlueRaw, shadowOpacity: isDark ? 0.18 : 0.35 }]}>
+    <View style={[
+      styles.glow,
+      { shadowColor: theme.accentBlueRaw, shadowOpacity: isDark ? 0.18 : (compact ? 0.22 : 0.35) },
+      compact && { shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
+      wrapperStyle,
+    ]}>
       <Animated.View style={{ transform: [{ scale }] }}>
         <TouchableOpacity
           activeOpacity={0.9}
@@ -60,7 +72,11 @@ export default function PrimaryCTA({
           onPressIn={() => to(0.97)}
           onPressOut={() => to(1)}
           onPress={() => { triggerHaptic(haptic); onPress(); }}
-          style={[styles.btn, { backgroundColor: theme.accentBlue, opacity: disabled ? 0.5 : 1 }]}
+          style={[
+            styles.btn,
+            compact && { borderRadius: 9, paddingVertical: 9, paddingHorizontal: 10 },
+            { backgroundColor: theme.accentBlue, opacity: disabled ? 0.5 : 1 },
+          ]}
         >
           <LinearGradient
             colors={mold}
@@ -72,11 +88,17 @@ export default function PrimaryCTA({
           {busy ? (
             <ActivityIndicator size="small" color="#ffffff" />
           ) : (
-            <View style={styles.row}>
+            <View style={[styles.row, compact && { gap: 6 }]}>
               {/* Nudged up: Bebas is all-caps with no descenders, so its optical centre sits ABOVE the
-                  text box's geometric centre. Centre-aligning an icon against it makes the icon sag. */}
-              {icon ? <View style={{ marginBottom: 3 }}>{icon}</View> : null}
-              <Text style={styles.label}>{label}</Text>
+                  text box's geometric centre. Centre-aligning an icon against it makes the icon sag.
+                  Compact uses DMSans, which has normal metrics, so it needs no nudge. */}
+              {icon ? <View style={compact ? undefined : { marginBottom: 3 }}>{icon}</View> : null}
+              <Text
+                numberOfLines={1}
+                style={compact ? styles.labelCompact : styles.label}
+              >
+                {label}
+              </Text>
             </View>
           )}
         </TouchableOpacity>
@@ -92,4 +114,5 @@ const styles = StyleSheet.create({
   btn: { borderRadius: 13, paddingVertical: 16, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   label: { fontSize: 19, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1.2, color: '#ffffff' },
+  labelCompact: { fontSize: 12.5, fontFamily: 'DMSans_700Bold', color: '#ffffff', flexShrink: 1 },
 });

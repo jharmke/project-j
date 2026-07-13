@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Easing, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import PressableButton from '../../components/PressableButton';
+import PrimaryCTA from '../../components/PrimaryCTA';
 import { DEFAULT_MEAL_SLOTS, MealSlot, findSlotForMeal, loadMealSlots, saveMealSlots } from '../../utils/mealSlots';
 import { getRepeatSummary, logRepeatedItems, SlotRepeatInfo, tidyFoodName } from '../../utils/repeatMeal';
 import RepeatMealModal from '../../components/RepeatMealModal';
@@ -1527,39 +1528,41 @@ export default function LogScreen() {
             {/* Repeat a Meal pill -- only on an EMPTY slot that has copyable history in the window */}
             {mealEntries.length === 0 && repeatSummary[slot.id]?.hasHistory && (
               <View style={{ width: '100%', paddingLeft: 50, paddingRight: 16, paddingBottom: 12, marginTop: -8, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                {/* The original outline pills, kept quiet on purpose -- solid fill is reserved for a screen's
+                    ONE primary action, and there are two of these per slot across up to 8 slots. What they
+                    gained: press-scale (PressableButton) and a rounder corner.
+                    flex: Repeat takes 1 so its label always has room; Pick a Day takes 0 so it sizes to its
+                    own content. PressableButton defaults BOTH to flex:1, which split the row evenly and
+                    truncated "Repeat Yesterday · 566 kcal". */}
                 {repeatSummary[slot.id].yesterdayItems.length > 0 ? (
                   <>
-                    <TouchableOpacity
+                    <PressableButton
+                      flex={1}
                       onPress={() => repeatYesterday(slot)}
-                      activeOpacity={0.85}
-                      hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
-                      style={{ flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.accentBlue, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 7 }}>
+                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.accentBlue, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 }}>
                       <Ionicons name="repeat" size={13} color={theme.accentBlue} />
-                      <Text numberOfLines={1} style={{ flexShrink: 1, color: theme.accentBlue, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>
+                      <Text numberOfLines={1} style={{ color: theme.accentBlue, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>
                         Repeat Yesterday · {repeatSummary[slot.id].yesterdayTotal} kcal
                       </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
+                    </PressableButton>
+                    <PressableButton
+                      flex={0}
                       onPress={() => openRepeatModal(slot)}
-                      activeOpacity={0.7}
-                      hitSlop={{ top: 8, bottom: 8, left: 6, right: 8 }}
-                      accessibilityLabel="Pick a day to repeat a meal from"
-                      style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.accentBlue, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 7 }}>
+                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.accentBlue, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 }}>
                       <Ionicons name="calendar" size={13} color={theme.accentBlue} />
                       <Text style={{ color: theme.accentBlue, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Pick a Day</Text>
-                    </TouchableOpacity>
+                    </PressableButton>
                   </>
                 ) : (
-                  <TouchableOpacity
+                  <PressableButton
+                    flex={0}
                     onPress={() => openRepeatModal(slot)}
-                    activeOpacity={0.85}
-                    hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
-                    style={{ flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.accentBlue, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 7 }}>
+                    style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.accentBlue, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 }}>
                     <Ionicons name="repeat" size={13} color={theme.accentBlue} />
-                    <Text numberOfLines={1} style={{ flexShrink: 1, color: theme.accentBlue, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>
+                    <Text numberOfLines={1} style={{ color: theme.accentBlue, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>
                       Repeat a Previous Meal
                     </Text>
-                  </TouchableOpacity>
+                  </PressableButton>
                 )}
               </View>
             )}

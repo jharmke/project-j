@@ -9,6 +9,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
 import { useToast } from '../components/Toast';
 import SproutIcon from '../components/SproutIcon';
+import PrimaryCTA from '../components/PrimaryCTA';
+import { FoilChip, FoilEdge, GOLD_BASE, GOLD_DEEP, GOLD_EDGE, GOLD_ENGRAVE, GOLD_HI, GOLD_TINT } from '../components/SupporterFoil';
 import { useMembership } from '../MembershipContext';
 
 // ─── Support the Mission (the reframed paywall) ──────────────────────────────
@@ -18,17 +20,7 @@ import { useMembership } from '../MembershipContext';
 // Uses live theme tokens so it adapts across all 5 themes + accents.
 // Mode-agnostic (no health data / scores), so no Mindful or faith-tier variant.
 
-// ─── Gold FOIL ───────────────────────────────────────────────────────────────
-// Gold is a MATERIAL, not a color: it only reads as gold when a light-to-dark shift fakes a specular
-// highlight. There is no flat hex that reads as gold -- painted flat on a light card it is, literally,
-// mustard. So gold appears here ONLY as gradient surfaces (the sprout chip + the foil edge on the two
-// mission cards). Everything else stays in normal theme ink. Emblem, not paint.
-const GOLD_HI = '#f6e08f';                // specular highlight -- the stop that makes it metal
-const GOLD_BASE = '#d4af37';
-const GOLD_DEEP = '#a8801f';
-const GOLD_ENGRAVE = '#33290c';           // the sprout, stamped INTO the foil
-const GOLD_EDGE = 'rgba(212,175,55,0.45)';
-const GOLD_TINT = 'rgba(212,175,55,0.13)';   // champagne wash -- a tint of the card, never a gold fill
+// Gold lives in components/SupporterFoil (one source of truth: Support screen + Profile + Settings).
 
 type Perk = { icon: string; title: string; body: string; gold?: boolean; sprout?: boolean };
 
@@ -243,15 +235,7 @@ export default function SupportScreen() {
                   was the one card whose title didn't start on the same left edge as the others. */}
               <View style={styles.memberHead}>
                 <Text style={[styles.heading, { color: t.textSecondary, marginBottom: 0 }]}>You're a Supporter</Text>
-                <View style={[styles.memberSprout, { borderColor: GOLD_EDGE }]}>
-                  <LinearGradient
-                    colors={[GOLD_HI, GOLD_BASE, GOLD_DEEP]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={StyleSheet.absoluteFill}
-                  />
-                  <SproutIcon size={22} color={GOLD_ENGRAVE} />
-                </View>
+                <FoilChip size={36} />
               </View>
 
               {details && (
@@ -374,27 +358,14 @@ export default function SupportScreen() {
               </PressScale>
             </View>
 
-            {/* The one solid-fill CTA in the app. Lifted off the flat slab it used to be: a top-light
-                sheen for depth, an accent-tinted glow instead of a generic black shadow, and the sprout
-                (the Supporter mark) beside the label. */}
-            <View style={[styles.ctaGlow, { shadowColor: t.accentBlueRaw }]}>
-              <TouchableOpacity
-                activeOpacity={0.9}
-                onPress={handleSubscribe}
-                disabled={!!busy}
-                style={[styles.cta, { backgroundColor: t.accentBlue, opacity: busy && busy !== 'sub' ? 0.5 : 1 }]}
-              >
-                <View style={styles.ctaSheen} pointerEvents="none" />
-                {busy === 'sub'
-                  ? <ActivityIndicator size="small" color="#ffffff" />
-                  : (
-                    <View style={styles.ctaRow}>
-                      <SproutIcon size={18} color="#ffffff" />
-                      <Text style={styles.ctaText}>Become a Supporter</Text>
-                    </View>
-                  )}
-              </TouchableOpacity>
-            </View>
+            {/* The app's primary solid-fill button (components/PrimaryCTA). */}
+            <PrimaryCTA
+              label="Become a Supporter"
+              onPress={handleSubscribe}
+              icon={<SproutIcon size={18} color="#ffffff" />}
+              busy={busy === 'sub'}
+              disabled={!!busy && busy !== 'sub'}
+            />
           </View>
         </View>
         )}
@@ -512,11 +483,11 @@ const styles = StyleSheet.create({
   // Accent-tinted glow (shadowColor is set per-theme at the call site) -- lives on a WRAPPER because
   // the button itself needs overflow:hidden to clip the sheen, which would clip a shadow too.
   ctaGlow: { shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 4 },
-  cta: { borderRadius: 13, paddingVertical: 15, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  // Soft top-light: a translucent white band across the upper half reads as a sheen on the fill.
-  ctaSheen: { position: 'absolute', top: 0, left: 0, right: 0, height: '50%', backgroundColor: 'rgba(255,255,255,0.13)' },
-  ctaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  ctaText: { fontSize: 15, fontFamily: 'DMSans_700Bold', letterSpacing: 0.3, color: '#ffffff' },
+  cta: { borderRadius: 13, paddingVertical: 16, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  ctaRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  // Bebas caps, like the card headings -- DMSans bold 15 was the same weight as body copy, which is why
+  // the label read as plain text sitting on a colored rectangle.
+  ctaText: { fontSize: 19, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1.2, color: '#ffffff' },
   supporterState: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, borderRadius: 13, borderWidth: 1, paddingVertical: 13, paddingHorizontal: 16 },
 
   tipTiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, marginTop: 0, marginBottom: 10 },

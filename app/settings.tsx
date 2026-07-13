@@ -55,6 +55,7 @@ import TooltipModal from '../components/TooltipModal';
 import TooltipIcon from '../components/TooltipIcon';
 import ToggleSwitch from '../components/ToggleSwitch';
 import SproutIcon from '../components/SproutIcon';
+import MembershipCard from '../components/MembershipCard';
 import PrayerRequestModal from '../components/PrayerRequestModal';
 import { useToast } from '../components/Toast';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -1255,30 +1256,11 @@ export default function SettingsScreen() {
         </CollapsibleSection>
 
         {/* ── Membership ── */}
-        {/* Status now sourced from the real RevenueCat entitlement (isSupporter). In dev, the dev toggle
-            below feeds it via MembershipContext. The "Active Supporter" sub is still a placeholder until
-            RevenueCat provides real plan/renewal dates. */}
-        <CollapsibleSection label="Membership" subtitle="Support the Mission" defaultOpen={false} theme={theme}>
-          <TouchableOpacity
-            style={[styles.row, { borderTopColor: theme.borderCard }]}
-            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/support' as any); }}
-            activeOpacity={0.7}
-          >
-            <View style={{ flex: 1 }}>
-              {/* sprout + amber tick + title inline; tick sized to the TITLE only (matches the Health section labels) */}
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <SproutIcon size={22} color={theme.accentAmber} />
-                <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentAmber, paddingLeft: 10, marginLeft: 12 }}>
-                  <Text style={[styles.rowTitle, { color: theme.accentAmber, fontFamily: 'DMSans_700Bold', fontSize: 15 }]}>
-                    {isSupporter ? 'Thanks for your support' : 'Support the Mission'}
-                  </Text>
-                </View>
-              </View>
-              {/* Supporter sub = "Active Supporter" placeholder; swap to "Renews on [date]" once RevenueCat provides it. */}
-              <Text style={[styles.rowSub, { color: theme.textMuted, paddingLeft: 47 }]}>{isSupporter ? 'Active Supporter' : 'Help keep the app going'}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color={theme.accentAmber} />
-          </TouchableOpacity>
+        {/* Shared with Profile > Membership (components/MembershipCard) so the two can never drift. */}
+        <CollapsibleSection label="Membership" subtitle={isSupporter ? 'Supporter' : 'Support the Mission'} defaultOpen={false} theme={theme}>
+          <View style={{ paddingVertical: 4 }}>
+            <MembershipCard />
+          </View>
         </CollapsibleSection>
 
         {/* ── Goals ── */}

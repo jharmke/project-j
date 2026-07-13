@@ -224,6 +224,20 @@ are separate pre-submission checklists, NOT part of this menu.
   bad patterns (whack-a-mole), or (b) DROP the insight sentence on these cards entirely (claim+proof+lever already
   stand strong) -- trade-off is losing the occasional good insight. Not a copy-string audit; it's an AI-output
   problem. Files: utils/coachAI.ts (FEED_VOICE_RULEBOOK, voiceDiagnosticCards, sanitizeVoicedLine).
+- [QUICK-ISH WIN, raised 2026-07-13, Justin loved the result] PRIMARY BUTTON ROLLOUT. The Support screen's
+  "Become a Supporter" CTA was rebuilt and is now the app's button standard, extracted to components/
+  PrimaryCTA.tsx: a MOLDED look (true vertical light->dark gradient overlay, so it works with every accent
+  with no color math -- the old "sheen" was a translucent band across the top half, which read as a two-tone
+  slab with a seam), an ACCENT-tinted glow instead of a black shadow, Bebas caps type (DMSans bold = the same
+  weight as body copy, so labels read as plain text on a colored rectangle), press-scale + a built-in busy
+  spinner. RULE: solid fill = the ONE primary action on a screen; secondary actions keep the house tinted
+  recipe. TASK = sweep the app for primary CTAs and swap them to <PrimaryCTA> (Justin: "I kind of want to go
+  through the app and find buttons to change to this style"). Deliberately NOT swept yet -- do it as its own
+  pass so each screen's primary-vs-secondary call is made deliberately, not bulk-replaced.
+- [DEPENDENCY, do WITH the gold app icon] Support screen's "Custom Badge & Icon" perk is illustrated with the
+  gold sprout badge only, but the perk promises a badge AND an icon. Once the gold app icon exists, show the
+  actual gold icon there (or the icon + badge together) so a free user sees literally what they get. Justin is
+  making the icon himself (color change on the existing one). No code until the asset exists.
 - [EXPLORE, unspecced -- raised 2026-07-13 from the gym. Do AFTER the monetization/Support track closes.]
   Four raw ideas, ranked by how real they are. NONE are specced; each needs a design pass before any code.
   1. [MOST REAL] GOAL WEIGHT + GOAL DATE ("by when"). Today the user picks a PACE and the app derives the date.

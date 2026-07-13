@@ -19,6 +19,7 @@ import { useTheme } from '../../theme';
 import { useMembership } from '../../MembershipContext';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import SproutIcon from '../../components/SproutIcon';
+import MembershipCard from '../../components/MembershipCard';
 
 interface Profile {
   name: string;
@@ -165,7 +166,7 @@ export default function ProfileScreen() {
   const [tempBirthday, setTempBirthday] = useState<Date | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [savedProfile, setSavedProfile] = useState<Profile | null>(null);
-  // Supporter status for the Membership section, from the real RevenueCat entitlement.
+  // Supporter status drives the Membership section's subtitle; the card itself reads the entitlement.
   const { isSupporter } = useMembership();
   const SAVE_BAR_HEIGHT = 76;
   const floatAnim = useRef(new Animated.Value(0)).current;
@@ -489,34 +490,11 @@ export default function ProfileScreen() {
           </View>
         </ProfileSection>
 
-        <ProfileSection label="Membership" subtitle={isSupporter ? 'Active Supporter' : 'Support the Mission'} defaultOpen={true} theme={theme}>
-          <TouchableOpacity
-            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/support' as any); }}
-            activeOpacity={0.7}
-            style={{
-              flexDirection: 'row', alignItems: 'center', marginTop: 2,
-              backgroundColor: theme.bgInput, borderWidth: 1, borderColor: 'rgba(212,134,10,0.4)',
-              borderRadius: 12, paddingVertical: 14, paddingHorizontal: 14,
-              shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
-            }}
-          >
-            <View style={{ flex: 1 }}>
-              {/* sprout + amber tick + title inline; tick sized to the TITLE only (matches Settings Membership row) */}
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <SproutIcon size={22} color={theme.accentAmber} />
-                <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentAmber, paddingLeft: 10, marginLeft: 12 }}>
-                  <Text style={{ color: theme.accentAmber, fontFamily: 'DMSans_700Bold', fontSize: 15 }}>
-                    {isSupporter ? 'Thanks for your support' : 'Support the Mission'}
-                  </Text>
-                </View>
-              </View>
-              {/* Supporter sub = "Active Supporter" placeholder; swap to "Renews on [date]" once RevenueCat provides it. */}
-              <Text style={{ color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontSize: 12, paddingLeft: 47, marginTop: 3 }}>
-                {isSupporter ? 'Active Supporter' : 'Help keep the app going'}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color={theme.accentAmber} />
-          </TouchableOpacity>
+        {/* Shared with Settings > Membership (components/MembershipCard) so the two can never drift. */}
+        <ProfileSection label="Membership" subtitle={isSupporter ? 'Supporter' : 'Support the Mission'} defaultOpen={true} theme={theme}>
+          <View style={{ marginTop: 2 }}>
+            <MembershipCard />
+          </View>
         </ProfileSection>
 
         <View onLayout={e => { activityLevelY.current = e.nativeEvent.layout.y; }} />

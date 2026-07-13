@@ -4,6 +4,7 @@ import * as admin from 'firebase-admin';
 import Anthropic from '@anthropic-ai/sdk';
 import { screenForCrisis } from './crisis';
 import { buildSystemPrompt, FaithTier } from './faithSystemPrompt';
+import { isSupporter } from './membership';
 
 // NOTE: admin.initializeApp() is already called once in index.ts. Do NOT call it again here.
 //
@@ -22,11 +23,15 @@ import { buildSystemPrompt, FaithTier } from './faithSystemPrompt';
 
 const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
 
-// Free tier messages per user per day. Pro (about 50/day) does not exist yet (no
-// subscription system), so EVERYONE is free for now; this becomes a tier lookup later.
-// 🚨 BETA HACK (2026-07-01): raised from 5 to 50 so email-invited TestFlight testers can
-// exercise Halo freely. REVERT to 5 (real free-tier cap) before App Store launch.
+// Messages per user per day, by tier. NOTE: Halo's two tiers are INTENTIONALLY EQUAL (locked design:
+// 25 free / 25 Supporter). Faith is never upcharged -- a Supporter does not get more of Halo than a
+// free user does, and Halo never nudges anyone to pay. That is a product rule, not an oversight.
+// The tier lookup exists anyway so the shape matches Otto and can't drift.
+//
+// 🚨 BETA HACK (2026-07-01): raised so email-invited TestFlight testers can exercise Halo freely.
+// REVERT AT LAUNCH to 25 / 25. See LAUNCH_CHECKLIST.md (2.1).
 const FREE_DAILY_CAP = 50;
+const SUPPORTER_DAILY_CAP = 50;
 
 // Dev/test accounts that bypass the daily cap (effectively unlimited). Empty this before
 // public launch. Currently just Justin's uid for testing.
@@ -112,7 +117,11 @@ export const faithCompanion = onCall(
     }
 
     // 3. Per-user daily cap: atomic check-and-increment so concurrent calls cannot race past it.
-    const dailyCap = DEV_UNLIMITED_UIDS.includes(uid) ? 100000 : FREE_DAILY_CAP;
+    // Tier from the SERVER's own membership record (fails closed to free on any error).
+    const supporter = await isSupporter(uid);
+    const dailyCap = DEV_UNLIMITED_UIDS.includes(uid)
+      ? 100000
+      : supporter ? SUPPORTER_DAILY_CAP : FREE_DAILY_CAP;
     const today = todayKey();
     const ref = usageDoc(uid);
     const cap = await admin.firestore().runTransaction(async (tx) => {

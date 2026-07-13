@@ -2,6 +2,7 @@ import { onRequest } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import * as admin from 'firebase-admin';
 import * as nodemailer from 'nodemailer';
+import { recordMembershipEvent } from './membership';
 
 // ─── RevenueCat webhook -> email Justin ──────────────────────────────────────
 // Fires when someone becomes a Supporter or leaves a tip, so the thank-you can be hand-written.
@@ -72,9 +73,17 @@ export const revenueCatWebhook = onRequest(
     }
 
     const type: string = event.type;
+
+    // FIRST, on EVERY event: record the subscription state server-side. The AI caps read this to decide
+    // who's a Supporter, and it must never be taken on the client's word (a spoofed client would run up
+    // the Anthropic bill). This deliberately runs for renewals, cancellations and expirations too --
+    // events we don't email about, but whose state the caps absolutely depend on. Tips are ignored here:
+    // they aren't in the `supporter` entitlement, so recordMembershipEvent skips them.
+    await recordMembershipEvent(event);
+
     if (type !== INITIAL_PURCHASE && type !== NON_RENEWING_PURCHASE) {
-      // Renewal / cancellation / expiration / etc. Acknowledge so RevenueCat doesn't retry.
-      res.status(200).send(`Ignored event type: ${type}`);
+      // Recorded above; nothing to email. Acknowledge so RevenueCat doesn't retry.
+      res.status(200).send(`Recorded, no email for event type: ${type}`);
       return;
     }
 

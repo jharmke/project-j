@@ -234,10 +234,21 @@ are separate pre-submission checklists, NOT part of this menu.
   recipe. TASK = sweep the app for primary CTAs and swap them to <PrimaryCTA> (Justin: "I kind of want to go
   through the app and find buttons to change to this style"). Deliberately NOT swept yet -- do it as its own
   pass so each screen's primary-vs-secondary call is made deliberately, not bulk-replaced.
-- [DEPENDENCY, do WITH the gold app icon] Support screen's "Custom Badge & Icon" perk is illustrated with the
-  gold sprout badge only, but the perk promises a badge AND an icon. Once the gold app icon exists, show the
-  actual gold icon there (or the icon + badge together) so a free user sees literally what they get. Justin is
-  making the icon himself (color change on the existing one). No code until the asset exists.
+- [GOLD APP ICON -- ASSET DONE 2026-07-13, WIRING REMAINS] assets/images/icon-gold.png now exists: the shipping
+  icon recolored to gold. Made in code, not by hand (a gradient map over the source's luminance, so every facet
+  and highlight is preserved exactly -- the geometry is never redrawn). KEY LESSON if it's ever regenerated: do
+  NOT try to mask the mark off the background. The background's vignette and the mark's dark facets occupy the
+  same brightness range, so every mask leaks or punches holes (Photoshop's wand, flood-fill, and morphological
+  closing all failed). Instead keep the ramp NEUTRAL below the vignette's brightness and start the gold above it:
+  the background maps to itself, the mark's shadowed facets stay dark (they're dark in the silver original too),
+  and only the lit metal turns gold. Ramp needs BROWN shadows + a WARM-WHITE specular -- a ramp of pure yellows
+  reads as plastic. Script + variants kept in the session scratchpad. Chose the clean-background version over a
+  gold-glow one: the glow looked rich at poster size but went muddy at 60px on a light wallpaper (icons are judged
+  on silhouette contrast at thumbnail size).
+  REMAINING: (a) wire it as an iOS ALTERNATE app icon (needs a config plugin + a NATIVE REBUILD -- rides the next
+  build, cannot ship on a reload); (b) gate the switch on the Supporter entitlement; (c) update the Support
+  screen's "Custom Badge & Icon" perk illustration to show the actual gold icon (or icon + badge together) --
+  it currently shows only the badge, though the perk promises both.
 - [EXPLORE, unspecced -- raised 2026-07-13 from the gym. Do AFTER the monetization/Support track closes.]
   Four raw ideas, ranked by how real they are. NONE are specced; each needs a design pass before any code.
   1. [MOST REAL] GOAL WEIGHT + GOAL DATE ("by when"). Today the user picks a PACE and the app derives the date.

@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app } from '../firebaseConfig';
 import { router } from 'expo-router';
+import { useMembership } from '../MembershipContext';
 import { CRISIS_RESPONSE, screenForCrisis } from '../utils/faithCrisis';
 import { buildCompanionStats } from '../utils/companionStats';
 import { buildPRContextIfRelevant } from '../utils/companionPRs';
@@ -465,6 +466,8 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
     AsyncStorage.setItem(QUOTA_KEY, JSON.stringify({ date: utcDay(), used, cap })).catch(() => {});
   };
 
+  const { isSupporter } = useMembership();
+
   const canSend = input.trim().length > 0 && !sending;
 
   const remaining = quota ? Math.max(0, quota.cap - quota.used) : null;
@@ -718,6 +721,21 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
 
             {showQuota && (
               <Text style={[styles.quota, { color: quotaLow ? accent : theme.textDim }]}>{quotaLabel}</Text>
+            )}
+
+            {/* Otto's free-user nudge. Copy locked in SPEC_monetization. Shown ONLY to a free user and
+                ONLY at the wall (1 left / none left) -- never mid-conversation, never to a Supporter, and
+                never on Halo (faith is never upcharged). This is the whole "never nag" rule in one place:
+                the ask appears at the moment it's actually useful information, and nowhere else. */}
+            {showQuota && quotaLow && !isSupporter && (
+              <Pressable
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/support' as any); }}
+                hitSlop={{ top: 6, bottom: 6, left: 12, right: 12 }}
+              >
+                <Text style={[styles.quota, { color: accent, marginTop: 2 }]}>
+                  Supporters get more time with Otto each day. Become a Supporter →
+                </Text>
+              </Pressable>
             )}
 
             <View style={styles.inputBar}>

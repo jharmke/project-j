@@ -250,8 +250,17 @@ are separate pre-submission checklists, NOT part of this menu.
      syrup/sauce PUMPS, since calories per pump are fairly standard. Justin has hand-built these in Cronometer many
      times -- a real, repeated, personal pain point. Open: where does it live (Add Food? a mini-tool?), and where do
      the per-pump numbers come from (hand-curated table vs FatSecret).
-  3. RESEARCH: MENUFIT (restaurant menus). Explore -- big fitness accounts rave about it. Figure out what it
-     actually does well and what's worth stealing for restaurant logging.
+  3. [RESEARCHED 2026-07-13 -> SPEC_restaurant_mode.md. NOT approved to build.] RESTAURANT MODE ("what should I
+     order"). MenuFit teardown DONE, do not redo it. Findings: it's a DECIDER not a logger; its good part is
+     composing + scoring a full order at CHAINS with a one-line insight; it works only because chains PUBLISH
+     nutrition data. At LOCAL restaurants it is HOLLOW -- Justin looked up BurgerUp and every item showed `0 cal`
+     (scraped menu text, no nutrition). FatSecret's chain data is ACCURATE (verified vs official: Big Mac,
+     McDouble, CFA nuggets all within ~10 kcal or exact), and `food_brands.get?brand_type=restaurant` gives a
+     restaurant list -- but there is NO endpoint to enumerate a brand's foods (workaround: paginated brand search,
+     completeness not guaranteed). THE EDGE WE'D HAVE: MenuFit only knows your GOALS; we know your REMAINING
+     macros today, and we can log the order in one tap (their own users beg for MFP integration). Real feature,
+     not a weekend. Full teardown, data feasibility, v1 shape, risks + the "don't build this from FOMO" warning:
+     SPEC_restaurant_mode.md.
   4. RESEARCH: TRAINERIZE. Explore/compare -- heard good things, never used it. Understand where it overlaps and
      where Project J is different.
 - [ ] QUICK WINS (small, grab-when-convenient): none queued right now -- add here as they come up. (DONE 2026-07-07: FAB text-label rings app-wide · inline Add Exercise button · the whole gym list.)
@@ -437,7 +446,9 @@ Every major feature has a SPEC_*.md in the repo root. Active ones tied to open w
 - Nutrition: SPEC_nutrition.md, SPEC_calorie_goal_hit.md, SPEC_calorie_floor.md, SPEC_ai_meal_estimator.md | Day/Reports: SPEC_day_score_and_summary.md, SPEC_weekly_summary.md, SPEC_monthly_summary.md, SPEC_evr_redesign.md, SPEC_comparison_challenge.md, SPEC_custom_reports.md
 - Faith/Coach: SPEC_faith_ai.md, SPEC_faith_tab.md, SPEC_smart_tips.md, SMART_COACH_SPEC.md, TRIGGER_LIBRARY.md | Cards: SPEC_card_gradient.md | Vacation: SPEC_vacation_mode.md | Tutorials: tutorial_system_spec.md
 - Body: SPEC_body_measurements.md, SPEC_body_progress.md, SPEC_weight_history.md
-- App Store: APP_STORE_CHECKLIST.md, COMPLIANCE_SCAN_findings.md
+- App Store: APP_STORE_CHECKLIST.md, COMPLIANCE_SCAN_findings.md | Launch: **LAUNCH_CHECKLIST.md** (the single
+  ordered launch list; supersedes the REVERT + LAUNCH BLOCKERS sections above)
+- Monetization: SPEC_monetization.md | Restaurant Mode (researched, unbuilt): SPEC_restaurant_mode.md
 
 ## 📎 ARCHIVES
 - project_j_roadmap_archive.md -- full shipped/fixed history + detailed post-mortems (this file's completed items live here; grep by section when you need the story behind a shipped feature)

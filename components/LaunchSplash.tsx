@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Dimensions, Image, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { isGoldIconActive } from '../utils/appIcon';
 import * as SplashScreen from 'expo-splash-screen';
 
 // Condensed app-open cinematic. Replicates the sign-in logo treatment (full-width
@@ -37,8 +38,17 @@ export default function LaunchSplash({ onDone }: { onDone: () => void }) {
       style={[StyleSheet.absoluteFill, { backgroundColor: BG, opacity: overlayOpacity, alignItems: 'center', justifyContent: 'center', zIndex: 1000000 }]}
     >
       <Animated.View style={{ width: SCREEN_W, height: SCREEN_W, opacity: logoOpacity, transform: [{ scale: logoScale }] }}>
+        {/* The splash follows the APP ICON, not the entitlement. Keying it on "is a Supporter" would race
+            RevenueCat -- the splash renders before the entitlement resolves, so you'd see silver flash then
+            swap to gold. The icon is a local device setting, so it's known instantly. It's also more
+            coherent: the app you tapped was gold, so the app that opens is gold. And a Supporter who
+            prefers the classic icon keeps the classic splash, which is right -- they chose it.
+            (iOS's OWN first frame, before any JS runs, is baked into the build and can never be
+            personalised. This is the second, in-app splash.) */}
         <Image
-          source={require('../assets/images/logo.png')}
+          source={isGoldIconActive()
+            ? require('../assets/images/icon-gold.png')
+            : require('../assets/images/logo.png')}
           style={{ width: '100%', height: '100%' }}
           resizeMode="contain"
         />

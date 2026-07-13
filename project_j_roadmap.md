@@ -11,6 +11,33 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-13 MONETIZATION / "SUPPORT THE MISSION" **COMPLETE + DEVICE-VERIFIED.** The whole track: RevenueCat
+  purchases (subscribe monthly/annual, monthly->annual upgrade, tips, restore), Supporter gates, the membership
+  card with REAL dates (and "Ends on" not "Renews on" once cancelled), the gold system (SupporterFoil = the one
+  source of gold), the gold app icon + gold splash + lapse guard, the thank-you webhook, Otto's free-user nudge,
+  and SERVER-SIDE Supporter truth (Firestore as a cache, RevenueCat as the truth, so the AI caps can't be
+  spoofed by a modified client). All 11 testers granted a free year. Three real bugs caught on the way: an
+  out-of-order webhook that could have killed a paying subscriber's access; a lapse guard that only ran if the
+  user happened to open Settings; and a promotional grant that emailed a fake $0 tip AND would have silently
+  given granted testers free-tier AI caps. Detail: SPEC_monetization.md. Launch steps: LAUNCH_CHECKLIST.md.
+- 2026-07-13 WHAT'S NEW Patch 3 written (Supporter, Repeat a Meal, weight history, fixes) + the page's patches
+  are now COLLAPSIBLE (newest open, older collapsed) + the Supporter card wears the real gold foil hallmark.
+- 2026-07-13 CALORIE FLOOR **TRACK CLOSED.** Core shipped 2026-07-08; the two remaining follow-ons turned out to
+  be already done (pace granularity 0.25/0.75 shipped in Patch 2; the onboarding activity/training-frequency
+  wording shipped 2026-07-10). The third ("activity nudge") was never specified and is redundant: the modal
+  already has an adjust-activity button. Nothing left.
+- 2026-07-13 GOLD APP ICON shipped: alternate iOS icon (Supporter-only toggle in Settings > Appearance), a
+  pointer row on the Support membership card, the perk row now shows BOTH marks (badge + icon), the in-app launch
+  splash follows the icon, and a lapse guard puts a lapsed Supporter back on the default. Made in CODE (a gradient
+  map over the source's luminance), not by hand.
+- 2026-07-12 [BUG FIX] EvR/home Coach Insight was rendering the deterministic FALLBACK instead of the AI voice.
+  ROOT CAUSE: the coach tip's client-side timeout was 8s, too tight for the aiProxy round trip (Firebase cold
+  starts + a large uncached rulebook prompt), so it timed out CLIENT-side and fell back even though the Anthropic
+  call SUCCEEDED server-side. Fixed by raising it to 20s (utils/coachAI.ts), matching the feed voicer. NOTE: an
+  EvR report SNAPSHOTS its insight at generation, so an old report never updates -- generate a new one to test.
+- 2026-07-13 APPLE WORKOUTS IN THE EXERCISE LIBRARY **CONFIRMED BUILT** (the roadmap still said "build after the
+  gym list" -- it was already done). workout-library.tsx groups Apple-synced sessions into browse entries with
+  editable labels, per-key history, and sorting (utils/syncedWorkouts).
 - 2026-07-12 MONETIZATION: RevenueCat purchase flow DEVICE-VERIFIED end to end (sandbox sub, tip, restore, and the
   LOCKED state all confirmed; a tip correctly does NOT grant the entitlement) + the THANK-YOU WEBHOOK shipped
   (functions/src/revenueCatWebhook.ts: emails Justin the buyer's name/email on a new Supporter or a tip, token-
@@ -131,36 +158,6 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
-- [TRACK, LAUNCH-CRITICAL, decisions LOCKED 2026-07-11, ready to BUILD] MONETIZATION / "Support the Mission."
-  Must be built + functional before public release; NO purchase flow exists yet ("Pro" is faked by the Settings
-  dev toggle). LOCKED: name = Supporter; price = $6.99/mo + $69.99/yr (no trial); caps = Otto 10/25, Halo 25/25
-  (faith never upcharged), Estimator 5/100, Reports + Day-vs-Day Supporter-only, Smart Coach free-for-all; tip
-  jar = $2.99/$4.99/$9.99 + $24.99 (Concept C, first-person humble voice, "why" copy drafted); recognition =
-  gold sprout badge + gold-thread cosmetics (app icon/avatar ring/badge) + flat + hand-written thank-you
-  (RevenueCat webhook -> email Justin), faith cross skin for Rooted; Patron DEFERRED; payment infra = RevenueCat
-  (free to ~$2,500/mo, then 1%); Tier-1 usage monitoring launch-required + Tier-2 cost rollup to build. Resolves
-  REVERT #2-#5. STILL OPEN: the COPY pass (final user-facing strings) + the actual BUILD. Full detail, cost math,
-  build checklist, monitoring plan: SPEC_monetization.md.
-- [TRACK, DESIGN LOCKED 2026-07-08, ready to build in slices] CALORIE FLOOR / low-target safeguard
-  (gym #1, the health-safety gap). NEVER hard-blocks -- Option B "warn + consent," the real target
-  always shows. Three zones via two sex-based lines (Men whisper<1500 / modal<1200, Women whisper<1200
-  / modal<1000): green = silent, whisper = inline caution under the target, modal = one-time
-  acknowledgment. The modal only ever offers a fix that's REAL for that person (pace lever + activity
-  lever) -> 4 branch cases, copy LOCKED + ED-aware (never references body size). Loss goals only;
-  manual targets warn not block. Full spec + the 4 modal scripts: SPEC_calorie_floor.md. Build order in
-  the spec. >> SLICES 1-3 BUILT + device-verified 2026-07-08 (pure JS): (1) utils/calorieFloor classifier + 31 unit
-  tests, wired into loadCalorieTargets (additive, calTarget unchanged); (2) inline amber caution on profile Your
-  Estimates card AND under the Weekly Pace picker (both spots); (3) components/CalorieFloorModal 4-case branched modal
-  off the pace picker, buttons wired (slower-pace jumps to fastest safe pace, adjust-activity scrolls, set-maintenance,
-  continue = ack), persistence pj_calorie_warning_acknowledged (only re-asks if target drops BELOW what was okayed).
-  Core is COMPLETE (no Mindful variant -- decided out, copy is mode-agnostic). Separate follow-ons: pace granularity
-  (.25/.75), activity nudge, onboarding activity wording. Full detail: SPEC_calorie_floor.md.
-- [TRACK, design LOCKED 2026-07-07] Apple Workouts in the Exercise Library (lean "Synced Workouts"
-  history) -- give Apple-synced cardio a home in the library, keyed by activity type + indoor flag,
-  auto-created on first sync, rename = editable label (never re-keys), green "Apple Health" badge,
-  HIDDEN from the add-exercise picker, backfill existing sessions, additive/display-only (no counting
-  changes). Cardio PRs PARKED (see spec). Full spec: SPEC_apple_workout_library.md. Chosen OVER the full
-  Sessions rearchitecture (SPEC_workout_sessions.md). Build after the gym list.
 - [TRACK, VISION LOCKED + SPECCED 2026-07-07 -> ready to build] Custom Reports (Pro). Model: report =
   date range (week/month/3mo/6mo/1yr/custom) + chapters, each a PICKER into a library of ~55 pre-designed
   blocks the user assembles freely; templates = pre-filled block sets; exportable (PDF/share); Pro-gated
@@ -182,8 +179,6 @@ are separate pre-submission checklists, NOT part of this menu.
   entries logged together. Repeat a Meal already re-logs separate entries from history; this would persist
   a named bundle. Needs its own design pass (look/behavior, where it's saved + surfaced, how it lives
   alongside recipes without confusing the two). Full spec context: SPEC_repeat_meal.md bottom section.
-- [x] Otto on-demand data access thread -- COMPLETE 2026-07-05 (one dataset at a time, conditional-injection pattern from utils/companionPRs.ts). SHIPPED: PR values + real-exercise recognition + per-lift TREND + recent-workouts (30-day sessions) + food log (30-day totals + named-day items) + sleep + recovery (30-day nights + named-night detail) + body measurements (per-field value/age/delta + Navy BF% + history) + achievements (earned set + live badge progress via shared achievementProgress scan) + journal/prayer (recent entries + prayers, privacy + faith-tier gated). All device-verified. OPTIONAL later add: full per-metric streak tiles (needs the Stats streak engine extracted into a shared util first). Did NOT build true LLM tool-use (Haiku too flaky); revisit only if Otto moves to a stronger model.
-- [x] FAB contrast/border (GLOBAL) -- COMPLETE 2026-07-05. "bg ring" recipe = borderWidth: 3, borderColor: theme.bgPrimary on the FAB circle (invisible moat over the page, visible ring the moment it overlaps a same-accent button). DONE across every real page FAB: Otto FAB (AssistantFAB) + Workout tab (main + 2 subs) + workout-library (main + 3 subs) + stats (main + 3 subs) + add-food (main + 3 subs) + body-measurements + bible + journal + prayer + Halo (CompanionFAB, SVG special case: drawn page-colored Circle ring at r=DISC/2-1.5 instead of a border, now theme-aware). The other roadmap-listed files had NO floating page FAB (settings/profile/AssistantOverlay = the global Otto FAB already done + save bars; ai-meal-estimator/AddPrayerModal = none; CompanionChat/AssistantChat send buttons = in-bar, not overlap-prone, intentionally excluded). Awaiting 5-theme x all-accent device audit before fully closing the visual gate.
 - [ ] [FIX, data-integrity, needs reinstall verify] Achievement unlockedAt reinstall hardening. Badges
   stamp unlockedAt = new Date() at award time (achievementData.ts:1420); on a reinstall before the cloud
   restore lands, a check can first-unlock against an empty store and re-stamp the whole earned set to
@@ -199,17 +194,6 @@ are separate pre-submission checklists, NOT part of this menu.
   exist?) before building, so we don't assume. Keep the "no theme is EVER paid" rule intact -- these are earned,
   never bought (distinct from the monetization track). Surfaced 2026-07-11 (Justin flagged it during the
   monetization thread so it would not get forgotten).
-- [RESOLVED 2026-07-12] EvR/home Coach Insight was rendering the 1-sentence deterministic FALLBACK instead of
-  the AI voice. ROOT CAUSE: the coach tip's client-side timeout (API_TIMEOUT_MS) was 8s, too tight for the
-  aiProxy round-trip (frequent Firebase cold starts + the large uncached RULEBOOK system prompt), so the callable
-  timed out CLIENT-side and fell back, even though the Anthropic call SUCCEEDED server-side (aiProxy logs showed
-  zero errors). The feed voicer survived because it uses a 20s timeout. Fix = raise the coach timeout to 20s
-  (utils/coachAI.ts). Device-confirmed: full multi-sentence insights now generate. NOT the model, not a render
-  truncation, not the snapshot logic. NOTE for testing: the EvR report SNAPSHOTS its coachInsight at generation
-  (frozen forever), so an OLD report never updates; must generate a NEW report + use the "Reset Coach Tip Cache"
-  dev tool to force a fresh regen. Also observed + explained (not a bug): after a fresh regen the headline
-  rotated sodium -> carbs because selectByPrioritySpine applies a fatigue penalty to the recently-led topic (the
-  anti-repeat rotation), which was invisible while the coach was stuck on the sodium fallback every day.
 - [PARKED 2026-07-12, known limitation, do not keep prompt-tweaking] EvR ranked diagnostic card INSIGHT (the middle
   "why" sentence) occasionally comes out rambling/circular -- e.g. the sleep->workout card kept landing on "...the
   session you planned simply does not happen," which just restates the claim+proof and reads weird. INVESTIGATED:
@@ -224,10 +208,6 @@ are separate pre-submission checklists, NOT part of this menu.
   bad patterns (whack-a-mole), or (b) DROP the insight sentence on these cards entirely (claim+proof+lever already
   stand strong) -- trade-off is losing the occasional good insight. Not a copy-string audit; it's an AI-output
   problem. Files: utils/coachAI.ts (FEED_VOICE_RULEBOOK, voiceDiagnosticCards, sanitizeVoicedLine).
-- [ ] [PINNED 2026-07-13, do BEFORE the next TestFlight push] WHAT'S NEW screen is STALE. It was not updated for
-  the monetization work (Supporter/purchases, the gold system + gold app icon, the membership card, the launch
-  splash, the Log-tab repeat pills). Its content lives in the app BUNDLE, so it can only change with a new build --
-  the 2026-07-13 TestFlight build went out without it. Write the entries, then it rides the next build.
 - [QUICK-ISH WIN, raised 2026-07-13, Justin loved the result] PRIMARY BUTTON ROLLOUT. The Support screen's
   "Become a Supporter" CTA was rebuilt and is now the app's button standard, extracted to components/
   PrimaryCTA.tsx: a MOLDED look (true vertical light->dark gradient overlay, so it works with every accent
@@ -238,37 +218,6 @@ are separate pre-submission checklists, NOT part of this menu.
   recipe. TASK = sweep the app for primary CTAs and swap them to <PrimaryCTA> (Justin: "I kind of want to go
   through the app and find buttons to change to this style"). Deliberately NOT swept yet -- do it as its own
   pass so each screen's primary-vs-secondary call is made deliberately, not bulk-replaced.
-- [GOLD APP ICON -- ASSET DONE 2026-07-13, WIRING REMAINS] assets/images/icon-gold.png now exists: the shipping
-  icon recolored to gold. Made in code, not by hand (a gradient map over the source's luminance, so every facet
-  and highlight is preserved exactly -- the geometry is never redrawn). KEY LESSON if it's ever regenerated: do
-  NOT try to mask the mark off the background. The background's vignette and the mark's dark facets occupy the
-  same brightness range, so every mask leaks or punches holes (Photoshop's wand, flood-fill, and morphological
-  closing all failed). Instead keep the ramp NEUTRAL below the vignette's brightness and start the gold above it:
-  the background maps to itself, the mark's shadowed facets stay dark (they're dark in the silver original too),
-  and only the lit metal turns gold. Ramp needs BROWN shadows + a WARM-WHITE specular -- a ramp of pure yellows
-  reads as plastic. Script + variants kept in the session scratchpad. Chose the clean-background version over a
-  gold-glow one: the glow looked rich at poster size but went muddy at 60px on a light wallpaper (icons are judged
-  on silhouette contrast at thumbnail size).
-  >> SHIPPED + DEVICE-VERIFIED 2026-07-13. expo-alternate-app-icons plugin (app.json, name "Gold"); a
-  Supporter-ONLY toggle in Settings > Appearance (a locked row there would be a paywall sitting in the middle of
-  appearance settings, and gold marks membership, never restriction -- a free user meets it as a perk on the
-  Support screen instead); a POINTER row on the Support membership card that routes to it (deliberately not a
-  second toggle -- two controls setting one thing is how settings drift apart); the "Custom Badge & Icon" perk now
-  shows BOTH marks (gold sprout badge + gold app icon) because the perk promises two things; and the in-app
-  LaunchSplash follows the ICON (gold icon -> gold splash), keyed on the icon rather than the entitlement to avoid
-  a silver-then-gold flash while RevenueCat resolves. LAPSE GUARD in utils/appIcon.enforceIconEntitlement: a
-  non-Supporter wearing the gold icon is reset to the default on next launch, so the perk can't outlive the
-  membership. NOTE: iOS's OWN first frame (before any JS runs) is baked into the build and can never be
-  personalised; only the second, in-app splash can. iOS also pops its own unavoidable "You have changed the icon"
-  alert on switch. The icon is DEVICE-LOCAL (doesn't sync across a user's devices).
-  LAPSE GUARD DEVICE-VERIFIED 2026-07-13 (and a real bug fixed in the process): it was originally in the Settings
-  screen's effect, so it only fired if the user happened to OPEN Settings -- a lapsed Supporter kept the gold icon
-  indefinitely, then had it change under them out of nowhere the moment they wandered in. Moved to
-  MembershipContext (app-wide, on launch), gated on RevenueCat having RESOLVED -- during startup isSupporter is
-  briefly false while the entitlement loads, and enforcing in that window would have ripped the icon off a valid
-  Supporter on every single launch. Verified end to end: sub lapses -> next launch shows the gold splash (correct:
-  the icon IS still gold at that instant) -> entitlement resolves -> iOS alert -> icon reverts -> toggle disappears
-  -> next launch is fully silver. GOLD ICON TRACK IS COMPLETE.
 - [EXPLORE, unspecced -- raised 2026-07-13 from the gym. Do AFTER the monetization/Support track closes.]
   Four raw ideas, ranked by how real they are. NONE are specced; each needs a design pass before any code.
   1. [MOST REAL] GOAL WEIGHT + GOAL DATE ("by when"). Today the user picks a PACE and the app derives the date.

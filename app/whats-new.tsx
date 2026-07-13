@@ -3,8 +3,9 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { router } from 'expo-router';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FoilChip } from '../components/SupporterFoil';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
 import { useTheme } from '../theme';
 import { WHATS_NEW_RELEASES } from '../data/whatsNew';
 
@@ -13,6 +14,11 @@ import { WHATS_NEW_RELEASES } from '../data/whatsNew';
 export default function WhatsNewScreen() {
   const insets = useSafeAreaInsets();
   const { theme: t } = useTheme();
+
+  // Which patches are expanded. Default (nothing recorded) = only the newest, index 0.
+  const [openPatches, setOpenPatches] = useState<Record<string, boolean>>({});
+  const isOpen = (releaseId: string, idx: number) =>
+    openPatches[releaseId] ?? idx === 0;
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bgPrimary }}>
@@ -28,29 +34,52 @@ export default function WhatsNewScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 32 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.hero}>
           <Text style={[styles.heroTitle, { color: t.accentBlueRaw }]}>WHAT'S NEW</Text>
         </View>
 
-        {WHATS_NEW_RELEASES.map((release) => (
+        {WHATS_NEW_RELEASES.map((release, releaseIdx) => (
           <Fragment key={release.releaseId}>
-            <View style={styles.patchHeaderRow}>
+            {/* Each patch collapses. The NEWEST is open (it's why you came here); older ones are collapsed
+                so the page stays a changelog you can scan rather than a wall you have to scroll past. */}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => {
+                triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+                setOpenPatches(prev => ({ ...prev, [release.releaseId]: !isOpen(release.releaseId, releaseIdx) }));
+              }}
+              style={styles.patchHeaderRow}
+            >
               <Text style={[styles.patchHeader, { color: t.textMuted }]}>{release.version}</Text>
-              {release.date ? (
-                <Text style={[styles.patchDate, { color: t.textMuted }]}>{release.date}</Text>
-              ) : null}
-            </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                {release.date ? (
+                  <Text style={[styles.patchDate, { color: t.textMuted }]}>{release.date}</Text>
+                ) : null}
+                <Ionicons
+                  name={isOpen(release.releaseId, releaseIdx) ? 'chevron-up' : 'chevron-down'}
+                  size={15}
+                  color={t.textMuted}
+                />
+              </View>
+            </TouchableOpacity>
 
-            {release.highlights.map((h, i) => (
+            {isOpen(release.releaseId, releaseIdx) && release.highlights.map((h, i) => (
               <View key={i} style={[styles.cardShadow, { shadowColor: '#000' }]}>
                 <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw }]}>
                   <View style={styles.iconRow}>
-                    <View style={[styles.iconCircle, { backgroundColor: t.accentBlueBg, borderColor: t.accentBlueBorder }]}>
-                      <Ionicons name={h.icon as any} size={15} color={t.accentBlueRaw} />
-                    </View>
+                    {/* A highlight can carry the REAL Supporter hallmark instead of an Ionicon, so the
+                        card that announces the Supporter tier wears the actual gold badge rather than a
+                        stand-in glyph. */}
+                    {h.foil ? (
+                      <FoilChip size={30} radius={9} />
+                    ) : (
+                      <View style={[styles.iconCircle, { backgroundColor: t.accentBlueBg, borderColor: t.accentBlueBorder }]}>
+                        <Ionicons name={h.icon as any} size={15} color={t.accentBlueRaw} />
+                      </View>
+                    )}
                     <Text style={[styles.cardTitle, { color: t.textMuted }]}>{h.title}</Text>
                   </View>
 
@@ -85,7 +114,9 @@ const styles = StyleSheet.create({
   scrollContent: { paddingHorizontal: 16, paddingTop: 8, gap: 10 },
   hero:        { paddingHorizontal: 4, paddingBottom: 4 },
   heroTitle:   { fontSize: 42, fontFamily: 'BebasNeue_400Regular', letterSpacing: 3, lineHeight: 46 },
-  patchHeaderRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 12, marginBottom: -2, paddingHorizontal: 4 },
+  // 'center', not 'baseline': the row now carries a chevron, which has no text baseline to sit on.
+  // paddingVertical gives the whole header a proper tap target without changing how it looks.
+  patchHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, marginBottom: -2, paddingHorizontal: 4, paddingVertical: 6 },
   patchHeader: { fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, textTransform: 'uppercase' },
   patchDate:   { fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' },
   cardShadow:  { borderRadius: 14, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 },

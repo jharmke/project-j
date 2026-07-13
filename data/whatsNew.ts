@@ -15,6 +15,9 @@ export interface WhatsNewItem {
   title: string;
   body?: string;      // paragraph card
   bullets?: string[]; // bulleted card (use instead of body)
+  // Renders the real gold Supporter hallmark instead of the Ionicon (see components/SupporterFoil).
+  // For the card that announces the Supporter tier: it should wear the actual badge, not a stand-in.
+  foil?: boolean;
 }
 
 export interface WhatsNewRelease {
@@ -26,6 +29,41 @@ export interface WhatsNewRelease {
 
 // Newest patch FIRST. WHATS_NEW (below) tracks index 0.
 export const WHATS_NEW_RELEASES: WhatsNewRelease[] = [
+  {
+    releaseId: '2026-07-13',
+    version: 'Patch 3',
+    date: 'July 13, 2026',
+    highlights: [
+      {
+        icon: 'leaf',
+        foil: true,   // wears the real gold Supporter hallmark
+        title: 'Support the Mission',
+        body: "The app is now something you can support. Nothing you already use has been taken away. The basics stay free, and faith features are never behind a paywall. Supporters get more room with Otto and the meal estimator, plus Custom Reports, Comparison, a gold badge, and a gold app icon you can switch on in Appearance. As thanks for testing this thing while it was still rough: your account has a full year of Supporter on the house.",
+      },
+      {
+        icon: 'repeat',
+        title: 'Repeat a meal',
+        body: "Eating the same breakfast again? Tap Repeat Yesterday on an empty meal and the whole thing logs at once, photos, macros and all. Or pick any past day to copy from. You can also clear an entire meal in one tap.",
+      },
+      {
+        icon: 'analytics',
+        title: 'Your weight history, editable',
+        body: "Fix a bad weigh-in, delete one, or add a day you forgot to log. Your starting weight comes from your earliest weigh-in and can be corrected, and your milestones recalculate to match.",
+      },
+      {
+        icon: 'construct',
+        title: 'Fixes & Improvements',
+        bullets: [
+          'Rest and hold timers now sit in a compact chip instead of blocking the screen mid-set',
+          'The Workout tab no longer reloads from scratch every time you add an exercise',
+          'Food names no longer show long decimals like 113.33304999999999g',
+          'The Weight card no longer says "Total Lost" when you have gained',
+          'Effort vs Results insights write properly again instead of falling back to a stub',
+          'Onboarding now asks how often you actually train, not what you are aiming for',
+        ],
+      },
+    ],
+  },
   {
     releaseId: '2026-07-08',
     version: 'Patch 2',

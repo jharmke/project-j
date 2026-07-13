@@ -32,9 +32,24 @@ from memory.
 
 ---
 
-## 🔒 PHASE 1 — SERVER-SIDE SUPPORTER TRUTH (build; blocks 2.1)
+## 🔒 PHASE 1 — SERVER-SIDE SUPPORTER TRUTH — ✅ DONE + VERIFIED 2026-07-13
 
-- [ ] **1.1 — Make the server know who is a Supporter.**
+- [x] **1.1 — DONE.** functions/src/membership.ts. The RevenueCat webhook now records EVERY subscription event
+      (new/renewal/cancellation/expiration) to a server-only Firestore collection (`memberships/{uid}`), and
+      appCompanion + faithCompanion derive the daily cap from it. The client never gets a vote.
+      - **Stores the EXPIRY, not a boolean** → self-healing: a dropped or late webhook can't leave someone
+        wrongly entitled forever, because status is derived at read time from the expiry.
+      - **Fails closed** → any lookup error defaults to the free tier. A bug can only make someone LESS
+        generous, never hand out free AI.
+      - **Out-of-order safe** → webhooks DO arrive out of order (seen live: an EXPIRATION, then a stale
+        PRODUCT_CHANGE carrying an OLDER expiry, then the real RENEWAL). Writes are now transactional and
+        keyed on the event's own timestamp, so a stale event can't stomp a newer one. VERIFIED by firing a
+        crafted stale event at the live endpoint: it was correctly `SKIPPED (out-of-order/stale)`.
+      - **Tips don't touch it** → verified live: a tip emails Justin and writes NO membership record.
+      Both cap tiers are deliberately EQUAL right now (beta values), so nothing changed for testers. The real
+      split turns on at 2.1.
+
+- [ ] **1.1-OLD (for reference — what the problem was)**
       The AI caps live server-side, but they have **no Supporter tier** — there is one cap for everyone
       (appCompanion.ts:37, faithCompanion.ts:29). The locked design is Otto 10 free / 25 Supporter and
       Halo 25/25, which the server currently cannot express.

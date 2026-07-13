@@ -57,7 +57,7 @@ import ToggleSwitch from '../components/ToggleSwitch';
 import SproutIcon from '../components/SproutIcon';
 import MembershipCard from '../components/MembershipCard';
 import { GOLD_EDGE } from '../components/SupporterFoil';
-import { enforceIconEntitlement, isGoldIconActive, setGoldIcon } from '../utils/appIcon';
+import { isGoldIconActive, setGoldIcon } from '../utils/appIcon';
 import PrayerRequestModal from '../components/PrayerRequestModal';
 import { useToast } from '../components/Toast';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -463,11 +463,12 @@ export default function SettingsScreen() {
 
   // Gold app icon (Supporter perk). Device-local, so it reads the CURRENT native icon rather than any
   // stored preference -- if the user reinstalled or switched devices, the native truth is the truth.
+  // The lapse guard itself lives in MembershipContext (app-wide, runs on launch). This screen only
+  // REFLECTS the current native icon -- putting the enforcement here meant it fired only when someone
+  // opened Settings, so a lapsed user kept the gold icon until they wandered in.
   const [goldIcon, setGoldIcon_] = useState(false);
   useEffect(() => {
     setGoldIcon_(isGoldIconActive());
-    // Lapse guard: a non-Supporter can't keep the gold icon. Runs whenever entitlement changes.
-    enforceIconEntitlement(isSupporter).then(() => setGoldIcon_(isGoldIconActive()));
   }, [isSupporter]);
 
   const toggleGoldIcon = async (val: boolean) => {

@@ -10,6 +10,7 @@ import Purchases, {
 } from 'react-native-purchases';
 import { REVENUECAT_IOS_KEY, SUPPORTER_ENTITLEMENT_ID, TIP_PRODUCT_IDS } from './config';
 import { useAuth } from './AuthContext';
+import { enforceIconEntitlement } from './utils/appIcon';
 
 // Single source of truth for Supporter status + the purchase surface. Reads the RevenueCat `supporter`
 // entitlement (real purchases) and, IN DEV ONLY, also honors the legacy pj_settings.devProUnlocked toggle
@@ -226,6 +227,18 @@ export function MembershipProvider({ children }: { children: React.ReactNode }) 
   }, [applyCustomerInfo]);
 
   const isSupporter = entitled || (__DEV__ && devOverride);
+
+  // LAPSE GUARD, app-wide. The gold app icon is a Supporter perk, so a lapsed Supporter must not keep
+  // wearing it. This lives HERE, not on the Settings screen: it was originally in Settings' effect, which
+  // meant the icon only reverted if the user happened to OPEN Settings -- so a lapsed user kept the gold
+  // icon indefinitely until they wandered in there, and then it changed under them out of nowhere.
+  //
+  // Gated on `loading` being false: during startup isSupporter is briefly false while RevenueCat resolves,
+  // and enforcing then would rip the icon away from a perfectly valid Supporter on every single launch.
+  useEffect(() => {
+    if (loading) return;
+    enforceIconEntitlement(isSupporter);
+  }, [loading, isSupporter]);
 
   return (
     <MembershipContext.Provider

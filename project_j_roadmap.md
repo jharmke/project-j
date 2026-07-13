@@ -257,7 +257,14 @@ are separate pre-submission checklists, NOT part of this menu.
   membership. NOTE: iOS's OWN first frame (before any JS runs) is baked into the build and can never be
   personalised; only the second, in-app splash can. iOS also pops its own unavoidable "You have changed the icon"
   alert on switch. The icon is DEVICE-LOCAL (doesn't sync across a user's devices).
-  REMAINING: lapse-guard device verification (waiting on a sandbox sub to expire).
+  LAPSE GUARD DEVICE-VERIFIED 2026-07-13 (and a real bug fixed in the process): it was originally in the Settings
+  screen's effect, so it only fired if the user happened to OPEN Settings -- a lapsed Supporter kept the gold icon
+  indefinitely, then had it change under them out of nowhere the moment they wandered in. Moved to
+  MembershipContext (app-wide, on launch), gated on RevenueCat having RESOLVED -- during startup isSupporter is
+  briefly false while the entitlement loads, and enforcing in that window would have ripped the icon off a valid
+  Supporter on every single launch. Verified end to end: sub lapses -> next launch shows the gold splash (correct:
+  the icon IS still gold at that instant) -> entitlement resolves -> iOS alert -> icon reverts -> toggle disappears
+  -> next launch is fully silver. GOLD ICON TRACK IS COMPLETE.
 - [EXPLORE, unspecced -- raised 2026-07-13 from the gym. Do AFTER the monetization/Support track closes.]
   Four raw ideas, ranked by how real they are. NONE are specced; each needs a design pass before any code.
   1. [MOST REAL] GOAL WEIGHT + GOAL DATE ("by when"). Today the user picks a PACE and the app derives the date.

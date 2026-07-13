@@ -261,8 +261,23 @@ are separate pre-submission checklists, NOT part of this menu.
      macros today, and we can log the order in one tap (their own users beg for MFP integration). Real feature,
      not a weekend. Full teardown, data feasibility, v1 shape, risks + the "don't build this from FOMO" warning:
      SPEC_restaurant_mode.md.
-  4. RESEARCH: TRAINERIZE. Explore/compare -- heard good things, never used it. Understand where it overlaps and
-     where Project J is different.
+  4. [RESEARCHED 2026-07-13 -> DEAD END as a competitor, but ONE idea worth keeping.] TRAINERIZE is B2B software
+     for personal TRAINERS (build a program -> assign it to a client -> message them -> take payment). 400k
+     trainers, 1.6M clients. The trainer is the customer; the client just receives what they're given. That is the
+     OPPOSITE of Project J (a consumer app for someone coaching themselves, "you vs yesterday"). Nothing to copy
+     at the product level. Do not revisit as a competitor.
+     >> THE ONE THING WORTH STEALING: **OTTO AS A WORKOUT/ROUTINE BUILDER.** Trainerize's AI workout builder lets
+     a trainer describe goals + preferences and generates the workout. WE ARE ALREADY MOST OF THE WAY THERE: Otto
+     already knows the user's REAL exercise library (live union of pj_exercise_library + programs + weekly template
+     + PR'd lifts), their PRs, per-lift trends, recent sessions, and training frequency -- and he can already
+     DISCUSS training ("what's a good chest workout"). The missing step is small: let him BUILD one. "Otto, make me
+     a push day" -> he generates a routine using exercises the user ACTUALLY HAS -> one tap saves it into the
+     Workout Library as a program/routine. Turns Otto from knowledgeable into useful.
+     OPEN QUESTIONS before build: does he propose sets/reps/weight (and from what -- their PRs? their last
+     session?); what happens when he suggests an exercise they DON'T have (offer to add it to the library?); does
+     it respect the weekly template; Mindful behavior (a prescriptive "here's your workout" is judgment-heavy);
+     and the honest-numbers rule (never invent a weight that looks like a recommendation from their data if it
+     isn't). Reuses the conditional-injection pattern from utils/companionPRs + companionWorkouts.
 - [ ] QUICK WINS (small, grab-when-convenient): none queued right now -- add here as they come up. (DONE 2026-07-07: FAB text-label rings app-wide · inline Add Exercise button · the whole gym list.)
 
 ---

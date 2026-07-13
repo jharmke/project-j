@@ -1258,7 +1258,10 @@ export default function SettingsScreen() {
         {/* ── Membership ── */}
         {/* Shared with Profile > Membership (components/MembershipCard) so the two can never drift. */}
         <CollapsibleSection label="Membership" subtitle={isSupporter ? 'Supporter' : 'Support the Mission'} defaultOpen={false} theme={theme}>
-          <View style={{ paddingVertical: 4 }}>
+          {/* INSET inside the section. Settings sections are themselves cards, so a full-width card in
+              one reads as a doubled border at the same width. Profile doesn't have this problem: its
+              sections are just a label over the page, not a card. */}
+          <View style={{ paddingHorizontal: 12, paddingBottom: 14, paddingTop: 2 }}>
             <MembershipCard />
           </View>
         </CollapsibleSection>

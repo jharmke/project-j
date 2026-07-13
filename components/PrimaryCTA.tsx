@@ -64,7 +64,9 @@ export default function PrimaryCTA({
             <ActivityIndicator size="small" color="#ffffff" />
           ) : (
             <View style={styles.row}>
-              {icon}
+              {/* Nudged up: Bebas is all-caps with no descenders, so its optical centre sits ABOVE the
+                  text box's geometric centre. Centre-aligning an icon against it makes the icon sag. */}
+              {icon ? <View style={{ marginBottom: 3 }}>{icon}</View> : null}
               <Text style={styles.label}>{label}</Text>
             </View>
           )}

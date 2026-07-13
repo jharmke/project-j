@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Easing, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -16,6 +17,18 @@ import { useMembership } from '../MembershipContext';
 // they fire a toast so the screen is fully testable without the payment layer.
 // Uses live theme tokens so it adapts across all 5 themes + accents.
 // Mode-agnostic (no health data / scores), so no Mindful or faith-tier variant.
+
+// ─── Gold FOIL ───────────────────────────────────────────────────────────────
+// Gold is a MATERIAL, not a color: it only reads as gold when a light-to-dark shift fakes a specular
+// highlight. There is no flat hex that reads as gold -- painted flat on a light card it is, literally,
+// mustard. So gold appears here ONLY as gradient surfaces (the sprout chip + the foil edge on the two
+// mission cards). Everything else stays in normal theme ink. Emblem, not paint.
+const GOLD_HI = '#f6e08f';                // specular highlight -- the stop that makes it metal
+const GOLD_BASE = '#d4af37';
+const GOLD_DEEP = '#a8801f';
+const GOLD_ENGRAVE = '#33290c';           // the sprout, stamped INTO the foil
+const GOLD_EDGE = 'rgba(212,175,55,0.45)';
+const GOLD_TINT = 'rgba(212,175,55,0.13)';   // champagne wash -- a tint of the card, never a gold fill
 
 type Perk = { icon: string; title: string; body: string; gold?: boolean; sprout?: boolean };
 
@@ -55,13 +68,56 @@ export default function SupportScreen() {
   const { showToast } = useToast();
   const [plan, setPlan] = useState<'monthly' | 'annual'>('monthly');
 
-  // Derived gold (amber) tints from the theme token so it tracks the active theme.
-  const goldBg = t.accentAmber + '18';
-  const goldBorder = t.accentAmber + '44';
-  // Emphasis run inside the mission paragraph: amber + semibold for warmth + rhythm on the key beats.
-  const emph = { fontFamily: 'DMSans_600SemiBold' as const, color: t.accentAmber };
+  // Emphasis run inside the mission paragraph: the user's accent + semibold, so the key beats tie to the
+  // page instead of introducing a third hue.
+  const emph = { fontFamily: 'DMSans_600SemiBold' as const, color: t.accentBlue };
 
-  const { isSupporter, offering, tipProducts, purchasePackage, purchaseTip, restore: restorePurchases } = useMembership();
+  const { isSupporter, details, offering, tipProducts, purchasePackage, purchaseTip, restore: restorePurchases } = useMembership();
+
+  // LIVE prices from the store, never hardcoded: if a price ever changes in App Store Connect, a
+  // hardcoded string would keep showing the old number while Apple charged the new one.
+  // Falls back to the known price only while the offering is still loading.
+  const monthlyPrice = offering?.monthly?.product?.priceString ?? '$6.99';
+  const annualPrice = offering?.annual?.product?.priceString ?? '$69.99';
+  const tipPrice = (productId: string, fallback: string) =>
+    tipProducts.find(p => p.identifier === productId)?.priceString ?? fallback;
+
+  // What annual actually SAVES vs paying monthly for a year. Computed from the LIVE store prices, so it
+  // can never drift from what Apple charges. Null (and the line is hidden) if either price is missing --
+  // an invented saving would be exactly the kind of number we don't show.
+  const annualSaving = (() => {
+    const m = offering?.monthly?.product;
+    const a = offering?.annual?.product;
+    if (!m?.price || !a?.price) return null;
+    const saved = m.price * 12 - a.price;
+    if (saved <= 0) return null;
+    try {
+      return new Intl.NumberFormat(undefined, { style: 'currency', currency: a.currencyCode }).format(saved);
+    } catch {
+      return `$${saved.toFixed(2)}`;
+    }
+  })();
+
+  const fmtDate = (d: Date | null) =>
+    d ? d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : null;
+
+  // Upgrade monthly -> annual. Same subscription group, so this is Apple's own plan-change flow:
+  // annual is ranked the HIGHER service level, so it takes effect immediately and Apple credits the
+  // unused part of the current month. No cancel-then-resubscribe.
+  const handleChangePlan = async () => {
+    if (busy) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    const pkg = offering?.annual;
+    if (!pkg) { showToast("Plan changes aren't available right now", 'Please try again in a moment', 'info'); return; }
+    setBusy('change');
+    try {
+      const res = await purchasePackage(pkg);
+      if (res === 'success') showToast("You're on the annual plan", 'Thank you for the support', 'success');
+      else if (res === 'error') showToast("Plan change didn't go through", 'Please try again', 'error');
+    } finally {
+      setBusy(null);
+    }
+  };
 
   // Which purchase action is in flight: 'sub' | 'restore' | a tip product id. StoreKit takes a beat to
   // fetch the product and build the sheet (seconds on a cold/slow network), and without this the button
@@ -137,11 +193,24 @@ export default function SupportScreen() {
           <Text style={[styles.heroTitle, { color: t.accentBlueRaw }]}>Support the Mission</Text>
         </View>
 
-        {/* Mission paragraph -- treated as a personal note: amber left rule + soft wash, distinct from the
-            feature cards below (which have full borders) so the "why" reads as intentional, not filler. */}
-        <View style={[styles.missionCard, { backgroundColor: t.accentAmber + '10', borderColor: t.accentAmber + '66' }]}>
-          <Text style={[styles.missionTitle, { color: t.accentAmber }]}>The Promise</Text>
-          <Text style={[styles.mission, { color: t.textSecondary, paddingHorizontal: 0, marginBottom: 0 }]}>
+        {/* Mission paragraph -- a personal note, wearing the SAME gold foil edge as the membership card so
+            the two "mission" surfaces read as a family. Was amber-washed with amber text: amber is the
+            app's WARNING color, so the page's most heartfelt card was painted in caution paint, and it
+            fought both the accent and the gold. Foil edge + clean card + accent emphasis instead. */}
+        <View style={[styles.missionCard, { backgroundColor: t.bgCard, borderColor: GOLD_EDGE }]}>
+          <LinearGradient
+            colors={[GOLD_DEEP, GOLD_HI, GOLD_BASE]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.foilEdge}
+          />
+          {/* Same heading treatment as "You're a Supporter" so the two foil-edged cards read as the same
+              species. It was a tiny centred eyebrow next to a big left-aligned Bebas heading -- same hat,
+              different voice, which is why it felt out of place. */}
+          {/* The membership card's heading sits in a row beside a 42px chip, so it gets natural air above
+              and below. This heading has none, so it gets matching breathing room by hand. */}
+          <Text style={[styles.heading, { color: t.textSecondary, marginTop: 6, marginBottom: 14 }]}>The Promise</Text>
+          <Text style={[styles.mission, { color: t.textSecondary, paddingHorizontal: 0, marginBottom: 0, textAlign: 'left' }]}>
             A lot of apps hide the basics behind a paywall: the barcode scanner, full macro tracking, even your
             sleep and recovery scores. Here,{' '}
             <Text style={emph}>they stay free</Text>. The one piece with a real cost to run is{' '}
@@ -149,26 +218,129 @@ export default function SupportScreen() {
             estimator. So if the app's been good to you,{' '}
             <Text style={emph}>a little support</Text> keeps it alive and moving forward.
           </Text>
-          <Text style={[styles.missionClose, { color: t.accentAmber }]}>Either way, thank you for being part of this.</Text>
+          <Text style={[styles.missionClose, { color: t.accentBlue, textAlign: 'left' }]}>Either way, thank you for being part of this.</Text>
         </View>
 
-        {/* Become a Supporter */}
+        {/* SUPPORTER STATE: the membership card. Replaces the whole pitch -- no price boxes, no perks
+            list, no CTA. They already bought; keeping the sales pitch up is exactly the "we still want
+            your money" move this model rejects. Just their membership, stated plainly. NO thank-you
+            subline (decided 2026-07-13: the mission paragraph above already says it, and a third thank-you
+            inside the receipt tips into sappy). Rows only render on REAL entitlement data -- the __DEV__
+            toggle has no dates, and a placeholder date would be a lie. */}
+        {isSupporter ? (
+          <View style={[styles.cardShadow, { shadowColor: '#000' }]}>
+            {/* A NORMAL themed card wearing gold FOIL: the leaf chip + the top edge, both gradients.
+                No flat gold anywhere, so nothing can read as mustard. The type stays in theme ink. */}
+            <View style={[styles.memberCard, { backgroundColor: t.bgCard, borderColor: GOLD_EDGE }]}>
+              <LinearGradient
+                colors={[GOLD_DEEP, GOLD_HI, GOLD_BASE]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.foilEdge}
+              />
+
+              {/* Emblem on the RIGHT, like a hallmark. On the left it shoved the heading inward, so this
+                  was the one card whose title didn't start on the same left edge as the others. */}
+              <View style={styles.memberHead}>
+                <Text style={[styles.heading, { color: t.textSecondary, marginBottom: 0 }]}>You're a Supporter</Text>
+                <View style={[styles.memberSprout, { borderColor: GOLD_EDGE }]}>
+                  <LinearGradient
+                    colors={[GOLD_HI, GOLD_BASE, GOLD_DEEP]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <SproutIcon size={22} color={GOLD_ENGRAVE} />
+                </View>
+              </View>
+
+              {details && (
+                <View style={[styles.memberRows, { borderTopColor: t.borderCard }]}>
+                  {details.plan && (
+                    <View style={styles.memberRow}>
+                      <Text style={[styles.memberLabel, { color: t.textMuted }]}>Plan</Text>
+                      <Text style={[styles.memberValue, { color: t.textSecondary }]}>
+                        {details.plan === 'annual' ? 'Annual' : 'Monthly'}
+                      </Text>
+                    </View>
+                  )}
+                  {fmtDate(details.memberSince) && (
+                    <View style={styles.memberRow}>
+                      <Text style={[styles.memberLabel, { color: t.textMuted }]}>Member since</Text>
+                      <Text style={[styles.memberValue, { color: t.textSecondary }]}>{fmtDate(details.memberSince)}</Text>
+                    </View>
+                  )}
+                  {/* Cancelled but still inside the paid period: this date is when access ENDS, not a
+                      renewal. Saying "Renews on" to someone who just cancelled would be a lie. */}
+                  {fmtDate(details.periodEnd) && (
+                    <View style={styles.memberRow}>
+                      <Text style={[styles.memberLabel, { color: t.textMuted }]}>
+                        {details.willRenew ? 'Renews on' : 'Ends on'}
+                      </Text>
+                      <Text style={[styles.memberValue, { color: t.textSecondary }]}>{fmtDate(details.periodEnd)}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+
+              {/* Monthly only: annual has nothing to switch to. Apple's own plan-change flow.
+                  A ROW, not a centred pill: rows read as account management, centred pills read as ads.
+                  It also finally STATES the saving -- the entire reason to switch was invisible before. */}
+              {details?.plan === 'monthly' && (
+                <PressScale
+                  onPress={handleChangePlan}
+                  wrapperStyle={{ marginTop: 14 }}
+                  style={[styles.changePlan, {
+                    backgroundColor: t.accentBlueBg, borderColor: t.accentBlueBorder,
+                    opacity: busy && busy !== 'change' ? 0.5 : 1,
+                  }]}
+                >
+                  {busy === 'change'
+                    ? <ActivityIndicator size="small" color={t.accentBlue} />
+                    : (
+                      <>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.changePlanText, { color: t.accentBlue }]}>Switch to Annual</Text>
+                          {annualSaving && (
+                            <Text style={[styles.changePlanSub, { color: t.textMuted }]}>
+                              {annualPrice} a year. Save {annualSaving}.
+                            </Text>
+                          )}
+                        </View>
+                        <Ionicons name="chevron-forward" size={16} color={t.accentBlue} />
+                      </>
+                    )}
+                </PressScale>
+              )}
+            </View>
+          </View>
+        ) : (
+        /* FREE STATE: the pitch. */
         <View style={[styles.cardShadow, { shadowColor: '#000' }]}>
           <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw }]}>
-            <Text style={[styles.eyebrow, { color: t.textMuted }]}>Support monthly</Text>
-            <Text style={[styles.heading, { color: t.accentBlueRaw }]}>Become a Supporter</Text>
+            <Text style={[styles.heading, { color: t.textSecondary }]}>Become a Supporter</Text>
             <Text style={[styles.sub, { color: t.textMuted }]}>As a thank you, Supporters get:</Text>
 
             <View style={styles.perks}>
               {PERKS.map((p) => (
                 <View key={p.title} style={styles.perk}>
+                  {/* The badge perk shows the REAL foil chip -- a free user sees exactly the emblem
+                      they'd get, not a flat-gold approximation of it. */}
                   <View style={[styles.perkIcon, {
-                    backgroundColor: p.gold ? goldBg : t.accentBlueBg,
-                    borderColor: p.gold ? goldBorder : t.accentBlueBorder,
+                    backgroundColor: p.gold ? 'transparent' : t.accentBlueBg,
+                    borderColor: p.gold ? GOLD_EDGE : t.accentBlueBorder,
                   }]}>
+                    {p.gold && (
+                      <LinearGradient
+                        colors={[GOLD_HI, GOLD_BASE, GOLD_DEEP]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={StyleSheet.absoluteFill}
+                      />
+                    )}
                     {p.sprout
-                      ? <SproutIcon size={20} color={p.gold ? t.accentAmber : t.accentBlue} />
-                      : <Ionicons name={p.icon as any} size={15} color={p.gold ? t.accentAmber : t.accentBlue} />}
+                      ? <SproutIcon size={20} color={p.gold ? GOLD_ENGRAVE : t.accentBlue} />
+                      : <Ionicons name={p.icon as any} size={15} color={t.accentBlue} />}
                   </View>
                   <View style={styles.perkText}>
                     <Text style={[styles.perkTitle, { color: t.textSecondary }]}>{p.title}</Text>
@@ -178,7 +350,7 @@ export default function SupportScreen() {
               ))}
             </View>
 
-            {/* Price selection */}
+            {/* Price selection -- LIVE priceString from the store, not hardcoded. */}
             <View style={styles.prices}>
               <PressScale
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setPlan('monthly'); }}
@@ -187,7 +359,7 @@ export default function SupportScreen() {
                   backgroundColor: plan === 'monthly' ? t.accentBlueBg : t.bgInset,
                 }]}
               >
-                <Text style={[styles.priceAmt, { color: t.textSecondary }]}>$6.99</Text>
+                <Text style={[styles.priceAmt, { color: t.textSecondary }]}>{monthlyPrice}</Text>
                 <Text style={[styles.pricePer, { color: plan === 'monthly' ? t.accentBlue : t.textMuted }]}>per month</Text>
               </PressScale>
               <PressScale
@@ -197,50 +369,40 @@ export default function SupportScreen() {
                   backgroundColor: plan === 'annual' ? t.accentBlueBg : t.bgInset,
                 }]}
               >
-                <Text style={[styles.priceAmt, { color: t.textSecondary }]}>$69.99</Text>
+                <Text style={[styles.priceAmt, { color: t.textSecondary }]}>{annualPrice}</Text>
                 <Text style={[styles.pricePer, { color: plan === 'annual' ? t.accentBlue : t.textMuted }]}>per year</Text>
               </PressScale>
             </View>
 
-            {isSupporter ? (
-              <View style={[styles.supporterState, { backgroundColor: goldBg, borderColor: goldBorder }]}>
-                <SproutIcon size={20} color={t.accentAmber} />
-                <View>
-                  <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: t.accentAmber }}>You're a Supporter</Text>
-                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: t.textMuted, marginTop: 1 }}>Thank you for keeping this going</Text>
-                </View>
-              </View>
-            ) : (
-              /* The one solid-fill CTA in the app. Lifted off the flat slab it used to be: a top-light
-                 sheen for depth, an accent-tinted glow instead of a generic black shadow, and the sprout
-                 (the Supporter mark) beside the label. */
-              <View style={[styles.ctaGlow, { shadowColor: t.accentBlueRaw }]}>
-                <TouchableOpacity
-                  activeOpacity={0.9}
-                  onPress={handleSubscribe}
-                  disabled={!!busy}
-                  style={[styles.cta, { backgroundColor: t.accentBlue, opacity: busy && busy !== 'sub' ? 0.5 : 1 }]}
-                >
-                  <View style={styles.ctaSheen} pointerEvents="none" />
-                  {busy === 'sub'
-                    ? <ActivityIndicator size="small" color="#ffffff" />
-                    : (
-                      <View style={styles.ctaRow}>
-                        <SproutIcon size={18} color="#ffffff" />
-                        <Text style={styles.ctaText}>Become a Supporter</Text>
-                      </View>
-                    )}
-                </TouchableOpacity>
-              </View>
-            )}
+            {/* The one solid-fill CTA in the app. Lifted off the flat slab it used to be: a top-light
+                sheen for depth, an accent-tinted glow instead of a generic black shadow, and the sprout
+                (the Supporter mark) beside the label. */}
+            <View style={[styles.ctaGlow, { shadowColor: t.accentBlueRaw }]}>
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={handleSubscribe}
+                disabled={!!busy}
+                style={[styles.cta, { backgroundColor: t.accentBlue, opacity: busy && busy !== 'sub' ? 0.5 : 1 }]}
+              >
+                <View style={styles.ctaSheen} pointerEvents="none" />
+                {busy === 'sub'
+                  ? <ActivityIndicator size="small" color="#ffffff" />
+                  : (
+                    <View style={styles.ctaRow}>
+                      <SproutIcon size={18} color="#ffffff" />
+                      <Text style={styles.ctaText}>Become a Supporter</Text>
+                    </View>
+                  )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
+        )}
 
         {/* Tip jar */}
         <View style={[styles.cardShadow, { shadowColor: '#000' }]}>
           <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw }]}>
-            <Text style={[styles.eyebrow, { color: t.textMuted }]}>Support once</Text>
-            <Text style={[styles.heading, { color: t.accentBlueRaw }]}>A one-time chip in</Text>
+            <Text style={[styles.heading, { color: t.textSecondary }]}>A one-time chip in</Text>
             <Text style={[styles.sub, { color: t.textMuted }]}>No subscription, no commitment. Every bit helps.</Text>
 
             {/* 2x2 grid: all four tiles equal size/format; the $24.99 stays gold as an option, not a push. */}
@@ -251,15 +413,30 @@ export default function SupportScreen() {
                   onPress={() => handleTip(tip.productId)}
                   wrapperStyle={styles.tipTileWrap}
                   style={[styles.tipTile, {
-                    backgroundColor: tip.gold ? goldBg : t.accentBlueBg,
-                    borderColor: tip.gold ? goldBorder : t.accentBlueBorder,
+                    // Champagne: gold at low alpha = a TINT of the card, not a gold fill, so it can't go
+                    // mustard. Keeps the tile in family with the other three (all tinted) instead of
+                    // reading as an empty/failed tile the way a plain white face did.
+                    backgroundColor: tip.gold ? GOLD_TINT : t.accentBlueBg,
+                    borderColor: tip.gold ? GOLD_EDGE : t.accentBlueBorder,
                     opacity: busy && busy !== tip.productId ? 0.5 : 1,
                   }]}
                 >
-                  <Text style={[styles.tipLabel, { color: tip.gold ? t.accentAmber : t.textMuted }]}>{tip.label}</Text>
+                  {/* The top tip is MARKED, not shouted: clean card face + a gold foil edge. A full gold
+                      face made the most expensive ask the loudest object on a page whose whole point is
+                      "an option, not a push" -- and it made gold mean MONEY, when gold has to mean
+                      membership. Foil edge marks the tier without pushing it. */}
+                  {tip.gold && (
+                    <LinearGradient
+                      colors={[GOLD_DEEP, GOLD_HI, GOLD_BASE]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.foilEdge}
+                    />
+                  )}
+                  <Text style={[styles.tipLabel, { color: t.textMuted }]}>{tip.label}</Text>
                   {busy === tip.productId
-                    ? <ActivityIndicator size="small" color={tip.gold ? t.accentAmber : t.accentBlue} style={styles.tipSpinner} />
-                    : <Text style={[styles.tipAmt, { color: tip.gold ? t.accentAmber : t.textSecondary }]}>{tip.amount}</Text>}
+                    ? <ActivityIndicator size="small" color={t.accentBlue} style={styles.tipSpinner} />
+                    : <Text style={[styles.tipAmt, { color: t.textSecondary }]}>{tipPrice(tip.productId, tip.amount)}</Text>}
                 </PressScale>
               ))}
             </View>
@@ -293,7 +470,8 @@ const styles = StyleSheet.create({
   heroTitle: { fontSize: 46, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, lineHeight: 50 },
 
   mission: { fontSize: 14.5, fontFamily: 'DMSans_500Medium', lineHeight: 23, paddingHorizontal: 4, marginBottom: 2, textAlign: 'center' },
-  missionCard: { borderWidth: 1, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16 },
+  // Padding + radius match memberCard exactly so the two foil cards line up edge for edge.
+  missionCard: { borderWidth: 1, borderRadius: 14, padding: 16, overflow: 'hidden' },
   missionTitle: { fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 2.5, textTransform: 'uppercase', textAlign: 'center', marginBottom: 10 },
   missionClose: { fontSize: 14, fontFamily: 'DMSans_600SemiBold', lineHeight: 20, textAlign: 'center', marginTop: 12 },
 
@@ -306,7 +484,7 @@ const styles = StyleSheet.create({
 
   perks: { gap: 14, marginBottom: 18 },
   perk: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
-  perkIcon: { width: 30, height: 30, borderRadius: 9, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  perkIcon: { width: 30, height: 30, borderRadius: 9, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginTop: 1, overflow: 'hidden' },
   perkText: { flex: 1 },
   perkTitle: { fontSize: 14.5, fontFamily: 'DMSans_700Bold', marginBottom: 2 },
   perkBody: { fontSize: 13, fontFamily: 'DMSans_400Regular', lineHeight: 18 },
@@ -316,6 +494,21 @@ const styles = StyleSheet.create({
   priceAmt: { fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5 },
   pricePer: { fontSize: 11, fontFamily: 'DMSans_600SemiBold', marginTop: 1 },
 
+  // Supporter membership card (dark object; see the palette block up top).
+  memberCard: { borderRadius: 14, borderWidth: 1, padding: 16, overflow: 'hidden' },
+  foilEdge: { position: 'absolute', top: 0, left: 0, right: 0, height: 2.5 },
+  memberHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  memberSprout: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  memberRows: { borderTopWidth: 0.5, marginTop: 12, paddingTop: 4 },
+  memberRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 9 },
+  memberLabel: { fontSize: 13, fontFamily: 'DMSans_400Regular' },
+  memberValue: { fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
+  changePlan: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    borderWidth: 1, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14,
+  },
+  changePlanText: { fontSize: 14, fontFamily: 'DMSans_700Bold' },
+  changePlanSub: { fontSize: 12, fontFamily: 'DMSans_400Regular', marginTop: 2 },
   // Accent-tinted glow (shadowColor is set per-theme at the call site) -- lives on a WRAPPER because
   // the button itself needs overflow:hidden to clip the sheen, which would clip a shadow too.
   ctaGlow: { shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 4 },
@@ -328,7 +521,7 @@ const styles = StyleSheet.create({
 
   tipTiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, marginTop: 0, marginBottom: 10 },
   tipTileWrap: { flexBasis: '47%', flexGrow: 1 },
-  tipTile: { borderRadius: 14, borderWidth: 1, paddingVertical: 11, paddingHorizontal: 6, alignItems: 'center', gap: 2 },
+  tipTile: { borderRadius: 14, borderWidth: 1, paddingVertical: 11, paddingHorizontal: 6, alignItems: 'center', gap: 2, overflow: 'hidden' },
   tipLabel: { fontSize: 11, fontFamily: 'DMSans_600SemiBold', textAlign: 'center', lineHeight: 14, minHeight: 15 },
   tipAmt: { fontSize: 23, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5 },
   // Matches the tipAmt line box so swapping in the spinner doesn't resize the tile.

@@ -132,6 +132,15 @@ export interface Theme {
   accentGreenBg: string;
   accentGreenBorder: string;
   accentAmber: string;              // warning / close to goal
+  // ── Supporter gold ──────────────────────────────────────────────────────────
+  // The premium/Supporter metal. Deliberately NOT accentAmber -- amber is the app's WARNING color
+  // (close to goal / caution), so dressing membership in it reads as a caution state, not a reward.
+  // supporterGold = metal base (fills, borders, gradients) | supporterGoldHi = the highlight stop that
+  // makes it read as metal rather than flat mustard | supporterGoldText = a gold dark enough to READ
+  // on that theme's card (four of the five themes are light, where bright gold on near-white vanishes).
+  supporterGold: string;
+  supporterGoldHi: string;
+  supporterGoldText: string;
   accentRed: string;                // over goal / failed
   accentRedBg: string;
   accentRedBorder: string;
@@ -217,6 +226,10 @@ const dark: Theme = {
   accentGreenBg:    'rgba(16,185,129,0.15)',
   accentGreenBorder:'rgba(16,185,129,0.30)',
   accentAmber:      '#d4860a',
+  // DARK: the only dark-bg theme, so gold can stay bright and still read.
+  supporterGold:     '#d4af37',
+  supporterGoldHi:   '#f6e08f',
+  supporterGoldText: '#e2c257',
   accentRed:        '#ef4444',
   accentRedBg:      'rgba(239,68,68,0.15)',
   accentRedBorder:  'rgba(239,68,68,0.30)',
@@ -295,6 +308,10 @@ const light: Theme = {
   accentGreenBg:    'rgba(5,150,105,0.10)',
   accentGreenBorder:'rgba(5,150,105,0.25)',
   accentAmber:      '#b45309',
+  // LIGHT: bright gold disappears on near-white, so text/icons use a deeper struck-gold.
+  supporterGold:     '#c9a227',
+  supporterGoldHi:   '#eed07a',
+  supporterGoldText: '#9a7b18',
   accentRed:        '#dc2626',
   accentRedBg:      'rgba(220,38,38,0.10)',
   accentRedBorder:  'rgba(220,38,38,0.25)',
@@ -373,6 +390,10 @@ const slate: Theme = {
   accentGreenBg:    'rgba(42,157,110,0.12)',
   accentGreenBorder:'rgba(42,157,110,0.28)',
   accentAmber:      '#b87c1a',
+  // SLATE: cool blue-gray page, so gold pops hard -- keep the text stop deep so it stays classy.
+  supporterGold:     '#c9a227',
+  supporterGoldHi:   '#e8cd80',
+  supporterGoldText: '#8f7317',
   accentRed:        '#cc3333',
   accentRedBg:      'rgba(204,51,51,0.10)',
   accentRedBorder:  'rgba(204,51,51,0.25)',
@@ -451,6 +472,10 @@ const warm: Theme = {
   accentGreenBg:    'rgba(58,138,88,0.12)',
   accentGreenBorder:'rgba(58,138,88,0.28)',
   accentAmber:      '#b86c10',
+  // WARM: cream page already sits in the gold family, so go a touch deeper or the metal vanishes.
+  supporterGold:     '#c0951c',
+  supporterGoldHi:   '#e6c76e',
+  supporterGoldText: '#8c6a10',
   accentRed:        '#c04020',
   accentRedBg:      'rgba(192,64,32,0.10)',
   accentRedBorder:  'rgba(192,64,32,0.25)',
@@ -529,6 +554,10 @@ const blush: Theme = {
   accentGreenBg:    'rgba(92,184,122,0.12)',
   accentGreenBorder:'rgba(92,184,122,0.28)',
   accentAmber:      '#c47820',
+  // BLUSH: pink page -- gold is the complement, so it reads richly without going brassy.
+  supporterGold:     '#c9a227',
+  supporterGoldHi:   '#eed07a',
+  supporterGoldText: '#9a7b18',
   accentRed:        '#d44040',
   accentRedBg:      'rgba(212,64,64,0.10)',
   accentRedBorder:  'rgba(212,64,64,0.25)',

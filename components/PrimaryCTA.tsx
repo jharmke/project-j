@@ -35,7 +35,16 @@ export default function PrimaryCTA({
   disabled?: boolean;
   haptic?: Haptics.ImpactFeedbackStyle;
 }) {
-  const { theme } = useTheme();
+  const { theme, themeId } = useTheme();
+  // DARK: the accents are saturated and already hot against a black page, so the white top-highlight
+  // that molds the button on a light theme just makes it glare (worst with yellow / pink / red). On dark
+  // we mold from the SHADOW side instead -- almost no highlight, a deeper foot -- and pull the accent
+  // glow back, since a glow around a bright fill on black is what pushes it over.
+  const isDark = themeId === 'dark';
+  const mold: [string, string, string] = isDark
+    ? ['rgba(255,255,255,0.05)', 'rgba(0,0,0,0.04)', 'rgba(0,0,0,0.26)']
+    : ['rgba(255,255,255,0.16)', 'rgba(255,255,255,0.03)', 'rgba(0,0,0,0.16)'];
+
   const scale = useRef(new Animated.Value(1)).current;
   const to = (v: number) =>
     Animated.timing(scale, { toValue: v, duration: 90, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
@@ -43,7 +52,7 @@ export default function PrimaryCTA({
   const blocked = busy || disabled;
 
   return (
-    <View style={[styles.glow, { shadowColor: theme.accentBlueRaw }]}>
+    <View style={[styles.glow, { shadowColor: theme.accentBlueRaw, shadowOpacity: isDark ? 0.18 : 0.35 }]}>
       <Animated.View style={{ transform: [{ scale }] }}>
         <TouchableOpacity
           activeOpacity={0.9}
@@ -54,7 +63,7 @@ export default function PrimaryCTA({
           style={[styles.btn, { backgroundColor: theme.accentBlue, opacity: disabled ? 0.5 : 1 }]}
         >
           <LinearGradient
-            colors={['rgba(255,255,255,0.16)', 'rgba(255,255,255,0.03)', 'rgba(0,0,0,0.16)']}
+            colors={mold}
             locations={[0, 0.5, 1]}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}

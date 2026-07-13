@@ -37,10 +37,11 @@ export default function MembershipCard() {
       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/support' as any); }}
       style={{
         flexDirection: 'row', alignItems: 'center', gap: 12,
-        // Solid card fill, NOT a wash. An accent wash over the page's light-blue gradient made the free
-        // card almost the same color as the page it sat on -- it vanished. Its neighbours (Birthday,
-        // Current Weight) are solid cards; this one has to lift off the page the same way.
-        backgroundColor: isSupporter ? GOLD_TINT : theme.bgCard,
+        // TINTED in both states -- champagne for a Supporter, the user's accent for a free user. A plain
+        // bgCard fill made the free card the SAME color as its container on Settings (a settings section
+        // is itself a card), so on Slate/Warm/Blush it vanished into the section. A tint always separates
+        // from whatever it sits on, whichever theme is active.
+        backgroundColor: isSupporter ? GOLD_TINT : theme.accentBlueBg,
         borderWidth: 1, borderColor: isSupporter ? GOLD_EDGE : theme.accentBlueRaw + '55',
         borderRadius: 14, paddingVertical: 14, paddingHorizontal: 14,
         overflow: 'hidden',

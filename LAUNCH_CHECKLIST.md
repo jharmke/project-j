@@ -10,25 +10,37 @@ from memory.
 
 ---
 
-## ⛓️ PHASE 0 — THE DEPENDENCY THAT GATES EVERYTHING ELSE
+## ⛓️ PHASE 0 — TESTER ENTITLEMENTS — ✅ DONE 2026-07-13
 
-**Nothing in Phase 2 can happen until this is done.** Read the reasoning; it is not obvious.
+**The ordering trap that made this Phase 0:** testers are NOT Pro and never were. `isSupporter = entitled ||
+(__DEV__ && devOverride)` (MembershipContext.tsx:228) and `__DEV__` is **false** in TestFlight — so the Settings
+dev toggle only ever worked on Justin's local dev build. Testers' access came entirely from the beta hacks in
+Phase 2. Revert those before granting entitlements and every tester drops to the real free caps with no way out.
 
-- [ ] **0.1 — Ship a TestFlight build that contains RevenueCat.**
-      The native build exists but has never been distributed. Until testers run a build with the SDK in it,
-      they do not exist as RevenueCat customers, so they cannot be granted anything.
-- [ ] **0.2 — Have each tester open the app once.** `Purchases.logIn(firebase uid)` runs and creates their
-      RevenueCat customer record.
-- [ ] **0.3 — Grant each tester the `supporter` entitlement** in the RevenueCat dashboard (longest/lifetime).
-      Their RevenueCat customer ID **is** their Firebase uid. UIDs are listed in SPEC_monetization.md.
-      ⚠️ **Do NOT grant Justin** (`zLZOx2aqiKXcl3tlg7LNmkwbGxH3`). His dev build shares that uid, and a real
-      entitlement can never be turned off by the dev toggle — he'd permanently lose the ability to see the
-      free/locked state. He stays un-granted as the only account that can test both sides.
+- [x] **0.1 — Grant every tester the `supporter` entitlement. DONE: all 11, `yearly`, 2026-07-13.**
+      **The plan changed for the better.** We assumed testers had to be on a RevenueCat build and open the app
+      first (RevenueCat only knows a customer once the SDK has run). Not so: the v1 REST API **GET
+      /subscribers/{id} CREATES the customer**, and you can then grant a promotional entitlement to someone who
+      has never opened the app. The entitlement simply sits waiting for them. No chasing anyone to update, no
+      tracking who did.
+      Method: `GET /v1/subscribers/{uid}` then `POST /v1/subscribers/{uid}/entitlements/supporter/promotional`
+      with `{"duration":"yearly"}`, looped over every uid, using a RevenueCat **secret** API key.
+      The uid list came from `firebase auth:export` — NOT from memory. Worth noting: the hand-written list Justin
+      had assembled was missing **four** testers. Enumerate, don't recall.
+      ⚠️ **Justin's TWO accounts are deliberately un-granted** (`jtharmke@gmail.com` = the dev-build uid
+      `zLZOx2aqiKXcl3tlg7LNmkwbGxH3`, and `justin.harmke@gmail.com`). A real entitlement can never be switched
+      off by the dev toggle, so granting either would permanently destroy his ability to see the free/locked
+      state — on dev AND on TestFlight. He needs one free account on each.
+      Chose `yearly` over `lifetime`: covers the whole beta and well past launch, then quietly ends, rather than
+      giving the product away forever.
 
-> **Why this gates everything:** testers are NOT Pro and never were. `isSupporter = entitled || (__DEV__ &&
-> devOverride)` (MembershipContext.tsx:228) and `__DEV__` is **false** in TestFlight — so the Settings dev toggle
-> only ever worked on Justin's local dev build. Testers' access comes entirely from the beta hacks in Phase 2.
-> Revert those before granting entitlements and you drop every tester to the real free caps with no way out.
+- [x] **0.2 — THE TRAP THIS EXPOSED (fixed; see Phase 1).** A promotional grant reaches RevenueCat but does NOT
+      arrive as a usable subscription webhook — it comes through as `NON_RENEWING_PURCHASE`, the same event type
+      as a TIP. Two consequences, both caught live:
+      (a) it emailed Justin "Someone left a tip... $0... time to write the thank-you" (would have been 11 emails);
+      (b) it never wrote a membership record, so the SERVER would have given every granted tester **free-tier AI
+      caps** while the app told them they were Supporters. Silent, and hell to diagnose.
+      Fixed by making Firestore a CACHE and RevenueCat the TRUTH (Phase 1), plus a promo guard on the email.
 
 ---
 
@@ -49,7 +61,16 @@ from memory.
       Both cap tiers are deliberately EQUAL right now (beta values), so nothing changed for testers. The real
       split turns on at 2.1.
 
-- [ ] **1.1-OLD (for reference — what the problem was)**
+- [x] **1.2 — HARDENED 2026-07-13: Firestore is a CACHE, RevenueCat is the TRUTH.**
+      Webhooks alone were not enough (proven by the promotional-grant trap in Phase 0.2). `isSupporter()` now
+      reads Firestore first, and on a MISS (or a "not a supporter" answer older than 6h) asks the RevenueCat REST
+      API directly and caches the result. This self-heals promotional grants, transfers, and ANY webhook that is
+      ever dropped, delayed, or shaped differently than expected. Still fails closed: any error → free tier.
+      Needs the `REVENUECAT_SECRET_KEY` secret (set in Firebase, wired into appCompanion + faithCompanion +
+      revenueCatWebhook).
+      ⚠️ STILL UNVERIFIED IN THE WILD: the API-lookup path only fires when a granted tester actually messages
+      Otto. Confirm from the logs (look for a membership record with `lastEventType: 'API_LOOKUP'`) the first
+      time one of them does. Zero user impact if it's broken today — both cap tiers are equal during beta.
       The AI caps live server-side, but they have **no Supporter tier** — there is one cap for everyone
       (appCompanion.ts:37, faithCompanion.ts:29). The locked design is Otto 10 free / 25 Supporter and
       Halo 25/25, which the server currently cannot express.

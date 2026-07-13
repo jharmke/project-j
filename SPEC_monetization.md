@@ -32,8 +32,22 @@ This doc is the single source of truth for monetization. Keep the roadmap to one
 
 ## SESSION HANDOFF (2026-07-12) -- READ THIS FIRST TO PICK UP SEAMLESSLY
 
->>> 📌 PINNED -- THE TESTER-ENTITLEMENT SEQUENCE (decided 2026-07-12, session 3). DO NOT flip the beta hacks
->>> out of order or you WILL break the testers.
+>>> ✅ TESTER ENTITLEMENTS DONE 2026-07-13: all 11 testers granted `supporter` (yearly) via the RevenueCat REST
+>>> API. The pinned sequence below is now HISTORY -- keep it for the reasoning, but the blocker is cleared.
+>>> WHAT CHANGED: we assumed testers had to run a RevenueCat build and open the app before they could be granted
+>>> (RC only knows a customer once the SDK has run). FALSE. `GET /v1/subscribers/{uid}` CREATES the customer, and
+>>> you can then POST a promotional entitlement to someone who has never opened the app -- it sits waiting for
+>>> them. No chasing, no tracking who updated. Method + full uid list: LAUNCH_CHECKLIST.md Phase 0.
+>>> ⚠️ TWO TRAPS FOUND DOING IT (both fixed, both would have bitten at launch):
+>>>   1. A PROMOTIONAL grant arrives as NON_RENEWING_PURCHASE -- the same webhook event as a TIP. It emailed
+>>>      Justin a fake "$0 tip, time to write the thank-you" (would have been 11 emails). Guarded now.
+>>>   2. That same event never wrote a membership record, so the SERVER would have given every granted tester
+>>>      FREE-tier AI caps while the app told them they were Supporters. Fixed properly: Firestore is now a
+>>>      CACHE and RevenueCat is the TRUTH (lazy API lookup on a miss). See LAUNCH_CHECKLIST 1.2.
+>>>   3. The hand-written tester list was missing FOUR people. The real list came from `firebase auth:export`.
+>>>      Enumerate, don't recall.
+>>>
+>>> 📌 PINNED (HISTORICAL -- the sequence we thought we needed; superseded above, kept for the reasoning)
 >>> THE TRAP: TestFlight testers are NOT Pro and never were. `isSupporter = entitled || (__DEV__ && devOverride)`
 >>> (MembershipContext.tsx:185) and __DEV__ is FALSE in a TestFlight build -- so the Settings dev toggle grants
 >>> Justin Pro ONLY in his local dev build. Testers' access comes from the per-feature BETA HACKS (raised

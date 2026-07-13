@@ -245,10 +245,19 @@ are separate pre-submission checklists, NOT part of this menu.
   reads as plastic. Script + variants kept in the session scratchpad. Chose the clean-background version over a
   gold-glow one: the glow looked rich at poster size but went muddy at 60px on a light wallpaper (icons are judged
   on silhouette contrast at thumbnail size).
-  REMAINING: (a) wire it as an iOS ALTERNATE app icon (needs a config plugin + a NATIVE REBUILD -- rides the next
-  build, cannot ship on a reload); (b) gate the switch on the Supporter entitlement; (c) update the Support
-  screen's "Custom Badge & Icon" perk illustration to show the actual gold icon (or icon + badge together) --
-  it currently shows only the badge, though the perk promises both.
+  >> SHIPPED + DEVICE-VERIFIED 2026-07-13. expo-alternate-app-icons plugin (app.json, name "Gold"); a
+  Supporter-ONLY toggle in Settings > Appearance (a locked row there would be a paywall sitting in the middle of
+  appearance settings, and gold marks membership, never restriction -- a free user meets it as a perk on the
+  Support screen instead); a POINTER row on the Support membership card that routes to it (deliberately not a
+  second toggle -- two controls setting one thing is how settings drift apart); the "Custom Badge & Icon" perk now
+  shows BOTH marks (gold sprout badge + gold app icon) because the perk promises two things; and the in-app
+  LaunchSplash follows the ICON (gold icon -> gold splash), keyed on the icon rather than the entitlement to avoid
+  a silver-then-gold flash while RevenueCat resolves. LAPSE GUARD in utils/appIcon.enforceIconEntitlement: a
+  non-Supporter wearing the gold icon is reset to the default on next launch, so the perk can't outlive the
+  membership. NOTE: iOS's OWN first frame (before any JS runs) is baked into the build and can never be
+  personalised; only the second, in-app splash can. iOS also pops its own unavoidable "You have changed the icon"
+  alert on switch. The icon is DEVICE-LOCAL (doesn't sync across a user's devices).
+  REMAINING: lapse-guard device verification (waiting on a sandbox sub to expire).
 - [EXPLORE, unspecced -- raised 2026-07-13 from the gym. Do AFTER the monetization/Support track closes.]
   Four raw ideas, ranked by how real they are. NONE are specced; each needs a design pass before any code.
   1. [MOST REAL] GOAL WEIGHT + GOAL DATE ("by when"). Today the user picks a PACE and the app derives the date.

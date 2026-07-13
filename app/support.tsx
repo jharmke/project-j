@@ -4,12 +4,13 @@ import { triggerHaptic } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Easing, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Animated, Easing, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
 import { useToast } from '../components/Toast';
 import SproutIcon from '../components/SproutIcon';
 import PrimaryCTA from '../components/PrimaryCTA';
+import { GoldIconRow } from '../components/MembershipCard';
 import { FoilChip, FoilEdge, GOLD_BASE, GOLD_DEEP, GOLD_EDGE, GOLD_ENGRAVE, GOLD_HI, GOLD_TINT } from '../components/SupporterFoil';
 import { useMembership } from '../MembershipContext';
 
@@ -296,6 +297,9 @@ export default function SupportScreen() {
                     )}
                 </PressScale>
               )}
+
+              {/* The gold icon is theirs -- point them at the switch (which lives in Appearance). */}
+              <GoldIconRow />
             </View>
           </View>
         ) : (
@@ -308,24 +312,30 @@ export default function SupportScreen() {
             <View style={styles.perks}>
               {PERKS.map((p) => (
                 <View key={p.title} style={styles.perk}>
-                  {/* The badge perk shows the REAL foil chip -- a free user sees exactly the emblem
-                      they'd get, not a flat-gold approximation of it. */}
-                  <View style={[styles.perkIcon, {
-                    backgroundColor: p.gold ? 'transparent' : t.accentBlueBg,
-                    borderColor: p.gold ? GOLD_EDGE : t.accentBlueBorder,
-                  }]}>
-                    {p.gold && (
-                      <LinearGradient
-                        colors={[GOLD_HI, GOLD_BASE, GOLD_DEEP]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={StyleSheet.absoluteFill}
+                  {/* "Custom Badge & Icon" promises TWO things, so it shows two: the real gold foil badge
+                      AND the real gold app icon. A free user sees exactly what they'd get, not an
+                      approximation of half of it. Every other perk shows its single accent glyph. */}
+                  {p.gold ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 1 }}>
+                      <View style={[styles.perkIcon, { backgroundColor: 'transparent', borderColor: GOLD_EDGE, marginTop: 0 }]}>
+                        <LinearGradient
+                          colors={[GOLD_HI, GOLD_BASE, GOLD_DEEP]}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={StyleSheet.absoluteFill}
+                        />
+                        <SproutIcon size={20} color={GOLD_ENGRAVE} />
+                      </View>
+                      <Image
+                        source={require('../assets/images/icon-gold.png')}
+                        style={{ width: 30, height: 30, borderRadius: 9, borderWidth: 1, borderColor: GOLD_EDGE }}
                       />
-                    )}
-                    {p.sprout
-                      ? <SproutIcon size={20} color={p.gold ? GOLD_ENGRAVE : t.accentBlue} />
-                      : <Ionicons name={p.icon as any} size={15} color={t.accentBlue} />}
-                  </View>
+                    </View>
+                  ) : (
+                    <View style={[styles.perkIcon, { backgroundColor: t.accentBlueBg, borderColor: t.accentBlueBorder }]}>
+                      <Ionicons name={p.icon as any} size={15} color={t.accentBlue} />
+                    </View>
+                  )}
                   <View style={styles.perkText}>
                     <Text style={[styles.perkTitle, { color: t.textSecondary }]}>{p.title}</Text>
                     <Text style={[styles.perkBody, { color: t.textSecondary }]}>{p.body}</Text>

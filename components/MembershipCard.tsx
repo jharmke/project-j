@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Image, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
@@ -104,6 +104,42 @@ export default function MembershipCard() {
       </View>
 
       <Ionicons name="chevron-forward" size={16} color={isSupporter ? theme.textMuted : theme.accentBlue} />
+    </TouchableOpacity>
+  );
+}
+
+// Pointer, not a second control: the gold-icon switch itself lives in Settings > Appearance (where anyone
+// would instinctively look for it). Two toggles setting the same thing is how settings drift apart, so this
+// just tells a Supporter the perk is theirs and takes them to it.
+export function GoldIconRow() {
+  const { theme } = useTheme();
+  const { isSupporter } = useMembership();
+  if (!isSupporter) return null;
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={() => {
+        triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+        router.push('/settings?section=appearance' as any);
+      }}
+      style={{
+        flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12,
+        backgroundColor: GOLD_TINT, borderWidth: 1, borderColor: GOLD_EDGE,
+        borderRadius: 10, paddingVertical: 11, paddingHorizontal: 12,
+      }}
+    >
+      <Image
+        source={require('../assets/images/icon-gold.png')}
+        style={{ width: 30, height: 30, borderRadius: 8, borderWidth: 1, borderColor: GOLD_EDGE }}
+      />
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 13.5, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>Gold App Icon</Text>
+        <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 1 }}>
+          Turn it on in Appearance
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={15} color={theme.textMuted} />
     </TouchableOpacity>
   );
 }

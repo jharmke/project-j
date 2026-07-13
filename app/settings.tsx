@@ -6,7 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Dimensions, Easing, InteractionManager, Keyboard, KeyboardAvoidingView, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Dimensions, Easing, Image, InteractionManager, Keyboard, KeyboardAvoidingView, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ACCENT_PALETTES, THEME_ORDER, ThemeId, THEMES, useTheme } from '../theme';
 import { useMembership } from '../MembershipContext';
@@ -56,6 +56,8 @@ import TooltipIcon from '../components/TooltipIcon';
 import ToggleSwitch from '../components/ToggleSwitch';
 import SproutIcon from '../components/SproutIcon';
 import MembershipCard from '../components/MembershipCard';
+import { GOLD_EDGE } from '../components/SupporterFoil';
+import { enforceIconEntitlement, isGoldIconActive, setGoldIcon } from '../utils/appIcon';
 import PrayerRequestModal from '../components/PrayerRequestModal';
 import { useToast } from '../components/Toast';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -458,6 +460,25 @@ export default function SettingsScreen() {
   // Real Supporter status from RevenueCat (drives the Membership row copy). devProUnlocked below is the
   // DEV-ONLY test toggle that, in dev, feeds this via MembershipContext's override.
   const { isSupporter } = useMembership();
+
+  // Gold app icon (Supporter perk). Device-local, so it reads the CURRENT native icon rather than any
+  // stored preference -- if the user reinstalled or switched devices, the native truth is the truth.
+  const [goldIcon, setGoldIcon_] = useState(false);
+  useEffect(() => {
+    setGoldIcon_(isGoldIconActive());
+    // Lapse guard: a non-Supporter can't keep the gold icon. Runs whenever entitlement changes.
+    enforceIconEntitlement(isSupporter).then(() => setGoldIcon_(isGoldIconActive()));
+  }, [isSupporter]);
+
+  const toggleGoldIcon = async (val: boolean) => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    setGoldIcon_(val);                       // optimistic: iOS's own alert is the real confirmation
+    const ok = await setGoldIcon(val);
+    if (!ok) {
+      setGoldIcon_(isGoldIconActive());      // native refused -- snap back to the truth
+      showToast("Couldn't change the app icon", 'Please try again', 'error');
+    }
+  };
   const [importRange, setImportRange] = useState<14 | 30 | 90>(30);
   const [importing, setImporting] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -1243,6 +1264,29 @@ export default function SettingsScreen() {
               );
             })()}
           </View>
+
+          {/* GOLD APP ICON -- a Supporter perk. Only rendered for a Supporter: a locked row here would be
+              a paywall sitting in the middle of Appearance, and gold marks membership, never restriction.
+              A free user simply doesn't see it (they meet it as a perk on the Support screen instead).
+              iOS shows its own unavoidable "You have changed the icon" alert on switch -- Apple enforces it. */}
+          {isSupporter && (
+            <>
+              <View style={{ height: 1, backgroundColor: theme.borderCard, marginHorizontal: 16, marginBottom: 4 }} />
+              <View style={[styles.row, { borderTopColor: 'transparent' }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+                  <Image
+                    source={require('../assets/images/icon-gold.png')}
+                    style={{ width: 34, height: 34, borderRadius: 9, borderWidth: 1, borderColor: GOLD_EDGE }}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Gold App Icon</Text>
+                    <Text style={[styles.rowSub, { color: theme.textMuted }]}>Your Supporter icon, on your home screen</Text>
+                  </View>
+                </View>
+                <ToggleSwitch value={goldIcon} onValueChange={toggleGoldIcon} />
+              </View>
+            </>
+          )}
 
           <View style={{ height: 1, backgroundColor: theme.borderCard, marginHorizontal: 16, marginBottom: 4 }} />
           <View style={[styles.row, { borderTopColor: 'transparent' }]}>

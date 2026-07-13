@@ -68,6 +68,15 @@
       ],
       "expo-apple-authentication",
       [
+        "expo-alternate-app-icons",
+        [
+          {
+            "name": "Gold",
+            "ios": "./assets/images/icon-gold.png"
+          }
+        ]
+      ],
+      [
         "expo-notifications",
         {
           "iosDisplayInForeground": true

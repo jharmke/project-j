@@ -62,6 +62,33 @@ This doc is the single source of truth for monetization. Keep the roadmap to one
 >>> never see the free/locked state again (the dev override can only ADD Supporter, never remove a real
 >>> entitlement). He stays un-granted as the one account that can test BOTH sides.
 >>>
+>>> ✅ WEBHOOK DONE + VERIFIED 2026-07-12 (session 3). functions/src/revenueCatWebhook.ts (deployed).
+>>> URL: https://us-central1-projectj-5d024.cloudfunctions.net/revenueCatWebhook
+>>> Emails Justin (dev.harmke@gmail.com, via the same nodemailer/GMAIL_APP_PASSWORD setup the prayer-request
+>>> function uses) on exactly TWO events: INITIAL_PURCHASE (new Supporter) + NON_RENEWING_PURCHASE (tip). The
+>>> email NAMES the buyer -- app_user_id IS the Firebase uid (client calls Purchases.logIn(uid)), so the function
+>>> looks them up in Firebase Auth and includes name + email, which is the whole point (hand-written thank-you).
+>>> Subject is flagged [SANDBOX] vs real. Every other event type (RENEWAL/CANCELLATION/EXPIRATION/...) gets a
+>>> silent 200 -- deliberate: a renewal email per subscriber per month would train Justin to ignore these.
+>>> SECURITY: the URL is public, so the function requires an Authorization header matching the
+>>> REVENUECAT_WEBHOOK_TOKEN secret (set via `firebase functions:secrets:set`, same value pasted into
+>>> RevenueCat > Integrations > Webhooks). A bad token = 401 + no email (VERIFIED). Email is best-effort and the
+>>> function STILL returns 200 -- a non-2xx makes RevenueCat retry, and a Gmail hiccup must not cause a retry storm.
+>>> RC dashboard config: Both Production and Sandbox / All apps / All events (we filter server-side); paywall
+>>> events OFF (we use our own Support screen, not RC's paywall UI).
+>>> VERIFIED: tip -> email (twice, real sandbox purchases) ✅ | INITIAL_PURCHASE -> email ✅ | bad token -> 401,
+>>> no email ✅.
+>>> ⚠️ GOTCHA THAT WILL BITE THE NEXT PERSON: re-buying the SAME subscription after a sandbox lapse does NOT send
+>>> INITIAL_PURCHASE -- RevenueCat sends RENEWAL (you're an existing subscriber resuming), which we ignore by
+>>> design, so NO email arrives and nothing is broken. INITIAL_PURCHASE fires only on a customer's FIRST purchase
+>>> of that product. It was verified here by POSTing a real INITIAL_PURCHASE payload at the live function (RC's
+>>> delivery pipe was already proven by the tips). A full first-purchase-through-RevenueCat run needs a FRESH
+>>> sandbox tester account -- worth doing once before launch, not a blocker.
+>>> ⚠️ WATCH (not chased, per the 2-attempt rule): a one-off client console error right after a sandbox purchase --
+>>> "[RevenueCat] Error fetching offerings ... API request failed with status code 404" (getOfferings). Did NOT
+>>> reproduce on a cold launch; purchases, entitlement, and the webhook all worked. Looks like the offerings fetch
+>>> firing while the RC session was still settling post-purchase. If it recurs on a CLEAN run, dig in then.
+>>>
 >>> DONE 2026-07-12 (session 3): ON-DEVICE GAUNTLET COMPLETE -- tip purchase ✅, Restore ✅, LOCKED state ✅
 >>> (sub lapsed -> app re-locked; a tip bought while locked did NOT grant entitlement, confirming tips are
 >>> correctly outside the `supporter` entitlement). Plus, shipped: EvR locked-card redesign (WHOLE card frosted

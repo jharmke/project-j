@@ -2180,11 +2180,10 @@ export default function StatsScreen() {
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <Text style={[styles.cardLabel, { color: theme.textMuted }]}>CUSTOM REPORTS</Text>
-                      {reportsLocked && (
-                        <View style={{ backgroundColor: `${theme.accentBlueRaw}20`, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
-                          <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.accentBlueRaw }}>SUPPORTER</Text>
-                        </View>
-                      )}
+                      {/* Lock ONLY -- no "SUPPORTER" chip. Styled like a badge, that word reads as a
+                          status you HAVE, not a requirement. The lock says gated; the CTA underneath
+                          names the tier. */}
+                      {reportsLocked && <Ionicons name="lock-closed" size={12} color={theme.textMuted} />}
                     </View>
                     <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 18, marginTop: 4 }}>Build your own: pick a date range and the blocks you care about.</Text>
                   </View>
@@ -2233,11 +2232,7 @@ export default function StatsScreen() {
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <Text style={[styles.cardLabel, { color: theme.textMuted }]}>COMPARISON</Text>
-                      {!isPro && (
-                        <View style={{ backgroundColor: `${theme.accentBlueRaw}20`, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
-                          <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.accentBlueRaw }}>SUPPORTER</Text>
-                        </View>
-                      )}
+                      {!isPro && <Ionicons name="lock-closed" size={12} color={theme.textMuted} />}
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                       <TooltipIcon tooltipKey="comparison_report" />

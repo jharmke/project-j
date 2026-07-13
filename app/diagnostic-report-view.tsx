@@ -540,12 +540,9 @@ function LockedInsightCard({ topic, accent, title, body, theme, shadowStyle, isD
       <View style={[StyleSheet.absoluteFill, { padding: 16, justifyContent: 'space-between' }]} pointerEvents="none">
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <ChipLabel label={topic.toUpperCase()} theme={theme} />
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Ionicons name="lock-closed" size={12} color={theme.textMuted} />
-            <View style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
-              <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.accentBlueRaw }}>SUPPORTER</Text>
-            </View>
-          </View>
+          {/* Lock only. A "SUPPORTER" chip styled like a badge reads as a status you HAVE, not a
+              requirement -- the lock says gated, and "Unlock" below names the action. */}
+          <Ionicons name="lock-closed" size={13} color={theme.textMuted} />
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
           <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlueRaw }}>Unlock</Text>

@@ -32,6 +32,48 @@ This doc is the single source of truth for monetization. Keep the roadmap to one
 
 ## SESSION HANDOFF (2026-07-12) -- READ THIS FIRST TO PICK UP SEAMLESSLY
 
+>>> 📌 PINNED -- THE TESTER-ENTITLEMENT SEQUENCE (decided 2026-07-12, session 3). DO NOT flip the beta hacks
+>>> out of order or you WILL break the testers.
+>>> THE TRAP: TestFlight testers are NOT Pro and never were. `isSupporter = entitled || (__DEV__ && devOverride)`
+>>> (MembershipContext.tsx:185) and __DEV__ is FALSE in a TestFlight build -- so the Settings dev toggle grants
+>>> Justin Pro ONLY in his local dev build. Testers' access comes from the per-feature BETA HACKS (raised
+>>> Otto/Halo/Estimator caps + REPORTS_BETA_OPEN), NOT from any entitlement. That's why Comparison + the EvR
+>>> cards genuinely lock for them today while Custom Reports does not.
+>>> WHY WE CAN'T JUST GRANT THEM SUPPORTER TODAY: RevenueCat only knows a user once they've RUN a build
+>>> containing the SDK. Every tester is still on the pre-RevenueCat TestFlight build, so they do not exist as
+>>> RC customers yet (checked 2026-07-12: the RC dashboard has exactly ONE customer -- Justin's dev build).
+>>> Nothing to grant.
+>>> THE ORDER (each step gates the next):
+>>>   1. Ship a TestFlight build that INCLUDES RevenueCat (the native build already exists; not yet distributed).
+>>>   2. Each tester opens the app once -> Purchases.logIn(firebase uid) runs -> they appear in RC as customers.
+>>>   3. In the RC dashboard, GRANT each tester the `supporter` entitlement (longest/lifetime duration).
+>>>   4. ONLY THEN retire the beta hacks (REPORTS_BETA_OPEN=false + real Otto/Halo/Estimator caps) -- nobody is
+>>>      depending on them anymore and testers see the REAL Supporter experience.
+>>> TESTER UIDs (= their RevenueCat customer IDs; pulled from Firebase Auth 2026-07-12):
+>>>   meganholley01@gmail.com                 HpvSF7CwAxPHJ3MK2Zy2HpReiQa2
+>>>   tharmke3@gmail.com                      jZDNOG0B05Z2Y4mZrDgcubMgRJX2
+>>>   cnajarian27@gmail.com                   4aycyZq2zIhhRLMsx5fFKv88Qk82
+>>>   erinenpointe@gmail.com                  MaLenULUgwR1pSiH3oFpQzzYuu63
+>>>   mcctwkmbw5@privaterelay.appleid.com     NVltSwNcCshudCqAonVO72QHqwd2
+>>>   zdmjw78ct2@privaterelay.appleid.com     Ver7gb3Ol9Ux1vOB1E1puFwAGti1
+>>>   gfr5dknvsh@privaterelay.appleid.com     6PchTJOXxNRpGjJpKTSAOAVQ43J3
+>>> ⚠️ DO **NOT** GRANT JUSTIN (jtharmke@gmail.com / zLZOx2aqiKXcl3tlg7LNmkwbGxH3). His dev build logs in with
+>>> the same uid, so a real granted entitlement would make him a permanent Supporter EVERYWHERE and he could
+>>> never see the free/locked state again (the dev override can only ADD Supporter, never remove a real
+>>> entitlement). He stays un-granted as the one account that can test BOTH sides.
+>>>
+>>> DONE 2026-07-12 (session 3): ON-DEVICE GAUNTLET COMPLETE -- tip purchase ✅, Restore ✅, LOCKED state ✅
+>>> (sub lapsed -> app re-locked; a tip bought while locked did NOT grant entitlement, confirming tips are
+>>> correctly outside the `supporter` entitlement). Plus, shipped: EvR locked-card redesign (WHOLE card frosted
+>>> incl. the wash -- a partial blur always showed a hard square seam; topic chip from the card id so the subject
+>>> shows but never the verdict; quiet "Unlock ->" per card, no repeated pitch); purchase PENDING STATES (spinner
+>>> in the tapped control + others dimmed + double-tap lockout on subscribe/tip/restore); Support CTA made premium
+>>> (sheen + accent glow + sprout); Stats card buttons (Comparison / Open Analysis / Log Measurements / New
+>>> Challenge) moved OFF the solid-blue slab onto the house tinted-button recipe (solid fill is now reserved for
+>>> the ONE primary CTA on the Support screen; the graph-creator ADD TO STATS + FAB pills deliberately left solid);
+>>> and the "SUPPORTER" gate CHIP was REMOVED app-wide in favor of a lock icon alone -- styled like a badge, that
+>>> word read as a status you HAVE rather than a requirement, and it repeatedly made Justin think the app was bugged.
+>>>
 >>> LATEST STATUS (end of 2026-07-12, session 2) -- READ THIS FIRST:
 >>> RevenueCat is BUILT + WORKING. A native dev build was made (react-native-purchases + expo-blur) and a REAL
 >>> SANDBOX SUBSCRIPTION was purchased end-to-end on device: sheet appeared, purchase completed, entitlement

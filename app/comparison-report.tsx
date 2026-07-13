@@ -297,11 +297,9 @@ export default function ComparisonReportScreen() {
         </View>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
           <View style={{ backgroundColor: theme.bgCard, borderWidth: 1, borderColor: `${accent}40`, borderRadius: 14, padding: 20, alignItems: 'center' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <Ionicons name="lock-closed" size={16} color={theme.textMuted} />
-              <View style={{ backgroundColor: `${accent}20`, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
-                <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: accent }}>SUPPORTER</Text>
-              </View>
+            {/* Lock only -- the headline right below already names the tier. */}
+            <View style={{ marginBottom: 12 }}>
+              <Ionicons name="lock-closed" size={20} color={theme.textMuted} />
             </View>
             <Text style={{ fontSize: 17, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', textAlign: 'center', marginBottom: 8 }}>Comparison is a Supporter feature</Text>
             <Text style={{ fontSize: 14, color: theme.textMuted, fontFamily: 'DMSans_400Regular', lineHeight: 21, textAlign: 'center', marginBottom: 18 }}>

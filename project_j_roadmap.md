@@ -246,10 +246,18 @@ are separate pre-submission checklists, NOT part of this menu.
      + Profile. Open questions: what happens as the date approaches and they're off-pace (silently re-solve? nudge?),
      and the Mindful variant (a countdown to a weight is the most judgment-heavy thing in the app -- probably neutral
      or off). See SPEC_calorie_floor.md.
-  2. COFFEE-SHOP DRINK BUILDER (Starbucks/Dunkin). A little calculator for custom drinks: pick the base + milk +
-     syrup/sauce PUMPS, since calories per pump are fairly standard. Justin has hand-built these in Cronometer many
-     times -- a real, repeated, personal pain point. Open: where does it live (Add Food? a mini-tool?), and where do
-     the per-pump numbers come from (hand-curated table vs FatSecret).
+  2. [DESIGNED 2026-07-13 -> SPEC_drink_builder.md. The BEST of these four ideas.] COFFEE DRINK BUILDER
+     (Starbucks/Dunkin). You cannot log a real coffee order anywhere -- every app has ONE fixed "Grande Latte"
+     entry and nobody drinks that. This builds the drink from components: shop -> drink -> size -> milk -> syrup
+     pumps -> extras. It is ARITHMETIC, not guesswork (a pump of syrup, an ounce of oat milk, a shot of espresso
+     are all published, stable numbers), so it satisfies the honest-numbers rule BY CONSTRUCTION -- unlike the
+     restaurant-database idea, which never can. Offline, no API, no AI. Days, not months.
+     DESIGN TRAP already caught: milk volume depends on the DRINK, not the size (a grande latte is ~12oz of milk;
+     a grande iced coffee is a ~2oz splash), so each drink+size carries milkOz + shots + standardPumps.
+     SHOWS sugar (for coffee, sugar IS the story) and captures caffeine in the table even before it's surfaced.
+     ⚠️ GATING ITEM = the DATA AUDIT (Phase 1 in the spec): enumerate BOTH menus fully before any code. Starbucks
+     SYRUPS vs SAUCES differ; Dunkin FLAVOR SHOTS (unsweetened, ~0 cal) vs FLAVOR SWIRLS (sweetened) is the
+     single easiest thing to get backwards, and it would make every Dunkin number wrong.
   3. [RESEARCHED 2026-07-13 -> SPEC_restaurant_mode.md. NOT approved to build.] RESTAURANT MODE ("what should I
      order"). MenuFit teardown DONE, do not redo it. Findings: it's a DECIDER not a logger; its good part is
      composing + scoring a full order at CHAINS with a one-line insight; it works only because chains PUBLISH
@@ -464,6 +472,7 @@ Every major feature has a SPEC_*.md in the repo root. Active ones tied to open w
 - App Store: APP_STORE_CHECKLIST.md, COMPLIANCE_SCAN_findings.md | Launch: **LAUNCH_CHECKLIST.md** (the single
   ordered launch list; supersedes the REVERT + LAUNCH BLOCKERS sections above)
 - Monetization: SPEC_monetization.md | Restaurant Mode (researched, unbuilt): SPEC_restaurant_mode.md
+- Coffee Drink Builder (designed, unbuilt; data audit gates the build): SPEC_drink_builder.md
 
 ## 📎 ARCHIVES
 - project_j_roadmap_archive.md -- full shipped/fixed history + detailed post-mortems (this file's completed items live here; grep by section when you need the story behind a shipped feature)

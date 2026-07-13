@@ -30,6 +30,7 @@ export interface MembershipRecord {
   productId: string;
   environment: string;       // SANDBOX | PRODUCTION
   lastEventType: string;
+  lastEventAtMs: number;     // the EVENT's own timestamp -- see the out-of-order note below
   updatedAtMs: number;
 }
 
@@ -66,6 +67,15 @@ export async function recordMembershipEvent(event: any): Promise<void> {
   const expiresAtMs = Number(event.expiration_at_ms) || 0;
   if (!expiresAtMs) return;
 
+  // WEBHOOKS ARRIVE OUT OF ORDER. Observed live 2026-07-13: an EXPIRATION landed, then a PRODUCT_CHANGE
+  // carrying an OLDER expiry, then the RENEWAL with the true new one. A blind overwrite means a stale
+  // event can stomp a newer one and leave someone on the wrong expiry -- granting or denying access
+  // wrongly, and self-healing can't save us because the record itself would be wrong.
+  //
+  // So: stamp each write with the EVENT's own timestamp and, inside a transaction, ignore anything older
+  // than what we already hold. Delivery order stops mattering; only the event's real chronology does.
+  const eventAtMs = Number(event.event_timestamp_ms) || Date.now();
+
   const record: MembershipRecord = {
     expiresAtMs,
     // RevenueCat sends CANCELLATION when auto-renew is switched off. Access continues to expiresAtMs.
@@ -73,12 +83,24 @@ export async function recordMembershipEvent(event: any): Promise<void> {
     productId: event.product_id || '(unknown)',
     environment: event.environment || '(unknown)',
     lastEventType: event.type || '(unknown)',
+    lastEventAtMs: eventAtMs,
     updatedAtMs: Date.now(),
   };
 
   try {
-    await membershipDoc(uid).set(record, { merge: true });
-    console.log(`membership recorded: ${uid} ${record.lastEventType} expires=${new Date(expiresAtMs).toISOString()}`);
+    const ref = membershipDoc(uid);
+    const applied = await admin.firestore().runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      const prev = snap.exists ? (snap.data() as MembershipRecord | undefined) : undefined;
+      if (prev?.lastEventAtMs && prev.lastEventAtMs > eventAtMs) return false;   // stale, drop it
+      tx.set(ref, record, { merge: true });
+      return true;
+    });
+    if (applied) {
+      console.log(`membership recorded: ${uid} ${record.lastEventType} expires=${new Date(expiresAtMs).toISOString()}`);
+    } else {
+      console.log(`membership SKIPPED (out-of-order/stale): ${uid} ${record.lastEventType}`);
+    }
   } catch (e) {
     console.error('Failed to record membership (event still acknowledged):', uid, e);
   }

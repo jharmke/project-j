@@ -26,6 +26,7 @@ import { useToast } from './Toast';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { Type } from '../typography';
+import ModalHeader from './ModalHeader';
 
 interface CustomFoodCreatorProps {
   visible: boolean;
@@ -441,12 +442,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
   // ── Shared card content (same JSX for both Modal and inline paths) ────────
   const cardContent = (
     <Animated.View ref={cardRef as any} style={[s.card, { transform: [{ scale: cardScale }] }]}>
-      <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleClose(); }} style={{ alignSelf: 'center', paddingTop: 12, paddingBottom: 4, paddingHorizontal: 20 }} hitSlop={{ top: 8, bottom: 8, left: 20, right: 20 }}>
-        <View style={{ height: 4, width: 40, backgroundColor: theme.borderCard, borderRadius: 2 }} />
-      </TouchableOpacity>
-      <View style={s.header}>
-        <Text style={s.title}>{title ? title.toUpperCase() : 'CREATE FOOD'}</Text>
-      </View>
+      <ModalHeader title={title || 'Create Food'} onClose={handleClose} />
       <ScrollView
         ref={scrollViewRef}
         style={s.scroll}

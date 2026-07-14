@@ -77,6 +77,7 @@ import DurationValue from '../../components/DurationValue';
 import GradientNumber from '../../components/GradientNumber';
 import BackgroundLayers from '../../components/BackgroundLayers';
 import { Type, DISPLAY_CAPS, DISPLAY_TRACKING, displaySize, numLine } from '../../typography';
+import ModalHeader from '../../components/ModalHeader';
 
 const RECOVERY_PURPLE = '#9b7adb';
 const CAROUSEL_PAGE_W = Dimensions.get('window').width - 32;
@@ -3824,13 +3825,8 @@ export default function HomeScreen() {
               style={{ flex:1, justifyContent:'center', alignItems:'center' }}
               pointerEvents="box-none">
             <Animated.View style={{ width:'92%', maxHeight:'82%', backgroundColor: theme.bgSheet, borderRadius:16, borderWidth:0.5, borderColor: theme.borderCard, borderTopWidth:1.5, borderTopColor: theme.accentBlueRaw, overflow:'hidden', transform:[{scale: cardScale}] }}>
-              {/* Handle + header always visible above scroll */}
-              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeWaterDetailModal(); }} style={{ alignItems:'center', paddingTop:12, paddingBottom:8 }}>
-                <View style={{ width:36, height:4, borderRadius:2, backgroundColor: theme.sheetHandle }} />
-              </TouchableOpacity>
-              <View style={{ paddingHorizontal:16, paddingBottom:12 }}>
-                <Text style={{ fontSize:9, color: theme.accentBlueRaw, fontFamily:Type.uiBold, letterSpacing:3, textTransform:'uppercase' }}>Water Log</Text>
-              </View>
+              {/* The title was a 9px uppercase micro-label doing a title's job. */}
+              <ModalHeader title="Water Log" onClose={closeWaterDetailModal} />
               <View style={{ height:0.5, backgroundColor: theme.borderCard, marginHorizontal:16 }} />
               {/* All sections scrollable so Daily Goal is reachable with keyboard open */}
               <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} nestedScrollEnabled={true} contentContainerStyle={{ flexGrow:1 }}>
@@ -3973,10 +3969,8 @@ export default function HomeScreen() {
               <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeWaterEntryEdit} />
               <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex:1, justifyContent:'center', alignItems:'center' }} pointerEvents="box-none">
                 <Animated.View style={{ width:'82%', backgroundColor: theme.bgSheet, borderRadius:16, borderWidth:0.5, borderColor: theme.borderCard, borderTopWidth:1.5, borderTopColor: theme.accentBlueRaw, padding:18, transform:[{ scale: editWaterAnim.interpolate({ inputRange:[0,1], outputRange:[0.9,1] }) }] }}>
-                  <View style={{ alignItems:'center', marginBottom:6 }}>
-                    <View style={{ width:36, height:4, borderRadius:2, backgroundColor: theme.sheetHandle }} />
-                  </View>
-                  <Text style={{ fontSize:9, color: theme.accentBlueRaw, fontFamily:Type.uiBold, letterSpacing:3, textTransform:'uppercase', marginBottom:16, textAlign:'center' }}>Edit Entry</Text>
+                  <ModalHeader title="Edit Entry" onClose={closeWaterEntryEdit} />
+                  <View style={{ marginBottom: 10 }} />
                   {/* Sign toggle */}
                   <View style={{ flexDirection:'row', gap:8, marginBottom:14 }}>
                     <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditWaterSign('add'); }}
@@ -4456,14 +4450,8 @@ export default function HomeScreen() {
             overflow:'hidden',
             transform:[{ scale: macroScaleAnim }], opacity: macroOpacityAnim,
           }}>
-            {/* Handle */}
-            <TouchableOpacity onPress={closeMacroSheetWithHaptic} style={{ alignItems:'center', paddingTop:12, paddingBottom:6 }} hitSlop={{ top:12, bottom:12, left:60, right:60 }}>
-              <View style={{ width:36, height:4, borderRadius:2, backgroundColor: theme.borderCard }} />
-            </TouchableOpacity>
-            {/* Header */}
-            <View style={{ paddingHorizontal:20, paddingBottom:14, paddingTop:6, borderBottomWidth:0.5, borderBottomColor: theme.borderCard }}>
-              <Text style={{ fontSize:18, color: theme.accentBlue, fontFamily:Type.num, letterSpacing:2 }}>MACROS</Text>
-            </View>
+            <ModalHeader title="Macros" onClose={closeMacroSheetWithHaptic} />
+            <View style={{ borderBottomWidth:0.5, borderBottomColor: theme.borderCard }} />
             <ScrollView contentContainerStyle={{ padding:20, paddingBottom:26 }} showsVerticalScrollIndicator={false}>
               {/* Macro goal presets -- hidden in Mindful */}
               {styleMode !== 'mindful' && (

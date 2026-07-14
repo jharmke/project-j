@@ -213,13 +213,12 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
               <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
             </TouchableOpacity>
 
-            {/* Header row: title + inline (i), matching every other surface in the app */}
+            {/* Bespoke hero card (its own padding + centred ring), NOT a full-bleed sheet -- so it keeps
+                its own header row rather than ModalHeader. Only the title face is fixed: was "DAY SUMMARY"
+                caps in Type.num (the number face). */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-              <Text style={{ fontSize: 18, letterSpacing: 2, fontFamily: Type.num, color: theme.accentBlue }}>DAY SUMMARY</Text>
-              {/* Bebas sits high in its line box; lift the (i) to the caps' optical center */}
-              <View style={{ transform: [{ translateY: -2 }] }}>
-                <TooltipIcon tooltipKey="day_score" hideTour />
-              </View>
+              <Text style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentBlueRaw }}>Day Summary</Text>
+              <TooltipIcon tooltipKey="day_score" hideTour />
             </View>
 
             {/* Date (lead-in to the centered hero) */}

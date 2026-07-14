@@ -19,6 +19,7 @@ import { useTheme } from '../theme';
 import { ToastRenderer, useToast } from './Toast';
 import { deleteWeightForDate, gatherWeightHistory, saveWeightForDate, startingWeighIn, WeighIn } from '../utils/weightHistory';
 import { Type } from '../typography';
+import ModalHeader from './ModalHeader';
 
 interface Props {
   visible: boolean;
@@ -209,17 +210,8 @@ export default function WeightHistoryModal({ visible, onClose, styleMode, goalWe
               opacity: opacityAnim,
             }}
           >
-            {/* Handle */}
-            <TouchableOpacity onPress={closeWithHaptic} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 6 }} hitSlop={{ top: 12, bottom: 12, left: 60, right: 60 }}>
-              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
-            </TouchableOpacity>
-
-            {/* Header */}
-            <View style={{ paddingHorizontal: 20, paddingBottom: 14, paddingTop: 6, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-              <Text style={{ fontSize: 18, color: theme.accentBlue, fontFamily: Type.num, letterSpacing: 2 }}>
-                WEIGHT HISTORY
-              </Text>
-            </View>
+            <ModalHeader title="Weight History" onClose={closeWithHaptic} />
+            <View style={{ borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }} />
 
             <ScrollView ref={scrollRef} contentContainerStyle={{ padding: 16, paddingBottom: 28 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} automaticallyAdjustKeyboardInsets>
 

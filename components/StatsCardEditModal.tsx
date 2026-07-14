@@ -7,6 +7,7 @@ import { CardPeriod, ChartType, StatsCard } from '../statsCardRegistry';
 import { ToastRenderer, useToast } from './Toast';
 import { GRAPH_SWATCHES, MACRO_CARBS, MACRO_FAT, MACRO_PROTEIN } from './StatsGraphCard';
 import { Type } from '../typography';
+import ModalHeader from './ModalHeader';
 
 interface Props {
   card: StatsCard | null;
@@ -131,13 +132,8 @@ export function StatsCardEditModal({ card, onClose, onSave, onDelete, theme }: P
             shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20,
             transform: [{ scale: cardScale }],
           }}>
-            {/* Header */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-              <Text style={{ fontFamily: Type.num, fontSize: 22, letterSpacing: 3, color: theme.accentBlueRaw }}>EDIT GRAPH</Text>
-              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleClose(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Ionicons name="close" size={20} color={theme.textMuted} />
-              </TouchableOpacity>
-            </View>
+            <ModalHeader title="Edit Graph" onClose={handleClose} />
+            <View style={{ borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }} />
 
             <ScrollView style={{ maxHeight: 480 }} contentContainerStyle={{ padding: 20 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               {/* Label */}

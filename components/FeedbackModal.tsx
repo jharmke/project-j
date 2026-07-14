@@ -10,6 +10,7 @@ import {
 import { useTheme } from '../theme';
 import { useToast, ToastRenderer } from './Toast';
 import { Type } from '../typography';
+import ModalHeader from './ModalHeader';
 
 // Send Feedback. Opened from Settings > About. Collects a type + a description and hands off to
 // the user's mail app via a mailto link, addressed to the dev inbox. No backend (per spec). A
@@ -100,18 +101,8 @@ export default function FeedbackModal({ visible, onClose }: Props) {
               transform: [{ scale: scaleAnim }], opacity: opacityAnim,
             }}
           >
-            {/* Handle */}
-            <TouchableOpacity onPress={closeWithHaptic} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 6 }} hitSlop={{ top: 12, bottom: 12, left: 60, right: 60 }}>
-              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
-            </TouchableOpacity>
-
-            {/* Header */}
-            <View style={{ paddingHorizontal: 20, paddingBottom: 14, paddingTop: 6, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Ionicons name="chatbox-ellipses" size={16} color={theme.accentBlue} />
-                <Text style={{ fontSize: 18, color: theme.accentBlue, fontFamily: Type.num, letterSpacing: 2 }}>SEND FEEDBACK</Text>
-              </View>
-            </View>
+            <ModalHeader title="Send Feedback" onClose={closeWithHaptic} />
+            <View style={{ borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }} />
 
             <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 24 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
               <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.ui, lineHeight: 19, marginBottom: 16 }}>

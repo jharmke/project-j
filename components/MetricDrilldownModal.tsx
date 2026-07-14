@@ -12,6 +12,7 @@ import Svg, { Circle, Defs, Line, LinearGradient as SvgLinearGradient, Path, Pol
 import { useTheme } from '../theme';
 import { triggerHaptic } from '../utils/haptics';
 import { Type } from '../typography';
+import ModalHeader from './ModalHeader';
 
 export interface MetricDrilldownData {
   title: string;
@@ -208,19 +209,13 @@ export default function MetricDrilldownModal({ visible, onClose, data }: Props) 
           transform: [{ scale: scaleAnim }],
           opacity: opacityAnim,
         }}>
-          {/* Handle */}
-          <TouchableOpacity
-            onPress={closeWithHaptic}
-            style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 6 }}
-            hitSlop={{ top: 12, bottom: 12, left: 60, right: 60 }}
-          >
-            <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
-          </TouchableOpacity>
+          {/* The metric name (data.title) was a 9px section label; it becomes the modal title. Standard
+              accent -- the status colour already lives in the big stat and the top border. */}
+          <ModalHeader title={data?.title ?? 'Metric'} onClose={closeWithHaptic} />
 
-          {/* Header */}
+          {/* Stat readout */}
           {data && (
-            <View style={{ paddingHorizontal: 20, paddingBottom: 14, paddingTop: 4, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-              <Text style={sectionLabel}>{data.title}</Text>
+            <View style={{ paddingHorizontal: 20, paddingBottom: 14, paddingTop: 2, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
               <View style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
                 <Text style={{ fontSize: 30, color: data.statusColor, fontFamily: Type.num, letterSpacing: 1 }}>
                   {data.value}

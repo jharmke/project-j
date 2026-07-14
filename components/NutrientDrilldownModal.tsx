@@ -5,6 +5,7 @@ import { useRef, useMemo } from 'react';
 import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../theme';
 import { Type } from '../typography';
+import ModalHeader from './ModalHeader';
 
 // Recipe-logged entries store extended nutrients as FLAT fields (e.fiber, e.sodium, ...),
 // already scaled to the logged portion, NOT inside foodNutrients. Map readable names to those
@@ -189,26 +190,15 @@ export default function NutrientDrilldownModal({ visible, onClose, item, entries
           opacity: opacityAnim,
         }}>
 
-          {/* Handle */}
-          <TouchableOpacity
-            onPress={closeWithHaptic}
-            style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 6 }}
-            hitSlop={{ top: 12, bottom: 12, left: 60, right: 60 }}
-          >
-            <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
-          </TouchableOpacity>
+          {/* Title is the nutrient itself (was buried next to the number, with a MISPLACED "TODAY'S
+              SOURCES" label sitting above the total -- that label now labels the actual sources list). */}
+          <ModalHeader title={item?.label ?? 'Nutrient'} onClose={closeWithHaptic} />
 
-          {/* Header */}
-          <View style={{ paddingHorizontal: 20, paddingBottom: 14, paddingTop: 4, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-            <Text style={{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, fontFamily: Type.uiBold, marginBottom: 4 }}>
-              TODAY'S SOURCES
-            </Text>
+          {/* Stat readout */}
+          <View style={{ paddingHorizontal: 20, paddingBottom: 14, paddingTop: 2, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: 6 }}>
               <Text style={{ fontSize: 28, color, fontFamily: Type.num, letterSpacing: 1 }}>
                 {displayTotal}{item?.unit ?? ''}
-              </Text>
-              <Text style={{ fontSize: 14, color: theme.textMuted, fontFamily: Type.uiSemibold }}>
-                {item?.label}
               </Text>
               {item?.goal !== null && item?.goal !== undefined && (
                 <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui }}>
@@ -254,6 +244,9 @@ export default function NutrientDrilldownModal({ visible, onClose, item, entries
             contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
             showsVerticalScrollIndicator={false}
           >
+            <Text style={{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, fontFamily: Type.uiBold, marginBottom: 12 }}>
+              Today's Sources
+            </Text>
             {contributions.length === 0 ? (
               <Text style={{ color: theme.textDim, fontSize: 13, fontFamily: Type.ui, fontStyle: 'italic', textAlign: 'center', paddingVertical: 12 }}>
                 No entries with data for this nutrient.

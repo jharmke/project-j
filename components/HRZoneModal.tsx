@@ -14,6 +14,7 @@ import { useTheme } from '../theme';
 import TooltipIcon from './TooltipIcon';
 import { ZoneBound, fmtZoneTime, MaxHRSource, HRZoneModel, zoneDebrief } from '../utils/hrZones';
 import { Type } from '../typography';
+import ModalHeader from './ModalHeader';
 
 export interface HRZoneData {
   workoutName: string;
@@ -127,22 +128,15 @@ export default function HRZoneModal({ visible, loading, data, onClose }: Props) 
           shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.45, shadowRadius: 28, elevation: 24,
           overflow: 'hidden', transform: [{ scale: scaleAnim }], opacity: opacityAnim,
         }}>
-          {/* Handle */}
-          <TouchableOpacity onPress={closeWithHaptic} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4 }} hitSlop={{ top: 12, bottom: 12, left: 60, right: 60 }}>
-            <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
-          </TouchableOpacity>
+          {/* The workout + duration was a bold line under a 9px caps label; it becomes the subtitle. */}
+          <ModalHeader
+            title="HR Zones"
+            subtitle={data ? `${data.workoutName} · ${fmtDuration(data.durationSec)}` : undefined}
+            onClose={closeWithHaptic}
+            right={<TooltipIcon tooltipKey="hr_zones" size={14} hideTour />}
+          />
 
-          <View style={{ paddingHorizontal: 20, paddingBottom: 18, paddingTop: 6 }}>
-            {/* Header */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4 }}>
-              <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.accentBlue, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>HR Zones</Text>
-              <TooltipIcon tooltipKey="hr_zones" size={14} hideTour />
-            </View>
-            {data && (
-              <Text style={{ fontSize: 16, fontFamily: Type.uiBold, color: theme.textSecondary, marginBottom: 14 }}>
-                {data.workoutName} · {fmtDuration(data.durationSec)}
-              </Text>
-            )}
+          <View style={{ paddingHorizontal: 20, paddingBottom: 18, paddingTop: 10 }}>
 
             {loading ? (
               <View style={{ paddingVertical: 36, alignItems: 'center' }}>

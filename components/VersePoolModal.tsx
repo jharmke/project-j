@@ -11,6 +11,7 @@ import {
   activeVerseCount, DEFAULT_POOL, type VersePool, type CustomVerse, type DailyVerse,
 } from '../data/verses';
 import { Type } from '../typography';
+import ModalHeader from './ModalHeader';
 
 // Manage the Today's Message pool. Opened from the gear on the Today's Message card (both the
 // Home faith hub card and the Faith tab card). Centered floating card per the modal standard:
@@ -173,18 +174,9 @@ export default function VersePoolModal({ visible, onClose, onChanged }: Props) {
             transform: [{ scale: scaleAnim }], opacity: opacityAnim,
           }}
         >
-          {/* Handle */}
-          <TouchableOpacity onPress={closeWithHaptic} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 6 }} hitSlop={{ top: 12, bottom: 12, left: 60, right: 60 }}>
-            <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
-          </TouchableOpacity>
-
-          {/* Header */}
-          <View style={{ paddingHorizontal: 20, paddingBottom: 14, paddingTop: 6, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Ionicons name="sunny" size={16} color={theme.accentAmber} />
-              <Text style={{ fontSize: 18, color: theme.accentAmber, fontFamily: Type.num, letterSpacing: 2 }}>TODAY'S MESSAGE</Text>
-            </View>
-          </View>
+          {/* Faith modal -- amber title. */}
+          <ModalHeader title="Today's Message" onClose={closeWithHaptic} color={theme.accentAmber} />
+          <View style={{ borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }} />
 
           <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
             {/* Mode toggle */}

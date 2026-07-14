@@ -8,6 +8,7 @@ import { storageSet } from '../utils/storage';
 import { useTheme } from '../theme';
 import { useToast, ToastRenderer } from './Toast';
 import { Type } from '../typography';
+import ModalHeader from './ModalHeader';
 
 export type NutritionPreset = 'standard' | 'keto' | 'heart' | 'fiber' | 'athletic' | 'custom';
 
@@ -246,24 +247,9 @@ export default function NutritionGearModal({ visible, onClose, preset, goals, on
             opacity: opacityAnim,
           }}
         >
-          {/* Handle */}
-          <TouchableOpacity
-            onPress={closeWithHaptic}
-            style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 6 }}
-            hitSlop={{ top: 12, bottom: 12, left: 60, right: 60 }}
-          >
-            <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
-          </TouchableOpacity>
-
-          {/* Header */}
-          <View style={{
-            paddingHorizontal: 20, paddingBottom: 14, paddingTop: 6,
-            borderBottomWidth: 0.5, borderBottomColor: theme.borderCard,
-          }}>
-            <Text style={{ fontSize: 18, color: theme.accentBlue, fontFamily: Type.num, letterSpacing: 2 }}>
-              NUTRITION GOALS
-            </Text>
-          </View>
+          {/* Was "NUTRITION GOALS" in Type.num -- caps, in the NUMBER face. */}
+          <ModalHeader title="Nutrition Goals" onClose={closeWithHaptic} />
+          <View style={{ borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }} />
 
           {/* Scrollable body */}
           <ScrollView

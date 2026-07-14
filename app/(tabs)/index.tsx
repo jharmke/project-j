@@ -71,6 +71,8 @@ import {
 } from '../../utils/challenges';
 import { METRIC_META } from '../../utils/comparisonEngine';
 import { getVacation, endVacationEarly, vacationTodayKey, addDaysKey, VacationState } from '../../utils/vacationMode';
+import { Type, DISPLAY_CAPS, DISPLAY_TRACKING, displaySize, numLine } from '../../typography';
+import DurationValue from '../../components/DurationValue';
 
 const RECOVERY_PURPLE = '#9b7adb';
 const CAROUSEL_PAGE_W = Dimensions.get('window').width - 32;
@@ -177,7 +179,7 @@ function MacroDonut({ protein, carbs, fat, calories, theme }: { protein: number;
           <Circle cx={size/2} cy={size/2} r={radius} stroke="#2a2a2a" strokeWidth={strokeWidth} fill="none" />
         </Svg>
         <View style={{ position: 'absolute', alignItems: 'center' }}>
-          <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular' }}>no data</Text>
+          <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: Type.ui }}>no data</Text>
         </View>
       </View>
     );
@@ -199,8 +201,8 @@ function MacroDonut({ protein, carbs, fat, calories, theme }: { protein: number;
           strokeDasharray={`${fatDash} ${circumference}`} strokeDashoffset={-((proteinPct + carbsPct) * circumference)} strokeLinecap="butt" />
       </Svg>
       <View style={{ position: 'absolute', alignItems: 'center' }}>
-        <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{calories}</Text>
-        <Text style={{ color: theme.textMuted, fontSize: 9, fontFamily: 'DMSans_400Regular' }}>kcal</Text>
+        <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: Type.num, letterSpacing: 1 }}>{calories}</Text>
+        <Text style={{ color: theme.textMuted, fontSize: 9, fontFamily: Type.ui }}>kcal</Text>
       </View>
     </View>
   );
@@ -357,9 +359,9 @@ function ScoreRing({ score, scoreColor, trackColor, donutSize, donutStroke, donu
       <View style={{ position:'absolute', top:0, left:0, width:donutSize, height:donutSize, alignItems:'center', justifyContent:'center' }}>
         <ReAnimated.View style={[{ alignItems:'center' }, shimmerCenterStyle]}>
           <View style={{ shadowColor:'#000000', shadowOffset:{width:0,height:2}, shadowOpacity:0.18, shadowRadius:0 }}>
-            <Text style={{ fontSize:36, fontFamily:'BebasNeue_400Regular', color:scoreColor, letterSpacing:1, lineHeight:38, opacity:0.88 }}>{score}</Text>
+            <Text style={{ fontSize:36, fontFamily:Type.num, color:scoreColor, letterSpacing:1, lineHeight:numLine(36), opacity:0.88 }}>{score}</Text>
           </View>
-          <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:2, color:scoreColor, textTransform:'uppercase', opacity:0.7 }}>/100</Text>
+          <Text style={{ fontSize:8, fontFamily:Type.uiBold, letterSpacing:2, color:scoreColor, textTransform:'uppercase', opacity:0.7 }}>/100</Text>
         </ReAnimated.View>
       </View>
     </View>
@@ -2182,7 +2184,7 @@ export default function HomeScreen() {
           </View>
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/(tabs)/log'); }} activeOpacity={0.6}
             style={{ backgroundColor: theme.accentBlueBg, borderWidth:1, borderColor: theme.accentBlueBorder, borderRadius:6, paddingHorizontal:10, paddingVertical:4 }}>
-            <Text style={{ color: theme.accentBlue, fontSize:12, fontFamily:'DMSans_600SemiBold' }}>+ Log</Text>
+            <Text style={{ color: theme.accentBlue, fontSize:12, fontFamily:Type.uiSemibold }}>+ Log</Text>
           </TouchableOpacity>
         </View>
 
@@ -2210,10 +2212,10 @@ export default function HomeScreen() {
               const statRef = [calRemainingRef, calActiveRef, calNetRef][i];
               return (
                 <View key={i} ref={statRef} collapsable={false} style={{ flex:1, alignItems: i === 1 ? 'center' : i === 2 ? 'flex-end' : 'flex-start' }}>
-                  <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase', marginBottom:2 }}>{s.label}</Text>
+                  <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:1.5, textTransform:'uppercase', marginBottom:2 }}>{s.label}</Text>
                   <View style={{ flexDirection:'row', alignItems:'baseline', gap:2 }}>
-                    <Text style={{ fontSize:18, color: s.color, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{s.value}</Text>
-                    <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:1 }}>kcal</Text>
+                    <Text style={{ fontSize:18, color: s.color, fontFamily:Type.num, letterSpacing:1 }}>{s.value}</Text>
+                    <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:1 }}>kcal</Text>
                   </View>
                 </View>
               );
@@ -2225,14 +2227,14 @@ export default function HomeScreen() {
 
         {/* No BMR (no resolvable weight): explain the dashed net, point to the fix. */}
         {styleMode !== 'mindful' && profileBmr === 0 && (
-          <Text style={{ fontSize:11, color: theme.textMuted, fontFamily:'DMSans_400Regular', fontStyle:'italic', marginTop:6 }}>
+          <Text style={{ fontSize:11, color: theme.textMuted, fontFamily:Type.ui, fontStyle:'italic', marginTop:6 }}>
             Log your weight to see your calorie net.
           </Text>
         )}
 
-        {/* Mindful evening nudge */}
+        {/* Mindful evening nudge -- VOICE role: this is the coach talking, not the interface labelling */}
         {showMindfulNudge && (
-          <Text style={{ fontSize:11, color: theme.textMuted, fontFamily:'DMSans_400Regular', fontStyle:'italic', marginTop:6 }}>
+          <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:Type.voice, marginTop:6, lineHeight:18 }}>
             {nudgeText}
           </Text>
         )}
@@ -2268,7 +2270,7 @@ export default function HomeScreen() {
             <TooltipIcon tooltipKey="macros_today" />
           </View>
           <View style={{ flexDirection:'row', alignItems:'center', gap:10 }}>
-            <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase' }}>vs goal</Text>
+            <Text style={{ fontSize:9, color: theme.textDim, fontFamily:Type.uiBold, letterSpacing:1.5, textTransform:'uppercase' }}>vs goal</Text>
             <TouchableOpacity onPress={() => openMacroSheet()} hitSlop={{ top:8, bottom:8, left:8, right:8 }}>
               <Ionicons name="settings" size={16} color={theme.textMuted} />
             </TouchableOpacity>
@@ -2283,15 +2285,15 @@ export default function HomeScreen() {
               <View key={m.label} ref={macroRef} collapsable={false}>
                 <TouchableOpacity onPress={() => openMacroDrilldown(i)} activeOpacity={0.75} hitSlop={{ top: 4, bottom: 4 }}>
                   <View style={{ flexDirection:'row', alignItems:'baseline', justifyContent:'space-between', marginBottom:4 }}>
-                    <Text style={{ fontSize:11, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', flex:1 }}>{m.label}</Text>
+                    <Text style={{ fontSize:11, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase', flex:1 }}>{m.label}</Text>
                     <View style={{ flexDirection:'row', alignItems:'baseline', gap:4, width:120, justifyContent:'flex-end' }}>
-                      <AnimatedNumber value={m.val} style={{ fontSize:20, color: over ? theme.macroOver : m.color, fontFamily:'BebasNeue_400Regular', letterSpacing:1, textAlign:'right' }} decimals={0} />
-                      <Text style={{ fontSize:11, color: over ? theme.macroOver : m.color, fontFamily:'DMSans_500Medium' }}>g</Text>
-                      <Text style={{ fontSize:11, color: theme.textDim, fontFamily:'DMSans_500Medium' }}>/ {m.goal} g</Text>
+                      <AnimatedNumber value={m.val} style={{ fontSize:20, color: over ? theme.macroOver : m.color, fontFamily:Type.num, letterSpacing:1, textAlign:'right' }} decimals={0} />
+                      <Text style={{ fontSize:11, color: over ? theme.macroOver : m.color, fontFamily:Type.uiMedium }}>g</Text>
+                      <Text style={{ fontSize:11, color: theme.textDim, fontFamily:Type.uiMedium }}>/ {m.goal} g</Text>
                     </View>
                   </View>
                   <MacroBar val={m.val} goal={m.goal} color={over ? theme.macroOver : m.color} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} />
-                  <Text style={{ fontSize:9, color: m.color, fontFamily:'DMSans_500Medium', letterSpacing:0.5, marginTop:3, opacity:0.7 }}>
+                  <Text style={{ fontSize:9, color: m.color, fontFamily:Type.uiMedium, letterSpacing:0.5, marginTop:3, opacity:0.7 }}>
                     {m.val > m.goal
                       ? `${Math.round(m.val - m.goal)} g over`
                       : `${Math.round(m.goal - m.val)} g remaining`}
@@ -2331,7 +2333,7 @@ export default function HomeScreen() {
         <PressableButton style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => openWaterCustomModal('add')}>
           <View style={{ alignItems:'center', justifyContent:'center', width:20, height:20 }}>
             <Ionicons name="water-outline" size={18} color={theme.accentBlue} />
-            <Text style={{ color: theme.accentBlue, fontSize:9, fontFamily:'DMSans_700Bold', position:'absolute', bottom:-2, right:-4 }}>+</Text>
+            <Text style={{ color: theme.accentBlue, fontSize:9, fontFamily:Type.uiBold, position:'absolute', bottom:-2, right:-4 }}>+</Text>
           </View>
         </PressableButton>
       </View>
@@ -2344,7 +2346,7 @@ export default function HomeScreen() {
         <PressableButton style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => openWaterCustomModal('subtract')}>
           <View style={{ alignItems:'center', justifyContent:'center', width:20, height:20 }}>
             <Ionicons name="water-outline" size={18} color={theme.accentRed} />
-            <Text style={{ color: theme.accentRed, fontSize:9, fontFamily:'DMSans_700Bold', position:'absolute', bottom:-2, right:-4 }}>-</Text>
+            <Text style={{ color: theme.accentRed, fontSize:9, fontFamily:Type.uiBold, position:'absolute', bottom:-2, right:-4 }}>-</Text>
           </View>
         </PressableButton>
       </View>
@@ -2488,7 +2490,7 @@ export default function HomeScreen() {
             <Ionicons name="barbell-outline" size={11} color={theme.textMuted} />
             <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Today's Training</Text>
             {hasHealthData && lastSyncedAt ? (
-              <Text style={{ marginLeft:'auto', fontSize:9, color: theme.textDim, fontFamily:'DMSans_400Regular' }}>Synced {syncAgo(lastSyncedAt)}</Text>
+              <Text style={{ marginLeft:'auto', fontSize:9, color: theme.textDim, fontFamily:Type.ui }}>Synced {syncAgo(lastSyncedAt)}</Text>
             ) : null}
           </View>
           {(() => {
@@ -2496,8 +2498,8 @@ export default function HomeScreen() {
             const kcalBadge = burnedDisplay > 0 ? (
               <View style={{ flexDirection:'row', alignItems:'baseline', gap:3, marginLeft:'auto' }}>
                 <Ionicons name="flame-outline" size={11} color={theme.accentBlue} style={{ marginBottom:2 }} />
-                <Text style={{ fontSize:20, color: theme.accentBlue, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{burnedDisplay}</Text>
-                <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase' }}>kcal</Text>
+                <Text style={{ fontSize:20, color: theme.accentBlue, fontFamily:Type.num, letterSpacing:1 }}>{burnedDisplay}</Text>
+                <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:1.5, textTransform:'uppercase' }}>kcal</Text>
               </View>
             ) : null;
 
@@ -2505,7 +2507,7 @@ export default function HomeScreen() {
               return (
                 <View style={{ flexDirection: 'row', alignItems:'center' }}>
                   <View style={{ borderWidth: 1, borderColor: theme.borderSubtle, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
-                    <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.textDim }}>
+                    <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, color: theme.textDim }}>
                       {todayProgram?.customLabel || 'UNASSIGNED'}
                     </Text>
                   </View>
@@ -2521,7 +2523,7 @@ export default function HomeScreen() {
               if (!tag) return null;
               return (
                 <View key={tagId} style={{ backgroundColor: tag.color + '99', borderWidth: 1, borderColor: tag.color, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
-                  <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: '#ffffff' }}>{tag.label.toUpperCase()}</Text>
+                  <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, color: '#ffffff' }}>{tag.label.toUpperCase()}</Text>
                 </View>
               );
             };
@@ -2536,7 +2538,7 @@ export default function HomeScreen() {
                     {row2.map(renderPill)}
                     {extra > 0 && (
                       <View style={{ borderWidth: 1, borderColor: theme.borderSubtle, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
-                        <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.textDim }}>+{extra}</Text>
+                        <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, color: theme.textDim }}>+{extra}</Text>
                       </View>
                     )}
                     {kcalBadge}
@@ -2548,7 +2550,7 @@ export default function HomeScreen() {
         </View>
 
         {exercises.length === 0 ? (
-          <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>No exercises logged yet</Text>
+          <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui, fontStyle: 'italic' }}>No exercises logged yet</Text>
         ) : (
           <View style={{ gap: 6, marginBottom: 10 }}>
             {displayExercises.map((ex: any) => {
@@ -2556,20 +2558,20 @@ export default function HomeScreen() {
               return (
                 <View key={ex.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: done ? theme.textDim : pillColor }} />
-                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_500Medium', color: theme.textMuted, textDecorationLine: done ? 'line-through' : 'none', flex: 1 }}>
+                  <Text style={{ fontSize: 12, fontFamily: Type.uiMedium, color: theme.textMuted, textDecorationLine: done ? 'line-through' : 'none', flex: 1 }}>
                     {ex.name}
                   </Text>
                   {!ex.isCardio && (
-                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{ex.sets}x{ex.reps}</Text>
+                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui }}>{ex.sets}x{ex.reps}</Text>
                   )}
                   {ex.isCardio && ex.duration && (
-                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{ex.duration}</Text>
+                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui }}>{ex.duration}</Text>
                   )}
                 </View>
               );
             })}
             {overflow > 0 && (
-              <Text style={{ fontSize: 11, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold', marginTop: 2 }}>+{overflow} more exercises</Text>
+              <Text style={{ fontSize: 11, color: theme.accentBlue, fontFamily: Type.uiSemibold, marginTop: 2 }}>+{overflow} more exercises</Text>
             )}
           </View>
         )}
@@ -2579,7 +2581,7 @@ export default function HomeScreen() {
           const effMin = (exerciseMinutes !== null && exerciseMinutes > 0) ? exerciseMinutes : manualWorkoutMin;
           if (effMin <= 0) return null;
           return (
-            <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginTop:6 }}>
+            <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase', marginTop:6 }}>
               {effMin < 60
                 ? `${effMin} min active today`
                 : effMin % 60 > 0
@@ -2622,17 +2624,17 @@ export default function HomeScreen() {
         </View>
         <View style={{ flexDirection:'row', alignItems:'baseline', gap:6, marginBottom:6 }}>
           <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
-            <AnimatedNumber value={steps} style={{ fontSize:36, color:stepColor, fontFamily:'BebasNeue_400Regular', letterSpacing:1, opacity: 0.88 }} formatter={(n) => n.toLocaleString()} />
+            <AnimatedNumber value={steps} style={{ fontSize:36, color:stepColor, fontFamily:Type.num, letterSpacing:1, opacity: 0.88 }} formatter={(n) => n.toLocaleString()} />
           </View>
-          <Text style={{ fontSize:13, color: theme.textMuted, fontFamily:'DMSans_400Regular' }}>/ {stepGoal.toLocaleString()} steps</Text>
+          <Text style={{ fontSize:13, color: theme.textMuted, fontFamily:Type.ui }}>/ {stepGoal.toLocaleString()} steps</Text>
         </View>
         <View style={{ marginBottom:8 }}>
           <AnimatedProgressBar pct={Math.min(pct*100,100)} color={stepColor} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} overGoal={pct >= 1} />
         </View>
         <View style={{ flexDirection:'row', justifyContent:'space-between', alignItems:'center' }}>
-          <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase' }}>{distance} mi walked today</Text>
+          <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase' }}>{distance} mi walked today</Text>
           {hasHealthData && lastSyncedAt ? (
-            <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_400Regular' }}>Synced {syncAgo(lastSyncedAt)}</Text>
+            <Text style={{ fontSize:9, color: theme.textDim, fontFamily:Type.ui }}>Synced {syncAgo(lastSyncedAt)}</Text>
           ) : null}
         </View>
       </View>
@@ -2653,8 +2655,8 @@ export default function HomeScreen() {
         <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: color + '1A', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
           <Ionicons name={icon} size={28} color={color} />
         </View>
-        <Text style={{ fontSize: 15, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', marginBottom: 6, textAlign: 'center' }}>{title}</Text>
-        <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', lineHeight: 17, textAlign: 'center', paddingHorizontal: 24 }}>{subtitle}</Text>
+        <Text style={{ fontSize: 15, color: theme.textSecondary, fontFamily: Type.uiBold, marginBottom: 6, textAlign: 'center' }}>{title}</Text>
+        <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, lineHeight: 17, textAlign: 'center', paddingHorizontal: 24 }}>{subtitle}</Text>
       </View>
     );
     return (
@@ -2712,9 +2714,9 @@ export default function HomeScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
                     <View style={{ flex: 1, paddingRight: 12 }}>
                       <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
-                        <Text style={{ fontSize: 40, color: recColor, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, opacity: 0.88, lineHeight: 42 }}>{recZone?.label}</Text>
+                        <Text style={{ fontSize: 40, color: recColor, fontFamily: Type.num, letterSpacing: 1, opacity: 0.88, lineHeight: numLine(40) }}>{recZone?.label}</Text>
                       </View>
-                      <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium', lineHeight: 16, marginTop: 4 }}>{readinessLine}</Text>
+                      <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.uiMedium, lineHeight: 16, marginTop: 4 }}>{readinessLine}</Text>
                     </View>
                     <View style={{ flex: 1, alignItems: 'center' }}>
                       <ScoreRing
@@ -2731,10 +2733,10 @@ export default function HomeScreen() {
                           <Ionicons name={s.icon} size={13} color={s.color} />
                         </View>
                         <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>{s.label}</Text>
+                          <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 1, textTransform: 'uppercase' }}>{s.label}</Text>
                           <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 3 }}>
-                            <Text style={{ fontSize: 19, color: s.color, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5 }}>{s.value}</Text>
-                            <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>{s.unit}</Text>
+                            <Text style={{ fontSize: 19, color: s.color, fontFamily: Type.num, letterSpacing: 0.5 }}>{s.value}</Text>
+                            <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: Type.ui }}>{s.unit}</Text>
                           </View>
                         </View>
                       </View>
@@ -2744,15 +2746,17 @@ export default function HomeScreen() {
                     <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
                       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
                         <Ionicons name="bulb-outline" size={11} color={theme.textMuted} style={{ marginTop: 2 }} />
-                        <Text numberOfLines={2} style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', flex: 1, lineHeight: 17 }}>{recTip}</Text>
+                        {/* VOICE role: the coach talking, not the interface labelling. The slab carries it;
+                            the faux-italic it used to lean on is gone. */}
+                        <Text numberOfLines={2} style={{ fontSize: 11.5, color: theme.textMuted, fontFamily: Type.voice, flex: 1, lineHeight: 17 }}>{recTip}</Text>
                       </View>
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 6 }}>
-                        <Text style={{ fontSize: 10, color: RECOVERY_PURPLE, fontFamily: 'DMSans_600SemiBold' }}>Recovery Hub</Text>
+                        <Text style={{ fontSize: 10, color: RECOVERY_PURPLE, fontFamily: Type.uiSemibold }}>Recovery Hub</Text>
                         <Ionicons name="chevron-forward" size={11} color={RECOVERY_PURPLE} style={{ marginLeft: 1 }} />
                       </View>
                     </View>
                   )}
-                  <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 8, fontStyle: 'italic' }}>For informational purposes only. Not medical advice.</Text>
+                  <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, textAlign: 'center', marginTop: 8, fontStyle: 'italic' }}>For informational purposes only. Not medical advice.</Text>
                 </View>
               );
             })()}
@@ -2789,7 +2793,7 @@ export default function HomeScreen() {
             {sleepHours != null && (
               <View style={{ flexDirection:'row', alignItems:'flex-start', gap:6, backgroundColor: theme.statusWarn + '14', borderRadius:8, borderLeftWidth:3, borderLeftColor: theme.statusWarn, padding:10, marginBottom:10 }}>
                 <Ionicons name="information-circle-outline" size={14} color={theme.statusWarn} style={{ marginTop:1 }} />
-                <Text style={{ flex:1, fontSize:11, color: theme.textSecondary, fontFamily:'DMSans_400Regular', lineHeight:16 }}>
+                <Text style={{ flex:1, fontSize:11, color: theme.textSecondary, fontFamily:Type.ui, lineHeight:16 }}>
                   A manual time overrides your Apple Health sleep for today. Tap Clear to restore it.
                 </Text>
               </View>
@@ -2798,22 +2802,22 @@ export default function HomeScreen() {
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setActiveSleepPicker(activeSleepPicker === 'bed' ? null : 'bed'); }}
                 style={{ flex:1, backgroundColor: activeSleepPicker === 'bed' ? theme.accentBlueBg : theme.bgInput, borderWidth:1, borderColor: activeSleepPicker === 'bed' ? theme.accentBlueBorder : theme.borderInput, borderRadius:6, padding:10, alignItems:'center' }}>
-                <Text style={{ fontSize:10, color: theme.textMuted, fontFamily:'DMSans_400Regular', marginBottom:2 }}>Bed Time</Text>
-                <Text style={{ fontSize:16, color: sleepBedTime ? theme.textPrimary : theme.textPlaceholder, fontFamily:'DMSans_600SemiBold' }}>
+                <Text style={{ fontSize:10, color: theme.textMuted, fontFamily:Type.ui, marginBottom:2 }}>Bed Time</Text>
+                <Text style={{ fontSize:16, color: sleepBedTime ? theme.textPrimary : theme.textPlaceholder, fontFamily:Type.uiSemibold }}>
                   {sleepBedTime ? sleepBedTime.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : 'Tap to set'}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setActiveSleepPicker(activeSleepPicker === 'wake' ? null : 'wake'); }}
                 style={{ flex:1, backgroundColor: activeSleepPicker === 'wake' ? theme.accentBlueBg : theme.bgInput, borderWidth:1, borderColor: activeSleepPicker === 'wake' ? theme.accentBlueBorder : theme.borderInput, borderRadius:6, padding:10, alignItems:'center' }}>
-                <Text style={{ fontSize:10, color: theme.textMuted, fontFamily:'DMSans_400Regular', marginBottom:2 }}>Wake Time</Text>
-                <Text style={{ fontSize:16, color: sleepWakeTime ? theme.textPrimary : theme.textPlaceholder, fontFamily:'DMSans_600SemiBold' }}>
+                <Text style={{ fontSize:10, color: theme.textMuted, fontFamily:Type.ui, marginBottom:2 }}>Wake Time</Text>
+                <Text style={{ fontSize:16, color: sleepWakeTime ? theme.textPrimary : theme.textPlaceholder, fontFamily:Type.uiSemibold }}>
                   {sleepWakeTime ? sleepWakeTime.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : 'Tap to set'}
                 </Text>
               </TouchableOpacity>
             </View>
             {sleepBedTime && sleepWakeTime && (
-              <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:'DMSans_400Regular', textAlign:'center', marginBottom:8 }}>
+              <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:Type.ui, textAlign:'center', marginBottom:8 }}>
                 {(() => { let diff=sleepWakeTime.getTime()-sleepBedTime.getTime(); if(diff<0) diff+=24*3600000; const h=Math.floor(diff/3600000); const m=Math.round((diff%3600000)/60000); return m>0?`${h}h ${m}m of sleep`:`${h}h of sleep`; })()}
               </Text>
             )}
@@ -2835,7 +2839,7 @@ export default function HomeScreen() {
             <View style={{ flexDirection:'row', gap:8 }}>
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditingSleep(false); setActiveSleepPicker(null); }}
                 style={{ flex:1, backgroundColor: theme.bgInput, borderWidth:1, borderColor: theme.borderInput, borderRadius:6, padding:10, alignItems:'center' }}>
-                <Text style={{ color: theme.textMuted, fontSize:13, fontFamily:'DMSans_600SemiBold' }}>Cancel</Text>
+                <Text style={{ color: theme.textMuted, fontSize:13, fontFamily:Type.uiSemibold }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={async () => {
                 triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
@@ -2864,7 +2868,7 @@ export default function HomeScreen() {
                 });
                 setSleepStoredBed(bedStr); setSleepStoredWake(wakeStr); setEditingSleep(false); setActiveSleepPicker(null);
               }} style={{ flex:1, backgroundColor: theme.accentGreen, borderRadius:6, padding:10, alignItems:'center' }}>
-                <Text style={{ color: theme.bgPrimary, fontSize:13, fontFamily:'DMSans_600SemiBold' }}>Save</Text>
+                <Text style={{ color: theme.bgPrimary, fontSize:13, fontFamily:Type.uiSemibold }}>Save</Text>
               </TouchableOpacity>
               {sleepOverride && (
                 <TouchableOpacity onPress={async () => {
@@ -2878,7 +2882,7 @@ export default function HomeScreen() {
                   await storageSet(`pj_${todayKey}`,JSON.stringify(current));
                   setEditingSleep(false); setActiveSleepPicker(null);
                 }} style={{ backgroundColor: theme.accentRedBg, borderWidth:1, borderColor: theme.accentRedBorder, borderRadius:6, paddingVertical:10, paddingHorizontal:16, alignItems:'center' }}>
-                  <Text style={{ color: theme.accentRed, fontSize:13, fontFamily:'DMSans_500Medium' }}>Clear</Text>
+                  <Text style={{ color: theme.accentRed, fontSize:13, fontFamily:Type.uiMedium }}>Clear</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -2938,15 +2942,15 @@ export default function HomeScreen() {
                   <View style={{ flexDirection:'row', alignItems:'center', marginBottom:14 }}>
                     <View style={{ flex:1, paddingRight:12 }}>
                       <View style={{ shadowColor:'#000000', shadowOffset:{width:0,height:2}, shadowOpacity:0.18, shadowRadius:0 }}>
-                        <Text style={{ fontSize:42, color:scoreColor, fontFamily:'BebasNeue_400Regular', letterSpacing:1, opacity:0.88 }}>{hrs}h {mins}m</Text>
+                        <DurationValue value={`${hrs}h ${mins}m`} size={42} color={scoreColor} style={{ letterSpacing:1, opacity:0.88 }} />
                       </View>
                       {scoreLabel ? (
-                        <Text style={{ fontSize:9, color:scoreColor, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginTop:2 }}>{scoreLabel}</Text>
+                        <Text style={{ fontSize:9, color:scoreColor, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase', marginTop:2 }}>{scoreLabel}</Text>
                       ) : (
-                        <Text style={{ fontSize:9, color:theme.textDim, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginTop:2 }}>HEALTHKIT</Text>
+                        <Text style={{ fontSize:9, color:theme.textDim, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase', marginTop:2 }}>HEALTHKIT</Text>
                       )}
                       {sleepTimes && (
-                        <Text style={{ fontSize:12, color:theme.textMuted, fontFamily:'DMSans_500Medium', marginTop:6 }}>
+                        <Text style={{ fontSize:12, color:theme.textMuted, fontFamily:Type.uiMedium, marginTop:6 }}>
                           {sleepTimes.bed} → {sleepTimes.wake}
                         </Text>
                       )}
@@ -2978,10 +2982,10 @@ export default function HomeScreen() {
                           <View style={{ width:10, height:10, borderRadius:5, backgroundColor:s.color }} />
                         </View>
                         <View style={{ flex:1 }}>
-                          <Text style={{ fontSize:9, color:theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase' }}>{s.label}</Text>
+                          <Text style={{ fontSize:9, color:theme.textMuted, fontFamily:Type.uiBold, letterSpacing:1, textTransform:'uppercase' }}>{s.label}</Text>
                           <View style={{ flexDirection:'row', alignItems:'baseline', gap:3 }}>
-                            <Text style={{ fontSize:19, color:s.color, fontFamily:'BebasNeue_400Regular', letterSpacing:0.5 }}>{s.value}</Text>
-                            <Text style={{ fontSize:9, color:theme.textDim, fontFamily:'DMSans_400Regular' }}>{s.unit}</Text>
+                            <DurationValue value={s.value} size={19} color={s.color} style={{ letterSpacing:0.5 }} />
+                            <Text style={{ fontSize:9, color:theme.textDim, fontFamily:Type.ui }}>{s.unit}</Text>
                           </View>
                         </View>
                       </View>
@@ -2992,26 +2996,26 @@ export default function HomeScreen() {
                 <View style={{ flexDirection:'row', alignItems:'center' }}>
                   <View style={{ flex:1, paddingRight:12 }}>
                     <View style={{ shadowColor:'#000000', shadowOffset:{width:0,height:2}, shadowOpacity:0.18, shadowRadius:0 }}>
-                      <Text style={{ fontSize:42, color: score !== null ? scoreColor : theme.textPrimary, fontFamily:'BebasNeue_400Regular', letterSpacing:1, opacity:0.88 }}>{hrs}h {mins}m</Text>
+                      <DurationValue value={`${hrs}h ${mins}m`} size={42} color={score !== null ? scoreColor : theme.textPrimary} style={{ letterSpacing:1, opacity:0.88 }} />
                     </View>
                     {scoreLabel ? (
-                      <Text style={{ fontSize:9, color:scoreColor, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:6 }}>
+                      <Text style={{ fontSize:9, color:scoreColor, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase', marginBottom:6 }}>
                         {scoreLabel}{isManual ? ' · manual' : ''}
                       </Text>
                     ) : (
-                      <Text style={{ fontSize:9, color:theme.textDim, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:6 }}>
+                      <Text style={{ fontSize:9, color:theme.textDim, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase', marginBottom:6 }}>
                         {isManual ? 'MANUAL' : 'HEALTHKIT'}
                       </Text>
                     )}
                     {((sleepStoredBed&&sleepStoredWake)||sleepTimes) ? (
-                      <Text style={{ fontSize:12, color:theme.textMuted, fontFamily:'DMSans_500Medium', marginBottom:6 }}>
+                      <Text style={{ fontSize:12, color:theme.textMuted, fontFamily:Type.uiMedium, marginBottom:6 }}>
                         {sleepStoredBed||sleepTimes?.bed} → {sleepStoredWake||sleepTimes?.wake}
                       </Text>
                     ) : null}
                     {consistencyLabel && (
                       <View style={{ flexDirection:'row', alignItems:'center', gap:5 }}>
                         <View style={{ width:6, height:6, borderRadius:3, backgroundColor:consistencyColor }} />
-                        <Text style={{ fontSize:10, color:consistencyColor, fontFamily:'DMSans_500Medium' }}>{consistencyLabel}</Text>
+                        <Text style={{ fontSize:10, color:consistencyColor, fontFamily:Type.uiMedium }}>{consistencyLabel}</Text>
                       </View>
                     )}
                   </View>
@@ -3030,7 +3034,7 @@ export default function HomeScreen() {
               {/* Feel rating prompt: Path 2/3 only */}
               {path !== 1 && (
                 <View ref={sleepFeelRef} collapsable={false} style={{ marginTop:12, paddingTop:12, borderTopWidth:0.5, borderTopColor:theme.borderSubtle }}>
-                  <Text style={{ fontSize:9, color:theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>
+                  <Text style={{ fontSize:9, color:theme.textMuted, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>
                     {sleepFeelRating ? 'HOW DID YOU SLEEP?' : 'HOW DID YOU SLEEP? · REQUIRED FOR SCORE'}
                   </Text>
                   {[[1,2,3,4,5],[6,7,8,9,10]].map((row, ri) => (
@@ -3054,7 +3058,7 @@ export default function HomeScreen() {
                               borderWidth: 0.5,
                               borderColor: selected ? fc : fc + '40',
                             }}>
-                              <Text style={{ fontSize:16, fontFamily:'BebasNeue_400Regular', color: selected ? '#ffffff' : fc }}>{r}</Text>
+                              <Text style={{ fontSize:16, fontFamily:Type.num, color: selected ? '#ffffff' : fc }}>{r}</Text>
                             </TouchableOpacity>
                           </Animated.View>
                         );
@@ -3062,7 +3066,7 @@ export default function HomeScreen() {
                     </View>
                   ))}
                   {sleepFeelRating && (
-                    <Text style={{ fontSize:10, color: feelColor(sleepFeelRating), fontFamily:'DMSans_600SemiBold', marginTop:6, textAlign:'center' }}>
+                    <Text style={{ fontSize:10, color: feelColor(sleepFeelRating), fontFamily:Type.uiSemibold, marginTop:6, textAlign:'center' }}>
                       {FEEL_DESCRIPTORS[sleepFeelRating]}
                     </Text>
                   )}
@@ -3073,17 +3077,18 @@ export default function HomeScreen() {
                 <View style={{ marginTop:10, paddingTop:10, borderTopWidth:0.5, borderTopColor:theme.borderSubtle }}>
                   <View style={{ flexDirection:'row', alignItems:'flex-start', gap:6 }}>
                     <Ionicons name="bulb-outline" size={11} color={theme.textMuted} style={{ marginTop:2 }} />
-                    <Text numberOfLines={aiSleepTip ? 2 : undefined} style={{ fontSize:11, color:theme.textMuted, fontFamily:'DMSans_400Regular', fontStyle:'italic', flex:1, lineHeight:17 }}>{tip}</Text>
+                    {/* VOICE role -- see the recovery tip above */}
+                    <Text numberOfLines={aiSleepTip ? 2 : undefined} style={{ fontSize:11.5, color:theme.textMuted, fontFamily:Type.voice, flex:1, lineHeight:17 }}>{tip}</Text>
                   </View>
                   {aiSleepTip && (
                     <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'flex-end', marginTop:6 }}>
-                      <Text style={{ fontSize:10, color:theme.accentBlue, fontFamily:'DMSans_600SemiBold' }}>Sleep Hub</Text>
+                      <Text style={{ fontSize:10, color:theme.accentBlue, fontFamily:Type.uiSemibold }}>Sleep Hub</Text>
                       <Ionicons name="chevron-forward" size={11} color={theme.accentBlue} style={{ marginLeft:1 }} />
                     </View>
                   )}
                 </View>
               )}
-              <Text style={{ fontSize:10, color:theme.textDim, fontFamily:'DMSans_400Regular', textAlign:'center', marginTop:8, fontStyle:'italic' }}>For informational purposes only. Not medical advice.</Text>
+              <Text style={{ fontSize:10, color:theme.textDim, fontFamily:Type.ui, textAlign:'center', marginTop:8, fontStyle:'italic' }}>For informational purposes only. Not medical advice.</Text>
             </View>
           );
         })()}
@@ -3178,8 +3183,8 @@ export default function HomeScreen() {
         {!hasAny ? (
           <View style={{ alignItems:'center', paddingVertical:16, gap:6 }}>
             <Ionicons name="fitness-outline" size={28} color={theme.iconMuted} />
-            <Text style={{ fontSize:12, color: theme.textDim, fontFamily:'DMSans_400Regular', fontStyle:'italic' }}>No fitness data available</Text>
-            <Text style={{ fontSize:10, color: theme.textDim, fontFamily:'DMSans_400Regular', textAlign:'center' }}>Metrics sync automatically from Apple Health</Text>
+            <Text style={{ fontSize:12, color: theme.textDim, fontFamily:Type.ui, fontStyle:'italic' }}>No fitness data available</Text>
+            <Text style={{ fontSize:10, color: theme.textDim, fontFamily:Type.ui, textAlign:'center' }}>Metrics sync automatically from Apple Health</Text>
           </View>
         ) : (
           <>
@@ -3190,16 +3195,16 @@ export default function HomeScreen() {
                     <Ionicons name={m.icon} size={13} color={m.color} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>{m.label}</Text>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 1, textTransform: 'uppercase' }}>{m.label}</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 3 }}>
-                      <Text style={{ fontSize: 19, color: m.color, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5 }}>{m.value}</Text>
-                      <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>{m.unit}</Text>
+                      <Text style={{ fontSize: 19, color: m.color, fontFamily: Type.num, letterSpacing: 0.5 }}>{m.value}</Text>
+                      <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: Type.ui }}>{m.unit}</Text>
                     </View>
                   </View>
                 </View>
               ))}
             </View>
-            <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 10, textAlign: 'center' }}>
+            <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: Type.ui, marginTop: 10, textAlign: 'center' }}>
               For informational purposes only. Not medical advice.
             </Text>
           </>
@@ -3300,10 +3305,10 @@ export default function HomeScreen() {
             <TooltipIcon tooltipKey="challenge_system" />
           </View>
           <View style={{ alignItems:'center', paddingVertical:6, gap:8 }}>
-            <Text style={{ color: accentRaw, fontSize:20, fontFamily:'BebasNeue_400Regular', letterSpacing:1, textAlign:'center' }}>
+            <Text style={{ color: accentRaw, fontSize:20, fontFamily:Type.num, letterSpacing:1, textAlign:'center' }}>
               {isMindful ? 'Set a Personal Challenge' : 'Start a Challenge'}
             </Text>
-            <Text style={{ color: theme.textSecondary, fontSize:12, fontFamily:'DMSans_400Regular', textAlign:'center', lineHeight:18, marginBottom:8 }}>
+            <Text style={{ color: theme.textSecondary, fontSize:12, fontFamily:Type.ui, textAlign:'center', lineHeight:18, marginBottom:8 }}>
               {isMindful
                 ? 'Grow past a previous week, or set a higher daily target for a stretch. Track it gently right here.'
                 : 'Beat a previous week, or set a higher daily target for a stretch. Track it live, right here.'}
@@ -3311,7 +3316,7 @@ export default function HomeScreen() {
             <TouchableOpacity
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); router.push('/challenge-create'); }}
               style={{ backgroundColor: accentRaw, borderRadius: 8, paddingVertical: 12, alignSelf: 'stretch', alignItems: 'center' }}>
-              <Text style={{ fontSize:13, fontFamily:'DMSans_600SemiBold', color:'#fff' }}>
+              <Text style={{ fontSize:13, fontFamily:Type.uiSemibold, color:'#fff' }}>
                 {isMindful ? 'Set a Challenge' : 'Start a Challenge'}
               </Text>
             </TouchableOpacity>
@@ -3354,15 +3359,15 @@ export default function HomeScreen() {
             <Ionicons name={won ? 'trophy' : 'ribbon'} size={12} color={washColor} />
             <Text style={[styles.cardLabel, { marginBottom:0, color: washColor }]}>{perfect && won ? 'Perfect' : 'Complete'}</Text>
           </View>
-          <Text style={{ fontSize:18, fontFamily:'DMSans_700Bold', color: theme.textPrimary, marginBottom:4 }}>{title}</Text>
-          <Text style={{ fontSize:13, fontFamily:'DMSans_400Regular', color: theme.textSecondary, lineHeight:19, marginBottom:14 }}>{outcomeLine}</Text>
+          <Text style={{ fontSize:18, fontFamily:Type.uiBold, color: theme.textPrimary, marginBottom:4 }}>{title}</Text>
+          <Text style={{ fontSize:13, fontFamily:Type.ui, color: theme.textSecondary, lineHeight:19, marginBottom:14 }}>{outcomeLine}</Text>
           <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between' }}>
-            <Text style={{ fontSize:13, fontFamily:'DMSans_600SemiBold', color: washColor }}>See how you did ›</Text>
+            <Text style={{ fontSize:13, fontFamily:Type.uiSemibold, color: washColor }}>See how you did ›</Text>
             <TouchableOpacity
               onPress={async (e: any) => { e?.stopPropagation?.(); triggerHaptic(Haptics.ImpactFeedbackStyle.Light); await clearActiveChallenge(); setActiveChallenge(null); setChallengeProg(null); }}
               hitSlop={{ top:8, bottom:8, left:8, right:8 }}
               style={{ paddingVertical:4, paddingHorizontal:10, borderRadius:6, borderWidth:1, borderColor: theme.borderCard }}>
-              <Text style={{ fontSize:12, fontFamily:'DMSans_600SemiBold', color: theme.textMuted }}>Done</Text>
+              <Text style={{ fontSize:12, fontFamily:Type.uiSemibold, color: theme.textMuted }}>Done</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -3384,13 +3389,13 @@ export default function HomeScreen() {
               <TooltipIcon tooltipKey="challenge_system" />
             </View>
           </View>
-          <Text style={{ fontSize:18, fontFamily:'DMSans_700Bold', color: theme.textSecondary, marginBottom:4 }}>{title}</Text>
+          <Text style={{ fontSize:18, fontFamily:Type.uiBold, color: theme.textSecondary, marginBottom:4 }}>{title}</Text>
           {ch.type === 'beat' && !!summary && (
-            <Text style={{ fontSize:12, fontFamily:'DMSans_400Regular', color: theme.textMuted, marginBottom:10 }}>{summary}</Text>
+            <Text style={{ fontSize:12, fontFamily:Type.ui, color: theme.textMuted, marginBottom:10 }}>{summary}</Text>
           )}
           <View style={{ flexDirection:'row', alignItems:'center', gap:5, marginTop:6 }}>
             <Ionicons name="time-outline" size={13} color={accentRaw} />
-            <Text style={{ fontSize:12, fontFamily:'DMSans_600SemiBold', color: accentRaw }}>
+            <Text style={{ fontSize:12, fontFamily:Type.uiSemibold, color: accentRaw }}>
               Kicks off tomorrow, {prog.totalDays} {prog.totalDays === 1 ? 'day' : 'days'}
             </Text>
           </View>
@@ -3411,24 +3416,24 @@ export default function HomeScreen() {
           </View>
           <View style={{ flexDirection:'row', alignItems:'center', gap:4, backgroundColor: `${accentRaw}18`, borderWidth:1, borderColor:`${accentRaw}40`, borderRadius:6, paddingHorizontal:8, paddingVertical:3 }}>
             <Ionicons name="timer-outline" size={10} color={accentRaw} />
-            <Text style={{ fontSize:10, fontFamily:'DMSans_700Bold', letterSpacing:0.5, color: accentRaw }}>{daysLeftChip}</Text>
+            <Text style={{ fontSize:10, fontFamily:Type.uiBold, letterSpacing:0.5, color: accentRaw }}>{daysLeftChip}</Text>
           </View>
         </View>
-        <Text style={{ fontSize:16, fontFamily:'DMSans_700Bold', color: theme.textSecondary, marginBottom: ch.type === 'beat' ? 2 : 12 }}>{title}</Text>
+        <Text style={{ fontSize:16, fontFamily:Type.uiBold, color: theme.textSecondary, marginBottom: ch.type === 'beat' ? 2 : 12 }}>{title}</Text>
 
         {ch.type === 'beat' ? (
           <>
-            <Text style={{ fontSize:12, fontFamily:'DMSans_600SemiBold', color: accentRaw, marginBottom:10 }}>
+            <Text style={{ fontSize:12, fontFamily:Type.uiSemibold, color: accentRaw, marginBottom:10 }}>
               {isMindful ? 'Ahead on' : 'Leading on'} {prog.metricsBeaten ?? 0} of {prog.metricsTotal ?? 0}
             </Text>
             {/* Column headers */}
             <View style={{ flexDirection:'row', marginBottom:4 }}>
               <View style={{ flex:1 }} />
               <View style={{ width:80, alignItems:'center' }}>
-                <Text style={{ fontSize:9, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase', color: accentRaw }}>You so far</Text>
+                <Text style={{ fontSize:9, fontFamily:Type.uiBold, letterSpacing:1.5, textTransform:'uppercase', color: accentRaw }}>You so far</Text>
               </View>
               <View style={{ width:80, alignItems:'center' }}>
-                <Text style={{ fontSize:9, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase', color: theme.textDim }}>{isMindful ? 'Previous' : 'To Beat'}</Text>
+                <Text style={{ fontSize:9, fontFamily:Type.uiBold, letterSpacing:1.5, textTransform:'uppercase', color: theme.textDim }}>{isMindful ? 'Previous' : 'To Beat'}</Text>
               </View>
             </View>
             {/* Metric rows */}
@@ -3440,18 +3445,18 @@ export default function HomeScreen() {
                 <View key={r.metric} style={{ flexDirection:'row', alignItems:'center', paddingVertical:9,
                   borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
                   <View style={{ flex:1 }}>
-                    <Text style={{ fontSize:10, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', color: theme.textPrimary }}>{r.label}</Text>
+                    <Text style={{ fontSize:10, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase', color: theme.textPrimary }}>{r.label}</Text>
                   </View>
                   <View style={{ width:80, alignItems:'center' }}>
                     {!isMindful && youLead && (
                       <View style={{ position:'absolute', left:2, top:'10%', width:3, height:'80%', backgroundColor: accentRaw, borderRadius:2 }} />
                     )}
-                    <Text style={{ fontSize:20, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: youColor }}>{fmtChallengeVal(r.metric, r.youAvg)}</Text>
-                    <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase', color: youColor, opacity:0.6 }}>{r.unit}</Text>
+                    <Text style={{ fontSize:20, fontFamily:Type.num, letterSpacing:1, color: youColor }}>{fmtChallengeVal(r.metric, r.youAvg)}</Text>
+                    <Text style={{ fontSize:8, fontFamily:Type.uiBold, letterSpacing:1, textTransform:'uppercase', color: youColor, opacity:0.6 }}>{r.unit}</Text>
                   </View>
                   <View style={{ width:80, alignItems:'center' }}>
-                    <Text style={{ fontSize:20, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: benchColor }}>{fmtChallengeVal(r.metric, r.benchmarkAvg)}</Text>
-                    <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase', color: benchColor, opacity:0.6 }}>{r.unit}</Text>
+                    <Text style={{ fontSize:20, fontFamily:Type.num, letterSpacing:1, color: benchColor }}>{fmtChallengeVal(r.metric, r.benchmarkAvg)}</Text>
+                    <Text style={{ fontSize:8, fontFamily:Type.uiBold, letterSpacing:1, textTransform:'uppercase', color: benchColor, opacity:0.6 }}>{r.unit}</Text>
                   </View>
                 </View>
               );
@@ -3468,12 +3473,12 @@ export default function HomeScreen() {
             const pct = target > 0 ? Math.min((doneAbs / target) * 100, 100) : 0;
             return (
               <>
-                <Text style={{ fontSize:26, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: theme.textPrimary, marginBottom:8 }}>
+                <Text style={{ fontSize:26, fontFamily:Type.num, letterSpacing:1, color: theme.textPrimary, marginBottom:8 }}>
                   {change === null ? 'Need 2 weigh-ins' : `${lose ? 'Down' : 'Up'} ${Math.abs(change).toFixed(1)} `}
                   {change !== null && <Text style={{ color: theme.textMuted }}>of {target.toFixed(1)} lbs</Text>}
                 </Text>
                 <AnimatedProgressBar pct={pct} color={accentRaw} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} />
-                <Text style={{ fontSize:12, fontFamily:'DMSans_500Medium', color: theme.textMuted, marginTop:8 }}>
+                <Text style={{ fontSize:12, fontFamily:Type.uiMedium, color: theme.textMuted, marginTop:8 }}>
                   {prog.daysRemaining} {prog.daysRemaining === 1 ? 'day' : 'days'} left
                 </Text>
               </>
@@ -3491,14 +3496,14 @@ export default function HomeScreen() {
           return (
             <>
               <View style={{ flexDirection:'row', alignItems:'baseline', gap:6, marginBottom:8 }}>
-                <Text style={{ fontSize:26, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: theme.textPrimary }}>{fmtChallengeVal(metric, today)}</Text>
-                <Text style={{ fontSize:16, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: theme.textMuted }}>/ {fmtChallengeVal(metric, target)}{unitLabel ? ` ${unitLabel}` : ''}</Text>
-                <Text style={{ fontSize:10, fontFamily:'DMSans_500Medium', color: theme.textDim, marginLeft:'auto' }}>today</Text>
+                <Text style={{ fontSize:26, fontFamily:Type.num, letterSpacing:1, color: theme.textPrimary }}>{fmtChallengeVal(metric, today)}</Text>
+                <Text style={{ fontSize:16, fontFamily:Type.num, letterSpacing:1, color: theme.textMuted }}>/ {fmtChallengeVal(metric, target)}{unitLabel ? ` ${unitLabel}` : ''}</Text>
+                <Text style={{ fontSize:10, fontFamily:Type.uiMedium, color: theme.textDim, marginLeft:'auto' }}>today</Text>
               </View>
               {todayBarPct !== null && (
                 <AnimatedProgressBar pct={todayBarPct} color={accentRaw} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} />
               )}
-              <Text style={{ fontSize:12, fontFamily:'DMSans_500Medium', color: theme.textMuted, marginTop:8 }}>
+              <Text style={{ fontSize:12, fontFamily:Type.uiMedium, color: theme.textMuted, marginTop:8 }}>
                 Hit {daysHit} of {daysElapsed} days, {daysRemaining} left
               </Text>
             </>
@@ -3574,17 +3579,19 @@ export default function HomeScreen() {
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                           <Ionicons name="sparkles" size={12} color={theme.accentBlueRaw} />
-                          <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, color: theme.accentBlueRaw, textTransform: 'uppercase' }}>Coach Insight</Text>
+                          <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, color: theme.accentBlueRaw, textTransform: 'uppercase' }}>Coach Insight</Text>
                           <TooltipIcon tooltipKey="smart_tip" size={14} />
                         </View>
                         <View style={{ backgroundColor: chipColor + '22', borderWidth: 1, borderColor: chipColor + '55', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-                          <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: chipColor }}>{chipLabel}</Text>
+                          <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, color: chipColor }}>{chipLabel}</Text>
                         </View>
                       </View>
-                      <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: theme.textSecondary, lineHeight: 21, marginBottom: 6 }}>{displayTitle}</Text>
-                      <Text numberOfLines={3} ellipsizeMode="tail" style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 20, marginBottom: 12 }}>{displayBody}</Text>
+                      {/* VOICE role: the Coach Insight card is the single largest piece of coach prose on
+                          Home, so it is the best read on the voice face. */}
+                      <Text style={{ fontSize: 14.5, fontFamily: Type.voiceSemibold, color: theme.textSecondary, lineHeight: 21, marginBottom: 6 }}>{displayTitle}</Text>
+                      <Text numberOfLines={3} ellipsizeMode="tail" style={{ fontSize: 13, fontFamily: Type.voice, color: theme.textSecondary, lineHeight: 20, marginBottom: 12 }}>{displayBody}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlueRaw }}>View in Effort vs Results</Text>
+                        <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: theme.accentBlueRaw }}>View in Effort vs Results</Text>
                         <Ionicons name="chevron-forward" size={12} color={theme.accentBlueRaw} />
                       </View>
                     </View>
@@ -3657,11 +3664,13 @@ export default function HomeScreen() {
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
         <View style={{ flexDirection:'row', alignItems:'center', gap:12, flex:1 }}>
           <HeaderAvatar />
-          <View style={{ flex:1 }}>
-            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.headerTitle, { color: theme.accentBlueRaw, fontSize: 28 }]}>
+          {/* paddingRight: the display faces are wider than Bebas was, so "Good afternoon" ran straight
+              into the refresh button. Gives the title a gutter before the icon row. */}
+          <View style={{ flex:1, paddingRight:8 }}>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>
               {(() => { const h=new Date().getHours(); return h<12?'Good morning':h<17?'Good afternoon':'Good evening'; })()}
             </Text>
-            <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', marginTop:1, letterSpacing:2, textTransform:'uppercase' }}>
+            <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, marginTop:1, letterSpacing:2, textTransform:'uppercase' }}>
               {new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}
             </Text>
           </View>
@@ -3695,15 +3704,15 @@ export default function HomeScreen() {
           <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeWaterCustomModal} activeOpacity={1} />
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={{ backgroundColor: theme.bgSheet, borderRadius:14, padding:24, width:'80%', borderWidth:0.5, borderColor: theme.borderCard }}>
-            <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:12 }}>
+            <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase', marginBottom:12 }}>
               {waterCustomSign==='add' ? 'Add Custom Amount' : 'Remove Custom Amount'}
             </Text>
-            <TextInput ref={waterCustomInputRef} style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textPrimary, padding:12, fontSize:24, fontFamily:'BebasNeue_400Regular', textAlign:'center', marginBottom:16 }}
+            <TextInput ref={waterCustomInputRef} style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textPrimary, padding:12, fontSize:24, fontFamily:Type.num, textAlign:'center', marginBottom:16 }}
               value={waterCustomInput} onChangeText={setWaterCustomInput} keyboardType="number-pad" placeholder="0" placeholderTextColor={theme.textPlaceholder} autoFocus />
-            <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase', textAlign:'center', marginBottom:16 }}>oz</Text>
+            <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:1, textTransform:'uppercase', textAlign:'center', marginBottom:16 }}>oz</Text>
             <View style={{ flexDirection:'row', gap:10 }}>
               <TouchableOpacity style={{ flex:1, padding:12, borderRadius:8, backgroundColor: theme.bgInput, alignItems:'center' }} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeWaterCustomModal(); }}>
-                <Text style={{ color: theme.textMuted, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>Cancel</Text>
+                <Text style={{ color: theme.textMuted, fontFamily:Type.uiSemibold, fontSize:14 }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={{ flex:1, padding:12, borderRadius:8, backgroundColor: waterCustomSign==='add' ? theme.accentBlueBg : theme.accentRedBg, alignItems:'center' }}
                 onPress={async () => {
@@ -3712,7 +3721,7 @@ export default function HomeScreen() {
                   if (amt > 0) { await doWaterUpdate(waterCustomSign === 'add' ? amt : -amt); }
                   closeWaterCustomModal();
                 }}>
-                <Text style={{ color: waterCustomSign==='add' ? theme.accentBlue : theme.accentRed, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>
+                <Text style={{ color: waterCustomSign==='add' ? theme.accentBlue : theme.accentRed, fontFamily:Type.uiSemibold, fontSize:14 }}>
                   {waterCustomSign==='add'?'Add':'Remove'}
                 </Text>
               </TouchableOpacity>
@@ -3772,7 +3781,7 @@ export default function HomeScreen() {
                 <View style={{ width:36, height:4, borderRadius:2, backgroundColor: theme.sheetHandle }} />
               </TouchableOpacity>
               <View style={{ paddingHorizontal:16, paddingBottom:12 }}>
-                <Text style={{ fontSize:9, color: theme.accentBlueRaw, fontFamily:'DMSans_700Bold', letterSpacing:3, textTransform:'uppercase' }}>Water Log</Text>
+                <Text style={{ fontSize:9, color: theme.accentBlueRaw, fontFamily:Type.uiBold, letterSpacing:3, textTransform:'uppercase' }}>Water Log</Text>
               </View>
               <View style={{ height:0.5, backgroundColor: theme.borderCard, marginHorizontal:16 }} />
               {/* All sections scrollable so Daily Goal is reachable with keyboard open */}
@@ -3780,31 +3789,31 @@ export default function HomeScreen() {
               {/* Progress */}
               <View style={{ paddingHorizontal:16, paddingTop:14, paddingBottom:14 }}>
                 <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-                  <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase' }}>Progress</Text>
+                  <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase' }}>Progress</Text>
                   <View style={{ backgroundColor: statusColor+'22', borderRadius:12, paddingHorizontal:8, paddingVertical:3 }}>
-                    <Text style={{ fontSize:10, color: statusColor, fontFamily:'DMSans_700Bold', letterSpacing:1 }}>{statusLabel}</Text>
+                    <Text style={{ fontSize:10, color: statusColor, fontFamily:Type.uiBold, letterSpacing:1 }}>{statusLabel}</Text>
                   </View>
                 </View>
                 <View style={{ flexDirection:'row', marginBottom:12 }}>
                   <View style={{ flex:1 }}>
-                    <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:2 }}>Logged</Text>
-                    <Text style={{ fontSize:28, color: theme.accentBlueRaw, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>
-                      {water}<Text style={{ fontSize:14, color: theme.textMuted, fontFamily:'BebasNeue_400Regular' }}> oz</Text>
+                    <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase', marginBottom:2 }}>Logged</Text>
+                    <Text style={{ fontSize:28, color: theme.accentBlueRaw, fontFamily:Type.num, letterSpacing:1 }}>
+                      {water}<Text style={{ fontSize:14, color: theme.textMuted, fontFamily:Type.num }}> oz</Text>
                     </Text>
-                    <Text style={{ fontSize:10, color: theme.textDim, fontFamily:'DMSans_400Regular' }}>of {waterGoal} oz goal</Text>
+                    <Text style={{ fontSize:10, color: theme.textDim, fontFamily:Type.ui }}>of {waterGoal} oz goal</Text>
                   </View>
                   {!goalMet ? (
                     <View style={{ flex:1, borderLeftWidth:0.5, borderLeftColor: theme.borderCard, paddingLeft:14 }}>
-                      <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:2 }}>Expected Now</Text>
-                      <Text style={{ fontSize:28, color: statusColor, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>
-                        {expectedOz}<Text style={{ fontSize:14, color: theme.textMuted, fontFamily:'BebasNeue_400Regular' }}> oz</Text>
+                      <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase', marginBottom:2 }}>Expected Now</Text>
+                      <Text style={{ fontSize:28, color: statusColor, fontFamily:Type.num, letterSpacing:1 }}>
+                        {expectedOz}<Text style={{ fontSize:14, color: theme.textMuted, fontFamily:Type.num }}> oz</Text>
                       </Text>
-                      <Text style={{ fontSize:10, color: theme.textDim, fontFamily:'DMSans_400Regular' }}>by this time of day</Text>
+                      <Text style={{ fontSize:10, color: theme.textDim, fontFamily:Type.ui }}>by this time of day</Text>
                     </View>
                   ) : (
                     <View style={{ flex:1, borderLeftWidth:0.5, borderLeftColor: theme.borderCard, paddingLeft:14, justifyContent:'center' }}>
-                      <Text style={{ fontSize:28, color: theme.statusGood, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>Goal</Text>
-                      <Text style={{ fontSize:20, color: theme.statusGood, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>Complete</Text>
+                      <Text style={{ fontSize:28, color: theme.statusGood, fontFamily:Type.num, letterSpacing:1 }}>Goal</Text>
+                      <Text style={{ fontSize:20, color: theme.statusGood, fontFamily:Type.num, letterSpacing:1 }}>Complete</Text>
                     </View>
                   )}
                 </View>
@@ -3815,19 +3824,19 @@ export default function HomeScreen() {
               <View style={{ height:0.5, backgroundColor: theme.borderCard, marginHorizontal:16 }} />
               {/* Entry Log */}
               <View style={{ paddingHorizontal:16, paddingTop:12, paddingBottom:4 }}>
-                <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase' }}>Entries</Text>
+                <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase' }}>Entries</Text>
               </View>
               <ScrollView style={{ maxHeight:180 }} contentContainerStyle={{ paddingHorizontal:16, paddingBottom:8 }} showsVerticalScrollIndicator={false} nestedScrollEnabled={true} keyboardDismissMode="on-drag">
                 {waterEntries.length === 0 ? (
-                  <Text style={{ fontSize:12, color: theme.textDim, fontFamily:'DMSans_400Regular', textAlign:'center', paddingVertical:14 }}>No entries yet today</Text>
+                  <Text style={{ fontSize:12, color: theme.textDim, fontFamily:Type.ui, textAlign:'center', paddingVertical:14 }}>No entries yet today</Text>
                 ) : (
                   [...waterEntries].reverse().map((entry, displayIdx) => {
                     const realIdx = waterEntries.length - 1 - displayIdx;
                     const entryTime = new Date(entry.timestamp).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
                     return (
                       <View key={realIdx} style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingVertical:9, borderBottomWidth:0.5, borderBottomColor: theme.borderCard }}>
-                        <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:'DMSans_500Medium', width:68 }}>{entryTime}</Text>
-                        <Text style={{ fontSize:14, color: entry.sign === 'add' ? theme.statusGood : theme.statusBad, fontFamily:'DMSans_600SemiBold', flex:1 }}>
+                        <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:Type.uiMedium, width:68 }}>{entryTime}</Text>
+                        <Text style={{ fontSize:14, color: entry.sign === 'add' ? theme.statusGood : theme.statusBad, fontFamily:Type.uiSemibold, flex:1 }}>
                           {entry.sign === 'add' ? '+' : '-'}{entry.amount} oz
                         </Text>
                         <View style={{ flexDirection:'row', alignItems:'center', gap:16 }}>
@@ -3846,12 +3855,12 @@ export default function HomeScreen() {
               <View style={{ height:0.5, backgroundColor: theme.borderCard, marginHorizontal:16 }} />
               {/* Presets */}
               <View style={{ paddingHorizontal:16, paddingTop:14, paddingBottom:16 }}>
-                <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>Quick Add Presets</Text>
+                <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>Quick Add Presets</Text>
                 <View style={{ flexDirection:'row', gap:8, marginBottom:10 }}>
                   {([0,1,2] as const).map(i => (
                     <View key={i} style={{ flex:1, alignItems:'center' }}>
                       <TextInput
-                        style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textSecondary, padding:10, fontSize:18, fontFamily:'BebasNeue_400Regular', textAlign:'center', width:'100%' }}
+                        style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textSecondary, padding:10, fontSize:18, fontFamily:Type.num, textAlign:'center', width:'100%' }}
                         value={waterPresetInputs[i]}
                         onChangeText={v => {
                           const cleaned = v.replace(/[^0-9]/g,'');
@@ -3863,7 +3872,7 @@ export default function HomeScreen() {
                         placeholder={String(waterPresets[i])}
                         placeholderTextColor={theme.textPlaceholder}
                       />
-                      <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_500Medium', marginTop:3 }}>oz</Text>
+                      <Text style={{ fontSize:9, color: theme.textDim, fontFamily:Type.uiMedium, marginTop:3 }}>oz</Text>
                     </View>
                   ))}
                 </View>
@@ -3872,24 +3881,24 @@ export default function HomeScreen() {
                   onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); saveWaterPresets(); }}
                   disabled={!presetsSaveable}
                 >
-                  <Text style={{ color: presetsSaveable ? theme.accentBlue : theme.textDim, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>Save Presets</Text>
+                  <Text style={{ color: presetsSaveable ? theme.accentBlue : theme.textDim, fontFamily:Type.uiSemibold, fontSize:14 }}>Save Presets</Text>
                 </TouchableOpacity>
               </View>
               <View style={{ height:0.5, backgroundColor: theme.borderCard, marginHorizontal:0, marginBottom:0, marginTop:0 }} />
               {/* Daily Goal */}
               <View style={{ paddingHorizontal:16, paddingTop:14, paddingBottom:20 }}>
-                <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>Daily Goal</Text>
+                <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>Daily Goal</Text>
                 <View style={{ flexDirection:'row', gap:8, alignItems:'flex-start' }}>
                   <View style={{ flex:1 }}>
                     <TextInput
-                      style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textSecondary, padding:10, fontSize:18, fontFamily:'BebasNeue_400Regular', textAlign:'center', width:'100%' }}
+                      style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textSecondary, padding:10, fontSize:18, fontFamily:Type.num, textAlign:'center', width:'100%' }}
                       value={waterGoalInput}
                       onChangeText={v => setWaterGoalInput(v.replace(/[^0-9]/g,''))}
                       keyboardType="number-pad"
                       placeholder={String(waterGoal)}
                       placeholderTextColor={theme.textPlaceholder}
                     />
-                    <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_500Medium', marginTop:3, textAlign:'center' }}>oz</Text>
+                    <Text style={{ fontSize:9, color: theme.textDim, fontFamily:Type.uiMedium, marginTop:3, textAlign:'center' }}>oz</Text>
                   </View>
                   {(() => {
                     const goalInputNum = parseInt(waterGoalInput);
@@ -3899,7 +3908,7 @@ export default function HomeScreen() {
                         style={{ flex:2, backgroundColor: goalSaveable ? theme.accentBlueBg : theme.bgInput, borderWidth:1, borderColor: goalSaveable ? theme.accentBlueBorder : theme.borderInput, borderRadius:8, padding:12, alignItems:'center', opacity: goalSaveable ? 1 : 0.5, marginTop:1 }}
                         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); saveWaterGoal(); }}
                         disabled={!goalSaveable}>
-                        <Text style={{ color: goalSaveable ? theme.accentBlue : theme.textDim, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>Save Goal</Text>
+                        <Text style={{ color: goalSaveable ? theme.accentBlue : theme.textDim, fontFamily:Type.uiSemibold, fontSize:14 }}>Save Goal</Text>
                       </TouchableOpacity>
                     );
                   })()}
@@ -3919,22 +3928,22 @@ export default function HomeScreen() {
                   <View style={{ alignItems:'center', marginBottom:6 }}>
                     <View style={{ width:36, height:4, borderRadius:2, backgroundColor: theme.sheetHandle }} />
                   </View>
-                  <Text style={{ fontSize:9, color: theme.accentBlueRaw, fontFamily:'DMSans_700Bold', letterSpacing:3, textTransform:'uppercase', marginBottom:16, textAlign:'center' }}>Edit Entry</Text>
+                  <Text style={{ fontSize:9, color: theme.accentBlueRaw, fontFamily:Type.uiBold, letterSpacing:3, textTransform:'uppercase', marginBottom:16, textAlign:'center' }}>Edit Entry</Text>
                   {/* Sign toggle */}
                   <View style={{ flexDirection:'row', gap:8, marginBottom:14 }}>
                     <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditWaterSign('add'); }}
                       style={{ flex:1, paddingVertical:10, borderRadius:8, borderWidth:1, alignItems:'center', backgroundColor: editWaterSign==='add' ? theme.statusGood+'22' : 'transparent', borderColor: editWaterSign==='add' ? theme.statusGood : theme.borderInput }}>
-                      <Text style={{ fontSize:13, fontFamily:'DMSans_600SemiBold', color: editWaterSign==='add' ? theme.statusGood : theme.textMuted }}>Add</Text>
+                      <Text style={{ fontSize:13, fontFamily:Type.uiSemibold, color: editWaterSign==='add' ? theme.statusGood : theme.textMuted }}>Add</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditWaterSign('remove'); }}
                       style={{ flex:1, paddingVertical:10, borderRadius:8, borderWidth:1, alignItems:'center', backgroundColor: editWaterSign==='remove' ? theme.statusBad+'22' : 'transparent', borderColor: editWaterSign==='remove' ? theme.statusBad : theme.borderInput }}>
-                      <Text style={{ fontSize:13, fontFamily:'DMSans_600SemiBold', color: editWaterSign==='remove' ? theme.statusBad : theme.textMuted }}>Remove</Text>
+                      <Text style={{ fontSize:13, fontFamily:Type.uiSemibold, color: editWaterSign==='remove' ? theme.statusBad : theme.textMuted }}>Remove</Text>
                     </TouchableOpacity>
                   </View>
                   {/* Amount */}
                   <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'center', marginBottom:18 }}>
                     <TextInput
-                      style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textSecondary, paddingVertical:10, paddingHorizontal:16, fontSize:26, fontFamily:'BebasNeue_400Regular', textAlign:'center', minWidth:130 }}
+                      style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textSecondary, paddingVertical:10, paddingHorizontal:16, fontSize:26, fontFamily:Type.num, textAlign:'center', minWidth:130 }}
                       value={editWaterAmount}
                       onChangeText={v => setEditWaterAmount(v.replace(/[^0-9]/g,''))}
                       keyboardType="number-pad"
@@ -3942,12 +3951,12 @@ export default function HomeScreen() {
                       placeholder="0"
                       placeholderTextColor={theme.textPlaceholder}
                     />
-                    <Text style={{ fontSize:16, color: theme.textMuted, fontFamily:'BebasNeue_400Regular', marginLeft:8 }}>oz</Text>
+                    <Text style={{ fontSize:16, color: theme.textMuted, fontFamily:Type.num, marginLeft:8 }}>oz</Text>
                   </View>
                   {/* Actions */}
                   <View style={{ flexDirection:'row', gap:8 }}>
                     <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeWaterEntryEdit(); }} style={{ flex:1, paddingVertical:12, borderRadius:8, borderWidth:1, borderColor: theme.borderInput, alignItems:'center' }}>
-                      <Text style={{ fontSize:14, fontFamily:'DMSans_600SemiBold', color: theme.textMuted }}>Cancel</Text>
+                      <Text style={{ fontSize:14, fontFamily:Type.uiSemibold, color: theme.textMuted }}>Cancel</Text>
                     </TouchableOpacity>
                     {(() => {
                       const amt = parseInt(editWaterAmount);
@@ -3955,7 +3964,7 @@ export default function HomeScreen() {
                       return (
                         <TouchableOpacity onPress={saveWaterEntryEdit} disabled={!saveable}
                           style={{ flex:1, paddingVertical:12, borderRadius:8, borderWidth:1, alignItems:'center', backgroundColor: saveable ? theme.accentBlueBg : theme.bgInput, borderColor: saveable ? theme.accentBlueBorder : theme.borderInput, opacity: saveable ? 1 : 0.5 }}>
-                          <Text style={{ fontSize:14, fontFamily:'DMSans_600SemiBold', color: saveable ? theme.accentBlue : theme.textDim }}>Save</Text>
+                          <Text style={{ fontSize:14, fontFamily:Type.uiSemibold, color: saveable ? theme.accentBlue : theme.textDim }}>Save</Text>
                         </TouchableOpacity>
                       );
                     })()}
@@ -4026,10 +4035,10 @@ export default function HomeScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueRaw + '44', borderRadius: 12, padding: 12, marginBottom: 12, gap: 10 }}>
               <Ionicons name="airplane" size={18} color={theme.accentBlueRaw} />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.accentBlueRaw }}>
+                <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.accentBlueRaw }}>
                   {isScheduled ? 'Vacation Scheduled' : 'On Vacation'}
                 </Text>
-                <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted }}>
+                <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textMuted }}>
                   Back {resumeStr}
                 </Text>
               </View>
@@ -4043,7 +4052,7 @@ export default function HomeScreen() {
                 }}
                 style={{ backgroundColor: theme.accentRedBg, borderWidth: 1, borderColor: theme.accentRedBorder, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 6 }}
               >
-                <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentRed, letterSpacing: 1 }}>END EARLY</Text>
+                <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentRed, letterSpacing: 1 }}>END EARLY</Text>
               </TouchableOpacity>
             </View>
           );
@@ -4087,19 +4096,19 @@ export default function HomeScreen() {
             </View>
             {/* Header */}
             <View style={[styles.editSheetHeader, { borderBottomColor: theme.borderSubtle }]}>
-              <Text style={{ fontSize: 10, color: theme.accentBlueRaw, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase' }}>Edit Layout</Text>
+              <Text style={{ fontSize: 10, color: theme.accentBlueRaw, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase' }}>Edit Layout</Text>
               <View style={{ backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder, borderRadius: 6, paddingHorizontal: 14, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>DONE</Text>
+                <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: Type.uiBold, letterSpacing: 1 }}>DONE</Text>
               </View>
             </View>
             {/* Segmented tabs -- dynamic, reflects editTab state */}
             <View ref={editLayoutTabsRef} collapsable={false} style={{ flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10 }}>
               <View style={{ flex: 1, flexDirection: 'row', backgroundColor: theme.bgInput, borderRadius: 10, padding: 3 }}>
                 <View style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center', backgroundColor: editTab === 'my' ? theme.accentBlueRaw : 'transparent' }}>
-                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', color: editTab === 'my' ? '#ffffff' : theme.textMuted }}>My Cards</Text>
+                  <Text style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase', color: editTab === 'my' ? '#ffffff' : theme.textMuted }}>My Cards</Text>
                 </View>
                 <View style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center', backgroundColor: editTab === 'add' ? theme.accentBlueRaw : 'transparent' }}>
-                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', color: editTab === 'add' ? '#ffffff' : theme.textMuted }}>Add Cards</Text>
+                  <Text style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase', color: editTab === 'add' ? '#ffffff' : theme.textMuted }}>Add Cards</Text>
                 </View>
               </View>
             </View>
@@ -4134,7 +4143,7 @@ export default function HomeScreen() {
                   );
                 })}
                 {cardOrder.length > 4 && (
-                  <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 8, textAlign: 'center' }}>
+                  <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, marginTop: 8, textAlign: 'center' }}>
                     + {cardOrder.length - 4} more card{cardOrder.length - 4 !== 1 ? 's' : ''}
                   </Text>
                 )}
@@ -4143,9 +4152,9 @@ export default function HomeScreen() {
             {/* ADD CARDS tab */}
             {editTab === 'add' && (
               <ScrollView showsVerticalScrollIndicator={false} scrollEnabled={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}>
-                <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 8, marginTop: 4 }}>Home Cards</Text>
+                <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase', marginBottom: 8, marginTop: 4 }}>Home Cards</Text>
                 {CARD_REGISTRY.filter(m => !cardVisible[m.id]).length === 0 ? (
-                  <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginBottom: 12 }}>All cards are currently visible.</Text>
+                  <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui, marginBottom: 12 }}>All cards are currently visible.</Text>
                 ) : (
                   CARD_REGISTRY.filter(m => !cardVisible[m.id]).map(m => (
                     <View key={m.id} style={styles.editCardRow}>
@@ -4162,9 +4171,9 @@ export default function HomeScreen() {
                     </View>
                   ))
                 )}
-                <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 8, marginTop: 12 }}>Custom Stats Graphs</Text>
+                <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase', marginBottom: 8, marginTop: 12 }}>Custom Stats Graphs</Text>
                 {allStatsCards.filter(c => c.type === 'graph' && c.placement !== 'both').length === 0 ? (
-                  <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>Build a graph in the Stats tab to pin it here for a quick home screen view.</Text>
+                  <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui }}>Build a graph in the Stats tab to pin it here for a quick home screen view.</Text>
                 ) : (
                   allStatsCards.filter(c => c.type === 'graph' && c.placement !== 'both').slice(0, 3).map(card => (
                     <View key={card.id} style={styles.editCardRow}>
@@ -4213,10 +4222,10 @@ export default function HomeScreen() {
             </TouchableOpacity>
             {/* Header row */}
             <View style={[styles.editSheetHeader, { borderBottomColor: theme.borderSubtle }]}>
-              <Text style={{ fontSize:10, color: theme.accentBlueRaw, fontFamily:'DMSans_700Bold', letterSpacing:3, textTransform:'uppercase' }}>Edit Layout</Text>
+              <Text style={{ fontSize:10, color: theme.accentBlueRaw, fontFamily:Type.uiBold, letterSpacing:3, textTransform:'uppercase' }}>Edit Layout</Text>
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); exitEditMode(); }}
                 style={{ backgroundColor: theme.accentGreenBg, borderWidth:1, borderColor: theme.accentGreenBorder, borderRadius:6, paddingHorizontal:14, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center' }}>
-                <Text style={{ color: theme.accentGreen, fontSize:12, fontFamily:'DMSans_700Bold', letterSpacing:1 }}>DONE</Text>
+                <Text style={{ color: theme.accentGreen, fontSize:12, fontFamily:Type.uiBold, letterSpacing:1 }}>DONE</Text>
               </TouchableOpacity>
             </View>
 
@@ -4228,7 +4237,7 @@ export default function HomeScreen() {
                     style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center',
                       backgroundColor: editTab === tab ? theme.accentBlueRaw : 'transparent',
                     }}>
-                    <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase',
+                    <Text style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase',
                       color: editTab === tab ? '#ffffff' : theme.textMuted }}>
                       {tab === 'my' ? 'My Cards' : 'Add Cards'}
                     </Text>
@@ -4282,7 +4291,7 @@ export default function HomeScreen() {
                   return (
                     <>
                       <View style={{ paddingTop: 16, paddingBottom: 8, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle, marginTop: 8, paddingHorizontal: 0 }}>
-                        <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Pinned Graphs</Text>
+                        <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>Pinned Graphs</Text>
                       </View>
                       {pinned.map(card => {
                         const graphMeta = card.dataKey ? DATA_KEY_META[card.dataKey as keyof typeof DATA_KEY_META] : null;
@@ -4313,10 +4322,10 @@ export default function HomeScreen() {
             {/* ADD CARDS tab */}
             {editTab === 'add' && (
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}>
-                <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 8, marginTop: 4 }}>Home Cards</Text>
+                <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase', marginBottom: 8, marginTop: 4 }}>Home Cards</Text>
                 {CARD_REGISTRY.filter(meta => !cardVisible[meta.id]).length === 0 ? (
                   <View style={{ paddingVertical: 16, alignItems: 'center' }}>
-                    <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>All home cards are active</Text>
+                    <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui }}>All home cards are active</Text>
                   </View>
                 ) : (
                   CARD_REGISTRY.filter(meta => !cardVisible[meta.id]).map(meta => (
@@ -4327,19 +4336,19 @@ export default function HomeScreen() {
                         <Ionicons name="add" size={14} color={theme.accentGreen} />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary, marginBottom: 2 }}>{meta.label}</Text>
-                        <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim }}>{meta.description}</Text>
+                        <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.textPrimary, marginBottom: 2 }}>{meta.label}</Text>
+                        <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textDim }}>{meta.description}</Text>
                       </View>
                     </TouchableOpacity>
                   ))
                 )}
 
                 <View style={{ marginTop: 20, marginBottom: 8, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle, paddingTop: 16 }}>
-                  <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 8 }}>Graphs</Text>
+                  <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase', marginBottom: 8 }}>Graphs</Text>
                 </View>
                 {allStatsCards.filter(c => c.type === 'graph' && c.placement !== 'both').length === 0 ? (
                   <View style={{ paddingVertical: 16, alignItems: 'center' }}>
-                    <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>All graphs are pinned to home</Text>
+                    <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui }}>All graphs are pinned to home</Text>
                   </View>
                 ) : (
                   allStatsCards.filter(c => c.type === 'graph' && c.placement !== 'both').map(card => {
@@ -4353,13 +4362,13 @@ export default function HomeScreen() {
                         </View>
                         {graphMeta && <Ionicons name={graphMeta.icon as any} size={18} color={theme.textMuted} />}
                         <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary, marginBottom: 2 }}>{card.label}</Text>
-                          <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim }}>
+                          <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.textPrimary, marginBottom: 2 }}>{card.label}</Text>
+                          <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textDim }}>
                             {graphMeta?.description ?? 'Graph'} · {card.period}D
                           </Text>
                         </View>
                         <View style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
-                          <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 1 }}>{card.period}D</Text>
+                          <Text style={{ fontSize: 9, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 1 }}>{card.period}D</Text>
                         </View>
                       </TouchableOpacity>
                     );
@@ -4402,14 +4411,14 @@ export default function HomeScreen() {
             </TouchableOpacity>
             {/* Header */}
             <View style={{ paddingHorizontal:20, paddingBottom:14, paddingTop:6, borderBottomWidth:0.5, borderBottomColor: theme.borderCard }}>
-              <Text style={{ fontSize:18, color: theme.accentBlue, fontFamily:'BebasNeue_400Regular', letterSpacing:2 }}>MACROS</Text>
+              <Text style={{ fontSize:18, color: theme.accentBlue, fontFamily:Type.num, letterSpacing:2 }}>MACROS</Text>
             </View>
             <ScrollView contentContainerStyle={{ padding:20, paddingBottom:26 }} showsVerticalScrollIndicator={false}>
               {/* Macro goal presets -- hidden in Mindful */}
               {styleMode !== 'mindful' && (
                 <>
-                  <Text style={{ fontSize:9, letterSpacing:3, textTransform:'uppercase', color: theme.textMuted, fontFamily:'DMSans_700Bold', marginBottom:4 }}>Macro Goals</Text>
-                  <Text style={{ fontSize:11, color: theme.textDim, fontFamily:'DMSans_400Regular', marginBottom:12, lineHeight:16 }}>Sets your protein, carb, and fat targets automatically.</Text>
+                  <Text style={{ fontSize:9, letterSpacing:3, textTransform:'uppercase', color: theme.textMuted, fontFamily:Type.uiBold, marginBottom:4 }}>Macro Goals</Text>
+                  <Text style={{ fontSize:11, color: theme.textDim, fontFamily:Type.ui, marginBottom:12, lineHeight:16 }}>Sets your protein, carb, and fat targets automatically.</Text>
                   <View style={{ flexDirection:'row', flexWrap:'wrap', gap:8 }}>
                     {Object.entries(MACRO_PRESETS).map(([key, pr]) => {
                       const active = macroPreset === key;
@@ -4420,38 +4429,38 @@ export default function HomeScreen() {
                             backgroundColor: active ? theme.accentBlueBg : theme.bgCard,
                             borderColor: active ? theme.accentBlueBorder : theme.borderCard, alignItems:'center', gap:4 }}>
                           <Ionicons name={pr.icon} size={22} color={active ? theme.accentBlue : theme.textMuted} />
-                          <Text style={{ fontSize:14, fontFamily:'DMSans_700Bold', color: active ? theme.accentBlue : theme.textSecondary }}>{pr.label}</Text>
-                          <Text style={{ fontSize:11, fontFamily:'DMSans_400Regular', color: theme.textDim }}>{pr.p}P · {pr.c}C · {pr.f}F</Text>
+                          <Text style={{ fontSize:14, fontFamily:Type.uiBold, color: active ? theme.accentBlue : theme.textSecondary }}>{pr.label}</Text>
+                          <Text style={{ fontSize:11, fontFamily:Type.ui, color: theme.textDim }}>{pr.p}P · {pr.c}C · {pr.f}F</Text>
                         </TouchableOpacity>
                       );
                     })}
                   </View>
                   {macroPreset === null && (
-                    <Text style={{ fontSize:11, color: theme.textDim, fontFamily:'DMSans_400Regular', marginTop:10 }}>Custom goals set. Pick a preset to replace them.</Text>
+                    <Text style={{ fontSize:11, color: theme.textDim, fontFamily:Type.ui, marginTop:10 }}>Custom goals set. Pick a preset to replace them.</Text>
                   )}
                   <TouchableOpacity
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeMacroSheet(); router.push({ pathname: '/settings', params: { section: 'goals' } }); }}
                     hitSlop={{ top:8, bottom:8, left:8, right:8 }}
                     style={{ flexDirection:'row', alignItems:'center', gap:5, marginTop:12 }}>
                     <Ionicons name="options" size={13} color={theme.accentBlue} />
-                    <Text style={{ fontSize:12, color: theme.accentBlue, fontFamily:'DMSans_600SemiBold' }}>Need exact numbers? Fine-tune in Settings {'>'} Goals</Text>
+                    <Text style={{ fontSize:12, color: theme.accentBlue, fontFamily:Type.uiSemibold }}>Need exact numbers? Fine-tune in Settings {'>'} Goals</Text>
                   </TouchableOpacity>
                   <View style={{ height:0.5, backgroundColor: theme.borderCard, marginTop:16, marginBottom:16 }} />
                 </>
               )}
               {/* Net Carbs display */}
-              <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:3, textTransform:'uppercase', marginBottom:14 }}>Macro Display</Text>
+              <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:3, textTransform:'uppercase', marginBottom:14 }}>Macro Display</Text>
               <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between' }}>
                 <View style={{ flex:1, paddingRight:12 }}>
-                  <Text style={{ fontSize:15, color: theme.textPrimary, fontFamily:'DMSans_600SemiBold', marginBottom:3 }}>Net Carbs</Text>
-                  <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:'DMSans_400Regular', lineHeight:17 }}>
+                  <Text style={{ fontSize:15, color: theme.textPrimary, fontFamily:Type.uiSemibold, marginBottom:3 }}>Net Carbs</Text>
+                  <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:Type.ui, lineHeight:17 }}>
                     Show carbs as total minus fiber and sugar alcohols everywhere in the app.
                   </Text>
                 </View>
                 <ToggleSwitch value={showNetCarbs} onValueChange={toggleNetCarbs} />
               </View>
               {showNetCarbs && (
-                <Text style={{ fontSize:11, color: theme.textDim, fontFamily:'DMSans_400Regular', lineHeight:16, marginTop:12 }}>
+                <Text style={{ fontSize:11, color: theme.textDim, fontFamily:Type.ui, lineHeight:16, marginTop:12 }}>
                   Tip: you can set a specific net carbs goal in Settings {'>'} Goals.
                 </Text>
               )}
@@ -4549,42 +4558,47 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container:        { flex:1 },
   header:           { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:20, paddingVertical:16, borderBottomWidth:0.5, marginBottom:16 },
-  headerLabel:      { fontSize:9, letterSpacing:2, textTransform:'uppercase', marginBottom:2, fontFamily:'DMSans_700Bold' },
-  headerTitle:      { fontSize:32, fontWeight:'700', fontFamily:'BebasNeue_400Regular', letterSpacing:2 },
+  headerLabel:      { fontSize:9, letterSpacing:2, textTransform:'uppercase', marginBottom:2, fontFamily:Type.uiBold },
+  // DISPLAY role, not a number face. Bebas had no lowercase, so the greeting was shouting whether it
+  // wanted to or not, and it needed +2 tracking just to breathe. Casing and tracking now come from the
+  // ACTIVE display face (typography.ts), so flipping Clash -> Oswald -> Fraunces carries the right
+  // treatment with it instead of leaving a mixed-case face wearing Bebas's all-caps tracking.
+  headerTitle:      { fontSize: displaySize(27), fontFamily: Type.display, letterSpacing: DISPLAY_TRACKING,
+                      ...(DISPLAY_CAPS ? { textTransform: 'uppercase' as const } : {}) },
   headerBtn:        { borderWidth:1, borderRadius:6, paddingHorizontal:12, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center' },
   card:             { borderWidth:0.5, borderRadius:14, padding:16, marginBottom:12, borderTopWidth:1.5, shadowColor: '#000000', shadowOffset: { width:0, height:4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
-  cardLabel:        { fontSize:10, letterSpacing:3, textTransform:'uppercase', fontFamily:'DMSans_700Bold', marginBottom:10 },
+  cardLabel:        { fontSize:10, letterSpacing:3, textTransform:'uppercase', fontFamily:Type.uiBold, marginBottom:10 },
   verseCard:        { borderWidth:2, borderRadius:14, padding:16, marginBottom:12, shadowColor: '#000000', shadowOffset: { width:0, height:4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
-  verseLabel:       { fontSize:9, letterSpacing:3, textTransform:'uppercase', marginBottom:8, fontFamily:'DMSans_700Bold' },
-  verseText:        { fontSize:14, fontStyle:'italic', lineHeight:24, marginBottom:10, fontFamily:'DMSans_400Regular', textAlign:'center' },
-  verseRef:         { fontSize:9, fontFamily:'DMSans_700Bold', textAlign:'center', letterSpacing:2, textTransform:'uppercase' },
+  verseLabel:       { fontSize:9, letterSpacing:3, textTransform:'uppercase', marginBottom:8, fontFamily:Type.uiBold },
+  verseText:        { fontSize:14, fontStyle:'italic', lineHeight:24, marginBottom:10, fontFamily:Type.ui, textAlign:'center' },
+  verseRef:         { fontSize:9, fontFamily:Type.uiBold, textAlign:'center', letterSpacing:2, textTransform:'uppercase' },
   calRow:           { flexDirection:'row', alignItems:'baseline', gap:6, marginBottom:10 },
-  calNumber:        { fontSize:52, lineHeight:56, fontFamily:'BebasNeue_400Regular', letterSpacing:1 },
-  calTarget:        { fontSize:14, fontFamily:'DMSans_700Bold', letterSpacing: 0.3 },
-  calRemaining:     { fontSize:12, fontFamily:'DMSans_400Regular' },
+  calNumber:        { fontSize:52, lineHeight:numLine(52), fontFamily:Type.num, letterSpacing:1 },
+  calTarget:        { fontSize:14, fontFamily:Type.uiBold, letterSpacing: 0.3 },
+  calRemaining:     { fontSize:12, fontFamily:Type.ui },
   progressBarBg:    { height:6, borderRadius:6, overflow:'hidden', marginBottom:12 },
   progressBarFill:  { height:'100%', borderRadius:6 },
   waterBtns:        { flexDirection:'row', gap:8 },
   waterBtn:         { flex:1, padding:10, borderWidth:1, borderRadius:6, alignItems:'center', justifyContent:'center' },
-  waterBtnText:     { fontFamily:'BebasNeue_400Regular', fontSize:15, letterSpacing:1 },
+  waterBtnText:     { fontFamily:Type.num, fontSize:15, letterSpacing:1 },
   waterBtnRed:      { flex:1, padding:10, borderWidth:1, borderRadius:6, alignItems:'center', justifyContent:'center' },
-  waterBtnRedText:  { fontFamily:'BebasNeue_400Regular', fontSize:15, letterSpacing:1 },
+  waterBtnRedText:  { fontFamily:Type.num, fontSize:15, letterSpacing:1 },
   weightRow:        { flexDirection:'row', gap:12, marginBottom:10 },
   weightStat:       { flex:1 },
-  weightVal:        { fontSize:28, lineHeight:32, fontFamily:'BebasNeue_400Regular', letterSpacing:1 },
-  weightLbl:        { fontSize:10, letterSpacing:2, textTransform:'uppercase', marginTop:2, fontFamily:'DMSans_500Medium' },
+  weightVal:        { fontSize:28, lineHeight:numLine(28), fontFamily:Type.num, letterSpacing:1 },
+  weightLbl:        { fontSize:10, letterSpacing:2, textTransform:'uppercase', marginTop:2, fontFamily:Type.uiMedium },
   weightAdd:        { flexDirection:'row', gap:8 },
-  weightInput:      { flex:1, borderWidth:1, borderRadius:6, padding:10, fontSize:14, fontFamily:'DMSans_400Regular' },
+  weightInput:      { flex:1, borderWidth:1, borderRadius:6, padding:10, fontSize:14, fontFamily:Type.ui },
   logBtn:           { borderWidth:1, borderRadius:6, paddingHorizontal:16, justifyContent:'center' },
-  logBtnText:       { fontFamily:'BebasNeue_400Regular', fontSize:16, letterSpacing:1 },
+  logBtnText:       { fontFamily:Type.num, fontSize:16, letterSpacing:1 },
   workoutRow:       { flexDirection:'row', alignItems:'center', justifyContent:'space-between' },
-  workoutDay:       { fontSize:22, letterSpacing:1, fontFamily:'BebasNeue_400Regular' },
-  workoutMuscles:   { fontSize:12, marginTop:2, fontFamily:'DMSans_400Regular' },
+  workoutDay:       { fontSize:22, letterSpacing:1, fontFamily:Type.num },
+  workoutMuscles:   { fontSize:12, marginTop:2, fontFamily:Type.ui },
   workoutPill:      { paddingHorizontal:12, paddingVertical:4, borderRadius:20, borderWidth:1 },
-  workoutPillText:  { fontSize:10, letterSpacing:2, fontFamily:'DMSans_600SemiBold' },
-  notesInput:       { borderWidth:1, borderRadius:6, padding:10, fontSize:13, minHeight:80, textAlignVertical:'top', marginTop:8, fontFamily:'DMSans_400Regular' },
+  workoutPillText:  { fontSize:10, letterSpacing:2, fontFamily:Type.uiSemibold },
+  notesInput:       { borderWidth:1, borderRadius:6, padding:10, fontSize:13, minHeight:80, textAlignVertical:'top', marginTop:8, fontFamily:Type.ui },
   saveBtn:          { marginTop:8, padding:10, borderWidth:1, borderRadius:6, alignItems:'center' },
-  saveBtnText:      { fontSize:12, fontFamily:'DMSans_500Medium' },
+  saveBtnText:      { fontSize:12, fontFamily:Type.uiMedium },
   // Edit sheet
   editSheet:        { width:'92%', borderRadius:20, maxHeight:'72%', borderWidth:0.5, paddingBottom:20, flex:1 },
   editSheetHandle:  { width:36, height:4, borderRadius:2, alignSelf:'center', marginTop:6, marginBottom:6 },
@@ -4593,7 +4607,7 @@ const styles = StyleSheet.create({
   editCardRow:      { flexDirection:'row', alignItems:'center', gap:10, marginBottom:10 },
   editBadge:        { width:28, height:28, borderRadius:14, borderWidth:1, alignItems:'center', justifyContent:'center' },
   editCardPreview:  { flex:1, borderWidth:0.5, borderRadius:10, paddingHorizontal:14, paddingVertical:10 },
-  editCardLabel:    { fontSize:13, fontFamily:'DMSans_600SemiBold', marginBottom:2 },
-  editCardDesc:     { fontSize:11, fontFamily:'DMSans_400Regular' },
+  editCardLabel:    { fontSize:13, fontFamily:Type.uiSemibold, marginBottom:2 },
+  editCardDesc:     { fontSize:11, fontFamily:Type.ui },
   dragHandle:       { padding:8 },
 });

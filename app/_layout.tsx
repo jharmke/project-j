@@ -1,11 +1,17 @@
 import { BebasNeue_400Regular } from '@expo-google-fonts/bebas-neue';
+import { Bitter_400Regular, Bitter_600SemiBold, Bitter_700Bold } from '@expo-google-fonts/bitter';
+import { Fraunces_600SemiBold, Fraunces_700Bold } from '@expo-google-fonts/fraunces';
+import { Oswald_600SemiBold, Oswald_700Bold } from '@expo-google-fonts/oswald';
 import {
   DMSans_400Regular,
   DMSans_500Medium,
   DMSans_600SemiBold,
   DMSans_700Bold,
 } from '@expo-google-fonts/dm-sans';
+import { Khand_500Medium, Khand_600SemiBold } from '@expo-google-fonts/khand';
 import { Lora_400Regular, Lora_500Medium } from '@expo-google-fonts/lora';
+import { Onest_400Regular, Onest_500Medium, Onest_600SemiBold, Onest_700Bold } from '@expo-google-fonts/onest';
+import { Rajdhani_500Medium, Rajdhani_600SemiBold, Rajdhani_700Bold } from '@expo-google-fonts/rajdhani';
 import { DarkTheme, ThemeProvider as NavThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack, router } from 'expo-router';
@@ -225,6 +231,8 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
+    // Legacy: still carrying every screen we have not migrated to the type roles yet. They come out
+    // as each screen converts. See typography.ts + SPEC_visual_refresh.md.
     DMSans_400Regular,
     DMSans_500Medium,
     DMSans_600SemiBold,
@@ -232,6 +240,32 @@ export default function RootLayout() {
     BebasNeue_400Regular,
     Lora_400Regular,
     Lora_500Medium,
+
+    // The type roles. Display = Clash Display (Fontshare, local .ttf). Num = Rajdhani, with Khand
+    // loaded alongside so the A/B is a one-line flip in typography.ts, not a reinstall. UI = Onest.
+    // Voice = Bitter, with Ranade likewise loaded for its A/B.
+    'ClashDisplay-Semibold': require('../assets/fonts/ClashDisplay-Semibold.ttf'),
+    'ClashDisplay-Bold': require('../assets/fonts/ClashDisplay-Bold.ttf'),
+    Oswald_600SemiBold,
+    Oswald_700Bold,
+    Fraunces_600SemiBold,
+    Fraunces_700Bold,
+    'Ranade-Light': require('../assets/fonts/Ranade-Light.ttf'),
+    'Ranade-Regular': require('../assets/fonts/Ranade-Regular.ttf'),
+    'Ranade-Medium': require('../assets/fonts/Ranade-Medium.ttf'),
+    'Ranade-Bold': require('../assets/fonts/Ranade-Bold.ttf'),
+    Rajdhani_500Medium,
+    Rajdhani_600SemiBold,
+    Rajdhani_700Bold,
+    Khand_500Medium,
+    Khand_600SemiBold,
+    Onest_400Regular,
+    Onest_500Medium,
+    Onest_600SemiBold,
+    Onest_700Bold,
+    Bitter_400Regular,
+    Bitter_600SemiBold,
+    Bitter_700Bold,
   });
 
   if (!fontsLoaded) return null;

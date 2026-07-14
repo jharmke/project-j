@@ -129,13 +129,47 @@ A full-row button was proposed and REJECTED by Justin.
 
 ---
 
+## THE LEDGER -- what was actually tried on device, and the verdict
+
+Kept here because it was getting lost in chat and Justin was (rightly) losing track. PROCESS RULE learned
+the hard way: change ONE variable per look. Early rounds changed face + weight + size together, so nothing
+could be isolated and two rounds were judged on a screen with a rendering bug.
+
+| Role | Tried | Verdict |
+|---|---|---|
+| Display | **Clash Display Semibold** | ✅ **LOCKED.** Liked immediately, twice. Oswald + Fraunces are loaded but never seen in-app; only look if Clash ever sours |
+| Interface | **Onest** | ✅ **LOCKED.** Never once mentioned, which is exactly what a good interface face does |
+| Numbers | Rajdhani Bold 700 | "I think I like it" (but the tops were clipped -- see below) |
+| Numbers | Khand Bold 700 | ❌ "too bold and big" (also clipped) |
+| Numbers | Khand Medium 500 | ❌ "too small/plain" |
+| Numbers | Khand SemiBold 600 | ❌ "looks exactly like what we started with" -- and he was right. Khand SemiBold and Bebas sit in the same visual niche, so the swap bought nothing |
+| Numbers | **Rajdhani Bold 700 (unclipped)** | ✅ **LOCKED.** "def the best so far" |
+| Voice | Bitter (slab) | ❌ "def feels like a newspaper". Which is what a book serif IS. My call, and it was wrong |
+| Voice | **Ranade** | ✅ FACE LOCKED -- "I really like the voice font". WEIGHT still open (reads too heavy) |
+
+Two bugs that polluted early verdicts, both mine, both fixed:
+- **Clipped numbers.** Every number style carried a lineHeight hand-tuned to Bebas (the calorie number was
+  52/56). Bebas is all-caps with no ascenders so it fits a tight box; Rajdhani and Khand have real
+  ascenders and got their tops sliced. Fixed by `numLine()` in typography.ts -- any number style that sets
+  an explicit lineHeight MUST run it through that, never keep the old value.
+- **Everything mapped to its BOLD cut.** Bebas ships one weight that reads optically MEDIUM, so pointing a
+  role at a 700 made every value shout at once. That reads as "this font is too heavy" when the font was
+  fine and the weight was wrong.
+
 ## OPEN -- test on device, do not decide in a browser
 
-- **Numbers: Rajdhani vs Khand.** Both condensed and heavy. One-token swap.
-- **Voice: Bitter vs Ranade.** If Ranade wins, Interface has to move so the Voice stays distinct.
+- **Voice WEIGHT.** The face is settled (Ranade). Ranade-Light (usWeightClass 300, verified in the actual
+  file) still reads heavy next to Onest. Two possibilities and they need different fixes: either Ranade's
+  Light genuinely is that dense (it is a low-contrast, big-x-height face), or the weight is not resolving
+  on iOS at all. DIAGNOSTIC: set the body to Light and the title to Bold. If they look identical, it is a
+  loading problem, not a taste problem.
 - **Halftone at real screen brightness.** May be invisible, may be perfect. Ten-second check.
 - **Title press on/off.** Justin was 60/40 for keeping it. On glass the press earns its keep (it separates
   the word from a background now moving underneath), but confirm.
+
+RESOLVED: Numbers = Rajdhani Bold. Voice face = Ranade. Display = Clash Display. Interface = Onest.
+The "if Ranade wins the Voice, Interface must move" rule is DROPPED -- Clash (display) and Onest
+(deliberately invisible) leave Ranade plenty of room to have its own register between them.
 
 ---
 

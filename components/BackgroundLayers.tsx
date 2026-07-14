@@ -42,7 +42,7 @@ const GRID_OPACITY = 0.10;
 // conscious notice -- you should never be able to point at it, only feel that the surfaces stopped being
 // plastic.
 const GRAIN_OPACITY_LIGHT = 0.03;
-const GRAIN_OPACITY_DARK = 0.04;
+const GRAIN_OPACITY_DARK = 0.022;
 
 function withAlpha(hex: string, alpha: number) {
   const a = Math.round(Math.max(0, Math.min(1, alpha)) * 255).toString(16).padStart(2, '0');

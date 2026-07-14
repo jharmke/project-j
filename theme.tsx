@@ -100,6 +100,14 @@ export interface Theme {
   // ~90% of the screen, so until they let light through, every background treatment is invisible.
   // Tuned per theme: the alpha has to keep body text readable on that theme's own ground.
   bgCardGlass: string;
+
+  // ── Card depth ──────────────────────────────────────────────────────────────
+  // Shadows are per-theme, not one hardcoded black. A pure-black shadow on a pale ground goes MUDDY --
+  // it reads as grey dirt under the card instead of depth. Light grounds want a shadow tinted toward the
+  // page's own hue, and they want MORE of it, because a light card on a light page has less contrast for
+  // the shadow to define an edge with. Dark grounds want the opposite: black, and less of it.
+  cardShadow: string;
+  cardShadowOpacity: number;
   bgCardVerse: string;      // verse card background (special)
   bgCardFaith: string;      // faith tab card background (faint warm tint, faith tab only)
   bgCardFaithHero: string;  // Faith Today home hub card (between bgCardFaith and bgCardVerse)
@@ -198,6 +206,8 @@ const dark: Theme = {
   bgPrimary:        '#161619',
   bgCard:           '#2a2a2e',
   bgCardGlass:      'rgba(52,52,58,0.62)',
+  cardShadow:       '#000000',
+  cardShadowOpacity: 0.55,
   bgCardVerse:      '#22223a',
   bgCardFaith:      '#2a2a2e',  // = bgCard: no tint on dark (warm-dark cards recede and look cheap; warmth lives in the gold edge + accents)
   bgCardFaithHero:  '#262634',
@@ -278,16 +288,29 @@ const light: Theme = {
   id: 'light',
   name: 'Light',
 
-  bgPrimary:        '#f0f0f5',
+  // DEEPENED from #f0f0f5, which was effectively white. A white card CANNOT float on a white page -- no
+  // shadow, no opacity and no blur can fix that, because there is no value gap for an edge to define
+  // itself against. This is the single biggest lever on Light: give the cards a ground to rise off, and
+  // the glow and the grid get to read without being cranked.
+  bgPrimary:        '#e3e6ee',
   bgCard:           'rgba(255,255,255,0.85)',
-  bgCardGlass:      'rgba(255,255,255,0.58)',
+  // Real glass, and it only works because the GROUND got deeper. Over the old near-white page, a 58% white
+  // card composited to... white: card and ground landed within a few levels of each other, so there was no
+  // value gap, no edge, no shadow, no float -- which is what made translucency look like a hole in the
+  // page. Over #e3e6ee the same card composites to roughly #f5f6f9, a real gap. So it can be see-through
+  // AND still have an edge for the shadow to define. Paper-vs-glass was a false choice created by a white
+  // page, not a genuine trade-off.
+  bgCardGlass:      'rgba(255,255,255,0.70)',
+  // Blue-tinted ink, not black: on a pale blue-grey ground a neutral black shadow reads as dirt.
+  cardShadow:       '#26304f',
+  cardShadowOpacity: 0.20,
   bgCardVerse:      'rgba(255,251,240,0.72)',
   bgCardFaith:      'rgba(255,250,243,0.85)',
   bgCardFaithHero:  'rgba(255,248,236,0.82)',
   bgTileFaith:      'rgba(212,134,10,0.06)',
   bgTileFaithStrong: 'rgba(212,134,10,0.11)',
   bgInput:          '#f5f5fa',
-  bgProgressTrack:  '#e4e4ee',
+  bgProgressTrack:  '#ccd2e2',
   bgSheet:          '#ffffff',
   bgInset:          '#f5f5fa',
   bgEditCard:       '#ffffff',
@@ -336,7 +359,7 @@ const light: Theme = {
   sleepDeep:        '#a855f7',
   sleepRem:         '#10b981',
   sleepAwake:       '#cc3333',
-  sleepTrack:       '#e0e0ee',
+  sleepTrack:       '#ccd2e2',
 
   workoutPush:      '#2563eb',
   workoutPull:      '#059669',
@@ -347,13 +370,13 @@ const light: Theme = {
   ifMethodBorder:   'rgba(0,0,0,0.10)',
   ifMethodText:     '#6666aa',
 
-  donutTrack:       '#e0e0ee',
+  donutTrack:       '#ccd2e2',
   iconMuted:        '#ccccdd',
   sheetHandle:      'rgba(0,0,0,0.12)',
   overlayBg:        'rgba(0,0,0,0.40)',
 
   gradientStart:    '#d4d4e8',
-  gradientEnd:      '#f0f0f5',
+  gradientEnd:      '#e3e6ee',
 };
 
 // ─── Slate Theme (cool silver, steel blue accent) ─────────────────────────────
@@ -364,6 +387,8 @@ const slate: Theme = {
   bgPrimary:        '#bcc8d4',
   bgCard:           'rgba(228,234,244,0.90)',
   bgCardGlass:      'rgba(233,239,248,0.62)',
+  cardShadow:       '#1c2533',
+  cardShadowOpacity: 0.22,
   bgCardVerse:      'rgba(226,232,244,0.90)',
   bgCardFaith:      'rgba(228,221,209,0.92)',
   bgCardFaithHero:  'rgba(226,219,206,0.92)',
@@ -447,6 +472,8 @@ const warm: Theme = {
   bgPrimary:        '#f3ece0',
   bgCard:           '#fff4e4',
   bgCardGlass:      'rgba(255,246,232,0.64)',
+  cardShadow:       '#5a3a18',
+  cardShadowOpacity: 0.18,
   bgCardVerse:      '#fff8e8',
   bgCardFaith:      '#fff1dd',
   bgCardFaithHero:  '#ffeed6',
@@ -530,6 +557,8 @@ const blush: Theme = {
   bgPrimary:        '#f9dae5',
   bgCard:           'rgba(253,238,245,0.95)',
   bgCardGlass:      'rgba(254,243,248,0.66)',
+  cardShadow:       '#5a2438',
+  cardShadowOpacity: 0.16,
   bgCardVerse:      'rgba(255,252,245,0.92)',
   bgCardFaith:      'rgba(253,240,241,0.95)',
   bgCardFaithHero:  'rgba(253,242,238,0.94)',

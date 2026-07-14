@@ -8,7 +8,7 @@ import {
   DMSans_600SemiBold,
   DMSans_700Bold,
 } from '@expo-google-fonts/dm-sans';
-import { Khand_500Medium, Khand_600SemiBold } from '@expo-google-fonts/khand';
+import { Khand_500Medium, Khand_600SemiBold, Khand_700Bold } from '@expo-google-fonts/khand';
 import { Lora_400Regular, Lora_500Medium } from '@expo-google-fonts/lora';
 import { Onest_400Regular, Onest_500Medium, Onest_600SemiBold, Onest_700Bold } from '@expo-google-fonts/onest';
 import { Rajdhani_500Medium, Rajdhani_600SemiBold, Rajdhani_700Bold } from '@expo-google-fonts/rajdhani';
@@ -259,6 +259,7 @@ export default function RootLayout() {
     Rajdhani_700Bold,
     Khand_500Medium,
     Khand_600SemiBold,
+    Khand_700Bold,
     Onest_400Regular,
     Onest_500Medium,
     Onest_600SemiBold,

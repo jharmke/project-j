@@ -18,7 +18,7 @@
 // swap is instant -- no install, no rebuild. All three need to be judged on a real screen at real
 // brightness, not in a browser. See SPEC_visual_refresh.md "OPEN".
 const DISPLAY_FACE: 'clash' | 'oswald' | 'fraunces' = 'clash';
-const NUM_FACE: 'rajdhani' | 'khand' = 'rajdhani';
+const NUM_FACE: 'rajdhani' | 'khand' = 'khand';
 const VOICE_FACE: 'bitter' | 'ranade' = 'ranade';
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -38,7 +38,7 @@ const DISPLAY_FACES = {
 // that only goes to SemiBold, not Bold.
 const NUM_FACES = {
   rajdhani: { soft: 'Rajdhani_500Medium', regular: 'Rajdhani_700Bold',   hero: 'Rajdhani_700Bold',     scale: 1.06 },
-  khand:    { soft: 'Khand_500Medium',    regular: 'Khand_600SemiBold',  hero: 'Khand_600SemiBold',    scale: 1.04 },
+  khand:    { soft: 'Khand_500Medium',    regular: 'Khand_700Bold',      hero: 'Khand_700Bold',        scale: 1.04 },
 } as const;
 
 // Same story for the voice. Ranade is a chunky face even at Regular, and the coach copy sits INSIDE a

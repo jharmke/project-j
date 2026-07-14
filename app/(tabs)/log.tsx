@@ -13,8 +13,10 @@ import PrimaryCTA from '../../components/PrimaryCTA';
 import { DEFAULT_MEAL_SLOTS, MealSlot, findSlotForMeal, loadMealSlots, saveMealSlots } from '../../utils/mealSlots';
 import { getRepeatSummary, logRepeatedItems, SlotRepeatInfo, tidyFoodName } from '../../utils/repeatMeal';
 import RepeatMealModal from '../../components/RepeatMealModal';
+import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TAB_SCROLL_PAD } from '../../components/CustomTabBar';
+import BackgroundLayers from '../../components/BackgroundLayers';
 import Svg, { Circle } from 'react-native-svg';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
@@ -166,6 +168,8 @@ function WaterBar({ pct, color, trackColor, refreshKey, overGoal }: { pct: numbe
 
 export default function LogScreen() {
   const insets = useSafeAreaInsets();
+  // Measured height of the floating header, so the scroll knows how far to clear it.
+  const [headerH, setHeaderH] = useState(104);
   const { theme } = useTheme();
   const { showToast } = useToast();
   const mealAddRef = useTutorialTarget('log_meal_add');
@@ -1154,8 +1158,10 @@ export default function LogScreen() {
   };
 
   return (
-    <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
+    <LinearGradient colors={[theme.gradientEnd, theme.gradientEnd]} style={styles.container}>
+      <BackgroundLayers />
+      <View onLayout={e => setHeaderH(e.nativeEvent.layout.height)} style={[styles.header, { paddingTop: insets.top + 12, borderBottomColor: theme.borderCard }]}>
+        <BlurView intensity={theme.id === 'dark' ? 34 : 28} tint={theme.id === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} pointerEvents="none" />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
           <HeaderAvatar />
           <View style={{ flex: 1 }}>
@@ -1195,12 +1201,12 @@ export default function LogScreen() {
       </View>
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + TAB_SCROLL_PAD }]}
+        contentContainerStyle={[styles.content, { paddingTop: headerH + 16, paddingBottom: insets.bottom + TAB_SCROLL_PAD }]}
         onScrollBeginDrag={() => {}}
       >
 
       {/* Today's Total Card */}
-      <View ref={todayTotalRef} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
+      <View ref={todayTotalRef} style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
           <Text style={[styles.cardLabel, { color: theme.textMuted, marginBottom: 0 }]}>Today's Total</Text>
           <TooltipIcon tooltipKey="todays_total" />
@@ -1337,7 +1343,7 @@ export default function LogScreen() {
         ];
         const allEmpty = advGroups.every(grp => grp.items.every(item => item.value === 0));
         return (
-          <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
+          <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); toggleAdvanced(); }}
@@ -1489,7 +1495,12 @@ export default function LogScreen() {
         const isExpanded = expandedMeals[slot.id];
 
         return (
-          <View key={slot.id} style={[styles.mealRow, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
+          // TWO views, on purpose. On iOS a view can either CLIP its children to its rounded corners or
+          // cast a SHADOW -- never both. Meal rows need the clipping (the expanding food list would spill
+          // past the corners without it), which is why they have never had a shadow and never floated.
+          // So the shadow moves OUT to a wrapper and the clipping stays IN. Outer floats, inner clips.
+          <View key={slot.id} style={[styles.mealShadow, { shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity }]}>
+          <View style={[styles.mealRow, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
             {/* + button on left */}
             <TouchableOpacity
               ref={mealIdx === 0 ? (mealAddRef as any) : undefined}
@@ -1771,12 +1782,13 @@ export default function LogScreen() {
               </Animated.View>
             )}
           </View>
+          </View>
         );
       })}
 
       {/* AI Meal Estimator -- persistent entry point, always shown below the meals */}
       <TouchableOpacity
-        style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 10 }}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 10 }}
         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); returningFromChild.current = true; router.push({ pathname: '/ai-meal-estimator', params: { date: activeDate } }); }}>
         <Ionicons name="sparkles" size={20} color={theme.accentBlueRaw} />
         <View style={{ flex: 1 }}>
@@ -1787,7 +1799,7 @@ export default function LogScreen() {
       </TouchableOpacity>
 
       {/* Water Card */}
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
         <Ionicons name="water" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -2276,7 +2288,7 @@ export default function LogScreen() {
 const styles = StyleSheet.create({
   container:          { flex: 1 },
   content:            { padding: 16 },
-  header:             { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5, marginBottom: 16 },
+  header:             { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 0.5 },
   headerLabel:        { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: 'DMSans_700Bold' },
   headerTitle:        { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
   libraryBtn:         { borderWidth: 1, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 },
@@ -2289,7 +2301,9 @@ const styles = StyleSheet.create({
   progressBarBg:      { height: 6, borderRadius: 6, overflow: 'hidden', marginBottom: 12 },
   progressBarFill:    { height: '100%', borderRadius: 6 },
   calRemaining:       { fontSize: 10, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase' },
-  mealRow:            { borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14, marginBottom: 12, overflow: 'hidden', shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
+  // The shadow lives on mealShadow (the wrapper); mealRow keeps the clipping. A view cannot do both.
+  mealShadow:         { marginBottom: 12, borderRadius: 14, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
+  mealRow:            { borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14, overflow: 'hidden' },
   mealAddBtn:         { position: 'absolute', left: 14, top: 14, zIndex: 1, width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   mealAddBtnText:     { fontSize: 22, fontFamily: 'DMSans_400Regular', lineHeight: 24 },
   mealInfo:           { paddingLeft: 50, paddingRight: 40, paddingVertical: 14 },

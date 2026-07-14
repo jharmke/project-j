@@ -110,7 +110,11 @@ export function Grain() {
       style={[
         StyleSheet.absoluteFill,
         {
-          zIndex: 5,
+          // Above EVERY overlay. Otto's FAB sits at zIndex 51 and was punching through the grain, which
+          // is exactly the "one surface has no texture" tell that breaks the illusion. Modals are separate
+          // native windows and are out of reach on purpose -- a sheet floating over the app should read as
+          // a different plane anyway.
+          zIndex: 9999,
           opacity: theme.id === 'dark' ? GRAIN_OPACITY_DARK : GRAIN_OPACITY_LIGHT,
           mixBlendMode: 'overlay',
         },

@@ -131,7 +131,11 @@ export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen,
   );
 
   return (
-    <View ref={ifCardRef} collapsable={false} style={[s.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
+    // Shadow on the WRAPPER, clipping on the card. A view on iOS can either clip its children to its
+    // rounded corners or cast a shadow, never both -- and this card must clip, because the watermark
+    // glyph deliberately hangs off its bottom-right corner.
+    <View style={[s.cardShadow, { shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity }]}>
+    <View ref={ifCardRef} collapsable={false} style={[s.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
       <Ionicons name="timer" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
 
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -316,14 +320,19 @@ export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen,
         </View>
       )}
     </View>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
+  // The shadow lives here (a view that clips cannot also cast one); the card itself keeps the clipping.
+  cardShadow: {
+    marginBottom: 12, borderRadius: 14,
+    shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6,
+  },
   card: {
-    borderWidth: 0.5, borderRadius: 14, padding: 16, marginBottom: 12,
-    borderTopWidth: 1.5, shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25, shadowRadius: 12, elevation: 6,
+    borderWidth: 0.5, borderRadius: 14, padding: 16,
+    borderTopWidth: 1.5,
   },
   cardLabel: { fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', marginBottom: 10 },
   ifLabel:    { fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', fontFamily: 'DMSans_500Medium' },

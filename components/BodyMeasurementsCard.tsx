@@ -87,9 +87,9 @@ export default function BodyMeasurementsCard() {
 
   const slots = settings.slots;
   const cardBase = {
-    backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: accent,
+    backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: accent,
     borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, padding: 16, marginBottom: 12,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 6,
+    shadowColor: theme.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: theme.cardShadowOpacity, shadowRadius: 12, elevation: 6,
   };
 
   return (

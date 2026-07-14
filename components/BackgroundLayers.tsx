@@ -1,6 +1,6 @@
 import { Image, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient as SvgGradient, Mask, Pattern, Rect, Stop } from 'react-native-svg';
 import { useTheme } from '../theme';
 
 // ─── BackgroundLayers ─────────────────────────────────────────────────────────
@@ -8,7 +8,7 @@ import { useTheme } from '../theme';
 // colour and texture are independent and were never in competition.
 //
 //   LAYER 1  COLOUR   -- a bottom glow. The accent rises from the base of the screen.
-//   LAYER 2  TEXTURE  -- a line grid, rising from the bottom and dissolving upward.
+//   LAYER 2  TEXTURE  -- halftone. Dots rise from the bottom and dissolve upward.
 //
 // Both point the SAME direction: light rising from below, dissolving as it climbs. That is the whole
 // design idea, and it is why we cut mesh, aurora, vignette, topographic, line grid and stripes -- each
@@ -27,9 +27,14 @@ const GLOW_HEIGHT = '62%';     // how far up the screen it reaches
 // LINE GRID. The halftone dots were too fine to survive being seen through a glass card -- they read as
 // speckle, not structure. Lines hold their shape: they carry the eye and give the surface an architecture
 // to sit on, which is what "depth" actually means here.
-const GRID_SPACING = 30;
-const GRID_WIDTH = 1;
-const GRID_OPACITY = 0.10;
+// HALFTONE, not a grid. The grid was tried and cut: it competes with the app's own LINES. Stats is built
+// out of horizontal dividers and section rules, the summary cards have their own internal rules, and a
+// background made of lines turns all of that into visual noise -- you cannot tell the app's structure from
+// the wallpaper's. Dots have no direction, so they never compete with a divider.
+// Dots ARE atmosphere, so unlike the grid they get the rising-from-below fade back.
+const DOT_SPACING = 18;
+const DOT_RADIUS = 1.3;
+const DOT_OPACITY = 0.14;
 
 // LAYER 3 -- GRAIN. A 128px tile of deterministic noise, repeated. It is meant to be almost invisible:
 // if you can SEE it as texture it is turned up too far. What it does is stop a flat colour field reading
@@ -49,8 +54,14 @@ function withAlpha(hex: string, alpha: number) {
   return /^#[0-9a-f]{6}$/i.test(hex) ? `${hex}${a}` : hex;
 }
 
-export default function BackgroundLayers() {
+export default function BackgroundLayers({ glow }: {
+  // The glow colour. Defaults to the app accent; the Faith tab passes its amber, so the PAGE ITSELF runs
+  // warm there. The tab announces itself before you read a word, and the gold identity stops living only
+  // in the card edges.
+  glow?: string;
+} = {}) {
   const { theme } = useTheme();
+  const glowColor = glow ?? theme.accentBlueRaw;
 
   // Texture ink: the page's own ink, not the accent. Accent dots are lovely on a light theme and turn
   // gaudy fast on a dark one, and this has to hold across five themes and every accent.
@@ -60,24 +71,28 @@ export default function BackgroundLayers() {
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       {/* LAYER 1 -- bottom glow */}
       <LinearGradient
-        colors={['transparent', withAlpha(theme.accentBlueRaw, GLOW_STRENGTH)]}
+        colors={['transparent', withAlpha(glowColor, GLOW_STRENGTH)]}
         style={[styles.glow, { height: GLOW_HEIGHT }]}
       />
 
-      {/* LAYER 2 -- line grid. NO MASK, NO FADE: it runs edge to edge, top to bottom.
-          It first shipped with the halftone's rising-from-below fade, on my logic that every layer should
-          point the same direction. That logic was wrong. Dots are ATMOSPHERE, so they dissolve. A grid is
-          ARCHITECTURE -- graph paper does not fade out, and structure that dissolves stops being
-          structure. Only the glow rises now; the grid just IS. */}
+      {/* LAYER 2 -- halftone, rising from the bottom and dissolving upward. Same gesture as the glow. */}
       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
         <Defs>
-          {/* One cell = a hairline down its left edge and one across its top. Tiled, that is a grid. */}
-          <Pattern id="grid" patternUnits="userSpaceOnUse" width={GRID_SPACING} height={GRID_SPACING}>
-            <Rect x="0" y="0" width={GRID_WIDTH} height={GRID_SPACING} fill={ink} />
-            <Rect x="0" y="0" width={GRID_SPACING} height={GRID_WIDTH} fill={ink} />
+          <Pattern id="dots" patternUnits="userSpaceOnUse" width={DOT_SPACING} height={DOT_SPACING}>
+            <Circle cx={DOT_SPACING / 2} cy={DOT_SPACING / 2} r={DOT_RADIUS} fill={ink} />
           </Pattern>
+          {/* The mask is what makes it a HALFTONE rather than wallpaper: strongest at the bottom, gone by
+              the time it reaches the header. White = keep, black = drop. */}
+          <SvgGradient id="fade" x1="0" y1="1" x2="0" y2="0">
+            <Stop offset="0" stopColor="#ffffff" stopOpacity="1" />
+            <Stop offset="0.46" stopColor="#ffffff" stopOpacity="0.55" />
+            <Stop offset="0.88" stopColor="#ffffff" stopOpacity="0" />
+          </SvgGradient>
+          <Mask id="fadeMask">
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#fade)" />
+          </Mask>
         </Defs>
-        <Rect x="0" y="0" width="100%" height="100%" fill="url(#grid)" opacity={GRID_OPACITY} />
+        <Rect x="0" y="0" width="100%" height="100%" fill="url(#dots)" mask="url(#fadeMask)" opacity={DOT_OPACITY} />
       </Svg>
 
       {/* Grain does NOT live here -- see <Grain />, exported below. It has to sit OVER the cards, not

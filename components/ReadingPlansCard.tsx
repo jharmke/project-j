@@ -78,7 +78,7 @@ export default function ReadingPlansCard({ theme: t }: Props) {
 
   return (
     <View style={[styles.card, {
-      backgroundColor: t.bgCard,
+      backgroundColor: t.bgCardFaithGlass,
       borderColor: t.borderCard,
       borderTopColor: t.accentBlueRaw,
       shadowColor: '#000',

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, router, useLocalSearchParams } from 'expo-router';
 import { useScrollToTop } from '@react-navigation/native';
@@ -11,6 +12,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import CompanionFAB from '../../components/CompanionFAB';
 import { TAB_BAR_HEIGHT, TAB_SCROLL_PAD } from '../../components/CustomTabBar';
+import BackgroundLayers from '../../components/BackgroundLayers';
 import CompanionChat from '../../components/CompanionChat';
 import { showToolkit } from '../../components/ToolkitSheet';
 import TooltipIcon from '../../components/TooltipIcon';
@@ -66,6 +68,7 @@ const BUILT_CARDS: FaithCardId[] = ['votd', 'bible_plans', 'gratitude', 'prayer'
 export default function FaithScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const [headerH, setHeaderH] = useState(104);
   const { scrollTo, openHalo, haloVerseRef, haloVerseText } = useLocalSearchParams<{ scrollTo?: string; openHalo?: string; haloVerseRef?: string; haloVerseText?: string }>();
   const [chatOpen, setChatOpen] = useState(false);
   const [companionSeed, setCompanionSeed] = useState<{ ref: string; note?: string } | null>(null);
@@ -170,8 +173,11 @@ export default function FaithScreen() {
   };
 
   return (
-    <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
-      <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
+    <LinearGradient colors={[theme.gradientEnd, theme.gradientEnd]} style={{ flex: 1 }}>
+      {/* The page glows AMBER on Faith, not the app accent. */}
+      <BackgroundLayers glow={theme.accentAmber} />
+      <View onLayout={e => setHeaderH(e.nativeEvent.layout.height)} style={[styles.header, { paddingTop: insets.top + 12, borderBottomColor: theme.borderCard }]}>
+        <BlurView intensity={theme.id === 'dark' ? 34 : 28} tint={theme.id === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} pointerEvents="none" />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
           <HeaderAvatar />
           <View style={{ flex: 1 }}>
@@ -196,7 +202,7 @@ export default function FaithScreen() {
 
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: insets.bottom + TAB_SCROLL_PAD }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: headerH + 16, paddingBottom: insets.bottom + TAB_SCROLL_PAD }}
         showsVerticalScrollIndicator={false}
       >
         {visibleCards.map(id => (
@@ -270,7 +276,7 @@ function VotdCard({ verse, theme, onReflect }: { verse: DailyVerse | null; theme
         router.push({ pathname: '/bible', params: { verseRef: v.reference, verseText: v.text } });
       }}
       style={[styles.card, {
-        backgroundColor: theme.bgCardFaith,
+        backgroundColor: theme.bgCardFaithGlass,
         shadowColor: '#d4860a', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.85, shadowRadius: 8, elevation: 8,
         borderTopWidth: theme.id === 'warm' ? 1.5 : 0.5,
         borderTopColor: theme.id === 'warm' ? 'rgba(212,134,10,0.5)' : 'rgba(212,134,10,0.22)',
@@ -398,7 +404,7 @@ function BibleCard({ theme }: { theme: Theme }) {
 
   return (
     <>
-      <View ref={cardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.id === 'warm' ? 'rgba(255,253,248,0.96)' : theme.bgCard, overflow: 'hidden', borderTopWidth: 2, borderTopColor: 'rgba(212,134,10,0.55)' }]}>
+      <View ref={cardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.id === 'warm' ? 'rgba(255,253,248,0.72)' : theme.bgCardFaithGlass, overflow: 'hidden', borderTopWidth: 2, borderTopColor: 'rgba(212,134,10,0.55)' }]}>
         <Ionicons name="book" size={130} color={theme.accentAmber} style={styles.cardWatermark} pointerEvents="none" />
         <View style={[styles.cardLabelRow, { justifyContent: 'space-between' }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -661,7 +667,7 @@ function PrayerCard({ theme }: { theme: Theme }) {
   // answered count is NOT shown on the card; it lives as a hero on the prayer screen instead.
   return (
     <Animated.View style={{ transform: [{ scale }] }}>
-      <View ref={cardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.id === 'warm' ? 'rgba(255,253,248,0.96)' : theme.bgCard, overflow: 'hidden', borderTopWidth: 2, borderTopColor: 'rgba(212,134,10,0.55)' }]}>
+      <View ref={cardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.id === 'warm' ? 'rgba(255,253,248,0.72)' : theme.bgCardFaithGlass, overflow: 'hidden', borderTopWidth: 2, borderTopColor: 'rgba(212,134,10,0.55)' }]}>
         <MaterialCommunityIcons name="hand-heart" size={130} color={theme.accentAmber} style={styles.cardWatermark} pointerEvents="none" />
         <TouchableOpacity
           activeOpacity={0.9}
@@ -722,7 +728,7 @@ const styles = StyleSheet.create({
   verseLabel:    { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold' },
   verseText:     { fontSize: 14, lineHeight: 22, marginBottom: 10, fontFamily: 'Lora_500Medium', textAlign: 'center' },
   verseRef:      { fontSize: 9, fontFamily: 'DMSans_700Bold', textAlign: 'center', letterSpacing: 2, textTransform: 'uppercase' },
-  header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5, marginBottom: 16 },
+  header:      { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 0.5 },
   headerTitle: { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
   // Faith cards carry a faint warm gold edge (a softer cousin of the verse card) instead of
   // the standard cool top border; this is now the faith identity, since the screen wash is gone.

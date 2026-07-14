@@ -156,7 +156,7 @@ export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen,
         <View style={{ flexDirection: 'row', gap: 5, marginBottom: 12, flexWrap: 'wrap' }}>
           {Object.keys(IF_METHODS).map(m => (
             <TouchableOpacity key={m} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setIfMethod(m); }}
-              style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, backgroundColor: ifMethod === m ? theme.accentBlueBg : theme.ifMethodBg, borderWidth: 1, borderColor: ifMethod === m ? theme.accentBlueBorder : theme.ifMethodBorder }}>
+              style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, backgroundColor: ifMethod === m ? theme.bgSelected : theme.ifMethodBg, borderWidth: 1, borderColor: ifMethod === m ? theme.accentBlueBorder : theme.ifMethodBorder }}>
               <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: ifMethod === m ? theme.accentBlue : theme.ifMethodText }}>{m}</Text>
             </TouchableOpacity>
           ))}

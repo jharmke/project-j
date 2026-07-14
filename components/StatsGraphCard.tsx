@@ -1085,7 +1085,9 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
   showNetCarbs?: boolean;
   editBtnRef?: React.RefObject<any>;
 }) {
-  const shadow = { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 6 };
+  // Per-theme shadow: a pure-black shadow on a pale ground reads as dirt, not depth, and a light card on
+  // a light page needs MORE of it than a dark one does.
+  const shadow = { shadowColor: theme.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: theme.cardShadowOpacity, shadowRadius: 12, elevation: 6 };
   const [nutrientPickerVisible, setNutrientPickerVisible] = useState(false);
   const pickerOverlayAnim = useRef(new Animated.Value(0)).current;
   const pickerScaleAnim = useRef(new Animated.Value(0.92)).current;
@@ -1426,7 +1428,7 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
   })();
 
   return (
-    <View style={{ borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14, padding: 16, marginBottom: 12, backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadow }}>
+    <View style={{ borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14, padding: 16, marginBottom: 12, backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadow }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
         <Ionicons name={iconName as any} size={11} color={theme.textMuted} />
         <Text style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted, flex: 1, marginLeft: 6 }}>{card.label}</Text>

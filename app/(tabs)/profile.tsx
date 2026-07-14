@@ -8,9 +8,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TAB_SCROLL_PAD } from '../../components/CustomTabBar';
-import { TAB_BAR_HEIGHT } from '../../components/CustomTabBar';
+import { TAB_BAR_HEIGHT, TAB_SCROLL_PAD } from '../../components/CustomTabBar';
+import BackgroundLayers from '../../components/BackgroundLayers';
 import { useToast } from '../../components/Toast';
 import { saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
@@ -111,10 +112,10 @@ function ProfileSection({ label, subtitle, defaultOpen = false, children, theme,
     <View style={{ marginTop: first ? 4 : 20 }}>
       <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); toggle(); }} activeOpacity={0.7} style={{ paddingVertical: 6, minHeight: 44, justifyContent: 'center' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <Text style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.accentBlueRaw }}>
+          <Text style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>
             {label}
           </Text>
-          <View style={{ flex: 1, height: 1, backgroundColor: theme.accentBlueBorder }} />
+          <View style={{ flex: 1, height: 1, backgroundColor: theme.textMuted + '55' }} />
           <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color={theme.accentBlueRaw} />
         </View>
         {!open && subtitle && (
@@ -134,6 +135,7 @@ function ProfileSection({ label, subtitle, defaultOpen = false, children, theme,
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const [headerH, setHeaderH] = useState(104);
   const { theme } = useTheme();
   const { showToast } = useToast();
   const [profile, setProfile] = useState<Profile>({
@@ -392,8 +394,10 @@ export default function ProfileScreen() {
   };
 
   return (
-    <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
-      <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
+    <LinearGradient colors={[theme.gradientEnd, theme.gradientEnd]} style={{ flex: 1 }}>
+      <BackgroundLayers />
+      <View onLayout={e => setHeaderH(e.nativeEvent.layout.height)} style={[styles.header, { paddingTop: insets.top + 12, borderBottomColor: theme.borderCard }]}>
+        <BlurView intensity={theme.id === 'dark' ? 34 : 28} tint={theme.id === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} pointerEvents="none" />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
           <HeaderAvatar inert />
           <View style={{ flex: 1 }}>
@@ -417,7 +421,7 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + TAB_SCROLL_PAD }]} automaticallyAdjustKeyboardInsets={true} onScroll={e => { scrollOffset.current = e.nativeEvent.contentOffset.y; }} scrollEventThrottle={16}>
+      <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={[styles.content, { paddingTop: headerH + 16, paddingBottom: insets.bottom + TAB_SCROLL_PAD }]} automaticallyAdjustKeyboardInsets={true} onScroll={e => { scrollOffset.current = e.nativeEvent.contentOffset.y; }} scrollEventThrottle={16}>
 
         <ProfileSection label="Basic Info" subtitle="Name, height, birthday, sex" defaultOpen={true} theme={theme} first={true}>
           <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>Name</Text>
@@ -479,13 +483,13 @@ export default function ProfileScreen() {
           <View style={styles.toggleRow}>
             <TouchableOpacity
               style={[styles.toggleBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput },
-                profile.sex === 'male' && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+                profile.sex === 'male' && { backgroundColor: theme.bgSelected, borderColor: theme.accentBlue }]}
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateField('sex', 'male'); }}>
               <Text style={[styles.toggleBtnText, { color: theme.textMuted }, profile.sex === 'male' && { color: theme.accentBlue }]}>Male</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.toggleBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput },
-                profile.sex === 'female' && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+                profile.sex === 'female' && { backgroundColor: theme.bgSelected, borderColor: theme.accentBlue }]}
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateField('sex', 'female'); }}>
               <Text style={[styles.toggleBtnText, { color: theme.textMuted }, profile.sex === 'female' && { color: theme.accentBlue }]}>Female</Text>
             </TouchableOpacity>
@@ -507,7 +511,7 @@ export default function ProfileScreen() {
             <TouchableOpacity
               key={o.key}
               style={[styles.activityBtn, { borderWidth: 0.5, borderColor: theme.borderInput, backgroundColor: theme.bgInput },
-                profile.lifestyleActivity === o.key && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+                profile.lifestyleActivity === o.key && { backgroundColor: theme.bgSelected, borderColor: theme.accentBlue }]}
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateField('lifestyleActivity', o.key); }}>
               <View style={[styles.activityDot, { backgroundColor: theme.textDim },
                 profile.lifestyleActivity === o.key && { backgroundColor: theme.accentBlue }]} />
@@ -527,7 +531,7 @@ export default function ProfileScreen() {
             <TouchableOpacity
               key={o.key}
               style={[styles.activityBtn, { borderWidth: 0.5, borderColor: theme.borderInput, backgroundColor: theme.bgInput },
-                profile.trainingFrequency === o.key && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+                profile.trainingFrequency === o.key && { backgroundColor: theme.bgSelected, borderColor: theme.accentBlue }]}
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateField('trainingFrequency', o.key); }}>
               <View style={[styles.activityDot, { backgroundColor: theme.textDim },
                 profile.trainingFrequency === o.key && { backgroundColor: theme.accentBlue }]} />
@@ -722,11 +726,20 @@ export default function ProfileScreen() {
         paddingHorizontal: 16,
         paddingTop: 12,
         paddingBottom: keyboardHeight > 0 ? 12 : 16,
-        backgroundColor: theme.bgSheet,
+        // GLASS, not a white slab. This is floating chrome, exactly like the header and the tab bar, and
+        // it should behave like them: content passes under it, you can see it through. A solid bgSheet
+        // panel dropped in front of a translucent, glowing page reads as a foreign object.
         borderTopWidth: 0.5,
         borderTopColor: theme.borderCard,
+        overflow: 'hidden',
         transform: [{ translateY: floatAnim.interpolate({ inputRange: [0, 1], outputRange: [200, 0] }) }],
       }}>
+        <BlurView
+          intensity={theme.id === 'dark' ? 40 : 34}
+          tint={theme.id === 'dark' ? 'dark' : 'light'}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <TouchableOpacity
             onPress={() => {
@@ -780,7 +793,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container:          { flex: 1 },
   content:            { padding: 16 },
-  header:             { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5, marginBottom: 16 },
+  header:             { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 0.5 },
   headerLabel:        { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: 'DMSans_700Bold' },
   headerTitle:        { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
   card:               { borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14, padding: 16, marginBottom: 12, shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },

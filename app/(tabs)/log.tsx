@@ -2088,7 +2088,7 @@ export default function LogScreen() {
                     ))}
                   </View>
                   <TouchableOpacity
-                    style={{ backgroundColor: presetsSaveable ? theme.accentBlueBg : theme.bgInput, borderWidth:1, borderColor: presetsSaveable ? theme.accentBlueBorder : theme.borderInput, borderRadius:8, padding:12, alignItems:'center', opacity: presetsSaveable ? 1 : 0.5 }}
+                    style={{ backgroundColor: presetsSaveable ? theme.bgSelected : theme.bgInput, borderWidth:1, borderColor: presetsSaveable ? theme.accentBlueBorder : theme.borderInput, borderRadius:8, padding:12, alignItems:'center', opacity: presetsSaveable ? 1 : 0.5 }}
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); saveWaterPresets(); }}
                     disabled={!presetsSaveable}>
                     <Text style={{ color: presetsSaveable ? theme.accentBlue : theme.textDim, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>Save Presets</Text>
@@ -2111,7 +2111,7 @@ export default function LogScreen() {
                       <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_500Medium', marginTop:3, textAlign:'center' }}>oz</Text>
                     </View>
                     <TouchableOpacity
-                      style={{ flex:2, backgroundColor: goalSaveable ? theme.accentBlueBg : theme.bgInput, borderWidth:1, borderColor: goalSaveable ? theme.accentBlueBorder : theme.borderInput, borderRadius:8, padding:12, alignItems:'center', opacity: goalSaveable ? 1 : 0.5, marginTop:1 }}
+                      style={{ flex:2, backgroundColor: goalSaveable ? theme.bgSelected : theme.bgInput, borderWidth:1, borderColor: goalSaveable ? theme.accentBlueBorder : theme.borderInput, borderRadius:8, padding:12, alignItems:'center', opacity: goalSaveable ? 1 : 0.5, marginTop:1 }}
                       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); saveWaterGoal(); }}
                       disabled={!goalSaveable}>
                       <Text style={{ color: goalSaveable ? theme.accentBlue : theme.textDim, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>Save Goal</Text>
@@ -2172,7 +2172,7 @@ export default function LogScreen() {
                 <View style={{ height:0.5, backgroundColor: theme.borderCard, marginBottom:12, marginTop:2 }} />
                 <View ref={logEditAddBtnRef as any} collapsable={false}>
                   <TouchableOpacity
-                    style={{ flexDirection:'row', alignItems:'center', justifyContent:'center', gap:8, paddingVertical:13, borderRadius:8, backgroundColor: mealSlots.length >= 8 ? theme.bgInput : theme.accentBlueBg, borderWidth:1, borderColor: mealSlots.length >= 8 ? theme.borderInput : theme.accentBlueBorder, opacity: mealSlots.length >= 8 ? 0.5 : 1 }}
+                    style={{ flexDirection:'row', alignItems:'center', justifyContent:'center', gap:8, paddingVertical:13, borderRadius:8, backgroundColor: mealSlots.length >= 8 ? theme.bgInput : theme.bgSelected, borderWidth:1, borderColor: mealSlots.length >= 8 ? theme.borderInput : theme.accentBlueBorder, opacity: mealSlots.length >= 8 ? 0.5 : 1 }}
                     onPress={addMealSlot}
                     disabled={mealSlots.length >= 8}>
                     <Ionicons name="add" size={16} color={mealSlots.length >= 8 ? theme.textDim : theme.accentBlue} />

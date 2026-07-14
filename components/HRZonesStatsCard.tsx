@@ -127,7 +127,7 @@ export default function HRZonesStatsCard() {
           style={{
             paddingHorizontal: 12, paddingVertical: 5, borderRadius: 6, borderWidth: 1,
             borderColor: period === p ? theme.accentBlueBorder : theme.borderInput,
-            backgroundColor: period === p ? theme.accentBlueBg : theme.bgInput,
+            backgroundColor: period === p ? theme.bgSelected : theme.bgInput,
           }}>
           <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: period === p ? theme.accentBlue : theme.textMuted }}>{p}D</Text>
         </TouchableOpacity>
@@ -136,7 +136,7 @@ export default function HRZonesStatsCard() {
   );
 
   return (
-    <View style={{ backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 6 }}>
+    <View style={{ backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, padding: 16, marginBottom: 12, shadowColor: theme.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: theme.cardShadowOpacity, shadowRadius: 12, elevation: 6 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, flex: 1 }}>
           <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>

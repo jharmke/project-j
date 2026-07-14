@@ -108,9 +108,16 @@ export interface Theme {
   // the shadow to define an edge with. Dark grounds want the opposite: black, and less of it.
   cardShadow: string;
   cardShadowOpacity: number;
+
+  // The SELECTED-state fill. OPAQUE, and computed per accent in the provider (see bgSelected there).
+  bgSelected: string;
   bgCardVerse: string;      // verse card background (special)
   bgCardFaith: string;      // faith tab card background (faint warm tint, faith tab only)
   bgCardFaithHero: string;  // Faith Today home hub card (between bgCardFaith and bgCardVerse)
+  // The faith card, translucent. Its OWN warm tint, not the neutral glass -- the faith surfaces are the
+  // one place in the app where the colour means something, and they keep that. They just stop being the
+  // only solid slabs left once every other card floats.
+  bgCardFaithGlass: string;
   bgTileFaith: string;      // faith inner tile/button fill (warm wash on light, solid warm-elevated on dark)
   bgTileFaithStrong: string; // faith inner hero fill (Continue Reading); a step stronger than bgTileFaith
   bgInput: string;          // text input background
@@ -208,9 +215,11 @@ const dark: Theme = {
   bgCardGlass:      'rgba(52,52,58,0.62)',
   cardShadow:       '#000000',
   cardShadowOpacity: 0.55,
+  bgSelected:       '#000000',   // placeholder: the provider computes this from the LIVE accent
   bgCardVerse:      '#22223a',
   bgCardFaith:      '#2a2a2e',  // = bgCard: no tint on dark (warm-dark cards recede and look cheap; warmth lives in the gold edge + accents)
   bgCardFaithHero:  '#262634',
+  bgCardFaithGlass: 'rgba(52,52,58,0.62)',
   bgTileFaith:      '#34302a',  // dark: solid warm-elevated inner tile fill (lighter than the card so tiles float, not transparent)
   bgTileFaithStrong: '#3c372e', // dark: Continue Reading hero, a step lighter so it leads
   bgInput:          '#1f1f22',
@@ -300,13 +309,15 @@ const light: Theme = {
   // page. Over #e3e6ee the same card composites to roughly #f5f6f9, a real gap. So it can be see-through
   // AND still have an edge for the shadow to define. Paper-vs-glass was a false choice created by a white
   // page, not a genuine trade-off.
-  bgCardGlass:      'rgba(255,255,255,0.70)',
+  bgCardGlass:      'rgba(255,255,255,0.60)',
   // Blue-tinted ink, not black: on a pale blue-grey ground a neutral black shadow reads as dirt.
   cardShadow:       '#26304f',
   cardShadowOpacity: 0.20,
+  bgSelected:       '#000000',   // placeholder: the provider computes this from the LIVE accent
   bgCardVerse:      'rgba(255,251,240,0.72)',
   bgCardFaith:      'rgba(255,250,243,0.85)',
   bgCardFaithHero:  'rgba(255,248,236,0.82)',
+  bgCardFaithGlass: 'rgba(255,250,243,0.62)',
   bgTileFaith:      'rgba(212,134,10,0.06)',
   bgTileFaithStrong: 'rgba(212,134,10,0.11)',
   bgInput:          '#f5f5fa',
@@ -389,9 +400,11 @@ const slate: Theme = {
   bgCardGlass:      'rgba(233,239,248,0.62)',
   cardShadow:       '#1c2533',
   cardShadowOpacity: 0.22,
+  bgSelected:       '#000000',   // placeholder: the provider computes this from the LIVE accent
   bgCardVerse:      'rgba(226,232,244,0.90)',
   bgCardFaith:      'rgba(228,221,209,0.92)',
   bgCardFaithHero:  'rgba(226,219,206,0.92)',
+  bgCardFaithGlass: 'rgba(233,227,216,0.64)',
   bgTileFaith:      'rgba(212,134,10,0.06)',
   bgTileFaithStrong: 'rgba(212,134,10,0.11)',
   bgInput:          '#d0d8e4',
@@ -474,9 +487,11 @@ const warm: Theme = {
   bgCardGlass:      'rgba(255,246,232,0.64)',
   cardShadow:       '#5a3a18',
   cardShadowOpacity: 0.18,
+  bgSelected:       '#000000',   // placeholder: the provider computes this from the LIVE accent
   bgCardVerse:      '#fff8e8',
   bgCardFaith:      '#fff1dd',
   bgCardFaithHero:  '#ffeed6',
+  bgCardFaithGlass: 'rgba(255,241,221,0.66)',
   bgTileFaith:      'rgba(212,134,10,0.06)',
   bgTileFaithStrong: 'rgba(212,134,10,0.11)',
   bgInput:          '#efe9dd',
@@ -559,9 +574,11 @@ const blush: Theme = {
   bgCardGlass:      'rgba(254,243,248,0.66)',
   cardShadow:       '#5a2438',
   cardShadowOpacity: 0.16,
+  bgSelected:       '#000000',   // placeholder: the provider computes this from the LIVE accent
   bgCardVerse:      'rgba(255,252,245,0.92)',
   bgCardFaith:      'rgba(253,240,241,0.95)',
   bgCardFaithHero:  'rgba(253,242,238,0.94)',
+  bgCardFaithGlass: 'rgba(253,240,241,0.66)',
   bgTileFaith:      'rgba(212,134,10,0.06)',
   bgTileFaithStrong: 'rgba(212,134,10,0.11)',
   bgInput:          '#fce8ed',
@@ -633,6 +650,23 @@ const blush: Theme = {
   gradientStart:    '#f0bdce',
   gradientEnd:      '#f9dae5',
 };
+
+
+// Blend two hex colours into an OPAQUE hex. React Native has no color-mix(), and a TRANSLUCENT fill is
+// precisely what broke selection states once the page behind them stopped being an opaque slab -- so the
+// blend happens here, once, and what the UI gets is a solid colour.
+function mix(fg: string, bg: string, amount: number): string {
+  const parse = (h: string) => {
+    const m = /^#?([0-9a-f]{6})$/i.exec(h.trim());
+    if (!m) return null;
+    const v = m[1];
+    return [parseInt(v.slice(0,2),16), parseInt(v.slice(2,4),16), parseInt(v.slice(4,6),16)] as [number,number,number];
+  };
+  const f = parse(fg), b = parse(bg);
+  if (!f || !b) return fg;                       // a non-hex token (rgba) cannot be blended; fail loud, not wrong
+  const out = f.map((c, i) => Math.round(c * amount + b[i] * (1 - amount)));
+  return '#' + out.map(c => Math.max(0, Math.min(255, c)).toString(16).padStart(2, '0')).join('');
+}
 
 // ─── Theme Map ────────────────────────────────────────────────────────────────
 export const THEMES: Record<ThemeId, Theme> = { dark, light, slate, warm, blush };
@@ -714,6 +748,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }): Reac
     accentBlueRaw:    activeAccent.accentBlue,
     accentBlueBg:     activeAccent.buttonBg ?? activeAccent.accentBlueBg,
     accentBlueBorder: activeAccent.buttonBorder ?? activeAccent.accentBlueBorder,
+    // The SELECTED fill, pre-composited to an OPAQUE colour.
+    // accentBlueBg is a TRANSLUCENT accent (~10%), and a selected row does not layer it over the white --
+    // it REPLACES the white with it. That was invisible while the page behind was an opaque near-white
+    // slab. Now the page is translucent and glowing, so a selected row was showing the glow, the halftone
+    // and the cards behind it straight through, and its label became unreadable while every UNSELECTED row
+    // stayed crisply opaque. Selection has to be more solid than its neighbours, not less.
+    bgSelected:       mix(activeAccent.accentBlue, baseTheme.bgInput, themeId === 'dark' ? 0.22 : 0.16),
     ...(activeAccent.gradientStart ? { gradientStart: activeAccent.gradientStart } : {}),
   };
 

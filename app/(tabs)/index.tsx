@@ -2470,7 +2470,7 @@ export default function HomeScreen() {
               if (before.length <= 3) setWeightInput(before + '.' + after);
             }
           }} />
-        <PressableButton style={[styles.logBtn, { backgroundColor: weightInput.trim() ? theme.accentBlueBg : theme.bgInput, borderColor: weightInput.trim() ? theme.accentBlueBorder : theme.borderInput, opacity: weightInput.trim() ? 1 : 0.5 }]} onPress={logWeight}>
+        <PressableButton style={[styles.logBtn, { backgroundColor: weightInput.trim() ? theme.bgSelected : theme.bgInput, borderColor: weightInput.trim() ? theme.accentBlueBorder : theme.borderInput, opacity: weightInput.trim() ? 1 : 0.5 }]} onPress={logWeight}>
           <Text style={[styles.logBtnText, { color: weightInput.trim() ? theme.accentBlue : theme.textDim }]}>LOG</Text>
         </PressableButton>
       </View>
@@ -2818,7 +2818,7 @@ export default function HomeScreen() {
             <View style={{ flexDirection:'row', gap:8, marginBottom:8 }}>
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setActiveSleepPicker(activeSleepPicker === 'bed' ? null : 'bed'); }}
-                style={{ flex:1, backgroundColor: activeSleepPicker === 'bed' ? theme.accentBlueBg : theme.bgInput, borderWidth:1, borderColor: activeSleepPicker === 'bed' ? theme.accentBlueBorder : theme.borderInput, borderRadius:6, padding:10, alignItems:'center' }}>
+                style={{ flex:1, backgroundColor: activeSleepPicker === 'bed' ? theme.bgSelected : theme.bgInput, borderWidth:1, borderColor: activeSleepPicker === 'bed' ? theme.accentBlueBorder : theme.borderInput, borderRadius:6, padding:10, alignItems:'center' }}>
                 <Text style={{ fontSize:10, color: theme.textMuted, fontFamily:Type.ui, marginBottom:2 }}>Bed Time</Text>
                 <Text style={{ fontSize:16, color: sleepBedTime ? theme.textPrimary : theme.textPlaceholder, fontFamily:Type.uiSemibold }}>
                   {sleepBedTime ? sleepBedTime.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : 'Tap to set'}
@@ -2826,7 +2826,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setActiveSleepPicker(activeSleepPicker === 'wake' ? null : 'wake'); }}
-                style={{ flex:1, backgroundColor: activeSleepPicker === 'wake' ? theme.accentBlueBg : theme.bgInput, borderWidth:1, borderColor: activeSleepPicker === 'wake' ? theme.accentBlueBorder : theme.borderInput, borderRadius:6, padding:10, alignItems:'center' }}>
+                style={{ flex:1, backgroundColor: activeSleepPicker === 'wake' ? theme.bgSelected : theme.bgInput, borderWidth:1, borderColor: activeSleepPicker === 'wake' ? theme.accentBlueBorder : theme.borderInput, borderRadius:6, padding:10, alignItems:'center' }}>
                 <Text style={{ fontSize:10, color: theme.textMuted, fontFamily:Type.ui, marginBottom:2 }}>Wake Time</Text>
                 <Text style={{ fontSize:16, color: sleepWakeTime ? theme.textPrimary : theme.textPlaceholder, fontFamily:Type.uiSemibold }}>
                   {sleepWakeTime ? sleepWakeTime.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : 'Tap to set'}
@@ -3914,7 +3914,7 @@ export default function HomeScreen() {
                   ))}
                 </View>
                 <TouchableOpacity
-                  style={{ backgroundColor: presetsSaveable ? theme.accentBlueBg : theme.bgInput, borderWidth:1, borderColor: presetsSaveable ? theme.accentBlueBorder : theme.borderInput, borderRadius:8, padding:12, alignItems:'center', opacity: presetsSaveable ? 1 : 0.5 }}
+                  style={{ backgroundColor: presetsSaveable ? theme.bgSelected : theme.bgInput, borderWidth:1, borderColor: presetsSaveable ? theme.accentBlueBorder : theme.borderInput, borderRadius:8, padding:12, alignItems:'center', opacity: presetsSaveable ? 1 : 0.5 }}
                   onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); saveWaterPresets(); }}
                   disabled={!presetsSaveable}
                 >
@@ -3942,7 +3942,7 @@ export default function HomeScreen() {
                     const goalSaveable = !isNaN(goalInputNum) && goalInputNum > 0 && goalInputNum !== waterGoal;
                     return (
                       <TouchableOpacity
-                        style={{ flex:2, backgroundColor: goalSaveable ? theme.accentBlueBg : theme.bgInput, borderWidth:1, borderColor: goalSaveable ? theme.accentBlueBorder : theme.borderInput, borderRadius:8, padding:12, alignItems:'center', opacity: goalSaveable ? 1 : 0.5, marginTop:1 }}
+                        style={{ flex:2, backgroundColor: goalSaveable ? theme.bgSelected : theme.bgInput, borderWidth:1, borderColor: goalSaveable ? theme.accentBlueBorder : theme.borderInput, borderRadius:8, padding:12, alignItems:'center', opacity: goalSaveable ? 1 : 0.5, marginTop:1 }}
                         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); saveWaterGoal(); }}
                         disabled={!goalSaveable}>
                         <Text style={{ color: goalSaveable ? theme.accentBlue : theme.textDim, fontFamily:Type.uiSemibold, fontSize:14 }}>Save Goal</Text>
@@ -4000,7 +4000,7 @@ export default function HomeScreen() {
                       const saveable = !isNaN(amt) && amt > 0;
                       return (
                         <TouchableOpacity onPress={saveWaterEntryEdit} disabled={!saveable}
-                          style={{ flex:1, paddingVertical:12, borderRadius:8, borderWidth:1, alignItems:'center', backgroundColor: saveable ? theme.accentBlueBg : theme.bgInput, borderColor: saveable ? theme.accentBlueBorder : theme.borderInput, opacity: saveable ? 1 : 0.5 }}>
+                          style={{ flex:1, paddingVertical:12, borderRadius:8, borderWidth:1, alignItems:'center', backgroundColor: saveable ? theme.bgSelected : theme.bgInput, borderColor: saveable ? theme.accentBlueBorder : theme.borderInput, opacity: saveable ? 1 : 0.5 }}>
                           <Text style={{ fontSize:14, fontFamily:Type.uiSemibold, color: saveable ? theme.accentBlue : theme.textDim }}>Save</Text>
                         </TouchableOpacity>
                       );

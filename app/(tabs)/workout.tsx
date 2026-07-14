@@ -11,8 +11,10 @@ import { Alert, Animated, AppState, Dimensions, Keyboard, KeyboardAvoidingView, 
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Reanimated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, runOnJS, FadeIn, FadeOut } from 'react-native-reanimated';
+import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TAB_SCROLL_PAD } from '../../components/CustomTabBar';
+import BackgroundLayers from '../../components/BackgroundLayers';
 import { ToastRenderer, useToast } from '../../components/Toast';
 import { showAchievementToast } from '../../components/AchievementToast';
 import { showCelebration } from '../../components/CelebrationOverlay';
@@ -96,6 +98,7 @@ const filterDecimal = (v: string, set: (s: string) => void) => {
 
 export default function WorkoutScreen() {
   const insets = useSafeAreaInsets();
+  const [headerH, setHeaderH] = useState(104);
   const { theme } = useTheme();
   const { showToast } = useToast();
   const [todayKey, setTodayKey] = useState(getWorkoutDateKey);
@@ -1859,7 +1862,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
     const elapsed = getTimerElapsedSec(day);
     const hasTime = elapsed > 0;
     return (
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: running ? theme.accentBlueBorder : theme.borderCard, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 14, marginBottom: 12,
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.bgCardGlass, borderWidth: 0.5, borderColor: running ? theme.accentBlueBorder : theme.borderCard, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 14, marginBottom: 12,
         shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 2 }}>
         <TouchableOpacity onPress={() => openDurationEdit(day)} activeOpacity={hasTime && !running ? 0.6 : 1} disabled={!hasTime || running} style={{ flexDirection: 'row', alignItems: 'center', gap: 9, flex: 1 }} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
           <Ionicons name={running ? 'stopwatch' : 'stopwatch-outline'} size={18} color={running ? theme.accentBlue : theme.textMuted} />
@@ -1965,7 +1968,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
         collapsable={false}
         style={inGroup
           ? [isDone && styles.exerciseDone, { paddingHorizontal: 14, paddingVertical: 12 }]
-          : [styles.exerciseItem, isDone && styles.exerciseDone, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderLeftColor: isDone ? theme.accentBlue : theme.textDim }]
+          : [styles.exerciseItem, isDone && styles.exerciseDone, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderLeftColor: isDone ? theme.accentBlue : theme.textDim }]
         }>
         <View style={styles.exerciseRow}>
           <View style={{ paddingRight: 10, justifyContent: 'center', gap: 1 }}>
@@ -2111,7 +2114,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
           }
         });
         out.push(
-          <View key={`g_${unit.groupId}`} style={[styles.exerciseItem, { backgroundColor: theme.bgCard, borderColor: theme.accentBlue + '55', borderLeftColor: theme.accentBlue, padding: 0, overflow: 'hidden' }]}>
+          <View key={`g_${unit.groupId}`} style={[styles.exerciseItem, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.accentBlue + '55', borderLeftColor: theme.accentBlue, padding: 0, overflow: 'hidden' }]}>
             <View style={{ paddingHorizontal: 14, paddingTop: 10, paddingBottom: 0 }}>
               <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.accentBlue, fontFamily: 'DMSans_700Bold' }}>SUPERSET</Text>
             </View>
@@ -2160,8 +2163,10 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={[styles.container, { paddingTop: insets.top }]}>
-        <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
+      <LinearGradient colors={[theme.gradientEnd, theme.gradientEnd]} style={styles.container}>
+        <BackgroundLayers />
+        <View onLayout={e => setHeaderH(e.nativeEvent.layout.height)} style={[styles.header, { paddingTop: insets.top + 12, borderBottomColor: theme.borderCard }]}>
+          <BlurView intensity={theme.id === 'dark' ? 34 : 28} tint={theme.id === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} pointerEvents="none" />
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
             <HeaderAvatar />
             <View style={{ flex: 1 }}>
@@ -2183,15 +2188,20 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
       <ScrollView
         ref={mainScrollRef}
         style={{ flex: 1 }}
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + TAB_SCROLL_PAD }]}
+        contentContainerStyle={[styles.content, { paddingTop: headerH + 16, paddingBottom: insets.bottom + TAB_SCROLL_PAD }]}
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets={true}>
 
-        <View ref={dayScrollerRef} collapsable={false} style={{ marginBottom: 16 }}>
+        <View ref={dayScrollerRef} collapsable={false} style={{ marginBottom: 4 }}>
         <ScrollView
           ref={dayScrollRef}
           horizontal
           showsHorizontalScrollIndicator={false}
+          // The day tiles used to fill this ScrollView's height EXACTLY, and a ScrollView clips to its own
+          // bounds -- so the moment the tiles got a shadow, it was sliced off top and bottom. The content
+          // needs padding for the shadow to live in. The left/right padding does the same for the first
+          // and last tile.
+          contentContainerStyle={{ paddingVertical: 12, paddingHorizontal: 2 }}
           onLayout={() => {}}>
           {DATES.map(({ key, dayName, label }) => {
             const c = theme.accentBlue;
@@ -2201,7 +2211,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
             return (
               <TouchableOpacity
                 key={key}
-                style={[styles.dayTab, { backgroundColor: theme.bgCard, borderColor: theme.borderSubtle },
+                style={[styles.dayTab, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderSubtle },
                   isActiveDayTab && { borderColor: c, backgroundColor: c + '18', borderWidth: 1.5 },
                   isToday && !isActiveDayTab && { borderColor: theme.textSecondary, borderWidth: 1.5 }]}
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setActiveDay(key); setCalBurnedSaved(!!cardioLogs[key]?.caloriesBurned); }}>
@@ -2294,7 +2304,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
         </View>
 
         {isRest ? (
-          <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, alignItems: 'center', paddingVertical: 32, overflow: 'hidden' }]}>
+          <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, alignItems: 'center', paddingVertical: 32, overflow: 'hidden' }]}>
             <Ionicons name="moon" size={36} color={theme.textMuted} />
             <Text style={{ color: theme.textPrimary, fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginTop: 12 }}>REST DAY</Text>
             <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginTop: 8, textAlign: 'center' }}>Recovery is part of the program. Rest well.</Text>
@@ -2351,7 +2361,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
           ].filter(Boolean) as { value: string; label: string }[];
           return (
             <>
-              <View style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, borderRadius: 14, marginBottom: 12, overflow: 'hidden',
+              <View style={{ backgroundColor: theme.bgCardGlass, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, borderRadius: 14, marginBottom: 12, overflow: 'hidden',
                 shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 2 }}>
                 {/* Session header: the Apple Watch envelope (duration / calories / HR). */}
                 <View style={{ padding: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
@@ -2420,7 +2430,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
         })()}
 
         {!isRest && displayExercises.length === 0 && appleSessions.length === 0 && (
-          <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, alignItems: 'center', paddingVertical: 28, marginBottom: 12 }]}>
+          <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, alignItems: 'center', paddingVertical: 28, marginBottom: 12 }]}>
             <Ionicons name="barbell-outline" size={32} color={theme.textDim} />
             <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_600SemiBold', marginTop: 10 }}>No exercises yet</Text>
             <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginTop: 4, textAlign: 'center', paddingHorizontal: 24, marginBottom: 20 }}>
@@ -2449,7 +2459,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 4, marginBottom: 4 }}>
             <TouchableOpacity
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/workout-library', params: { selectMode: 'true', day: activeDay } }); }}
-              style={{ flex: 1.3, backgroundColor: theme.bgCard, borderWidth: 1.5, borderColor: theme.accentBlue, borderRadius: 12, paddingVertical: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 5 }}>
+              style={{ flex: 1.3, backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderWidth: 1.5, borderColor: theme.accentBlue, borderRadius: 12, paddingVertical: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 5 }}>
               <Ionicons name="add" size={19} color={theme.accentBlue} />
               <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', letterSpacing: 0.3, color: theme.accentBlue }}>Add Exercise</Text>
             </TouchableOpacity>
@@ -2466,7 +2476,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
           </View>
         )}
 
-        <View ref={effortCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
+        <View ref={effortCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
           <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Today's Effort</Text>
           <View style={{ flexDirection: 'column', gap: 8, marginTop: 12 }}>
             {[[1,2,3,4,5],[6,7,8,9,10]].map((row, ri) => (
@@ -2514,7 +2524,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
           </Animated.View>
         </View>
 
-        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
+        <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <TextInput
               style={{ flex: 1, fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, fontFamily: 'DMSans_700Bold', padding: 0, marginRight: 8 }}
@@ -2883,7 +2893,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                   <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} placeholder="Exercise name" placeholderTextColor={theme.textPlaceholder} value={form.name} onChangeText={v => setForm(p => ({ ...p, name: v }))} autoCapitalize="words" autoCorrect={false} spellCheck={false} />
                   <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
                     <TouchableOpacity
-                      style={[styles.modalCancelBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }, !form.isCardio && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+                      style={[styles.modalCancelBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }, !form.isCardio && { backgroundColor: theme.bgSelected, borderColor: theme.accentBlue }]}
                       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setForm(p => ({ ...p, isCardio: false })); }}>
                       <Text style={[styles.modalCancelBtnText, { color: theme.textMuted }, !form.isCardio && { color: theme.accentBlue }]}>Lift</Text>
                     </TouchableOpacity>
@@ -2921,7 +2931,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                     {/* Weight unit (lb/kg) + tracking type (reps/time), two compact segmented groups sharing a row.
                         Both default to lb/reps; mirror the inline set-row header toggles. */}
                     {(() => {
-                      const segBtn = (active: boolean) => [{ flex: 1, borderWidth: 1, borderRadius: 10, paddingVertical: 9, alignItems: 'center' as const, backgroundColor: active ? theme.accentBlueBg : theme.bgInput, borderColor: active ? theme.accentBlueBorder : theme.borderInput }];
+                      const segBtn = (active: boolean) => [{ flex: 1, borderWidth: 1, borderRadius: 10, paddingVertical: 9, alignItems: 'center' as const, backgroundColor: active ? theme.bgSelected : theme.bgInput, borderColor: active ? theme.accentBlueBorder : theme.borderInput }];
                       const segTxt = (active: boolean) => [{ fontSize: 13, fontFamily: 'DMSans_700Bold' as const, color: active ? theme.accentBlue : theme.textMuted }];
                       const cap = { fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase' as const, color: theme.textMuted, fontFamily: 'DMSans_700Bold' as const, marginBottom: 5 };
                       const set = (patch: any) => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setForm(p => ({ ...p, ...patch })); };
@@ -3282,7 +3292,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                         const isSelected = selectedRoutine?.id === r.id;
                         return (
                           <TouchableOpacity key={r.id} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setSelectedRoutine(isSelected ? null : r); }}
-                            style={{ backgroundColor: isSelected ? theme.accentBlueBg : theme.bgInset, borderRadius: 10, paddingHorizontal: 14, paddingTop: 12, paddingBottom: isSelected ? 14 : 12, marginBottom: 8, borderWidth: 1, borderColor: isSelected ? theme.accentBlueBorder : theme.borderCard }}>
+                            style={{ backgroundColor: isSelected ? theme.bgSelected : theme.bgInset, borderRadius: 10, paddingHorizontal: 14, paddingTop: 12, paddingBottom: isSelected ? 14 : 12, marginBottom: 8, borderWidth: 1, borderColor: isSelected ? theme.accentBlueBorder : theme.borderCard }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                               <View style={{ flex: 1 }}>
                                 <Text style={{ color: isSelected ? theme.accentBlue : theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>{r.name}</Text>
@@ -3449,7 +3459,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
 const styles = StyleSheet.create({
   container:            { flex: 1 },
   content:              { padding: 16 },
-  header:               { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5, marginBottom: 16 },
+  header:               { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 0.5 },
   headerLabel:          { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: 'DMSans_700Bold' },
   headerTitle:          { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
   dayTabsContainer:     { marginBottom: 16 },

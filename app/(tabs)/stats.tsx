@@ -8,8 +8,10 @@ import { router, useFocusEffect } from 'expo-router';
 import { REPORTS_BETA_OPEN } from '../reports';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Animated, Dimensions, Easing, Keyboard, LayoutAnimation, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TAB_SCROLL_PAD } from '../../components/CustomTabBar';
+import BackgroundLayers from '../../components/BackgroundLayers';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { DayDetailContent } from '../day-detail';
@@ -145,10 +147,14 @@ function CollapsibleSection({ label, subtitle, children, defaultOpen = true, the
       <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); toggle(); }} activeOpacity={0.7}
         style={{ paddingVertical: 6, marginBottom: 10, minHeight: 44, justifyContent: 'center' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <Text style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.accentBlueRaw }}>
+          {/* Deep ink, NOT the accent. These headers sit directly on the page, and the page's lower half is
+              now accent-coloured (the glow) -- accent text on an accent ground is the same hue fighting
+              itself, and it washed out completely. The accent's job is "this is interactive"; a section
+              header is not. The rule and the chevron keep the accent, so the section still reads as ours. */}
+          <Text style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>
             {label}
           </Text>
-          <View style={{ flex: 1, height: 1, backgroundColor: theme.accentBlueBorder }} />
+          <View style={{ flex: 1, height: 1, backgroundColor: theme.textMuted + '55' }} />
           <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color={theme.accentBlueRaw} />
         </View>
         {!open && subtitle && (
@@ -184,6 +190,7 @@ const WATCH_ONLY_GRAPHS: Partial<Record<DataKey, PresenceMetric>> = {
 
 export default function StatsScreen() {
   const insets = useSafeAreaInsets();
+  const [headerH, setHeaderH] = useState(104);
   const { theme } = useTheme();
 
   // Tutorial spotlight targets
@@ -1142,7 +1149,7 @@ export default function StatsScreen() {
       return groups;
     };
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginTop: 12 }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginTop: 12 }]}>
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setDaySummariesOpen(o => !o); }}
@@ -1223,7 +1230,7 @@ export default function StatsScreen() {
     }
 
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginTop: 12 }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginTop: 12 }]}>
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setWeeklyCardOpen(o => !o); }}
@@ -1322,7 +1329,7 @@ export default function StatsScreen() {
     // Monthly Summaries are FREE, same as Day + Weekly (decided 2026-07-12): gating a free-to-run recap
     // is the exact thin/petty gate Path A rejects, and it clashed with free daily/weekly recaps. No lock.
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginTop: 12 }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginTop: 12 }]}>
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setMonthlyCardOpen(o => !o); }}
@@ -1770,13 +1777,14 @@ export default function StatsScreen() {
     return { bg: 'transparent', text: theme.textDim };
   };
 
-  const shadowStyle = { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 6 };
+  // Per-theme: black on a pale ground reads as dirt, and a light card on a light page needs more of it.
+  const shadowStyle = { shadowColor: theme.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: theme.cardShadowOpacity, shadowRadius: 12, elevation: 6 };
 
   const RecordTile = ({ icon, label, value, unit, color, date, fmt }: {
     icon: string, label: string, value: number | null, unit: string,
     color: string, date: string | null, fmt: (v: number) => string,
   }) => (
-    <View style={[{ flex: 1, backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, borderRadius: 14, padding: 14, alignItems: 'center' }, shadowStyle]}>
+    <View style={[{ flex: 1, backgroundColor: theme.bgCardGlass, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, borderRadius: 14, padding: 14, alignItems: 'center' }, shadowStyle]}>
       <Ionicons name={icon as any} size={18} color={color} style={{ marginBottom: 4 }} />
       <Text style={{ fontSize: 26, color, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0, opacity: 0.88 }}>
         {value !== null ? fmt(value) : '--'}
@@ -1796,8 +1804,10 @@ export default function StatsScreen() {
 
 
   return (
-    <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
-      <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
+    <LinearGradient colors={[theme.gradientEnd, theme.gradientEnd]} style={{ flex: 1 }}>
+      <BackgroundLayers />
+      <View onLayout={e => setHeaderH(e.nativeEvent.layout.height)} style={[styles.header, { paddingTop: insets.top + 12, borderBottomColor: theme.borderCard }]}>
+        <BlurView intensity={theme.id === 'dark' ? 34 : 28} tint={theme.id === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} pointerEvents="none" />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
           <HeaderAvatar />
           <View style={{ flex: 1 }}>
@@ -1829,7 +1839,7 @@ export default function StatsScreen() {
         </View>
       </View>
 
-      <ScrollView ref={statsScrollRef} style={styles.container} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + TAB_SCROLL_PAD }]}>
+      <ScrollView ref={statsScrollRef} style={styles.container} contentContainerStyle={[styles.content, { paddingTop: headerH + 16, paddingBottom: insets.bottom + TAB_SCROLL_PAD }]}>
 
         {statsCards
           .filter(c => c.type === 'system')
@@ -1839,7 +1849,7 @@ export default function StatsScreen() {
             const isFirst = idx === 0;
             if (section.systemKey === 'atAGlance') return (
               <CollapsibleSection key={section.id} label={section.label} subtitle="Averages across your logged days" defaultOpen={isFirst} theme={theme} first={isFirst}>
-          <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
+          <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 12 }}>
               <TooltipIcon tooltipKey="at_a_glance" />
             </View>
@@ -1847,7 +1857,7 @@ export default function StatsScreen() {
               {(['7', '30', '90', '180', 'ytd'] as const).map(p => (
                 <TouchableOpacity key={p} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setActivePeriod(p); }}
                   style={{ flex: 1, paddingVertical: 6, borderRadius: 6, alignItems: 'center',
-                    backgroundColor: activePeriod === p ? theme.accentBlueBg : theme.bgInput,
+                    backgroundColor: activePeriod === p ? theme.bgSelected : theme.bgInput,
                     borderWidth: 1, borderColor: activePeriod === p ? theme.accentBlueBorder : theme.borderInput }}>
                   <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: activePeriod === p ? theme.accentBlue : theme.textMuted }}>
                     {p === 'ytd' ? 'YTD' : p === '7' ? '7D' : p === '30' ? '30D' : p === '90' ? '3M' : '6M'}
@@ -1922,7 +1932,7 @@ export default function StatsScreen() {
               {(['7', '30', '90'] as const).map(p => (
                 <TouchableOpacity key={p} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleGlobalPeriodSync(p); }}
                   style={{ paddingVertical: 7, paddingHorizontal: 18, borderRadius: 8,
-                    backgroundColor: trendPeriod === p ? theme.accentBlueBg : theme.bgInput,
+                    backgroundColor: trendPeriod === p ? theme.bgSelected : theme.bgInput,
                     borderWidth: 1, borderColor: trendPeriod === p ? theme.accentBlueBorder : theme.borderInput }}>
                   <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: trendPeriod === p ? theme.accentBlue : theme.textMuted }}>
                     {p}D
@@ -1987,7 +1997,7 @@ export default function StatsScreen() {
             );
             if (section.systemKey === 'streaks') return (
               <CollapsibleSection key={section.id} label={section.label} subtitle="Consistency tracking" defaultOpen={isFirst} theme={theme} first={isFirst} forceOpen={streaksSectionForceOpen}>
-          <View ref={streaksSectionRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
+          <View ref={streaksSectionRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
             {/* Card header row -- (i) inline with label, gear on right */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: liveStreaks.length > 0 ? 16 : 0 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -2056,7 +2066,7 @@ export default function StatsScreen() {
             );
             if (section.systemKey === 'challenges') return (
               <CollapsibleSection key={section.id} label={section.label} subtitle="Beat a period or set a goal" defaultOpen={isFirst} theme={theme} first={isFirst}>
-                <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden' }]}>
+                <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden' }]}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: challengeActive && challengeProg ? 4 : 8 }}>
                     <Text style={[styles.cardLabel, { color: theme.textMuted }]}>
                       {challengeActive && challengeProg
@@ -2110,7 +2120,7 @@ export default function StatsScreen() {
             );
             if (section.systemKey === 'calendar') return (
               <CollapsibleSection key={section.id} label={section.label} subtitle="Day-by-day history" defaultOpen={isFirst} theme={theme} first={isFirst}>
-                <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
+                <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); if (calendarMonth === 0) { setCalendarMonth(11); setCalendarYear(y => y - 1); } else setCalendarMonth(m => m - 1); }} style={{ padding: 8 }}>
                 <Ionicons name="chevron-back" size={18} color={theme.accentBlue} />
@@ -2173,7 +2183,7 @@ export default function StatsScreen() {
               <CollapsibleSection label={section.label} subtitle="Custom Reports, Summaries, Comparison and Effort vs. Results" defaultOpen={isFirst} theme={theme} first={isFirst} forceOpen={reportsSectionForceOpen}>
                 {/* Custom Reports (Pro; beta-open to all testers) -- build-your-own report */}
                 <TouchableOpacity activeOpacity={0.8} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push(reportsLocked ? '/support' : '/reports'); }}
-                  style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden', marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 13 }]}>
+                  style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden', marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 13 }]}>
                   <Ionicons name="documents" size={120} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -22, bottom: -26, opacity: 0.10 }} />
                   <View style={{ width: 42, height: 42, borderRadius: 11, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, alignItems: 'center', justifyContent: 'center' }}>
                     <Ionicons name="document-text" size={22} color={theme.accentBlue} />
@@ -2190,7 +2200,7 @@ export default function StatsScreen() {
                   </View>
                   <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
                 </TouchableOpacity>
-                <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden', marginTop: 12 }]}>
+                <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden', marginTop: 12 }]}>
                   {evrCardOpen && <Ionicons name="analytics" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />}
                   <TouchableOpacity
                     activeOpacity={0.7}
@@ -2224,7 +2234,7 @@ export default function StatsScreen() {
                   )}
                 </View>
                 {/* ── Comparison Report (launch card) ── */}
-                <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden', marginTop: 12 }]}>
+                <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden', marginTop: 12 }]}>
                   {comparisonCardOpen && <Ionicons name="swap-horizontal" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />}
                   <TouchableOpacity
                     activeOpacity={0.7}
@@ -3188,7 +3198,7 @@ export default function StatsScreen() {
 const styles = StyleSheet.create({
   container:    { flex: 1 },
   content:      { padding: 16 },
-  header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5, marginBottom: 4 },
+  header:       { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 0.5 },
   headerLabel:  { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: 'DMSans_700Bold' },
   headerTitle:  { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
   card:         { borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 6 },

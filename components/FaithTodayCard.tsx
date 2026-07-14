@@ -235,7 +235,7 @@ export default function FaithTodayCard({ verse, theme }: Props) {
           onMomentumScrollEnd={onMomentumEnd}
         >
           {/* Page 1: the verse (Today's Message) */}
-          <Slide width={width} minHeight={maxH} bg={theme.bgCardFaith} onPress={goVerse} onContentLayout={onContentLayout(0)}
+          <Slide width={width} minHeight={maxH} bg={theme.bgCardFaithGlass} onPress={goVerse} onContentLayout={onContentLayout(0)}
             watermark={<Ionicons name="sunny" size={130} color={theme.accentAmber} style={styles.watermark} pointerEvents="none" />}>
             <PageHeader
               title="Today's Message"
@@ -258,7 +258,7 @@ export default function FaithTodayCard({ verse, theme }: Props) {
           </Slide>
 
           {/* Page 2: active reading plans + devotionals, two columns */}
-          <Slide width={width} minHeight={maxH} bg={theme.bgCardFaith} onPress={goFaithPlans} onContentLayout={onContentLayout(1)}
+          <Slide width={width} minHeight={maxH} bg={theme.bgCardFaithGlass} onPress={goFaithPlans} onContentLayout={onContentLayout(1)}
             watermark={<Ionicons name="book" size={130} color={theme.accentAmber} style={styles.watermark} pointerEvents="none" />}>
             <PageHeader
               title="Plans & Devotionals"
@@ -281,7 +281,7 @@ export default function FaithTodayCard({ verse, theme }: Props) {
           </Slide>
 
           {/* Page 3: active prayer preview */}
-          <Slide width={width} minHeight={maxH} bg={theme.bgCardFaith} onPress={goFaithPrayer} onContentLayout={onContentLayout(2)}
+          <Slide width={width} minHeight={maxH} bg={theme.bgCardFaithGlass} onPress={goFaithPrayer} onContentLayout={onContentLayout(2)}
             watermark={<MaterialCommunityIcons name="hand-heart" size={130} color={theme.accentAmber} style={styles.watermark} pointerEvents="none" />}>
             <PageHeader
               title="Prayer"

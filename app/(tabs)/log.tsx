@@ -47,6 +47,12 @@ import {
 
 const WATER_TARGET = 128;
 
+// The repeat pill is sized to its WORST CASE: "Repeat Yesterday · 1,248 kcal" (a 4-digit day) must never
+// truncate. Measured, that's ~205pt of content, so the cap is 212 with a little slack for wider accents/
+// fonts. NOTE this is essentially the pill's natural full-row width already -- the "dead air" that shows up
+// next to a 3-digit value IS this 4-digit headroom, not waste. 190 was tried and truncated "848 kcal".
+const REPEAT_MAX_W = 212;
+
 interface FoodEntry {
   name: string;
   cal: number;
@@ -1527,42 +1533,83 @@ export default function LogScreen() {
 
             {/* Repeat a Meal pill -- only on an EMPTY slot that has copyable history in the window */}
             {mealEntries.length === 0 && repeatSummary[slot.id]?.hasHistory && (
-              <View style={{ width: '100%', paddingLeft: 50, paddingRight: 16, paddingBottom: 12, marginTop: -8, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              // The pills are CENTERED as a pair, not pinned to the card's edges. Two earlier attempts and
+              // why they failed: the original 50/16 inherited the meal name's hanging indent on the left but
+              // a plain inset on the right, so the gutters were lopsided and Pick a Day jammed the edge;
+              // 14/14 made the gutters equal but pushed the pills out past the name, so they read as
+              // breaking out of the card. Centering the pair gives equal gutters AND keeps the pills inside
+              // the card's content, and the empty Pick-a-Day spacer means the lone Repeat pill still lands
+              // in exactly the same spot as every other row's.
+              <View style={{ width: '100%', paddingHorizontal: 16, paddingBottom: 12, marginTop: -8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
                 {/* The original outline pills, kept quiet on purpose -- solid fill is reserved for a screen's
                     ONE primary action, and there are two of these per slot across up to 8 slots. What they
                     gained: press-scale (PressableButton) and a rounder corner.
                     flex: Repeat takes 1 so its label always has room; Pick a Day takes 0 so it sizes to its
                     own content. PressableButton defaults BOTH to flex:1, which split the row evenly and
-                    truncated "Repeat Yesterday · 566 kcal". */}
+                    truncated "Repeat Yesterday · 566 kcal".
+
+                    TWO fixes here, and they are separate problems (fixing one does NOT fix the other):
+                    1) ICON COLUMN. These pills used to CENTER their contents, so the repeat glyph landed at a
+                       different x on every row (a long "Repeat Yesterday · 160 kcal" pushes it way in; a short
+                       label leaves it near the edge). Contents are now LEFT-ALIGNED, so the glyph always sits
+                       exactly paddingHorizontal in from the pill's left edge and the icons form a clean column
+                       straight down the meal stack.
+                    2) WIDTH. A slot with no yesterday-meal used to throw the two-slot row away for one hugging
+                       pill, which read as an orphan. The row structure is now IDENTICAL in both branches:
+                       Repeat takes flex:1, and an invisible spacer holds the "Pick a Day" slot so every row is
+                       the same width.
+
+                    REPEAT_MAX_W: left-aligning the contents parked a pocket of dead air on the right of a
+                    full-width pill. The pill can't hug its label (that would make every row a different width
+                    and bring the orphan back), so it's CAPPED instead: 190 is the widest label this button ever
+                    has to carry ("Repeat Yesterday · 1,248 kcal"), so anything past that was pure air. maxWidth,
+                    not width, so a narrow phone simply takes what it has instead of overflowing. The row is
+                    space-between, so the reclaimed space falls BETWEEN the pills and Pick a Day stays flush
+                    right where the eye expects it. */}
                 {repeatSummary[slot.id].yesterdayItems.length > 0 ? (
                   <>
                     <PressableButton
                       flex={1}
+                      wrapperStyle={{ maxWidth: REPEAT_MAX_W }}
                       onPress={() => repeatYesterday(slot)}
-                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.accentBlue, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 }}>
+                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 5, backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.accentBlue, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 }}>
                       <Ionicons name="repeat" size={13} color={theme.accentBlue} />
-                      <Text numberOfLines={1} style={{ color: theme.accentBlue, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>
+                      <Text numberOfLines={1} style={{ flexShrink: 1, color: theme.accentBlue, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>
                         Repeat Yesterday · {repeatSummary[slot.id].yesterdayTotal} kcal
                       </Text>
                     </PressableButton>
                     <PressableButton
                       flex={0}
                       onPress={() => openRepeatModal(slot)}
-                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.accentBlue, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 }}>
+                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 5, backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.accentBlue, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 }}>
                       <Ionicons name="calendar" size={13} color={theme.accentBlue} />
                       <Text style={{ color: theme.accentBlue, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Pick a Day</Text>
                     </PressableButton>
                   </>
                 ) : (
-                  <PressableButton
-                    flex={0}
-                    onPress={() => openRepeatModal(slot)}
-                    style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.accentBlue, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 }}>
-                    <Ionicons name="repeat" size={13} color={theme.accentBlue} />
-                    <Text numberOfLines={1} style={{ color: theme.accentBlue, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>
-                      Repeat a Previous Meal
-                    </Text>
-                  </PressableButton>
+                  <>
+                    <PressableButton
+                      flex={1}
+                      wrapperStyle={{ maxWidth: REPEAT_MAX_W }}
+                      onPress={() => openRepeatModal(slot)}
+                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 5, backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.accentBlue, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 }}>
+                      <Ionicons name="repeat" size={13} color={theme.accentBlue} />
+                      <Text numberOfLines={1} style={{ flexShrink: 1, color: theme.accentBlue, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>
+                        Repeat a Previous Meal
+                      </Text>
+                    </PressableButton>
+                    {/* Invisible twin of the Pick a Day pill: reserves the exact same slot width (same glyph,
+                        same label, same padding, same border) so this row lines up with every other row.
+                        Untouchable and unreadable -- opacity 0 + pointerEvents none + hidden from screen readers. */}
+                    <View
+                      pointerEvents="none"
+                      accessible={false}
+                      importantForAccessibility="no-hide-descendants"
+                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 5, borderWidth: 1, borderColor: 'transparent', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, opacity: 0 }}>
+                      <Ionicons name="calendar" size={13} color="transparent" />
+                      <Text style={{ color: 'transparent', fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Pick a Day</Text>
+                    </View>
+                  </>
                 )}
               </View>
             )}

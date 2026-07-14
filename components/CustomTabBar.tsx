@@ -236,7 +236,10 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
       {tabs.map((tab, i) => {
         const routeIdx = state.routes.findIndex(r => r.name === tab.name);
         const isFocused = state.index === routeIdx;
-        const color = isFocused ? theme.textPrimary : theme.textDim;
+        // Active tab = ACCENT (icon + label), matching the Faith fish (amber) and the home button
+        // (white on accent). Those two already carried their identity when selected; these three were
+        // still landing on textPrimary, which is near-black on the light themes.
+        const color = isFocused ? theme.accentBlueRaw : theme.textDim;
         const scaleStyle = useAnimatedStyle(() => ({
           transform: [{ scale: scales[i].value }],
         }));

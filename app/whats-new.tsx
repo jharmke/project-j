@@ -9,6 +9,7 @@ import { Fragment, useState } from 'react';
 import { useTheme } from '../theme';
 import { WHATS_NEW_RELEASES } from '../data/whatsNew';
 import { Type, numLine } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 // What's New / release notes page. Mirrors the Mission page look (clean cards, big hero title).
 // Reached permanently from Settings > About, and once per release from an Otto hub notification.
@@ -23,24 +24,12 @@ export default function WhatsNewScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bgPrimary }}>
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity
-          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
-          style={styles.backBtn}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons name="chevron-back" size={22} color={t.accentBlueRaw} />
-          <Text style={[styles.backText, { color: t.accentBlueRaw }]}>Back</Text>
-        </TouchableOpacity>
-      </View>
-
+      <ScreenHeader title={"What's New"} />
+      
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.hero}>
-          <Text style={[styles.heroTitle, { color: t.accentBlueRaw }]}>WHAT'S NEW</Text>
-        </View>
 
         {WHATS_NEW_RELEASES.map((release, releaseIdx) => (
           <Fragment key={release.releaseId}>

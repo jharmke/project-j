@@ -27,6 +27,7 @@ import {
   ComparisonResult, MetricComparison, MetricId,
 } from '../utils/comparisonEngine';
 import { Type, numLine } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
@@ -290,12 +291,7 @@ export default function ComparisonReportScreen() {
   if (!isPro) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
-        <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={{ padding: 4 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons name="chevron-back" size={24} color={accent} />
-          </TouchableOpacity>
-          <Text style={{ fontSize: 24, fontFamily: Type.display, letterSpacing: 0.3, color: accent, flex: 1 }}>COMPARISON</Text>
-        </View>
+        <ScreenHeader title="Comparison" color={accent} />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
           <View style={{ backgroundColor: theme.bgCard, borderWidth: 1, borderColor: `${accent}40`, borderRadius: 14, padding: 20, alignItems: 'center' }}>
             {/* Lock only -- the headline right below already names the tier. */}
@@ -317,16 +313,7 @@ export default function ComparisonReportScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
-      {/* Header */}
-      <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={{ padding: 4 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Ionicons name="chevron-back" size={24} color={accent} />
-        </TouchableOpacity>
-        <Text style={{ fontSize: 24, fontFamily: Type.display, letterSpacing: 0.3, color: accent, flex: 1 }}>COMPARISON</Text>
-        <View style={{ transform: [{ translateY: -1 }] }}>
-          <TooltipIcon tooltipKey="comparison_report" size={18} />
-        </View>
-      </View>
+      <ScreenHeader title="Comparison" color={accent} right={<TooltipIcon tooltipKey="comparison_report" size={18} />} />
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 40 }}>
 

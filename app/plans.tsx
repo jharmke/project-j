@@ -24,7 +24,8 @@ import { useToast } from '../components/Toast';
 import { useTheme, type Theme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
-import { Type } from '../typography';
+import { Type, PAGE_TITLE } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 /**
  * Plans hub. One Stack screen (so the faith-tab keyboard bug never applies) with two tabs:
@@ -208,16 +209,7 @@ export default function PlansScreen() {
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
 
-      <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
-        <TouchableOpacity
-          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
-          style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
-        >
-          <Ionicons name="chevron-back" size={14} color={theme.accentBlue} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>PLANS</Text>
-        <View style={{ width: 32 }} />
-      </View>
+      <ScreenHeader title="Plans" topInset={false} />
 
       {/* Segmented toggle: this is where the reading-plan vs devotional distinction is taught. */}
       <View ref={segmentRef} collapsable={false} style={styles.segmentRow}>
@@ -523,7 +515,7 @@ function PressScale({ onPress, style, children }: { onPress: () => void; style: 
 const styles = StyleSheet.create({
   header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5 },
   headerBtn:    { borderWidth: 1, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' },
-  headerTitle:  { fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3 },
+  headerTitle: { ...PAGE_TITLE },
   segmentRow:   { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 4 },
   segment:      { flexDirection: 'row', borderRadius: 12, borderWidth: 1, padding: 4, gap: 4 },
   segmentBtn:   { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 9, borderRadius: 9, minHeight: 40 },

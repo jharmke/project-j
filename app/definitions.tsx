@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TOOLTIP_REGISTRY, TooltipDefinition } from '../tooltipRegistry';
 import { useTheme } from '../theme';
 import { Type } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 const CATEGORIES = ['All', 'Nutrition', 'Fitness', 'Sleep & Recovery', 'Faith', 'Reports', 'Habits'] as const;
 
@@ -101,24 +102,8 @@ export default function DefinitionsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
       {/* Header */}
-      <View style={{ paddingTop: insets.top, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: theme.bgPrimary }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, marginTop: 8 }}>
-          <TouchableOpacity
-            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
-            style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: 4 }}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="chevron-back" size={22} color={theme.accentBlue} />
-          </TouchableOpacity>
-          <View style={{ flex: 1 }}>
-            {/* NO EYEBROWS OVER TITLES. */}
-            <Text style={{ fontSize: 22, fontFamily: Type.display, color: theme.accentBlueRaw, letterSpacing: 0.3 }}>
-              Definitions
-            </Text>
-          </View>
-        </View>
-
-        {/* Category filter */}
+      {/* The category pills ride in the header's subRow -- they belong to the header, not the list. */}
+      <ScreenHeader title="Definitions" subRow={
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
           <View style={{ flexDirection: 'row', gap: 8 }}>
             {availableCategories.map(cat => {
@@ -147,7 +132,7 @@ export default function DefinitionsScreen() {
             })}
           </View>
         </ScrollView>
-      </View>
+      } />
 
       <ScrollView
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24 }}

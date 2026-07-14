@@ -22,6 +22,7 @@ import { cancelWeeklySummaryNotification } from '../services/notifications';
 import { TIPS_GATED, CoachTipCache, loadCoachTipCache } from '../utils/smartTipsEngine';
 import { refreshCoachTipWeekly, resolveTipBody } from '../utils/coachAI';
 import { Type, numLine } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -210,18 +211,7 @@ export default function WeeklySummaryScreen() {
   if (!data) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
-        {/* Header */}
-        <View style={{ paddingTop: insets.top + 12, paddingHorizontal: 20, paddingBottom: 12, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="chevron-back" size={22} color={accent} />
-            </TouchableOpacity>
-            <Text style={{ fontSize: 22, letterSpacing: 0.3, fontFamily: Type.display, color: accent, flex: 1 }}>WEEKLY SUMMARY</Text>
-            <View style={{ transform: [{ translateY: -1 }] }}>
-              <TooltipIcon tooltipKey="day_score" size={18} />
-            </View>
-          </View>
-        </View>
+        <ScreenHeader title="Weekly Summary" color={accent} right={<TooltipIcon tooltipKey="day_score" size={18} />} />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 }}>
           <Text style={{ fontSize: 14, color: theme.textMuted, fontFamily: Type.ui, textAlign: 'center' }}>
             No summary found for this week.
@@ -258,23 +248,12 @@ export default function WeeklySummaryScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
-      {/* Pinned header (matches DAY SUMMARY: fixed above the ScrollView with a bottom border so it stays put on scroll) */}
-      <View style={{ paddingTop: insets.top + 12, paddingHorizontal: 20, paddingBottom: 12, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons name="chevron-back" size={22} color={accent} />
-          </TouchableOpacity>
-          <Text style={{ fontSize: 22, letterSpacing: 0.3, fontFamily: Type.display, color: accent, flex: 1 }}>
-            WEEKLY SUMMARY
-          </Text>
-          <View style={{ transform: [{ translateY: -1 }] }}>
-            <TooltipIcon tooltipKey="day_score" size={18} />
-          </View>
-        </View>
-        <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginLeft: 34, marginTop: 2 }}>
-          {formatDateRange(data.weekStart, data.weekEnd)}
-        </Text>
-      </View>
+      <ScreenHeader
+        title="Weekly Summary"
+        subtitle={formatDateRange(data.weekStart, data.weekEnd)}
+        color={accent}
+        right={<TooltipIcon tooltipKey="day_score" size={18} />}
+      />
       <ScrollView
         contentContainerStyle={{ paddingTop: 16, paddingBottom: insets.bottom + 24 }}
         showsVerticalScrollIndicator={false}

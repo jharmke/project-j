@@ -27,7 +27,8 @@ import { DEFAULT_MEAL_SLOTS, MealSlot, loadMealSlots, getMealDisplayName } from 
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { TUTORIAL_CHICKEN_BREAST } from '../data/tutorialFood';
-import { Type } from '../typography';
+import { Type, PAGE_TITLE } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 function buildTutorialChickenFood() {
   const fsServings = TUTORIAL_CHICKEN_BREAST.servings.serving.map(s => ({
@@ -1135,14 +1136,11 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
   const styles = useStyles(theme);
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          {isEditing ? 'Edit Entry' : 'Food Detail'}
-        </Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minWidth: 60, justifyContent: 'flex-end' }}>
+      <ScreenHeader
+        title={isEditing ? 'Edit Entry' : 'Food Detail'}
+        topInset={false}
+        right={
+        <>
           {food?.isMyFood ? (
             <TouchableOpacity
               style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 }}
@@ -1175,8 +1173,9 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
               />
             </Animated.View>
           </TouchableOpacity>
-        </View>
-      </View>
+        </>
+        }
+      />
 
       <ScrollView ref={detailScrollRef} contentContainerStyle={styles.content} automaticallyAdjustKeyboardInsets keyboardDismissMode="on-drag">
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 20 }}>
@@ -2145,7 +2144,7 @@ const useStyles = (theme: any) => StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: theme.borderCard },
   backBtn: { padding: 4, width: 60 },
   backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: Type.uiMedium },
-  headerTitle: { fontSize: 20, color: theme.accentBlueRaw, fontFamily: Type.display, letterSpacing: 0.3, flex: 1, textAlign: 'center' },
+  headerTitle: { ...PAGE_TITLE, color: theme.accentBlueRaw, flex: 1 },
   content: { padding: 16 },
   foodName: { fontSize: 18, color: theme.textSecondary, fontFamily: Type.uiSemibold, marginBottom: 20, lineHeight: 24 },
   unitRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },

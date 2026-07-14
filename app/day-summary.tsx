@@ -33,6 +33,7 @@ import { useTutorial } from '../context/TutorialContext';
 import { refreshDayCoachTip, resolveTipBody } from '../utils/coachAI';
 import { effectiveExerciseMinutes } from '../utils/exerciseMinutes';
 import { Type, numLine } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -204,19 +205,7 @@ export default function DaySummaryScreen() {
 
   // ── Header (shared across loading / empty / content) ──
   const Header = (
-    <View style={{
-      paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 12,
-      borderBottomWidth: 0.5, borderBottomColor: theme.borderCard,
-      flexDirection: 'row', alignItems: 'center', gap: 10,
-    }}>
-      <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={{ padding: 4 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-        <Ionicons name="chevron-back" size={24} color={accent} />
-      </TouchableOpacity>
-      <Text style={{ fontSize: 24, fontFamily: Type.display, letterSpacing: 0.3, color: accent, flex: 1 }}>DAY SUMMARY</Text>
-      <View style={{ transform: [{ translateY: -1 }] }}>
-        <TooltipIcon tooltipKey="day_score" size={18} />
-      </View>
-    </View>
+    <ScreenHeader title="Day Summary" color={accent} right={<TooltipIcon tooltipKey="day_score" size={18} />} />
   );
 
   if (loading) {

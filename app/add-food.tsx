@@ -23,7 +23,8 @@ import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { TUTORIAL_CHICKEN_BREAST } from '../data/tutorialFood';
-import { Type } from '../typography';
+import { Type, PAGE_TITLE } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 
 
@@ -1558,26 +1559,25 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
   const styles = useStyles(theme, themeId);
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={styles.header}>
-  <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={styles.backBtn}>
-    <Text style={styles.backBtnText}>← Back</Text>
-  </TouchableOpacity>
-  <Text style={styles.headerTitle}>{meal === 'browse' ? 'Food Library' : `Add to ${getMealDisplayName(meal, mealSlots, slotNameCache)}`}</Text>
-  <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
-    <TouchableOpacity
-      onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/ai-meal-estimator', params: { meal, date } }); }}
-      style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, padding: 6, alignItems: 'center', justifyContent: 'center', width: 38, height: 38 }}>
-      <Ionicons name="sparkles" size={22} color={theme.accentBlue} />
-    </TouchableOpacity>
-    <TouchableOpacity
-      ref={barcodeIconRef as any}
-      onPress={startScan}
-      style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, padding: 6, alignItems: 'center', justifyContent: 'center', width: 38, height: 38 }}>
-      <Ionicons name="barcode-outline" size={24} color={theme.accentBlue} />
-    </TouchableOpacity>
-  </View>
-</View>
+      <ScreenHeader
+        title={meal === 'browse' ? 'Food Library' : `Add to ${getMealDisplayName(meal, mealSlots, slotNameCache)}`}
+        topInset={false}
+        right={
+          <>
+            <TouchableOpacity
+              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/ai-meal-estimator', params: { meal, date } }); }}
+              style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, padding: 6, alignItems: 'center', justifyContent: 'center', width: 38, height: 38 }}>
+              <Ionicons name="sparkles" size={22} color={theme.accentBlue} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              ref={barcodeIconRef as any}
+              onPress={startScan}
+              style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, padding: 6, alignItems: 'center', justifyContent: 'center', width: 38, height: 38 }}>
+              <Ionicons name="barcode-outline" size={24} color={theme.accentBlue} />
+            </TouchableOpacity>
+          </>
+        }
+      />
 
       {/* Search */}
       <View ref={searchBarRef} style={styles.searchRow}>
@@ -2561,7 +2561,7 @@ const useStyles = (theme: any, themeId: string) => {
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: theme.borderCard },
   backBtn: { padding: 4 },
   backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: Type.uiMedium },
-  headerTitle: { fontSize: 20, color: theme.accentBlueRaw, fontFamily: Type.display, letterSpacing: 0.3 },
+  headerTitle: { ...PAGE_TITLE, color: theme.accentBlueRaw },
   scanBtn: { padding: 4 },
   scanBtnText: { fontSize: 20 },
   searchRow: { flexDirection: 'row', alignItems: 'center', padding: 16, paddingBottom: 8 },

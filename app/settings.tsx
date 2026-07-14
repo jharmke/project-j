@@ -78,7 +78,8 @@ import { resetAllTutorials, useTutorial } from '../context/TutorialContext';
 import { showToolkit } from '../components/ToolkitSheet';
 import { generateWeeklySummary } from '../utils/weeklySummary';
 import { generateMonthlySummary } from '../utils/monthlySummary';
-import { Type } from '../typography';
+import { Type, PAGE_TITLE } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 type FaithJourney = 'rooted' | 'exploring' | 'notrightnow';
 
@@ -1184,23 +1185,21 @@ export default function SettingsScreen() {
 
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
-      <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
-        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={{ marginRight: 12 }}>
-          <Ionicons name="arrow-back" size={22} color={theme.accentBlue} />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <TouchableOpacity onPress={() => {
-            const next = devTapCount + 1;
-            setDevTapCount(next);
-            if (next >= 7) { setDevUnlocked(true); setDevTapCount(0); }
-          }}>
-            <Text style={[styles.headerTitle, { color: theme.accentBlue }]}>Settings</Text>
+      {/* The title is still the 7-tap dev unlock. */}
+      <ScreenHeader
+        title="Settings"
+        topInset={false}
+        onTitlePress={() => {
+          const next = devTapCount + 1;
+          setDevTapCount(next);
+          if (next >= 7) { setDevUnlocked(true); setDevTapCount(0); }
+        }}
+        right={
+          <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); showToolkit('settings'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+            <Ionicons name="help-circle" size={22} color={theme.accentBlue} />
           </TouchableOpacity>
-        </View>
-        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); showToolkit('settings'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
-          <Ionicons name="help-circle" size={22} color={theme.accentBlue} />
-        </TouchableOpacity>
-      </View>
+        }
+      />
 
       <ScrollView ref={scrollViewRef} contentContainerStyle={styles.content} automaticallyAdjustKeyboardInsets={true} onScroll={e => { goalScrollOffset.current = e.nativeEvent.contentOffset.y; }} scrollEventThrottle={16}>
 
@@ -3966,7 +3965,7 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   header:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5, marginBottom: 0 },
   headerLabel: { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: Type.uiBold },
-  headerTitle: { fontSize: 32, fontFamily: Type.display, letterSpacing: 0.3 },
+  headerTitle: { ...PAGE_TITLE },
   content:     { padding: 16, paddingBottom: 80 },
   section:     { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, marginBottom: 12, overflow: 'hidden', shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 6 },
   sectionLabel:{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold },

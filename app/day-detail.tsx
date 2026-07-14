@@ -10,7 +10,8 @@ import { storageSet } from '../utils/storage';
 import { DEFAULT_MEAL_SLOTS, MealSlot, findSlotForMeal, loadMealSlots, getMealDisplayName } from '../utils/mealSlots';
 import { calcSleepScore, sleepScoreColor as getSleepScoreColor } from '../utils/sleepScore';
 import { recoveryZone } from '../utils/recoveryScore';
-import { Type } from '../typography';
+import { Type, PAGE_TITLE } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 type SleepStages = { core: number; deep: number; rem: number; totalMs: number };
 
@@ -337,31 +338,34 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: 10 }}>
-          <View style={{ flex: 1 }} />
-          <Text style={styles.headerTitle}>DAY DETAIL</Text>
-          <View style={{ flex: 1, alignItems: 'flex-end' }}>
-            <TouchableOpacity onPress={openCalPicker} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Ionicons name="calendar" size={20} color={theme.accentBlueRaw} />
-            </TouchableOpacity>
-          </View>
-        </View>
-        <View style={styles.dateNav}>
-          <TouchableOpacity onPress={navPrev} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Ionicons name="chevron-back" size={20} color={theme.accentBlueRaw} />
+      {/* The date nav is exactly what subRow is for: it belongs to the header, not the content. The old
+          header had NO back control at all -- just an empty flex spacer holding the title centred. */}
+      <ScreenHeader
+        title="Day Detail"
+        right={
+          <TouchableOpacity onPress={openCalPicker} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="calendar" size={20} color={theme.accentBlueRaw} />
           </TouchableOpacity>
-          <Text style={styles.headerDate}>{formatDate(currentDate)}</Text>
-          <TouchableOpacity onPress={navNext} disabled={isToday} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Ionicons name="chevron-forward" size={20} color={isToday ? theme.textDim : theme.accentBlueRaw} />
-          </TouchableOpacity>
-        </View>
-        {!isToday && (
-          <View style={styles.historyBadge}>
-            <Text style={styles.historyBadgeText}>HISTORY</Text>
-          </View>
-        )}
-      </View>
+        }
+        subRow={
+          <>
+            <View style={styles.dateNav}>
+              <TouchableOpacity onPress={navPrev} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Ionicons name="chevron-back" size={20} color={theme.accentBlueRaw} />
+              </TouchableOpacity>
+              <Text style={styles.headerDate}>{formatDate(currentDate)}</Text>
+              <TouchableOpacity onPress={navNext} disabled={isToday} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Ionicons name="chevron-forward" size={20} color={isToday ? theme.textDim : theme.accentBlueRaw} />
+              </TouchableOpacity>
+            </View>
+            {!isToday && (
+              <View style={styles.historyBadge}>
+                <Text style={styles.historyBadgeText}>HISTORY</Text>
+              </View>
+            )}
+          </>
+        }
+      />
 
       <Modal visible={calPickerVisible} transparent animationType="none" onRequestClose={closeCalPicker}>
         <Animated.View style={{ flex: 1, opacity: calFadeAnim }}>
@@ -868,7 +872,7 @@ const useStyles = (theme: any, themeId: string) => {
   return StyleSheet.create({
     container:        { flex: 1, backgroundColor: theme.bgSheet },
     header:           { alignItems: 'center', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 10, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard },
-    headerTitle:      { fontSize: 10, color: theme.accentBlueRaw, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase' },
+    headerTitle: { ...PAGE_TITLE, color: theme.accentBlueRaw },
     dateNav:          { flexDirection: 'row', alignItems: 'center', gap: 10 },
     headerDate:       { fontSize: 15, color: theme.textPrimary, fontFamily: Type.display, letterSpacing: 0.3, textAlign: 'center', flex: 1 },
     historyBadge:     { marginTop: 6, backgroundColor: `${theme.accentBlueRaw}26`, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2 },

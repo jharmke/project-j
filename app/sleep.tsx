@@ -33,6 +33,7 @@ import { useTheme } from '../theme';
 import { refreshCoachTipSleep, refreshCoachTipRecovery, resolveTipBody } from '../utils/coachAI';
 import { loadCoachTipCacheSleep, loadCoachTipCacheRecovery, CoachTipCache } from '../utils/smartTipsEngine';
 import { Type, numLine } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 type SleepTab = 'sleep' | 'recovery';
 
@@ -1789,20 +1790,7 @@ export default function SleepHub() {
 
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
-      {/* Header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-        <TouchableOpacity
-          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
-          style={{ width: 36, height: 36, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons name="chevron-back" size={16} color={theme.accentBlue} />
-        </TouchableOpacity>
-        <Text style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentBlueRaw }}>SLEEP & RECOVERY</Text>
-        <View style={{ width: 36, alignItems: 'flex-end', justifyContent: 'center' }}>
-          <TooltipIcon tooltipKey="sleep_hub" size={20} />
-        </View>
-      </View>
+      <ScreenHeader title="Sleep & Recovery" topInset={false} right={<TooltipIcon tooltipKey="sleep_hub" size={20} />} />
 
       {/* Tab pill selector */}
       <View style={{ flexDirection: 'row', marginHorizontal: 12, marginTop: 12, marginBottom: 4, backgroundColor: theme.bgProgressTrack, borderRadius: 8, padding: 4 }}>

@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Animated, Dimensions, Easing, Keyboard, LayoutAnimation, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TAB_SCROLL_PAD } from '../../components/CustomTabBar';
+import { TAB_BAR_HEIGHT, TAB_SCROLL_PAD } from '../../components/CustomTabBar';
 import BackgroundLayers from '../../components/BackgroundLayers';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -2812,7 +2812,7 @@ export default function StatsScreen() {
 
       {/* ── FAB speed dial items ── */}
       {showFabMenu && (
-        <View style={{ position: 'absolute', bottom: 86, right: 20, alignItems: 'flex-end', gap: 12 }}>
+        <View style={{ position: 'absolute', bottom: TAB_BAR_HEIGHT + insets.bottom + 88, right: 20, alignItems: 'flex-end', gap: 12 }}>
           {/* Custom Reports -- opens the Reports hub */}
           <Animated.View style={{ opacity: fabItem4Anim, transform: [{ translateY: fabItem4Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -2880,7 +2880,11 @@ export default function StatsScreen() {
       )}
 
       {/* ── Main FAB ── */}
-      <View ref={fabRef} collapsable={false} style={{ position: 'absolute', bottom: 16, right: 20 }}>
+      {/* bottom must clear the tab bar EXPLICITLY. The old bottom:16 was correct while the Tabs navigator
+          INSET screen content above the bar -- that inset made "the bottom of the screen" mean "the top of
+          the tab bar". The bar is ABSOLUTE now, so the screen runs to the device edge and 16 puts the FAB
+          UNDERNEATH it. This is Otto's exact formula (AssistantOverlay), so the two line up. */}
+      <View ref={fabRef} collapsable={false} style={{ position: 'absolute', bottom: TAB_BAR_HEIGHT + insets.bottom + 18, right: 20 }}>
       <Animated.View style={{ transform: [{ scale: fabScale }] }}>
         <TouchableOpacity
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); toggleFabMenu(); }}

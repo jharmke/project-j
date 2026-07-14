@@ -20,7 +20,8 @@ import { useTheme } from '../theme';
 import { ACHIEVEMENTS, checkAndUnlock, loadAchievements, checkMomentumAchievements, checkFaithAchievements, getCelebTier } from '../achievementData';
 import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
-import { Type } from '../typography';
+import { Type, PAGE_TITLE } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 type Category = 'verse' | 'prayer' | 'study' | 'personal' | 'gratitude' | 'fitness';
 
@@ -608,26 +609,19 @@ export default function JournalScreen() {
       colors={[theme.gradientStart, theme.gradientEnd]}
       style={[styles.container, { paddingTop: insets.top }]}
     >
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
-        {/* Matches Achievements / Settings: a BARE chevron (the boxed one made Back look like an action),
-            and a LEFT-aligned mixed-case title. A centred title is a different header pattern and the app
-            only gets to have one. */}
-        <TouchableOpacity
-          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
-          style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginLeft: -10 }}
-        >
-          <Ionicons name="chevron-back" size={22} color={theme.accentBlue} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.accentBlueRaw, flex: 1 }]}>Journal</Text>
-        <TouchableOpacity
-          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setSortOrder(p => p === 'desc' ? 'asc' : 'desc'); }}
-          style={[styles.headerBtn, { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
-        >
-          <Ionicons name={sortOrder === 'desc' ? 'arrow-down' : 'arrow-up'} size={14} color={theme.accentBlue} />
-          <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>{sortOrder === 'desc' ? 'Newest' : 'Oldest'}</Text>
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title="Journal"
+        topInset={false}
+        right={
+          <TouchableOpacity
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setSortOrder(p => p === 'desc' ? 'asc' : 'desc'); }}
+            style={[styles.headerBtn, { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+          >
+            <Ionicons name={sortOrder === 'desc' ? 'arrow-down' : 'arrow-up'} size={14} color={theme.accentBlue} />
+            <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>{sortOrder === 'desc' ? 'Newest' : 'Oldest'}</Text>
+          </TouchableOpacity>
+        }
+      />
 
       {/* Filter pills */}
       <ScrollView
@@ -911,7 +905,7 @@ const styles = StyleSheet.create({
   container:         { flex: 1 },
   header:            { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5 },
   headerBtn:         { borderWidth: 1, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' },
-  headerTitle:       { fontSize: 22, fontFamily: Type.display, letterSpacing: 0.3 },
+  headerTitle: { ...PAGE_TITLE },
   emptyState:        { alignItems: 'center', paddingTop: 80, gap: 12 },
   emptyTitle:        { fontSize: 16, fontFamily: Type.uiSemibold },
   emptySubtitle:     { fontSize: 13, fontFamily: Type.ui, textAlign: 'center', lineHeight: 20, paddingHorizontal: 24 },

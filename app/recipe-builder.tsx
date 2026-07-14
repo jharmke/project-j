@@ -13,7 +13,8 @@ import { storageSet } from '../utils/storage';
 import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
-import { Type } from '../typography';
+import { Type, PAGE_TITLE } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 interface Ingredient {
   id: string;
@@ -459,20 +460,20 @@ export default function RecipeBuilderScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{recipeId ? 'Edit Recipe' : 'New Recipe'}</Text>
-        <View ref={saveBtnRef} collapsable={false}>
-          <TouchableOpacity
-            onPress={saveRecipe}
-            disabled={!canSave}
-            style={[styles.saveBtn, !canSave && { opacity: 0.35 }]}>
-            <Text style={styles.saveBtnText}>Save</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      <ScreenHeader
+        title={recipeId ? 'Edit Recipe' : 'New Recipe'}
+        topInset={false}
+        right={
+          <View ref={saveBtnRef} collapsable={false}>
+            <TouchableOpacity
+              onPress={saveRecipe}
+              disabled={!canSave}
+              style={[styles.saveBtn, !canSave && { opacity: 0.35 }]}>
+              <Text style={styles.saveBtnText}>Save</Text>
+            </TouchableOpacity>
+          </View>
+        }
+      />
 
       <ScrollView
         ref={scrollViewRef}
@@ -708,7 +709,7 @@ const useStyles = (theme: any) => StyleSheet.create({
   },
   backBtn: { width: 60, paddingVertical: 4 },
   backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: Type.uiMedium },
-  headerTitle: { fontSize: 20, color: theme.accentBlueRaw, fontFamily: Type.display, letterSpacing: 0.3 },
+  headerTitle: { ...PAGE_TITLE, color: theme.accentBlueRaw },
   saveBtn: { backgroundColor: theme.accentGreen, borderRadius: 8, paddingHorizontal: 18, paddingVertical: 8 },
   saveBtnText: { color: theme.bgPrimary, fontSize: 14, fontFamily: Type.uiBold },
   content: { padding: 12, paddingBottom: 40, gap: 12 },

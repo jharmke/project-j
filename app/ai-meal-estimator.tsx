@@ -29,6 +29,7 @@ import {
   generateMealEstimate, getRemainingUses, incrementQuota, limitFor, nextResetLabel,
 } from '../services/aiMealEstimator';
 import { Type } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 // Fixed brand macro colors (design system). Same values used across the app.
 const MACRO = { protein: '#0d9268', carbs: '#c47d1a', fat: '#a83232' };
@@ -490,17 +491,7 @@ export default function AIMealEstimatorScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
       <ToastRenderer />
-      {/* Header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: insets.top + 6, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: theme.borderCard }}>
-        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={{ width: 44, height: 44, justifyContent: 'center' }}>
-          <Ionicons name="chevron-back" size={26} color={theme.accentBlue} />
-        </TouchableOpacity>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-          <Ionicons name="sparkles" size={16} color={theme.accentBlueRaw} />
-          <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: Type.display, letterSpacing: 0.3 }}>AI Estimate</Text>
-        </View>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="AI Estimate" />
 
       {step === 'loading' ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>

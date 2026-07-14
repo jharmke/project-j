@@ -22,7 +22,8 @@ import CompanionChat, { MiniCross } from '../components/CompanionChat';
 import { useTheme } from '../theme';
 import type { DevotionalsStorage, DevotionalHaloTurn } from '../data/devotionals';
 import { cancelFaithReadingNotification } from '../services/notifications';
-import { Type } from '../typography';
+import { Type, PAGE_TITLE } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 /**
  * Devotional day screen. The interactive half of Bucket C (distinct from a pure reading plan).
@@ -211,16 +212,7 @@ export default function DevotionalScreen() {
   if (!dev || !dayData) {
     return (
       <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
-        <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
-          <TouchableOpacity
-            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
-            style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
-          >
-            <Ionicons name="chevron-back" size={14} color={theme.accentBlue} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>DEVOTIONAL</Text>
-          <View style={{ width: 32 }} />
-        </View>
+        <ScreenHeader title="Devotional" topInset={false} />
         <View style={styles.loading}>
           <Ionicons name="leaf-outline" size={40} color={theme.iconMuted} />
           <Text style={[styles.emptyTitle, { color: theme.textMuted }]}>This devotional could not be found</Text>
@@ -234,21 +226,13 @@ export default function DevotionalScreen() {
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
 
-      {/* Header: back, devotional name, day count on the right. */}
-      <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
-        >
-          <Ionicons name="chevron-back" size={14} color={theme.accentBlue} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]} numberOfLines={1}>
-          {dev.shortName.toUpperCase()}
-        </Text>
-        <Text style={[styles.dayCount, { color: theme.textMuted }]}>
-          {day}/{dev.totalDays}
-        </Text>
-      </View>
+      {/* The title is the devotional's own name -- it used to be .toUpperCase()'d, which is the app
+          shouting a proper noun back at you. */}
+      <ScreenHeader
+        title={dev.shortName}
+        topInset={false}
+        right={<Text style={[styles.dayCount, { color: theme.textMuted }]}>{day}/{dev.totalDays}</Text>}
+      />
 
       <ScrollView
         ref={scrollRef}
@@ -430,7 +414,7 @@ export default function DevotionalScreen() {
 const styles = StyleSheet.create({
   header:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5 },
   headerBtn:       { borderWidth: 1, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' },
-  headerTitle:     { flex: 1, textAlign: 'center', fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, marginHorizontal: 8 },
+  headerTitle: { ...PAGE_TITLE },
   dayCount:        { fontSize: 13, fontFamily: Type.uiBold, minWidth: 32, textAlign: 'right' },
   loading:         { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   emptyTitle:      { fontSize: 15, fontFamily: Type.uiSemibold, textAlign: 'center', paddingHorizontal: 32 },

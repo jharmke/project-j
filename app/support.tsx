@@ -14,6 +14,7 @@ import { GoldIconRow } from '../components/MembershipCard';
 import { FoilChip, FoilEdge, GOLD_BASE, GOLD_DEEP, GOLD_EDGE, GOLD_ENGRAVE, GOLD_HI, GOLD_TINT } from '../components/SupporterFoil';
 import { useMembership } from '../MembershipContext';
 import { Type, numLine } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 // ─── Support the Mission (the reframed paywall) ──────────────────────────────
 // Copy locked in SPEC_monetization.md (DECISIONS #4). This renders the FREE-user
@@ -167,25 +168,12 @@ export default function SupportScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bgPrimary }}>
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity
-          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
-          style={styles.backBtn}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons name="chevron-back" size={22} color={t.accentBlueRaw} />
-          <Text style={[styles.backText, { color: t.accentBlueRaw }]}>Back</Text>
-        </TouchableOpacity>
-      </View>
-
+      <ScreenHeader title={"Support the Mission"} />
+      
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Hero */}
-        <View style={styles.hero}>
-          <Text style={[styles.heroTitle, { color: t.accentBlueRaw }]}>Support the Mission</Text>
-        </View>
 
         {/* Mission paragraph -- a personal note, wearing the SAME gold foil edge as the membership card so
             the two "mission" surfaces read as a family. Was amber-washed with amber text: amber is the

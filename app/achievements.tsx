@@ -21,7 +21,8 @@ import {
 } from '../achievementData';
 import { loadProgressValues } from '../utils/achievementProgress';
 import { useTheme } from '../theme';
-import { Type, numLine } from '../typography';
+import { Type, numLine, PAGE_TITLE } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 // ─── Tier Config ──────────────────────────────────────────────────────────────
 
@@ -714,34 +715,28 @@ export default function AchievementsScreen() {
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
 
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
-        <TouchableOpacity
-          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
-          style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
-          <Ionicons name="chevron-back" size={22} color={theme.accentBlue} />
-        </TouchableOpacity>
-        <View style={{ flex: 1, marginLeft: 4 }}>
-          {/* NO EYEBROWS OVER TITLES. The app does not need to tell you which app you are in. */}
-          <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Achievements</Text>
-        </View>
-        <View style={{
-          backgroundColor: theme.accentBlueBg,
-          borderWidth: 1,
-          borderColor: theme.accentBlueBorder,
-          borderRadius: 8,
-          paddingHorizontal: 10,
-          paddingVertical: 6,
-          alignItems: 'center',
-        }}>
-          <Text style={{ fontSize: 16, fontFamily: Type.num, color: theme.accentBlue, letterSpacing: 1 }}>
-            {totalUnlocked}
-          </Text>
-          <Text style={{ fontSize: 7, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase', color: theme.textMuted }}>
-            Earned
-          </Text>
-        </View>
-      </View>
+      <ScreenHeader
+        title="Achievements"
+        topInset={false}
+        right={
+          <View style={{
+            backgroundColor: theme.accentBlueBg,
+            borderWidth: 1,
+            borderColor: theme.accentBlueBorder,
+            borderRadius: 8,
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            alignItems: 'center',
+          }}>
+            <Text style={{ fontSize: 16, fontFamily: Type.num, color: theme.accentBlue, letterSpacing: 1 }}>
+              {totalUnlocked}
+            </Text>
+            <Text style={{ fontSize: 7, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase', color: theme.textMuted }}>
+              Earned
+            </Text>
+          </View>
+        }
+      />
 
       {loading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -859,11 +854,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
     fontFamily: Type.uiBold,
   },
-  headerTitle: {
-    fontSize: 28,
-    fontFamily: Type.display,
-    letterSpacing: 0.3,
-  },
+  headerTitle: { ...PAGE_TITLE },
   card: {
     borderWidth: 0.5,
     borderTopWidth: 0.5,

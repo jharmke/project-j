@@ -20,6 +20,7 @@ import { useMembership } from '../MembershipContext';
 import { useToast } from '../components/Toast';
 import { loadReports, deleteReport, newReportId, RANGE_LABELS, Report } from '../utils/reports';
 import { Type } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 // 🚧 BETA HACK (revert before App Store launch): Reports is a Pro feature, but every TestFlight user gets
 // full access during beta. Flip to false (or gate on the real subscription) before public release.
@@ -64,12 +65,7 @@ export default function ReportsHub() {
   if (!hasAccess) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
-        <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 18, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Ionicons name="chevron-back" size={26} color={theme.textSecondary} />
-          </TouchableOpacity>
-          <Text style={{ fontSize: 24, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentBlueRaw }}>Reports</Text>
-        </View>
+        <ScreenHeader title="Reports" />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
           <View style={{ backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 14, padding: 20, alignItems: 'center' }}>
             {/* Lock only -- the headline right below already names the tier. */}
@@ -92,15 +88,7 @@ export default function ReportsHub() {
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
       {/* Header */}
-      <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 18, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Ionicons name="chevron-back" size={26} color={theme.textSecondary} />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 24, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentBlueRaw }}>Reports</Text>
-          <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textMuted, marginTop: 1 }}>Build your own, from any period.</Text>
-        </View>
-      </View>
+      <ScreenHeader title="Reports" subtitle="Build your own, from any period." />
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: insets.bottom + 120 }} showsVerticalScrollIndicator={false}>
         {reports.length === 0 ? (

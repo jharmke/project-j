@@ -23,6 +23,7 @@ import {
   BodyProfile, MeasurementUnit,
 } from '../utils/bodyMeasurements';
 import { Type } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 export default function BodyMeasurementLogScreen() {
   const { theme } = useTheme();
@@ -121,16 +122,12 @@ export default function BodyMeasurementLogScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <View style={{ flex: 1, paddingTop: insets.top }}>
           {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity
-              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); if (router.canGoBack()) router.back(); }}
-              style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Ionicons name="chevron-back" size={20} color={theme.accentBlue} />
-            </TouchableOpacity>
-            <Text style={{ fontSize: 22, fontFamily: Type.num, letterSpacing: 1.5, color: theme.accentBlueRaw }}>{isEdit ? 'Edit Measurements' : 'Log Measurements'}</Text>
-            <View style={{ width: 38 }} />
-          </View>
+          {/* The title was in Type.num -- Rajdhani, the NUMBER face -- on a page of text inputs. */}
+          <ScreenHeader
+            title={isEdit ? 'Edit Measurements' : 'Log Measurements'}
+            topInset={false}
+            onBack={() => { if (router.canGoBack()) router.back(); }}
+          />
 
           <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             {/* How to measure entry point */}

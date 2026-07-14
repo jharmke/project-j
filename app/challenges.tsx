@@ -20,6 +20,7 @@ import {
   computeChallengeProgress, createChallenge, challengeTitle,
 } from '../utils/challenges';
 import { Type } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 function fmtMetricValue(id: MetricId, v: number | null): string {
   if (v === null) return '—';
@@ -86,15 +87,7 @@ export default function ChallengesScreen() {
   };
 
   const Header = (
-    <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-      <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={{ padding: 4 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-        <Ionicons name="chevron-back" size={24} color={accent} />
-      </TouchableOpacity>
-      <Text style={{ fontSize: 24, fontFamily: Type.display, letterSpacing: 0.3, color: accent, flex: 1 }}>CHALLENGES</Text>
-      <View style={{ transform: [{ translateY: -1 }] }}>
-        <TooltipIcon tooltipKey="challenge_system" size={18} />
-      </View>
-    </View>
+    <ScreenHeader title="Challenges" color={accent} right={<TooltipIcon tooltipKey="challenge_system" size={18} />} />
   );
 
   if (loading) {

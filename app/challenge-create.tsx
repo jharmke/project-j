@@ -23,6 +23,7 @@ import {
   createChallenge, maxWeightChangeLbs,
 } from '../utils/challenges';
 import { Type } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 const METRIC_ICON: Record<ChallengeMetric, string> = {
   net: 'flame', protein: 'restaurant', steps: 'footsteps', water: 'water', sleepScore: 'moon', weight: 'barbell',
@@ -253,12 +254,7 @@ export default function ChallengeCreateScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
       {/* Header */}
-      <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={{ padding: 4 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Ionicons name="chevron-back" size={24} color={accent} />
-        </TouchableOpacity>
-        <Text style={{ fontSize: 24, fontFamily: Type.display, letterSpacing: 0.3, color: accent, flex: 1 }}>NEW CHALLENGE</Text>
-      </View>
+      <ScreenHeader title="New Challenge" color={accent} />
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 160 }} keyboardShouldPersistTaps="handled">
 

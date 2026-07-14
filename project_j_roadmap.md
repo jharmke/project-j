@@ -202,9 +202,25 @@ are separate pre-submission checklists, NOT part of this menu.
   untouched); an on-device 4-cut specimen with an Onest 400/700 CONTROL proved the ladder. Any future
   Fontshare weight must be patched the same way. Google-Fonts-packaged faces (Onest, Rajdhani) were never
   affected -- prefer them.
-  >> NEXT: the ~30 STACK SCREENS (Settings, add-food, Bible reader, EvR, reports, onboarding, journal,
-  prayer) are still on Bebas + DM Sans -- there is a visible seam the moment you leave a tab. Then the
-  VOICE PASS (Ranade is on 6 lines, all on Home; Otto's bubbles + EvR + verses are where it earns its keep).
+  >> STACK SCREENS: type sweep DONE (43 files, 1408 refs). SURFACE still to do -- 22 stack screens still
+  paint the OLD top-down gradient while the 6 tabs are lit from BELOW, so the app changes its lighting
+  every time you leave a tab. That is the last structural piece.
+  >> HEADER TITLES: unresolved, see below. Then the VOICE PASS (Ranade is on 6 lines, all on Home;
+  Otto's bubbles + EvR + verses are where it earns its keep).
+- [NOW] [BUG, found 2026-07-14] **Header titles have no plan and the app is inconsistent.** The stack
+  screens had SEVEN title sizes (10, 15, 18, 20, 22, 28, 32) and three treatments (caps+ink, caps+accent,
+  mixed+accent). None of it was ever designed -- the screens were built weeks apart with no token, and
+  Bebas hid the drift (a condensed caps face reads much the same at 20 as at 28). Clash does not.
+  A single PAGE_TITLE token (28 / Clash / accent / mixed case / left-aligned) was applied to all 14 -- and
+  it is WRONG for some of them: Day Detail and Food Detail look bad left-aligned and oversized, because
+  they are not pages. My first theory (pages have a back chevron, sheets have a handle pill) was asserted
+  WITHOUT CHECKING and is false -- Food Detail has no handle pill. DO NOT theorise again: go READ all 14
+  screens, classify by what they ACTUALLY are (route push vs modal presentation, chevron vs pill, centred
+  vs left), and bring Justin a table of facts before proposing a second token.
+- [NOW] [BUG, found 2026-07-14] **Journal FAB.** Three problems: (1) it opens a SLIDE-UP BOTTOM SHEET,
+  which violates the standing centered-modals-only rule (Justin hates bottom sheets); (2) the handle pill
+  is decorative and does nothing; (3) the "New Entry" label is near-black, violating no-black-for-titles.
+  Not a font issue -- a real bug cluster, deliberately parked so it did not get swept up in the type work.
 - [TRACK, VISION LOCKED + SPECCED 2026-07-07 -> ready to build] Custom Reports (Pro). Model: report =
   date range (week/month/3mo/6mo/1yr/custom) + chapters, each a PICKER into a library of ~55 pre-designed
   blocks the user assembles freely; templates = pre-filled block sets; exportable (PDF/share); Pro-gated

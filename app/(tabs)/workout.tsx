@@ -13,7 +13,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Reanimated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, runOnJS, FadeIn, FadeOut } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TAB_SCROLL_PAD } from '../../components/CustomTabBar';
+import { TAB_BAR_HEIGHT, TAB_SCROLL_PAD } from '../../components/CustomTabBar';
 import BackgroundLayers from '../../components/BackgroundLayers';
 import { ToastRenderer, useToast } from '../../components/Toast';
 import { showAchievementToast } from '../../components/AchievementToast';
@@ -3218,7 +3218,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
 
       {/* FAB speed dial items */}
       {showFabMenu && (
-        <View style={{ position: 'absolute', bottom: 86, right: 20, alignItems: 'flex-end', gap: 12 }}>
+        <View style={{ position: 'absolute', bottom: TAB_BAR_HEIGHT + insets.bottom + 88, right: 20, alignItems: 'flex-end', gap: 12 }}>
           {/* Load Routine - top */}
           <Animated.View style={{ opacity: fabItem2Anim, transform: [{ translateY: fabItem2Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -3254,7 +3254,9 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
       )}
 
       {/* Main FAB */}
-      <View ref={workoutFabRef} collapsable={false} style={{ position: 'absolute', bottom: 16, right: 20 }}>
+      {/* Clears the now-ABSOLUTE tab bar. See the note on the Stats FAB -- same bug, same fix, and this is
+          Otto's exact formula so the two FABs sit on the same line. */}
+      <View ref={workoutFabRef} collapsable={false} style={{ position: 'absolute', bottom: TAB_BAR_HEIGHT + insets.bottom + 18, right: 20 }}>
         <Animated.View style={{ transform: [{ scale: fabScale }] }}>
           <TouchableOpacity
             onPress={toggleFabMenu}

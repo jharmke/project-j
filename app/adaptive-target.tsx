@@ -19,7 +19,8 @@ import TooltipIcon from '../components/TooltipIcon';
 import { useToast, ToastRenderer } from '../components/Toast';
 import { computeAdaptiveTdee, applyAdaptiveTarget, type AdaptiveTdeeResult } from '../utils/adaptiveTdee';
 import { clearNotification } from '../utils/notifications';
-import { Type } from '../typography';
+import { Type, PAGE_TITLE } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 const DISCLAIMER_KEY = 'pj_adaptive_tdee_disclaimer_seen';
 
@@ -78,15 +79,8 @@ export default function AdaptiveTargetScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bgPrimary }} edges={['top']}>
-      <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
-        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={26} color={theme.accentBlue} />
-        </Pressable>
-        <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>YOUR TARGET</Text>
-        <View style={{ width: 26, alignItems: 'center' }}>
-          <TooltipIcon tooltipKey="adaptive_tdee" size={20} />
-        </View>
-      </View>
+      {/* SafeAreaView edges={['top']} already paid the inset. */}
+      <ScreenHeader title="Your Target" topInset={false} right={<TooltipIcon tooltipKey="adaptive_tdee" size={20} />} />
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
         {loading ? (
@@ -188,7 +182,7 @@ export default function AdaptiveTargetScreen() {
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 0.5 },
   backBtn: { width: 26, alignItems: 'flex-start' },
-  headerTitle: { fontSize: 15, fontFamily: Type.uiBold, letterSpacing: 2 },
+  headerTitle: { ...PAGE_TITLE },
   iconWrap: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
   title: { fontSize: 22, fontFamily: Type.uiBold, lineHeight: 28, marginBottom: 10 },
   lede: { fontSize: 15, fontFamily: Type.ui, lineHeight: 22, marginBottom: 20 },

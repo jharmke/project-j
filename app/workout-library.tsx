@@ -22,7 +22,8 @@ import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { useHealthKit } from '../useHealthKit';
 import { groupSyncedWorkouts, loadSyncedLabels, saveSyncedLabel, summarizeSessions, sortSessions, groupSessionsByMonth, formatDurationShort, formatDurationLong, loadSyncedCache, saveSyncedCache, SyncedWorkout, SyncedSort } from '../utils/syncedWorkouts';
-import { Type } from '../typography';
+import { Type, PAGE_TITLE } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 interface LibraryExercise {
   id: string;
@@ -2648,26 +2649,19 @@ export default function WorkoutLibraryScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={styles.backBtn}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Ionicons name="chevron-back" size={18} color={theme.accentBlueRaw} />
-            <Text style={styles.backBtnText}>Back</Text>
-          </View>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isSelectMode ? `Add to ${fmtLibraryDay(day)}` : 'Exercise Library'}</Text>
-        {isSelectMode ? (
-          <View style={{ width: 60 }} />
-        ) : (
+      <ScreenHeader
+        title={isSelectMode ? `Add to ${fmtLibraryDay(day)}` : 'Exercise Library'}
+        topInset={false}
+        right={isSelectMode ? undefined : (
           <TouchableOpacity
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openAllPRs(); }}
-            style={{ width: 60, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="trophy" size={15} color={theme.accentAmber} />
             <Text style={{ color: theme.accentAmber, fontSize: 14, fontFamily: Type.uiSemibold }}>PRs</Text>
           </TouchableOpacity>
         )}
-      </View>
+      />
 
       <View ref={libSearchRef} collapsable={false} style={styles.searchRow}>
         <TextInput
@@ -3864,7 +3858,7 @@ const useStyles = (theme: any) => StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard },
   backBtn: { width: 60 },
   backBtnText: { color: theme.accentBlueRaw, fontSize: 14, fontFamily: Type.uiMedium },
-  headerTitle: { fontSize: 22, color: theme.accentBlueRaw, fontFamily: Type.display, letterSpacing: 0.3 },
+  headerTitle: { ...PAGE_TITLE, color: theme.accentBlueRaw },
   searchRow: { padding: 12, paddingBottom: 8, flexDirection: 'row', alignItems: 'center' },
   searchInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 14, fontFamily: Type.ui },
   tabRow: { flexDirection: 'row', marginHorizontal: 12, marginBottom: 8, backgroundColor: theme.bgProgressTrack, borderRadius: 8, padding: 4 },

@@ -6,6 +6,7 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
 import { Type, numLine } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 type MissionCard = {
   icon: string;
@@ -54,24 +55,14 @@ export default function MissionScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: t.bgPrimary }}>
 
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity
-          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
-          style={styles.backBtn}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons name="chevron-back" size={22} color={t.accentBlueRaw} />
-          <Text style={[styles.backText, { color: t.accentBlueRaw }]}>Back</Text>
-        </TouchableOpacity>
-      </View>
+      {/* The title used to be a 48px hero INSIDE the scroll content, with a bare back button above it.
+          That is a fifth header pattern for one page. It is a page like any other. */}
+      <ScreenHeader title="Our Mission" />
 
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 32 }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.hero}>
-          <Text style={[styles.heroTitle, { color: t.accentBlueRaw }]}>OUR MISSION</Text>
-        </View>
 
         {CARDS.map((card, i) => (
           <View

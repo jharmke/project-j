@@ -9,7 +9,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
 import { useHealthKit } from '../useHealthKit';
 import { groupSyncedWorkouts, applySyncedLabels, loadSyncedLabels, saveSyncedLabel, formatDurationShort, SyncedWorkout } from '../utils/syncedWorkouts';
-import { Type } from '../typography';
+import { Type, PAGE_TITLE } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 // Phase 1 verification screen (temporary): pulls the user's real Apple workouts, reads the indoor flag,
 // and shows them grouped by { type + indoor } so we can confirm the bucketing is correct on real data
@@ -63,15 +64,7 @@ export default function SyncedWorkoutsScreen() {
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={[styles.container, { paddingTop: insets.top }]}>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
-        <TouchableOpacity
-          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
-          style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
-          <Ionicons name="chevron-back" size={14} color={theme.accentBlue} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>SYNCED WORKOUTS</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <ScreenHeader title="Synced Workouts" topInset={false} />
 
       {loading ? (
         <View style={styles.center}>
@@ -145,7 +138,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 0.5 },
   headerBtn: { width: 40, height: 32, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 18, fontFamily: Type.display, letterSpacing: 0.3 },
+  headerTitle: { ...PAGE_TITLE },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
   card: { borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14, padding: 16, marginBottom: 12 },
 });

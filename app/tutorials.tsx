@@ -10,6 +10,7 @@ import { TAB_TUTORIALS, Tutorial, getTutorialById } from '../data/tutorials';
 import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 import { Type } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 const TAB_FILTERS = ['All', 'Home', 'Nutrition', 'Workout', 'Stats', 'Faith', 'Profile'] as const;
 type TabFilter = typeof TAB_FILTERS[number];
@@ -108,25 +109,7 @@ export default function TutorialsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
-      {/* Header */}
-      <View style={{ paddingTop: insets.top, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: theme.bgPrimary }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, marginTop: 8 }}>
-          <TouchableOpacity
-            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
-            style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: 4 }}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="chevron-back" size={22} color={theme.accentBlue} />
-          </TouchableOpacity>
-          <View style={{ flex: 1 }}>
-            {/* NO EYEBROWS OVER TITLES. */}
-            <Text style={{ fontSize: 22, fontFamily: Type.display, color: theme.accentBlueRaw, letterSpacing: 0.3 }}>
-              Guided Tutorials
-            </Text>
-          </View>
-        </View>
-
-        {/* Tab filter pills */}
+      <ScreenHeader title="Guided Tutorials" subRow={
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
           <View style={{ flexDirection: 'row', gap: 8 }}>
             {visibleFilters.map(filter => {
@@ -155,7 +138,7 @@ export default function TutorialsScreen() {
             })}
           </View>
         </ScrollView>
-      </View>
+      } />
 
       <ScrollView
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24 }}

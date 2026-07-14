@@ -13,7 +13,8 @@ import { DEFAULT_MEAL_SLOTS, MealSlot, loadMealSlots } from '../utils/mealSlots'
 import { ACHIEVEMENTS, checkAndUnlock, loadAchievements, checkMomentumAchievements, checkNutritionAchievements, getCelebTier } from '../achievementData';
 import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
-import { Type } from '../typography';
+import { Type, PAGE_TITLE } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 export default function RecipeLogScreen() {
   const insets = useSafeAreaInsets();
@@ -185,17 +186,17 @@ export default function RecipeLogScreen() {
   const styles = useStyles(theme);
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>{recipe.name}</Text>
-        <TouchableOpacity
-          style={styles.editBtn}
-          onPress={() => router.push({ pathname: '/recipe-builder', params: { recipeId: recipe.id } })}>
-          <Text style={styles.editBtnText}>Edit</Text>
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title={recipe.name}
+        topInset={false}
+        right={
+          <TouchableOpacity
+            style={styles.editBtn}
+            onPress={() => router.push({ pathname: '/recipe-builder', params: { recipeId: recipe.id } })}>
+            <Text style={styles.editBtnText}>Edit</Text>
+          </TouchableOpacity>
+        }
+      />
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" automaticallyAdjustKeyboardInsets={true}>
 
@@ -411,7 +412,7 @@ const useStyles = (theme: any) => StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: theme.borderCard },
   backBtn: { padding: 4, width: 60 },
   backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: Type.uiMedium },
-  headerTitle: { fontSize: 20, color: theme.textSecondary, fontFamily: Type.display, letterSpacing: 0.3, flex: 1, textAlign: 'center' },
+  headerTitle: { ...PAGE_TITLE, color: theme.accentBlueRaw, flex: 1 },
   editBtn: { backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 },
   editBtnText: { color: theme.accentBlue, fontSize: 13, fontFamily: Type.uiSemibold },
   content: { padding: 16, paddingBottom: 80 },

@@ -20,7 +20,8 @@ import {
 import { useTheme, type Theme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
-import { Type, numLine } from '../typography';
+import { Type, numLine, PAGE_TITLE } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 // Static demo prayers for the faith_prayer tutorial (?tutorial=1). Rendered without ever touching
 // pj_prayers, so a brand-new user with zero prayers still sees a full screen to learn on, and no
@@ -166,33 +167,30 @@ export default function PrayerScreen() {
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
 
-      {/* Header: back, title, and the answered count as a hero stat on the right (only once any
-          prayer is answered, so a list of all-ongoing prayers never reads as "0"). */}
-      <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
-        >
-          <Ionicons name="chevron-back" size={14} color={theme.accentBlue} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>PRAYER</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          {answeredN > 0 && (
-            <View ref={heroRef} collapsable={false}>
-              <Animated.View style={[styles.heroBox, { transform: [{ scale: heroPop }] }]}>
-                <Text style={[styles.heroNum, { color: theme.accentAmber }]}>{answeredN}</Text>
-                <Text style={[styles.heroLabel, { color: theme.textMuted }]}>ANSWERED</Text>
-              </Animated.View>
-            </View>
-          )}
-          <TouchableOpacity
-            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setRequestOpen(true); }}
-            style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
-          >
-            <Ionicons name="people" size={14} color={theme.accentBlue} />
-          </TouchableOpacity>
-        </View>
-      </View>
+      {/* The answered count only appears once a prayer IS answered, so a list of all-ongoing prayers
+          never reads as "0". */}
+      <ScreenHeader
+        title="Prayer"
+        topInset={false}
+        right={
+          <>
+            {answeredN > 0 && (
+              <View ref={heroRef} collapsable={false}>
+                <Animated.View style={[styles.heroBox, { transform: [{ scale: heroPop }] }]}>
+                  <Text style={[styles.heroNum, { color: theme.accentAmber }]}>{answeredN}</Text>
+                  <Text style={[styles.heroLabel, { color: theme.textMuted }]}>ANSWERED</Text>
+                </Animated.View>
+              </View>
+            )}
+            <TouchableOpacity
+              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setRequestOpen(true); }}
+              style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+            >
+              <Ionicons name="people" size={14} color={theme.accentBlue} />
+            </TouchableOpacity>
+          </>
+        }
+      />
 
       {loading ? (
         <View style={styles.loading}>
@@ -389,7 +387,7 @@ function PrayerRow({
 const styles = StyleSheet.create({
   header:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5 },
   headerBtn:     { borderWidth: 1, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' },
-  headerTitle:   { fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3 },
+  headerTitle: { ...PAGE_TITLE },
   heroBox:       { alignItems: 'flex-end' },
   heroNum:       { fontSize: 26, fontFamily: Type.num, letterSpacing: 1, lineHeight: numLine(26) },
   heroLabel:     { fontSize: 8, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: Type.uiBold, marginTop: -1 },

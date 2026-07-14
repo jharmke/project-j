@@ -26,6 +26,7 @@ import {
   BodyMeasureSettings, BodyProfile, MeasureFieldKey,
 } from '../utils/bodyMeasurements';
 import { Type } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 const DISCLAIMER_KEY = 'pj_navy_bf_disclaimer_seen';
 
@@ -98,19 +99,8 @@ export default function BodyMeasurementsScreen() {
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1 }}>
       <View style={{ flex: 1, paddingTop: insets.top }}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
-            style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Ionicons name="chevron-back" size={20} color={theme.accentBlue} />
-          </TouchableOpacity>
-          <Text style={{ flex: 1, textAlign: 'center', fontSize: 26, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentBlueRaw }}>BODY</Text>
-          <View style={{ width: 38, alignItems: 'center', justifyContent: 'center' }}>
-            <TooltipIcon tooltipKey="body_measurements" size={18} />
-          </View>
-        </View>
+        {/* The title was the single word "BODY", centred, in caps. */}
+        <ScreenHeader title="Body Measurements" topInset={false} right={<TooltipIcon tooltipKey="body_measurements" size={18} />} />
 
         <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 120 }} showsVerticalScrollIndicator={false}>
           {!loaded ? null : !hasData ? (

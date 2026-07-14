@@ -23,6 +23,7 @@ import {
 import { refreshCoachTip, resolveTipBody } from '../utils/coachAI';
 import PrimaryCTA from '../components/PrimaryCTA';
 import { Type, numLine } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -173,21 +174,11 @@ export default function DiagnosticReportScreen() {
     <View style={{ flex: 1, backgroundColor: t.bgPrimary }}>
       <ToastRenderer />
 
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Ionicons name="chevron-back" size={22} color={t.accentBlueRaw} />
-          <Text style={[styles.backText, { color: t.accentBlueRaw }]}>Stats</Text>
-        </TouchableOpacity>
-      </View>
+      {/* The 48px two-line hero is GONE. It was the biggest title in the app by a factor of two, and it
+          only existed because this screen invented its own header. */}
+      <ScreenHeader title="Effort vs Results" right={<TooltipIcon tooltipKey="effort_vs_results" size={18} />} />
 
       <ScrollView ref={scrollRef} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]} showsVerticalScrollIndicator={false}>
-
-        {/* Title */}
-        <View style={{ paddingHorizontal: 4, marginBottom: 16, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-          <Text style={[styles.heroTitle, { color: t.accentBlueRaw }]}>{'Effort vs\nResults'}</Text>
-          <TooltipIcon tooltipKey="effort_vs_results" size={18} />
-        </View>
 
         {/* Intro line (replaces the window picker -- each pattern uses its own timeframe) */}
         <Text style={{ fontSize: 13, fontFamily: Type.ui, color: t.textSecondary, lineHeight: 20, marginBottom: 14 }}>

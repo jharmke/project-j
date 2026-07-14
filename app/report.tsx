@@ -242,7 +242,7 @@ export default function ReportScreen() {
             {/* Document header -- captured into the export image */}
             <View style={{ marginBottom: 14 }}>
               <TextInput ref={nameRef} value={report.name} onChangeText={rename} onBlur={commitName} placeholder="Report name" placeholderTextColor={theme.textDim}
-                style={{ fontSize: 26, fontFamily: Type.num, letterSpacing: 1, color: theme.textSecondary, padding: 0 }} />
+                style={{ fontSize: 26, fontFamily: Type.display, letterSpacing: 0.3, color: theme.textSecondary, padding: 0 }} />
               <Text style={{ fontSize: 11.5, fontFamily: Type.uiSemibold, color: theme.textMuted, marginTop: 3 }}>
                 {RANGE_LABELS[report.range.preset]} · Generated {genDate} · Project J
               </Text>

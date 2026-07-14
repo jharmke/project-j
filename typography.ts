@@ -78,6 +78,26 @@ export const Type = {
   voiceBold:     VOICE_FACES[VOICE_FACE].bold,
 } as const;
 
+// ─── The page title ───────────────────────────────────────────────────────────
+// ONE style. Every screen's title is the same object, and the ONLY thing a screen supplies is the colour
+// (which has to come from the live theme).
+//
+//   MIXED CASE, ACCENT, CLASH, LEFT-ALIGNED. No eyebrow above it. No caps. No centring.
+//
+// This exists because the app had SEVEN different title sizes -- 10, 15, 18, 20, 22, 28, 32 -- and three
+// different treatments (caps+ink, caps+accent, mixed+accent). None of that was ever DESIGNED; the screens
+// were built weeks apart and there was no token to reach for, so each one got whatever number felt right
+// that day. Bebas hid it (a condensed caps face reads much the same at 20 as at 28). Clash does not.
+// Day Detail's "title" was 10px uppercase INTERFACE -- an eyebrow pretending to be a title.
+//
+// A page title is a page title. Settings is not more important than Journal. If a screen ever seems to
+// need its own size, it does not: it needs a different LAYOUT.
+export const PAGE_TITLE = {
+  fontSize: 28,
+  fontFamily: DISPLAY_FACES[DISPLAY_FACE].regular,
+  letterSpacing: DISPLAY_FACES[DISPLAY_FACE].track,
+} as const;
+
 // ─── Display metrics ──────────────────────────────────────────────────────────
 // A title style pulls these instead of hardcoding, so flipping DISPLAY_FACE also flips the casing and
 // tracking that face needs. Oswald is caps-and-tracked like Bebas was; Clash and Fraunces are not.

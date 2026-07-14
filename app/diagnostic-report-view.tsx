@@ -32,6 +32,7 @@ import {
 } from '../utils/smartTipsEngine';
 import { refreshCoachTip, resolveTipBody, resolveTipTitle, voiceDiagnosticCards } from '../utils/coachAI';
 import { Type, numLine } from '../typography';
+import ScreenHeader from '../components/ScreenHeader';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -759,18 +760,19 @@ export default function DiagnosticReportViewScreen() {
     <View style={{ flex: 1, backgroundColor: t.bgPrimary }}>
       <ToastRenderer />
 
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Ionicons name="chevron-back" size={22} color={t.accentBlueRaw} />
-          <Text style={[styles.backText, { color: t.accentBlueRaw }]}>Reports</Text>
-        </TouchableOpacity>
-        {report && !isTutorialMode && (
-          <TouchableOpacity onPress={handleDelete} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ padding: 4 }}>
-            <Ionicons name="trash-outline" size={20} color={t.statusBad} />
-          </TouchableOpacity>
-        )}
-      </View>
+      <ScreenHeader
+        title="Effort vs Results"
+        right={
+          <>
+            <TooltipIcon tooltipKey="effort_vs_results" size={18} />
+            {report && !isTutorialMode && (
+              <TouchableOpacity onPress={handleDelete} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ padding: 4 }}>
+                <Ionicons name="trash-outline" size={20} color={t.statusBad} />
+              </TouchableOpacity>
+            )}
+          </>
+        }
+      />
 
       {/* Not found state */}
       {notFound && (
@@ -789,11 +791,6 @@ export default function DiagnosticReportViewScreen() {
       {report && (
         <ScrollView ref={scrollRef} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 120 }]} showsVerticalScrollIndicator={false}>
 
-          {/* Title + window info */}
-          <View style={{ paddingHorizontal: 4, marginBottom: 8, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-            <Text style={[styles.heroTitle, { color: t.accentBlueRaw }]}>{'Effort vs\nResults'}</Text>
-            <TooltipIcon tooltipKey="effort_vs_results" size={18} />
-          </View>
 
           {/* "As of" stamp -- no single window now; each card states its own timeframe */}
           <View style={{ alignItems: 'flex-start', marginBottom: 16 }}>

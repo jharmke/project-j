@@ -7,6 +7,7 @@ import { Animated, Easing, StyleSheet, Text, TextInput, TouchableOpacity, View }
 import PressableButton from './PressableButton';
 import TooltipIcon from './TooltipIcon';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
+import { Type, numLine } from '../typography';
 
 export const IF_METHODS: Record<string, { fast: number; eat: number }> = {
   '12:12': { fast: 12, eat: 12 },
@@ -118,7 +119,7 @@ export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen,
 
   const IFPill = ({ label, color }: { label: string; color: string }) => (
     <View style={{ alignSelf: 'flex-start', backgroundColor: color + '22', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
-      <Text style={{ fontSize: 10, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color }}>{label}</Text>
+      <Text style={{ fontSize: 10, fontFamily: Type.uiBold, letterSpacing: 2, color }}>{label}</Text>
     </View>
   );
 
@@ -126,7 +127,7 @@ export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen,
     <TouchableOpacity
       onPress={() => { triggerHaptic(hapticLevel === 'heavy' ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Light); onPress(); }}
       style={{ backgroundColor: color + '18', borderWidth: 1, borderColor: color + '40', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 5 }}>
-      <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color, letterSpacing: 0.5 }}>{label}</Text>
+      <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color, letterSpacing: 0.5 }}>{label}</Text>
     </TouchableOpacity>
   );
 
@@ -157,7 +158,7 @@ export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen,
           {Object.keys(IF_METHODS).map(m => (
             <TouchableOpacity key={m} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setIfMethod(m); }}
               style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, backgroundColor: ifMethod === m ? theme.bgSelected : theme.ifMethodBg, borderWidth: 1, borderColor: ifMethod === m ? theme.accentBlueBorder : theme.ifMethodBorder }}>
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: ifMethod === m ? theme.accentBlue : theme.ifMethodText }}>{m}</Text>
+              <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: ifMethod === m ? theme.accentBlue : theme.ifMethodText }}>{m}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -165,11 +166,11 @@ export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen,
 
       {!readOnly && ifMethod === 'Custom' && (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Eating window:</Text>
+          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui }}>Eating window:</Text>
           <TextInput
-            style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, color: theme.textPrimary, padding: 6, fontSize: 14, fontFamily: 'DMSans_600SemiBold', width: 50, textAlign: 'center' }}
+            style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, color: theme.textPrimary, padding: 6, fontSize: 14, fontFamily: Type.uiSemibold, width: 50, textAlign: 'center' }}
             value={ifCustomHours} onChangeText={setIfCustomHours} keyboardType="number-pad" maxLength={2} />
-          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>hrs</Text>
+          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui }}>hrs</Text>
         </View>
       )}
 
@@ -180,7 +181,7 @@ export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen,
             onPress={onStartFast}
             flex={0}
           >
-            <Text style={{ fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, fontSize: 16, color: theme.accentGreen }}>TAP WHEN YOU EAT YOUR FIRST MEAL</Text>
+            <Text style={{ fontFamily: Type.num, letterSpacing: 2, fontSize: 16, color: theme.accentGreen }}>TAP WHEN YOU EAT YOUR FIRST MEAL</Text>
           </PressableButton>
         </Animated.View>
       )}
@@ -211,14 +212,14 @@ export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen,
             <View style={{ flexDirection: 'row', gap: 12, paddingTop: 2 }}>
               <View style={{ alignItems: 'center' }}>
                 <Text style={[s.ifLabel, { color: theme.textMuted, marginBottom: 2 }]}>Started</Text>
-                <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>
+                <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: Type.num, letterSpacing: 1 }}>
                   {new Date(effIfStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Text>
               </View>
               {effWindowEnd && (
                 <View style={{ alignItems: 'center' }}>
                   <Text style={[s.ifLabel, { color: theme.textMuted, marginBottom: 2 }]}>Closes</Text>
-                  <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>
+                  <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: Type.num, letterSpacing: 1 }}>
                     {new Date(effWindowEnd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </Text>
                 </View>
@@ -235,7 +236,7 @@ export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen,
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); onLastMeal(); }}
               style={{ backgroundColor: theme.accentRed, borderRadius: 10, paddingHorizontal: 22, paddingVertical: 10 }}
             >
-              <Text style={{ color: '#ffffff', fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 }}>LAST MEAL</Text>
+              <Text style={{ color: '#ffffff', fontSize: 16, fontFamily: Type.num, letterSpacing: 2 }}>LAST MEAL</Text>
             </TouchableOpacity>
             <IFLinkBtn label="Cancel fast" color={theme.textSecondary} onPress={onCancelFast} />
           </View>
@@ -244,10 +245,10 @@ export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen,
             <View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowTimePicker(false); }}>
-                  <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Cancel</Text>
+                  <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: Type.uiMedium }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowTimePicker(false); if (pickerTime) onConfirmStart(pickerTime); }}>
-                  <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Confirm</Text>
+                  <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: Type.uiSemibold }}>Confirm</Text>
                 </TouchableOpacity>
               </View>
               <DateTimePicker mode="time" value={pickerTime || (effIfStart ? new Date(effIfStart) : new Date())} display="spinner" textColor={theme.textPrimary} onChange={(_, d) => { if (d) setPrickerTime(d); }} />
@@ -264,15 +265,15 @@ export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen,
             <View style={{ flexDirection: 'row', gap: 28, marginBottom: 12 }}>
               <View>
                 <Text style={[s.ifLabel, { color: theme.textMuted, marginBottom: 2 }]}>Target</Text>
-                <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{formatHrMin(effIfTargetMs)}</Text>
+                <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: Type.num, letterSpacing: 1 }}>{formatHrMin(effIfTargetMs)}</Text>
               </View>
               <View>
                 <Text style={[s.ifLabel, { color: theme.textMuted, marginBottom: 2 }]}>Actual</Text>
-                <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{effIfActualMs ? formatHrMin(effIfActualMs) : '--'}</Text>
+                <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: Type.num, letterSpacing: 1 }}>{effIfActualMs ? formatHrMin(effIfActualMs) : '--'}</Text>
               </View>
               <View>
                 <Text style={[s.ifLabel, { color: theme.textMuted, marginBottom: 2 }]}>Window</Text>
-                <Text style={{ fontSize: 22, color: theme.textSecondary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>
+                <Text style={{ fontSize: 22, color: theme.textSecondary, fontFamily: Type.num, letterSpacing: 1 }}>
                   {new Date(effIfStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} → {new Date(effIfEnd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Text>
               </View>
@@ -294,10 +295,10 @@ export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen,
             <View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowTimePicker(false); }}>
-                  <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Cancel</Text>
+                  <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: Type.uiMedium }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowTimePicker(false); if (pickerTime) onConfirmStart(pickerTime); }}>
-                  <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Confirm</Text>
+                  <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: Type.uiSemibold }}>Confirm</Text>
                 </TouchableOpacity>
               </View>
               <DateTimePicker mode="time" value={pickerTime || (effIfStart ? new Date(effIfStart) : new Date())} display="spinner" textColor={theme.textPrimary} onChange={(_, d) => { if (d) setPrickerTime(d); }} />
@@ -307,10 +308,10 @@ export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen,
             <View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowEndTimePicker(false); }}>
-                  <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Cancel</Text>
+                  <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: Type.uiMedium }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowEndTimePicker(false); if (pickerTime) onConfirmEnd(pickerTime); }}>
-                  <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Confirm</Text>
+                  <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: Type.uiSemibold }}>Confirm</Text>
                 </TouchableOpacity>
               </View>
               <DateTimePicker mode="time" value={pickerTime || (effIfEnd ? new Date(effIfEnd) : new Date())} display="spinner" textColor={theme.textPrimary} onChange={(_, d) => { if (d) setPrickerTime(d); }} />
@@ -334,7 +335,7 @@ const s = StyleSheet.create({
     borderWidth: 0.5, borderRadius: 14, padding: 16,
     borderTopWidth: 1.5,
   },
-  cardLabel: { fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', marginBottom: 10 },
-  ifLabel:    { fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', fontFamily: 'DMSans_500Medium' },
-  ifCountdown:{ fontSize: 48, lineHeight: 52, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  cardLabel: { fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold, marginBottom: 10 },
+  ifLabel:    { fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', fontFamily: Type.uiMedium },
+  ifCountdown:{ fontSize: 48, lineHeight: numLine(48), fontFamily: Type.num, letterSpacing: 2 },
 });

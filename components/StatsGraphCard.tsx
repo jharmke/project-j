@@ -6,6 +6,7 @@ import { Animated, Dimensions, Easing, Modal, ScrollView, StyleSheet, Text, Touc
 import Svg, { Circle, Defs, Line, LinearGradient as SvgLinearGradient, Path, Polyline, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import { ADVANCED_NUTRIENTS, CardPeriod, DATA_KEY_META, NUTRIENT_CATEGORIES, StatsCard } from '../statsCardRegistry';
 import { TrendData } from '../utils/statsData';
+import { Type } from '../typography';
 
 const CHART_WIDTH = Dimensions.get('window').width - 64;
 const CHART_HEIGHT = 150;
@@ -76,7 +77,7 @@ function LineChart({ data, color, unit, goalValue, theme, fmtY, fmtFull, gradien
     return (
       <View style={{ height: CHART_HEIGHT, alignItems: 'center', justifyContent: 'center', gap: 6 }}>
         <Ionicons name="analytics-outline" size={24} color={theme.iconMuted} />
-        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>Not enough data yet</Text>
+        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic' }}>Not enough data yet</Text>
       </View>
     );
   }
@@ -226,7 +227,7 @@ function CalorieBarChart({ data, calTarget, theme, color }: {
     return (
       <View style={{ height: CHART_HEIGHT, alignItems: 'center', justifyContent: 'center', gap: 6 }}>
         <Ionicons name="flame-outline" size={24} color={theme.iconMuted} />
-        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>No calorie data yet</Text>
+        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic' }}>No calorie data yet</Text>
       </View>
     );
   }
@@ -336,7 +337,7 @@ function GenericBarChart({ data, color, unit, theme, fmtY, fmtFull, startFromZer
     return (
       <View style={{ height: CHART_HEIGHT, alignItems: 'center', justifyContent: 'center', gap: 6 }}>
         <Ionicons name="analytics-outline" size={24} color={theme.iconMuted} />
-        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>Not enough data yet</Text>
+        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic' }}>Not enough data yet</Text>
       </View>
     );
   }
@@ -439,7 +440,7 @@ function NetCalBarChart({ data, theme, fmtFull }: {
     return (
       <View style={{ height: CHART_HEIGHT, alignItems: 'center', justifyContent: 'center', gap: 6 }}>
         <Ionicons name="analytics-outline" size={24} color={theme.iconMuted} />
-        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>Not enough data yet</Text>
+        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic' }}>Not enough data yet</Text>
       </View>
     );
   }
@@ -559,7 +560,7 @@ function NetCalLineChart({ data, theme, gradientId }: {
     return (
       <View style={{ height: CHART_HEIGHT, alignItems: 'center', justifyContent: 'center', gap: 6 }}>
         <Ionicons name="analytics-outline" size={24} color={theme.iconMuted} />
-        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>Not enough data yet</Text>
+        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic' }}>Not enough data yet</Text>
       </View>
     );
   }
@@ -665,7 +666,7 @@ function MacroBarChart({ data, theme, proteinColor, carbsColor, fatColor }: {
     return (
       <View style={{ height: CHART_HEIGHT, alignItems: 'center', justifyContent: 'center', gap: 6 }}>
         <Ionicons name="nutrition-outline" size={24} color={theme.iconMuted} />
-        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>No macro data yet</Text>
+        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic' }}>No macro data yet</Text>
       </View>
     );
   }
@@ -777,7 +778,7 @@ function MacroBarChart({ data, theme, proteinColor, carbsColor, fatColor }: {
         ].map(l => (
           <View key={l.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
             <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: l.color }} />
-            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>{l.label}</Text>
+            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 1, textTransform: 'uppercase' }}>{l.label}</Text>
           </View>
         ))}
       </View>
@@ -803,7 +804,7 @@ function SleepStagesBarChart({ data, theme }: {
     return (
       <View style={{ height: CHART_HEIGHT, alignItems: 'center', justifyContent: 'center', gap: 6 }}>
         <Ionicons name="bar-chart-outline" size={24} color={theme.iconMuted} />
-        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>No sleep stage data yet</Text>
+        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic' }}>No sleep stage data yet</Text>
       </View>
     );
   }
@@ -934,7 +935,7 @@ function SleepStagesBarChart({ data, theme }: {
         ].map(l => (
           <View key={l.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
             <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: l.color }} />
-            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>{l.label}</Text>
+            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 1, textTransform: 'uppercase' }}>{l.label}</Text>
           </View>
         ))}
       </View>
@@ -962,7 +963,7 @@ function WorkoutFrequencyChart({ data, theme }: {
     return (
       <View style={{ height: CHART_HEIGHT, alignItems: 'center', justifyContent: 'center', gap: 6 }}>
         <Ionicons name="barbell-outline" size={24} color={theme.iconMuted} />
-        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>No workout data yet</Text>
+        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic' }}>No workout data yet</Text>
       </View>
     );
   }
@@ -1063,7 +1064,7 @@ function WorkoutFrequencyChart({ data, theme }: {
         ].map(l => (
           <View key={l.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
             <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: l.color }} />
-            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>{l.label}</Text>
+            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 1, textTransform: 'uppercase' }}>{l.label}</Text>
           </View>
         ))}
       </View>
@@ -1431,14 +1432,14 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
     <View style={{ borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14, padding: 16, marginBottom: 12, backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadow }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
         <Ionicons name={iconName as any} size={11} color={theme.textMuted} />
-        <Text style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted, flex: 1, marginLeft: 6 }}>{card.label}</Text>
+        <Text style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textMuted, flex: 1, marginLeft: 6 }}>{card.label}</Text>
         <View style={{ flexDirection: 'row', gap: 4, marginRight: homeMode ? 0 : 8 }}>
           {([7, 30, 90] as CardPeriod[]).map(p => (
             <TouchableOpacity key={p} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); onPeriodChange?.(card.id, p); }}
               style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 5,
                 backgroundColor: card.period === p ? theme.accentBlueBg : 'transparent',
                 borderWidth: 1, borderColor: card.period === p ? theme.accentBlueBorder : theme.borderInput }}>
-              <Text style={{ fontSize: 9, fontFamily: 'DMSans_600SemiBold', color: card.period === p ? theme.accentBlue : theme.textMuted }}>
+              <Text style={{ fontSize: 9, fontFamily: Type.uiSemibold, color: card.period === p ? theme.accentBlue : theme.textMuted }}>
                 {p}d
               </Text>
             </TouchableOpacity>
@@ -1457,7 +1458,7 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
           style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 4,
             backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
             borderRadius: 6, paddingHorizontal: 10, paddingVertical: 5, marginBottom: 10 }}>
-          <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>
+          <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>
             {card.nutrientKey ? (ADVANCED_NUTRIENTS.find(n => n.key === card.nutrientKey)?.label ?? 'Select Nutrient') : 'Select Nutrient'}
           </Text>
           <Ionicons name="chevron-down" size={12} color={theme.accentBlue} />
@@ -1475,7 +1476,7 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
             shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20 }}>
             <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderSubtle, alignSelf: 'center', marginTop: 10, marginBottom: 4 }} />
             <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle }}>
-              <Text style={{ flex: 1, fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted }}>NUTRIENT</Text>
+              <Text style={{ flex: 1, fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textMuted }}>NUTRIENT</Text>
               <TouchableOpacity onPress={closeNutrientPicker} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <Ionicons name="close" size={20} color={theme.textMuted} />
               </TouchableOpacity>
@@ -1485,7 +1486,7 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
                 const items = ADVANCED_NUTRIENTS.filter(n => n.category === cat);
                 return (
                   <View key={cat}>
-                    <Text style={{ fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold',
+                    <Text style={{ fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', fontFamily: Type.uiBold,
                       color: theme.textMuted, marginTop: 14, marginBottom: 4, paddingHorizontal: 16 }}>{cat}</Text>
                     {items.map(n => {
                       const selected = card.nutrientKey === n.key;
@@ -1493,9 +1494,9 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
                         <TouchableOpacity key={n.key} onPress={() => selectNutrient(n.key)}
                           style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 11,
                             backgroundColor: selected ? theme.accentBlueBg : 'transparent' }}>
-                          <Text style={{ flex: 1, fontSize: 14, fontFamily: 'DMSans_400Regular',
+                          <Text style={{ flex: 1, fontSize: 14, fontFamily: Type.ui,
                             color: selected ? theme.accentBlue : theme.textPrimary }}>{n.label}</Text>
-                          <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginRight: selected ? 8 : 0 }}>{n.unit}</Text>
+                          <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textMuted, marginRight: selected ? 8 : 0 }}>{n.unit}</Text>
                           {selected && <Ionicons name="checkmark" size={16} color={theme.accentBlue} />}
                         </TouchableOpacity>
                       );
@@ -1514,14 +1515,14 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
         <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle, flexDirection: 'row' }}>
           {stats.map((s, i) => (
             <View key={i} style={{ flex: 1, alignItems: 'center' }}>
-              <Text style={{ fontSize: 9, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 3, textAlign: 'center' }}>{s.label}</Text>
-              <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', textAlign: 'center' }}>{s.value}</Text>
+              <Text style={{ fontSize: 9, letterSpacing: 1.5, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase', marginBottom: 3, textAlign: 'center' }}>{s.label}</Text>
+              <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: Type.uiSemibold, textAlign: 'center' }}>{s.value}</Text>
             </View>
           ))}
         </View>
       )}
       {sampleInfo && (
-        <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 8 }}>
+        <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, textAlign: 'center', marginTop: 8 }}>
           Based on {sampleInfo.count} {sampleInfo.noun}{sampleInfo.count !== 1 ? 's' : ''} of data
         </Text>
       )}
@@ -1536,7 +1537,7 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
         const count = excType ? (cardTrendData.excludedCounts?.[excType] ?? 0) : 0;
         if (count === 0) return null;
         return (
-          <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 8 }}>
+          <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, textAlign: 'center', marginTop: 8 }}>
             {count} day{count !== 1 ? 's' : ''} excluded
           </Text>
         );

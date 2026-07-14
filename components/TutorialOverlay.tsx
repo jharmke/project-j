@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ActiveTutorialState } from '../context/TutorialContext';
 import { useTutorial } from '../context/TutorialContext';
 import { useTheme } from '../theme';
+import { Type } from '../typography';
 
 const { width: SW, height: SH } = Dimensions.get('window');
 const PAD        = 8;
@@ -569,22 +570,22 @@ const styles = StyleSheet.create({
   },
   stepText: {
     fontSize: 11,
-    fontFamily: 'DMSans_500Medium',
+    fontFamily: Type.uiMedium,
     letterSpacing: 1,
   },
   skipText: {
     fontSize: 12,
-    fontFamily: 'DMSans_500Medium',
+    fontFamily: Type.uiMedium,
   },
   title: {
     fontSize: 22,
-    fontFamily: 'BebasNeue_400Regular',
+    fontFamily: Type.num,
     letterSpacing: 1,
     marginBottom: 6,
   },
   body: {
     fontSize: 13,
-    fontFamily: 'DMSans_400Regular',
+    fontFamily: Type.ui,
     lineHeight: 20,
     marginBottom: 14,
   },
@@ -596,7 +597,7 @@ const styles = StyleSheet.create({
   },
   nextBtnText: {
     fontSize: 12,
-    fontFamily: 'DMSans_700Bold',
+    fontFamily: Type.uiBold,
     letterSpacing: 1.5,
   },
 });

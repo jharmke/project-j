@@ -11,6 +11,7 @@ import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, withSpring } 
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
+import { Type } from '../typography';
 
 export type FloorModalCase = 1 | 2 | 3 | 4;
 
@@ -68,7 +69,7 @@ export default function CalorieFloorModal({ theme, modalCase, target, onSlowerPa
     <TouchableOpacity
       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); onPress(); }}
       style={{ marginTop: 10, paddingVertical: 13, borderRadius: 10, alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
-      <Text style={{ color: theme.accentBlue, fontSize: 13, letterSpacing: 0.5, fontFamily: 'DMSans_600SemiBold' }}>{label}</Text>
+      <Text style={{ color: theme.accentBlue, fontSize: 13, letterSpacing: 0.5, fontFamily: Type.uiSemibold }}>{label}</Text>
     </TouchableOpacity>
   );
 
@@ -96,13 +97,13 @@ export default function CalorieFloorModal({ theme, modalCase, target, onSlowerPa
               </View>
             </View>
 
-            <Text style={{ fontSize: 20, letterSpacing: 0.5, fontFamily: 'DMSans_700Bold', color: theme.textSecondary, textAlign: 'center', marginBottom: 10 }}>{title}</Text>
+            <Text style={{ fontSize: 20, letterSpacing: 0.5, fontFamily: Type.uiBold, color: theme.textSecondary, textAlign: 'center', marginBottom: 10 }}>{title}</Text>
 
-            <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_400Regular', textAlign: 'center', lineHeight: 20 }}>
+            <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.ui, textAlign: 'center', lineHeight: 20 }}>
               {body}
             </Text>
 
-            <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', textAlign: 'center', lineHeight: 16, marginTop: 12 }}>
+            <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.ui, fontStyle: 'italic', textAlign: 'center', lineHeight: 16, marginTop: 12 }}>
               For informational purposes only. Not medical advice.
             </Text>
 
@@ -115,7 +116,7 @@ export default function CalorieFloorModal({ theme, modalCase, target, onSlowerPa
             <TouchableOpacity
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); onContinue(); }}
               style={{ marginTop: 8, paddingVertical: 13, borderRadius: 10, alignItems: 'center', backgroundColor: theme.bgInset, borderWidth: 0.5, borderColor: theme.borderCard }}>
-              <Text style={{ color: theme.textSecondary, fontSize: 13, letterSpacing: 0.5, fontFamily: 'DMSans_600SemiBold' }}>I understand, continue</Text>
+              <Text style={{ color: theme.textSecondary, fontSize: 13, letterSpacing: 0.5, fontFamily: Type.uiSemibold }}>I understand, continue</Text>
             </TouchableOpacity>
           </View>
         </Reanimated.View>

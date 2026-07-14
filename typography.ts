@@ -41,12 +41,18 @@ const NUM_FACES = {
   khand:    { soft: 'Khand_500Medium',    regular: 'Khand_700Bold',      hero: 'Khand_700Bold',        scale: 1.04 },
 } as const;
 
-// Same story for the voice. Ranade is a chunky face even at Regular, and the coach copy sits INSIDE a
-// card next to quiet interface labels -- it should feel like someone talking, not like a headline. So the
-// body weight is LIGHT and the emphasis weight is Regular. Nothing here goes near bold.
+// The voice needs RANGE. Read this before touching the weights again, because the whole ladder was once
+// a lie: Fontshare ships Ranade as one FAMILY PER WEIGHT ("Ranade Light", "Ranade Medium"), iOS resolves
+// fontFamily against a font's internal names, and a miss falls back SILENTLY. So every cut collapsed onto
+// a single face and three separate weight changes produced ZERO pixels of difference on device. The .ttf
+// name tables are patched now (each cut is its own one-face family named exactly what the code asks for)
+// and a four-line specimen confirmed a real Light/Regular/Medium/Bold ladder. If a weight change ever
+// again produces no visible effect, suspect the FONT, not the design.
+// Ranade genuinely IS chunky, so `regular` deliberately sits a step below where a sans body would --
+// Regular, not Medium. Light was tried and, once the fonts actually worked, read as too thin.
 const VOICE_FACES = {
   bitter: { regular: 'Bitter_400Regular', semibold: 'Bitter_600SemiBold', bold: 'Bitter_700Bold' },
-  ranade: { regular: 'Ranade-Light',      semibold: 'Ranade-Regular',     bold: 'Ranade-Medium' },
+  ranade: { regular: 'Ranade-Regular',    semibold: 'Ranade-Medium',      bold: 'Ranade-Bold' },
 } as const;
 
 export const Type = {

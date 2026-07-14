@@ -25,6 +25,7 @@ import { useTheme } from '../theme';
 import { useToast } from './Toast';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
+import { Type } from '../typography';
 
 interface CustomFoodCreatorProps {
   visible: boolean;
@@ -463,14 +464,14 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
             style={{ flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 10, borderWidth: 1.5, backgroundColor: !isSupplementType ? theme.accentBlueBg : theme.bgInput, borderColor: !isSupplementType ? theme.accentBlueBorder : theme.borderInput }}
           >
             <Ionicons name="nutrition" size={18} color={!isSupplementType ? theme.accentBlue : theme.textMuted} />
-            <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', marginTop: 4, color: !isSupplementType ? theme.accentBlue : theme.textMuted }}>Food</Text>
+            <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, marginTop: 4, color: !isSupplementType ? theme.accentBlue : theme.textMuted }}>Food</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setIsSupplementType(true); }}
             style={{ flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 10, borderWidth: 1.5, backgroundColor: isSupplementType ? theme.accentBlueBg : theme.bgInput, borderColor: isSupplementType ? theme.accentBlueBorder : theme.borderInput }}
           >
             <Ionicons name="medical" size={18} color={isSupplementType ? theme.accentBlue : theme.textMuted} />
-            <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', marginTop: 4, color: isSupplementType ? theme.accentBlue : theme.textMuted }}>Supplement</Text>
+            <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, marginTop: 4, color: isSupplementType ? theme.accentBlue : theme.textMuted }}>Supplement</Text>
           </TouchableOpacity>
         </View>
 
@@ -556,7 +557,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
                     borderColor: servingUnitType === u ? theme.accentBlueBorder : theme.borderInput,
                   }}
                 >
-                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: servingUnitType === u ? theme.accentBlue : theme.textMuted }}>{u}</Text>
+                  <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: servingUnitType === u ? theme.accentBlue : theme.textMuted }}>{u}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -585,11 +586,11 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}
               >
                 <Ionicons name="add" size={12} color={theme.accentBlue} />
-                <Text style={{ fontSize: 11, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>Add</Text>
+                <Text style={{ fontSize: 11, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Add</Text>
               </TouchableOpacity>
             </View>
             {additionalServings.length === 0 && (
-              <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginBottom: 12 }}>
+              <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, marginBottom: 12 }}>
                 Optional. Add extra serving sizes like "1 link" or "6 pieces".
               </Text>
             )}
@@ -878,21 +879,21 @@ const styles = (theme: any) => StyleSheet.create({
     paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14,
     borderBottomWidth: 0.5, borderBottomColor: theme.borderCard,
   },
-  title: { fontSize: 20, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  title: { fontSize: 19, color: theme.accentBlueRaw, fontFamily: Type.display, letterSpacing: -0.2 },
   closeBtn: { padding: 4 },
   scroll: { flex: 1 },
   scrollContent: { padding: 20, paddingBottom: 24 },
-  sectionLabel: { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, fontFamily: 'DMSans_700Bold', marginBottom: 10 },
+  sectionLabel: { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, fontFamily: Type.uiBold, marginBottom: 10 },
   fieldRow: { marginBottom: 12 },
-  fieldLabel: { fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_500Medium', marginBottom: 5 },
+  fieldLabel: { fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiMedium, marginBottom: 5 },
   unitText: { color: theme.textMuted, fontSize: 11 },
   requiredStar: { color: theme.accentRed || '#cc3333', fontSize: 12 },
-  requiredNote: { fontSize: 10, color: theme.accentRed || '#cc3333', fontFamily: 'DMSans_400Regular', marginBottom: 12 },
-  input: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: 'DMSans_400Regular' },
+  requiredNote: { fontSize: 10, color: theme.accentRed || '#cc3333', fontFamily: Type.ui, marginBottom: 12 },
+  input: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: Type.ui },
   twoCol: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   optionalToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 4 },
-  optionalToggleText: { fontSize: 13, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' },
+  optionalToggleText: { fontSize: 13, color: theme.accentBlue, fontFamily: Type.uiSemibold },
   saveBtn: { backgroundColor: theme.accentGreen, borderRadius: 10, padding: 15, alignItems: 'center', marginTop: 16 },
   saveBtnDim: { opacity: 0.35 },
-  saveBtnText: { color: theme.bgPrimary, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  saveBtnText: { color: theme.bgPrimary, fontSize: 16, fontFamily: Type.uiBold, letterSpacing: 0.2 },
 });

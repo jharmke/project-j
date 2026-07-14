@@ -37,6 +37,7 @@ import TooltipIcon from '../../components/TooltipIcon';
 import { showToolkit } from '../../components/ToolkitSheet';
 import { useTutorial } from '../../context/TutorialContext';
 import { useTutorialTarget } from '../../hooks/useTutorialTarget';
+import { Type, DISPLAY_CAPS, DISPLAY_TRACKING, displaySize } from '../../typography';
 
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -1827,8 +1828,8 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
               <View key={i} style={{ flexBasis: '47%', maxWidth: '47%', flexGrow: row.length === 2 ? 1 : 0, alignItems: 'center', backgroundColor: theme.bgInset, borderWidth: 0.5, borderColor: theme.borderCard, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 10,
                 shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 6, elevation: 3 }}>
                 <Ionicons name={s.icon} size={14} color={accentColor} style={{ marginBottom: 3 }} />
-                <Text style={{ fontSize: 23, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5, color: theme.textSecondary }}>{s.value}</Text>
-                <Text style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted, marginTop: 1 }}>{s.label}</Text>
+                <Text style={{ fontSize: 23, fontFamily: Type.num, letterSpacing: 0.5, color: theme.textSecondary }}>{s.value}</Text>
+                <Text style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textMuted, marginTop: 1 }}>{s.label}</Text>
               </View>
             ))}
           </View>
@@ -1867,10 +1868,10 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
         <TouchableOpacity onPress={() => openDurationEdit(day)} activeOpacity={hasTime && !running ? 0.6 : 1} disabled={!hasTime || running} style={{ flexDirection: 'row', alignItems: 'center', gap: 9, flex: 1 }} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
           <Ionicons name={running ? 'stopwatch' : 'stopwatch-outline'} size={18} color={running ? theme.accentBlue : theme.textMuted} />
           <View>
-            <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>
+            <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>
               {running ? 'Workout Running' : hasTime ? 'Workout Time' : 'Workout Timer'}
             </Text>
-            <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5, color: running ? theme.accentBlueRaw : hasTime ? theme.textSecondary : theme.textMuted, marginTop: 1 }}>
+            <Text style={{ fontSize: 18, fontFamily: Type.num, letterSpacing: 0.5, color: running ? theme.accentBlueRaw : hasTime ? theme.textSecondary : theme.textMuted, marginTop: 1 }}>
               {hasTime || running ? formatDuration(elapsed) : 'Not started'}
             </Text>
           </View>
@@ -1884,12 +1885,12 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
           {running ? (
             <TouchableOpacity onPress={() => stopWorkoutTimer(day)} activeOpacity={0.8} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: theme.accentRed + '22', borderWidth: 1, borderColor: theme.accentRed + '55', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
               <Ionicons name="stop" size={13} color={theme.accentRed} />
-              <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.accentRed }}>Stop</Text>
+              <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: theme.accentRed }}>Stop</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity onPress={() => startWorkoutTimer(day)} activeOpacity={0.8} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
               <Ionicons name="play" size={13} color={theme.accentBlue} />
-              <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.accentBlue }}>{hasTime ? 'Resume' : 'Start'}</Text>
+              <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: theme.accentBlue }}>{hasTime ? 'Resume' : 'Start'}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -2012,7 +2013,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                     hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                     style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', marginTop: 6, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, gap: 4 }}>
                     <Ionicons name="pulse" size={12} color={theme.accentBlue} />
-                    <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>HR Zones</Text>
+                    <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>HR Zones</Text>
                     <Ionicons name="chevron-forward" size={11} color={theme.accentBlue} />
                   </TouchableOpacity>
                 )}
@@ -2069,7 +2070,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
           </View>
         </View>
         {loggedAt != null && (
-          <Text style={{ alignSelf: 'flex-end', fontSize: 11, fontFamily: 'DMSans_500Medium', color: theme.textDim, marginTop: 2 }}>
+          <Text style={{ alignSelf: 'flex-end', fontSize: 11, fontFamily: Type.uiMedium, color: theme.textDim, marginTop: 2 }}>
             {formatLoggedAt(loggedAt)}
           </Text>
         )}
@@ -2106,7 +2107,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                 <View style={{ flex: 1, height: 0.5, backgroundColor: theme.borderCard }} />
                 <TouchableOpacity onPress={() => unlinkSuperset(unit.groupId)} style={{ flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 10, paddingVertical: 3 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                   <Ionicons name="close" size={11} color={theme.textMuted} />
-                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>UNLINK</Text>
+                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 1 }}>UNLINK</Text>
                 </TouchableOpacity>
                 <View style={{ flex: 1, height: 0.5, backgroundColor: theme.borderCard }} />
               </View>
@@ -2116,7 +2117,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
         out.push(
           <View key={`g_${unit.groupId}`} style={[styles.exerciseItem, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.accentBlue + '55', borderLeftColor: theme.accentBlue, padding: 0, overflow: 'hidden' }]}>
             <View style={{ paddingHorizontal: 14, paddingTop: 10, paddingBottom: 0 }}>
-              <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.accentBlue, fontFamily: 'DMSans_700Bold' }}>SUPERSET</Text>
+              <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.accentBlue, fontFamily: Type.uiBold }}>SUPERSET</Text>
             </View>
             {memberRows}
           </View>
@@ -2132,7 +2133,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
             style={{ alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: -2, marginBottom: 8, paddingVertical: 4, paddingHorizontal: 12, borderRadius: 12, backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard }}
             hitSlop={{ top: 6, bottom: 6, left: 8, right: 8 }}>
             <Ionicons name="link" size={12} color={theme.textMuted} />
-            <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold', letterSpacing: 0.5 }}>Superset</Text>
+            <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.uiSemibold, letterSpacing: 0.5 }}>Superset</Text>
           </TouchableOpacity>
         );
       }
@@ -2171,7 +2172,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
             <HeaderAvatar />
             <View style={{ flex: 1 }}>
               <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Workout</Text>
-              <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', marginTop: 1, letterSpacing: 2, textTransform: 'uppercase' }}>
+              <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, marginTop: 1, letterSpacing: 2, textTransform: 'uppercase' }}>
                 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
               </Text>
             </View>
@@ -2264,7 +2265,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                   {dayTagObjs.length === 0 ? (
                     <View style={{ flexDirection: 'row' }}>
                       <View style={{ borderWidth: 1, borderColor: theme.borderSubtle, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
-                        <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.textDim }}>UNASSIGNED</Text>
+                        <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, color: theme.textDim }}>UNASSIGNED</Text>
                       </View>
                     </View>
                   ) : (
@@ -2272,7 +2273,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                       <View style={{ flexDirection: 'row', gap: 6 }}>
                         {row1.map(t => (
                           <View key={t.id} style={{ backgroundColor: t.color + '99', borderWidth: 1, borderColor: t.color, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
-                            <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: '#ffffff' }}>{t.label.toUpperCase()}</Text>
+                            <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, color: '#ffffff' }}>{t.label.toUpperCase()}</Text>
                           </View>
                         ))}
                       </View>
@@ -2280,7 +2281,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                         <View style={{ flexDirection: 'row', gap: 6 }}>
                           {row2.map(t => (
                             <View key={t.id} style={{ backgroundColor: t.color + '99', borderWidth: 1, borderColor: t.color, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
-                              <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: '#ffffff' }}>{t.label.toUpperCase()}</Text>
+                              <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, color: '#ffffff' }}>{t.label.toUpperCase()}</Text>
                             </View>
                           ))}
                         </View>
@@ -2296,7 +2297,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                     setTagModalInitialTags([...currentTags]);
                     setShowTagModal(true);
                   }}>
-                  <Text style={{ color: theme.accentBlue, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Tags</Text>
+                  <Text style={{ color: theme.accentBlue, fontSize: 12, fontFamily: Type.uiSemibold }}>Tags</Text>
                 </TouchableOpacity>
               </View>
             );
@@ -2306,9 +2307,9 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
         {isRest ? (
           <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, alignItems: 'center', paddingVertical: 32, overflow: 'hidden' }]}>
             <Ionicons name="moon" size={36} color={theme.textMuted} />
-            <Text style={{ color: theme.textPrimary, fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginTop: 12 }}>REST DAY</Text>
-            <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginTop: 8, textAlign: 'center' }}>Recovery is part of the program. Rest well.</Text>
-            <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', marginTop: 12 }}>Tap + to add an exercise anyway</Text>
+            <Text style={{ color: theme.textPrimary, fontSize: 20, fontFamily: Type.num, letterSpacing: 1, marginTop: 12 }}>REST DAY</Text>
+            <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: Type.ui, marginTop: 8, textAlign: 'center' }}>Recovery is part of the program. Rest well.</Text>
+            <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: Type.ui, marginTop: 12 }}>Tap + to add an exercise anyway</Text>
           </View>
         ) : (
           <>
@@ -2320,7 +2321,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
               }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <IconSymbol name="pencil" size={14} color={theme.textMuted} />
-                  <Text style={[styles.progressLabel, { fontSize: 18, color: programs[activeDay]?.customLabel ? theme.textSecondary : theme.textDim, fontFamily: 'DMSans_600SemiBold', flex: 1 }]} numberOfLines={1} ellipsizeMode="tail">{programs[activeDay]?.customLabel || 'Add label...'}</Text>
+                  <Text style={[styles.progressLabel, { fontSize: 18, color: programs[activeDay]?.customLabel ? theme.textSecondary : theme.textDim, fontFamily: Type.uiSemibold, flex: 1 }]} numberOfLines={1} ellipsizeMode="tail">{programs[activeDay]?.customLabel || 'Add label...'}</Text>
                 </View>
               </TouchableOpacity>
               <View ref={progressCountRef} collapsable={false}>
@@ -2371,7 +2372,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                         <View style={{ width: 14, alignItems: 'center' }}>
                           <Ionicons name="watch-outline" size={14} color={theme.accentBlue} />
                         </View>
-                        <Text style={{ fontSize: 10, letterSpacing: 2, color: theme.accentBlue, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Strength Session</Text>
+                        <Text style={{ fontSize: 10, letterSpacing: 2, color: theme.accentBlue, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>Strength Session</Text>
                       </View>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
                         <View style={{ width: 14, alignItems: 'center' }}>
@@ -2385,7 +2386,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                         <TouchableOpacity onPress={() => openHRZones(appleSessions[0])} activeOpacity={0.7} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                           style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, gap: 4 }}>
                           <Ionicons name="pulse" size={12} color={theme.accentBlue} />
-                          <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>HR Zones</Text>
+                          <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>HR Zones</Text>
                           <Ionicons name="chevron-forward" size={11} color={theme.accentBlue} />
                         </TouchableOpacity>
                       )}
@@ -2395,7 +2396,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                     </View>
                   </View>
                   {appleSessions.length > 1 && (
-                    <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium', marginBottom: 12 }}>
+                    <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.uiMedium, marginBottom: 12 }}>
                       Combined from {appleSessions.length} separate workouts
                     </Text>
                   )}
@@ -2404,8 +2405,8 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                       <View key={i} style={{ flex: 1, flexDirection: 'row', alignItems: 'stretch' }}>
                         {i > 0 && <View style={{ width: 0.5, backgroundColor: theme.borderCard, marginVertical: 2 }} />}
                         <View style={{ flex: 1, alignItems: 'center', paddingHorizontal: 2 }}>
-                          <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5, color: theme.textSecondary }}>{s.value}</Text>
-                          <Text style={{ fontSize: 8, letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted, marginTop: 1, textAlign: 'center' }}>{s.label}</Text>
+                          <Text style={{ fontSize: 22, fontFamily: Type.num, letterSpacing: 0.5, color: theme.textSecondary }}>{s.value}</Text>
+                          <Text style={{ fontSize: 8, letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textMuted, marginTop: 1, textAlign: 'center' }}>{s.label}</Text>
                         </View>
                       </View>
                     ))}
@@ -2420,7 +2421,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                           {i < lifts.length - 1 && <View style={{ height: 0.5, backgroundColor: theme.borderCard, marginHorizontal: 14 }} />}
                         </View>
                       ))
-                    : <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular', textAlign: 'center', paddingVertical: 18, paddingHorizontal: 14 }}>No lifts logged in this session yet. Tap the + to add one.</Text>}
+                    : <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.ui, textAlign: 'center', paddingVertical: 18, paddingHorizontal: 14 }}>No lifts logged in this session yet. Tap the + to add one.</Text>}
                 </View>
               </View>
               {/* Cardio stays OUTSIDE the session. */}
@@ -2432,20 +2433,20 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
         {!isRest && displayExercises.length === 0 && appleSessions.length === 0 && (
           <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, alignItems: 'center', paddingVertical: 28, marginBottom: 12 }]}>
             <Ionicons name="barbell-outline" size={32} color={theme.textDim} />
-            <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_600SemiBold', marginTop: 10 }}>No exercises yet</Text>
-            <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginTop: 4, textAlign: 'center', paddingHorizontal: 24, marginBottom: 20 }}>
+            <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: Type.uiSemibold, marginTop: 10 }}>No exercises yet</Text>
+            <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: Type.ui, marginTop: 4, textAlign: 'center', paddingHorizontal: 24, marginBottom: 20 }}>
               Load a routine to fill the day, or add exercises manually
             </Text>
             <View style={{ flexDirection: 'row', gap: 10, width: '100%', paddingHorizontal: 8 }}>
               <TouchableOpacity onPress={openLoadRoutineModal}
                 style={{ flex: 1, backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}>
                 <Ionicons name="repeat-outline" size={18} color={theme.textMuted} style={{ marginBottom: 4 }} />
-                <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Load Routine</Text>
+                <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: Type.uiSemibold }}>Load Routine</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => router.push({ pathname: '/workout-library', params: { selectMode: 'true', day: activeDay } })}
                 style={{ flex: 1, backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}>
                 <Ionicons name="library-outline" size={18} color={theme.textMuted} style={{ marginBottom: 4 }} />
-                <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Browse Library</Text>
+                <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: Type.uiSemibold }}>Browse Library</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -2461,7 +2462,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/workout-library', params: { selectMode: 'true', day: activeDay } }); }}
               style={{ flex: 1.3, backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderWidth: 1.5, borderColor: theme.accentBlue, borderRadius: 12, paddingVertical: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 5 }}>
               <Ionicons name="add" size={19} color={theme.accentBlue} />
-              <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', letterSpacing: 0.3, color: theme.accentBlue }}>Add Exercise</Text>
+              <Text style={{ fontSize: 14, fontFamily: Type.uiBold, letterSpacing: 0.3, color: theme.accentBlue }}>Add Exercise</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => {
@@ -2471,7 +2472,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
               style={{ flex: 1.7, backgroundColor: theme.accentBlue, borderRadius: 12, paddingVertical: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8,
                 shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}>
               <Ionicons name="checkmark-circle" size={18} color={theme.bgPrimary} />
-              <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5, color: theme.bgPrimary }}>View Summary</Text>
+              <Text style={{ fontSize: 15, fontFamily: Type.uiBold, letterSpacing: 0.5, color: theme.bgPrimary }}>View Summary</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -2507,7 +2508,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                           borderWidth: 0.5,
                           borderColor: selected ? effortColor : effortColor + '40',
                         }}>
-                        <Text style={{ fontSize: 28, fontFamily: 'BebasNeue_400Regular', color: selected ? '#ffffff' : effortColor, opacity: selected ? 1 : 0.55 }}>{n}</Text>
+                        <Text style={{ fontSize: 28, fontFamily: Type.num, color: selected ? '#ffffff' : effortColor, opacity: selected ? 1 : 0.55 }}>{n}</Text>
                       </TouchableOpacity>
                     </Animated.View>
                   );
@@ -2519,7 +2520,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
             {(() => {
               const s = cardioLogs[activeDay]?.effortScore;
               const c = !s ? theme.textMuted : s <= 3 ? theme.statusGood : s <= 6 ? theme.statusWarn : s <= 8 ? '#f97316' : theme.statusBad;
-              return <Text style={{ fontSize: 10, letterSpacing: 3, color: c, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>{getEffortLabel(s)}</Text>;
+              return <Text style={{ fontSize: 10, letterSpacing: 3, color: c, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>{getEffortLabel(s)}</Text>;
             })()}
           </Animated.View>
         </View>
@@ -2527,7 +2528,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
         <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <TextInput
-              style={{ flex: 1, fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, fontFamily: 'DMSans_700Bold', padding: 0, marginRight: 8 }}
+              style={{ flex: 1, fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, fontFamily: Type.uiBold, padding: 0, marginRight: 8 }}
               value={workoutNoteNames[activeDay] ?? ''}
               onChangeText={v => setWorkoutNoteNames(prev => ({ ...prev, [activeDay]: v }))}
               onBlur={() => saveState()}
@@ -2583,10 +2584,10 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
             {restExpanded && !countUp && (
               <View style={{ position: 'absolute', left: 90, right: 90, bottom: 16 + CHIP_H + 8, zIndex: 51, flexDirection: 'row', gap: 8 }}>
                 <TouchableOpacity onPress={() => adjustRest(-15)} style={{ flex: 1, backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 12, paddingVertical: 11, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 6 }} hitSlop={{ top: 4, bottom: 4 }}>
-                  <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>−15s</Text>
+                  <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.textSecondary }}>−15s</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => adjustRest(15)} style={{ flex: 1, backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 12, paddingVertical: 11, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 6 }} hitSlop={{ top: 4, bottom: 4 }}>
-                  <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>+15s</Text>
+                  <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.textSecondary }}>+15s</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -2600,15 +2601,15 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                   style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}
                   hitSlop={{ top: 12, bottom: 4 }}>
                   <Ionicons name={countUp ? 'stopwatch-outline' : 'timer-outline'} size={20} color={over ? theme.accentRed : theme.accentBlue} />
-                  <Text style={{ fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: over ? theme.accentRed : theme.textPrimary }}>{num}</Text>
+                  <Text style={{ fontSize: 24, fontFamily: Type.num, letterSpacing: 1, color: over ? theme.accentRed : theme.textPrimary }}>{num}</Text>
                   {!countUp && <Ionicons name={restExpanded ? 'chevron-down' : 'chevron-up'} size={14} color={theme.textMuted} />}
                 </TouchableOpacity>
                 <TouchableOpacity onPress={skipRest} style={{ backgroundColor: theme.accentBlue, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 9 }} hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}>
-                  <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.bgPrimary }}>{countUp ? 'Done' : 'Skip'}</Text>
+                  <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.bgPrimary }}>{countUp ? 'Done' : 'Skip'}</Text>
                 </TouchableOpacity>
               </View>
               {/* Row 2: full-width label (left-aligned to stack under the time) so the exercise name fits. */}
-              <Text numberOfLines={1} style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', textAlign: 'center', fontFamily: 'DMSans_700Bold', color: over ? theme.accentRed : theme.textMuted }}>{over ? 'Over' : 'Rest'}{restTimer.label ? ` · ${restTimer.label}` : ''}</Text>
+              <Text numberOfLines={1} style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', textAlign: 'center', fontFamily: Type.uiBold, color: over ? theme.accentRed : theme.textMuted }}>{over ? 'Over' : 'Rest'}{restTimer.label ? ` · ${restTimer.label}` : ''}</Text>
             </Reanimated.View>
           </>
         );
@@ -2627,16 +2628,16 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
             {/* Row 1: time + Cancel + Done. */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Ionicons name="stopwatch-outline" size={20} color={theme.accentGreen} />
-              <Text style={{ flex: 1, fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.textPrimary }}>{num}</Text>
+              <Text style={{ flex: 1, fontSize: 24, fontFamily: Type.num, letterSpacing: 1, color: theme.textPrimary }}>{num}</Text>
               <TouchableOpacity onPress={cancelHold} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9 }} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
                 <Ionicons name="close" size={15} color={theme.textSecondary} />
               </TouchableOpacity>
               <TouchableOpacity onPress={stopHold} style={{ backgroundColor: theme.accentGreen, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 9 }} hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}>
-                <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.bgPrimary }}>Done</Text>
+                <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.bgPrimary }}>Done</Text>
               </TouchableOpacity>
             </View>
             {/* Row 2: full-width label (left-aligned to stack under the time). */}
-            <Text numberOfLines={1} style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', textAlign: 'center', fontFamily: 'DMSans_700Bold', color: theme.textMuted }}>Hold · {holdTimer.exName} · Set {holdTimer.setIndex + 1}</Text>
+            <Text numberOfLines={1} style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', textAlign: 'center', fontFamily: Type.uiBold, color: theme.textMuted }}>Hold · {holdTimer.exName} · Set {holdTimer.setIndex + 1}</Text>
           </Reanimated.View>
         );
       })()}
@@ -2685,7 +2686,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                 try { return new Date(activeDay + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }); } catch { return ''; }
               })();
               const sectionLabel = (txt: string, color: string = theme.accentBlue) => (
-                <Text style={{ fontSize: 10, letterSpacing: 2.5, color, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 9 }}>{txt}</Text>
+                <Text style={{ fontSize: 10, letterSpacing: 2.5, color, fontFamily: Type.uiBold, textTransform: 'uppercase', marginBottom: 9 }}>{txt}</Text>
               );
               return (
                 <View style={{ backgroundColor: theme.bgSheet, borderRadius: 18, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden',
@@ -2698,7 +2699,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                   <View style={{ marginBottom: 18, paddingBottom: 12, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
                     <Text style={[styles.modalTitle, { color: theme.accentBlue, marginBottom: !!dateLabel ? 2 : 0 }]}>Workout Summary</Text>
                     {!!dateLabel && (
-                      <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted, letterSpacing: 0.3 }}>{dateLabel}</Text>
+                      <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: theme.textMuted, letterSpacing: 0.3 }}>{dateLabel}</Text>
                     )}
                   </View>
 
@@ -2710,8 +2711,8 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                         <View style={{ marginTop: 8, gap: 8 }}>
                           {fs.liftItems.map((it, idx) => (
                             <View key={idx} style={{ backgroundColor: theme.bgInset, borderWidth: 0.5, borderLeftWidth: 2.5, borderColor: theme.borderCard, borderLeftColor: theme.accentBlue, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 }}>
-                              <Text numberOfLines={1} style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary }}>{it.name}</Text>
-                              <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textSecondary, marginTop: 6 }}>{formatLiftSets(it.sets, it.unit, it.trackingType)}</Text>
+                              <Text numberOfLines={1} style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textSecondary }}>{it.name}</Text>
+                              <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: theme.textSecondary, marginTop: 6 }}>{formatLiftSets(it.sets, it.unit, it.trackingType)}</Text>
                             </View>
                           ))}
                         </View>
@@ -2728,9 +2729,9 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                           {fs.cardio.items!.map((it, idx) => (
                             <View key={idx} style={{ backgroundColor: theme.bgInset, borderWidth: 0.5, borderLeftWidth: 2.5, borderColor: theme.borderCard, borderLeftColor: theme.accentAmber, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 }}>
                               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <Text numberOfLines={1} style={{ flex: 1, fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginRight: 8 }}>{it.name}</Text>
+                                <Text numberOfLines={1} style={{ flex: 1, fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textSecondary, marginRight: 8 }}>{it.name}</Text>
                                 {it.durationSec > 0 && (
-                                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted }}>{formatDuration(it.durationSec)}</Text>
+                                  <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: theme.textMuted }}>{formatDuration(it.durationSec)}</Text>
                                 )}
                               </View>
                               {(it.avgHr != null || it.maxHr != null) ? (
@@ -2738,20 +2739,20 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                                   {it.avgHr != null && (
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                       <Ionicons name="heart-outline" size={12} color={theme.accentAmber} />
-                                      <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{it.avgHr}</Text>
-                                      <Text style={{ fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted }}>Avg BPM</Text>
+                                      <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: theme.textSecondary }}>{it.avgHr}</Text>
+                                      <Text style={{ fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textMuted }}>Avg BPM</Text>
                                     </View>
                                   )}
                                   {it.maxHr != null && (
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                       <Ionicons name="heart" size={12} color={theme.accentAmber} />
-                                      <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{it.maxHr}</Text>
-                                      <Text style={{ fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted }}>Max BPM</Text>
+                                      <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: theme.textSecondary }}>{it.maxHr}</Text>
+                                      <Text style={{ fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textMuted }}>Max BPM</Text>
                                     </View>
                                   )}
                                 </View>
                               ) : (
-                                <Text style={{ fontSize: 11, fontFamily: 'DMSans_500Medium', color: theme.textMuted, marginTop: 5 }}>No heart rate recorded</Text>
+                                <Text style={{ fontSize: 11, fontFamily: Type.uiMedium, color: theme.textMuted, marginTop: 5 }}>No heart rate recorded</Text>
                               )}
                             </View>
                           ))}
@@ -2768,26 +2769,26 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                     <View style={{ backgroundColor: theme.accentAmber + '14', borderWidth: 1, borderColor: theme.accentAmber + '40', borderRadius: 12, padding: 14, marginBottom: 16 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 10 }}>
                         <Ionicons name="trophy" size={16} color={theme.accentAmber} />
-                        <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.accentAmber, flex: 1 }}>
+                        <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.accentAmber, flex: 1 }}>
                           {`You set ${totalPRs} PR${totalPRs !== 1 ? 's' : ''} today`}
                         </Text>
                         <TooltipIcon tooltipKey="personal_records" hideTour color={theme.accentAmber} />
                       </View>
                       {fs.prHits.map((pr: any, i: number) => (
                         <View key={`l${i}`} style={{ marginBottom: (i < fs.prHits.length - 1 || cardioPrs.length > 0) ? 10 : 0 }}>
-                          <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, marginBottom: 2 }}>{pr.name}</Text>
+                          <Text style={{ fontSize: 14, fontFamily: Type.uiBold, color: theme.textPrimary, marginBottom: 2 }}>{pr.name}</Text>
                           {pr.weightPR && (
-                            <Text style={{ fontSize: 12, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>
+                            <Text style={{ fontSize: 12, fontFamily: Type.uiMedium, color: theme.textSecondary }}>
                               New heaviest set: {pr.weightVal} {weightUnitLabel(pr.unit)} × {pr.weightReps}
                             </Text>
                           )}
                           {pr.e1rmPR && (
-                            <Text style={{ fontSize: 12, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>
+                            <Text style={{ fontSize: 12, fontFamily: Type.uiMedium, color: theme.textSecondary }}>
                               New estimated 1-rep max: {pr.e1rmVal} {weightUnitLabel(pr.unit)}
                             </Text>
                           )}
                           {pr.durationPR && (
-                            <Text style={{ fontSize: 12, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>
+                            <Text style={{ fontSize: 12, fontFamily: Type.uiMedium, color: theme.textSecondary }}>
                               New longest hold: {formatHold(pr.durationVal)}{pr.durationWeight != null && pr.durationWeight > 0 ? ` at ${pr.durationWeight} ${weightUnitLabel(pr.unit)}` : ''}
                             </Text>
                           )}
@@ -2795,14 +2796,14 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                       ))}
                       {cardioPrs.map((pr, i) => (
                         <View key={`c${i}`} style={{ marginBottom: i < cardioPrs.length - 1 ? 10 : 0 }}>
-                          <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, marginBottom: 2 }}>{pr.label}</Text>
+                          <Text style={{ fontSize: 14, fontFamily: Type.uiBold, color: theme.textPrimary, marginBottom: 2 }}>{pr.label}</Text>
                           {pr.distancePR && (
-                            <Text style={{ fontSize: 12, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>
+                            <Text style={{ fontSize: 12, fontFamily: Type.uiMedium, color: theme.textSecondary }}>
                               New furthest: {pr.distanceMi} mi
                             </Text>
                           )}
                           {pr.durationPR && (
-                            <Text style={{ fontSize: 12, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>
+                            <Text style={{ fontSize: 12, fontFamily: Type.uiMedium, color: theme.textSecondary }}>
                               New longest: {formatDuration(pr.durationSec)}
                             </Text>
                           )}
@@ -2814,7 +2815,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
 
                   <TouchableOpacity onPress={closeFinishSummary}
                     style={{ backgroundColor: theme.accentBlue, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 10 }}>
-                    <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: theme.bgPrimary }}>Done</Text>
+                    <Text style={{ fontSize: 15, fontFamily: Type.uiBold, color: theme.bgPrimary }}>Done</Text>
                   </TouchableOpacity>
                   </ScrollView>
                 </View>
@@ -2838,8 +2839,8 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
             <View style={{ alignItems: 'center', marginBottom: 14 }}>
               <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
             </View>
-            <Text style={{ fontSize: 12, letterSpacing: 2.5, color: theme.accentBlue, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', textAlign: 'center', marginBottom: 6 }}>Workout Duration</Text>
-            <Text style={{ fontSize: 13, fontFamily: 'DMSans_500Medium', color: theme.textMuted, textAlign: 'center', marginBottom: 16 }}>How many minutes did you train? Set to 0 to clear it.</Text>
+            <Text style={{ fontSize: 12, letterSpacing: 2.5, color: theme.accentBlue, fontFamily: Type.uiBold, textTransform: 'uppercase', textAlign: 'center', marginBottom: 6 }}>Workout Duration</Text>
+            <Text style={{ fontSize: 13, fontFamily: Type.uiMedium, color: theme.textMuted, textAlign: 'center', marginBottom: 16 }}>How many minutes did you train? Set to 0 to clear it.</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 18 }}>
               <TextInput
                 value={durationEditText}
@@ -2847,20 +2848,20 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                 keyboardType="number-pad"
                 placeholder="0"
                 placeholderTextColor={theme.textPlaceholder}
-                style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 18, fontSize: 24, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, textAlign: 'center', minWidth: 120 }}
+                style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 18, fontSize: 24, fontFamily: Type.uiBold, color: theme.textPrimary, textAlign: 'center', minWidth: 120 }}
                 autoFocus
                 maxLength={4}
               />
-              <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted }}>min</Text>
+              <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.textMuted }}>min</Text>
             </View>
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <TouchableOpacity onPress={() => { setDurationEditDay(null); setDurationEditText(''); durationOverlay.value = 0; durationCardScale.value = 0.85; durationCardOpacity.value = 0; }}
                 style={{ flex: 1, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 12, paddingVertical: 13, alignItems: 'center' }}>
-                <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: theme.textMuted }}>Cancel</Text>
+                <Text style={{ fontSize: 14, fontFamily: Type.uiBold, color: theme.textMuted }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => { durationOverlay.value = 0; durationCardScale.value = 0.85; durationCardOpacity.value = 0; saveDurationEdit(); }}
                 style={{ flex: 1, backgroundColor: theme.accentBlue, borderRadius: 12, paddingVertical: 13, alignItems: 'center' }}>
-                <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: theme.bgPrimary }}>Save</Text>
+                <Text style={{ fontSize: 14, fontFamily: Type.uiBold, color: theme.bgPrimary }}>Save</Text>
               </TouchableOpacity>
             </View>
           </Reanimated.View>
@@ -2914,7 +2915,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                         { label: 'Avg HR', key: 'hr' },
                       ].map(field => (
                         <View key={field.key} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{field.label}</Text>
+                          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui }}>{field.label}</Text>
                           <TextInput
                             style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, width: 100, textAlign: 'right', marginBottom: 0 }]}
                             placeholder="0"
@@ -2932,8 +2933,8 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                         Both default to lb/reps; mirror the inline set-row header toggles. */}
                     {(() => {
                       const segBtn = (active: boolean) => [{ flex: 1, borderWidth: 1, borderRadius: 10, paddingVertical: 9, alignItems: 'center' as const, backgroundColor: active ? theme.bgSelected : theme.bgInput, borderColor: active ? theme.accentBlueBorder : theme.borderInput }];
-                      const segTxt = (active: boolean) => [{ fontSize: 13, fontFamily: 'DMSans_700Bold' as const, color: active ? theme.accentBlue : theme.textMuted }];
-                      const cap = { fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase' as const, color: theme.textMuted, fontFamily: 'DMSans_700Bold' as const, marginBottom: 5 };
+                      const segTxt = (active: boolean) => [{ fontSize: 13, fontFamily: Type.uiBold, color: active ? theme.accentBlue : theme.textMuted }];
+                      const cap = { fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase' as const, color: theme.textMuted, fontFamily: Type.uiBold, marginBottom: 5 };
                       const set = (patch: any) => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setForm(p => ({ ...p, ...patch })); };
                       return (
                         <View style={{ flexDirection: 'row', gap: 12, marginBottom: 10 }}>
@@ -2991,7 +2992,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                 <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
               </TouchableOpacity>
               <View style={{ padding: 20, paddingTop: 8 }}>
-                <Text style={{ color: theme.accentBlueRaw, fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, textAlign: 'center', marginBottom: 14 }}>EDIT DAY LABEL</Text>
+                <Text style={{ color: theme.accentBlueRaw, fontSize: 16, fontFamily: Type.num, letterSpacing: 2, textAlign: 'center', marginBottom: 14 }}>EDIT DAY LABEL</Text>
                 <TextInput
                   style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, marginBottom: 16 }]}
                   value={labelInput}
@@ -3032,15 +3033,15 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
           <TouchableOpacity style={{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }} activeOpacity={1} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowTagModal(false); }}>
             <TouchableOpacity activeOpacity={1} onPress={e => e.stopPropagation()}>
               <View style={{ backgroundColor: theme.bgSheet, borderRadius: 16, padding: 20, width: 320, borderWidth: 1, borderColor: theme.borderCard }}>
-                <Text style={{ color: theme.textPrimary, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginBottom: 4 }}>ASSIGN TAGS</Text>
-                <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: 'DMSans_400Regular', marginBottom: 16 }}>{activeDateObj?.dayName} {activeDateObj?.label} · tap to toggle</Text>
+                <Text style={{ color: theme.textPrimary, fontSize: 18, fontFamily: Type.num, letterSpacing: 2, marginBottom: 4 }}>ASSIGN TAGS</Text>
+                <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: Type.ui, marginBottom: 16 }}>{activeDateObj?.dayName} {activeDateObj?.label} · tap to toggle</Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
                   {tags.map(t => {
                     const active = (programs[activeDay]?.tags || weeklyTemplate[activeDayName]?.tags || []).includes(t.id);
                     return (
                       <TouchableOpacity key={t.id} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); toggleDayTag(t.id); }}
                         style={{ backgroundColor: active ? t.color + '99' : theme.bgInput, borderWidth: 1, borderColor: active ? t.color : theme.borderInput, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 }}>
-                        <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: active ? '#ffffff' : theme.textMuted }}>{t.label}</Text>
+                        <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: active ? '#ffffff' : theme.textMuted }}>{t.label}</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -3056,7 +3057,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                         showToast('Tags saved', undefined, 'success');
                       }}
                       style={{ marginBottom: 8, paddingVertical: 12, alignItems: 'center', borderRadius: 8, backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder }}>
-                      <Text style={{ color: theme.accentGreen, fontSize: 13, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>CONFIRM</Text>
+                      <Text style={{ color: theme.accentGreen, fontSize: 13, fontFamily: Type.uiBold, letterSpacing: 1 }}>CONFIRM</Text>
                     </TouchableOpacity>
                   ) : null;
                 })()}
@@ -3069,7 +3070,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
   openManageTags();
 }}
                   style={{ paddingVertical: 10, alignItems: 'center', borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
-                  <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Manage Tags</Text>
+                  <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: Type.uiSemibold }}>Manage Tags</Text>
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>
@@ -3102,7 +3103,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
               </TouchableOpacity>
               <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
               <View style={{ paddingHorizontal: 20 }}>
-                <Text style={{ color: theme.textPrimary, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginBottom: 16 }}>MANAGE TAGS</Text>
+                <Text style={{ color: theme.textPrimary, fontSize: 18, fontFamily: Type.num, letterSpacing: 2, marginBottom: 16 }}>MANAGE TAGS</Text>
 
                 {/* Existing tags list */}
                 <View style={{ maxHeight: 280 }}>
@@ -3123,13 +3124,13 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                               <Ionicons name="reorder-three-outline" size={18} color={theme.textDim} />
                             </TouchableOpacity>
                             <View style={{ backgroundColor: displayColor + '99', borderWidth: 1, borderColor: displayColor, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                              <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: '#ffffff', flex: 1 }}>{displayLabel.toUpperCase()}</Text>
+                              <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: '#ffffff', flex: 1 }}>{displayLabel.toUpperCase()}</Text>
                               {t.locked && <Ionicons name="lock-closed" size={10} color="rgba(255,255,255,0.6)" />}
                             </View>
                             {!t.locked && (
                               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditingTag(t); setTagLabelInput(t.label); setTagColorInput(t.color); }}
                                 style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: isBeingEdited ? theme.accentGreenBorder : theme.accentBlueBorder, backgroundColor: isBeingEdited ? theme.accentGreenBg : theme.accentBlueBg }}>
-                                <Text style={{ fontSize: 11, color: isBeingEdited ? theme.accentGreen : theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>{isBeingEdited ? 'Editing' : 'Edit'}</Text>
+                                <Text style={{ fontSize: 11, color: isBeingEdited ? theme.accentGreen : theme.accentBlue, fontFamily: Type.uiSemibold }}>{isBeingEdited ? 'Editing' : 'Edit'}</Text>
                               </TouchableOpacity>
                             )}
                             {!t.locked && (
@@ -3140,7 +3141,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                                   { text: 'Delete', style: 'destructive', onPress: () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy); saveTags(tags.filter(x => x.id !== t.id)); } },
                                 ]);
                               }} style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: theme.accentRedBorder, backgroundColor: theme.accentRedBg }}>
-                                <Text style={{ fontSize: 11, color: theme.accentRed, fontFamily: 'DMSans_600SemiBold' }}>Delete</Text>
+                                <Text style={{ fontSize: 11, color: theme.accentRed, fontFamily: Type.uiSemibold }}>Delete</Text>
                               </TouchableOpacity>
                             )}
                           </View>
@@ -3152,11 +3153,11 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
 
                 {/* Create / edit form */}
                 <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
-                  <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>
+                  <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>
                     {editingTag ? 'Edit Tag' : 'New Tag'}
                   </Text>
                   <TextInput
-                    style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: 'DMSans_400Regular', marginBottom: 12 }}
+                    style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: Type.ui, marginBottom: 12 }}
                     placeholder="Tag name (max 20 chars)"
                     placeholderTextColor={theme.textPlaceholder}
                     value={tagLabelInput}
@@ -3175,7 +3176,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                     {editingTag && (
                       <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditingTag(null); setTagLabelInput(''); setTagColorInput(TAG_COLOR_PALETTE[0]); }}
                         style={{ flex: 1, padding: 12, borderRadius: 8, borderWidth: 1, borderColor: theme.borderInput, backgroundColor: theme.bgInput, alignItems: 'center' }}>
-                        <Text style={{ color: theme.textMuted, fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>Cancel</Text>
+                        <Text style={{ color: theme.textMuted, fontFamily: Type.uiSemibold, fontSize: 14 }}>Cancel</Text>
                       </TouchableOpacity>
                     )}
                     <TouchableOpacity
@@ -3199,7 +3200,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                         setTimeout(() => showToast(msg, sub, 'success'), 400);
                       }}
                       style={{ flex: 1, padding: 12, borderRadius: 8, backgroundColor: tagColorInput, alignItems: 'center' }}>
-                      <Text style={{ color: '#ffffff', fontFamily: 'DMSans_700Bold', fontSize: 14 }}>{editingTag ? 'Save Changes' : 'Create Tag'}</Text>
+                      <Text style={{ color: '#ffffff', fontFamily: Type.uiBold, fontSize: 14 }}>{editingTag ? 'Save Changes' : 'Create Tag'}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -3224,7 +3225,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openLoadRoutineModal(); }}
                 style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Load Routine</Text>
+                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Load Routine</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openLoadRoutineModal(); }}
@@ -3240,7 +3241,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); router.push({ pathname: '/workout-library', params: { selectMode: 'true', day: activeDay } }); }}
                 style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Add Exercise</Text>
+                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Add Exercise</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); router.push({ pathname: '/workout-library', params: { selectMode: 'true', day: activeDay } }); }}
@@ -3283,7 +3284,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                     <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: theme.textDim }} />
                   </TouchableOpacity>
                   <View style={{ paddingHorizontal: 20, paddingTop: 6, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-                    <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw }}>LOAD ROUTINE</Text>
+                    <Text style={{ fontSize: 22, fontFamily: Type.num, letterSpacing: 2, color: theme.accentBlueRaw }}>LOAD ROUTINE</Text>
                   </View>
 
                   <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 28 }}>
@@ -3295,8 +3296,8 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                             style={{ backgroundColor: isSelected ? theme.bgSelected : theme.bgInset, borderRadius: 10, paddingHorizontal: 14, paddingTop: 12, paddingBottom: isSelected ? 14 : 12, marginBottom: 8, borderWidth: 1, borderColor: isSelected ? theme.accentBlueBorder : theme.borderCard }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                               <View style={{ flex: 1 }}>
-                                <Text style={{ color: isSelected ? theme.accentBlue : theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>{r.name}</Text>
-                                <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>
+                                <Text style={{ color: isSelected ? theme.accentBlue : theme.textPrimary, fontSize: 14, fontFamily: Type.uiSemibold }}>{r.name}</Text>
+                                <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: Type.ui, marginTop: 2 }}>
                                   {r.exercises.length} exercise{r.exercises.length !== 1 ? 's' : ''}
                                   {!isSelected && r.tags.length > 0 ? ` · ${r.tags.map(tid => tags.find(t => t.id === tid)?.label).filter(Boolean).join(', ')}` : ''}
                                 </Text>
@@ -3309,9 +3310,9 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                                   <View key={ex.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 3 }}>
                                     <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8 }}>
                                       <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: theme.accentBlue, marginRight: 8 }} />
-                                      <Text style={{ color: theme.textPrimary, fontSize: 12, fontFamily: 'DMSans_400Regular', flex: 1 }}>{ex.name}</Text>
+                                      <Text style={{ color: theme.textPrimary, fontSize: 12, fontFamily: Type.ui, flex: 1 }}>{ex.name}</Text>
                                     </View>
-                                    <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: 'DMSans_400Regular' }}>
+                                    <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: Type.ui }}>
                                       {ex.isCardio ? `${ex.duration}min` : ex.trackingType === 'time' ? `${ex.sets}× ${formatHold(parseInt(ex.reps) || 0)}` : `${ex.sets}×${ex.reps}`}
                                     </Text>
                                   </View>
@@ -3323,7 +3324,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                                       if (!tag) return null;
                                       return (
                                         <View key={tid} style={{ backgroundColor: tag.color + '40', borderWidth: 1, borderColor: tag.color, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3 }}>
-                                          <Text style={{ color: tag.color, fontSize: 10, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>{tag.label.toUpperCase()}</Text>
+                                          <Text style={{ color: tag.color, fontSize: 10, fontFamily: Type.uiBold, letterSpacing: 1 }}>{tag.label.toUpperCase()}</Text>
                                         </View>
                                       );
                                     })}
@@ -3336,17 +3337,17 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                       };
                       return (
                         <>
-                          <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 10 }}>PRESETS</Text>
+                          <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase', marginBottom: 10 }}>PRESETS</Text>
                           {PRESET_ROUTINES.map(renderRoutineRow)}
                           {routines.length > 0 && (
                             <>
-                              <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 10, marginTop: 8 }}>MY ROUTINES</Text>
+                              <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase', marginBottom: 10, marginTop: 8 }}>MY ROUTINES</Text>
                               {routines.map(renderRoutineRow)}
                             </>
                           )}
 
                           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, marginTop: 8 }}>
-                            <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>{weekLabel}</Text>
+                            <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>{weekLabel}</Text>
                             <View style={{ flexDirection: 'row', gap: 2 }}>
                               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setLoadPickerWeekOffset(o => o - 1); }} disabled={loadPickerWeekOffset <= 0} style={{ padding: 6, opacity: loadPickerWeekOffset <= 0 ? 0.25 : 1 }}>
                                 <Ionicons name="chevron-back" size={18} color={theme.textMuted} />
@@ -3366,8 +3367,8 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                                   disabled={isPast}
                                   onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setSelectedLoadDays(prev => prev.includes(d.key) ? prev.filter(k => k !== d.key) : [...prev, d.key]); }}
                                   style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: isSel ? theme.accentBlue : theme.bgInset, borderWidth: 1, borderColor: isSel ? theme.accentBlue : isToday ? theme.textSecondary : theme.borderCard, opacity: isPast ? 0.25 : 1 }}>
-                                  <Text style={{ fontSize: 10, fontFamily: 'DMSans_700Bold', color: isSel ? '#ffffff' : theme.textMuted, letterSpacing: 0.5 }}>{d.name.toUpperCase()}</Text>
-                                  <Text style={{ fontSize: 9, fontFamily: 'DMSans_400Regular', color: isSel ? 'rgba(255,255,255,0.7)' : theme.textDim, marginTop: 2 }}>{d.label}</Text>
+                                  <Text style={{ fontSize: 10, fontFamily: Type.uiBold, color: isSel ? '#ffffff' : theme.textMuted, letterSpacing: 0.5 }}>{d.name.toUpperCase()}</Text>
+                                  <Text style={{ fontSize: 9, fontFamily: Type.ui, color: isSel ? 'rgba(255,255,255,0.7)' : theme.textDim, marginTop: 2 }}>{d.label}</Text>
                                 </TouchableOpacity>
                               );
                             })}
@@ -3376,7 +3377,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                           <TouchableOpacity onPress={handleLoadRoutine}
                             disabled={!selectedRoutine || selectedLoadDays.length === 0}
                             style={{ paddingVertical: 14, borderRadius: 10, alignItems: 'center', backgroundColor: theme.accentBlue, opacity: selectedRoutine && selectedLoadDays.length > 0 ? 1 : 0.4 }}>
-                            <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 18, letterSpacing: 2 }}>
+                            <Text style={{ color: '#ffffff', fontFamily: Type.num, fontSize: 18, letterSpacing: 2 }}>
                               LOAD TO {selectedLoadDays.length} {selectedLoadDays.length === 1 ? 'DAY' : 'DAYS'}
                             </Text>
                           </TouchableOpacity>
@@ -3399,7 +3400,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
               <View pointerEvents="auto" style={{ backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, overflow: 'hidden' }}>
                 <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
-                    <Text style={{ flex: 1, fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1.5, color: theme.accentBlueRaw, paddingRight: 12 }}>{infoExercise.name}</Text>
+                    <Text style={{ flex: 1, fontSize: 22, fontFamily: Type.num, letterSpacing: 1.5, color: theme.accentBlueRaw, paddingRight: 12 }}>{infoExercise.name}</Text>
                     <TouchableOpacity onPress={closeInfoModal} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                       <Ionicons name="close" size={20} color={theme.textMuted} />
                     </TouchableOpacity>
@@ -3408,18 +3409,18 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                   {(infoExercise.primaryMuscles?.length || infoExercise.secondaryMuscles?.length) ? (
                     <View style={{ marginBottom: 16 }}>
                       <MuscleMap primaryMuscles={infoExercise.primaryMuscles} secondaryMuscles={infoExercise.secondaryMuscles} scale={0.62} />
-                      <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 8, marginTop: 12 }}>MUSCLES</Text>
+                      <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase', marginBottom: 8, marginTop: 12 }}>MUSCLES</Text>
                       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
                         {infoExercise.primaryMuscles?.map((m: string) => (
                           <View key={m} style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
-                            <Text style={{ color: theme.accentBlue, fontSize: 11, fontFamily: 'DMSans_600SemiBold' }}>
+                            <Text style={{ color: theme.accentBlue, fontSize: 11, fontFamily: Type.uiSemibold }}>
                               {m.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
                             </Text>
                           </View>
                         ))}
                         {infoExercise.secondaryMuscles?.map((m: string) => (
                           <View key={m} style={{ backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
-                            <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: 'DMSans_500Medium' }}>
+                            <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: Type.uiMedium }}>
                               {m.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
                             </Text>
                           </View>
@@ -3430,13 +3431,13 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
 
                   {infoExercise.instructions?.length ? (
                     <View>
-                      <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 10 }}>HOW TO PERFORM</Text>
+                      <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase', marginBottom: 10 }}>HOW TO PERFORM</Text>
                       {infoExercise.instructions.map((step: string, i: number) => (
                         <View key={i} style={{ flexDirection: 'row', marginBottom: 10, gap: 10 }}>
                           <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
-                            <Text style={{ color: theme.accentBlue, fontSize: 11, fontFamily: 'DMSans_700Bold' }}>{i + 1}</Text>
+                            <Text style={{ color: theme.accentBlue, fontSize: 11, fontFamily: Type.uiBold }}>{i + 1}</Text>
                           </View>
-                          <Text style={{ flex: 1, color: theme.textSecondary, fontSize: 13, fontFamily: 'DMSans_400Regular', lineHeight: 19 }}>{step}</Text>
+                          <Text style={{ flex: 1, color: theme.textSecondary, fontSize: 13, fontFamily: Type.ui, lineHeight: 19 }}>{step}</Text>
                         </View>
                       ))}
                     </View>
@@ -3460,22 +3461,22 @@ const styles = StyleSheet.create({
   container:            { flex: 1 },
   content:              { padding: 16 },
   header:               { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 0.5 },
-  headerLabel:          { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: 'DMSans_700Bold' },
-  headerTitle:          { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  headerLabel:          { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: Type.uiBold },
+  headerTitle:          { fontSize: displaySize(27), fontFamily: Type.display, letterSpacing: DISPLAY_TRACKING, ...(DISPLAY_CAPS ? { textTransform: 'uppercase' as const } : {}) },
   dayTabsContainer:     { marginBottom: 16 },
   dayTab:               { width: 72, height: 74, paddingVertical: 8, borderRadius: 8, borderWidth: 0.5, marginRight: 8, alignItems: 'center', justifyContent: 'center' },
-  dayTabText:           { fontSize: 13, fontWeight: '700', fontFamily: 'DMSans_700Bold' },
-  dayTabSub:            { fontSize: 9, letterSpacing: 1, marginTop: 2, fontFamily: 'DMSans_700Bold' },
+  dayTabText:           { fontSize: 13, fontWeight: '700', fontFamily: Type.uiBold },
+  dayTabSub:            { fontSize: 9, letterSpacing: 1, marginTop: 2, fontFamily: Type.uiBold },
   cardioCard:           { borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14, padding: 28, alignItems: 'center' },
   cardioIcon:           { fontSize: 40, marginBottom: 12 },
-  cardioTitle:          { fontSize: 26, letterSpacing: 2, marginBottom: 8, fontFamily: 'BebasNeue_400Regular' },
-  cardioDetail:         { fontSize: 10, textAlign: 'center', lineHeight: 20, fontFamily: 'DMSans_700Bold', marginBottom: 16, letterSpacing: 1.5, textTransform: 'uppercase' },
+  cardioTitle:          { fontSize: 26, letterSpacing: 2, marginBottom: 8, fontFamily: Type.num },
+  cardioDetail:         { fontSize: 10, textAlign: 'center', lineHeight: 20, fontFamily: Type.uiBold, marginBottom: 16, letterSpacing: 1.5, textTransform: 'uppercase' },
   cardioCompleteBtn:    { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8, borderWidth: 0.5 },
   cardioCompleteBtnDone:{ },
-  cardioCompleteBtnText:{ fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 2 },
+  cardioCompleteBtnText:{ fontFamily: Type.num, fontSize: 16, letterSpacing: 2 },
   progressRow:          { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  progressLabel:        { fontSize: 15, flex: 1, fontFamily: 'DMSans_600SemiBold' },
-  progressCount:        { fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
+  progressLabel:        { fontSize: 15, flex: 1, fontFamily: Type.uiSemibold },
+  progressCount:        { fontSize: 24, fontFamily: Type.num, letterSpacing: 1 },
   progressBarBg:        { height: 2, borderRadius: 2, overflow: 'hidden', marginBottom: 16 },
   progressBarFill:      { height: '100%', borderRadius: 2 },
   exerciseItem:         { borderWidth: 0.5, borderLeftWidth: 3, borderRadius: 10, padding: 14, marginBottom: 8, shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
@@ -3483,36 +3484,36 @@ const styles = StyleSheet.create({
   exerciseRow:          { flexDirection: 'row', alignItems: 'flex-start' },
   exerciseInfo:         { flex: 1 },
   exerciseNameRow:      { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 },
-  exerciseName:         { fontSize: 14, fontWeight: '600', fontFamily: 'DMSans_600SemiBold' },
+  exerciseName:         { fontSize: 14, fontWeight: '600', fontFamily: Type.uiSemibold },
   exerciseNameDone:     {},
-  exerciseMeta:         { fontSize: 10, marginBottom: 4, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' },
-  exerciseNote:         { fontSize: 11, fontStyle: 'italic', lineHeight: 16, fontFamily: 'DMSans_400Regular' },
+  exerciseMeta:         { fontSize: 10, marginBottom: 4, fontFamily: Type.uiBold, letterSpacing: 1, textTransform: 'uppercase' },
+  exerciseNote:         { fontSize: 11, fontStyle: 'italic', lineHeight: 16, fontFamily: Type.ui },
   badge:                { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 3 },
-  badgeText:            { fontSize: 9, fontWeight: '700', letterSpacing: 1, fontFamily: 'DMSans_700Bold' },
+  badgeText:            { fontSize: 9, fontWeight: '700', letterSpacing: 1, fontFamily: Type.uiBold },
   checkCircle:          { width: 24, height: 24, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
   checkMark:            { fontSize: 13, fontWeight: '700' },
   addExBtn:             { marginTop: 12, padding: 14, borderWidth: 0.5, borderRadius: 10, alignItems: 'center' },
-  addExBtnText:         { fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 2 },
+  addExBtnText:         { fontFamily: Type.num, fontSize: 16, letterSpacing: 2 },
   completeMsg:          { padding: 16, marginTop: 8, alignItems: 'center' },
-  completeMsgText:      { fontSize: 32, letterSpacing: 4, fontFamily: 'BebasNeue_400Regular' },
+  completeMsgText:      { fontSize: 32, letterSpacing: 4, fontFamily: Type.num },
   card:                 { borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14, padding: 16, shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
-  cardLabel:            { fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold' },
-  notesInput:           { borderWidth: 0.5, borderRadius: 8, padding: 10, fontSize: 13, minHeight: 80, textAlignVertical: 'top', marginTop: 10, fontFamily: 'DMSans_400Regular' },
+  cardLabel:            { fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold },
+  notesInput:           { borderWidth: 0.5, borderRadius: 8, padding: 10, fontSize: 13, minHeight: 80, textAlignVertical: 'top', marginTop: 10, fontFamily: Type.ui },
   saveNoteBtn:          { marginTop: 8, padding: 10, borderWidth: 0.5, borderRadius: 6, alignItems: 'center' },
-  saveNoteBtnText:      { fontSize: 12, fontFamily: 'DMSans_600SemiBold' },
+  saveNoteBtnText:      { fontSize: 12, fontFamily: Type.uiSemibold },
   modalOverlay:         { flex: 1, justifyContent: 'flex-end' },
   modal:                { borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, borderWidth: 0.5 },
-  modalTitle:           { fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginBottom: 16 },
-  modalInput:           { borderWidth: 0.5, borderRadius: 8, padding: 10, fontSize: 14, fontFamily: 'DMSans_400Regular', marginBottom: 10 },
+  modalTitle:           { fontSize: 22, fontFamily: Type.num, letterSpacing: 1, marginBottom: 16 },
+  modalInput:           { borderWidth: 0.5, borderRadius: 8, padding: 10, fontSize: 14, fontFamily: Type.ui, marginBottom: 10 },
   modalRow:             { flexDirection: 'row', gap: 8 },
   modalBtns:            { flexDirection: 'row', gap: 8, marginTop: 8 },
   modalCancelBtn:       { flex: 1, padding: 12, borderWidth: 0.5, borderRadius: 8, alignItems: 'center' },
-  modalCancelBtnText:   { fontFamily: 'DMSans_600SemiBold', fontSize: 14 },
+  modalCancelBtnText:   { fontFamily: Type.uiSemibold, fontSize: 14 },
   modalSaveBtn:         { flex: 1, padding: 12, borderRadius: 8, alignItems: 'center' },
-  modalSaveBtnText:     { fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 1 },
+  modalSaveBtnText:     { fontFamily: Type.num, fontSize: 16, letterSpacing: 1 },
   libraryBtn:           { borderWidth: 1, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 },
-  libraryBtnText:       { fontSize: 14, fontFamily: 'DMSans_700Bold' },
+  libraryBtnText:       { fontSize: 14, fontFamily: Type.uiBold },
   cardioFieldRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 0.5 },
-  cardioFieldLabel:     { fontSize: 13, fontFamily: 'DMSans_400Regular', flex: 1 },
-  cardioFieldInput:     { borderWidth: 0.5, borderRadius: 6, padding: 8, fontSize: 14, fontFamily: 'DMSans_400Regular', width: 100, textAlign: 'right' },
+  cardioFieldLabel:     { fontSize: 13, fontFamily: Type.ui, flex: 1 },
+  cardioFieldInput:     { borderWidth: 0.5, borderRadius: 6, padding: 8, fontSize: 14, fontFamily: Type.ui, width: 100, textAlign: 'right' },
 });

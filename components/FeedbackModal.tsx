@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../theme';
 import { useToast, ToastRenderer } from './Toast';
+import { Type } from '../typography';
 
 // Send Feedback. Opened from Settings > About. Collects a type + a description and hands off to
 // the user's mail app via a mailto link, addressed to the dev inbox. No backend (per spec). A
@@ -108,12 +109,12 @@ export default function FeedbackModal({ visible, onClose }: Props) {
             <View style={{ paddingHorizontal: 20, paddingBottom: 14, paddingTop: 6, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Ionicons name="chatbox-ellipses" size={16} color={theme.accentBlue} />
-                <Text style={{ fontSize: 18, color: theme.accentBlue, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 }}>SEND FEEDBACK</Text>
+                <Text style={{ fontSize: 18, color: theme.accentBlue, fontFamily: Type.num, letterSpacing: 2 }}>SEND FEEDBACK</Text>
               </View>
             </View>
 
             <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 24 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-              <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_400Regular', lineHeight: 19, marginBottom: 16 }}>
+              <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.ui, lineHeight: 19, marginBottom: 16 }}>
                 Found a bug or have an idea? Send it our way. It opens your mail app with the details filled in.
               </Text>
 
@@ -134,7 +135,7 @@ export default function FeedbackModal({ visible, onClose }: Props) {
                         borderColor: active ? theme.accentBlueBorder : theme.borderCard,
                       }}
                     >
-                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: active ? theme.accentBlue : theme.textSecondary }}>{t}</Text>
+                      <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: active ? theme.accentBlue : theme.textSecondary }}>{t}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -152,7 +153,7 @@ export default function FeedbackModal({ visible, onClose }: Props) {
                 multiline
                 style={{
                   backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 10,
-                  color: theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_400Regular',
+                  color: theme.textPrimary, fontSize: 14, fontFamily: Type.ui,
                   paddingHorizontal: 12, paddingVertical: 12, minHeight: 120, textAlignVertical: 'top',
                 }}
               />
@@ -160,7 +161,7 @@ export default function FeedbackModal({ visible, onClose }: Props) {
               {/* Screenshot note */}
               <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 12, marginBottom: 18 }}>
                 <Ionicons name="image-outline" size={13} color={theme.textMuted} style={{ marginTop: 1 }} />
-                <Text style={{ flex: 1, fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', lineHeight: 17 }}>
+                <Text style={{ flex: 1, fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, lineHeight: 17 }}>
                   Have a screenshot? Email it straight to {FEEDBACK_EMAIL}.
                 </Text>
               </View>
@@ -177,7 +178,7 @@ export default function FeedbackModal({ visible, onClose }: Props) {
                   opacity: canSend ? 1 : 0.6,
                 }}
               >
-                <Text style={{ color: canSend ? theme.bgPrimary : theme.textMuted, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 }}>SEND</Text>
+                <Text style={{ color: canSend ? theme.bgPrimary : theme.textMuted, fontSize: 18, fontFamily: Type.num, letterSpacing: 2 }}>SEND</Text>
               </TouchableOpacity>
             </ScrollView>
           </Animated.View>
@@ -188,5 +189,5 @@ export default function FeedbackModal({ visible, onClose }: Props) {
 }
 
 const styles = StyleSheet.create({
-  label: { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', marginBottom: 8 },
+  label: { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold, marginBottom: 8 },
 });

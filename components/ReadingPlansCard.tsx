@@ -17,6 +17,7 @@ import {
   MAX_ACTIVE_PLANS,
 } from '../data/readingPlans';
 import { storageSet } from '../utils/storage';
+import { Type } from '../typography';
 
 interface Props {
   theme: any;
@@ -232,13 +233,13 @@ const styles = StyleSheet.create({
   },
   cardLabel: {
     fontSize: 9,
-    fontFamily: 'DMSans_700Bold',
+    fontFamily: Type.uiBold,
     letterSpacing: 3,
     textTransform: 'uppercase',
   },
   planCount: {
     fontSize: 10,
-    fontFamily: 'DMSans_400Regular',
+    fontFamily: Type.ui,
   },
   emptyState: {
     alignItems: 'center',
@@ -247,12 +248,12 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 14,
-    fontFamily: 'DMSans_700Bold',
+    fontFamily: Type.uiBold,
     marginTop: 4,
   },
   emptySubtitle: {
     fontSize: 12,
-    fontFamily: 'DMSans_400Regular',
+    fontFamily: Type.ui,
     textAlign: 'center',
     lineHeight: 18,
   },
@@ -268,7 +269,7 @@ const styles = StyleSheet.create({
   },
   browseBtnText: {
     fontSize: 12,
-    fontFamily: 'DMSans_600SemiBold',
+    fontFamily: Type.uiSemibold,
   },
   divider: {
     height: 0.5,
@@ -279,28 +280,28 @@ const styles = StyleSheet.create({
   },
   planName: {
     fontSize: 9,
-    fontFamily: 'DMSans_700Bold',
+    fontFamily: Type.uiBold,
     letterSpacing: 2,
     textTransform: 'uppercase',
     flex: 1,
   },
   dayBadge: {
     fontSize: 9,
-    fontFamily: 'DMSans_400Regular',
+    fontFamily: Type.ui,
     marginLeft: 'auto',
   },
   passageText: {
     fontSize: 16,
-    fontFamily: 'DMSans_700Bold',
+    fontFamily: Type.uiBold,
     marginBottom: 6,
   },
   completeText: {
     fontSize: 15,
-    fontFamily: 'DMSans_700Bold',
+    fontFamily: Type.uiBold,
   },
   progressLabel: {
     fontSize: 11,
-    fontFamily: 'DMSans_400Regular',
+    fontFamily: Type.ui,
   },
   progressTrack: {
     height: 3,
@@ -324,16 +325,16 @@ const styles = StyleSheet.create({
   },
   markReadText: {
     fontSize: 13,
-    fontFamily: 'DMSans_700Bold',
+    fontFamily: Type.uiBold,
     letterSpacing: 1,
   },
   readLabel: {
     fontSize: 12,
-    fontFamily: 'DMSans_600SemiBold',
+    fontFamily: Type.uiSemibold,
   },
   undoText: {
     fontSize: 12,
-    fontFamily: 'DMSans_400Regular',
+    fontFamily: Type.ui,
     textDecorationLine: 'underline',
   },
 });

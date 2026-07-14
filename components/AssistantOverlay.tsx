@@ -13,6 +13,7 @@ import { useTooltip } from '../useTooltip';
 import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 import { useNotifications, setNotifTourDemo } from '../utils/notifications';
+import { Type } from '../typography';
 
 // Single app-wide mount for the general Companion assistant. Rendered once in the root layout, it
 // decides on every screen whether the FAB should appear, and owns the open/close state for the chat.
@@ -150,6 +151,6 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 6,
   },
-  calloutTitle: { fontSize: 13, fontFamily: 'DMSans_700Bold', marginBottom: 2 },
-  calloutText: { fontSize: 12, fontFamily: 'DMSans_400Regular', lineHeight: 16 },
+  calloutTitle: { fontSize: 13, fontFamily: Type.uiBold, marginBottom: 2 },
+  calloutText: { fontSize: 12, fontFamily: Type.ui, lineHeight: 16 },
 });

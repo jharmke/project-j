@@ -6,6 +6,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Text, TouchableOpacity } from 'react-native';
 import { useTheme } from '../theme';
+import { Type } from '../typography';
 
 /**
  * Shared top-left header avatar. Lives on every tab header so the user's
@@ -47,7 +48,7 @@ export default function HeaderAvatar({ inert = false }: { inert?: boolean }) {
       hitSlop={inert ? undefined : { top: 8, bottom: 8, left: 8, right: 8 }}
       style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: theme.bgCard, borderWidth: 1.5, borderColor: theme.accentBlueBorder, alignItems: 'center', justifyContent: 'center', shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 6, elevation: 4 }}>
       {initials
-        ? <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 0.5 }}>{initials}</Text>
+        ? <Text style={{ fontSize: 15, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 0.5 }}>{initials}</Text>
         : <Ionicons name="person" size={20} color={theme.accentBlue} />}
     </TouchableOpacity>
   );

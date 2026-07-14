@@ -10,6 +10,7 @@ import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, r
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
+import { Type } from '../typography';
 
 export default function DayScoreDisclaimerModal({ theme, onAcknowledge }: { theme: any; onAcknowledge: () => void }) {
   const overlay = useSharedValue(0);
@@ -56,18 +57,18 @@ export default function DayScoreDisclaimerModal({ theme, onAcknowledge }: { them
               </View>
             </View>
 
-            <Text style={{ fontSize: 22, letterSpacing: 1, fontFamily: 'BebasNeue_400Regular', color: theme.textPrimary, textAlign: 'center', marginBottom: 10 }}>YOUR DAY SCORE</Text>
+            <Text style={{ fontSize: 22, letterSpacing: 1, fontFamily: Type.num, color: theme.textPrimary, textAlign: 'center', marginBottom: 10 }}>YOUR DAY SCORE</Text>
 
-            <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_400Regular', textAlign: 'center', lineHeight: 20 }}>
+            <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.ui, textAlign: 'center', lineHeight: 20 }}>
               Each morning you'll see a score out of 100 for the day before, built from the nutrition, activity, and recovery data you logged. It's a snapshot to help you spot patterns and reflect.
             </Text>
 
-            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', textAlign: 'center', lineHeight: 18, marginTop: 12 }}>
+            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, fontStyle: 'italic', textAlign: 'center', lineHeight: 18, marginTop: 12 }}>
               For informational purposes only. It is not medical advice, and it is not a measure of your health or your worth.
             </Text>
 
             <TouchableOpacity onPress={accept} style={{ marginTop: 20, paddingVertical: 14, borderRadius: 10, alignItems: 'center', backgroundColor: theme.accentBlue }}>
-              <Text style={{ color: '#ffffff', fontSize: 14, letterSpacing: 1, fontFamily: 'DMSans_600SemiBold' }}>I UNDERSTAND</Text>
+              <Text style={{ color: '#ffffff', fontSize: 14, letterSpacing: 1, fontFamily: Type.uiSemibold }}>I UNDERSTAND</Text>
             </TouchableOpacity>
           </View>
         </Reanimated.View>

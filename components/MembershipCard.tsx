@@ -8,6 +8,7 @@ import { useTheme } from '../theme';
 import { useMembership } from '../MembershipContext';
 import SproutIcon from './SproutIcon';
 import { FoilChip, FoilEdge, GOLD_EDGE, GOLD_TINT } from './SupporterFoil';
+import { Type, numLine } from '../typography';
 
 // ─── Membership card ─────────────────────────────────────────────────────────
 // ONE component, used by BOTH Profile > Membership and Settings > Membership, so the two can't drift.
@@ -69,7 +70,7 @@ export default function MembershipCard() {
 
       <View style={{ flex: 1 }}>
         <Text style={{
-          fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.8, lineHeight: 22,
+          fontSize: 20, fontFamily: Type.num, letterSpacing: 0.8, lineHeight: numLine(20),
           color: isSupporter ? theme.textSecondary : theme.accentBlue,
         }}>
           {isSupporter ? "You're a Supporter" : 'Support the Mission'}
@@ -83,7 +84,7 @@ export default function MembershipCard() {
                 borderRadius: 5, paddingHorizontal: 7, paddingVertical: 2,
               }}>
                 <Text style={{
-                  fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5,
+                  fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 1.5,
                   color: theme.textSecondary, textTransform: 'uppercase',
                 }}>
                   {plan}
@@ -92,12 +93,12 @@ export default function MembershipCard() {
             )}
             {/* Semibold, to sit level with the bold caps pill beside it -- thin regular next to a bold
                 pill read as two unrelated pieces of text. */}
-            <Text style={{ fontSize: 12.5, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted }}>
+            <Text style={{ fontSize: 12.5, fontFamily: Type.uiSemibold, color: theme.textMuted }}>
               {dateLine ?? 'Thank you for keeping this going'}
             </Text>
           </View>
         ) : (
-          <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 3 }}>
+          <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textMuted, marginTop: 3 }}>
             Help keep the app going
           </Text>
         )}
@@ -134,8 +135,8 @@ export function GoldIconRow() {
         style={{ width: 30, height: 30, borderRadius: 8, borderWidth: 1, borderColor: GOLD_EDGE }}
       />
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 13.5, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>Gold App Icon</Text>
-        <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 1 }}>
+        <Text style={{ fontSize: 13.5, fontFamily: Type.uiBold, color: theme.textSecondary }}>Gold App Icon</Text>
+        <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textMuted, marginTop: 1 }}>
           Turn it on in Settings &gt; Appearance
         </Text>
       </View>

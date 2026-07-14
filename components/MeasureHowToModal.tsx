@@ -13,6 +13,7 @@ import { useRef, useState } from 'react';
 import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../theme';
 import { MEASURE_FIELDS, MEASURE_REGIONS, fieldsForRegion, MeasureFieldKey } from '../utils/bodyMeasurements';
+import { Type } from '../typography';
 
 // Technique copy per field. Steps are short and imperative.
 const HOWTO: Record<MeasureFieldKey, string[]> = {
@@ -113,10 +114,10 @@ export default function MeasureHowToModal({ visible, onClose }: Props) {
             {mode === 'detail' ? (
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setMode('index'); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                 <Ionicons name="chevron-back" size={16} color={accent} />
-                <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: accent }}>All measurements</Text>
+                <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: accent }}>All measurements</Text>
               </TouchableOpacity>
             ) : (
-              <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>How to Measure</Text>
+              <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>How to Measure</Text>
             )}
             <TouchableOpacity onPress={closeWithHaptic} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <Ionicons name="close" size={20} color={theme.textMuted} />
@@ -127,14 +128,14 @@ export default function MeasureHowToModal({ visible, onClose }: Props) {
             <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 22 }} showsVerticalScrollIndicator={false}>
               {MEASURE_REGIONS.map(region => (
                 <View key={region} style={{ marginBottom: 14 }}>
-                  <Text style={{ fontSize: 10, letterSpacing: 1.5, fontFamily: 'DMSans_700Bold', color: theme.textMuted, marginBottom: 8, marginLeft: 2 }}>{region.toUpperCase()}</Text>
+                  <Text style={{ fontSize: 10, letterSpacing: 1.5, fontFamily: Type.uiBold, color: theme.textMuted, marginBottom: 8, marginLeft: 2 }}>{region.toUpperCase()}</Text>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                     {fieldsForRegion(region).map(f => {
                       const idx = MEASURE_FIELDS.findIndex(mf => mf.key === f.key);
                       return (
                         <TouchableOpacity key={f.key} onPress={() => goDetail(idx)}
                           style={{ backgroundColor: theme.bgInput, borderColor: theme.borderInput, borderWidth: 1, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 12, minWidth: '47%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexGrow: 1 }}>
-                          <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary }}>{f.label}</Text>
+                          <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textSecondary }}>{f.label}</Text>
                           <Ionicons name="chevron-forward" size={15} color={theme.textMuted} />
                         </TouchableOpacity>
                       );
@@ -157,19 +158,19 @@ export default function MeasureHowToModal({ visible, onClose }: Props) {
                     <View style={{ width: 92, height: 92, borderRadius: 46, backgroundColor: accent + '14', alignItems: 'center', justifyContent: 'center', marginBottom: 14, marginTop: 4 }}>
                       <Ionicons name="body-outline" size={46} color={accent} />
                     </View>
-                    <Text style={{ fontSize: 19, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, marginBottom: 14 }}>{f.label}</Text>
+                    <Text style={{ fontSize: 19, fontFamily: Type.uiBold, color: theme.textPrimary, marginBottom: 14 }}>{f.label}</Text>
                     <View style={{ alignSelf: 'stretch' }}>
                       {HOWTO[f.key].map((step, i) => (
                         <View key={i} style={{ flexDirection: 'row', marginBottom: 10 }}>
                           <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: accent + '1A', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
-                            <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: accent }}>{i + 1}</Text>
+                            <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: accent }}>{i + 1}</Text>
                           </View>
-                          <Text style={{ flex: 1, fontSize: 13.5, lineHeight: 20, fontFamily: 'DMSans_400Regular', color: theme.textSecondary }}>{step}</Text>
+                          <Text style={{ flex: 1, fontSize: 13.5, lineHeight: 20, fontFamily: Type.ui, color: theme.textSecondary }}>{step}</Text>
                         </View>
                       ))}
                       <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginTop: 6, backgroundColor: theme.bgInput, borderRadius: 10, padding: 12 }}>
                         <Ionicons name="bulb-outline" size={15} color={theme.accentAmber} style={{ marginRight: 8, marginTop: 1 }} />
-                        <Text style={{ flex: 1, fontSize: 12, lineHeight: 18, fontFamily: 'DMSans_400Regular', color: theme.textMuted }}>{CONSISTENCY}</Text>
+                        <Text style={{ flex: 1, fontSize: 12, lineHeight: 18, fontFamily: Type.ui, color: theme.textMuted }}>{CONSISTENCY}</Text>
                       </View>
                     </View>
                   </ScrollView>

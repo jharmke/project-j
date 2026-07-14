@@ -8,6 +8,7 @@ import { addPrayer, updatePrayer, type Prayer } from '../utils/prayers';
 import { cancelPrayerNotification } from '../services/notifications';
 import { useTheme } from '../theme';
 import { ToastRenderer, useToast } from './Toast';
+import { Type } from '../typography';
 
 /**
  * Add/edit-prayer pop-up. Shared by the faith-tab card's quick-capture and the prayer screen.
@@ -125,11 +126,11 @@ export default function AddPrayerModal({ visible, onClose, onAdded, editPrayer }
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
             <Ionicons name="hand-left" size={15} color={theme.accentAmber} />
-            <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentAmber }}>
+            <Text style={{ fontSize: 18, fontFamily: Type.num, letterSpacing: 2, color: theme.accentAmber }}>
               {isEdit ? 'Edit a Prayer' : 'Add a Prayer'}
             </Text>
           </View>
-          <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginBottom: 16, lineHeight: 20 }}>
+          <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textMuted, marginBottom: 16, lineHeight: 20 }}>
             {isEdit
               ? 'Reword what you wrote. Everything else stays the same.'
               : "Something you're carrying. Mark it answered whenever God shows up, or just let it rest here."}
@@ -149,7 +150,7 @@ export default function AddPrayerModal({ visible, onClose, onAdded, editPrayer }
               borderRadius: 8,
               padding: 12,
               fontSize: 14,
-              fontFamily: 'DMSans_400Regular',
+              fontFamily: Type.ui,
               color: theme.textPrimary,
               minHeight: 72,
               textAlignVertical: 'top',
@@ -163,7 +164,7 @@ export default function AddPrayerModal({ visible, onClose, onAdded, editPrayer }
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); close(); }}
               style={{ flex: 1, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 12, backgroundColor: theme.bgInput }}
             >
-              <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted }}>Cancel</Text>
+              <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textMuted }}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleSave}
@@ -177,10 +178,10 @@ export default function AddPrayerModal({ visible, onClose, onAdded, editPrayer }
               }}
             >
               {saving
-                ? <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.accentAmber }}>Saving...</Text>
+                ? <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.accentAmber }}>Saving...</Text>
                 : <>
                     <Ionicons name={isEdit ? 'checkmark' : 'add'} size={16} color={theme.accentAmber} />
-                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.accentAmber }}>{isEdit ? 'Save' : 'Add'}</Text>
+                    <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.accentAmber }}>{isEdit ? 'Save' : 'Add'}</Text>
                   </>
               }
             </TouchableOpacity>

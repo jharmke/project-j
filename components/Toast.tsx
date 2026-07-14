@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Animated, Keyboard, PanResponder, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../theme';
+import { Type } from '../typography';
 
 interface Toast {
   id: number;
@@ -174,11 +175,11 @@ const styles = StyleSheet.create({
   },
   message: {
     fontSize: 13,
-    fontFamily: 'DMSans_600SemiBold',
+    fontFamily: Type.uiSemibold,
   },
   submessage: {
     fontSize: 11,
-    fontFamily: 'DMSans_400Regular',
+    fontFamily: Type.ui,
     marginTop: 2,
   },
   close: {

@@ -26,6 +26,7 @@ import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import {
   useNotifications, markReadIds, clearNotification, clearAllNotifications, type NotifItem,
 } from '../utils/notifications';
+import { Type } from '../typography';
 
 const CARD_MIN_H = 70;
 
@@ -327,11 +328,11 @@ const styles = StyleSheet.create({
   handleWrap: { alignItems: 'center', paddingTop: 10, paddingBottom: 4 },
   handle: { width: 40, height: 5, borderRadius: 3, opacity: 0.5 },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingTop: 6, paddingBottom: 8 },
-  title: { fontSize: 13, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase' },
-  clearAll: { fontSize: 12, fontFamily: 'DMSans_600SemiBold' },
+  title: { fontSize: 13, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase' },
+  clearAll: { fontSize: 12, fontFamily: Type.uiSemibold },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
-  emptyTitle: { fontSize: 15, fontFamily: 'DMSans_600SemiBold', marginBottom: 4 },
-  emptyBody: { fontSize: 12.5, fontFamily: 'DMSans_400Regular', textAlign: 'center', lineHeight: 18 },
+  emptyTitle: { fontSize: 15, fontFamily: Type.uiSemibold, marginBottom: 4 },
+  emptyBody: { fontSize: 12.5, fontFamily: Type.ui, textAlign: 'center', lineHeight: 18 },
   card: {
     flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: CARD_MIN_H,
     borderRadius: 12, borderWidth: 0.5, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 10,
@@ -340,14 +341,14 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   unreadDot: { width: 7, height: 7, borderRadius: 4 },
   iconChip: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  cardTitle: { fontSize: 14, fontFamily: 'DMSans_700Bold' },
-  cardBody: { fontSize: 12.5, fontFamily: 'DMSans_400Regular', lineHeight: 17, marginTop: 1 },
-  cardTime: { fontSize: 10.5, fontFamily: 'DMSans_500Medium', marginTop: 3 },
+  cardTitle: { fontSize: 14, fontFamily: Type.uiBold },
+  cardBody: { fontSize: 12.5, fontFamily: Type.ui, lineHeight: 17, marginTop: 1 },
+  cardTime: { fontSize: 10.5, fontFamily: Type.uiMedium, marginTop: 3 },
   cardClear: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
   peek: { position: 'absolute', borderRadius: 12, borderWidth: 0.5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 4, elevation: 2 },
   peekBack: { opacity: 0.9 },
   countPill: { minWidth: 22, height: 20, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
-  countText: { fontSize: 11, fontFamily: 'DMSans_700Bold' },
+  countText: { fontSize: 11, fontFamily: Type.uiBold },
   doneBtn: { borderRadius: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center' },
-  doneText: { fontSize: 14, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5, color: '#ffffff' },
+  doneText: { fontSize: 14, fontFamily: Type.uiBold, letterSpacing: 0.5, color: '#ffffff' },
 });

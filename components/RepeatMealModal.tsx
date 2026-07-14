@@ -15,6 +15,7 @@ import { useTheme } from '../theme';
 import { useToast, ToastRenderer } from './Toast';
 import { MealSlot } from '../utils/mealSlots';
 import { getRepeatDays, logRepeatedItems, tidyFoodName, RepeatDay } from '../utils/repeatMeal';
+import { Type, numLine } from '../typography';
 
 // Macro dot colors, matched to the Log-tab mealtime cards (Protein / Carbs / Fat).
 const MACRO = { protein: '#0d9268', carbs: '#c47d1a', fat: '#a83232' };
@@ -210,11 +211,11 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
 
           {/* Header */}
           <View style={{ paddingHorizontal: 20, paddingBottom: 12, paddingTop: 4 }}>
-            <Text style={{ fontSize: 18, color: theme.accentBlue, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 }}>
+            <Text style={{ fontSize: 18, color: theme.accentBlue, fontFamily: Type.num, letterSpacing: 2 }}>
               REPEAT A MEAL
             </Text>
-            <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>
-              Adds to <Text style={{ color: theme.textMuted, fontFamily: 'DMSans_600SemiBold' }}>{launchSlot.name}</Text>
+            <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, marginTop: 2 }}>
+              Adds to <Text style={{ color: theme.textMuted, fontFamily: Type.uiSemibold }}>{launchSlot.name}</Text>
             </Text>
           </View>
 
@@ -243,7 +244,7 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
                   >
                     <Text style={{
                       fontSize: 13,
-                      fontFamily: active ? 'DMSans_700Bold' : 'DMSans_500Medium',
+                      fontFamily: active ? Type.uiBold : Type.uiMedium,
                       color: active ? theme.accentBlue : theme.textSecondary,
                     }}>
                       {s.name}
@@ -262,10 +263,10 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
           ) : days.length === 0 ? (
             <View style={{ paddingVertical: 44, paddingHorizontal: 24, alignItems: 'center' }}>
               <Ionicons name="time-outline" size={30} color={theme.textDim} />
-              <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', marginTop: 10, textAlign: 'center' }}>
+              <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiSemibold, marginTop: 10, textAlign: 'center' }}>
                 Nothing to repeat yet
               </Text>
-              <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 4, textAlign: 'center', lineHeight: 17 }}>
+              <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui, marginTop: 4, textAlign: 'center', lineHeight: 17 }}>
                 No {sourceSlot.name} logged in the last 14 days. Try another meal above.
               </Text>
             </View>
@@ -308,10 +309,10 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
                       <View style={{ flex: 1 }}>
                         {/* Day name + date */}
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_700Bold' }}>
+                          <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiBold }}>
                             {day.relativeLabel}
                           </Text>
-                          <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_700Bold' }}>
+                          <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiBold }}>
                             {'  ·  '}{day.dateLabel}
                           </Text>
                         </View>
@@ -320,7 +321,7 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
                           {macros.map(([color, val], mi) => (
                             <View key={mi} style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                               <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: color }} />
-                              <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{val}g</Text>
+                              <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.ui }}>{val}g</Text>
                             </View>
                           ))}
                         </View>
@@ -328,7 +329,7 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
                         {!isOpen && (
                           <Text
                             numberOfLines={1}
-                            style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 4 }}
+                            style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, marginTop: 4 }}
                           >
                             {preview}
                           </Text>
@@ -336,8 +337,8 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
                       </View>
                       {/* Live kcal (reflects what's checked) */}
                       <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={{ color: theme.textSecondary, fontSize: 20, fontFamily: 'BebasNeue_400Regular', lineHeight: 22 }}>{selKcal}</Text>
-                        <Text style={{ color: theme.textDim, fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5 }}>KCAL</Text>
+                        <Text style={{ color: theme.textSecondary, fontSize: 20, fontFamily: Type.num, lineHeight: numLine(20) }}>{selKcal}</Text>
+                        <Text style={{ color: theme.textDim, fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 1.5 }}>KCAL</Text>
                       </View>
                     </TouchableOpacity>
 
@@ -364,11 +365,11 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
                               </View>
                               <Text
                                 numberOfLines={1}
-                                style={{ flex: 1, fontSize: 13, fontFamily: 'DMSans_500Medium', color: on ? theme.textSecondary : theme.textDim }}
+                                style={{ flex: 1, fontSize: 13, fontFamily: Type.uiMedium, color: on ? theme.textSecondary : theme.textDim }}
                               >
                                 {tidyFoodName(it.name)}
                               </Text>
-                              <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: on ? theme.textMuted : theme.textDim }}>
+                              <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: on ? theme.textMuted : theme.textDim }}>
                                 {Math.round(it.cal)}
                               </Text>
                             </TouchableOpacity>
@@ -391,7 +392,7 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
                         >
                           <Text style={{
                             fontSize: 13,
-                            fontFamily: 'DMSans_700Bold',
+                            fontFamily: Type.uiBold,
                             color: sel.length === 0 ? theme.textDim : theme.bgPrimary,
                           }}>
                             {sel.length === 0

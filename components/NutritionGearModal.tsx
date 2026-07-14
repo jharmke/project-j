@@ -7,6 +7,7 @@ import { Animated, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpac
 import { storageSet } from '../utils/storage';
 import { useTheme } from '../theme';
 import { useToast, ToastRenderer } from './Toast';
+import { Type } from '../typography';
 
 export type NutritionPreset = 'standard' | 'keto' | 'heart' | 'fiber' | 'athletic' | 'custom';
 
@@ -259,7 +260,7 @@ export default function NutritionGearModal({ visible, onClose, preset, goals, on
             paddingHorizontal: 20, paddingBottom: 14, paddingTop: 6,
             borderBottomWidth: 0.5, borderBottomColor: theme.borderCard,
           }}>
-            <Text style={{ fontSize: 18, color: theme.accentBlue, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 }}>
+            <Text style={{ fontSize: 18, color: theme.accentBlue, fontFamily: Type.num, letterSpacing: 2 }}>
               NUTRITION GOALS
             </Text>
           </View>
@@ -272,7 +273,7 @@ export default function NutritionGearModal({ visible, onClose, preset, goals, on
             automaticallyAdjustKeyboardInsets
           >
             {/* Preset grid */}
-            <Text style={{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, fontFamily: 'DMSans_700Bold', marginBottom: 10 }}>
+            <Text style={{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, fontFamily: Type.uiBold, marginBottom: 10 }}>
               PRESET
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 6 }}>
@@ -306,14 +307,14 @@ export default function NutritionGearModal({ visible, onClose, preset, goals, on
                     />
                     <Text style={{
                       fontSize: 13,
-                      fontFamily: 'DMSans_700Bold',
+                      fontFamily: Type.uiBold,
                       color: active ? theme.accentBlue : theme.textSecondary,
                     }}>
                       {p.label}
                     </Text>
                     <Text style={{
                       fontSize: 10,
-                      fontFamily: 'DMSans_400Regular',
+                      fontFamily: Type.ui,
                       color: theme.textDim,
                       textAlign: 'center',
                     }}>
@@ -327,7 +328,7 @@ export default function NutritionGearModal({ visible, onClose, preset, goals, on
             {!isCustom && (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'center', marginBottom: 16, paddingVertical: 4 }}>
                 <Ionicons name="lock-closed-outline" size={11} color={theme.textDim} />
-                <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>
+                <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui }}>
                   Tap "Custom" or any field to edit
                 </Text>
               </View>
@@ -349,7 +350,7 @@ export default function NutritionGearModal({ visible, onClose, preset, goals, on
               >
                 <Text style={{
                   fontSize: 11,
-                  fontFamily: 'DMSans_700Bold',
+                  fontFamily: Type.uiBold,
                   color: theme.textPrimary,
                   letterSpacing: 2,
                   textTransform: 'uppercase',
@@ -362,7 +363,7 @@ export default function NutritionGearModal({ visible, onClose, preset, goals, on
                     const currentVal = localGoals[f.key as keyof NutritionGoals];
                     return (
                       <View key={f.key} style={{ width: '47%' }}>
-                        <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_500Medium', marginBottom: 5 }}>
+                        <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.uiMedium, marginBottom: 5 }}>
                           {f.label}{' '}
                           <Text style={{ color: theme.textDim }}>({f.unit})</Text>
                         </Text>
@@ -377,7 +378,7 @@ export default function NutritionGearModal({ visible, onClose, preset, goals, on
                               paddingHorizontal: 10,
                               paddingVertical: 8,
                               fontSize: 14,
-                              fontFamily: 'DMSans_400Regular',
+                              fontFamily: Type.ui,
                               minHeight: 40,
                             }}
                             value={currentVal === null ? '' : String(currentVal)}
@@ -400,7 +401,7 @@ export default function NutritionGearModal({ visible, onClose, preset, goals, on
                               justifyContent: 'center',
                             }}
                           >
-                            <Text style={{ fontSize: 14, fontFamily: 'DMSans_400Regular', color: theme.textDim }}>
+                            <Text style={{ fontSize: 14, fontFamily: Type.ui, color: theme.textDim }}>
                               {currentVal !== null ? String(currentVal) : '—'}
                             </Text>
                           </TouchableOpacity>
@@ -421,7 +422,7 @@ export default function NutritionGearModal({ visible, onClose, preset, goals, on
               borderWidth: 0.5,
               borderColor: theme.borderCard,
             }}>
-              <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', lineHeight: 16 }}>
+              <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, lineHeight: 16 }}>
                 Goals are based on general dietary guidelines. Individual needs vary. Consult a registered dietitian before making significant dietary changes.
               </Text>
             </View>
@@ -431,7 +432,7 @@ export default function NutritionGearModal({ visible, onClose, preset, goals, on
               onPress={handleSave}
               style={{ backgroundColor: theme.accentGreen, borderRadius: 10, padding: 15, alignItems: 'center' }}
             >
-              <Text style={{ color: theme.bgPrimary, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 }}>
+              <Text style={{ color: theme.bgPrimary, fontSize: 18, fontFamily: Type.num, letterSpacing: 2 }}>
                 SAVE GOALS
               </Text>
             </TouchableOpacity>

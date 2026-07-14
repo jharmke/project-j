@@ -32,6 +32,7 @@ import {
 import { loadReadingPlanProgress } from '../../utils/readingPlansProgress';
 import { loadDevotionalProgress, getDevotionalProgress, getNextDay } from '../../utils/devotionals';
 import { useTheme, type Theme } from '../../theme';
+import { Type, DISPLAY_CAPS, DISPLAY_TRACKING, displaySize } from '../../typography';
 
 /**
  * Faith tab. Its own card system (mirrors the home tab pattern but with its own
@@ -182,7 +183,7 @@ export default function FaithScreen() {
           <HeaderAvatar />
           <View style={{ flex: 1 }}>
             <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Faith</Text>
-            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', marginTop: 1, letterSpacing: 2, textTransform: 'uppercase' }}>
+            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, marginTop: 1, letterSpacing: 2, textTransform: 'uppercase' }}>
               {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </Text>
           </View>
@@ -306,7 +307,7 @@ function VotdCard({ verse, theme, onReflect }: { verse: DailyVerse | null; theme
           style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: 'rgba(212,134,10,0.10)', borderColor: 'rgba(212,134,10,0.30)', borderWidth: 1, borderRadius: 6, paddingVertical: 9, paddingHorizontal: 12, minHeight: 44, marginTop: 10 }}
         >
           <Ionicons name="sparkles" size={12} color={theme.accentAmber} />
-          <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.accentAmber }}>Reflect with Halo</Text>
+          <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: theme.accentAmber }}>Reflect with Halo</Text>
         </TouchableOpacity>
       )}
     </PressCard>
@@ -713,7 +714,7 @@ function PrayerCard({ theme }: { theme: Theme }) {
             style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: tintBg, borderColor: tintBorder, borderWidth: 1, borderRadius: 6, paddingVertical: 9, paddingHorizontal: 12, minHeight: 44, marginTop: 8 }}
           >
             <Ionicons name="people" size={12} color={theme.accentAmber} />
-            <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.accentAmber }}>Ask for prayer</Text>
+            <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: theme.accentAmber }}>Ask for prayer</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -725,40 +726,40 @@ const styles = StyleSheet.create({
   // Today's Message verse card (matches the Home tab's verse card look).
   verseCard:     { borderWidth: 2, borderRadius: 14, padding: 16, marginBottom: 12 },
   verseLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
-  verseLabel:    { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold' },
+  verseLabel:    { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold },
   verseText:     { fontSize: 14, lineHeight: 22, marginBottom: 10, fontFamily: 'Lora_500Medium', textAlign: 'center' },
-  verseRef:      { fontSize: 9, fontFamily: 'DMSans_700Bold', textAlign: 'center', letterSpacing: 2, textTransform: 'uppercase' },
+  verseRef:      { fontSize: 9, fontFamily: Type.uiBold, textAlign: 'center', letterSpacing: 2, textTransform: 'uppercase' },
   header:      { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 0.5 },
-  headerTitle: { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  headerTitle: { fontSize: displaySize(27), fontFamily: Type.display, letterSpacing: DISPLAY_TRACKING, ...(DISPLAY_CAPS ? { textTransform: 'uppercase' as const } : {}) },
   // Faith cards carry a faint warm gold edge (a softer cousin of the verse card) instead of
   // the standard cool top border; this is now the faith identity, since the screen wash is gone.
   card:          { borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 0.5, borderColor: 'rgba(212,134,10,0.22)', shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.18, shadowRadius: 8, elevation: 4 },
   cardWatermark: { position: 'absolute', right: -24, bottom: -28, opacity: 0.10 },
   cardLabelRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
-  cardLabel:     { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold' },
-  bibleTitle:           { fontSize: 16, fontFamily: 'DMSans_600SemiBold' },
-  bibleFirstSub:        { fontSize: 12, fontFamily: 'DMSans_400Regular', lineHeight: 18, marginTop: 4, marginBottom: 14 },
-  bibleContinueLabel:   { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', marginBottom: 3 },
+  cardLabel:     { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold },
+  bibleTitle:           { fontSize: 16, fontFamily: Type.uiSemibold },
+  bibleFirstSub:        { fontSize: 12, fontFamily: Type.ui, lineHeight: 18, marginTop: 4, marginBottom: 14 },
+  bibleContinueLabel:   { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', fontFamily: Type.uiBold, marginBottom: 3 },
   bibleContinueRef:     { fontSize: 20, fontFamily: 'Lora_500Medium', letterSpacing: 0.3 },
   bibleContinueBtn:     { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.14, shadowRadius: 5, elevation: 3 },
   bibleFindBtn:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 10, paddingVertical: 12, minHeight: 44, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.12, shadowRadius: 3, elevation: 2 },
-  bibleFindBtnText:     { fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
+  bibleFindBtnText:     { fontSize: 13, fontFamily: Type.uiSemibold },
   bibleBtnRow:          { flexDirection: 'row', gap: 10 },
   bibleBtnPrimary:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 8, paddingVertical: 12, minHeight: 44, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.12, shadowRadius: 3, elevation: 2 },
-  bibleBtnPrimaryText:  { fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
+  bibleBtnPrimaryText:  { fontSize: 13, fontFamily: Type.uiSemibold },
   bibleBtnSecondary:    { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 8, paddingVertical: 12, minHeight: 44, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.12, shadowRadius: 3, elevation: 2 },
-  bibleBtnSecondaryText:{ fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
+  bibleBtnSecondaryText:{ fontSize: 13, fontFamily: Type.uiSemibold },
   // Prayer preview card.
-  prayerEmpty:        { fontSize: 13, fontFamily: 'DMSans_400Regular', lineHeight: 20, marginTop: 2, fontStyle: 'italic' },
+  prayerEmpty:        { fontSize: 13, fontFamily: Type.ui, lineHeight: 20, marginTop: 2, fontStyle: 'italic' },
   prayerPreviewBox:   { borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 11, marginBottom: 7, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.12, shadowRadius: 3, elevation: 2 },
   prayerPreviewText:  { fontSize: 15, fontFamily: 'Lora_500Medium', lineHeight: 22 },
-  prayerPreviewMore:  { fontSize: 11, fontFamily: 'DMSans_600SemiBold', marginTop: 2, marginLeft: 2 },
+  prayerPreviewMore:  { fontSize: 11, fontFamily: Type.uiSemibold, marginTop: 2, marginLeft: 2 },
   // Bible and Plans card: the divider + the two active-plan / active-devotional columns.
   hDivider:        { height: 1, marginVertical: 14 },
   plansRow:        { flexDirection: 'row', alignItems: 'stretch' },
   plansCol:        { flex: 1 },
   vDivider:        { width: 1, marginHorizontal: 10 },
-  colLabel:        { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', marginBottom: 10 },
+  colLabel:        { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', fontFamily: Type.uiBold, marginBottom: 10 },
   // Clean surface tile with a 3px amber left accent bar (the settings pattern), so amber reads as an
   // accent instead of a fill. Name is Lora serif (the "set apart" font, matching prayers + the
   // Continue Reading ref). Background / borders come from theme tokens (set inline per card).
@@ -769,12 +770,12 @@ const styles = StyleSheet.create({
   tileBarTrack:    { height: 5, borderRadius: 3, overflow: 'hidden' },
   tileBarFill:     { height: 5, borderRadius: 3 },
   tileCaptionRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 5, gap: 6 },
-  tileCaption:     { fontSize: 10, fontFamily: 'DMSans_700Bold' },
-  tileRef:         { flexShrink: 1, fontSize: 10, fontFamily: 'DMSans_600SemiBold' },
+  tileCaption:     { fontSize: 10, fontFamily: Type.uiBold },
+  tileRef:         { flexShrink: 1, fontSize: 10, fontFamily: Type.uiSemibold },
   browseLink:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 8, minHeight: 44 },
-  browseLinkText:  { fontSize: 12, fontFamily: 'DMSans_600SemiBold' },
+  browseLinkText:  { fontSize: 12, fontFamily: Type.uiSemibold },
   emptyCol:        { alignItems: 'center', gap: 10, paddingVertical: 6 },
-  emptyColText:    { fontSize: 12, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', textAlign: 'center' },
+  emptyColText:    { fontSize: 12, fontFamily: Type.ui, fontStyle: 'italic', textAlign: 'center' },
   emptyBrowseBtn:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 8, paddingHorizontal: 16, minHeight: 44 },
-  emptyBrowseText: { fontSize: 12, fontFamily: 'DMSans_600SemiBold' },
+  emptyBrowseText: { fontSize: 12, fontFamily: Type.uiSemibold },
 });

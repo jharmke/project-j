@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import type { SetEntry } from '../workoutData';
 import { weightUnitHeader, formatHold, parseHoldInput } from '../workoutData';
+import { Type } from '../typography';
 
 const MAX_SETS = 10;
 
@@ -121,10 +122,10 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
     commit(sets.filter((_, idx) => idx !== i));
   };
 
-  const headerCell = { fontSize: 8, letterSpacing: 1.2, color: t.textMuted, fontFamily: 'DMSans_700Bold' as const, textTransform: 'uppercase' as const, textAlign: 'center' as const };
+  const headerCell = { fontSize: 8, letterSpacing: 1.2, color: t.textMuted, fontFamily: Type.uiBold as const, textTransform: 'uppercase' as const, textAlign: 'center' as const };
   const inputStyle = (done: boolean) => ({
     width: '100%' as const, height: 32, borderRadius: 8, borderWidth: 1, textAlign: 'center' as const,
-    fontSize: 15, fontFamily: 'DMSans_700Bold' as const, paddingVertical: 0,
+    fontSize: 15, fontFamily: Type.uiBold as const, paddingVertical: 0,
     backgroundColor: t.bgInput, borderColor: done ? t.accentGreenBorder : t.borderInput, color: t.textSecondary,
   });
 
@@ -171,10 +172,10 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
               flexDirection: 'row', alignItems: 'center', marginBottom: 4,
               paddingVertical: 3, borderRadius: 8, backgroundColor: s.done ? t.accentGreenBg : 'transparent',
             }}>
-            <Text style={{ flex: COL.set, textAlign: 'center', fontSize: 14, fontFamily: 'DMSans_700Bold', color: s.done ? t.accentGreen : t.textSecondary }}>
+            <Text style={{ flex: COL.set, textAlign: 'center', fontSize: 14, fontFamily: Type.uiBold, color: s.done ? t.accentGreen : t.textSecondary }}>
               {i + 1}
             </Text>
-            <Text style={{ flex: COL.prev, textAlign: 'center', fontSize: 11, fontFamily: 'DMSans_500Medium', color: t.textDim }} numberOfLines={1}>
+            <Text style={{ flex: COL.prev, textAlign: 'center', fontSize: 11, fontFamily: Type.uiMedium, color: t.textDim }} numberOfLines={1}>
               {prev ?? '—'}
             </Text>
             <View style={{ flex: COL.weight, paddingHorizontal: 4 }}>
@@ -209,7 +210,7 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
                 // TYPE into, so the formatted clock can't flicker as it reformats each keystroke.
                 <View style={[inputStyle(s.done), { justifyContent: 'center', alignItems: 'center' }, holdActive && { borderColor: t.accentBlue, backgroundColor: t.accentBlue + '1f' }]}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: holdSec != null ? t.textSecondary : t.textDim }} numberOfLines={1}>
+                    <Text style={{ fontSize: 15, fontFamily: Type.uiBold, color: holdSec != null ? t.textSecondary : t.textDim }} numberOfLines={1}>
                       {holdSec != null ? formatHold(holdSec) : (pd != null ? formatHold(pd) : '—')}
                     </Text>
                     {holdActive ? <Animated.View style={{ opacity: caretBlink, width: 2, height: 17, borderRadius: 1, backgroundColor: t.accentBlue, marginLeft: 2 }} /> : null}
@@ -264,7 +265,7 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
         style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 7, marginTop: 2, alignSelf: 'flex-start', opacity: atMax ? 0.4 : 1 }}
         hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
         <Ionicons name="add-circle-outline" size={16} color={t.accentBlue} />
-        <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: t.accentBlue }}>
+        <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: t.accentBlue }}>
           {atMax ? 'Max 10 sets' : 'Add set'}
         </Text>
       </TouchableOpacity>

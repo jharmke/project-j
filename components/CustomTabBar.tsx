@@ -16,6 +16,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
 import FaithIconFish from './FaithIconFish';
+import { Type } from '../typography';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 // Exported: any screen that anchors something to the bottom (a floating save bar, a FAB) has to clear
@@ -71,7 +72,7 @@ function LabelAnimated({ translate, opacity, label, color }: { translate: any, o
   const style = useAnimatedStyle(() => ({
     opacity: opacity.value,
   }));
-  return <Animated.Text style={[{ fontSize: 9, fontFamily: 'DMSans_600SemiBold', letterSpacing: 0.5, textTransform: 'uppercase', color }, style]}>{label}</Animated.Text>;
+  return <Animated.Text style={[{ fontSize: 9, fontFamily: Type.uiSemibold, letterSpacing: 0.5, textTransform: 'uppercase', color }, style]}>{label}</Animated.Text>;
 }
 
 function FaithButton({ isFocused, scale, faithPulse, labelOpacity, labelTranslate, onPress, fishColor, amber }: { isFocused: boolean, scale: any, faithPulse: any, labelOpacity: any, labelTranslate: any, onPress: () => void, fishColor: string, amber: string }) {
@@ -370,7 +371,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 9,
-    fontFamily: 'DMSans_600SemiBold',
+    fontFamily: Type.uiSemibold,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },

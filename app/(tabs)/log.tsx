@@ -47,6 +47,7 @@ import {
   shouldAskPermission,
   requestNotificationPermission,
 } from '../../services/notifications';
+import { Type, numLine, DISPLAY_CAPS, DISPLAY_TRACKING, displaySize } from '../../typography';
 
 const WATER_TARGET = 128;
 
@@ -103,9 +104,9 @@ function MacroStackedBar({ protein, carbs, fat, proteinGoal, carbsGoal, fatGoal,
         <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
           <ReAnimated.View style={[{ height: '100%', borderRadius: 3, backgroundColor: theme.macroProtein }, proteinStyle]} />
         </View>
-        <Text style={{ fontSize: 11, color: theme.macroProtein, fontFamily: 'DMSans_700Bold', width: 12 }}>P</Text>
+        <Text style={{ fontSize: 11, color: theme.macroProtein, fontFamily: Type.uiBold, width: 12 }}>P</Text>
         <View style={{ width: 46, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'flex-end' }}>
-          <AnimatedNumber value={protein} style={{ fontSize: 15, color: theme.macroProtein, fontFamily: 'DMSans_600SemiBold' }} duration={500} />
+          <AnimatedNumber value={protein} style={{ fontSize: 15, color: theme.macroProtein, fontFamily: Type.uiSemibold }} duration={500} />
           <Text style={{ fontSize: 10, color: theme.macroProtein }}>g</Text>
         </View>
       </TouchableOpacity>
@@ -113,9 +114,9 @@ function MacroStackedBar({ protein, carbs, fat, proteinGoal, carbsGoal, fatGoal,
         <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
           <ReAnimated.View style={[{ height: '100%', borderRadius: 3, backgroundColor: theme.macroCarbs }, carbsStyle]} />
         </View>
-        <Text style={{ fontSize: 11, color: theme.macroCarbs, fontFamily: 'DMSans_700Bold', width: 12 }}>C</Text>
+        <Text style={{ fontSize: 11, color: theme.macroCarbs, fontFamily: Type.uiBold, width: 12 }}>C</Text>
         <View style={{ width: 46, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'flex-end' }}>
-          <AnimatedNumber value={carbs} style={{ fontSize: 15, color: theme.macroCarbs, fontFamily: 'DMSans_600SemiBold' }} duration={500} />
+          <AnimatedNumber value={carbs} style={{ fontSize: 15, color: theme.macroCarbs, fontFamily: Type.uiSemibold }} duration={500} />
           <Text style={{ fontSize: 10, color: theme.macroCarbs }}>g</Text>
         </View>
       </TouchableOpacity>
@@ -123,9 +124,9 @@ function MacroStackedBar({ protein, carbs, fat, proteinGoal, carbsGoal, fatGoal,
         <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
           <ReAnimated.View style={[{ height: '100%', borderRadius: 3, backgroundColor: theme.macroFat }, fatStyle]} />
         </View>
-        <Text style={{ fontSize: 11, color: theme.macroFat, fontFamily: 'DMSans_700Bold', width: 12 }}>F</Text>
+        <Text style={{ fontSize: 11, color: theme.macroFat, fontFamily: Type.uiBold, width: 12 }}>F</Text>
         <View style={{ width: 46, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'flex-end' }}>
-          <AnimatedNumber value={fat} style={{ fontSize: 15, color: theme.macroFat, fontFamily: 'DMSans_600SemiBold' }} duration={500} />
+          <AnimatedNumber value={fat} style={{ fontSize: 15, color: theme.macroFat, fontFamily: Type.uiSemibold }} duration={500} />
           <Text style={{ fontSize: 10, color: theme.macroFat }}>g</Text>
         </View>
       </TouchableOpacity>
@@ -360,7 +361,7 @@ export default function LogScreen() {
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); calPickerPrev(); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="chevron-back" size={20} color={theme.accentBlueRaw} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>
+          <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: Type.num, letterSpacing: 1 }}>
             {CAL_MONTHS[pickerMonth]} {pickerYear}
           </Text>
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); calPickerNext(); }} disabled={!calPickerCanGoNext()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
@@ -370,7 +371,7 @@ export default function LogScreen() {
         <View style={{ flexDirection: 'row', marginBottom: 6 }}>
           {CAL_DAYS.map(d => (
             <View key={d} style={{ flex: 1, alignItems: 'center' }}>
-              <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>{d}</Text>
+              <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: Type.uiBold, letterSpacing: 1 }}>{d}</Text>
             </View>
           ))}
         </View>
@@ -389,7 +390,7 @@ export default function LogScreen() {
                     backgroundColor: isSel ? theme.accentBlueRaw : isTod ? `${theme.accentBlueRaw}26` : 'transparent',
                     borderWidth: isTod && !isSel ? 0.5 : 0, borderColor: theme.accentBlueRaw,
                   }}>
-                    <Text style={{ fontSize: 13, fontFamily: isSel ? 'DMSans_700Bold' : 'DMSans_400Regular', color: isSel ? theme.bgPrimary : isFut ? theme.textDim : theme.textSecondary }}>
+                    <Text style={{ fontSize: 13, fontFamily: isSel ? Type.uiBold : Type.ui, color: isSel ? theme.bgPrimary : isFut ? theme.textDim : theme.textSecondary }}>
                       {day}
                     </Text>
                   </View>
@@ -1168,7 +1169,7 @@ export default function LogScreen() {
             <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Food Log</Text>
             <View ref={dateNavRef} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 1, height: 12, overflow: 'visible' }}>
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openCalPicker(); }} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
-                <Text style={{ fontSize: 9, color: isToday ? theme.textMuted : theme.accentAmber, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>
+                <Text style={{ fontSize: 9, color: isToday ? theme.textMuted : theme.accentAmber, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase' }}>
                   {formatActiveDate()}
                 </Text>
               </TouchableOpacity>
@@ -1255,17 +1256,17 @@ export default function LogScreen() {
             <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCardTop, paddingTop: 10, marginTop: 10, flexDirection: 'row' }}>
               {calStats.map((s, i) => (
                 <View key={i} style={{ flex: 1, alignItems: i === 1 ? 'center' : i === 2 ? 'flex-end' : 'flex-start' }}>
-                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 2 }}>{s.label}</Text>
+                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 2 }}>{s.label}</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
-                    <Text style={{ fontSize: 18, color: s.color, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{s.value}</Text>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>kcal</Text>
+                    <Text style={{ fontSize: 18, color: s.color, fontFamily: Type.num, letterSpacing: 1 }}>{s.value}</Text>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 1 }}>kcal</Text>
                   </View>
                 </View>
               ))}
             </View>
             {/* No BMR (no resolvable weight): explain the dashed net, point to the fix. */}
             {profileBmr === 0 && (
-              <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginTop: 6 }}>
+              <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.ui, fontStyle: 'italic', marginTop: 6 }}>
                 Log your weight to see your calorie net.
               </Text>
             )}
@@ -1372,7 +1373,7 @@ export default function LogScreen() {
             {advancedVisible && (
               <Animated.View style={{ opacity: advancedAnim }}>
                 {allEmpty ? (
-                  <Text style={{ color: theme.textDim, fontSize: 12, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', paddingVertical: 6 }}>Log food to see advanced nutrition data.</Text>
+                  <Text style={{ color: theme.textDim, fontSize: 12, fontFamily: Type.ui, fontStyle: 'italic', paddingVertical: 6 }}>Log food to see advanced nutrition data.</Text>
                 ) : (
                   advGroups.map(grp => {
                     const visible = grp.items.filter(item => item.value > 0);
@@ -1396,7 +1397,7 @@ export default function LogScreen() {
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                             {dvItems.length > 0 && (
                               <View style={{ borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: onTrack === dvItems.length ? 'rgba(13,146,104,0.15)' : theme.accentBlueBg }}>
-                                <Text style={{ fontSize: 10, fontFamily: 'DMSans_600SemiBold', color: onTrack === dvItems.length ? MUTED_GREEN : theme.accentBlue }}>{onTrack}/{dvItems.length}</Text>
+                                <Text style={{ fontSize: 10, fontFamily: Type.uiSemibold, color: onTrack === dvItems.length ? MUTED_GREEN : theme.accentBlue }}>{onTrack}/{dvItems.length}</Text>
                               </View>
                             )}
                             <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={12} color={theme.textDim} />
@@ -1416,11 +1417,11 @@ export default function LogScreen() {
                                   }}
                                   activeOpacity={(item as any).nutrientKey || (item as any).directField ? 0.65 : 1}
                                 >
-                                  <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_500Medium', marginBottom: 1 }}>{item.label}</Text>
+                                  <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.uiMedium, marginBottom: 1 }}>{item.label}</Text>
                                   <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 3, flexWrap: 'wrap' }}>
-                                    <Text style={{ fontSize: 14, color: getColor(item.value, item.dir, item.goal), fontFamily: 'DMSans_700Bold' }}>{item.value}{item.unit}</Text>
+                                    <Text style={{ fontSize: 14, color: getColor(item.value, item.dir, item.goal), fontFamily: Type.uiBold }}>{item.value}{item.unit}</Text>
                                     {item.goal !== null && (
-                                      <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold' }}>/ {item.goal}{item.unit}</Text>
+                                      <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.uiSemibold }}>/ {item.goal}{item.unit}</Text>
                                     )}
                                   </View>
                                 </TouchableOpacity>
@@ -1438,11 +1439,11 @@ export default function LogScreen() {
                                   }}
                                   activeOpacity={(item as any).nutrientKey || (item as any).directField ? 0.65 : 1}
                                 >
-                                  <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_500Medium', marginBottom: 1 }}>{item.label}</Text>
+                                  <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.uiMedium, marginBottom: 1 }}>{item.label}</Text>
                                   <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 3, flexWrap: 'wrap' }}>
-                                    <Text style={{ fontSize: 14, color: getColor(item.value, item.dir, item.goal), fontFamily: 'DMSans_700Bold' }}>{item.value}{item.unit}</Text>
+                                    <Text style={{ fontSize: 14, color: getColor(item.value, item.dir, item.goal), fontFamily: Type.uiBold }}>{item.value}{item.unit}</Text>
                                     {item.goal !== null && (
-                                      <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold' }}>/ {item.goal}{item.unit}</Text>
+                                      <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.uiSemibold }}>/ {item.goal}{item.unit}</Text>
                                     )}
                                   </View>
                                 </TouchableOpacity>
@@ -1517,23 +1518,23 @@ export default function LogScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                     <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#0d9268' }} />
-                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{mealProtein}g</Text>
+                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.ui }}>{mealProtein}g</Text>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                     <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#c47d1a' }} />
-                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{mealCarbs}g</Text>
+                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.ui }}>{mealCarbs}g</Text>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                     <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#a83232' }} />
-                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{mealFat}g</Text>
+                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.ui }}>{mealFat}g</Text>
                   </View>
                 </View>
                 )}
               </View>
               {mealTotal > 0 && (
                 <View style={{ alignItems: 'flex-end', marginRight: 4 }}>
-                  <Text style={{ color: theme.textSecondary, fontSize: 18, fontFamily: 'BebasNeue_400Regular', lineHeight: 20 }}>{mealTotal}</Text>
-                  <Text style={{ color: theme.textDim, fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase' }}>kcal</Text>
+                  <Text style={{ color: theme.textSecondary, fontSize: 18, fontFamily: Type.num, lineHeight: numLine(18) }}>{mealTotal}</Text>
+                  <Text style={{ color: theme.textDim, fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase' }}>kcal</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -1586,7 +1587,7 @@ export default function LogScreen() {
                       onPress={() => repeatYesterday(slot)}
                       style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 5, backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.accentBlue, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 }}>
                       <Ionicons name="repeat" size={13} color={theme.accentBlue} />
-                      <Text numberOfLines={1} style={{ flexShrink: 1, color: theme.accentBlue, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>
+                      <Text numberOfLines={1} style={{ flexShrink: 1, color: theme.accentBlue, fontSize: 12, fontFamily: Type.uiSemibold }}>
                         Repeat Yesterday · {repeatSummary[slot.id].yesterdayTotal} kcal
                       </Text>
                     </PressableButton>
@@ -1595,7 +1596,7 @@ export default function LogScreen() {
                       onPress={() => openRepeatModal(slot)}
                       style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 5, backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.accentBlue, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 }}>
                       <Ionicons name="calendar" size={13} color={theme.accentBlue} />
-                      <Text style={{ color: theme.accentBlue, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Pick a Day</Text>
+                      <Text style={{ color: theme.accentBlue, fontSize: 12, fontFamily: Type.uiSemibold }}>Pick a Day</Text>
                     </PressableButton>
                   </>
                 ) : (
@@ -1606,7 +1607,7 @@ export default function LogScreen() {
                       onPress={() => openRepeatModal(slot)}
                       style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 5, backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.accentBlue, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 }}>
                       <Ionicons name="repeat" size={13} color={theme.accentBlue} />
-                      <Text numberOfLines={1} style={{ flexShrink: 1, color: theme.accentBlue, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>
+                      <Text numberOfLines={1} style={{ flexShrink: 1, color: theme.accentBlue, fontSize: 12, fontFamily: Type.uiSemibold }}>
                         Repeat a Previous Meal
                       </Text>
                     </PressableButton>
@@ -1619,7 +1620,7 @@ export default function LogScreen() {
                       importantForAccessibility="no-hide-descendants"
                       style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 5, borderWidth: 1, borderColor: 'transparent', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, opacity: 0 }}>
                       <Ionicons name="calendar" size={13} color="transparent" />
-                      <Text style={{ color: 'transparent', fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Pick a Day</Text>
+                      <Text style={{ color: 'transparent', fontSize: 12, fontFamily: Type.uiSemibold }}>Pick a Day</Text>
                     </View>
                   </>
                 )}
@@ -1722,15 +1723,15 @@ export default function LogScreen() {
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3 }}>
                                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                                     <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#0d9268' }} />
-                                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{entry.protein ?? 0}g</Text>
+                                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.ui }}>{entry.protein ?? 0}g</Text>
                                   </View>
                                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                                     <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#c47d1a' }} />
-                                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{entry.carbs ?? 0}g</Text>
+                                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.ui }}>{entry.carbs ?? 0}g</Text>
                                   </View>
                                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                                     <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#a83232' }} />
-                                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{entry.fat ?? 0}g</Text>
+                                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.ui }}>{entry.fat ?? 0}g</Text>
                                   </View>
                                 </View>
                               ) : null}
@@ -1775,7 +1776,7 @@ export default function LogScreen() {
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4, paddingTop: 8, paddingBottom: 2, paddingRight: 2 }}>
                     <Ionicons name="trash-outline" size={13} color={theme.accentRed} />
-                    <Text style={{ fontSize: 12, color: theme.accentRed, fontFamily: 'DMSans_600SemiBold' }}>Clear all</Text>
+                    <Text style={{ fontSize: 12, color: theme.accentRed, fontFamily: Type.uiSemibold }}>Clear all</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -1792,8 +1793,8 @@ export default function LogScreen() {
         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); returningFromChild.current = true; router.push({ pathname: '/ai-meal-estimator', params: { date: activeDate } }); }}>
         <Ionicons name="sparkles" size={20} color={theme.accentBlueRaw} />
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }}>Eating out? AI can estimate your meal.</Text>
-          <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 1 }}>Photo or description, no weighing needed</Text>
+          <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: Type.uiSemibold }}>Eating out? AI can estimate your meal.</Text>
+          <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.ui, marginTop: 1 }}>Photo or description, no weighing needed</Text>
         </View>
         <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
       </TouchableOpacity>
@@ -1823,7 +1824,7 @@ export default function LogScreen() {
           <PressableButton style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => openWaterCustomModal('add')}>
             <View style={{ alignItems: 'center', justifyContent: 'center', width: 20, height: 20 }}>
               <Ionicons name="water-outline" size={18} color={theme.accentBlue} />
-              <Text style={{ color: theme.accentBlue, fontSize: 9, fontFamily: 'DMSans_700Bold', position: 'absolute', bottom: -2, right: -4 }}>+</Text>
+              <Text style={{ color: theme.accentBlue, fontSize: 9, fontFamily: Type.uiBold, position: 'absolute', bottom: -2, right: -4 }}>+</Text>
             </View>
           </PressableButton>
         </View>
@@ -1836,7 +1837,7 @@ export default function LogScreen() {
           <PressableButton style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => openWaterCustomModal('subtract')}>
             <View style={{ alignItems: 'center', justifyContent: 'center', width: 20, height: 20 }}>
               <Ionicons name="water-outline" size={18} color={theme.accentRed} />
-              <Text style={{ color: theme.accentRed, fontSize: 9, fontFamily: 'DMSans_700Bold', position: 'absolute', bottom: -2, right: -4 }}>-</Text>
+              <Text style={{ color: theme.accentRed, fontSize: 9, fontFamily: Type.uiBold, position: 'absolute', bottom: -2, right: -4 }}>-</Text>
             </View>
           </PressableButton>
         </View>
@@ -1939,17 +1940,17 @@ export default function LogScreen() {
       <Animated.View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center', zIndex: 999, opacity: waterModalAnim }}>
         <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeWaterCustomModal} activeOpacity={1} />
         <View style={{ backgroundColor: theme.bgSheet, borderRadius: 14, padding: 24, width: '80%', borderWidth: 0.5, borderColor: theme.borderCard }}>
-          <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>
+          <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>
             {waterCustomSign === 'add' ? 'Add Custom Amount' : 'Remove Custom Amount'}
           </Text>
           <TextInput
             ref={waterCustomInputRef}
-            style={{ backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 24, fontFamily: 'BebasNeue_400Regular', textAlign: 'center', marginBottom: 16 }}
+            style={{ backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 24, fontFamily: Type.num, textAlign: 'center', marginBottom: 16 }}
             value={waterCustomInput} onChangeText={setWaterCustomInput} keyboardType="number-pad" placeholder="0" placeholderTextColor={theme.textPlaceholder} autoFocus />
-          <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase', textAlign: 'center', marginBottom: 16 }}>oz</Text>
+          <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 1, textTransform: 'uppercase', textAlign: 'center', marginBottom: 16 }}>oz</Text>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <TouchableOpacity style={{ flex: 1, padding: 12, borderRadius: 8, backgroundColor: theme.bgInput, alignItems: 'center' }} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeWaterCustomModal(); }}>
-              <Text style={{ color: theme.textMuted, fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>Cancel</Text>
+              <Text style={{ color: theme.textMuted, fontFamily: Type.uiSemibold, fontSize: 14 }}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={{ flex: 1, padding: 12, borderRadius: 8, backgroundColor: waterCustomSign === 'add' ? theme.accentBlueBg : theme.accentRedBg, alignItems: 'center' }}
@@ -1959,7 +1960,7 @@ export default function LogScreen() {
                 if (amt > 0) { updateWater(waterCustomSign === 'add' ? amt : -amt); }
                 closeWaterCustomModal();
               }}>
-              <Text style={{ color: waterCustomSign === 'add' ? theme.accentBlue : theme.accentRed, fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>
+              <Text style={{ color: waterCustomSign === 'add' ? theme.accentBlue : theme.accentRed, fontFamily: Type.uiSemibold, fontSize: 14 }}>
                 {waterCustomSign === 'add' ? 'Add' : 'Remove'}
               </Text>
             </TouchableOpacity>
@@ -1998,7 +1999,7 @@ export default function LogScreen() {
                 <View style={{ width:36, height:4, borderRadius:2, backgroundColor: theme.sheetHandle }} />
               </TouchableOpacity>
               <View style={{ paddingHorizontal:16, paddingBottom:12 }}>
-                <Text style={{ fontSize:9, color: theme.accentBlueRaw, fontFamily:'DMSans_700Bold', letterSpacing:3, textTransform:'uppercase' }}>Water Log</Text>
+                <Text style={{ fontSize:9, color: theme.accentBlueRaw, fontFamily:Type.uiBold, letterSpacing:3, textTransform:'uppercase' }}>Water Log</Text>
               </View>
               <View style={{ height:0.5, backgroundColor: theme.borderCard, marginHorizontal:16 }} />
               {/* Everything below the header is scrollable so Daily Goal is reachable when keyboard is open */}
@@ -2010,31 +2011,31 @@ export default function LogScreen() {
                 {/* Progress */}
                 <View style={{ paddingHorizontal:16, paddingTop:14, paddingBottom:14 }}>
                   <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-                    <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase' }}>Progress</Text>
+                    <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase' }}>Progress</Text>
                     <View style={{ backgroundColor: statusColor+'22', borderRadius:12, paddingHorizontal:8, paddingVertical:3 }}>
-                      <Text style={{ fontSize:10, color: statusColor, fontFamily:'DMSans_700Bold', letterSpacing:1 }}>{statusLabel}</Text>
+                      <Text style={{ fontSize:10, color: statusColor, fontFamily:Type.uiBold, letterSpacing:1 }}>{statusLabel}</Text>
                     </View>
                   </View>
                   <View style={{ flexDirection:'row', marginBottom:12 }}>
                     <View style={{ flex:1 }}>
-                      <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:2 }}>Logged</Text>
-                      <Text style={{ fontSize:28, color: theme.accentBlueRaw, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>
-                        {water}<Text style={{ fontSize:14, color: theme.textMuted, fontFamily:'BebasNeue_400Regular' }}> oz</Text>
+                      <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase', marginBottom:2 }}>Logged</Text>
+                      <Text style={{ fontSize:28, color: theme.accentBlueRaw, fontFamily:Type.num, letterSpacing:1 }}>
+                        {water}<Text style={{ fontSize:14, color: theme.textMuted, fontFamily:Type.num }}> oz</Text>
                       </Text>
-                      <Text style={{ fontSize:10, color: theme.textDim, fontFamily:'DMSans_400Regular' }}>of {waterGoal} oz goal</Text>
+                      <Text style={{ fontSize:10, color: theme.textDim, fontFamily:Type.ui }}>of {waterGoal} oz goal</Text>
                     </View>
                     {isToday && !goalMet ? (
                       <View style={{ flex:1, borderLeftWidth:0.5, borderLeftColor: theme.borderCard, paddingLeft:14 }}>
-                        <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:2 }}>Expected Now</Text>
-                        <Text style={{ fontSize:28, color: statusColor, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>
-                          {expectedOz}<Text style={{ fontSize:14, color: theme.textMuted, fontFamily:'BebasNeue_400Regular' }}> oz</Text>
+                        <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase', marginBottom:2 }}>Expected Now</Text>
+                        <Text style={{ fontSize:28, color: statusColor, fontFamily:Type.num, letterSpacing:1 }}>
+                          {expectedOz}<Text style={{ fontSize:14, color: theme.textMuted, fontFamily:Type.num }}> oz</Text>
                         </Text>
-                        <Text style={{ fontSize:10, color: theme.textDim, fontFamily:'DMSans_400Regular' }}>by this time of day</Text>
+                        <Text style={{ fontSize:10, color: theme.textDim, fontFamily:Type.ui }}>by this time of day</Text>
                       </View>
                     ) : (
                       <View style={{ flex:1, borderLeftWidth:0.5, borderLeftColor: theme.borderCard, paddingLeft:14, justifyContent:'center' }}>
-                        <Text style={{ fontSize:28, color: theme.statusGood, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{goalMet ? 'Goal' : ''}</Text>
-                        <Text style={{ fontSize:20, color: theme.statusGood, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{goalMet ? 'Complete' : ''}</Text>
+                        <Text style={{ fontSize:28, color: theme.statusGood, fontFamily:Type.num, letterSpacing:1 }}>{goalMet ? 'Goal' : ''}</Text>
+                        <Text style={{ fontSize:20, color: theme.statusGood, fontFamily:Type.num, letterSpacing:1 }}>{goalMet ? 'Complete' : ''}</Text>
                       </View>
                     )}
                   </View>
@@ -2045,19 +2046,19 @@ export default function LogScreen() {
                 <View style={{ height:0.5, backgroundColor: theme.borderCard, marginHorizontal:16 }} />
                 {/* Entry Log */}
                 <View style={{ paddingHorizontal:16, paddingTop:12, paddingBottom:4 }}>
-                  <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase' }}>Entries</Text>
+                  <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase' }}>Entries</Text>
                 </View>
                 <ScrollView style={{ maxHeight:160 }} contentContainerStyle={{ paddingHorizontal:16, paddingBottom:8 }} showsVerticalScrollIndicator={false} nestedScrollEnabled={true} keyboardDismissMode="on-drag">
                   {waterEntries.length === 0 ? (
-                    <Text style={{ fontSize:12, color: theme.textDim, fontFamily:'DMSans_400Regular', textAlign:'center', paddingVertical:14 }}>No entries yet</Text>
+                    <Text style={{ fontSize:12, color: theme.textDim, fontFamily:Type.ui, textAlign:'center', paddingVertical:14 }}>No entries yet</Text>
                   ) : (
                     [...waterEntries].reverse().map((entry, displayIdx) => {
                       const realIdx = waterEntries.length - 1 - displayIdx;
                       const entryTime = new Date(entry.timestamp).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
                       return (
                         <View key={realIdx} style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingVertical:9, borderBottomWidth:0.5, borderBottomColor: theme.borderCard }}>
-                          <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:'DMSans_500Medium', width:68 }}>{entryTime}</Text>
-                          <Text style={{ fontSize:14, color: entry.sign === 'add' ? theme.statusGood : theme.statusBad, fontFamily:'DMSans_600SemiBold', flex:1 }}>
+                          <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:Type.uiMedium, width:68 }}>{entryTime}</Text>
+                          <Text style={{ fontSize:14, color: entry.sign === 'add' ? theme.statusGood : theme.statusBad, fontFamily:Type.uiSemibold, flex:1 }}>
                             {entry.sign === 'add' ? '+' : '-'}{entry.amount} oz
                           </Text>
                           <TouchableOpacity onPress={() => deleteWaterEntry(realIdx)} hitSlop={{top:8,bottom:8,left:12,right:8}}>
@@ -2071,19 +2072,19 @@ export default function LogScreen() {
                 <View style={{ height:0.5, backgroundColor: theme.borderCard, marginHorizontal:16 }} />
                 {/* Presets */}
                 <View style={{ paddingHorizontal:16, paddingTop:14, paddingBottom:10 }}>
-                  <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>Quick Add Presets</Text>
+                  <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>Quick Add Presets</Text>
                   <View style={{ flexDirection:'row', gap:8, marginBottom:10 }}>
                     {([0,1,2] as const).map(i => (
                       <View key={i} style={{ flex:1, alignItems:'center' }}>
                         <TextInput
-                          style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textSecondary, padding:10, fontSize:18, fontFamily:'BebasNeue_400Regular', textAlign:'center', width:'100%' }}
+                          style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textSecondary, padding:10, fontSize:18, fontFamily:Type.num, textAlign:'center', width:'100%' }}
                           value={waterPresetInputs[i]}
                           onChangeText={v => { const cleaned = v.replace(/[^0-9]/g,''); const next = [...waterPresetInputs] as [string,string,string]; next[i] = cleaned; setWaterPresetInputs(next); }}
                           keyboardType="number-pad"
                           placeholder={String(waterPresets[i])}
                           placeholderTextColor={theme.textPlaceholder}
                         />
-                        <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_500Medium', marginTop:3 }}>oz</Text>
+                        <Text style={{ fontSize:9, color: theme.textDim, fontFamily:Type.uiMedium, marginTop:3 }}>oz</Text>
                       </View>
                     ))}
                   </View>
@@ -2091,30 +2092,30 @@ export default function LogScreen() {
                     style={{ backgroundColor: presetsSaveable ? theme.bgSelected : theme.bgInput, borderWidth:1, borderColor: presetsSaveable ? theme.accentBlueBorder : theme.borderInput, borderRadius:8, padding:12, alignItems:'center', opacity: presetsSaveable ? 1 : 0.5 }}
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); saveWaterPresets(); }}
                     disabled={!presetsSaveable}>
-                    <Text style={{ color: presetsSaveable ? theme.accentBlue : theme.textDim, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>Save Presets</Text>
+                    <Text style={{ color: presetsSaveable ? theme.accentBlue : theme.textDim, fontFamily:Type.uiSemibold, fontSize:14 }}>Save Presets</Text>
                   </TouchableOpacity>
                 </View>
                 <View style={{ height:0.5, backgroundColor: theme.borderCard, marginHorizontal:16 }} />
                 {/* Daily Goal */}
                 <View style={{ paddingHorizontal:16, paddingTop:14, paddingBottom:20 }}>
-                  <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>Daily Goal</Text>
+                  <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>Daily Goal</Text>
                   <View style={{ flexDirection:'row', gap:8, alignItems:'flex-start' }}>
                     <View style={{ flex:1 }}>
                       <TextInput
-                        style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textSecondary, padding:10, fontSize:18, fontFamily:'BebasNeue_400Regular', textAlign:'center' }}
+                        style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textSecondary, padding:10, fontSize:18, fontFamily:Type.num, textAlign:'center' }}
                         value={waterGoalInput}
                         onChangeText={v => setWaterGoalInput(v.replace(/[^0-9]/g,''))}
                         keyboardType="number-pad"
                         placeholder={String(waterGoal)}
                         placeholderTextColor={theme.textPlaceholder}
                       />
-                      <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_500Medium', marginTop:3, textAlign:'center' }}>oz</Text>
+                      <Text style={{ fontSize:9, color: theme.textDim, fontFamily:Type.uiMedium, marginTop:3, textAlign:'center' }}>oz</Text>
                     </View>
                     <TouchableOpacity
                       style={{ flex:2, backgroundColor: goalSaveable ? theme.bgSelected : theme.bgInput, borderWidth:1, borderColor: goalSaveable ? theme.accentBlueBorder : theme.borderInput, borderRadius:8, padding:12, alignItems:'center', opacity: goalSaveable ? 1 : 0.5, marginTop:1 }}
                       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); saveWaterGoal(); }}
                       disabled={!goalSaveable}>
-                      <Text style={{ color: goalSaveable ? theme.accentBlue : theme.textDim, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>Save Goal</Text>
+                      <Text style={{ color: goalSaveable ? theme.accentBlue : theme.textDim, fontFamily:Type.uiSemibold, fontSize:14 }}>Save Goal</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -2150,13 +2151,13 @@ export default function LogScreen() {
           {/* Header -- matches editSheetHeader from home tab */}
           <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingBottom:16, borderBottomWidth:0.5, borderBottomColor: theme.borderSubtle }}>
             <View>
-              <Text style={{ fontSize:13, color: theme.accentBlueRaw, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase' }}>Edit Meal Slots</Text>
-              <Text style={{ fontSize:10, color: theme.textDim, fontFamily:'DMSans_400Regular', marginTop:2 }}>{mealSlots.length} of 8 slots</Text>
+              <Text style={{ fontSize:13, color: theme.accentBlueRaw, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase' }}>Edit Meal Slots</Text>
+              <Text style={{ fontSize:10, color: theme.textDim, fontFamily:Type.ui, marginTop:2 }}>{mealSlots.length} of 8 slots</Text>
             </View>
             <TouchableOpacity
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeEditMeals(); }}
               style={{ backgroundColor: theme.accentGreenBg, borderWidth:1, borderColor: theme.accentGreenBorder, borderRadius:6, paddingHorizontal:14, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center' }}>
-              <Text style={{ color: theme.accentGreen, fontSize:12, fontFamily:'DMSans_700Bold', letterSpacing:1 }}>DONE</Text>
+              <Text style={{ color: theme.accentGreen, fontSize:12, fontFamily:Type.uiBold, letterSpacing:1 }}>DONE</Text>
             </TouchableOpacity>
           </View>
           {/* Slot list -- flex:1 wrapper constrains FlatList to remaining card height, enabling scroll */}
@@ -2176,7 +2177,7 @@ export default function LogScreen() {
                     onPress={addMealSlot}
                     disabled={mealSlots.length >= 8}>
                     <Ionicons name="add" size={16} color={mealSlots.length >= 8 ? theme.textDim : theme.accentBlue} />
-                    <Text style={{ fontSize:14, color: mealSlots.length >= 8 ? theme.textDim : theme.accentBlue, fontFamily:'DMSans_600SemiBold' }}>
+                    <Text style={{ fontSize:14, color: mealSlots.length >= 8 ? theme.textDim : theme.accentBlue, fontFamily:Type.uiSemibold }}>
                       {mealSlots.length >= 8 ? 'Maximum 8 slots reached' : 'Add Meal Slot'}
                     </Text>
                   </TouchableOpacity>
@@ -2207,14 +2208,14 @@ export default function LogScreen() {
                           onBlur={() => commitRename(slot.id, editingSlotName)}
                           onSubmitEditing={() => commitRename(slot.id, editingSlotName)}
                           returnKeyType="done"
-                          style={{ fontSize:13, color: theme.textPrimary, fontFamily:'DMSans_600SemiBold', padding:0 }}
+                          style={{ fontSize:13, color: theme.textPrimary, fontFamily:Type.uiSemibold, padding:0 }}
                         />
                       ) : (
                         <TouchableOpacity
                           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditingSlotId(slot.id); setEditingSlotName(slot.name); }}
                           hitSlop={{ top:4, bottom:4, left:0, right:0 }}>
-                          <Text style={{ fontSize:13, color: theme.textPrimary, fontFamily:'DMSans_600SemiBold', marginBottom:2 }}>{slot.name}</Text>
-                          <Text style={{ fontSize:11, color: theme.textDim, fontFamily:'DMSans_400Regular' }}>Tap to rename</Text>
+                          <Text style={{ fontSize:13, color: theme.textPrimary, fontFamily:Type.uiSemibold, marginBottom:2 }}>{slot.name}</Text>
+                          <Text style={{ fontSize:11, color: theme.textDim, fontFamily:Type.ui }}>Tap to rename</Text>
                         </TouchableOpacity>
                       )}
                     </View>
@@ -2269,12 +2270,12 @@ export default function LogScreen() {
               <TouchableOpacity onPress={closeCalPicker} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 16 }}>
                 <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
               </TouchableOpacity>
-              <Text style={{ fontSize: 10, color: theme.accentBlueRaw, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', textAlign: 'center', marginBottom: 16 }}>Jump to Date</Text>
+              <Text style={{ fontSize: 10, color: theme.accentBlueRaw, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', textAlign: 'center', marginBottom: 16 }}>Jump to Date</Text>
               {calPickerVisible && renderCalGrid()}
               <TouchableOpacity
                 onPress={closeCalPicker}
                 style={{ marginTop: 16, alignItems: 'center', paddingVertical: 8, paddingHorizontal: 16, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8 }}>
-                <Text style={{ fontSize: 14, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>Cancel</Text>
+                <Text style={{ fontSize: 14, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Cancel</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -2289,42 +2290,42 @@ const styles = StyleSheet.create({
   container:          { flex: 1 },
   content:            { padding: 16 },
   header:             { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 0.5 },
-  headerLabel:        { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: 'DMSans_700Bold' },
-  headerTitle:        { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  headerLabel:        { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: Type.uiBold },
+  headerTitle:        { fontSize: displaySize(27), fontFamily: Type.display, letterSpacing: DISPLAY_TRACKING, ...(DISPLAY_CAPS ? { textTransform: 'uppercase' as const } : {}) },
   libraryBtn:         { borderWidth: 1, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 },
-  libraryBtnText:     { fontSize: 14, fontFamily: 'DMSans_700Bold' },
+  libraryBtnText:     { fontSize: 14, fontFamily: Type.uiBold },
   card:               { borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14, padding: 16, marginBottom: 12, shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
-  cardLabel:          { fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8, fontFamily: 'DMSans_700Bold' },
+  cardLabel:          { fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8, fontFamily: Type.uiBold },
   calRow:             { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginBottom: 10 },
-  calNumber:          { fontSize: 52, lineHeight: 56, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
-  calTarget:          { fontSize: 14, fontFamily: 'DMSans_700Bold', letterSpacing: 0.3 },
+  calNumber:          { fontSize: 52, lineHeight: numLine(52), fontFamily: Type.num, letterSpacing: 1 },
+  calTarget:          { fontSize: 14, fontFamily: Type.uiBold, letterSpacing: 0.3 },
   progressBarBg:      { height: 6, borderRadius: 6, overflow: 'hidden', marginBottom: 12 },
   progressBarFill:    { height: '100%', borderRadius: 6 },
-  calRemaining:       { fontSize: 10, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase' },
+  calRemaining:       { fontSize: 10, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase' },
   // The shadow lives on mealShadow (the wrapper); mealRow keeps the clipping. A view cannot do both.
   mealShadow:         { marginBottom: 12, borderRadius: 14, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
   mealRow:            { borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14, overflow: 'hidden' },
   mealAddBtn:         { position: 'absolute', left: 14, top: 14, zIndex: 1, width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
-  mealAddBtnText:     { fontSize: 22, fontFamily: 'DMSans_400Regular', lineHeight: 24 },
+  mealAddBtnText:     { fontSize: 22, fontFamily: Type.ui, lineHeight: 24 },
   mealInfo:           { paddingLeft: 50, paddingRight: 40, paddingVertical: 14 },
-  mealName:           { fontSize: 16, fontFamily: 'DMSans_600SemiBold' },
-  mealCals:           { fontSize: 10, fontFamily: 'DMSans_700Bold', marginTop: 2, letterSpacing: 1.5, textTransform: 'uppercase' },
+  mealName:           { fontSize: 16, fontFamily: Type.uiSemibold },
+  mealCals:           { fontSize: 10, fontFamily: Type.uiBold, marginTop: 2, letterSpacing: 1.5, textTransform: 'uppercase' },
   mealChevron:        { position: 'absolute', right: 14, top: 14, width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
-  mealChevronText:    { fontSize: 14, fontFamily: 'DMSans_400Regular' },
+  mealChevronText:    { fontSize: 14, fontFamily: Type.ui },
   mealExpanded:       { borderTopWidth: 0.5, paddingHorizontal: 16, paddingVertical: 8 },
   foodEntry:          { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 10, borderRadius: 8, marginBottom: 4 },
   foodEntryLeft:      { flex: 1, marginRight: 8 },
-  foodEntryName:      { fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
-  foodEntryMacros:    { fontSize: 10, fontFamily: 'DMSans_700Bold', marginTop: 2, letterSpacing: 1, textTransform: 'uppercase' },
+  foodEntryName:      { fontSize: 13, fontFamily: Type.uiSemibold },
+  foodEntryMacros:    { fontSize: 10, fontFamily: Type.uiBold, marginTop: 2, letterSpacing: 1, textTransform: 'uppercase' },
   foodEntryRight:     { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  foodEntryCal:       { fontSize: 16, fontFamily: 'BebasNeue_400Regular' },
-  foodEntryCalLabel:  { fontSize: 10, fontFamily: 'DMSans_400Regular' },
+  foodEntryCal:       { fontSize: 16, fontFamily: Type.num },
+  foodEntryCalLabel:  { fontSize: 10, fontFamily: Type.ui },
   foodEntryDelete:    { marginLeft: 8, padding: 4 },
   foodEntryDeleteText:{ fontSize: 18 },
-  emptyMealText:      { fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', paddingVertical: 8 },
+  emptyMealText:      { fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic', paddingVertical: 8 },
   waterBtns:          { flexDirection: 'row', gap: 8 },
   waterBtn:           { flex: 1, padding: 10, borderWidth: 0.5, borderRadius: 8, alignItems: 'center' },
-  waterBtnText:       { fontFamily: 'BebasNeue_400Regular', fontSize: 15, letterSpacing: 1 },
+  waterBtnText:       { fontFamily: Type.num, fontSize: 15, letterSpacing: 1 },
   waterBtnRed:        { flex: 1, padding: 10, borderWidth: 0.5, borderRadius: 8, alignItems: 'center' },
-  waterBtnRedText:    { fontFamily: 'BebasNeue_400Regular', fontSize: 15, letterSpacing: 1 },
+  waterBtnRedText:    { fontFamily: Type.num, fontSize: 15, letterSpacing: 1 },
 });

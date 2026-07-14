@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { type Prayer } from '../utils/prayers';
 import { useTheme } from '../theme';
+import { Type } from '../typography';
 
 /**
  * Prayer action pop-up. Tapping a prayer on the full screen opens this small centered fade card.
@@ -78,7 +79,7 @@ export default function PrayerActionModal({ prayer, onClose, onAnswer, onUnanswe
             shadowRadius: 12,
           }}
         >
-          <Text style={{ fontSize: 16, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', color: theme.textPrimary, lineHeight: 24, marginBottom: 18 }}>
+          <Text style={{ fontSize: 16, fontFamily: Type.ui, fontStyle: 'italic', color: theme.textPrimary, lineHeight: 24, marginBottom: 18 }}>
             "{display?.text}"
           </Text>
 
@@ -88,7 +89,7 @@ export default function PrayerActionModal({ prayer, onClose, onAnswer, onUnanswe
               style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderRadius: 10, paddingVertical: 13, marginBottom: 10, backgroundColor: theme.bgInput, borderColor: theme.borderInput }}
             >
               <Ionicons name="arrow-undo" size={16} color={theme.textSecondary} />
-              <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary }}>Move back to active</Text>
+              <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.textSecondary }}>Move back to active</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
@@ -96,7 +97,7 @@ export default function PrayerActionModal({ prayer, onClose, onAnswer, onUnanswe
               style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderRadius: 10, paddingVertical: 14, marginBottom: 10, backgroundColor: `rgba(${GOLD_RGB},0.16)`, borderColor: `rgba(${GOLD_RGB},0.4)` }}
             >
               <Ionicons name="sparkles" size={16} color={theme.accentAmber} />
-              <Text style={{ fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: theme.accentAmber }}>God answered this</Text>
+              <Text style={{ fontSize: 15, fontFamily: Type.uiSemibold, color: theme.accentAmber }}>God answered this</Text>
             </TouchableOpacity>
           )}
 
@@ -106,21 +107,21 @@ export default function PrayerActionModal({ prayer, onClose, onAnswer, onUnanswe
               style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 10, paddingVertical: 12, backgroundColor: theme.bgInput }}
             >
               <Ionicons name="create-outline" size={15} color={theme.textSecondary} />
-              <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary }}>Edit</Text>
+              <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textSecondary }}>Edit</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => display && onDelete(display)}
               style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: theme.accentRedBorder, borderRadius: 10, paddingVertical: 12, backgroundColor: theme.accentRedBg }}
             >
               <Ionicons name="trash-outline" size={14} color={theme.accentRed} />
-              <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.accentRed }}>Delete</Text>
+              <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.accentRed }}>Delete</Text>
             </TouchableOpacity>
           </View>
           <TouchableOpacity
             onPress={close}
             style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 10 }}
           >
-            <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted }}>Cancel</Text>
+            <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textMuted }}>Cancel</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>

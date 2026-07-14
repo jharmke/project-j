@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '../theme';
+import { Type } from '../typography';
 
 /**
  * "Where do I start?" guide for the faith Bible card's first-time state. A small centered fade
@@ -96,11 +97,11 @@ export default function BibleStartGuide({ visible, onClose }: Props) {
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
             <Ionicons name="book" size={15} color={theme.accentAmber} />
-            <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentAmber }}>
+            <Text style={{ fontSize: 18, fontFamily: Type.num, letterSpacing: 2, color: theme.accentAmber }}>
               Where do I start?
             </Text>
           </View>
-          <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginBottom: 14, lineHeight: 20 }}>
+          <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textMuted, marginBottom: 14, lineHeight: 20 }}>
             Good places to dig in, each with a reason why. Tap one to start reading.
           </Text>
 
@@ -121,15 +122,15 @@ export default function BibleStartGuide({ visible, onClose }: Props) {
               }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
-                <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: theme.accentAmber }}>{s.display}</Text>
+                <Text style={{ fontSize: 15, fontFamily: Type.uiBold, color: theme.accentAmber }}>{s.display}</Text>
                 <Ionicons name="arrow-forward" size={14} color={theme.textMuted} />
               </View>
-              <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 17 }}>{s.why}</Text>
+              <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textSecondary, lineHeight: 17 }}>{s.why}</Text>
             </TouchableOpacity>
           ))}
 
           <TouchableOpacity onPress={close} style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 12, marginTop: 4 }}>
-            <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted }}>Close</Text>
+            <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textMuted }}>Close</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>

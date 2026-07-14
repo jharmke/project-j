@@ -8,6 +8,7 @@ import Svg, { Defs, LinearGradient as SvgLinearGradient, Path, Stop } from 'reac
 import { AchievementDef, AchievementDisplayTier } from '../achievementData';
 import { useTheme } from '../theme';
 import { addNotification } from '../utils/notifications';
+import { Type } from '../typography';
 
 const CARD_WIDTH = 280;
 const CARD_HEIGHT = 72;
@@ -560,20 +561,20 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 8,
-    fontFamily: 'DMSans_700Bold',
+    fontFamily: Type.uiBold,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
     marginBottom: 3,
   },
   name: {
     fontSize: 15,
-    fontFamily: 'BebasNeue_400Regular',
+    fontFamily: Type.num,
     letterSpacing: 1.5,
     marginBottom: 2,
   },
   tier: {
     fontSize: 9,
-    fontFamily: 'DMSans_500Medium',
+    fontFamily: Type.uiMedium,
     letterSpacing: 1,
     textTransform: 'uppercase',
   },

@@ -23,6 +23,7 @@ import { useMembership } from '../../MembershipContext';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import SproutIcon from '../../components/SproutIcon';
 import MembershipCard from '../../components/MembershipCard';
+import { Type, DISPLAY_CAPS, DISPLAY_TRACKING, displaySize } from '../../typography';
 
 interface Profile {
   name: string;
@@ -112,14 +113,14 @@ function ProfileSection({ label, subtitle, defaultOpen = false, children, theme,
     <View style={{ marginTop: first ? 4 : 20 }}>
       <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); toggle(); }} activeOpacity={0.7} style={{ paddingVertical: 6, minHeight: 44, justifyContent: 'center' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <Text style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>
+          <Text style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textSecondary }}>
             {label}
           </Text>
           <View style={{ flex: 1, height: 1, backgroundColor: theme.textMuted + '55' }} />
           <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color={theme.accentBlueRaw} />
         </View>
         {!open && subtitle && (
-          <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 4 }}>
+          <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textMuted, marginTop: 4 }}>
             {subtitle}
           </Text>
         )}
@@ -402,7 +403,7 @@ export default function ProfileScreen() {
           <HeaderAvatar inert />
           <View style={{ flex: 1 }}>
             <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Profile</Text>
-            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', marginTop: 1, letterSpacing: 2, textTransform: 'uppercase' }}>
+            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, marginTop: 1, letterSpacing: 2, textTransform: 'uppercase' }}>
               {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </Text>
           </View>
@@ -429,7 +430,7 @@ export default function ProfileScreen() {
 
           <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>Birthday</Text>
           <TouchableOpacity style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowDatePicker(true); }}>
-            <Text style={{ color: profile.birthday ? theme.textPrimary : theme.textPlaceholder, fontFamily: 'DMSans_400Regular', fontSize: 15 }}>
+            <Text style={{ color: profile.birthday ? theme.textPrimary : theme.textPlaceholder, fontFamily: Type.ui, fontSize: 15 }}>
               {profile.birthday ? new Date(profile.birthday).toLocaleDateString() : 'Select birthday...'}
             </Text>
           </TouchableOpacity>
@@ -437,7 +438,7 @@ export default function ProfileScreen() {
             <View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, paddingHorizontal: 4 }}>
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowDatePicker(false); setTempBirthday(null); }}>
-                  <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Cancel</Text>
+                  <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: Type.uiMedium }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => {
                   triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
@@ -445,7 +446,7 @@ export default function ProfileScreen() {
                   if (tempBirthday) updateField('birthday', tempBirthday.toISOString());
                   setTempBirthday(null);
                 }}>
-                  <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Confirm</Text>
+                  <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: Type.uiSemibold }}>Confirm</Text>
                 </TouchableOpacity>
               </View>
               <DateTimePicker
@@ -506,7 +507,7 @@ export default function ProfileScreen() {
         <View onLayout={e => { activityLevelY.current = e.nativeEvent.layout.y; }} />
         <ProfileSection label="Activity Level" subtitle="Lifestyle & training frequency" theme={theme}>
           <Text style={[styles.fieldLabel, { color: theme.textMuted, marginTop: 0 }]}>LIFESTYLE</Text>
-          <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', color: theme.textMuted, marginBottom: 8 }}>Your day-to-day movement, not counting workouts.</Text>
+          <Text style={{ fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic', color: theme.textMuted, marginBottom: 8 }}>Your day-to-day movement, not counting workouts.</Text>
           {LIFESTYLE_OPTIONS.map(o => (
             <TouchableOpacity
               key={o.key}
@@ -516,9 +517,9 @@ export default function ProfileScreen() {
               <View style={[styles.activityDot, { backgroundColor: theme.textDim },
                 profile.lifestyleActivity === o.key && { backgroundColor: theme.accentBlue }]} />
               <View style={{ flex: 1 }}>
-                <Text style={[{ fontSize: 13, fontFamily: 'DMSans_500Medium' }, { color: theme.textMuted },
+                <Text style={[{ fontSize: 13, fontFamily: Type.uiMedium }, { color: theme.textMuted },
                   profile.lifestyleActivity === o.key && { color: theme.textPrimary }]}>{o.label}</Text>
-                <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 1 }}>{o.sub}</Text>
+                <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textDim, marginTop: 1 }}>{o.sub}</Text>
               </View>
             </TouchableOpacity>
           ))}
@@ -526,7 +527,7 @@ export default function ProfileScreen() {
           <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, marginTop: 12, marginBottom: 12 }} />
 
           <Text style={[styles.fieldLabel, { color: theme.textMuted, marginTop: 0 }]}>TRAINING FREQUENCY</Text>
-          <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', color: theme.textMuted, marginBottom: 8 }}>How often you do structured workouts.</Text>
+          <Text style={{ fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic', color: theme.textMuted, marginBottom: 8 }}>How often you do structured workouts.</Text>
           {TRAINING_OPTIONS.map(o => (
             <TouchableOpacity
               key={o.key}
@@ -536,9 +537,9 @@ export default function ProfileScreen() {
               <View style={[styles.activityDot, { backgroundColor: theme.textDim },
                 profile.trainingFrequency === o.key && { backgroundColor: theme.accentBlue }]} />
               <View style={{ flex: 1 }}>
-                <Text style={[{ fontSize: 13, fontFamily: 'DMSans_500Medium' }, { color: theme.textMuted },
+                <Text style={[{ fontSize: 13, fontFamily: Type.uiMedium }, { color: theme.textMuted },
                   profile.trainingFrequency === o.key && { color: theme.textPrimary }]}>{o.label}</Text>
-                <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 1 }}>{o.sub}</Text>
+                <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textDim, marginTop: 1 }}>{o.sub}</Text>
               </View>
             </TouchableOpacity>
           ))}
@@ -547,7 +548,7 @@ export default function ProfileScreen() {
         {bmr > 0 && (
           <ProfileSection label="Your Estimates" subtitle="BMR, TDEE, and calorie target" theme={theme}>
             <Text style={[styles.estimateNote, { color: theme.textMuted }]}>Based on Mifflin-St Jeor formula - estimates only, not exact values.</Text>
-            <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginBottom: 10 }}>For informational purposes only. Not medical advice.</Text>
+            <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, fontStyle: 'italic', marginBottom: 10 }}>For informational purposes only. Not medical advice.</Text>
             <View style={styles.statsRow}>
               <View style={[styles.statBox, { backgroundColor: theme.bgInset }]}>
                 <Text style={[styles.statVal, { color: theme.textPrimary }]}>{bmr}</Text>
@@ -566,7 +567,7 @@ export default function ProfileScreen() {
               </View>
             </View>
             {calorieFloor.zone !== 'green' && (
-              <Text style={{ fontSize: 12, color: theme.statusWarn, fontFamily: 'DMSans_500Medium', marginTop: 10, lineHeight: 17 }}>
+              <Text style={{ fontSize: 12, color: theme.statusWarn, fontFamily: Type.uiMedium, marginTop: 10, lineHeight: 17 }}>
                 This target is on the low side. Prioritize protein and nutrient-dense foods to fuel and recover well.
               </Text>
             )}
@@ -576,7 +577,7 @@ export default function ProfileScreen() {
         <ProfileSection label="Weight Goal" subtitle="Goal weight & weekly pace" theme={theme}>
           {/* Goal weight input -- lives above pace so the story reads top to bottom */}
           <Text style={[styles.fieldLabel, { color: theme.textMuted, marginTop: 0 }]}>Goal Weight (optional)</Text>
-          <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', color: theme.textMuted, marginBottom: 10 }}>
+          <Text style={{ fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic', color: theme.textMuted, marginBottom: 10 }}>
             Skip this if you're focused on general health rather than a specific number.
           </Text>
           <View
@@ -606,7 +607,7 @@ export default function ProfileScreen() {
                   }, 150);
                 }}
               />
-              <Text style={{ color: theme.textMuted, fontSize: 14, fontFamily: 'DMSans_400Regular' }}>lbs</Text>
+              <Text style={{ color: theme.textMuted, fontSize: 14, fontFamily: Type.ui }}>lbs</Text>
             </View>
           </View>
 
@@ -630,7 +631,7 @@ export default function ProfileScreen() {
                   }}>
                   <Text style={{
                     fontSize: 13,
-                    fontFamily: selected ? 'DMSans_700Bold' : 'DMSans_600SemiBold',
+                    fontFamily: selected ? Type.uiBold : Type.uiSemibold,
                     color: selected ? theme.accentBlue : theme.textSecondary,
                   }}>{short}</Text>
                 </TouchableOpacity>
@@ -641,7 +642,7 @@ export default function ProfileScreen() {
           {/* Low-target caution at the point of action (mirrors the Your Estimates card) so it's
               seen the moment an aggressive pace is picked, even if Estimates is collapsed. */}
           {calorieFloor.zone !== 'green' && (
-            <Text style={{ fontSize: 12, color: theme.statusWarn, fontFamily: 'DMSans_500Medium', marginTop: 12, lineHeight: 17 }}>
+            <Text style={{ fontSize: 12, color: theme.statusWarn, fontFamily: Type.uiMedium, marginTop: 12, lineHeight: 17 }}>
               This target is on the low side. Prioritize protein and nutrient-dense foods to fuel and recover well.
             </Text>
           )}
@@ -653,14 +654,14 @@ export default function ProfileScreen() {
             if (!profile.goalWeight) return null;
             if (!currentWeight) return (
               <View style={{ marginTop: 14, padding: 12, backgroundColor: theme.bgInset, borderRadius: 8 }}>
-                <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>
+                <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, fontStyle: 'italic' }}>
                   Log your weight today to see a projected date.
                 </Text>
               </View>
             );
             if (!projected) return (
               <View style={{ marginTop: 14, padding: 12, backgroundColor: theme.bgInset, borderRadius: 8 }}>
-                <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>
+                <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, fontStyle: 'italic' }}>
                   {deficit === 0 ? 'Set a loss or gain pace above to see a projected date.' : 'Your goal weight is already met at your current pace.'}
                 </Text>
               </View>
@@ -670,15 +671,15 @@ export default function ProfileScreen() {
               <View style={{ marginTop: 14 }}>
                 <View style={{ padding: 12, backgroundColor: theme.bgInset, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <View>
-                    <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 3 }}>Projected</Text>
-                    <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.accentBlue }}>{projected}</Text>
+                    <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 3 }}>Projected</Text>
+                    <Text style={{ fontSize: 22, fontFamily: Type.num, letterSpacing: 1, color: theme.accentBlue }}>{projected}</Text>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 3 }}>To Go</Text>
-                    <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.textPrimary }}>{Math.round(lbsToGo * 10) / 10} lbs</Text>
+                    <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 3 }}>To Go</Text>
+                    <Text style={{ fontSize: 22, fontFamily: Type.num, letterSpacing: 1, color: theme.textPrimary }}>{Math.round(lbsToGo * 10) / 10} lbs</Text>
                   </View>
                 </View>
-                <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', textAlign: 'center', marginTop: 6 }}>For informational purposes only. Not medical advice.</Text>
+                <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, fontStyle: 'italic', textAlign: 'center', marginTop: 6 }}>For informational purposes only. Not medical advice.</Text>
               </View>
             );
           })()}
@@ -759,14 +760,14 @@ export default function ProfileScreen() {
               alignItems: 'center',
               width: 90,
             }}>
-            <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.textMuted }}>
+            <Text style={{ fontSize: 18, fontFamily: Type.num, letterSpacing: 2, color: theme.textMuted }}>
               CANCEL
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); saveProfile(); }}
             style={{ flex: 1, backgroundColor: theme.accentBlue, borderRadius: 10, padding: 16, alignItems: 'center' }}>
-            <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.bgPrimary }}>
+            <Text style={{ fontSize: 18, fontFamily: Type.num, letterSpacing: 2, color: theme.bgPrimary }}>
               {saved ? 'SAVED' : 'SAVE PROFILE'}
             </Text>
           </TouchableOpacity>
@@ -794,39 +795,39 @@ const styles = StyleSheet.create({
   container:          { flex: 1 },
   content:            { padding: 16 },
   header:             { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 0.5 },
-  headerLabel:        { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: 'DMSans_700Bold' },
-  headerTitle:        { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  headerLabel:        { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: Type.uiBold },
+  headerTitle:        { fontSize: displaySize(27), fontFamily: Type.display, letterSpacing: DISPLAY_TRACKING, ...(DISPLAY_CAPS ? { textTransform: 'uppercase' as const } : {}) },
   card:               { borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14, padding: 16, marginBottom: 12, shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
-  cardLabel:          { fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 0, fontFamily: 'DMSans_700Bold' },
-  fieldLabel:         { fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6, marginTop: 10 },
-  input:              { borderWidth: 0.5, borderRadius: 8, padding: 10, fontSize: 15, fontFamily: 'DMSans_400Regular', marginBottom: 4 },
+  cardLabel:          { fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 0, fontFamily: Type.uiBold },
+  fieldLabel:         { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6, marginTop: 10 },
+  input:              { borderWidth: 0.5, borderRadius: 8, padding: 10, fontSize: 15, fontFamily: Type.ui, marginBottom: 4 },
   heightRow:          { flexDirection: 'row', gap: 12 },
   heightField:        { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  heightUnit:         { fontSize: 13, fontFamily: 'DMSans_400Regular' },
+  heightUnit:         { fontSize: 13, fontFamily: Type.ui },
   weightDisplay:      { borderWidth: 0.5, borderRadius: 8, padding: 10, marginBottom: 4 },
-  weightVal:          { fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
-  weightSub:          { fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 2 },
+  weightVal:          { fontSize: 20, fontFamily: Type.num, letterSpacing: 1 },
+  weightSub:          { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 2 },
   toggleRow:          { flexDirection: 'row', gap: 8, marginTop: 4 },
   toggleBtn:          { flex: 1, padding: 10, borderWidth: 0.5, borderRadius: 8, alignItems: 'center' },
   toggleBtnActive:    { },
-  toggleBtnText:      { fontSize: 14, fontFamily: 'DMSans_500Medium' },
+  toggleBtnText:      { fontSize: 14, fontFamily: Type.uiMedium },
   toggleBtnTextActive:{ },
   activityBtn:        { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderRadius: 8, marginBottom: 4 },
   activityBtnActive:  { },
   activityDot:        { width: 8, height: 8, borderRadius: 4 },
   activityDotActive:  { },
-  activityLabel:      { fontSize: 13, fontFamily: 'DMSans_400Regular', flex: 1 },
+  activityLabel:      { fontSize: 13, fontFamily: Type.ui, flex: 1 },
   activityLabelActive:{ },
-  estimateNote:       { fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginBottom: 12 },
+  estimateNote:       { fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic', marginBottom: 12 },
   statsRow:           { flexDirection: 'row', gap: 8 },
   statBox:            { flex: 1, borderRadius: 8, padding: 12, alignItems: 'center' },
-  statVal:            { fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
-  statLabel:          { fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginTop: 2 },
-  statSub:            { fontSize: 9, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 2 },
+  statVal:            { fontSize: 24, fontFamily: Type.num, letterSpacing: 1 },
+  statLabel:          { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginTop: 2 },
+  statSub:            { fontSize: 9, fontFamily: Type.ui, textAlign: 'center', marginTop: 2 },
   useRecommended:     { borderWidth: 1, borderRadius: 8, padding: 10, alignItems: 'center', marginBottom: 10 },
-  useRecommendedText: { fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
+  useRecommendedText: { fontSize: 13, fontFamily: Type.uiSemibold },
   saveBtn:            { borderRadius: 10, padding: 16, alignItems: 'center', marginBottom: 16 },
   saveBtnDone:        { },
-  saveBtnText:        { fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  saveBtnText:        { fontSize: 18, fontFamily: Type.num, letterSpacing: 2 },
   saveBtnDisabled:    { borderWidth: 0.5 },
 });

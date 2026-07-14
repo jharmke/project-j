@@ -25,6 +25,7 @@ import { READING_PLANS } from '../data/readingPlans';
 import { DEVOTIONALS } from '../data/devotionals';
 import { ToastRenderer, useToast } from './Toast';
 import { useTheme } from '../theme';
+import { Type } from '../typography';
 
 // Halo's chat overlay. A transparent Modal that fades in over the current faith screen
 // (the screen stays mounted behind it, so the user never loses their place). Never a
@@ -875,8 +876,8 @@ const styles = StyleSheet.create({
   },
   brandRow:  { flexDirection: 'row', alignItems: 'center', gap: 10 },
   brandDot:  { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
-  brand:     { fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1.5 },
-  brandSub:  { fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginTop: -2 },
+  brand:     { fontSize: 22, fontFamily: Type.num, letterSpacing: 1.5 },
+  brandSub:  { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginTop: -2 },
   closeBtn:  { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   bubble: {
@@ -897,17 +898,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(232,160,32,0.12)',
     borderColor: 'rgba(232,160,32,0.32)',
   },
-  bubbleText: { fontSize: 14, fontFamily: 'DMSans_400Regular', lineHeight: 20 },
-  verseLink:  { color: GOLD, fontFamily: 'DMSans_600SemiBold', textDecorationLine: 'underline' },
+  bubbleText: { fontSize: 14, fontFamily: Type.ui, lineHeight: 20 },
+  verseLink:  { color: GOLD, fontFamily: Type.uiSemibold, textDecorationLine: 'underline' },
   haloRow:     { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   replyCol:    { flexShrink: 1, marginBottom: 10 },
   replyBubble: { maxWidth: '100%', marginBottom: 0 },
   pillRow:  { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8, marginBottom: 2 },
   pill:     { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 14, borderWidth: 1, minHeight: 32 },
-  pillText: { fontSize: 12, fontFamily: 'DMSans_600SemiBold' },
+  pillText: { fontSize: 12, fontFamily: Type.uiSemibold },
   actionRow:   { flexDirection: 'row', alignItems: 'center', marginTop: 2, paddingLeft: 2 },
   actionBtn:   { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
-  systemMsg:  { fontSize: 12, fontFamily: 'DMSans_400Regular', textAlign: 'center', alignSelf: 'center', maxWidth: '90%', marginVertical: 10, lineHeight: 17 },
+  systemMsg:  { fontSize: 12, fontFamily: Type.ui, textAlign: 'center', alignSelf: 'center', maxWidth: '90%', marginVertical: 10, lineHeight: 17 },
   crisisCard: {
     alignSelf: 'stretch',
     borderWidth: 1,
@@ -916,18 +917,18 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     gap: 10,
   },
-  crisisMsg:      { fontSize: 14, fontFamily: 'DMSans_400Regular', lineHeight: 20 },
+  crisisMsg:      { fontSize: 14, fontFamily: Type.ui, lineHeight: 20 },
   crisisBtn:      { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
-  crisisBtnLabel: { fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
-  crisisBtnDetail:{ fontSize: 12, fontFamily: 'DMSans_400Regular', marginTop: 1 },
-  crisisSmall:    { fontSize: 11, fontFamily: 'DMSans_400Regular', lineHeight: 16 },
-  crisisClosing:  { fontSize: 13, fontFamily: 'DMSans_600SemiBold', textAlign: 'center', marginTop: 2 },
+  crisisBtnLabel: { fontSize: 13, fontFamily: Type.uiSemibold },
+  crisisBtnDetail:{ fontSize: 12, fontFamily: Type.ui, marginTop: 1 },
+  crisisSmall:    { fontSize: 11, fontFamily: Type.ui, lineHeight: 16 },
+  crisisClosing:  { fontSize: 13, fontFamily: Type.uiSemibold, textAlign: 'center', marginTop: 2 },
   contextChip:      { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', marginLeft: 12, marginBottom: 2, marginTop: 2, paddingVertical: 5, paddingHorizontal: 10, borderRadius: 14, borderWidth: 1 },
-  contextChipText:  { fontSize: 12, fontFamily: 'DMSans_600SemiBold', maxWidth: 220 },
+  contextChipText:  { fontSize: 12, fontFamily: Type.uiSemibold, maxWidth: 220 },
   contextChipClose: { padding: 2 },
-  quota:      { fontSize: 11, fontFamily: 'DMSans_600SemiBold', letterSpacing: 0.3, textAlign: 'center', paddingHorizontal: 16, paddingTop: 6, paddingBottom: 2 },
+  quota:      { fontSize: 11, fontFamily: Type.uiSemibold, letterSpacing: 0.3, textAlign: 'center', paddingHorizontal: 16, paddingTop: 6, paddingBottom: 2 },
   inputBar:   { flexDirection: 'row', alignItems: 'flex-end', gap: 10, paddingHorizontal: 12, paddingTop: 6 },
-  input:      { flex: 1, minHeight: 44, maxHeight: 120, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, fontFamily: 'DMSans_400Regular' },
+  input:      { flex: 1, minHeight: 44, maxHeight: 120, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, fontFamily: Type.ui },
   sendBtn:    { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  disclaimer: { fontSize: 10, fontFamily: 'DMSans_400Regular', textAlign: 'center', paddingHorizontal: 20, paddingTop: 8, lineHeight: 14 },
+  disclaimer: { fontSize: 10, fontFamily: Type.ui, textAlign: 'center', paddingHorizontal: 20, paddingTop: 8, lineHeight: 14 },
 });

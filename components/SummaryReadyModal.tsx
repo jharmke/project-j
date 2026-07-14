@@ -19,6 +19,7 @@ import TooltipIcon from './TooltipIcon';
 import { scoreLabel } from '../utils/dayScore';
 import { periodSummaryLines } from '../utils/daySummaryCopy';
 import { ScoreRing } from './DaySummaryModal';
+import { Type, numLine } from '../typography';
 
 type StyleMode = 'discipline' | 'balanced' | 'mindful';
 type Tier = 'week' | 'month';
@@ -146,22 +147,22 @@ export default function SummaryReadyModal({
 
             {/* Header row: title + inline (i) */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-              <Text style={{ fontSize: 18, letterSpacing: 2, fontFamily: 'BebasNeue_400Regular', color: theme.accentBlue }}>{title}</Text>
+              <Text style={{ fontSize: 18, letterSpacing: -0.2, fontFamily: Type.display, color: theme.accentBlue }}>{title}</Text>
               <View style={{ transform: [{ translateY: -2 }] }}>
                 <TooltipIcon tooltipKey="day_score" hideTour />
               </View>
             </View>
 
             {/* Date range (lead-in to the centered hero) */}
-            <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 2 }}>{formatRange(tier, rangeStart, rangeEnd)}</Text>
+            <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.ui, textAlign: 'center', marginTop: 2 }}>{formatRange(tier, rangeStart, rangeEnd)}</Text>
 
             {/* Hero composite ring + label + context line */}
             <View style={{ alignItems: 'center', marginTop: 12 }}>
               <ScoreRing value={composite} color={heroColor} theme={theme} celebrate={celebrate} />
-              <Text style={{ fontSize: 20, letterSpacing: 2, fontFamily: 'BebasNeue_400Regular', color: heroColor, marginTop: 8 }}>
+              <Text style={{ fontSize: 20, letterSpacing: 2, fontFamily: Type.num, color: heroColor, marginTop: 8 }}>
                 {scoreLabel(shownComposite, styleMode).toUpperCase()}
               </Text>
-              <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginTop: 4 }}>{contextLine}</Text>
+              <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.ui, fontStyle: 'italic', marginTop: 4 }}>{contextLine}</Text>
             </View>
 
             {/* Category pills: icon + label, soft number, animated tier fill bar */}
@@ -170,9 +171,9 @@ export default function SummaryReadyModal({
                 <View key={p.label} style={{ flex: 1, backgroundColor: theme.bgInset, borderRadius: 10, borderWidth: 0.5, borderColor: theme.borderCard, paddingVertical: 10, paddingHorizontal: 10, alignItems: 'center' }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <Ionicons name={p.icon} size={10} color={theme.textMuted} />
-                    <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold' }}>{p.label}</Text>
+                    <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: Type.uiBold }}>{p.label}</Text>
                   </View>
-                  <Text style={{ fontSize: 24, lineHeight: 28, fontFamily: 'BebasNeue_400Regular', color: p.val !== null ? theme.textSecondary : theme.textDim, marginTop: 2 }}>
+                  <Text style={{ fontSize: 24, lineHeight: numLine(24), fontFamily: Type.num, color: p.val !== null ? theme.textSecondary : theme.textDim, marginTop: 2 }}>
                     {p.val !== null ? Math.round(p.val) : '--'}
                   </Text>
                   <View style={{ width: '100%', height: 5, borderRadius: 3, backgroundColor: barColor(p.val) + '33', marginTop: 6, overflow: 'hidden' }}>
@@ -184,11 +185,11 @@ export default function SummaryReadyModal({
 
             {/* Encouraging line (period-aware, app coach voice) */}
             {!!winLine && (
-              <Text style={{ fontSize: 14, color: theme.accentBlue, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', textAlign: 'center', marginTop: 18, lineHeight: 20 }}>{winLine}</Text>
+              <Text style={{ fontSize: 14, color: theme.accentBlue, fontFamily: Type.ui, fontStyle: 'italic', textAlign: 'center', marginTop: 18, lineHeight: 20 }}>{winLine}</Text>
             )}
             {/* Coach note (only when a category lagged) */}
             {!!coachLine && (
-              <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', textAlign: 'center', marginTop: 8, lineHeight: 17 }}>{coachLine}</Text>
+              <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, fontStyle: 'italic', textAlign: 'center', marginTop: 8, lineHeight: 17 }}>{coachLine}</Text>
             )}
 
             {/* Divider */}
@@ -196,16 +197,16 @@ export default function SummaryReadyModal({
 
             {/* FULL BREAKDOWN -> dedicated full-summary screen */}
             <TouchableOpacity onPress={handleViewBreakdown} style={{ paddingVertical: 13, borderRadius: 10, alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
-              <Text style={{ color: theme.accentBlue, fontSize: 13, letterSpacing: 1, fontFamily: 'DMSans_600SemiBold' }}>FULL BREAKDOWN</Text>
+              <Text style={{ color: theme.accentBlue, fontSize: 13, letterSpacing: 1, fontFamily: Type.uiSemibold }}>FULL BREAKDOWN</Text>
             </TouchableOpacity>
 
             {/* GOT IT (labeled secondary exit) */}
             <TouchableOpacity onPress={dismiss} style={{ paddingVertical: 13, borderRadius: 10, alignItems: 'center', marginTop: 8, backgroundColor: theme.bgInset, borderWidth: 0.5, borderColor: theme.borderCard }}>
-              <Text style={{ color: theme.textSecondary, fontSize: 13, letterSpacing: 1, fontFamily: 'DMSans_600SemiBold' }}>GOT IT</Text>
+              <Text style={{ color: theme.textSecondary, fontSize: 13, letterSpacing: 1, fontFamily: Type.uiSemibold }}>GOT IT</Text>
             </TouchableOpacity>
 
             {/* Micro disclaimer */}
-            <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 12 }}>
+            <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, textAlign: 'center', marginTop: 12 }}>
               For informational purposes only. Not medical advice.
             </Text>
           </View>

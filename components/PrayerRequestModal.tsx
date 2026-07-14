@@ -7,6 +7,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { auth, db } from '../firebaseConfig';
 import { useTheme } from '../theme';
 import { ToastRenderer, useToast } from './Toast';
+import { Type } from '../typography';
 
 interface Props {
   visible: boolean;
@@ -100,11 +101,11 @@ export default function PrayerRequestModal({ visible, onClose, variant }: Props)
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
             <Ionicons name="heart" size={15} color={faith ? theme.accentAmber : theme.accentBlue} />
-            <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: faith ? theme.accentAmber : theme.accentBlue }}>
+            <Text style={{ fontSize: 18, fontFamily: Type.num, letterSpacing: 2, color: faith ? theme.accentAmber : theme.accentBlue }}>
               Send a Prayer Request
             </Text>
           </View>
-          <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginBottom: 16, lineHeight: 20 }}>
+          <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textMuted, marginBottom: 16, lineHeight: 20 }}>
             Share what's on your heart. Every request is read and prayed over.
           </Text>
 
@@ -122,7 +123,7 @@ export default function PrayerRequestModal({ visible, onClose, variant }: Props)
               borderRadius: 8,
               padding: 12,
               fontSize: 14,
-              fontFamily: 'DMSans_400Regular',
+              fontFamily: Type.ui,
               color: theme.textPrimary,
               minHeight: 100,
               textAlignVertical: 'top',
@@ -136,7 +137,7 @@ export default function PrayerRequestModal({ visible, onClose, variant }: Props)
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); close(); }}
               style={{ flex: 1, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 12, backgroundColor: theme.bgInput }}
             >
-              <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted }}>Cancel</Text>
+              <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textMuted }}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleSend}
@@ -150,10 +151,10 @@ export default function PrayerRequestModal({ visible, onClose, variant }: Props)
               }}
             >
               {sending
-                ? <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: faith ? theme.accentAmber : theme.accentBlue }}>Sending...</Text>
+                ? <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: faith ? theme.accentAmber : theme.accentBlue }}>Sending...</Text>
                 : <>
                     <Ionicons name="send" size={14} color={faith ? theme.accentAmber : theme.accentBlue} />
-                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: faith ? theme.accentAmber : theme.accentBlue }}>Send</Text>
+                    <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: faith ? theme.accentAmber : theme.accentBlue }}>Send</Text>
                   </>
               }
             </TouchableOpacity>

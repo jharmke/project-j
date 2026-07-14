@@ -6,6 +6,7 @@ import { Alert, Animated, KeyboardAvoidingView, Modal, Platform, ScrollView, Sty
 import { CardPeriod, ChartType, StatsCard } from '../statsCardRegistry';
 import { ToastRenderer, useToast } from './Toast';
 import { GRAPH_SWATCHES, MACRO_CARBS, MACRO_FAT, MACRO_PROTEIN } from './StatsGraphCard';
+import { Type } from '../typography';
 
 interface Props {
   card: StatsCard | null;
@@ -132,7 +133,7 @@ export function StatsCardEditModal({ card, onClose, onSave, onDelete, theme }: P
           }}>
             {/* Header */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-              <Text style={{ fontFamily: 'BebasNeue_400Regular', fontSize: 22, letterSpacing: 3, color: theme.accentBlueRaw }}>EDIT GRAPH</Text>
+              <Text style={{ fontFamily: Type.num, fontSize: 22, letterSpacing: 3, color: theme.accentBlueRaw }}>EDIT GRAPH</Text>
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleClose(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <Ionicons name="close" size={20} color={theme.textMuted} />
               </TouchableOpacity>
@@ -142,7 +143,7 @@ export function StatsCardEditModal({ card, onClose, onSave, onDelete, theme }: P
               {/* Label */}
               <Text style={styles.sectionLabel(theme)}>Label</Text>
               <TextInput
-                style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 15, fontFamily: 'DMSans_400Regular', marginBottom: 20 }}
+                style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 15, fontFamily: Type.ui, marginBottom: 20 }}
                 value={editLabel}
                 onChangeText={setEditLabel}
                 placeholderTextColor={theme.textPlaceholder}
@@ -159,7 +160,7 @@ export function StatsCardEditModal({ card, onClose, onSave, onDelete, theme }: P
                         style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center',
                           backgroundColor: editChartType === ct ? theme.accentBlueBg : theme.bgInput,
                           borderWidth: 1, borderColor: editChartType === ct ? theme.accentBlueBorder : theme.borderInput }}>
-                        <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: editChartType === ct ? theme.accentBlue : theme.textMuted }}>
+                        <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: editChartType === ct ? theme.accentBlue : theme.textMuted }}>
                           {ct === 'line' ? 'Line' : 'Bar'}
                         </Text>
                       </TouchableOpacity>
@@ -176,7 +177,7 @@ export function StatsCardEditModal({ card, onClose, onSave, onDelete, theme }: P
                     style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center',
                       backgroundColor: editPeriod === p ? theme.accentBlueBg : theme.bgInput,
                       borderWidth: 1, borderColor: editPeriod === p ? theme.accentBlueBorder : theme.borderInput }}>
-                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: editPeriod === p ? theme.accentBlue : theme.textMuted }}>
+                    <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: editPeriod === p ? theme.accentBlue : theme.textMuted }}>
                       {p}D
                     </Text>
                   </TouchableOpacity>
@@ -203,7 +204,7 @@ export function StatsCardEditModal({ card, onClose, onSave, onDelete, theme }: P
                           .map(([, v]) => v);
                         return (
                           <View key={key} style={{ marginBottom: 10 }}>
-                            <Text style={{ fontSize: 9, fontFamily: 'DMSans_600SemiBold', letterSpacing: 1.5, textTransform: 'uppercase', color: theme.textDim, marginBottom: 6 }}>{label}</Text>
+                            <Text style={{ fontSize: 9, fontFamily: Type.uiSemibold, letterSpacing: 1.5, textTransform: 'uppercase', color: theme.textDim, marginBottom: 6 }}>{label}</Text>
                             <View style={{ flexDirection: 'row', gap: 8 }}>
                               {GRAPH_SWATCHES.map(sw => {
                                 const selected = editMacroColors[key] === sw;
@@ -246,7 +247,7 @@ export function StatsCardEditModal({ card, onClose, onSave, onDelete, theme }: P
 
               {/* Delete */}
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleDelete(); }} style={{ paddingVertical: 12, alignItems: 'center' }}>
-                <Text style={{ color: theme.accentRed, fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>Delete Graph</Text>
+                <Text style={{ color: theme.accentRed, fontFamily: Type.uiSemibold, fontSize: 14 }}>Delete Graph</Text>
               </TouchableOpacity>
             </ScrollView>
 
@@ -254,7 +255,7 @@ export function StatsCardEditModal({ card, onClose, onSave, onDelete, theme }: P
             <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, paddingHorizontal: 20, paddingVertical: 14 }}>
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); handleSave(); }} disabled={noChange}
                 style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 10, paddingVertical: 14, alignItems: 'center', opacity: noChange ? 0.4 : 1 }}>
-                <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 18, letterSpacing: 2 }}>SAVE</Text>
+                <Text style={{ color: '#ffffff', fontFamily: Type.num, fontSize: 18, letterSpacing: 2 }}>SAVE</Text>
               </TouchableOpacity>
             </View>
           </Animated.View>
@@ -267,7 +268,7 @@ export function StatsCardEditModal({ card, onClose, onSave, onDelete, theme }: P
 const styles = {
   sectionLabel: (theme: any) => ({
     fontSize: 9 as const,
-    fontFamily: 'DMSans_700Bold' as const,
+    fontFamily: Type.uiBold as const,
     letterSpacing: 3,
     textTransform: 'uppercase' as const,
     color: theme.textMuted,

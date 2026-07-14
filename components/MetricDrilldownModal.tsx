@@ -11,6 +11,7 @@ import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View }
 import Svg, { Circle, Defs, Line, LinearGradient as SvgLinearGradient, Path, Polyline, Stop, Text as SvgText } from 'react-native-svg';
 import { useTheme } from '../theme';
 import { triggerHaptic } from '../utils/haptics';
+import { Type } from '../typography';
 
 export interface MetricDrilldownData {
   title: string;
@@ -97,10 +98,10 @@ function MiniMetricChart({ points, color, theme, formatTick }: { points: { dateK
   return (
     <View onLayout={e => setW(e.nativeEvent.layout.width)}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-        <Text style={{ fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', color: theme.textMuted, fontFamily: 'DMSans_700Bold' }}>Trend</Text>
+        <Text style={{ fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', color: theme.textMuted, fontFamily: Type.uiBold }}>Trend</Text>
         {selP && (
-          <Text style={{ fontSize: 11, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>
-            {fmtDay(selP.dateKey)} · <Text style={{ color, fontFamily: 'DMSans_700Bold' }}>{selP.label}</Text>
+          <Text style={{ fontSize: 11, color: theme.textSecondary, fontFamily: Type.uiMedium }}>
+            {fmtDay(selP.dateKey)} · <Text style={{ color, fontFamily: Type.uiBold }}>{selP.label}</Text>
           </Text>
         )}
       </View>
@@ -165,10 +166,10 @@ export default function MetricDrilldownModal({ visible, onClose, data }: Props) 
 
   const sectionLabel = {
     fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase' as const,
-    color: theme.textMuted, fontFamily: 'DMSans_700Bold', marginBottom: 6,
+    color: theme.textMuted, fontFamily: Type.uiBold, marginBottom: 6,
   };
   const bodyText = {
-    fontSize: 13.5, lineHeight: 20, color: theme.textSecondary, fontFamily: 'DMSans_400Regular',
+    fontSize: 13.5, lineHeight: 20, color: theme.textSecondary, fontFamily: Type.ui,
   };
 
   // Boxes take a light tint + left accent of the metric's own status color, so the
@@ -221,17 +222,17 @@ export default function MetricDrilldownModal({ visible, onClose, data }: Props) 
             <View style={{ paddingHorizontal: 20, paddingBottom: 14, paddingTop: 4, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
               <Text style={sectionLabel}>{data.title}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
-                <Text style={{ fontSize: 30, color: data.statusColor, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>
+                <Text style={{ fontSize: 30, color: data.statusColor, fontFamily: Type.num, letterSpacing: 1 }}>
                   {data.value}
                 </Text>
                 {data.statusWord && (
-                  <Text style={{ fontSize: 13, color: data.statusColor, fontFamily: 'DMSans_700Bold' }}>
+                  <Text style={{ fontSize: 13, color: data.statusColor, fontFamily: Type.uiBold }}>
                     {data.statusWord}
                   </Text>
                 )}
               </View>
               {data.reference && (
-                <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 3 }}>
+                <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, marginTop: 3 }}>
                   {data.reference}
                 </Text>
               )}
@@ -246,14 +247,14 @@ export default function MetricDrilldownModal({ visible, onClose, data }: Props) 
                   <View style={{ marginBottom: 12 }}>
                     <MiniMetricChart points={data.history} color={data.chartColor ?? data.statusColor} theme={theme} formatTick={data.chartValueFormat} />
                     {data.rangeDays && data.rangeDays > data.history.length && (
-                      <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 6 }}>
+                      <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.ui, textAlign: 'center', marginTop: 6 }}>
                         {data.history.length} of {data.rangeDays} nights tracked · {data.rangeDays - data.history.length} without data
                       </Text>
                     )}
                   </View>
                 ) : data.history ? (
                   <View style={{ marginBottom: 12, paddingVertical: 14, alignItems: 'center' }}>
-                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', textAlign: 'center' }}>
+                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, textAlign: 'center' }}>
                       Trend builds over time as more days are recorded.
                     </Text>
                   </View>
@@ -275,7 +276,7 @@ export default function MetricDrilldownModal({ visible, onClose, data }: Props) 
                   </View>
                 )}
 
-                <Text style={{ fontSize: 10.5, lineHeight: 16, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 4 }}>
+                <Text style={{ fontSize: 10.5, lineHeight: 16, color: theme.textDim, fontFamily: Type.ui, marginTop: 4 }}>
                   {data.disclaimer ?? 'For informational purposes only. Not medical advice.'}
                 </Text>
               </>

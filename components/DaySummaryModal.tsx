@@ -22,6 +22,7 @@ import { ToastRenderer, useToast } from './Toast';
 import { DayScore, scoreLabel } from '../utils/dayScore';
 import { excludeDayFromAverages } from '../utils/dayScoreStore';
 import { winAndCoachLines, contextLine as computeContextLine, hadFaithEntryOn, underLoggedNutritionLine } from '../utils/daySummaryCopy';
+import { Type, numLine } from '../typography';
 
 const AnimCircle = Reanimated.createAnimatedComponent(Circle);
 
@@ -101,11 +102,11 @@ export function ScoreRing({ value, color, theme, celebrate }: { value: number; c
       </Svg>
       <Reanimated.View style={[{ alignItems: 'center' }, pulseStyle]}>
         <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
-          <Text style={{ fontSize: 54, lineHeight: 58, fontFamily: 'BebasNeue_400Regular', color, opacity: 0.92 }}>
+          <Text style={{ fontSize: 54, lineHeight: numLine(54), fontFamily: Type.num, color, opacity: 0.92 }}>
             {Math.round(value)}
           </Text>
         </View>
-        <Text style={{ fontSize: 8, letterSpacing: 2, fontFamily: 'DMSans_700Bold', color, opacity: 0.55, marginTop: -2 }}>OUT OF 100</Text>
+        <Text style={{ fontSize: 8, letterSpacing: 2, fontFamily: Type.uiBold, color, opacity: 0.55, marginTop: -2 }}>OUT OF 100</Text>
       </Reanimated.View>
     </View>
   );
@@ -214,7 +215,7 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
 
             {/* Header row: title + inline (i), matching every other surface in the app */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-              <Text style={{ fontSize: 18, letterSpacing: 2, fontFamily: 'BebasNeue_400Regular', color: theme.accentBlue }}>DAY SUMMARY</Text>
+              <Text style={{ fontSize: 18, letterSpacing: 2, fontFamily: Type.num, color: theme.accentBlue }}>DAY SUMMARY</Text>
               {/* Bebas sits high in its line box; lift the (i) to the caps' optical center */}
               <View style={{ transform: [{ translateY: -2 }] }}>
                 <TooltipIcon tooltipKey="day_score" hideTour />
@@ -222,16 +223,16 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
             </View>
 
             {/* Date (lead-in to the centered hero) */}
-            <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 2 }}>{formatLongDate(dateKey)}</Text>
+            <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.ui, textAlign: 'center', marginTop: 2 }}>{formatLongDate(dateKey)}</Text>
 
             {/* Hero composite ring + label + context line */}
             <View style={{ alignItems: 'center', marginTop: 12 }}>
               <ScoreRing value={score.composite} color={heroColor} theme={theme} celebrate={celebrate} />
-              <Text style={{ fontSize: 20, letterSpacing: 2, fontFamily: 'BebasNeue_400Regular', color: heroColor, marginTop: 8 }}>
+              <Text style={{ fontSize: 20, letterSpacing: 2, fontFamily: Type.num, color: heroColor, marginTop: 8 }}>
                 {scoreLabel(Math.round(score.composite), styleMode).toUpperCase()}
               </Text>
               {!!contextLine && (
-                <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginTop: 4 }}>{contextLine}</Text>
+                <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.ui, fontStyle: 'italic', marginTop: 4 }}>{contextLine}</Text>
               )}
             </View>
 
@@ -241,9 +242,9 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
                 <View key={p.label} style={{ flex: 1, backgroundColor: theme.bgInset, borderRadius: 10, borderWidth: 0.5, borderColor: theme.borderCard, paddingVertical: 10, paddingHorizontal: 10, alignItems: 'center' }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <Ionicons name={p.icon} size={10} color={theme.textMuted} />
-                    <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold' }}>{p.label}</Text>
+                    <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: Type.uiBold }}>{p.label}</Text>
                   </View>
-                  <Text style={{ fontSize: 24, lineHeight: 28, fontFamily: 'BebasNeue_400Regular', color: p.val !== null ? theme.textSecondary : theme.textDim, marginTop: 2 }}>
+                  <Text style={{ fontSize: 24, lineHeight: numLine(24), fontFamily: Type.num, color: p.val !== null ? theme.textSecondary : theme.textDim, marginTop: 2 }}>
                     {p.val !== null ? Math.round(p.val) : '--'}
                   </Text>
                   <View style={{ width: '100%', height: 5, borderRadius: 3, backgroundColor: barColor(p.val) + '33', marginTop: 6, overflow: 'hidden' }}>
@@ -256,16 +257,16 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
             {/* Under-logged nudge: food logged but below the incomplete-log floor, so Nutrition
                 was dropped. The "This was my full day" override lives on the Full Breakdown page. */}
             {score.nutritionIncomplete && (
-              <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 14, lineHeight: 17 }}>{underLoggedNutritionLine(isMindful)}</Text>
+              <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, textAlign: 'center', marginTop: 14, lineHeight: 17 }}>{underLoggedNutritionLine(isMindful)}</Text>
             )}
 
             {/* Win line (app coach voice: regular weight, italic, accent) */}
             {!!winLine && (
-              <Text style={{ fontSize: 14, color: theme.accentBlue, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', textAlign: 'center', marginTop: 18, lineHeight: 20 }}>{winLine}</Text>
+              <Text style={{ fontSize: 14, color: theme.accentBlue, fontFamily: Type.ui, fontStyle: 'italic', textAlign: 'center', marginTop: 18, lineHeight: 20 }}>{winLine}</Text>
             )}
             {/* Coach note (only when something lagged) */}
             {!!coachLine && (
-              <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', textAlign: 'center', marginTop: 8, lineHeight: 17 }}>{coachLine}</Text>
+              <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, fontStyle: 'italic', textAlign: 'center', marginTop: 8, lineHeight: 17 }}>{coachLine}</Text>
             )}
 
             {/* Divider */}
@@ -274,34 +275,34 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
             {/* FULL BREAKDOWN (morning pop-up only; hidden when already in the archive) */}
             {onViewSummary && (
               <TouchableOpacity onPress={handleViewSummary} style={{ paddingVertical: 13, borderRadius: 10, alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
-                <Text style={{ color: theme.accentBlue, fontSize: 13, letterSpacing: 1, fontFamily: 'DMSans_600SemiBold' }}>FULL BREAKDOWN</Text>
+                <Text style={{ color: theme.accentBlue, fontSize: 13, letterSpacing: 1, fontFamily: Type.uiSemibold }}>FULL BREAKDOWN</Text>
               </TouchableOpacity>
             )}
 
             {/* GOT IT (the obvious labeled exit, secondary bordered button) */}
             <TouchableOpacity onPress={dismiss} style={{ paddingVertical: 13, borderRadius: 10, alignItems: 'center', marginTop: 8, backgroundColor: theme.bgInset, borderWidth: 0.5, borderColor: theme.borderCard }}>
-              <Text style={{ color: theme.textSecondary, fontSize: 13, letterSpacing: 1, fontFamily: 'DMSans_600SemiBold' }}>GOT IT</Text>
+              <Text style={{ color: theme.textSecondary, fontSize: 13, letterSpacing: 1, fontFamily: Type.uiSemibold }}>GOT IT</Text>
             </TouchableOpacity>
 
             {/* Micro disclaimer */}
-            <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 12 }}>
+            <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, textAlign: 'center', marginTop: 12 }}>
               For informational purposes only. Not medical advice.
             </Text>
 
             {/* Exclude this day (inline confirm) -- hidden when opened from a frozen snapshot (Weekly/Monthly) */}
             {!hideExclude && confirmingExclude ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14, marginTop: 12, flexWrap: 'wrap' }}>
-                <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', textAlign: 'center' }}>Remove from your weekly average?</Text>
+                <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.ui, textAlign: 'center' }}>Remove from your weekly average?</Text>
                 <TouchableOpacity onPress={() => setConfirmingExclude(false)} hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}>
-                  <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }}>Cancel</Text>
+                  <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiSemibold }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={handleExclude} hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}>
-                  <Text style={{ fontSize: 12, color: theme.statusBad, fontFamily: 'DMSans_600SemiBold' }}>Exclude</Text>
+                  <Text style={{ fontSize: 12, color: theme.statusBad, fontFamily: Type.uiSemibold }}>Exclude</Text>
                 </TouchableOpacity>
               </View>
             ) : !hideExclude ? (
               <TouchableOpacity onPress={() => setConfirmingExclude(true)} hitSlop={{ top: 10, bottom: 10, left: 20, right: 20 }} style={{ alignItems: 'center', marginTop: 12 }}>
-                <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', textDecorationLine: 'underline' }}>Exclude this day</Text>
+                <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, textDecorationLine: 'underline' }}>Exclude this day</Text>
               </TouchableOpacity>
             ) : null}
           </View>

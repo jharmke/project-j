@@ -40,6 +40,7 @@ import { streakHeldByExclusion } from '../../utils/streakExclusion';
 import { showToolkit } from '../../components/ToolkitSheet';
 import { useTutorial } from '../../context/TutorialContext';
 import { useTutorialTarget } from '../../hooks/useTutorialTarget';
+import { Type, numLine, DISPLAY_CAPS, DISPLAY_TRACKING, displaySize } from '../../typography';
 
 // ── Streak types and constants ────────────────────────────────────────────────
 
@@ -151,14 +152,14 @@ function CollapsibleSection({ label, subtitle, children, defaultOpen = true, the
               now accent-coloured (the glow) -- accent text on an accent ground is the same hue fighting
               itself, and it washed out completely. The accent's job is "this is interactive"; a section
               header is not. The rule and the chevron keep the accent, so the section still reads as ours. */}
-          <Text style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>
+          <Text style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textSecondary }}>
             {label}
           </Text>
           <View style={{ flex: 1, height: 1, backgroundColor: theme.textMuted + '55' }} />
           <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color={theme.accentBlueRaw} />
         </View>
         {!open && subtitle && (
-          <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 4 }}>
+          <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textMuted, marginTop: 4 }}>
             {subtitle}
           </Text>
         )}
@@ -1088,17 +1089,17 @@ export default function StatsScreen() {
     return (
       <TouchableOpacity key={day.dateKey} activeOpacity={sc && !day.excluded ? 0.6 : 1} onPress={open}
         style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 4, borderTopWidth: 0.5, borderTopColor: theme.borderCard }}>
-        <Text style={{ width: 76, fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{archDow(day.dateKey)} {day.dateKey.split('-')[2]}</Text>
+        <Text style={{ width: 76, fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiMedium }}>{archDow(day.dateKey)} {day.dateKey.split('-')[2]}</Text>
         {day.excluded || !sc ? (
-          <Text style={{ flex: 1, fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>{day.excluded ? 'Excluded' : 'No score'}</Text>
+          <Text style={{ flex: 1, fontSize: 12, color: theme.textDim, fontFamily: Type.ui, fontStyle: 'italic' }}>{day.excluded ? 'Excluded' : 'No score'}</Text>
         ) : (
           <>
-            <Text style={{ width: 34, fontSize: 20, lineHeight: 22, fontFamily: 'BebasNeue_400Regular', color: archTierColor(sc.composite) }}>{Math.round(sc.composite)}</Text>
+            <Text style={{ width: 34, fontSize: 20, lineHeight: numLine(20), fontFamily: Type.num, color: archTierColor(sc.composite) }}>{Math.round(sc.composite)}</Text>
             <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
               {[['N', sc.nutritionScore], ['R', sc.recoveryCategoryScore ?? sc.sleepScore], ['A', sc.activityScore]].map(([lbl, val]) => (
                 <View key={lbl as string} style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
-                  <Text style={{ fontSize: 8, color: theme.textMuted, fontFamily: 'DMSans_700Bold' }}>{lbl}</Text>
-                  <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }}>{val !== null ? Math.round(val as number) : '–'}</Text>
+                  <Text style={{ fontSize: 8, color: theme.textMuted, fontFamily: Type.uiBold }}>{lbl}</Text>
+                  <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.uiSemibold }}>{val !== null ? Math.round(val as number) : '–'}</Text>
                 </View>
               ))}
             </View>
@@ -1118,14 +1119,14 @@ export default function StatsScreen() {
           <TouchableOpacity onPress={() => toggleWeek(w.startKey)} activeOpacity={0.6}
             style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 4 }}>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }}>{archWeekRange(w.startKey, w.endKey)}</Text>
-              <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>
+              <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: Type.uiSemibold }}>{archWeekRange(w.startKey, w.endKey)}</Text>
+              <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.ui, marginTop: 2 }}>
                 {w.scoredCount} {w.scoredCount === 1 ? 'day' : 'days'} scored
                 {w.avgLabel ? ` · ${w.avgLabel}` : ''}
               </Text>
             </View>
             {w.avgComposite !== null && (
-              <Text style={{ fontSize: 26, lineHeight: 28, fontFamily: 'BebasNeue_400Regular', color: archTierColor(w.avgComposite), marginRight: 10 }}>{Math.round(w.avgComposite)}</Text>
+              <Text style={{ fontSize: 26, lineHeight: numLine(26), fontFamily: Type.num, color: archTierColor(w.avgComposite), marginRight: 10 }}>{Math.round(w.avgComposite)}</Text>
             )}
             <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textMuted} />
           </TouchableOpacity>
@@ -1169,13 +1170,13 @@ export default function StatsScreen() {
 
         {daySummariesOpen && (archiveLoading ? (
           <View style={{ paddingVertical: 24, alignItems: 'center' }}>
-            <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>Loading your summaries…</Text>
+            <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui }}>Loading your summaries…</Text>
           </View>
         ) : weeks.length === 0 ? (
           <View style={{ paddingVertical: 24, alignItems: 'center', paddingHorizontal: 16 }}>
             <Ionicons name="sparkles-outline" size={28} color={theme.textDim} style={{ marginBottom: 8 }} />
-            <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', marginBottom: 4 }}>No summaries yet</Text>
-            <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', lineHeight: 17 }}>
+            <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiSemibold, marginBottom: 4 }}>No summaries yet</Text>
+            <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui, textAlign: 'center', lineHeight: 17 }}>
               Your Day Score appears the morning after a logged day. Keep logging and your history fills in here.
             </Text>
           </View>
@@ -1190,8 +1191,8 @@ export default function StatsScreen() {
               <View key={g.monthKey} style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard }}>
                 <TouchableOpacity onPress={() => toggleMonth(g.monthKey)} activeOpacity={0.6}
                   style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 4 }}>
-                  <Text style={{ flex: 1, fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', color: theme.textSecondary, fontFamily: 'DMSans_700Bold' }}>{g.monthLabel}</Text>
-                  <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginRight: 8 }}>
+                  <Text style={{ flex: 1, fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', color: theme.textSecondary, fontFamily: Type.uiBold }}>{g.monthLabel}</Text>
+                  <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.ui, marginRight: 8 }}>
                     {g.weeks.length} {g.weeks.length === 1 ? 'week' : 'weeks'}
                   </Text>
                   <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textMuted} />
@@ -1243,8 +1244,8 @@ export default function StatsScreen() {
         {weeklyCardOpen && (weeklySummaries.length === 0 ? (
           <View style={{ paddingVertical: 20, alignItems: 'center', paddingHorizontal: 16 }}>
             <Ionicons name="calendar-outline" size={28} color={theme.textDim} style={{ marginBottom: 8 }} />
-            <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', marginBottom: 4 }}>No weekly summaries yet</Text>
-            <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', lineHeight: 17 }}>
+            <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiSemibold, marginBottom: 4 }}>No weekly summaries yet</Text>
+            <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui, textAlign: 'center', lineHeight: 17 }}>
               Your first weekly summary generates Sunday morning after a logged week.
             </Text>
           </View>
@@ -1265,9 +1266,9 @@ export default function StatsScreen() {
                   activeOpacity={0.6}
                   style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 4 }}
                 >
-                  <Text style={{ flex: 1, fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }}>{group.monthLabel}</Text>
+                  <Text style={{ flex: 1, fontSize: 13, color: theme.textPrimary, fontFamily: Type.uiSemibold }}>{group.monthLabel}</Text>
                   {monthAvg !== null && (
-                    <Text style={{ fontSize: 26, lineHeight: 28, fontFamily: 'BebasNeue_400Regular', color: monthAvgColor, marginRight: 8 }}>{monthAvg}</Text>
+                    <Text style={{ fontSize: 26, lineHeight: numLine(26), fontFamily: Type.num, color: monthAvgColor, marginRight: 8 }}>{monthAvg}</Text>
                   )}
                   <Ionicons name={monthOpen ? 'chevron-up' : 'chevron-down'} size={14} color={theme.textDim} />
                 </TouchableOpacity>
@@ -1284,11 +1285,11 @@ export default function StatsScreen() {
                       style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 11, paddingHorizontal: 4, borderTopWidth: 0.5, borderTopColor: theme.borderCard }}
                     >
                       {/* Date + score on left (matches Day Summaries row layout) */}
-                      <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>
+                      <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiMedium }}>
                         {weeklyDateRange(s.weekStart, s.weekEnd)}
                       </Text>
                       {hasScore && (
-                        <Text style={{ fontSize: 22, lineHeight: 24, fontFamily: 'BebasNeue_400Regular', color: scoreColor, marginLeft: 8 }}>
+                        <Text style={{ fontSize: 22, lineHeight: numLine(22), fontFamily: Type.num, color: scoreColor, marginLeft: 8 }}>
                           {Math.round(s.avgComposite!)}
                         </Text>
                       )}
@@ -1298,15 +1299,15 @@ export default function StatsScreen() {
                           <View style={{ flexDirection: 'row', gap: 8, marginRight: 8 }}>
                             {[['N', s.avgNutritionScore], ['A', s.avgActivityScore], ['R', s.avgSleepScore]].map(([lbl, val]) => (
                               <View key={lbl as string} style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
-                                <Text style={{ fontSize: 8, color: theme.textMuted, fontFamily: 'DMSans_700Bold' }}>{lbl}</Text>
-                                <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }}>{val !== null ? Math.round(val as number) : '–'}</Text>
+                                <Text style={{ fontSize: 8, color: theme.textMuted, fontFamily: Type.uiBold }}>{lbl}</Text>
+                                <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiSemibold }}>{val !== null ? Math.round(val as number) : '–'}</Text>
                               </View>
                             ))}
                           </View>
                           <Ionicons name="chevron-forward" size={14} color={theme.textDim} />
                         </>
                       ) : (
-                        <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>No scored days</Text>
+                        <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui, fontStyle: 'italic' }}>No scored days</Text>
                       )}
                     </TouchableOpacity>
                   );
@@ -1342,8 +1343,8 @@ export default function StatsScreen() {
         {monthlyCardOpen && (monthlySummaries.length === 0 ? (
           <View style={{ paddingVertical: 20, alignItems: 'center', paddingHorizontal: 16 }}>
             <Ionicons name="calendar-outline" size={28} color={theme.textDim} style={{ marginBottom: 8 }} />
-            <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', marginBottom: 4 }}>No monthly summaries yet</Text>
-            <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', lineHeight: 17 }}>
+            <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiSemibold, marginBottom: 4 }}>No monthly summaries yet</Text>
+            <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui, textAlign: 'center', lineHeight: 17 }}>
               Your first monthly summary generates on the 1st of the month after a logged month.
             </Text>
           </View>
@@ -1360,11 +1361,11 @@ export default function StatsScreen() {
                 onPress={() => { if (hasScore) { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/monthly-summary', params: { monthKey: s.monthKey } }); } }}
                 style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 11, paddingHorizontal: 4, borderTopWidth: 0.5, borderTopColor: theme.borderCard }}
               >
-                <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>
+                <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiMedium }}>
                   {monthLabel(s.monthKey)}
                 </Text>
                 {hasScore && (
-                  <Text style={{ fontSize: 22, lineHeight: 24, fontFamily: 'BebasNeue_400Regular', color: scoreColor, marginLeft: 8 }}>
+                  <Text style={{ fontSize: 22, lineHeight: numLine(22), fontFamily: Type.num, color: scoreColor, marginLeft: 8 }}>
                     {Math.round(s.avgComposite!)}
                   </Text>
                 )}
@@ -1374,15 +1375,15 @@ export default function StatsScreen() {
                     <View style={{ flexDirection: 'row', gap: 8, marginRight: 8 }}>
                       {[['N', s.avgNutritionScore], ['A', s.avgActivityScore], ['R', s.avgSleepScore]].map(([lbl, val]) => (
                         <View key={lbl as string} style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
-                          <Text style={{ fontSize: 8, color: theme.textMuted, fontFamily: 'DMSans_700Bold' }}>{lbl}</Text>
-                          <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }}>{val !== null ? Math.round(val as number) : '–'}</Text>
+                          <Text style={{ fontSize: 8, color: theme.textMuted, fontFamily: Type.uiBold }}>{lbl}</Text>
+                          <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiSemibold }}>{val !== null ? Math.round(val as number) : '–'}</Text>
                         </View>
                       ))}
                     </View>
                     <Ionicons name="chevron-forward" size={14} color={theme.textDim} />
                   </>
                 ) : (
-                  <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>No scored days</Text>
+                  <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui, fontStyle: 'italic' }}>No scored days</Text>
                 )}
               </TouchableOpacity>
             );
@@ -1786,13 +1787,13 @@ export default function StatsScreen() {
   }) => (
     <View style={[{ flex: 1, backgroundColor: theme.bgCardGlass, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, borderRadius: 14, padding: 14, alignItems: 'center' }, shadowStyle]}>
       <Ionicons name={icon as any} size={18} color={color} style={{ marginBottom: 4 }} />
-      <Text style={{ fontSize: 26, color, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0, opacity: 0.88 }}>
+      <Text style={{ fontSize: 26, color, fontFamily: Type.num, letterSpacing: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0, opacity: 0.88 }}>
         {value !== null ? fmt(value) : '--'}
       </Text>
-      <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 2, textAlign: 'center' }}>{unit}</Text>
-      <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>{label}</Text>
+      <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 2, textAlign: 'center' }}>{unit}</Text>
+      <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: Type.ui, marginTop: 2 }}>{label}</Text>
       {date && value !== null && (
-        <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 4, textAlign: 'center' }}>
+        <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: Type.ui, marginTop: 4, textAlign: 'center' }}>
           {fmtRecordDate(date)}
         </Text>
       )}
@@ -1812,7 +1813,7 @@ export default function StatsScreen() {
           <HeaderAvatar />
           <View style={{ flex: 1 }}>
             <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Stats</Text>
-            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', marginTop: 1, letterSpacing: 2, textTransform: 'uppercase' }}>
+            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, marginTop: 1, letterSpacing: 2, textTransform: 'uppercase' }}>
               {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </Text>
           </View>
@@ -1859,7 +1860,7 @@ export default function StatsScreen() {
                   style={{ flex: 1, paddingVertical: 6, borderRadius: 6, alignItems: 'center',
                     backgroundColor: activePeriod === p ? theme.bgSelected : theme.bgInput,
                     borderWidth: 1, borderColor: activePeriod === p ? theme.accentBlueBorder : theme.borderInput }}>
-                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: activePeriod === p ? theme.accentBlue : theme.textMuted }}>
+                  <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: activePeriod === p ? theme.accentBlue : theme.textMuted }}>
                     {p === 'ytd' ? 'YTD' : p === '7' ? '7D' : p === '30' ? '30D' : p === '90' ? '3M' : '6M'}
                   </Text>
                 </TouchableOpacity>
@@ -1894,8 +1895,8 @@ export default function StatsScreen() {
                 if (!hasAnyData) return (
                   <View style={{ paddingVertical: 24, alignItems: 'center', paddingHorizontal: 16 }}>
                     <Ionicons name="stats-chart-outline" size={28} color={theme.textDim} style={{ marginBottom: 8 }} />
-                    <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', marginBottom: 4 }}>No data yet</Text>
-                    <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', lineHeight: 17 }}>Log a day and your averages show up here.</Text>
+                    <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiSemibold, marginBottom: 4 }}>No data yet</Text>
+                    <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui, textAlign: 'center', lineHeight: 17 }}>Log a day and your averages show up here.</Text>
                   </View>
                 );
                 const rows: { label: string; value: string; color?: string }[][] = [];
@@ -1934,13 +1935,13 @@ export default function StatsScreen() {
                   style={{ paddingVertical: 7, paddingHorizontal: 18, borderRadius: 8,
                     backgroundColor: trendPeriod === p ? theme.bgSelected : theme.bgInput,
                     borderWidth: 1, borderColor: trendPeriod === p ? theme.accentBlueBorder : theme.borderInput }}>
-                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: trendPeriod === p ? theme.accentBlue : theme.textMuted }}>
+                  <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: trendPeriod === p ? theme.accentBlue : theme.textMuted }}>
                     {p}D
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
-            <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>syncs all</Text>
+            <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: Type.ui }}>syncs all</Text>
           </View>
 
           {statsCards
@@ -1991,7 +1992,7 @@ export default function StatsScreen() {
             activeOpacity={0.85}
             style={{ paddingVertical: 14, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: theme.accentBlueBorder, backgroundColor: theme.accentBlueBg, flexDirection: 'row', justifyContent: 'center', gap: 8 }}>
             <Ionicons name="trophy" size={16} color={theme.accentBlue} />
-            <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 1 }}>VIEW ALL ACHIEVEMENTS</Text>
+            <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 1 }}>VIEW ALL ACHIEVEMENTS</Text>
           </TouchableOpacity>
             </CollapsibleSection>
             );
@@ -2011,8 +2012,8 @@ export default function StatsScreen() {
             {liveStreaks.length === 0 ? (
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openManageStreaks(); }} style={{ alignItems: 'center', paddingVertical: 20 }}>
                 <Ionicons name="flame-outline" size={32} color={theme.textDim} />
-                <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted, marginTop: 8 }}>No streaks added</Text>
-                <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 4 }}>Tap to set up your streaks</Text>
+                <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textMuted, marginTop: 8 }}>No streaks added</Text>
+                <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textDim, marginTop: 4 }}>Tap to set up your streaks</Text>
               </TouchableOpacity>
             ) : (
               (() => {
@@ -2039,16 +2040,16 @@ export default function StatsScreen() {
                             activeOpacity={isTappable ? 0.7 : 1}
                             style={{ alignItems: 'center', width: '33%' }}>
                             <Text style={{ fontSize: 28, marginBottom: 4 }}>{s.emoji}</Text>
-                            <Text style={{ fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: tileColor, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0, opacity: 0.88, lineHeight: 34 }}>
+                            <Text style={{ fontSize: 32, fontFamily: Type.num, color: tileColor, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0, opacity: 0.88, lineHeight: numLine(32) }}>
                               {s.value}
                             </Text>
-                            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', textAlign: 'center' }} numberOfLines={1}>
+                            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase', textAlign: 'center' }} numberOfLines={1}>
                               {s.label}
                             </Text>
                             <View style={{ height: 14, justifyContent: 'center', alignItems: 'center', marginTop: 1 }}>
-                              <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular', position: 'absolute' }}>days</Text>
+                              <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: Type.ui, position: 'absolute' }}>days</Text>
                               {flashId === s.id && (
-                                <Animated.Text style={{ fontSize: 9, color: tileColor, fontFamily: 'DMSans_600SemiBold', position: 'absolute', opacity: flashOpacity }}>
+                                <Animated.Text style={{ fontSize: 9, color: tileColor, fontFamily: Type.uiSemibold, position: 'absolute', opacity: flashOpacity }}>
                                   {'✓ LOGGED'}
                                 </Animated.Text>
                               )}
@@ -2077,9 +2078,9 @@ export default function StatsScreen() {
                   </View>
                   {challengeActive && challengeProg ? (
                     <TouchableOpacity activeOpacity={0.7} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/challenges'); }}>
-                      <Text style={{ fontSize: 17, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, marginBottom: 6 }}>{challengeTitle(challengeActive, styleMode === 'Mindful')}</Text>
+                      <Text style={{ fontSize: 17, fontFamily: Type.uiBold, color: theme.textPrimary, marginBottom: 6 }}>{challengeTitle(challengeActive, styleMode === 'Mindful')}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlueRaw }}>
+                        <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.accentBlueRaw }}>
                           {challengeActive.type === 'beat'
                             ? (challengeProg.won ? (styleMode === 'Mindful' ? 'Ahead on every metric' : 'Beating it on all metrics') : `Ahead on ${challengeProg.metricsBeaten ?? 0} of ${challengeProg.metricsTotal ?? 0}`)
                             : challengeProg.isWeight
@@ -2091,7 +2092,7 @@ export default function StatsScreen() {
                     </TouchableOpacity>
                   ) : (
                     <>
-                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 20, marginBottom: 14 }}>
+                      <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textSecondary, lineHeight: 20, marginBottom: 14 }}>
                         {styleMode === 'Mindful'
                           ? 'Grow past a previous week or month, or set a higher daily target for a stretch. Track it gently on your home screen.'
                           : 'Outperform a past week or month, or set a higher daily target for a stretch. Track it live on your home screen.'}
@@ -2105,7 +2106,7 @@ export default function StatsScreen() {
                           borderRadius: 8, paddingVertical: 12,
                         }}>
                         <Ionicons name="flag" size={14} color={theme.accentBlue} />
-                        <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>New Challenge</Text>
+                        <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>New Challenge</Text>
                       </TouchableOpacity>
                     </>
                   )}
@@ -2171,7 +2172,7 @@ export default function StatsScreen() {
               ].map(l => (
                 <View key={l.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: l.color }} />
-                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>{l.label}</Text>
+                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 1, textTransform: 'uppercase' }}>{l.label}</Text>
                 </View>
               ))}
             </View>
@@ -2196,7 +2197,7 @@ export default function StatsScreen() {
                           names the tier. */}
                       {reportsLocked && <Ionicons name="lock-closed" size={12} color={theme.textMuted} />}
                     </View>
-                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 18, marginTop: 4 }}>Build your own: pick a date range and the blocks you care about.</Text>
+                    <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textSecondary, lineHeight: 18, marginTop: 4 }}>Build your own: pick a date range and the blocks you care about.</Text>
                   </View>
                   <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
                 </TouchableOpacity>
@@ -2215,7 +2216,7 @@ export default function StatsScreen() {
                   </TouchableOpacity>
                   {evrCardOpen && (
                     <>
-                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 20, marginBottom: 14 }}>
+                      <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textSecondary, lineHeight: 20, marginBottom: 14 }}>
                         Compare your logged data against your actual results. See what's working, what's not, and get specific suggestions.
                       </Text>
                       <TouchableOpacity
@@ -2228,7 +2229,7 @@ export default function StatsScreen() {
                         }}
                       >
                         <Ionicons name="analytics" size={14} color={theme.accentBlue} />
-                        <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>Open Analysis</Text>
+                        <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>Open Analysis</Text>
                       </TouchableOpacity>
                     </>
                   )}
@@ -2252,7 +2253,7 @@ export default function StatsScreen() {
                   </TouchableOpacity>
                   {comparisonCardOpen && (
                     <>
-                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 20, marginBottom: 14 }}>
+                      <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textSecondary, lineHeight: 20, marginBottom: 14 }}>
                         Compare two periods side by side: this week vs last week, this month vs last month, and more. Just the numbers, no scores.
                       </Text>
                       {/* House interactive-button recipe (tinted fill + accent border + accent text), not a
@@ -2268,7 +2269,7 @@ export default function StatsScreen() {
                         }}
                       >
                         <Ionicons name={isPro ? 'swap-horizontal' : 'lock-open'} size={14} color={theme.accentBlue} />
-                        <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>{isPro ? 'New Comparison' : 'Become a Supporter'}</Text>
+                        <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>{isPro ? 'New Comparison' : 'Become a Supporter'}</Text>
                       </TouchableOpacity>
                     </>
                   )}
@@ -2312,7 +2313,7 @@ export default function StatsScreen() {
             </TouchableOpacity>
 
             {/* Title */}
-            <Text style={{ fontFamily: 'BebasNeue_400Regular', fontSize: 22, letterSpacing: 3, color: theme.accentBlueRaw, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 }}>
+            <Text style={{ fontFamily: Type.num, fontSize: 22, letterSpacing: 3, color: theme.accentBlueRaw, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 }}>
               EDIT STATS
             </Text>
 
@@ -2330,15 +2331,15 @@ export default function StatsScreen() {
                 }}
                 ListHeaderComponent={() => (
                   <View style={{ paddingHorizontal: 20, paddingBottom: 8, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle }}>
-                    <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Graph Cards</Text>
-                    <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>Long-press to reorder</Text>
+                    <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>Graph Cards</Text>
+                    <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, marginTop: 2 }}>Long-press to reorder</Text>
                   </View>
                 )}
                 ListFooterComponent={() => (
                   <>
                     <View style={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle, marginTop: 8 }}>
-                      <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Sections</Text>
-                      <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>Long-press to reorder</Text>
+                      <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>Sections</Text>
+                      <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, marginTop: 2 }}>Long-press to reorder</Text>
                     </View>
                     <DraggableFlatList
                       data={editCards.filter(c => c.type === 'system').sort((a, b) => a.order - b.order)}
@@ -2365,11 +2366,11 @@ export default function StatsScreen() {
                               borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle,
                             }}>
                             <Ionicons name="reorder-three-outline" size={22} color={theme.textDim} />
-                            <Text style={{ flex: 1, fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: item.visible ? theme.textPrimary : item.visible === false ? theme.textDim : theme.textDim }}>
+                            <Text style={{ flex: 1, fontSize: 14, fontFamily: Type.uiSemibold, color: item.visible ? theme.textPrimary : item.visible === false ? theme.textDim : theme.textDim }}>
                               {item.label}
                             </Text>
                             <View style={{ backgroundColor: 'rgba(102,102,128,0.12)', borderWidth: 1, borderColor: 'rgba(102,102,128,0.2)', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
-                              <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1 }}>SECTION</Text>
+                              <Text style={{ fontSize: 9, fontFamily: Type.uiBold, color: theme.textMuted, letterSpacing: 1 }}>SECTION</Text>
                             </View>
                             <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleToggleCard(item.id); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                               <Ionicons name={item.visible ? 'eye' : 'eye-off-outline'} size={18} color={item.visible ? theme.accentBlue : theme.textDim} />
@@ -2394,11 +2395,11 @@ export default function StatsScreen() {
                         borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle,
                       }}>
                       <Ionicons name="reorder-three-outline" size={22} color={theme.textDim} />
-                      <Text style={{ flex: 1, fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: item.visible ? theme.textPrimary : theme.textDim }}>
+                      <Text style={{ flex: 1, fontSize: 14, fontFamily: Type.uiSemibold, color: item.visible ? theme.textPrimary : theme.textDim }}>
                         {item.label}
                       </Text>
                       <View style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
-                        <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 1 }}>{item.period}D</Text>
+                        <Text style={{ fontSize: 9, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 1 }}>{item.period}D</Text>
                       </View>
                       <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleDeleteCard(item.id); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                         <Ionicons name="trash-outline" size={17} color={theme.statusBad} />
@@ -2430,7 +2431,7 @@ export default function StatsScreen() {
             <ScrollView ref={creatorScrollRef} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 16 }} showsVerticalScrollIndicator={false}>
               {/* Header */}
               <View style={{ paddingTop: 12, paddingBottom: 20 }}>
-                <Text style={{ fontFamily: 'BebasNeue_400Regular', fontSize: 22, letterSpacing: 3, color: theme.accentBlueRaw }}>
+                <Text style={{ fontFamily: Type.num, fontSize: 22, letterSpacing: 3, color: theme.accentBlueRaw }}>
                   {creatorStep === 1 ? 'CHOOSE DATA TYPE' : creatorStep === 2 ? 'CHOOSE CHART TYPE' : 'PREVIEW'}
                 </Text>
               </View>
@@ -2443,7 +2444,7 @@ export default function StatsScreen() {
                     if (keys.length === 0) return null;
                     return (
                       <View key={cat}>
-                        <Text style={{ fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted, marginBottom: 10 }}>
+                        <Text style={{ fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textMuted, marginBottom: 10 }}>
                           {cat}
                         </Text>
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
@@ -2456,10 +2457,10 @@ export default function StatsScreen() {
                                   borderWidth: 1, borderColor: sel ? theme.accentBlueRaw : theme.borderCard,
                                   borderRadius: 12, padding: 14, alignItems: 'center', gap: 6 }}>
                                 <Ionicons name={meta.icon as any} size={22} color={sel ? theme.accentBlue : theme.textMuted} />
-                                <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: sel ? theme.accentBlue : theme.textPrimary, textAlign: 'center' }}>
+                                <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: sel ? theme.accentBlue : theme.textPrimary, textAlign: 'center' }}>
                                   {meta.label}
                                 </Text>
-                                <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textDim, textAlign: 'center', lineHeight: 13 }}>
+                                <Text style={{ fontSize: 10, fontFamily: Type.ui, color: theme.textDim, textAlign: 'center', lineHeight: 13 }}>
                                   {meta.description}
                                 </Text>
                               </TouchableOpacity>
@@ -2484,10 +2485,10 @@ export default function StatsScreen() {
                           borderRadius: 14, padding: 24, alignItems: 'center', gap: 10 }}>
                         <Ionicons name={ct === 'line' ? 'analytics-outline' : 'bar-chart-outline'} size={32}
                           color={sel ? theme.accentBlue : theme.textMuted} />
-                        <Text style={{ fontSize: 16, fontFamily: 'DMSans_700Bold', color: sel ? theme.accentBlue : theme.textPrimary }}>
+                        <Text style={{ fontSize: 16, fontFamily: Type.uiBold, color: sel ? theme.accentBlue : theme.textPrimary }}>
                           {ct === 'line' ? 'Line' : 'Bar'}
                         </Text>
-                        <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim, textAlign: 'center' }}>
+                        <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textDim, textAlign: 'center' }}>
                           {ct === 'line' ? 'Trend line with area fill' : 'Daily bar chart'}
                         </Text>
                       </TouchableOpacity>
@@ -2501,7 +2502,7 @@ export default function StatsScreen() {
                 <>
                   {creatorDataKey !== 'workoutFreq' && creatorDataKey !== 'netCalories' && creatorDataKey !== 'sleepStages' && (
                     <View ref={graphCreatorColorRef} collapsable={false}>
-                      <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 10 }}>
+                      <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 10 }}>
                         {creatorDataKey === 'macros' ? 'Macro Colors' : 'Color'}
                       </Text>
                       {creatorDataKey === 'macros' ? (
@@ -2516,7 +2517,7 @@ export default function StatsScreen() {
                               .map(([, v]) => v);
                             return (
                               <View key={key} style={{ marginBottom: 10 }}>
-                                <Text style={{ fontSize: 9, fontFamily: 'DMSans_600SemiBold', letterSpacing: 1.5, textTransform: 'uppercase', color: theme.textDim, marginBottom: 6 }}>{label}</Text>
+                                <Text style={{ fontSize: 9, fontFamily: Type.uiSemibold, letterSpacing: 1.5, textTransform: 'uppercase', color: theme.textDim, marginBottom: 6 }}>{label}</Text>
                                 <View style={{ flexDirection: 'row', gap: 8 }}>
                                   {GRAPH_SWATCHES.map(sw => {
                                     const selected = creatorMacroColors[key] === sw;
@@ -2578,7 +2579,7 @@ export default function StatsScreen() {
                     collapsable={false}
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); handleAddCard(); }}
                     style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 4 }}>
-                    <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: '#fff', letterSpacing: 1.5 }}>ADD TO STATS</Text>
+                    <Text style={{ fontSize: 15, fontFamily: Type.uiBold, color: '#fff', letterSpacing: 1.5 }}>ADD TO STATS</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -2629,7 +2630,7 @@ export default function StatsScreen() {
                     <Ionicons name="chevron-back" size={20} color={theme.accentBlueRaw} />
                   </TouchableOpacity>
                 )}
-                <Text style={{ fontFamily: 'BebasNeue_400Regular', fontSize: 22, letterSpacing: 3, color: theme.accentBlueRaw, flex: 1 }}>
+                <Text style={{ fontFamily: Type.num, fontSize: 22, letterSpacing: 3, color: theme.accentBlueRaw, flex: 1 }}>
                   {creatorStep === 1 ? 'CHOOSE DATA TYPE' : creatorStep === 2 ? 'CHOOSE CHART TYPE' : 'PREVIEW'}
                 </Text>
               </View>
@@ -2642,7 +2643,7 @@ export default function StatsScreen() {
                     if (keys.length === 0) return null;
                     return (
                       <View key={cat}>
-                        <Text style={{ fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted, marginBottom: 10 }}>
+                        <Text style={{ fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textMuted, marginBottom: 10 }}>
                           {cat}
                         </Text>
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
@@ -2655,10 +2656,10 @@ export default function StatsScreen() {
                                   borderWidth: 1, borderColor: sel ? theme.accentBlueRaw : theme.borderCard,
                                   borderRadius: 12, padding: 14, alignItems: 'center', gap: 6 }}>
                                 <Ionicons name={meta.icon as any} size={22} color={sel ? theme.accentBlue : theme.textMuted} />
-                                <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: sel ? theme.accentBlue : theme.textPrimary, textAlign: 'center' }}>
+                                <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: sel ? theme.accentBlue : theme.textPrimary, textAlign: 'center' }}>
                                   {meta.label}
                                 </Text>
-                                <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textDim, textAlign: 'center', lineHeight: 13 }}>
+                                <Text style={{ fontSize: 10, fontFamily: Type.ui, color: theme.textDim, textAlign: 'center', lineHeight: 13 }}>
                                   {meta.description}
                                 </Text>
                               </TouchableOpacity>
@@ -2683,10 +2684,10 @@ export default function StatsScreen() {
                           borderRadius: 14, padding: 24, alignItems: 'center', gap: 10 }}>
                         <Ionicons name={ct === 'line' ? 'analytics-outline' : 'bar-chart-outline'} size={32}
                           color={sel ? theme.accentBlue : theme.textMuted} />
-                        <Text style={{ fontSize: 16, fontFamily: 'DMSans_700Bold', color: sel ? theme.accentBlue : theme.textPrimary }}>
+                        <Text style={{ fontSize: 16, fontFamily: Type.uiBold, color: sel ? theme.accentBlue : theme.textPrimary }}>
                           {ct === 'line' ? 'Line' : 'Bar'}
                         </Text>
-                        <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim, textAlign: 'center' }}>
+                        <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textDim, textAlign: 'center' }}>
                           {ct === 'line' ? 'Trend line with area fill' : 'Daily bar chart'}
                         </Text>
                       </TouchableOpacity>
@@ -2701,7 +2702,7 @@ export default function StatsScreen() {
                   {/* Color picker */}
                   {creatorDataKey !== 'workoutFreq' && creatorDataKey !== 'netCalories' && creatorDataKey !== 'sleepStages' && (
                     <>
-                      <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 10 }}>
+                      <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 10 }}>
                         {creatorDataKey === 'macros' ? 'Macro Colors' : 'Color'}
                       </Text>
                       {creatorDataKey === 'macros' ? (
@@ -2716,7 +2717,7 @@ export default function StatsScreen() {
                               .map(([, v]) => v);
                             return (
                               <View key={key} style={{ marginBottom: 10 }}>
-                                <Text style={{ fontSize: 9, fontFamily: 'DMSans_600SemiBold', letterSpacing: 1.5, textTransform: 'uppercase', color: theme.textDim, marginBottom: 6 }}>{label}</Text>
+                                <Text style={{ fontSize: 9, fontFamily: Type.uiSemibold, letterSpacing: 1.5, textTransform: 'uppercase', color: theme.textDim, marginBottom: 6 }}>{label}</Text>
                                 <View style={{ flexDirection: 'row', gap: 8 }}>
                                   {GRAPH_SWATCHES.map(sw => {
                                     const selected = creatorMacroColors[key] === sw;
@@ -2774,7 +2775,7 @@ export default function StatsScreen() {
                   />
                   <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); handleAddCard(); }}
                     style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 4 }}>
-                    <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: '#fff', letterSpacing: 1.5 }}>ADD TO STATS</Text>
+                    <Text style={{ fontSize: 15, fontFamily: Type.uiBold, color: '#fff', letterSpacing: 1.5 }}>ADD TO STATS</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -2818,7 +2819,7 @@ export default function StatsScreen() {
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => router.push('/reports'), 150); }}
                 style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlueRaw, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Reports</Text>
+                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Reports</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => router.push('/reports'), 150); }}
@@ -2834,7 +2835,7 @@ export default function StatsScreen() {
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => router.push('/challenges'), 150); }}
                 style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlueRaw, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Challenges</Text>
+                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Challenges</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => router.push('/challenges'), 150); }}
@@ -2850,7 +2851,7 @@ export default function StatsScreen() {
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => router.push('/comparison-report'), 150); }}
                 style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlueRaw, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Comparison</Text>
+                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Comparison</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => router.push('/comparison-report'), 150); }}
@@ -2866,7 +2867,7 @@ export default function StatsScreen() {
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => openCreatorModal(), 150); }}
                 style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlueRaw, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Add Graph</Text>
+                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Add Graph</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => openCreatorModal(), 150); }}
@@ -2925,12 +2926,12 @@ export default function StatsScreen() {
             <TouchableOpacity style={{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }} activeOpacity={1} onPress={() => setShowArchiveCalendar(false)}>
               <TouchableOpacity activeOpacity={1} onPress={() => {}} style={{ width: '88%', maxWidth: 380 }}>
                 <View style={{ backgroundColor: theme.bgSheet, borderRadius: 18, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, padding: 20 }}>
-                  <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', textAlign: 'center', marginBottom: 10 }}>JUMP TO A DAY</Text>
+                  <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase', textAlign: 'center', marginBottom: 10 }}>JUMP TO A DAY</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                     <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); prevMonth(); }} style={{ padding: 8 }}>
                       <Ionicons name="chevron-back" size={18} color={theme.accentBlue} />
                     </TouchableOpacity>
-                    <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }}>{ARCH_MONTHS[archiveCalMonth]} {archiveCalYear}</Text>
+                    <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: Type.uiSemibold }}>{ARCH_MONTHS[archiveCalMonth]} {archiveCalYear}</Text>
                     <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); nextMonth(); }} disabled={isCurrentMonth} style={{ padding: 8, opacity: isCurrentMonth ? 0.25 : 1 }}>
                       <Ionicons name="chevron-forward" size={18} color={theme.accentBlue} />
                     </TouchableOpacity>
@@ -2957,7 +2958,7 @@ export default function StatsScreen() {
                       );
                     })}
                   </View>
-                  <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 12, lineHeight: 15 }}>
+                  <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, textAlign: 'center', marginTop: 12, lineHeight: 15 }}>
                     Highlighted days have a score. Tap one to jump to its week.
                   </Text>
                 </View>
@@ -2975,11 +2976,11 @@ export default function StatsScreen() {
             borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderSheet, borderTopColor: theme.accentBlueRaw,
             padding: 20,
           }}>
-            <Text style={{ fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw, marginBottom: 16 }}>MANAGE STREAKS</Text>
+            <Text style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 2, color: theme.accentBlueRaw, marginBottom: 16 }}>MANAGE STREAKS</Text>
             <ScrollView ref={manageStreaksScrollRef} showsVerticalScrollIndicator={false}>
               {streakConfig.length > 0 && (
                 <>
-                  <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 10 }}>ACTIVE</Text>
+                  <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 10 }}>ACTIVE</Text>
                   {streakConfig.map(item => {
                     const live = liveStreaks.find(l => l.id === item.id);
                     const meta = item.key ? BUILTIN_STREAK_META[item.key] : null;
@@ -2988,8 +2989,8 @@ export default function StatsScreen() {
                       <View key={item.id} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
                         <Text style={{ fontSize: 20, marginRight: 10 }}>{item.emoji}</Text>
                         <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary }}>{item.label}</Text>
-                          <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim }}>{live ? `${live.value} day streak · ` : ''}{isManual ? 'Manual check-in' : 'Auto-tracked'}</Text>
+                          <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.textPrimary }}>{item.label}</Text>
+                          <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textDim }}>{live ? `${live.value} day streak · ` : ''}{isManual ? 'Manual check-in' : 'Auto-tracked'}</Text>
                         </View>
                       </View>
                     );
@@ -3007,15 +3008,15 @@ export default function StatsScreen() {
                 if (available.length === 0) return null;
                 return (
                   <>
-                    <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 10 }}>ADD PRESET</Text>
+                    <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 10 }}>ADD PRESET</Text>
                     {available.map(key => {
                       const meta = BUILTIN_STREAK_META[key];
                       return (
                         <View key={key} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
                           <Text style={{ fontSize: 20, marginRight: 10 }}>{meta.emoji}</Text>
                           <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary }}>{meta.label}</Text>
-                            <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim }}>{meta.isManual ? 'Manual check-in' : 'Auto-tracked'}</Text>
+                            <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.textPrimary }}>{meta.label}</Text>
+                            <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textDim }}>{meta.isManual ? 'Manual check-in' : 'Auto-tracked'}</Text>
                           </View>
                           <Ionicons name="add-circle-outline" size={20} color={theme.accentBlue} />
                         </View>
@@ -3032,7 +3033,7 @@ export default function StatsScreen() {
                   backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
                   borderRadius: 10, paddingVertical: 12, marginTop: 4, marginBottom: 8 }}>
                 <Ionicons name="add" size={18} color={theme.accentBlue} />
-                <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>Create Custom Streak</Text>
+                <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>Create Custom Streak</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -3050,13 +3051,13 @@ export default function StatsScreen() {
             transform: [{ scale: manageStreaksAnim.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) }],
           }}>
             <TouchableOpacity style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textMuted, opacity: 0.5, marginBottom: 16 }} activeOpacity={0.6} hitSlop={{ top: 16, bottom: 16, left: 40, right: 40 }} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeManageStreaks(); }} />
-            <Text style={{ fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw, marginBottom: 16 }}>MANAGE STREAKS</Text>
+            <Text style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 2, color: theme.accentBlueRaw, marginBottom: 16 }}>MANAGE STREAKS</Text>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               {/* Active streaks -- drag to reorder */}
               {streakConfig.length > 0 && (
                 <>
-                  <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 10 }}>ACTIVE</Text>
+                  <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 10 }}>ACTIVE</Text>
                   <DraggableFlatList
                     data={streakConfig}
                     keyExtractor={item => item.id}
@@ -3074,8 +3075,8 @@ export default function StatsScreen() {
                             </TouchableOpacity>
                             <Text style={{ fontSize: 20, marginRight: 10 }}>{item.emoji}</Text>
                             <View style={{ flex: 1 }}>
-                              <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary }}>{item.label}</Text>
-                              <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim }}>{live ? `${live.value} day streak · ` : ''}{isManual ? 'Manual check-in' : 'Auto-tracked'}</Text>
+                              <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.textPrimary }}>{item.label}</Text>
+                              <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textDim }}>{live ? `${live.value} day streak · ` : ''}{isManual ? 'Manual check-in' : 'Auto-tracked'}</Text>
                             </View>
                             <TouchableOpacity
                               onPress={() => Alert.alert('Remove Streak', `Remove "${item.label}" from your active streaks?`, [
@@ -3105,7 +3106,7 @@ export default function StatsScreen() {
                 if (available.length === 0) return null;
                 return (
                   <>
-                    <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 10 }}>ADD PRESET</Text>
+                    <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 10 }}>ADD PRESET</Text>
                     {available.map(key => {
                       const meta = BUILTIN_STREAK_META[key];
                       return (
@@ -3113,8 +3114,8 @@ export default function StatsScreen() {
                           style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
                           <Text style={{ fontSize: 20, marginRight: 10 }}>{meta.emoji}</Text>
                           <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary }}>{meta.label}</Text>
-                            <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim }}>{meta.isManual ? 'Manual check-in' : 'Auto-tracked'}</Text>
+                            <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.textPrimary }}>{meta.label}</Text>
+                            <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textDim }}>{meta.isManual ? 'Manual check-in' : 'Auto-tracked'}</Text>
                           </View>
                           <Ionicons name="add-circle-outline" size={20} color={theme.accentBlue} />
                         </TouchableOpacity>
@@ -3131,7 +3132,7 @@ export default function StatsScreen() {
                   backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
                   borderRadius: 10, paddingVertical: 12, marginTop: 4, marginBottom: 8 }}>
                 <Ionicons name="add" size={18} color={theme.accentBlue} />
-                <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>Create Custom Streak</Text>
+                <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>Create Custom Streak</Text>
               </TouchableOpacity>
             </ScrollView>
           </Animated.View>
@@ -3150,12 +3151,12 @@ export default function StatsScreen() {
               transform: [{ translateY: modalKeyboardOffset }],
             }}>
                 <TouchableOpacity style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textMuted, opacity: 0.5, marginBottom: 16 }} activeOpacity={0.6} hitSlop={{ top: 16, bottom: 16, left: 40, right: 40 }} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeCreateCustom(); }} />
-                <Text style={{ fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw, marginBottom: 4 }}>CREATE CUSTOM STREAK</Text>
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginBottom: 20 }}>Manual check-in: tap the tile each day to log it.</Text>
+                <Text style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 2, color: theme.accentBlueRaw, marginBottom: 4 }}>CREATE CUSTOM STREAK</Text>
+              <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textDim, marginBottom: 20 }}>Manual check-in: tap the tile each day to log it.</Text>
 
-              <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 6 }}>STREAK NAME</Text>
+              <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 6 }}>STREAK NAME</Text>
               <TextInput
-                style={{ backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput, borderRadius: 8, padding: 12, fontSize: 15, fontFamily: 'DMSans_400Regular', color: theme.textPrimary, marginBottom: 16 }}
+                style={{ backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput, borderRadius: 8, padding: 12, fontSize: 15, fontFamily: Type.ui, color: theme.textPrimary, marginBottom: 16 }}
                 value={customName}
                 onChangeText={setCustomName}
                 placeholder="e.g. Cold Shower, No Alcohol..."
@@ -3163,7 +3164,7 @@ export default function StatsScreen() {
                 maxLength={30}
               />
 
-              <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 6 }}>EMOJI</Text>
+              <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 6 }}>EMOJI</Text>
               <TextInput
                 style={{ backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput, borderRadius: 8, padding: 12, fontSize: 28, textAlign: 'center', color: theme.textPrimary, marginBottom: 24 }}
                 value={customEmoji}
@@ -3176,14 +3177,14 @@ export default function StatsScreen() {
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeCreateCustom(); }}
                   style={{ backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput, borderRadius: 10, padding: 14, width: 90, alignItems: 'center' }}>
-                  <Text style={{ fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.textMuted }}>CANCEL</Text>
+                  <Text style={{ fontSize: 16, fontFamily: Type.num, letterSpacing: 2, color: theme.textMuted }}>CANCEL</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); saveCustomStreak(); }}
                   disabled={!customName.trim() || !customEmoji.trim()}
                   style={{ flex: 1, backgroundColor: customName.trim() && customEmoji.trim() ? theme.accentBlue : theme.bgInput, borderRadius: 10, padding: 14, alignItems: 'center',
                     borderWidth: customName.trim() && customEmoji.trim() ? 0 : 0.5, borderColor: theme.borderInput }}>
-                  <Text style={{ fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: customName.trim() && customEmoji.trim() ? theme.bgPrimary : theme.textDim }}>ADD STREAK</Text>
+                  <Text style={{ fontSize: 16, fontFamily: Type.num, letterSpacing: 2, color: customName.trim() && customEmoji.trim() ? theme.bgPrimary : theme.textDim }}>ADD STREAK</Text>
                 </TouchableOpacity>
             </View>
             </Animated.View>
@@ -3199,21 +3200,21 @@ const styles = StyleSheet.create({
   container:    { flex: 1 },
   content:      { padding: 16 },
   header:       { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 0.5 },
-  headerLabel:  { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: 'DMSans_700Bold' },
-  headerTitle:  { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  headerLabel:  { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: Type.uiBold },
+  headerTitle:  { fontSize: displaySize(27), fontFamily: Type.display, letterSpacing: DISPLAY_TRACKING, ...(DISPLAY_CAPS ? { textTransform: 'uppercase' as const } : {}) },
   card:         { borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 6 },
-  cardLabel:    { fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 0, fontFamily: 'DMSans_700Bold' },
+  cardLabel:    { fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 0, fontFamily: Type.uiBold },
   calGrid:      { flexDirection: 'row', flexWrap: 'wrap' },
-  calDayHeader: { width: '14.28%', textAlign: 'center', fontSize: 9, letterSpacing: 1, paddingVertical: 4, fontFamily: 'DMSans_700Bold' },
+  calDayHeader: { width: '14.28%', textAlign: 'center', fontSize: 9, letterSpacing: 1, paddingVertical: 4, fontFamily: Type.uiBold },
   calDay:       { width: '14.28%', height: 36, borderRadius: 6, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
   calDayToday:  { borderWidth: 1 },
-  calDayText:   { fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
+  calDayText:   { fontSize: 14, fontFamily: Type.uiSemibold },
   historyRow:   { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 0.5 },
-  historyDate:  { fontSize: 12, fontFamily: 'DMSans_400Regular' },
-  historyVal:   { fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
+  historyDate:  { fontSize: 12, fontFamily: Type.ui },
+  historyVal:   { fontSize: 13, fontFamily: Type.uiSemibold },
   glanceRow:    { flexDirection: 'row', borderBottomWidth: 0.5 },
   glanceCellL:  { width: '50%', paddingVertical: 10, paddingRight: 12 },
   glanceCellR:  { width: '50%', paddingVertical: 10, paddingLeft: 12 },
-  glanceLabel:  { fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 3 },
-  glanceVal:    { fontSize: 15, fontFamily: 'DMSans_700Bold' },
+  glanceLabel:  { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 3 },
+  glanceVal:    { fontSize: 15, fontFamily: Type.uiBold },
 });

@@ -20,6 +20,7 @@ import ReAnimated, {
   withTiming,
 } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
+import { Type, numLine } from '../typography';
 
 const AnimCircle = ReAnimated.createAnimatedComponent(Circle);
 
@@ -85,9 +86,9 @@ export default function SleepDonut({ coreFrac, deepFrac, remFrac, donutCirc, don
       <View style={{ position:'absolute', top:0, left:0, width:donutSize, height:donutSize, alignItems:'center', justifyContent:'center' }}>
         <ReAnimated.View style={[{ alignItems: 'center' }, shimmerCenterStyle]}>
           <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
-            <Text style={{ fontSize: 36, fontFamily: 'BebasNeue_400Regular', color: scoreColor, letterSpacing: 1, lineHeight: 38, opacity: 0.88 }}>{score}</Text>
+            <Text style={{ fontSize: 36, fontFamily: Type.num, color: scoreColor, letterSpacing: 1, lineHeight: numLine(36), opacity: 0.88 }}>{score}</Text>
           </View>
-          <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: scoreColor, textTransform: 'uppercase', opacity: 0.7 }}>/100</Text>
+          <Text style={{ fontSize: 8, fontFamily: Type.uiBold, letterSpacing: 2, color: scoreColor, textTransform: 'uppercase', opacity: 0.7 }}>/100</Text>
         </ReAnimated.View>
       </View>
     </View>

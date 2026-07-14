@@ -2733,7 +2733,9 @@ export default function HomeScreen() {
                       <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
                         <GradientNumber value={recZone?.label ?? ''} color={recColor} style={{ fontSize: 40, fontFamily: Type.num, letterSpacing: 1, opacity: 0.88, lineHeight: numLine(40) }} />
                       </View>
-                      <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.uiMedium, lineHeight: 16, marginTop: 4 }}>{readinessLine}</Text>
+                      {/* VOICE: the coach speaking, not a label. The sleep TIMES below stay in Interface
+                          because a bed time is a value, not speech. */}
+                      <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.voice, lineHeight: 16, marginTop: 4 }}>{readinessLine}</Text>
                     </View>
                     <View style={{ flex: 1, alignItems: 'center' }}>
                       <ScoreRing
@@ -3595,8 +3597,8 @@ export default function HomeScreen() {
                     >
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          <Ionicons name="sparkles" size={12} color={theme.accentBlueRaw} />
-                          <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, color: theme.accentBlueRaw, textTransform: 'uppercase' }}>Coach Insight</Text>
+                          <Ionicons name="sparkles" size={11} color={theme.textMuted} />
+                          <Text style={[styles.cardLabel, { marginBottom: 0, color: theme.textMuted }]}>Coach Insight</Text>
                           <TooltipIcon tooltipKey="smart_tip" size={14} />
                         </View>
                         <View style={{ backgroundColor: chipColor + '22', borderWidth: 1, borderColor: chipColor + '55', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
@@ -3604,9 +3606,18 @@ export default function HomeScreen() {
                         </View>
                       </View>
                       {/* VOICE role: the Coach Insight card is the single largest piece of coach prose on
-                          Home, so it is the best read on the voice face. */}
-                      <Text style={{ fontSize: 14.5, fontFamily: Type.voiceSemibold, color: theme.textSecondary, lineHeight: 21, marginBottom: 6 }}>{displayTitle}</Text>
-                      <Text numberOfLines={3} ellipsizeMode="tail" style={{ fontSize: 13, fontFamily: Type.voice, color: theme.textSecondary, lineHeight: 20, marginBottom: 12 }}>{displayBody}</Text>
+                          Home, so it is the best read on the voice face.
+                          Ranade is a high-ink face -- fine for a single tinted line (see the Recovery card),
+                          but a title plus three body lines stops being prose and becomes a dark block.
+                          Do NOT lighten the body with textMuted: on Light that token is #6666aa, a PURPLE,
+                          so it lightens by changing hue and hands the card a fifth colour. Title and body
+                          stay on ONE ink; the hierarchy is carried on the WEIGHT axis instead. voiceBold is
+                          Ranade Medium (nothing in the voice role goes near a real bold) against a Light
+                          body -- two steps apart, where semibold/light was only one, which is why the block
+                          used to read as a single mass. Leading is generous on purpose: air is the antidote
+                          to ink density, and it costs no colour. */}
+                      <Text style={{ fontSize: 15, fontFamily: Type.voiceBold, color: theme.textSecondary, lineHeight: 22, marginBottom: 6 }}>{displayTitle}</Text>
+                      <Text numberOfLines={3} ellipsizeMode="tail" style={{ fontSize: 13, fontFamily: Type.voice, color: theme.textSecondary, lineHeight: 22, marginBottom: 12 }}>{displayBody}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                         <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: theme.accentBlueRaw }}>View in Effort vs Results</Text>
                         <Ionicons name="chevron-forward" size={12} color={theme.accentBlueRaw} />

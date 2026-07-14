@@ -11,6 +11,7 @@ import { useToast } from './Toast';
 import TooltipIcon from './TooltipIcon';
 import AnimatedNumber from './AnimatedNumber';
 import { CardWash } from './GradientCard';
+import { Type, numLine } from '../typography';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -417,7 +418,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
             return (
               <View key={i} style={{ alignItems: 'center', gap: 3 }}>
                 <Text style={{
-                  fontFamily: isToday ? 'DMSans_700Bold' : 'DMSans_400Regular',
+                  fontFamily: isToday ? Type.uiBold : Type.ui,
                   fontSize: 8,
                   color: isToday ? accent : t.textMuted,
                   opacity: isFuture ? 0.35 : 1,
@@ -452,7 +453,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
               }}
             />
           ))}
-          <Text style={{ fontFamily: graceUsedToday ? 'DMSans_600SemiBold' : 'DMSans_500Medium', fontSize: 10, color: graceUsedToday ? t.accentAmber : t.textMuted }}>
+          <Text style={{ fontFamily: graceUsedToday ? Type.uiSemibold : Type.uiMedium, fontSize: 10, color: graceUsedToday ? t.accentAmber : t.textMuted }}>
             {graceUsedToday
               ? 'Grace saver covered yesterday'
               : savers.count < saverCap
@@ -467,10 +468,10 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
 
       {/* Scripture */}
       <View style={{ marginBottom: 12 }}>
-        <Text style={{ fontFamily: faith ? 'Lora_500Medium' : 'DMSans_400Regular', fontSize: faith ? 14 : 12, color: t.textSecondary, fontStyle: faith ? 'normal' : 'italic', lineHeight: faith ? 21 : 18, textAlign: faith ? 'center' : 'left' }}>
+        <Text style={{ fontFamily: faith ? 'Lora_500Medium' : Type.ui, fontSize: faith ? 14 : 12, color: t.textSecondary, fontStyle: faith ? 'normal' : 'italic', lineHeight: faith ? 21 : 18, textAlign: faith ? 'center' : 'left' }}>
           "{verse.text}"
         </Text>
-        <Text style={{ fontFamily: 'DMSans_600SemiBold', fontSize: 10, color: t.accentAmber, marginTop: 4, letterSpacing: 0.5, textAlign: faith ? 'center' : 'left' }}>
+        <Text style={{ fontFamily: Type.uiSemibold, fontSize: 10, color: t.accentAmber, marginTop: 4, letterSpacing: 0.5, textAlign: faith ? 'center' : 'left' }}>
           {verse.ref}
         </Text>
       </View>
@@ -480,7 +481,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
         <>
           <View style={[styles.entryBox, { backgroundColor: entryFill, borderColor: entryBorder, borderLeftWidth: 1, borderLeftColor: entryBorder }]}>
             <Text style={[styles.entryLabel, { color: t.textMuted }]}>Today's Entry</Text>
-            <Text style={{ fontFamily: 'DMSans_400Regular', fontSize: 14, color: faith ? inkText : t.textPrimary, lineHeight: 20 }}>
+            <Text style={{ fontFamily: Type.ui, fontSize: 14, color: faith ? inkText : t.textPrimary, lineHeight: 20 }}>
               {loggedEntry}
             </Text>
           </View>
@@ -490,7 +491,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
               onPress={handleEdit}
               hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
             >
-              <Text style={{ fontFamily: 'DMSans_600SemiBold', fontSize: 12, color: btnText }}>Edit</Text>
+              <Text style={{ fontFamily: Type.uiSemibold, fontSize: 12, color: btnText }}>Edit</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionBtn, { backgroundColor: btnBg, borderColor: btnBorder, flex: 2 }]}
@@ -498,7 +499,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
               hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
             >
               <Ionicons name={faith ? 'journal-outline' : 'book-outline'} size={12} color={btnText} style={{ marginRight: 4 }} />
-              <Text style={{ fontFamily: 'DMSans_600SemiBold', fontSize: 12, color: btnText }}>View in Journal</Text>
+              <Text style={{ fontFamily: Type.uiSemibold, fontSize: 12, color: btnText }}>View in Journal</Text>
             </TouchableOpacity>
           </View>
         </>
@@ -531,7 +532,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
                 style={[styles.actionBtn, { backgroundColor: t.bgInput, borderColor: t.borderInput, flex: 1 }]}
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setCardState('logged'); setInputText(''); }}
               >
-                <Text style={{ fontFamily: 'DMSans_600SemiBold', fontSize: 12, color: t.textSecondary }}>Cancel</Text>
+                <Text style={{ fontFamily: Type.uiSemibold, fontSize: 12, color: t.textSecondary }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionBtn, {
@@ -543,7 +544,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
                 disabled={!canSave}
                 onPress={handleSave}
               >
-                <Text style={{ fontFamily: 'DMSans_600SemiBold', fontSize: 12, color: btnText }}>Save Changes</Text>
+                <Text style={{ fontFamily: Type.uiSemibold, fontSize: 12, color: btnText }}>Save Changes</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -582,16 +583,16 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 3,
     textTransform: 'uppercase',
-    fontFamily: 'DMSans_700Bold',
+    fontFamily: Type.uiBold,
   },
   heroNumber: {
-    fontFamily: 'BebasNeue_400Regular',
+    fontFamily: Type.num,
     fontSize: 36,
-    lineHeight: 38,
+    lineHeight: numLine(36),
     opacity: 0.88,
   },
   heroLabel: {
-    fontFamily: 'DMSans_600SemiBold',
+    fontFamily: Type.uiSemibold,
     fontSize: 10,
     letterSpacing: 1.5,
   },
@@ -601,7 +602,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   entryLabel: {
-    fontFamily: 'DMSans_600SemiBold',
+    fontFamily: Type.uiSemibold,
     fontSize: 10,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
@@ -624,7 +625,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     minHeight: 80,
     textAlignVertical: 'top',
-    fontFamily: 'DMSans_400Regular',
+    fontFamily: Type.ui,
   },
   saveBtn: {
     marginTop: 8,
@@ -635,6 +636,6 @@ const styles = StyleSheet.create({
   },
   saveBtnText: {
     fontSize: 12,
-    fontFamily: 'DMSans_500Medium',
+    fontFamily: Type.uiMedium,
   },
 });

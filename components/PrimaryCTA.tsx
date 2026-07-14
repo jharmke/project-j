@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '../theme';
+import { Type } from '../typography';
 
 // ─── PrimaryCTA ──────────────────────────────────────────────────────────────
 // The app's primary solid-fill button. MOLDED, not painted:
@@ -104,10 +105,10 @@ export default function PrimaryCTA({
             )
           ) : (
             <View style={[styles.row, compact && { gap: 6 }]}>
-              {/* Nudged up: Bebas is all-caps with no descenders, so its optical centre sits ABOVE the
-                  text box's geometric centre. Centre-aligning an icon against it makes the icon sag.
-                  Compact uses DMSans, which has normal metrics, so it needs no nudge. */}
-              {icon ? <View style={compact ? undefined : { marginBottom: 3 }}>{icon}</View> : null}
+              {/* The old nudge is GONE. It existed because Bebas is all-caps with no descenders, so its
+                  optical centre sat above the text box's geometric centre and a centred icon looked like
+                  it was sagging. Onest has normal metrics; nudging it now would make the icon ride high. */}
+              {icon ? <View>{icon}</View> : null}
               <Text
                 numberOfLines={1}
                 style={compact ? styles.labelCompact : styles.label}
@@ -128,6 +129,10 @@ const styles = StyleSheet.create({
   glow: { shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 4 },
   btn: { borderRadius: 13, paddingVertical: 16, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  label: { fontSize: 19, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1.2, color: '#ffffff' },
-  labelCompact: { fontSize: 12.5, fontFamily: 'DMSans_700Bold', color: '#ffffff', flexShrink: 1 },
+  // INTERFACE, not the number face. Bebas was doing button-label duty here (it did every job), and the
+  // sweep faithfully mapped Bebas -> Num -- which would have put Rajdhani, a condensed TABULAR face built
+  // for values, on the app's primary CTA. A button label is interface copy. It also no longer needs the
+  // +1.2 tracking Bebas required to breathe.
+  label: { fontSize: 17, fontFamily: Type.uiBold, letterSpacing: 0.2, color: '#ffffff' },
+  labelCompact: { fontSize: 12.5, fontFamily: Type.uiBold, color: '#ffffff', flexShrink: 1 },
 });

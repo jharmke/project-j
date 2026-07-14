@@ -6,6 +6,7 @@ import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View }
 import { TOOLTIP_REGISTRY, TooltipDefinition } from '../tooltipRegistry';
 import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
+import { Type } from '../typography';
 
 interface Props {
   tooltipKey: string;
@@ -168,7 +169,7 @@ export default function TooltipModal({ tooltipKey, visible, onClose, hideTour }:
                 {def.definitions.map((d, i) => (
                   <View key={i}>
                     <Text style={{
-                      fontFamily: 'DMSans_700Bold',
+                      fontFamily: Type.uiBold,
                       fontSize: 13,
                       color: d.termColor ?? theme.textPrimary,
                       marginBottom: 3,
@@ -176,7 +177,7 @@ export default function TooltipModal({ tooltipKey, visible, onClose, hideTour }:
                       {d.term}
                     </Text>
                     <Text style={{
-                      fontFamily: 'DMSans_400Regular',
+                      fontFamily: Type.ui,
                       fontSize: 13,
                       lineHeight: 20,
                       color: theme.textSecondary,
@@ -211,10 +212,10 @@ export default function TooltipModal({ tooltipKey, visible, onClose, hideTour }:
                 ))}
                 <View style={[styles.exampleDivider, { backgroundColor: theme.borderCard }]} />
                 <View style={styles.exampleRow}>
-                  <Text style={[styles.exampleDesc, { color: theme.textSecondary, fontFamily: 'DMSans_700Bold' }]}>
+                  <Text style={[styles.exampleDesc, { color: theme.textSecondary, fontFamily: Type.uiBold }]}>
                     {def.example.result.desc}
                   </Text>
-                  <Text style={[styles.exampleValue, { color: theme.accentBlue, fontFamily: 'DMSans_700Bold' }]}>
+                  <Text style={[styles.exampleValue, { color: theme.accentBlue, fontFamily: Type.uiBold }]}>
                     {def.example.result.value}
                   </Text>
                 </View>
@@ -303,14 +304,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontFamily: 'BebasNeue_400Regular',
+    fontFamily: Type.num,
     fontSize: 28,
     letterSpacing: 2,
     marginBottom: 12,
     textAlign: 'center',
   },
   body: {
-    fontFamily: 'DMSans_400Regular',
+    fontFamily: Type.ui,
     fontSize: 14,
     lineHeight: 22,
     textAlign: 'center',
@@ -327,7 +328,7 @@ const styles = StyleSheet.create({
   exampleLabel: {
     fontSize: 9,
     letterSpacing: 3,
-    fontFamily: 'DMSans_700Bold',
+    fontFamily: Type.uiBold,
     textTransform: 'uppercase',
     marginBottom: 10,
   },
@@ -339,13 +340,13 @@ const styles = StyleSheet.create({
   },
   exampleDesc: {
     fontSize: 12,
-    fontFamily: 'DMSans_400Regular',
+    fontFamily: Type.ui,
     flex: 1,
     paddingRight: 8,
   },
   exampleValue: {
     fontSize: 12,
-    fontFamily: 'DMSans_600SemiBold',
+    fontFamily: Type.uiSemibold,
     textAlign: 'right',
   },
   exampleDivider: {
@@ -360,12 +361,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonText: {
-    fontFamily: 'DMSans_700Bold',
+    fontFamily: Type.uiBold,
     fontSize: 15,
     letterSpacing: 1,
   },
   footer: {
-    fontFamily: 'DMSans_400Regular',
+    fontFamily: Type.ui,
     fontSize: 11,
     marginTop: 14,
     textAlign: 'center',

@@ -18,6 +18,7 @@ import { Animated, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet
 import { useTheme } from '../theme';
 import { ToastRenderer, useToast } from './Toast';
 import { deleteWeightForDate, gatherWeightHistory, saveWeightForDate, startingWeighIn, WeighIn } from '../utils/weightHistory';
+import { Type } from '../typography';
 
 interface Props {
   visible: boolean;
@@ -215,7 +216,7 @@ export default function WeightHistoryModal({ visible, onClose, styleMode, goalWe
 
             {/* Header */}
             <View style={{ paddingHorizontal: 20, paddingBottom: 14, paddingTop: 6, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-              <Text style={{ fontSize: 18, color: theme.accentBlue, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 }}>
+              <Text style={{ fontSize: 18, color: theme.accentBlue, fontFamily: Type.num, letterSpacing: 2 }}>
                 WEIGHT HISTORY
               </Text>
             </View>
@@ -224,47 +225,47 @@ export default function WeightHistoryModal({ visible, onClose, styleMode, goalWe
 
               {/* STARTING WEIGHT block */}
               <View style={{ backgroundColor: theme.accentBlueBg, borderRadius: 12, borderWidth: 1, borderColor: theme.accentBlueBorder, padding: 14, marginBottom: 12 }}>
-                <Text style={{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, fontFamily: 'DMSans_700Bold', marginBottom: 8 }}>
+                <Text style={{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, fontFamily: Type.uiBold, marginBottom: 8 }}>
                   Starting Weight
                 </Text>
                 {start ? (
                   <TouchableOpacity onPress={() => openEdit(start.date, start.weight, true)} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <View>
-                      <Text style={{ fontSize: 26, color: valueColor, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>
+                      <Text style={{ fontSize: 26, color: valueColor, fontFamily: Type.num, letterSpacing: 1 }}>
                         {start.weight} lbs
                       </Text>
-                      <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>
+                      <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, marginTop: 2 }}>
                         {formatDate(start.date)}
                       </Text>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                       <Ionicons name="pencil" size={14} color={theme.accentBlue} />
-                      <Text style={{ fontSize: 12, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>Edit</Text>
+                      <Text style={{ fontSize: 12, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Edit</Text>
                     </View>
                   </TouchableOpacity>
                 ) : (
-                  <Text style={{ fontSize: 13, color: theme.textDim, fontFamily: 'DMSans_400Regular', lineHeight: 18 }}>
+                  <Text style={{ fontSize: 13, color: theme.textDim, fontFamily: Type.ui, lineHeight: 18 }}>
                     No weigh-ins yet. Log your weight on the home card, or add a past one below, to set your starting point.
                   </Text>
                 )}
-                <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 10, lineHeight: 15 }}>
+                <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.ui, marginTop: 10, lineHeight: 15 }}>
                   Your progress is measured from here.
                 </Text>
               </View>
 
               {/* Disclaimer */}
-              <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginBottom: 16, lineHeight: 14 }}>
+              <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, marginBottom: 16, lineHeight: 14 }}>
                 For informational purposes only. Not medical advice.
               </Text>
 
               {/* HISTORY list */}
-              <Text style={{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, fontFamily: 'DMSans_700Bold', marginBottom: 6 }}>
+              <Text style={{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, fontFamily: Type.uiBold, marginBottom: 6 }}>
                 History
               </Text>
               {loading ? (
-                <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', paddingVertical: 16 }}>Loading…</Text>
+                <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui, textAlign: 'center', paddingVertical: 16 }}>Loading…</Text>
               ) : history.length === 0 ? (
-                <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', paddingVertical: 16 }}>No weigh-ins logged yet.</Text>
+                <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui, textAlign: 'center', paddingVertical: 16 }}>No weigh-ins logged yet.</Text>
               ) : (
                 history.map((w) => {
                   const confirming = confirmDeleteDate === w.date;
@@ -272,20 +273,20 @@ export default function WeightHistoryModal({ visible, onClose, styleMode, goalWe
                     <View key={w.date} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
                       {confirming ? (
                         <>
-                          <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium', flex: 1 }}>Delete this weigh-in?</Text>
+                          <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.uiMedium, flex: 1 }}>Delete this weigh-in?</Text>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                             <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setConfirmDeleteDate(null); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ paddingHorizontal: 10, paddingVertical: 5 }}>
-                              <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold' }}>Cancel</Text>
+                              <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.uiSemibold }}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity onPress={() => commitDelete(w.date)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, backgroundColor: theme.accentRed + '22' }}>
-                              <Text style={{ fontSize: 13, color: theme.accentRed, fontFamily: 'DMSans_700Bold' }}>Delete</Text>
+                              <Text style={{ fontSize: 13, color: theme.accentRed, fontFamily: Type.uiBold }}>Delete</Text>
                             </TouchableOpacity>
                           </View>
                         </>
                       ) : (
                         <>
-                          <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_500Medium', width: 110 }}>{formatDate(w.date)}</Text>
-                          <Text style={{ fontSize: 15, color: valueColor, fontFamily: 'DMSans_600SemiBold', flex: 1 }}>{w.weight} lbs</Text>
+                          <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.uiMedium, width: 110 }}>{formatDate(w.date)}</Text>
+                          <Text style={{ fontSize: 15, color: valueColor, fontFamily: Type.uiSemibold, flex: 1 }}>{w.weight} lbs</Text>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
                             <TouchableOpacity onPress={() => openEdit(w.date, w.weight, start?.date === w.date)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                               <Ionicons name="pencil" size={15} color={theme.accentBlue} />
@@ -308,11 +309,11 @@ export default function WeightHistoryModal({ visible, onClose, styleMode, goalWe
                   style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderStyle: 'dashed', borderColor: theme.accentBlueBorder }}
                 >
                   <Ionicons name="add" size={18} color={theme.accentBlue} />
-                  <Text style={{ fontSize: 13, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>Add a past weigh-in</Text>
+                  <Text style={{ fontSize: 13, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Add a past weigh-in</Text>
                 </TouchableOpacity>
               ) : (
                 <View style={{ marginTop: 16, backgroundColor: theme.bgCard, borderRadius: 12, borderWidth: 0.5, borderColor: theme.borderCard, padding: 14 }}>
-                  <Text style={{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, fontFamily: 'DMSans_700Bold', marginBottom: 10 }}>
+                  <Text style={{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, fontFamily: Type.uiBold, marginBottom: 10 }}>
                     Add a Past Weigh-in
                   </Text>
                   <View style={{ alignItems: 'center', marginBottom: 6 }}>
@@ -327,7 +328,7 @@ export default function WeightHistoryModal({ visible, onClose, styleMode, goalWe
                   </View>
                   <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', marginTop: 6 }}>
                     <TextInput
-                      style={{ flex: 1, backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 12, fontSize: 16, fontFamily: 'DMSans_500Medium', textAlign: 'center' }}
+                      style={{ flex: 1, backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 12, fontSize: 16, fontFamily: Type.uiMedium, textAlign: 'center' }}
                       value={addValue}
                       onChangeText={v => setAddValue(cleanWeight(v))}
                       keyboardType="decimal-pad"
@@ -339,11 +340,11 @@ export default function WeightHistoryModal({ visible, onClose, styleMode, goalWe
                       disabled={!addValue.trim()}
                       style={{ paddingHorizontal: 18, paddingVertical: 12, borderRadius: 8, backgroundColor: addValue.trim() ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: addValue.trim() ? theme.accentBlueBorder : theme.borderInput, opacity: addValue.trim() ? 1 : 0.5 }}
                     >
-                      <Text style={{ fontSize: 13, color: addValue.trim() ? theme.accentBlue : theme.textDim, fontFamily: 'DMSans_700Bold' }}>Add</Text>
+                      <Text style={{ fontSize: 13, color: addValue.trim() ? theme.accentBlue : theme.textDim, fontFamily: Type.uiBold }}>Add</Text>
                     </TouchableOpacity>
                   </View>
                   <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setAdding(false); setAddValue(''); }} style={{ alignSelf: 'center', marginTop: 12, paddingVertical: 4 }}>
-                    <Text style={{ fontSize: 12, color: theme.accentRed, fontFamily: 'DMSans_600SemiBold' }}>Cancel</Text>
+                    <Text style={{ fontSize: 12, color: theme.accentRed, fontFamily: Type.uiSemibold }}>Cancel</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -352,7 +353,7 @@ export default function WeightHistoryModal({ visible, onClose, styleMode, goalWe
               {goalWeight != null && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 18 }}>
                   <Ionicons name="flag-outline" size={12} color={theme.textDim} />
-                  <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>
+                  <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui }}>
                     Goal: {goalWeight} lbs · Change in Profile
                   </Text>
                 </View>
@@ -369,15 +370,15 @@ export default function WeightHistoryModal({ visible, onClose, styleMode, goalWe
                 <View style={{ alignItems: 'center', marginBottom: 10 }}>
                   <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
                 </View>
-                <Text style={{ fontSize: 9, color: theme.accentBlueRaw, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4, textAlign: 'center' }}>
+                <Text style={{ fontSize: 9, color: theme.accentBlueRaw, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4, textAlign: 'center' }}>
                   {editIsStarting ? 'Edit Starting Weight' : 'Edit Weigh-in'}
                 </Text>
-                <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginBottom: 16, textAlign: 'center' }}>
+                <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui, marginBottom: 16, textAlign: 'center' }}>
                   {formatDate(editingDate)}
                 </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
                   <TextInput
-                    style={{ backgroundColor: theme.bgInput, borderWidth: 1.5, borderColor: theme.accentBlueBorder, borderRadius: 10, color: theme.textSecondary, paddingVertical: 12, paddingHorizontal: 16, fontSize: 26, fontFamily: 'BebasNeue_400Regular', textAlign: 'center', minWidth: 160 }}
+                    style={{ backgroundColor: theme.bgInput, borderWidth: 1.5, borderColor: theme.accentBlueBorder, borderRadius: 10, color: theme.textSecondary, paddingVertical: 12, paddingHorizontal: 16, fontSize: 26, fontFamily: Type.num, textAlign: 'center', minWidth: 160 }}
                     value={editValue}
                     onChangeText={v => setEditValue(cleanWeight(v))}
                     keyboardType="decimal-pad"
@@ -388,10 +389,10 @@ export default function WeightHistoryModal({ visible, onClose, styleMode, goalWe
                 </View>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeEdit(); }} style={{ flex: 1, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, padding: 12, alignItems: 'center' }}>
-                    <Text style={{ color: theme.textMuted, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>Cancel</Text>
+                    <Text style={{ color: theme.textMuted, fontSize: 14, fontFamily: Type.uiSemibold }}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={commitEdit} disabled={!editValue.trim()} style={{ flex: 1, backgroundColor: editValue.trim() ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: editValue.trim() ? theme.accentBlueBorder : theme.borderInput, borderRadius: 8, padding: 12, alignItems: 'center', opacity: editValue.trim() ? 1 : 0.5 }}>
-                    <Text style={{ color: editValue.trim() ? theme.accentBlue : theme.textDim, fontSize: 14, fontFamily: 'DMSans_700Bold' }}>Save</Text>
+                    <Text style={{ color: editValue.trim() ? theme.accentBlue : theme.textDim, fontSize: 14, fontFamily: Type.uiBold }}>Save</Text>
                   </TouchableOpacity>
                 </View>
               </Animated.View>

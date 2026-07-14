@@ -13,6 +13,7 @@ import { ActivityIndicator, Animated, Modal, StyleSheet, Text, TouchableOpacity,
 import { useTheme } from '../theme';
 import TooltipIcon from './TooltipIcon';
 import { ZoneBound, fmtZoneTime, MaxHRSource, HRZoneModel, zoneDebrief } from '../utils/hrZones';
+import { Type } from '../typography';
 
 export interface HRZoneData {
   workoutName: string;
@@ -134,11 +135,11 @@ export default function HRZoneModal({ visible, loading, data, onClose }: Props) 
           <View style={{ paddingHorizontal: 20, paddingBottom: 18, paddingTop: 6 }}>
             {/* Header */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4 }}>
-              <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.accentBlue, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>HR Zones</Text>
+              <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.accentBlue, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>HR Zones</Text>
               <TooltipIcon tooltipKey="hr_zones" size={14} hideTour />
             </View>
             {data && (
-              <Text style={{ fontSize: 16, fontFamily: 'DMSans_700Bold', color: theme.textSecondary, marginBottom: 14 }}>
+              <Text style={{ fontSize: 16, fontFamily: Type.uiBold, color: theme.textSecondary, marginBottom: 14 }}>
                 {data.workoutName} · {fmtDuration(data.durationSec)}
               </Text>
             )}
@@ -146,15 +147,15 @@ export default function HRZoneModal({ visible, loading, data, onClose }: Props) 
             {loading ? (
               <View style={{ paddingVertical: 36, alignItems: 'center' }}>
                 <ActivityIndicator color={theme.accentBlueRaw} />
-                <Text style={{ marginTop: 12, fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textMuted }}>Reading heart rate…</Text>
+                <Text style={{ marginTop: 12, fontSize: 13, fontFamily: Type.ui, color: theme.textMuted }}>Reading heart rate…</Text>
               </View>
             ) : !data ? (
               <View style={{ paddingVertical: 28, alignItems: 'center' }}>
                 <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: theme.textDim + '1A', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
                   <Ionicons name="pulse" size={26} color={theme.textMuted} />
                 </View>
-                <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: theme.textSecondary, marginBottom: 4 }}>No heart rate recorded</Text>
-                <Text style={{ fontSize: 12, lineHeight: 18, fontFamily: 'DMSans_400Regular', color: theme.textMuted, textAlign: 'center', paddingHorizontal: 10 }}>
+                <Text style={{ fontSize: 14, fontFamily: Type.uiBold, color: theme.textSecondary, marginBottom: 4 }}>No heart rate recorded</Text>
+                <Text style={{ fontSize: 12, lineHeight: 18, fontFamily: Type.ui, color: theme.textMuted, textAlign: 'center', paddingHorizontal: 10 }}>
                   This workout has no heart-rate data to build zones from. HR zones need a watch or tracker that recorded your heart rate during the session.
                 </Text>
               </View>
@@ -168,9 +169,9 @@ export default function HRZoneModal({ visible, loading, data, onClose }: Props) 
                       <View style={{ width: 96, paddingRight: 8 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                           <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: r.color }} />
-                          <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary }} numberOfLines={1}>{r.label}</Text>
+                          <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: theme.textSecondary }} numberOfLines={1}>{r.label}</Text>
                         </View>
-                        <Text style={{ fontSize: 9.5, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginLeft: 13 }}>{r.range}</Text>
+                        <Text style={{ fontSize: 9.5, fontFamily: Type.ui, color: theme.textMuted, marginLeft: 13 }}>{r.range}</Text>
                       </View>
                       <View style={{ flex: 1, height: 10, borderRadius: 5, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
                         <Animated.View style={{
@@ -180,8 +181,8 @@ export default function HRZoneModal({ visible, loading, data, onClose }: Props) 
                         }} />
                       </View>
                       <View style={{ width: 56, alignItems: 'flex-end', paddingLeft: 6 }}>
-                        <Text style={{ fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5, color: r.sec > 0 ? theme.textPrimary : theme.textDim }}>{fmtZoneTime(r.sec)}</Text>
-                        <Text style={{ fontSize: 10, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>{pct}%</Text>
+                        <Text style={{ fontSize: 16, fontFamily: Type.num, letterSpacing: 0.5, color: r.sec > 0 ? theme.textPrimary : theme.textDim }}>{fmtZoneTime(r.sec)}</Text>
+                        <Text style={{ fontSize: 10, fontFamily: Type.uiMedium, color: theme.textMuted }}>{pct}%</Text>
                       </View>
                     </View>
                   );
@@ -192,23 +193,23 @@ export default function HRZoneModal({ visible, loading, data, onClose }: Props) 
                   <View style={{ marginTop: 4, marginBottom: 2, padding: 12, borderRadius: 10, backgroundColor: DEBRIEF_STYLE[debrief.key].color + '14', borderWidth: 1, borderColor: DEBRIEF_STYLE[debrief.key].color + '30' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                       <Ionicons name={DEBRIEF_STYLE[debrief.key].icon as any} size={14} color={DEBRIEF_STYLE[debrief.key].color} />
-                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{debrief.headline}</Text>
+                      <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.textSecondary }}>{debrief.headline}</Text>
                     </View>
-                    <Text style={{ fontSize: 12, lineHeight: 18, fontFamily: 'DMSans_400Regular', color: theme.textMuted }}>{debrief.body}</Text>
+                    <Text style={{ fontSize: 12, lineHeight: 18, fontFamily: Type.ui, color: theme.textMuted }}>{debrief.body}</Text>
                   </View>
                 )}
 
                 {/* Max HR + method: consistent label/value rows */}
                 <View style={{ marginTop: 6, borderTopWidth: 0.5, borderTopColor: theme.borderCard, paddingTop: 12 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: 7 }}>
-                    <Text style={{ width: 66, fontSize: 11, letterSpacing: 0.3, fontFamily: 'DMSans_700Bold', color: theme.textMuted }}>Max HR</Text>
-                    <Text style={{ flex: 1, fontSize: 13, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>{data.maxHR} bpm · {SOURCE_LABEL[data.maxHRSource]}</Text>
+                    <Text style={{ width: 66, fontSize: 11, letterSpacing: 0.3, fontFamily: Type.uiBold, color: theme.textMuted }}>Max HR</Text>
+                    <Text style={{ flex: 1, fontSize: 13, fontFamily: Type.uiMedium, color: theme.textSecondary }}>{data.maxHR} bpm · {SOURCE_LABEL[data.maxHRSource]}</Text>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                    <Text style={{ width: 66, fontSize: 11, letterSpacing: 0.3, fontFamily: 'DMSans_700Bold', color: theme.textMuted }}>Zones</Text>
-                    <Text style={{ flex: 1, fontSize: 13, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>{methodValue}</Text>
+                    <Text style={{ width: 66, fontSize: 11, letterSpacing: 0.3, fontFamily: Type.uiBold, color: theme.textMuted }}>Zones</Text>
+                    <Text style={{ flex: 1, fontSize: 13, fontFamily: Type.uiMedium, color: theme.textSecondary }}>{methodValue}</Text>
                   </View>
-                  <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 12, fontStyle: 'italic', textAlign: 'center' }}>
+                  <Text style={{ fontSize: 10.5, fontFamily: Type.ui, color: theme.textDim, marginTop: 12, fontStyle: 'italic', textAlign: 'center' }}>
                     For informational purposes only. Not medical advice.
                   </Text>
                 </View>

@@ -10,6 +10,7 @@ import {
   VERSES, customKey, loadVersePool, saveVersePool, getAllVerses, resolveDailyVerse,
   activeVerseCount, DEFAULT_POOL, type VersePool, type CustomVerse, type DailyVerse,
 } from '../data/verses';
+import { Type } from '../typography';
 
 // Manage the Today's Message pool. Opened from the gear on the Today's Message card (both the
 // Home faith hub card and the Faith tab card). Centered floating card per the modal standard:
@@ -181,7 +182,7 @@ export default function VersePoolModal({ visible, onClose, onChanged }: Props) {
           <View style={{ paddingHorizontal: 20, paddingBottom: 14, paddingTop: 6, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Ionicons name="sunny" size={16} color={theme.accentAmber} />
-              <Text style={{ fontSize: 18, color: theme.accentAmber, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 }}>TODAY'S MESSAGE</Text>
+              <Text style={{ fontSize: 18, color: theme.accentAmber, fontFamily: Type.num, letterSpacing: 2 }}>TODAY'S MESSAGE</Text>
             </View>
           </View>
 
@@ -204,12 +205,12 @@ export default function VersePoolModal({ visible, onClose, onChanged }: Props) {
                     }}
                   >
                     <Ionicons name={icon as any} size={15} color={active ? theme.accentAmber : theme.textMuted} />
-                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: active ? theme.accentAmber : theme.textSecondary }}>{label}</Text>
+                    <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: active ? theme.accentAmber : theme.textSecondary }}>{label}</Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
-            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginBottom: 18, lineHeight: 17 }}>
+            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, textAlign: 'center', marginBottom: 18, lineHeight: 17 }}>
               {pool.mode === 'cycle' ? 'A new verse each day from your rotation.' : 'Show one verse every day until you change it.'}
             </Text>
 
@@ -218,8 +219,8 @@ export default function VersePoolModal({ visible, onClose, onChanged }: Props) {
                 {/* Built-in verses master switch */}
                 <View style={[styles.rowCard, { backgroundColor: theme.bgCard, borderColor: theme.borderCard }]}>
                   <View style={{ flex: 1, paddingRight: 12 }}>
-                    <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary }}>Curated verses</Text>
-                    <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 2 }}>{VERSES.length} Hand-picked verses</Text>
+                    <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.textSecondary }}>Curated verses</Text>
+                    <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textMuted, marginTop: 2 }}>{VERSES.length} Hand-picked verses</Text>
                   </View>
                   <ToggleSwitch value={builtInsOn} onValueChange={toggleBuiltIns} />
                 </View>
@@ -232,7 +233,7 @@ export default function VersePoolModal({ visible, onClose, onChanged }: Props) {
                       activeOpacity={0.7}
                       style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 4, minHeight: 44 }}
                     >
-                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary }}>Customize the list</Text>
+                      <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textSecondary }}>Customize the list</Text>
                       <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textMuted} />
                     </TouchableOpacity>
                     {expanded && VERSES.map(v => {
@@ -241,7 +242,7 @@ export default function VersePoolModal({ visible, onClose, onChanged }: Props) {
                         <View key={v.reference} style={[styles.verseRow, { borderColor: theme.borderSubtle }]}>
                           <View style={{ flex: 1, paddingRight: 12 }}>
                             <Text numberOfLines={2} style={{ fontSize: 13, fontFamily: 'Lora_500Medium', color: theme.textSecondary, lineHeight: 18 }}>{v.text}</Text>
-                            <Text style={{ fontSize: 10, fontFamily: 'DMSans_700Bold', color: theme.accentAmber, letterSpacing: 1, marginTop: 3, textTransform: 'uppercase' }}>{v.reference}</Text>
+                            <Text style={{ fontSize: 10, fontFamily: Type.uiBold, color: theme.accentAmber, letterSpacing: 1, marginTop: 3, textTransform: 'uppercase' }}>{v.reference}</Text>
                           </View>
                           <ToggleSwitch value={on} onValueChange={() => togglePreset(v.reference, on)} />
                         </View>
@@ -257,7 +258,7 @@ export default function VersePoolModal({ visible, onClose, onChanged }: Props) {
                     <View key={c.id} style={[styles.verseRow, { borderColor: theme.borderSubtle }]}>
                       <View style={{ flex: 1, paddingRight: 12 }}>
                         <Text numberOfLines={3} style={{ fontSize: 13, fontFamily: 'Lora_500Medium', color: theme.textSecondary, lineHeight: 18 }}>{c.text}</Text>
-                        <Text style={{ fontSize: 10, fontFamily: 'DMSans_700Bold', color: theme.accentAmber, letterSpacing: 1, marginTop: 3, textTransform: 'uppercase' }}>{c.reference}</Text>
+                        <Text style={{ fontSize: 10, fontFamily: Type.uiBold, color: theme.accentAmber, letterSpacing: 1, marginTop: 3, textTransform: 'uppercase' }}>{c.reference}</Text>
                       </View>
                       <TouchableOpacity onPress={() => askRemove(c)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ padding: 6 }}>
                         <Ionicons name="trash-outline" size={18} color={theme.accentRed} />
@@ -267,8 +268,8 @@ export default function VersePoolModal({ visible, onClose, onChanged }: Props) {
                 ) : (
                   <View style={{ alignItems: 'center', paddingVertical: 18, gap: 6 }}>
                     <Ionicons name="add-circle-outline" size={26} color={theme.textMuted} />
-                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary }}>No verses added yet</Text>
-                    <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, textAlign: 'center', lineHeight: 17, paddingHorizontal: 8 }}>
+                    <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textSecondary }}>No verses added yet</Text>
+                    <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textMuted, textAlign: 'center', lineHeight: 17, paddingHorizontal: 8 }}>
                       Highlight a verse in the Bible reader, then tap Add to Today's Message rotation.
                     </Text>
                   </View>
@@ -292,7 +293,7 @@ export default function VersePoolModal({ visible, onClose, onChanged }: Props) {
                     >
                       <View style={{ flex: 1, paddingRight: 12 }}>
                         <Text numberOfLines={2} style={{ fontSize: 13, fontFamily: 'Lora_500Medium', color: theme.textSecondary, lineHeight: 18 }}>{verse.text}</Text>
-                        <Text style={{ fontSize: 10, fontFamily: 'DMSans_700Bold', color: theme.accentAmber, letterSpacing: 1, marginTop: 3, textTransform: 'uppercase' }}>{verse.reference}</Text>
+                        <Text style={{ fontSize: 10, fontFamily: Type.uiBold, color: theme.accentAmber, letterSpacing: 1, marginTop: 3, textTransform: 'uppercase' }}>{verse.reference}</Text>
                       </View>
                       <Ionicons name={selected ? 'radio-button-on' : 'radio-button-off'} size={20} color={selected ? theme.accentAmber : theme.textMuted} />
                     </TouchableOpacity>
@@ -312,16 +313,16 @@ export default function VersePoolModal({ visible, onClose, onChanged }: Props) {
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setConfirmRemove(null); }}
             />
             <View style={{ position: 'absolute', width: '78%', backgroundColor: theme.bgSheet, borderRadius: 18, borderWidth: 0.5, borderColor: theme.borderCard, padding: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.5, shadowRadius: 24, elevation: 30 }}>
-              <Text style={{ fontSize: 16, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, marginBottom: 8 }}>Remove this verse?</Text>
-              <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 19, marginBottom: 18 }}>
+              <Text style={{ fontSize: 16, fontFamily: Type.uiBold, color: theme.textPrimary, marginBottom: 8 }}>Remove this verse?</Text>
+              <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textMuted, lineHeight: 19, marginBottom: 18 }}>
                 It will stop showing in Today's Message. You can add it again later.
               </Text>
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setConfirmRemove(null); }} style={{ flex: 1, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: theme.borderCard, alignItems: 'center', minHeight: 44, justifyContent: 'center' }}>
-                  <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary }}>Cancel</Text>
+                  <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.textSecondary }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={doRemove} style={{ flex: 1, paddingVertical: 12, borderRadius: 10, backgroundColor: theme.accentRedBg, borderWidth: 1, borderColor: theme.accentRedBorder, alignItems: 'center', minHeight: 44, justifyContent: 'center' }}>
-                  <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: theme.accentRed }}>Remove</Text>
+                  <Text style={{ fontSize: 14, fontFamily: Type.uiBold, color: theme.accentRed }}>Remove</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -335,5 +336,5 @@ export default function VersePoolModal({ visible, onClose, onChanged }: Props) {
 const styles = StyleSheet.create({
   rowCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 0.5, padding: 14, marginBottom: 4 },
   verseRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 0.5 },
-  sectionLabel: { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', marginTop: 18, marginBottom: 6 },
+  sectionLabel: { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold, marginTop: 18, marginBottom: 6 },
 });

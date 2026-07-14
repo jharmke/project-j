@@ -5,6 +5,7 @@ import { Animated, Dimensions, Easing, StyleSheet, Text, TouchableOpacity, View 
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Path, Stop } from 'react-native-svg';
 import { AchievementDef } from '../achievementData';
 import { useTheme } from '../theme';
+import { Type } from '../typography';
 
 // ─── Global Emitter ───────────────────────────────────────────────────────────
 
@@ -241,7 +242,7 @@ function DiamondCelebration({ def, label, onDismiss }: {
             opacity: titleOpacity,
             transform: [{ translateY: titleTransY }],
             fontSize: 12,
-            fontFamily: 'DMSans_700Bold',
+            fontFamily: Type.uiBold,
             letterSpacing: 4,
             color: D_BLUE,
             textTransform: 'uppercase',
@@ -309,7 +310,7 @@ function DiamondCelebration({ def, label, onDismiss }: {
             opacity: nameOpacity,
             transform: [{ translateY: nameTransY }],
             fontSize: 44,
-            fontFamily: 'BebasNeue_400Regular',
+            fontFamily: Type.num,
             color: '#ffffff',
             letterSpacing: 3,
             textShadowColor: D_BLUE,
@@ -326,7 +327,7 @@ function DiamondCelebration({ def, label, onDismiss }: {
           <Animated.Text style={{
             opacity: subtextOpacity,
             fontSize: 11,
-            fontFamily: 'DMSans_500Medium',
+            fontFamily: Type.uiMedium,
             letterSpacing: 2,
             color: D_BLUE,
             textTransform: 'uppercase',
@@ -564,7 +565,7 @@ export default function CelebrationOverlay({ visible, tier, accentColor, label, 
           }}>
             <Text style={{
               fontSize: tier === 'large' ? 52 : tier === 'medium' ? 38 : 22,
-              fontFamily: 'BebasNeue_400Regular',
+              fontFamily: Type.num,
               color: '#ffffff',
               letterSpacing: 4,
               textShadowColor: accentColor,
@@ -595,7 +596,7 @@ export default function CelebrationOverlay({ visible, tier, accentColor, label, 
               paddingHorizontal: 14,
               paddingVertical: 8,
             }}>
-            <Text style={{ color: '#ffffff', fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Tap to dismiss</Text>
+            <Text style={{ color: '#ffffff', fontSize: 12, fontFamily: Type.uiSemibold }}>Tap to dismiss</Text>
           </TouchableOpacity>
         </Animated.View>
       )}

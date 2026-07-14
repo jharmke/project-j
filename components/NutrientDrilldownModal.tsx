@@ -4,6 +4,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { useRef, useMemo } from 'react';
 import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../theme';
+import { Type } from '../typography';
 
 // Recipe-logged entries store extended nutrients as FLAT fields (e.fiber, e.sodium, ...),
 // already scaled to the logged portion, NOT inside foodNutrients. Map readable names to those
@@ -199,18 +200,18 @@ export default function NutrientDrilldownModal({ visible, onClose, item, entries
 
           {/* Header */}
           <View style={{ paddingHorizontal: 20, paddingBottom: 14, paddingTop: 4, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-            <Text style={{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, fontFamily: 'DMSans_700Bold', marginBottom: 4 }}>
+            <Text style={{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, fontFamily: Type.uiBold, marginBottom: 4 }}>
               TODAY'S SOURCES
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: 6 }}>
-              <Text style={{ fontSize: 28, color, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>
+              <Text style={{ fontSize: 28, color, fontFamily: Type.num, letterSpacing: 1 }}>
                 {displayTotal}{item?.unit ?? ''}
               </Text>
-              <Text style={{ fontSize: 14, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold' }}>
+              <Text style={{ fontSize: 14, color: theme.textMuted, fontFamily: Type.uiSemibold }}>
                 {item?.label}
               </Text>
               {item?.goal !== null && item?.goal !== undefined && (
-                <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>
+                <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui }}>
                   / {item.goal}{item.unit} goal
                 </Text>
               )}
@@ -231,7 +232,7 @@ export default function NutrientDrilldownModal({ visible, onClose, item, entries
                     borderColor: !localNet ? theme.accentBlueBorder : theme.borderCard,
                   }}
                 >
-                  <Text style={{ fontSize: 10, color: !localNet ? theme.accentBlue : theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5 }}>TOTAL</Text>
+                  <Text style={{ fontSize: 10, color: !localNet ? theme.accentBlue : theme.textDim, fontFamily: Type.uiBold, letterSpacing: 1.5 }}>TOTAL</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setLocalNet(true); }}
@@ -242,7 +243,7 @@ export default function NutrientDrilldownModal({ visible, onClose, item, entries
                     borderColor: localNet ? theme.accentBlueBorder : theme.borderCard,
                   }}
                 >
-                  <Text style={{ fontSize: 10, color: localNet ? theme.accentBlue : theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5 }}>NET</Text>
+                  <Text style={{ fontSize: 10, color: localNet ? theme.accentBlue : theme.textDim, fontFamily: Type.uiBold, letterSpacing: 1.5 }}>NET</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -254,7 +255,7 @@ export default function NutrientDrilldownModal({ visible, onClose, item, entries
             showsVerticalScrollIndicator={false}
           >
             {contributions.length === 0 ? (
-              <Text style={{ color: theme.textDim, fontSize: 13, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', textAlign: 'center', paddingVertical: 12 }}>
+              <Text style={{ color: theme.textDim, fontSize: 13, fontFamily: Type.ui, fontStyle: 'italic', textAlign: 'center', paddingVertical: 12 }}>
                 No entries with data for this nutrient.
               </Text>
             ) : (
@@ -262,15 +263,15 @@ export default function NutrientDrilldownModal({ visible, onClose, item, entries
                 <View key={i} style={{ marginBottom: i < contributions.length - 1 ? 14 : 0 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
                     <Text
-                      style={{ flex: 1, fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', marginRight: 8 }}
+                      style={{ flex: 1, fontSize: 13, color: theme.textPrimary, fontFamily: Type.uiSemibold, marginRight: 8 }}
                       numberOfLines={1}
                     >
                       {c.name}
                     </Text>
-                    <Text style={{ fontSize: 13, color, fontFamily: 'DMSans_700Bold', flexShrink: 0 }}>
+                    <Text style={{ fontSize: 13, color, fontFamily: Type.uiBold, flexShrink: 0 }}>
                       {c.value}{item?.unit}
                     </Text>
-                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginLeft: 6, width: 34, textAlign: 'right', flexShrink: 0 }}>
+                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginLeft: 6, width: 34, textAlign: 'right', flexShrink: 0 }}>
                       {c.pct}%
                     </Text>
                   </View>

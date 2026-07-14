@@ -16,6 +16,7 @@ import { loadDevotionalProgress, getDevotionalProgress, getNextDay } from '../ut
 import { useTheme, type Theme } from '../theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import VersePoolModal from './VersePoolModal';
+import { Type } from '../typography';
 
 /**
  * Faith Today: the home tab's faith hub card (same slot 1 as the old Today's Message verse
@@ -342,29 +343,29 @@ const styles = StyleSheet.create({
   watermark: { position: 'absolute', right: -24, bottom: -28, opacity: 0.10 },
   pageContent: { padding: 16 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-  eyebrow: { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', marginBottom: 2 },
+  eyebrow: { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold, marginBottom: 2 },
   titleRow: { flexDirection: 'row', alignItems: 'center' },
-  title: { fontSize: 14, fontFamily: 'DMSans_700Bold' },
+  title: { fontSize: 14, fontFamily: Type.uiBold },
   verseText: { fontSize: 17, lineHeight: 27, marginBottom: 12, fontFamily: 'Lora_500Medium', textAlign: 'center' },
-  verseRef: { fontSize: 9, fontFamily: 'DMSans_700Bold', textAlign: 'center', letterSpacing: 2, textTransform: 'uppercase' },
+  verseRef: { fontSize: 9, fontFamily: Type.uiBold, textAlign: 'center', letterSpacing: 2, textTransform: 'uppercase' },
   haloBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 6, paddingVertical: 9, paddingHorizontal: 12, minHeight: 44, marginTop: 10, marginBottom: 8 },
-  haloBtnText: { fontSize: 12, fontFamily: 'DMSans_600SemiBold' },
+  haloBtnText: { fontSize: 12, fontFamily: Type.uiSemibold },
   cols: { flexDirection: 'row' },
   col: { flex: 1 },
-  colLabel: { fontSize: 8, letterSpacing: 2, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', marginBottom: 8 },
-  colEmpty: { fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' },
+  colLabel: { fontSize: 8, letterSpacing: 2, textTransform: 'uppercase', fontFamily: Type.uiBold, marginBottom: 8 },
+  colEmpty: { fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic' },
   vDivider: { width: 1, marginHorizontal: 10 },
   tile: { borderRadius: 10, borderWidth: 1, borderLeftWidth: 3, paddingHorizontal: 10, paddingVertical: 8, marginBottom: 8 },
   tileTop: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4 },
   tileName: { flex: 1, fontSize: 12, fontFamily: 'Lora_500Medium' },
-  tileRef: { fontSize: 10, fontFamily: 'DMSans_400Regular' },
+  tileRef: { fontSize: 10, fontFamily: Type.ui },
   barTrack: { height: 4, borderRadius: 2, overflow: 'hidden' },
   barFill: { height: 4, borderRadius: 2 },
   prayerBox: { borderRadius: 10, borderWidth: 1, borderLeftWidth: 3, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 7 },
   prayerText: { fontSize: 13, fontFamily: 'Lora_500Medium' },
-  moreText: { fontSize: 11, fontFamily: 'DMSans_600SemiBold', marginTop: 2 },
+  moreText: { fontSize: 11, fontFamily: Type.uiSemibold, marginTop: 2 },
   empty: { alignItems: 'center', paddingVertical: 14, gap: 6 },
-  emptyText: { fontSize: 13, fontFamily: 'DMSans_600SemiBold', textAlign: 'center' },
-  emptyHint: { fontSize: 11, fontFamily: 'DMSans_400Regular', textAlign: 'center' },
+  emptyText: { fontSize: 13, fontFamily: Type.uiSemibold, textAlign: 'center' },
+  emptyHint: { fontSize: 11, fontFamily: Type.ui, textAlign: 'center' },
   dots: { position: 'absolute', bottom: 10, left: 0, right: 0, justifyContent: 'center', flexDirection: 'row', alignItems: 'center', gap: 5 },
 });

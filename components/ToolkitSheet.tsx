@@ -14,6 +14,7 @@ import { getTutorialsForTab } from '../data/tutorials';
 import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 import { ToastRenderer } from './Toast';
+import { Type } from '../typography';
 
 // ─── Emitter ─────────────────────────────────────────────────────────────────
 
@@ -240,19 +241,19 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: 9,
-    fontFamily: 'DMSans_700Bold',
+    fontFamily: Type.uiBold,
     letterSpacing: 3,
     textTransform: 'uppercase',
   },
   sectionTitle: {
     fontSize: 22,
-    fontFamily: 'BebasNeue_400Regular',
+    fontFamily: Type.num,
     letterSpacing: 1,
     marginBottom: 2,
   },
   sectionSub: {
     fontSize: 12,
-    fontFamily: 'DMSans_400Regular',
+    fontFamily: Type.ui,
     marginBottom: 14,
   },
   list: {
@@ -281,11 +282,11 @@ const styles = StyleSheet.create({
   },
   rowTitle: {
     fontSize: 14,
-    fontFamily: 'DMSans_600SemiBold',
+    fontFamily: Type.uiSemibold,
   },
   rowDesc: {
     fontSize: 11,
-    fontFamily: 'DMSans_400Regular',
+    fontFamily: Type.ui,
     marginTop: 1,
   },
 });

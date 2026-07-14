@@ -186,12 +186,25 @@ are separate pre-submission checklists, NOT part of this menu.
   press, gradient-filled numbers, molded buttons everywhere, glass cards keeping the accent top edge,
   bottom glow (medium, NEVER strong) + halftone rising from the bottom + subtle grain, frosted tab bar,
   accent active tab icons, staggered card entrance.
-  Decided against a live design lab across 6 iterations. Full detail, the OPEN device A/Bs (Rajdhani vs
-  Khand, Bitter vs Ranade, halftone visibility, title press) and the DO-NOT-RESURRECT list (topographic,
-  mesh, aurora, vignette, line/dot grid, deep-ink titles, a user-facing background picker) live in
-  **SPEC_visual_refresh.md**. Build order is in the spec; steps 1-6 and 8 are pure JS, step 7 (frosted bar +
-  gradient number fill) needs a native rebuild.
-  >> STEP 1 DONE 2026-07-14 (spec + this entry). NEXT: step 2 = lunch-row fix + active tab icons go accent.
+  Full detail, the ledger of every face tried + verdict, and the DO-NOT-RESURRECT list (topographic, mesh,
+  aurora, vignette, line/dot grid, deep-ink titles, a user-facing background picker) live in
+  **SPEC_visual_refresh.md**. Build order + status is in the spec.
+  >> SHIPPED 2026-07-14: the SURFACE (flat ground + bottom glow + halftone + grain via mixBlendMode,
+  glass cards, ABSOLUTE glass tab bar + header so content scrolls under both ends, per-theme card shadows,
+  new opaque bgSelected token), the four-role TYPE SYSTEM (typography.ts -- Clash Display / Rajdhani Bold /
+  Onest / Ranade, each a one-line swap), gradient hero numbers, molded PrimaryCTA on 4 CTAs, and the type
+  sweep across all 6 tabs + 42 components (406 font refs).
+  >> ⚠️ THE FONT BUG, 2026-07-14 (top of the spec, read it before touching any weight): Fontshare ships
+  Ranade and Clash as ONE FAMILY PER WEIGHT, iOS resolves fontFamily against a font's internal names, and a
+  miss falls back SILENTLY -- so every Ranade cut collapsed onto one face. THREE weight changes produced
+  zero pixels of difference and I burned an afternoon treating it as a taste problem. **A weight change
+  with no visible response is a BUG, not a design failure.** Six .ttf name tables patched (glyphs
+  untouched); an on-device 4-cut specimen with an Onest 400/700 CONTROL proved the ladder. Any future
+  Fontshare weight must be patched the same way. Google-Fonts-packaged faces (Onest, Rajdhani) were never
+  affected -- prefer them.
+  >> NEXT: the ~30 STACK SCREENS (Settings, add-food, Bible reader, EvR, reports, onboarding, journal,
+  prayer) are still on Bebas + DM Sans -- there is a visible seam the moment you leave a tab. Then the
+  VOICE PASS (Ranade is on 6 lines, all on Home; Otto's bubbles + EvR + verses are where it earns its keep).
 - [TRACK, VISION LOCKED + SPECCED 2026-07-07 -> ready to build] Custom Reports (Pro). Model: report =
   date range (week/month/3mo/6mo/1yr/custom) + chapters, each a PICKER into a library of ~55 pre-designed
   blocks the user assembles freely; templates = pre-filled block sets; exportable (PDF/share); Pro-gated

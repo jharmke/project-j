@@ -1,7 +1,55 @@
 # SPEC -- Visual Refresh (type, material, surface)
 
-Status: DECIDED 2026-07-14, not yet built. This file is the source of truth for the refresh.
-Roadmap points here. Nothing in here ships without Justin seeing it on device first.
+Status: IN PROGRESS. Decided AND largely built 2026-07-14. This file is the source of truth for the
+refresh. Roadmap points here. Nothing in here ships without Justin seeing it on device first.
+
+SHIPPED so far: the surface (flat ground + bottom glow + halftone + grain, glass cards, absolute glass
+tab bar and header, per-theme shadows, bgSelected), the four-role type system, and the type sweep across
+all 6 tabs + 42 components. Plus the font-packaging patch below.
+
+STILL OPEN: the ~30 stack screens (still on Bebas/DM Sans -- there is a visible seam the moment you leave
+a tab), the voice pass, the molded-button rollout, chip shine, title gradient, card stagger, and Warm +
+Blush getting the Light treatment.
+
+---
+
+## ⚠️ THE FONT BUG -- READ BEFORE TOUCHING ANY WEIGHT
+
+This cost an entire afternoon and it will cost another one if it is ever forgotten.
+
+**Fontshare ships Ranade and Clash Display as ONE FAMILY PER WEIGHT** -- `Ranade-Light.ttf` internally
+declares its family as "Ranade Light", `Ranade-Medium.ttf` declares "Ranade Medium", and so on -- rather
+than one family carrying four cuts. **iOS resolves a React Native `fontFamily` string against a font's
+internal names, and a miss falls back SILENTLY.** It never throws. So every Ranade weight collapsed onto
+a single face, and the app rendered one cut no matter what the code asked for.
+
+**The symptom, and the lesson:** three separate weight changes to the coach voice produced ZERO pixels of
+difference on device. Justin flagged it himself early ("did you do anything to the voice? it still feels
+very bold?") right after the body had been dropped to Light. Instead of chasing that, I treated it as a
+taste problem for three more rounds -- chased colour, shipped a `textMuted` body that is PURPLE on Light
+and gave the card five hues, and told Justin the title/body hierarchy was broken when it never was (they
+have shared an ink since long before the refresh).
+
+> **A weight change that produces no visible response is a BUG, not a design failure.**
+> Two or three no-ops in a row means stop designing and go look at the font.
+
+**The fix (done):** the six .ttf `name` tables are patched so each cut is its own one-face family named
+exactly what the code asks for (`Ranade-Light`, `ClashDisplay-Bold`, ...). Glyphs untouched; every other
+table copied through byte-for-byte, file repacked, checksums recomputed. Originals were backed up first.
+Patcher script lived in the session scratchpad -- **if new Fontshare weights are ever added, they MUST be
+patched the same way or they will silently collapse again.**
+
+**The instrument:** an on-device specimen block -- the same sentence rendered in all four Ranade cuts,
+plus an **Onest 400/700 control**. The control is the part that makes it conclusive: it proves the screen
+can render a weight difference at all, so an all-identical Ranade block cannot be blamed on the display.
+Rebuild that specimen for any future font that behaves strangely.
+
+**Clash had the same bug latent.** `Type.displayBold` had zero usages, so it cost nothing -- but it would
+have bitten the first time anyone set a bold title.
+
+Also worth knowing: **Onest and Rajdhani were never affected.** They come from `@expo-google-fonts`
+packages, which are packaged correctly. Only hand-dropped Fontshare `.ttf` files have this problem.
+**Prefer a Google-Fonts-packaged face whenever one will do.**
 
 ---
 
@@ -145,9 +193,13 @@ could be isolated and two rounds were judged on a screen with a rendering bug.
 | Numbers | Khand SemiBold 600 | ❌ "looks exactly like what we started with" -- and he was right. Khand SemiBold and Bebas sit in the same visual niche, so the swap bought nothing |
 | Numbers | **Rajdhani Bold 700 (unclipped)** | ✅ **LOCKED.** "def the best so far" |
 | Voice | Bitter (slab) | ❌ "def feels like a newspaper". Which is what a book serif IS. My call, and it was wrong |
-| Voice | **Ranade** | ✅ FACE LOCKED -- "I really like the voice font". WEIGHT still open (reads too heavy) |
+| Voice | **Ranade** | ✅ **FACE LOCKED** -- "I really like the voice font" |
+| Voice weight | Ranade Light body | ❌ Once the fonts ACTUALLY WORKED, Light read as too thin. (Every judgement of Ranade before the font patch was worthless -- see the font bug above.) |
+| Voice weight | **Regular body / Medium emphasis / Bold title** | ✅ **LOCKED.** Ranade is a chunky face, so its body sits a step below where a sans body would. Bold-over-Regular restores the 4-step spread DM Sans always had (700 vs 400) |
 
-Two bugs that polluted early verdicts, both mine, both fixed:
+Three bugs that polluted early verdicts, all mine, all fixed:
+- **The font packaging bug.** See the top of this file. It invalidated EVERY voice-weight judgement made
+  before it was found.
 - **Clipped numbers.** Every number style carried a lineHeight hand-tuned to Bebas (the calorie number was
   52/56). Bebas is all-caps with no ascenders so it fits a tight box; Rajdhani and Khand have real
   ascenders and got their tops sliced. Fixed by `numLine()` in typography.ts -- any number style that sets
@@ -155,6 +207,21 @@ Two bugs that polluted early verdicts, both mine, both fixed:
 - **Everything mapped to its BOLD cut.** Bebas ships one weight that reads optically MEDIUM, so pointing a
   role at a 700 made every value shout at once. That reads as "this font is too heavy" when the font was
   fine and the weight was wrong.
+
+### Rules the sweep taught us
+
+- **Bebas was doing THREE jobs, so `Bebas -> Num` is not always right.** A script maps it faithfully and
+  will happily put Rajdhani -- a condensed TABULAR face built for values -- on the app's primary CTA
+  label. A button label is INTERFACE. Modal titles are DISPLAY. Check every Bebas site the script touches.
+- **Voice is for SPEECH, not for data.** "Your body is ready to perform." is the coach talking -> Voice.
+  A bed time ("9:41 PM -> 6:01 AM") is a value -> Numbers/Interface, never Voice. Putting data in the
+  voice face is the same category error that turned Bebas into wallpaper.
+- **Do not lighten text with `textMuted` on Light.** It is `#6666aa` -- a PURPLE. It lightens by changing
+  HUE, and on a card that already carries an accent label and a coloured chip it hands you a fifth colour.
+  Carry hierarchy on the WEIGHT axis and leave the ink alone.
+- **Card labels use ONE recipe app-wide:** `styles.cardLabel` + `theme.textMuted`, icon at size 11 in
+  `textMuted`. Coach Insight was the lone accent-coloured label on Home -- invisible on the old flat white
+  page, wrong the moment the page started glowing accent. Same class of bug as Stats' section headers.
 
 ## PARKED -- molded button rollout (started, not finished)
 
@@ -180,16 +247,18 @@ NOT molding (deliberate, do not "fix" these):
 
 ## OPEN -- test on device, do not decide in a browser
 
-- **Voice WEIGHT.** The face is settled (Ranade). Ranade-Light (usWeightClass 300, verified in the actual
-  file) still reads heavy next to Onest. Two possibilities and they need different fixes: either Ranade's
-  Light genuinely is that dense (it is a low-contrast, big-x-height face), or the weight is not resolving
-  on iOS at all. DIAGNOSTIC: set the body to Light and the title to Bold. If they look identical, it is a
-  loading problem, not a taste problem.
-- **Halftone at real screen brightness.** May be invisible, may be perfect. Ten-second check.
 - **Title press on/off.** Justin was 60/40 for keeping it. On glass the press earns its keep (it separates
   the word from a background now moving underneath), but confirm.
+- **Title accent-GRADIENT fill.** Still flat accent in-app. The gradient machinery exists
+  (`GradientNumber` + masked-view) and is already carrying the hero numbers; titles never got it.
+- **Chip / tinted-button top shine.** Justin spotted it in the lab and wants it. Not built.
+- **Grain on big saturated buttons.** Justin: reads as too much on the Workout tab's large buttons.
+  Deliberately deferred -- revisit once everything else has landed.
+- **Stats section subtext colour.** Deferred on purpose until the fonts are done everywhere, so the same
+  text is not tuned twice.
 
-RESOLVED: Numbers = Rajdhani Bold. Voice face = Ranade. Display = Clash Display. Interface = Onest.
+RESOLVED: Numbers = Rajdhani Bold. Display = Clash Display. Interface = Onest.
+Voice = Ranade -- **Regular body / Medium emphasis / Bold title**.
 The "if Ranade wins the Voice, Interface must move" rule is DROPPED -- Clash (display) and Onest
 (deliberately invisible) leave Ranade plenty of room to have its own register between them.
 
@@ -214,17 +283,29 @@ The "if Ranade wins the Voice, Interface must move" rule is DROPPED -- Clash (di
 
 ## BUILD ORDER (safest first, one step at a time, confirm between each)
 
-1. This spec + roadmap entry. [DONE]
-2. Lunch row fix + active tab icons go accent. Two one-liners, zero risk. Pure JS.
-3. **Fonts.** Load the faces, add type-role tokens to `theme.tsx`, migrate Home first, then screen by
-   screen. THE BIG ONE: hundreds of hardcoded `fontFamily` strings across the app. Pure JS (font files
-   bundle through Metro; no native rebuild).
-4. Molded buttons: roll `PrimaryCTA` out screen by screen. Pure JS.
-5. Background: bottom glow + halftone + grain. Pure JS (react-native-svg is already a dependency).
-6. Glass cards.
-7. Frosted tab bar + gradient number fill. **NEEDS A NATIVE REBUILD** (`expo-blur`, and a masked-view for
-   gradient-filled text).
-8. Card stagger (Reanimated layout animations). Pure JS.
+1. This spec + roadmap entry. **[DONE]**
+2. Lunch row fix + active tab icons go accent. **[DONE]**
+3. **Fonts.** typography.ts + the four roles. Home, then the 6 tabs, then 42 components -- 406 font refs.
+   **[DONE for tabs + components]**
+4. Background: flat ground + bottom glow + halftone + grain. **[DONE]**
+5. Glass cards + absolute glass tab bar and header + per-theme shadows + bgSelected. **[DONE]**
+6. Gradient number fill (masked-view). **[DONE]** -- needed the native rebuild, which is spent.
+7. **Font packaging patch.** **[DONE]** -- see the top of this file.
+8. **-> NEXT: the ~30 stack screens.** Settings, add-food, Bible reader, Effort vs Results, the reports,
+   onboarding, journal, prayer. Still on Bebas + DM Sans, so there is a visible seam the moment you leave
+   a tab. Mostly mechanical (the sweep script), but see "Rules the sweep taught us" -- it cannot judge
+   Bebas's three jobs for you.
+9. **The voice pass.** The judgement calls a script cannot make. Ranade currently lives on SIX lines, all
+   on Home (Coach Insight title + body, the readiness line, the Recovery and Sleep AI tips, one line on
+   the Weight card). EvR's insight copy, Otto's chat bubbles, the verses and devotionals are where the
+   voice actually earns its keep. Otto's bubbles are the single biggest win available: HIS bubbles are
+   voice, YOURS stay Interface -- that contrast is the point.
+10. A single readability pass once the fonts are everywhere.
+11. Molded button rollout (see PARKED) -- including the row-height bug.
+12. Chip top-shine + title accent-gradient.
+13. Card stagger (Reanimated `FadeInDown.delay(i*50).springify()`). Pure JS.
+14. Warm + Blush get the Light treatment once Light is signed off.
+15. `bgSelected` sweep for modals and stack screens as they get converted.
 
 ## AUDIT GATE (every step)
 

@@ -156,6 +156,28 @@ Two bugs that polluted early verdicts, both mine, both fixed:
   role at a 700 made every value shout at once. That reads as "this font is too heavy" when the font was
   fine and the weight was wrong.
 
+## PARKED -- molded button rollout (started, not finished)
+
+Proven on three buttons and Justin signed off: Generate Analysis (diagnostic-report), Estimate My Meal +
+Add to Log (ai-meal-estimator, both the results-page hero and the confirm modal). Disabled states verified.
+
+Remaining:
+- **Sweep the other ~13 files' primary CTAs.** Mechanical now the pattern is proven.
+- **Circular variant + the FABs.** PrimaryCTA has no circular form yet; the app has a pile of 44/56px
+  accent circles (add-food, workout, bible scroll-speed, quick-add) that want the same mould.
+- **BUG in PrimaryCTA: a CTA in a row does not match its sibling's height.** The glow WRAPPER stretches
+  with the row but the button FACE inside it keeps its natural height, so a Cancel/Confirm pair comes out
+  uneven. Seen in the AI-estimator confirm modal. faceStyle was added as a stopgap and does NOT fix it.
+  Fix inside the component during the sweep, not per call site.
+
+NOT molding (deliberate, do not "fix" these):
+- Entry-point / doorway buttons (Stats > Open Analysis, Comparison, etc). Solid fill is reserved for a
+  screen's ONE primary action; molding every doorway would put six competing solid buttons on Stats.
+- Progress-bar fills, workout set checkboxes, profile picker dots. They are solid accent but they are not
+  buttons.
+- Home's weight Log button. It is already the tinted secondary recipe, by design.
+- Cancel is NOT red. Red is the destructive colour (delete/remove). Cancel dismisses; nothing is lost.
+
 ## OPEN -- test on device, do not decide in a browser
 
 - **Voice WEIGHT.** The face is settled (Ranade). Ranade-Light (usWeightClass 300, verified in the actual

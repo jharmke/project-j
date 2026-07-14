@@ -11,9 +11,12 @@ interface Props {
   // When true, a change up FROM zero rolls instead of snapping. Default false preserves every
   // existing caller (steps/water/etc. snap on first data load rather than counting up from 0).
   animateFromZero?: boolean;
+  // Lets a caller render the counted value as something other than a plain <Text> -- e.g. a hero number
+  // that needs a gradient fill. The counting logic stays here; only the presentation moves out.
+  renderValue?: (formatted: string) => React.ReactNode;
 }
 
-export default function AnimatedNumber({ value, style, decimals = 0, duration = 350, formatter, animateFromZero = false }: Props) {
+export default function AnimatedNumber({ value, style, decimals = 0, duration = 350, formatter, animateFromZero = false, renderValue }: Props) {
   const animRef = useRef(new Animated.Value(value));
   const [display, setDisplay] = useState(value);
   const prevRef = useRef(value);
@@ -43,5 +46,6 @@ export default function AnimatedNumber({ value, style, decimals = 0, duration = 
   const rounded = decimals > 0 ? display : Math.round(display);
   const formatted = formatter ? formatter(rounded) : decimals > 0 ? (rounded as number).toFixed(decimals) : `${rounded}`;
 
+  if (renderValue) return <>{renderValue(formatted)}</>;
   return <Text style={style}>{formatted}</Text>;
 }

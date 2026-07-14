@@ -10,6 +10,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import CompanionFAB from '../../components/CompanionFAB';
+import { TAB_BAR_HEIGHT, TAB_SCROLL_PAD } from '../../components/CustomTabBar';
 import CompanionChat from '../../components/CompanionChat';
 import { showToolkit } from '../../components/ToolkitSheet';
 import TooltipIcon from '../../components/TooltipIcon';
@@ -195,7 +196,7 @@ export default function FaithScreen() {
 
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: insets.bottom + 96 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: insets.bottom + TAB_SCROLL_PAD }}
         showsVerticalScrollIndicator={false}
       >
         {visibleCards.map(id => (
@@ -205,7 +206,10 @@ export default function FaithScreen() {
         ))}
       </ScrollView>
 
-      <CompanionFAB tutorialKey="faith_halo_fab" onPress={() => { setCompanionSeed(null); setChatOpen(true); }} />
+      {/* bottom must clear the tab bar EXPLICITLY now. CompanionFAB's default of 18 assumed the navigator
+          insets a tab screen's content above the bar -- it no longer does (the bar is absolute), so at 18
+          Halo mounted UNDERNEATH the bar and disappeared. */}
+      <CompanionFAB tutorialKey="faith_halo_fab" bottom={TAB_BAR_HEIGHT + insets.bottom + 18} onPress={() => { setCompanionSeed(null); setChatOpen(true); }} />
       <CompanionChat visible={chatOpen} seedContext={companionSeed} onClose={() => { setChatOpen(false); setCompanionSeed(null); }} />
     </LinearGradient>
   );

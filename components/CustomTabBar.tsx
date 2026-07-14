@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useEffect, useState } from 'react';
@@ -17,7 +18,17 @@ import { useTheme } from '../theme';
 import FaithIconFish from './FaithIconFish';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const TAB_BAR_HEIGHT = 64;
+// Exported: any screen that anchors something to the bottom (a floating save bar, a FAB) has to clear
+// the tab bar, and the bar is absolutely positioned, so screens can no longer assume it takes up layout
+// space. One number, one place.
+export const TAB_BAR_HEIGHT = 64;
+
+// What a tab's ScrollView must reserve at the bottom, ON TOP of the safe-area inset. The bar is absolute
+// (it takes no layout space), and the Otto/Halo FAB floats ABOVE the bar, so content has to clear both:
+//   TAB_BAR_HEIGHT (64) + FAB resting gap (18) + FAB disc (56) + breathing room (20)
+// Every tab uses `insets.bottom + TAB_SCROLL_PAD`. It was hand-tuned per screen once and drifted to three
+// different values, which is exactly the kind of thing you SEE and cannot name.
+export const TAB_SCROLL_PAD = TAB_BAR_HEIGHT + 18 + 56 + 20;
 
 // The first four tabs never change. The FIFTH slot is tier-aware: Faith for
 // Rooted/Exploring users, Profile for "Not Right Now" users. Keeping it always
@@ -230,7 +241,27 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
   };
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom, height: TAB_BAR_HEIGHT + insets.bottom, backgroundColor: theme.bgPrimary, borderTopColor: theme.borderCardTop }]}>
+    <View style={[styles.container, { paddingBottom: insets.bottom, height: TAB_BAR_HEIGHT + insets.bottom, borderTopColor: theme.borderCardTop }]}>
+      {/* FROSTED: the bar is glass, not a slab. Content visibly scrolls UNDER it instead of stopping at a
+          wall.
+          Use iOS's OWN material, not a hand-mixed blur. The first cut stacked a `light`/`dark` BlurView
+          under a translucent colour wash, and the two together came out as a flat grey slab -- worse than
+          the solid bar it replaced. A system material already knows how to sample what is behind it and
+          how to keep foreground contrast, which is the entire hard part. */}
+      {/* A PLAIN blur at low intensity -- NOT an iOS system material.
+          Every system material (thick, thin, even "ultra thin") is engineered to OBSCURE what is behind
+          it: that is their job in iOS, letting a control float over content without the content wrecking
+          legibility. They land somewhere near 85-90% effective opacity, which is why cards in amber,
+          purple and blue could scroll underneath and be invisible.
+          The lab's bar was a page-coloured pane at ~43% opacity with a 22px blur -- MORE than half
+          see-through. A plain tinted blur at intensity ~28 is the honest equivalent. No colour wash on top
+          of it: an earlier attempt stacked one and produced a grey slab, which is what sent me chasing
+          system materials in the first place. */}
+      <BlurView
+        intensity={theme.id === 'dark' ? 34 : 28}
+        tint={theme.id === 'dark' ? 'dark' : 'light'}
+        style={StyleSheet.absoluteFill}
+      />
       <Animated.View style={[styles.pill, { backgroundColor: theme.borderSubtle, borderColor: theme.borderCard }, pillStyle]} />
 
       {tabs.map((tab, i) => {
@@ -304,10 +335,19 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
 
 const styles = StyleSheet.create({
   container: {
+    // ABSOLUTE, so the bar floats OVER the screen instead of taking a slice of layout out of it. That is
+    // what lets a screen's background run to the device edge and its content scroll underneath the glass.
+    // (A custom tabBar ignores the navigator's tabBarStyle, so the position has to live here.)
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     flexDirection: 'row',
-    backgroundColor: '#0d0d0f',
+    // No backgroundColor: the BlurView IS the background now. A solid fill here would sit on top of the
+    // blur and defeat the whole thing.
     borderTopWidth: 0.5,
     borderTopColor: 'rgba(255,255,255,0.06)',
+    // NO overflow:'hidden' -- the home button is raised ABOVE the bar and would get its top sliced off.
   },
   pill: {
     position: 'absolute',

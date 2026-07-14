@@ -14,6 +14,7 @@ import { Onest_400Regular, Onest_500Medium, Onest_600SemiBold, Onest_700Bold } f
 import { Rajdhani_500Medium, Rajdhani_600SemiBold, Rajdhani_700Bold } from '@expo-google-fonts/rajdhani';
 import { DarkTheme, ThemeProvider as NavThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
+import { Grain } from '../components/BackgroundLayers';
 import { Stack, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -282,6 +283,12 @@ export default function RootLayout() {
     <TutorialProvider>
     <NavThemeProvider value={DarkTheme}>
       <RootLayoutNav />
+      {/* FILM GRAIN, at the very top of the tree.
+          It has to sit over EVERYTHING -- cards, header, tab bar, the FAB -- because that is what fuses
+          them into one material. Mounted inside a screen it could never reach the header (higher zIndex)
+          or the tab bar and FAB (they live in the navigator, outside any screen). Here it covers the lot.
+          pointerEvents:none, so a layer over the whole app never eats a tap. */}
+      <Grain />
     </NavThemeProvider>
     </TutorialProvider>
     </AchievementToastProvider>

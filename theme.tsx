@@ -95,6 +95,11 @@ export interface Theme {
   // ── Backgrounds ─────────────────────────────────────────────────────────────
   bgPrimary: string;        // main screen background
   bgCard: string;           // standard card background
+  // GLASS. A translucent card, so the page surface underneath (bottom glow + halftone) actually reaches
+  // the middle of the screen instead of only showing in the gutters between opaque slabs. The cards cover
+  // ~90% of the screen, so until they let light through, every background treatment is invisible.
+  // Tuned per theme: the alpha has to keep body text readable on that theme's own ground.
+  bgCardGlass: string;
   bgCardVerse: string;      // verse card background (special)
   bgCardFaith: string;      // faith tab card background (faint warm tint, faith tab only)
   bgCardFaithHero: string;  // Faith Today home hub card (between bgCardFaith and bgCardVerse)
@@ -192,6 +197,7 @@ const dark: Theme = {
 
   bgPrimary:        '#161619',
   bgCard:           '#2a2a2e',
+  bgCardGlass:      'rgba(52,52,58,0.62)',
   bgCardVerse:      '#22223a',
   bgCardFaith:      '#2a2a2e',  // = bgCard: no tint on dark (warm-dark cards recede and look cheap; warmth lives in the gold edge + accents)
   bgCardFaithHero:  '#262634',
@@ -274,6 +280,7 @@ const light: Theme = {
 
   bgPrimary:        '#f0f0f5',
   bgCard:           'rgba(255,255,255,0.85)',
+  bgCardGlass:      'rgba(255,255,255,0.58)',
   bgCardVerse:      'rgba(255,251,240,0.72)',
   bgCardFaith:      'rgba(255,250,243,0.85)',
   bgCardFaithHero:  'rgba(255,248,236,0.82)',
@@ -356,6 +363,7 @@ const slate: Theme = {
 
   bgPrimary:        '#bcc8d4',
   bgCard:           'rgba(228,234,244,0.90)',
+  bgCardGlass:      'rgba(233,239,248,0.62)',
   bgCardVerse:      'rgba(226,232,244,0.90)',
   bgCardFaith:      'rgba(228,221,209,0.92)',
   bgCardFaithHero:  'rgba(226,219,206,0.92)',
@@ -438,6 +446,7 @@ const warm: Theme = {
 
   bgPrimary:        '#f3ece0',
   bgCard:           '#fff4e4',
+  bgCardGlass:      'rgba(255,246,232,0.64)',
   bgCardVerse:      '#fff8e8',
   bgCardFaith:      '#fff1dd',
   bgCardFaithHero:  '#ffeed6',
@@ -520,6 +529,7 @@ const blush: Theme = {
 
   bgPrimary:        '#f9dae5',
   bgCard:           'rgba(253,238,245,0.95)',
+  bgCardGlass:      'rgba(254,243,248,0.66)',
   bgCardVerse:      'rgba(255,252,245,0.92)',
   bgCardFaith:      'rgba(253,240,241,0.95)',
   bgCardFaithHero:  'rgba(253,242,238,0.94)',

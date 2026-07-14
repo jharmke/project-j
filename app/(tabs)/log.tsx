@@ -14,6 +14,7 @@ import { DEFAULT_MEAL_SLOTS, MealSlot, findSlotForMeal, loadMealSlots, saveMealS
 import { getRepeatSummary, logRepeatedItems, SlotRepeatInfo, tidyFoodName } from '../../utils/repeatMeal';
 import RepeatMealModal from '../../components/RepeatMealModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TAB_SCROLL_PAD } from '../../components/CustomTabBar';
 import Svg, { Circle } from 'react-native-svg';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
@@ -1194,7 +1195,7 @@ export default function LogScreen() {
       </View>
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + TAB_SCROLL_PAD }]}
         onScrollBeginDrag={() => {}}
       >
 
@@ -2274,7 +2275,7 @@ export default function LogScreen() {
 
 const styles = StyleSheet.create({
   container:          { flex: 1 },
-  content:            { padding: 16, paddingBottom: 80 },
+  content:            { padding: 16 },
   header:             { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5, marginBottom: 16 },
   headerLabel:        { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: 'DMSans_700Bold' },
   headerTitle:        { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },

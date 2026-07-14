@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastRenderer, useToast } from '../components/Toast';
 import { saveToFirebase } from '../firebaseConfig';
 import { useTheme } from '../theme';
+import PrimaryCTA from '../components/PrimaryCTA';
 import { useMembership } from '../MembershipContext';
 import { triggerHaptic } from '../utils/haptics';
 import { DEFAULT_MEAL_SLOTS, MealSlot, getMealDisplayName, loadMealSlots } from '../utils/mealSlots';
@@ -599,14 +600,14 @@ export default function AIMealEstimatorScreen() {
                   </View>
                 ) : (
                   <>
-                    <TouchableOpacity
-                      onPress={handleSubmit}
+                    {/* The screen's ONE primary action -> molded solid fill, not a flat painted slab. */}
+                    <PrimaryCTA
+                      label="Estimate My Meal"
+                      icon={<Ionicons name="sparkles" size={18} color="#ffffff" />}
                       disabled={!canSubmit}
-                      style={{ marginTop: 12, borderRadius: 12, paddingVertical: 16, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, backgroundColor: canSubmit ? theme.accentBlue : theme.bgInput, borderWidth: 1, borderColor: canSubmit ? theme.accentBlue : theme.borderInput, opacity: canSubmit ? 1 : 0.5 }}
-                    >
-                      <Ionicons name="sparkles" size={18} color={canSubmit ? '#ffffff' : theme.textMuted} />
-                      <Text style={{ fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: canSubmit ? '#ffffff' : theme.textMuted }}>Estimate My Meal</Text>
-                    </TouchableOpacity>
+                      onPress={handleSubmit}
+                      wrapperStyle={{ marginTop: 12 }}
+                    />
                     <Text style={{ marginTop: 10, textAlign: 'center', fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>
                       {remaining === null ? ' ' : `${remaining} ${remaining === 1 ? 'estimate' : 'estimates'} remaining this month`}
                     </Text>
@@ -770,15 +771,13 @@ export default function AIMealEstimatorScreen() {
                   style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 10, padding: 14, fontSize: 15, color: theme.textPrimary, fontFamily: 'DMSans_500Medium', marginBottom: 18 }}
                 />
 
-                {/* Primary + secondary actions */}
-                <TouchableOpacity
-                  onPress={openConfirm}
+                {/* Primary + secondary actions. This is the results page's ONE primary action -> molded. */}
+                <PrimaryCTA
+                  label={mindful ? 'Record This Meal' : 'Add to Log'}
+                  icon={<Ionicons name="checkmark-circle" size={18} color="#ffffff" />}
                   disabled={!canAddToLog}
-                  style={{ borderRadius: 12, paddingVertical: 16, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, backgroundColor: canAddToLog ? theme.accentBlue : theme.bgInput, borderWidth: 1, borderColor: canAddToLog ? theme.accentBlue : theme.borderInput, opacity: canAddToLog ? 1 : 0.5 }}
-                >
-                  <Ionicons name="checkmark-circle" size={18} color={canAddToLog ? '#ffffff' : theme.textMuted} />
-                  <Text style={{ fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: canAddToLog ? '#ffffff' : theme.textMuted }}>{mindful ? 'Record This Meal' : 'Add to Log'}</Text>
-                </TouchableOpacity>
+                  onPress={openConfirm}
+                />
                 {hasPending && (
                   <Text style={{ marginTop: 8, textAlign: 'center', fontSize: 12, color: theme.accentAmber, fontFamily: 'DMSans_500Medium' }}>Resolve the flagged items above first.</Text>
                 )}
@@ -919,9 +918,15 @@ export default function AIMealEstimatorScreen() {
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowConfirm(false); }} style={{ flex: 1, alignItems: 'center', paddingVertical: 13, borderRadius: 10, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput }}>
             <Text style={{ fontSize: 14, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold' }}>Cancel</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleConfirmSave} style={{ flex: 2, alignItems: 'center', paddingVertical: 13, borderRadius: 10, backgroundColor: theme.accentBlue }}>
-            <Text style={{ fontSize: 14, color: '#ffffff', fontFamily: 'DMSans_600SemiBold' }}>{mindful ? 'Record' : 'Add to Log'}</Text>
-          </TouchableOpacity>
+          {/* The confirm side of a Cancel/Confirm pair is the primary -> molded. Cancel stays quiet.
+              faceStyle matches Cancel's geometry exactly (13/10) so the pair is the same height. */}
+          <PrimaryCTA
+            label={mindful ? 'Record' : 'Add to Log'}
+            compact
+            onPress={handleConfirmSave}
+            wrapperStyle={{ flex: 2 }}
+            faceStyle={{ paddingVertical: 13, borderRadius: 10 }}
+          />
         </View>
       </CenteredModal>
     );

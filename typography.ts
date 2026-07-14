@@ -18,7 +18,7 @@
 // swap is instant -- no install, no rebuild. All three need to be judged on a real screen at real
 // brightness, not in a browser. See SPEC_visual_refresh.md "OPEN".
 const DISPLAY_FACE: 'clash' | 'oswald' | 'fraunces' = 'clash';
-const NUM_FACE: 'rajdhani' | 'khand' = 'khand';
+const NUM_FACE: 'rajdhani' | 'khand' = 'rajdhani';
 const VOICE_FACE: 'bitter' | 'ranade' = 'ranade';
 // ──────────────────────────────────────────────────────────────────────────────
 

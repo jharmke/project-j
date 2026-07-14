@@ -25,21 +25,28 @@ export default function PrimaryCTA({
   onPress,
   icon,
   busy = false,
+  busyLabel,
   disabled = false,
   compact = false,
   wrapperStyle,
+  faceStyle,
   haptic = Haptics.ImpactFeedbackStyle.Medium,
 }: {
   label: string;
   onPress: () => void;
   icon?: React.ReactNode;          // rendered left of the label (already colored white by the caller)
   busy?: boolean;                  // swaps the label for a spinner and blocks presses
+  busyLabel?: string;              // keeps a message next to the spinner ("Analyzing your data...")
   disabled?: boolean;
   // COMPACT: the same molded button at pill scale. Bebas caps at 19px is right for a screen's one big
   // CTA, but it can't carry a label like "Repeat Yesterday · 566 kcal" inside half a row -- so compact
   // keeps the molding, glow and press-scale, and drops to DMSans at 13 so the label always fits.
   compact?: boolean;
   wrapperStyle?: any;              // e.g. { flex: 1 } to let a button share a row
+  // Overrides the BUTTON FACE (padding, radius). Needed when the CTA sits next to a sibling it has to
+  // match -- e.g. a Cancel/Confirm pair, where compact's own padding made the two buttons different
+  // heights. Do not use it to restyle the fill; the mould is the whole point.
+  faceStyle?: any;
   haptic?: Haptics.ImpactFeedbackStyle;
 }) {
   const { theme, themeId } = useTheme();
@@ -76,6 +83,7 @@ export default function PrimaryCTA({
             styles.btn,
             compact && { borderRadius: 9, paddingVertical: 9, paddingHorizontal: 10 },
             { backgroundColor: theme.accentBlue, opacity: disabled ? 0.5 : 1 },
+            faceStyle,
           ]}
         >
           <LinearGradient
@@ -86,7 +94,14 @@ export default function PrimaryCTA({
             style={StyleSheet.absoluteFill}
           />
           {busy ? (
-            <ActivityIndicator size="small" color="#ffffff" />
+            busyLabel ? (
+              <View style={styles.row}>
+                <ActivityIndicator size="small" color="#ffffff" />
+                <Text numberOfLines={1} style={compact ? styles.labelCompact : styles.label}>{busyLabel}</Text>
+              </View>
+            ) : (
+              <ActivityIndicator size="small" color="#ffffff" />
+            )
           ) : (
             <View style={[styles.row, compact && { gap: 6 }]}>
               {/* Nudged up: Bebas is all-caps with no descenders, so its optical centre sits ABOVE the

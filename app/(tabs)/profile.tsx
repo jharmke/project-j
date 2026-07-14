@@ -9,6 +9,8 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TAB_SCROLL_PAD } from '../../components/CustomTabBar';
+import { TAB_BAR_HEIGHT } from '../../components/CustomTabBar';
 import { useToast } from '../../components/Toast';
 import { saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
@@ -415,7 +417,7 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={styles.content} automaticallyAdjustKeyboardInsets={true} onScroll={e => { scrollOffset.current = e.nativeEvent.contentOffset.y; }} scrollEventThrottle={16}>
+      <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + TAB_SCROLL_PAD }]} automaticallyAdjustKeyboardInsets={true} onScroll={e => { scrollOffset.current = e.nativeEvent.contentOffset.y; }} scrollEventThrottle={16}>
 
         <ProfileSection label="Basic Info" subtitle="Name, height, birthday, sex" defaultOpen={true} theme={theme} first={true}>
           <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>Name</Text>
@@ -707,8 +709,11 @@ export default function ProfileScreen() {
         <View style={{ height: 100 }} />
 
       </ScrollView>
-    {/* Floating save bar */}
-      <KeyboardAvoidingView behavior="padding" style={{ position: 'absolute', bottom: 0, left: 0, right: 0, display: hasChanges ? 'flex' : 'none' }}>
+    {/* Floating save bar.
+        bottom is TAB_BAR_HEIGHT + inset, not 0. The tab bar is absolutely positioned, so this screen's
+        box now runs all the way to the device edge -- at bottom:0 the save bar would sit UNDERNEATH the
+        tab bar and be unreachable. */}
+      <KeyboardAvoidingView behavior="padding" style={{ position: 'absolute', bottom: TAB_BAR_HEIGHT + insets.bottom, left: 0, right: 0, display: hasChanges ? 'flex' : 'none' }}>
       <Animated.View
         style={{
         bottom: 0,
@@ -774,7 +779,7 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container:          { flex: 1 },
-  content:            { padding: 16, paddingBottom: 80 },
+  content:            { padding: 16 },
   header:             { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5, marginBottom: 16 },
   headerLabel:        { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: 'DMSans_700Bold' },
   headerTitle:        { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },

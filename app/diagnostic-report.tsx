@@ -21,6 +21,7 @@ import {
   saveReport,
 } from '../utils/diagnosticReport';
 import { refreshCoachTip, resolveTipBody } from '../utils/coachAI';
+import PrimaryCTA from '../components/PrimaryCTA';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -192,27 +193,18 @@ export default function DiagnosticReportScreen() {
           A diagnostic read of your recent data. Each pattern is measured over the timeframe that fits it, so there's no window to pick.
         </Text>
 
-        {/* Generate button */}
-        <TouchableOpacity
-          ref={generateBtnRef}
-          onPress={handleGenerate}
-          disabled={!initialized || generating || blocked}
-          style={[styles.generateBtn, {
-            backgroundColor: t.accentBlueRaw,
-            opacity: !initialized ? 0.4 : generating ? 0.7 : blocked ? 0.4 : 1,
-          }]}
-        >
-          {generating ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <ActivityIndicator color="#fff" size="small" />
-              <Text style={styles.generateBtnText}>Analyzing your data...</Text>
-            </View>
-          ) : (
-            <Text style={styles.generateBtnText}>
-              {blocked ? `Need ${MIN_LOGGED} logged days` : 'Generate Analysis'}
-            </Text>
-          )}
-        </TouchableOpacity>
+        {/* Generate button -- the screen's ONE primary action, so it gets the molded solid fill
+            (PrimaryCTA: vertical light-to-dark mould + accent-tinted glow instead of a flat painted slab).
+            The ref stays on a wrapper View because the tutorial spotlight measures it. */}
+        <View ref={generateBtnRef} collapsable={false} style={{ marginBottom: 20 }}>
+          <PrimaryCTA
+            label={blocked ? `Need ${MIN_LOGGED} logged days` : 'Generate Analysis'}
+            busyLabel="Analyzing your data..."
+            busy={generating}
+            disabled={!initialized || blocked}
+            onPress={handleGenerate}
+          />
+        </View>
 
         {/* Saved reports list */}
         {savedReports.length > 0 && (() => {

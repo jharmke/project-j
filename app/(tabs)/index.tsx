@@ -11,6 +11,7 @@ import { Animated, AppState, Dimensions, Easing, Keyboard, KeyboardAvoidingView,
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import ReAnimated, { useAnimatedStyle, useAnimatedProps, useSharedValue, withTiming, withRepeat, withSequence, withDelay, cancelAnimation, Easing as ReAnimEasing } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TAB_SCROLL_PAD } from '../../components/CustomTabBar';
 import Svg, { Circle } from 'react-native-svg';
 import PressableButton from '../../components/PressableButton';
 import { useToast, ToastRenderer } from '../../components/Toast';
@@ -71,8 +72,11 @@ import {
 } from '../../utils/challenges';
 import { METRIC_META } from '../../utils/comparisonEngine';
 import { getVacation, endVacationEarly, vacationTodayKey, addDaysKey, VacationState } from '../../utils/vacationMode';
+import { BlurView } from 'expo-blur';
 import { Type, DISPLAY_CAPS, DISPLAY_TRACKING, displaySize, numLine } from '../../typography';
 import DurationValue from '../../components/DurationValue';
+import GradientNumber from '../../components/GradientNumber';
+import BackgroundLayers from '../../components/BackgroundLayers';
 
 const RECOVERY_PURPLE = '#9b7adb';
 const CAROUSEL_PAGE_W = Dimensions.get('window').width - 32;
@@ -647,6 +651,9 @@ export default function HomeScreen() {
   // App state
   const [loaded,          setLoaded]          = useState(false);
   const [refreshKey,      setRefreshKey]       = useState(0);
+  // Measured height of the floating header, so the scroll knows how much to clear. Seeded with a sane
+  // estimate so the first frame is not wrong before onLayout fires.
+  const [headerH,         setHeaderH]          = useState(104);
   const [waterPresets,    setWaterPresets]     = useState<[number,number,number]>([8,12,16]);
   const [waterGoal,       setWaterGoal]        = useState(WATER_TARGET);
   const [showWaterCustomModal, setShowWaterCustomModal] = useState(false);
@@ -2174,7 +2181,7 @@ export default function HomeScreen() {
     const nudgeText = MINDFUL_NUDGES[new Date().getDate() % MINDFUL_NUDGES.length];
 
     return (
-      <View ref={calCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden' }]}>
+      <View ref={calCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden' }]}>
         <Ionicons name="flame" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         <View style={{ flexDirection:'row', alignItems:'flex-start', justifyContent:'space-between', marginBottom:4 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
@@ -2191,7 +2198,17 @@ export default function HomeScreen() {
         {/* Big number row */}
         <View style={styles.calRow}>
           <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
-            <AnimatedNumber value={totalCals} style={[styles.calNumber, { color: styleMode === 'mindful' ? theme.textSecondary : calColor, opacity: 0.88 }]} />
+            {/* HERO number -> molded, not painted. The counting stays in AnimatedNumber; only the
+                presentation moves to GradientNumber, which masks a light-to-dark wash through the glyphs.
+                Mindful keeps the flat, quiet treatment: a molded hero number is emphasis, and emphasis on
+                a calorie count is the one thing Mindful exists to avoid. */}
+            <AnimatedNumber
+              value={totalCals}
+              style={[styles.calNumber, { color: styleMode === 'mindful' ? theme.textSecondary : calColor, opacity: 0.88 }]}
+              renderValue={styleMode === 'mindful' ? undefined : (s) => (
+                <GradientNumber value={s} color={calColor} style={{ ...styles.calNumber, opacity: 0.88 }} />
+              )}
+            />
           </View>
           <Text style={[styles.calTarget, { color: theme.textSecondary }]}>/ {styleMode === 'mindful' ? calTarget : onPaceTarget} kcal</Text>
         </View>
@@ -2261,7 +2278,7 @@ export default function HomeScreen() {
       setShowMacroDrilldown(true);
     };
     return (
-      <View ref={macrosCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
+      <View ref={macrosCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
         <Ionicons name="nutrition" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
@@ -2308,7 +2325,7 @@ export default function HomeScreen() {
   };
 
   const renderWaterCard = () => (
-    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
+    <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
         <Ionicons name="water" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
       <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
         <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
@@ -2354,7 +2371,7 @@ export default function HomeScreen() {
   );
 
   const renderWeightCard = () => (
-    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden' }]}>
+    <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden' }]}>
         <Ionicons name="body" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
       <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
         <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
@@ -2483,7 +2500,7 @@ export default function HomeScreen() {
         onPressIn={onPressIn}
         onPressOut={onPressOut}
         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/(tabs)/workout'); }}
-        style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, padding: 16, overflow: 'hidden' }]}>
+        style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, padding: 16, overflow: 'hidden' }]}>
         <Ionicons name="barbell" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         <View style={{ marginBottom: 12 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:8 }}>
@@ -2610,7 +2627,7 @@ export default function HomeScreen() {
     const pct = stepGoal > 0 ? steps / stepGoal : 0;
     const stepColor = pct >= 1 ? theme.statusGood : theme.accentBlue;
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
         {/* Background accent icon */}
         <Ionicons
           name="footsteps"
@@ -2660,7 +2677,7 @@ export default function HomeScreen() {
       </View>
     );
     return (
-      <Animated.View ref={sleepCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: activeSleepFace === 0 ? RECOVERY_PURPLE : theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden', padding: 0, transform: [{ scale: sleepCardScale }] }]}>
+      <Animated.View ref={sleepCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: activeSleepFace === 0 ? RECOVERY_PURPLE : theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden', padding: 0, transform: [{ scale: sleepCardScale }] }]}>
         <ScrollView
           ref={carouselRef}
           horizontal
@@ -2714,7 +2731,7 @@ export default function HomeScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
                     <View style={{ flex: 1, paddingRight: 12 }}>
                       <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
-                        <Text style={{ fontSize: 40, color: recColor, fontFamily: Type.num, letterSpacing: 1, opacity: 0.88, lineHeight: numLine(40) }}>{recZone?.label}</Text>
+                        <GradientNumber value={recZone?.label ?? ''} color={recColor} style={{ fontSize: 40, fontFamily: Type.num, letterSpacing: 1, opacity: 0.88, lineHeight: numLine(40) }} />
                       </View>
                       <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.uiMedium, lineHeight: 16, marginTop: 4 }}>{readinessLine}</Text>
                     </View>
@@ -3173,7 +3190,7 @@ export default function HomeScreen() {
     if (bloodOxygen !== null)     metricBoxes.push({ key: 'bloodO2',   label: 'Blood O2',   value: `${Math.round(bloodOxygen * 10) / 10}`,   unit: '% SpO2',    icon: 'water',       color: fitnessColor('bloodO2', bloodOxygen) });
 
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
         <Ionicons name="fitness" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:10 }}>
           <Ionicons name="heart-outline" size={11} color={theme.textMuted} />
@@ -3219,7 +3236,7 @@ export default function HomeScreen() {
     const noteIsDirty = noteCurrentText !== noteLastSaved;
     const isClearing = noteIsDirty && !noteCurrentText && !!noteLastSaved;
     return (
-      <View ref={dailyNoteCardRef} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
+      <View ref={dailyNoteCardRef} style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
         <Ionicons name="create" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
@@ -3297,7 +3314,7 @@ export default function HomeScreen() {
     // ── Empty: no active challenge ──
     if (!ch || !prog) {
       return (
-        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: accentRaw, overflow: 'hidden' }]}>
+        <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: accentRaw, overflow: 'hidden' }]}>
           <Ionicons name="trophy" size={130} color={accentRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
           <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:14 }}>
             <Ionicons name="trophy" size={11} color={theme.textMuted} />
@@ -3352,7 +3369,7 @@ export default function HomeScreen() {
           ? (prog.weightChangeSoFar == null ? 'Not enough weigh-ins to call it.' : `${prog.weightChangeSoFar < 0 ? 'Down' : 'Up'} ${Math.abs(prog.weightChangeSoFar).toFixed(1)} of ${Math.abs(ch.target ?? 0).toFixed(1)} lbs.`)
           : `You hit it ${prog.daysHit ?? 0} of ${prog.totalDays} days.`;
       return (
-        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: washColor, overflow: 'hidden' }]}>
+        <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: washColor, overflow: 'hidden' }]}>
           <CardWash color={washColor} scored />
           <Ionicons name={won ? 'trophy' : 'ribbon'} size={130} color={washColor} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.12 }} />
           <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:10 }}>
@@ -3380,7 +3397,7 @@ export default function HomeScreen() {
         ? (prog.rows ?? []).map(r => r.label).join(', ')
         : title;
       return (
-        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: accentRaw, overflow: 'hidden' }]}>
+        <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: accentRaw, overflow: 'hidden' }]}>
           <Ionicons name="trophy" size={130} color={accentRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
           <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
             <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
@@ -3405,7 +3422,7 @@ export default function HomeScreen() {
 
     // ── Active ──
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: accentRaw, overflow: 'hidden' }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: accentRaw, overflow: 'hidden' }]}>
         <Ionicons name="trophy" size={130} color={accentRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         {/* Header */}
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
@@ -3536,7 +3553,7 @@ export default function HomeScreen() {
         const tipShadow = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 };
         return (
           <Animated.View
-            style={[styles.card, { padding: 0, overflow: 'hidden', backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: page0BorderColor, ...tipShadow, ...(tipHeightReady ? { height: cardHeightAnim } : {}) }]}
+            style={[styles.card, { padding: 0, overflow: 'hidden', backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: page0BorderColor, ...tipShadow, ...(tipHeightReady ? { height: cardHeightAnim } : {}) }]}
             onLayout={e => { const w = e.nativeEvent.layout.width; tipCardWidthRef.current = w; setTipCardWidth(w); }}
           >
             <ScrollView
@@ -3655,13 +3672,33 @@ export default function HomeScreen() {
   // ─── Render ───────────────────────────────────────────────────────────────────
   return (
     <View style={{ flex: 1 }}>
+    {/* FLAT base. The colour comes from BackgroundLayers' bottom glow now, and ONLY from there.
+        The top gradient used to live here and the glow was (wrongly) layered on top of it, so the page
+        was lit from above AND below at once -- two competing light sources plus a texture. A background
+        is ONE colour layer + ONE texture layer; that was the decision and this is it being honoured. */}
     <LinearGradient
-      colors={[theme.gradientStart, theme.gradientEnd]}
-      style={[styles.container, { paddingTop: insets.top }]}
+      colors={[theme.gradientEnd, theme.gradientEnd]}
+      style={styles.container}
     >
+      {/* The page surface: bottom glow + halftone, both rising from below. See BackgroundLayers.tsx. */}
+      <BackgroundLayers />
 
-      {/* ── Header ── */}
-      <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
+      {/* ── Header ──
+          FROSTED and ABSOLUTE, the same recipe as the tab bar at the other end of the screen. It used to
+          be a solid View sitting ABOVE the scroll in a column, so content stopped at it -- a wall, not
+          glass. Now the scroll runs underneath and you watch cards pass behind it.
+          A plain low-intensity blur, NOT an iOS system material: the materials are built to obscure what
+          is behind them, which is the exact opposite of the job. */}
+      <View
+        onLayout={e => setHeaderH(e.nativeEvent.layout.height)}
+        style={[styles.header, { paddingTop: insets.top + 12, borderBottomColor: theme.borderCard }]}
+      >
+        <BlurView
+          intensity={theme.id === 'dark' ? 34 : 28}
+          tint={theme.id === 'dark' ? 'dark' : 'light'}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
         <View style={{ flexDirection:'row', alignItems:'center', gap:12, flex:1 }}>
           <HeaderAvatar />
           {/* paddingRight: the display faces are wider than Bebas was, so "Good afternoon" ran straight
@@ -4014,7 +4051,10 @@ export default function HomeScreen() {
       <ScrollView
         ref={scrollRef}
         automaticallyAdjustKeyboardInsets={true}
-        contentContainerStyle={{ padding:16, paddingBottom:80 }}
+        // paddingTop clears the now-ABSOLUTE header (measured, not guessed -- the greeting's font can
+        // change its height). Content still scrolls UNDER it; this only stops the FIRST card from
+        // starting life hidden behind the glass.
+        contentContainerStyle={{ padding:16, paddingTop: headerH + 16, paddingBottom: insets.bottom + TAB_SCROLL_PAD }}
         refreshControl={
           <RefreshControl
             refreshing={false}
@@ -4426,7 +4466,7 @@ export default function HomeScreen() {
                         <TouchableOpacity key={key} onPress={() => applyMacroPreset(key)} activeOpacity={0.85}
                           style={{ width:'47%', paddingVertical:14, paddingHorizontal:10, borderRadius:12,
                             borderWidth: active ? 1.5 : 1,
-                            backgroundColor: active ? theme.accentBlueBg : theme.bgCard,
+                            backgroundColor: active ? theme.accentBlueBg : theme.bgCardGlass,
                             borderColor: active ? theme.accentBlueBorder : theme.borderCard, alignItems:'center', gap:4 }}>
                           <Ionicons name={pr.icon} size={22} color={active ? theme.accentBlue : theme.textMuted} />
                           <Text style={{ fontSize:14, fontFamily:Type.uiBold, color: active ? theme.accentBlue : theme.textSecondary }}>{pr.label}</Text>
@@ -4557,7 +4597,9 @@ export default function HomeScreen() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container:        { flex:1 },
-  header:           { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:20, paddingVertical:16, borderBottomWidth:0.5, marginBottom:16 },
+  // Absolute + zIndex: the header floats OVER the scroll instead of taking a slice of layout above it.
+  // paddingTop is supplied at render time from the safe-area inset; paddingBottom is the visual padding.
+  header:           { position:'absolute', top:0, left:0, right:0, zIndex:10, flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:20, paddingBottom:16, borderBottomWidth:0.5 },
   headerLabel:      { fontSize:9, letterSpacing:2, textTransform:'uppercase', marginBottom:2, fontFamily:Type.uiBold },
   // DISPLAY role, not a number face. Bebas had no lowercase, so the greeting was shouting whether it
   // wanted to or not, and it needed +2 tracking just to breathe. Casing and tracking now come from the

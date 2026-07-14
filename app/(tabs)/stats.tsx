@@ -9,6 +9,7 @@ import { REPORTS_BETA_OPEN } from '../reports';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Animated, Dimensions, Easing, Keyboard, LayoutAnimation, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TAB_SCROLL_PAD } from '../../components/CustomTabBar';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { DayDetailContent } from '../day-detail';
@@ -1828,7 +1829,7 @@ export default function StatsScreen() {
         </View>
       </View>
 
-      <ScrollView ref={statsScrollRef} style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView ref={statsScrollRef} style={styles.container} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + TAB_SCROLL_PAD }]}>
 
         {statsCards
           .filter(c => c.type === 'system')
@@ -3186,7 +3187,7 @@ export default function StatsScreen() {
 
 const styles = StyleSheet.create({
   container:    { flex: 1 },
-  content:      { padding: 16, paddingBottom: 100 },
+  content:      { padding: 16 },
   header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5, marginBottom: 4 },
   headerLabel:  { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: 'DMSans_700Bold' },
   headerTitle:  { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },

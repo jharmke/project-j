@@ -12,6 +12,7 @@ import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-nativ
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Reanimated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, runOnJS, FadeIn, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TAB_SCROLL_PAD } from '../../components/CustomTabBar';
 import { ToastRenderer, useToast } from '../../components/Toast';
 import { showAchievementToast } from '../../components/AchievementToast';
 import { showCelebration } from '../../components/CelebrationOverlay';
@@ -2182,7 +2183,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
       <ScrollView
         ref={mainScrollRef}
         style={{ flex: 1 }}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + TAB_SCROLL_PAD }]}
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets={true}>
 
@@ -3447,7 +3448,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
 
 const styles = StyleSheet.create({
   container:            { flex: 1 },
-  content:              { padding: 16, paddingBottom: 100 },
+  content:              { padding: 16 },
   header:               { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5, marginBottom: 16 },
   headerLabel:          { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: 'DMSans_700Bold' },
   headerTitle:          { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },

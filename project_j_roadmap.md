@@ -175,6 +175,23 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
+- [NOW] [TRACK, DECIDED + SPECCED 2026-07-14 -> building] **VISUAL REFRESH.** Justin: the app "still looks
+  like a Claude/AI generated app -- a blank form page with data slapped on it." Diagnosis was NOT the headers
+  he first pointed at: (1) every card is the same width/weight so nothing leads, (2) every button is FLAT
+  PAINTED accent (the #1 machine-designed tell -- and `components/PrimaryCTA.tsx` already solves this and is
+  used in only 2 files), (3) the type has no voice (Bebas does every job at every size; DM Sans is the
+  AI-app default; Lora is loaded and only ever appears on scripture).
+  THE LOOK, one idea -- *light rising from below, dissolving as it climbs*: four-role type system
+  (Clash Display titles / Rajdhani numbers / Onest interface / Bitter voice), accent-GRADIENT title fill +
+  press, gradient-filled numbers, molded buttons everywhere, glass cards keeping the accent top edge,
+  bottom glow (medium, NEVER strong) + halftone rising from the bottom + subtle grain, frosted tab bar,
+  accent active tab icons, staggered card entrance.
+  Decided against a live design lab across 6 iterations. Full detail, the OPEN device A/Bs (Rajdhani vs
+  Khand, Bitter vs Ranade, halftone visibility, title press) and the DO-NOT-RESURRECT list (topographic,
+  mesh, aurora, vignette, line/dot grid, deep-ink titles, a user-facing background picker) live in
+  **SPEC_visual_refresh.md**. Build order is in the spec; steps 1-6 and 8 are pure JS, step 7 (frosted bar +
+  gradient number fill) needs a native rebuild.
+  >> STEP 1 DONE 2026-07-14 (spec + this entry). NEXT: step 2 = lunch-row fix + active tab icons go accent.
 - [TRACK, VISION LOCKED + SPECCED 2026-07-07 -> ready to build] Custom Reports (Pro). Model: report =
   date range (week/month/3mo/6mo/1yr/custom) + chapters, each a PICKER into a library of ~55 pre-designed
   blocks the user assembles freely; templates = pre-filled block sets; exportable (PDF/share); Pro-gated
@@ -472,6 +489,8 @@ Every major feature has a SPEC_*.md in the repo root. Active ones tied to open w
 - Nutrition: SPEC_nutrition.md, SPEC_calorie_goal_hit.md, SPEC_calorie_floor.md, SPEC_ai_meal_estimator.md | Day/Reports: SPEC_day_score_and_summary.md, SPEC_weekly_summary.md, SPEC_monthly_summary.md, SPEC_evr_redesign.md, SPEC_comparison_challenge.md, SPEC_custom_reports.md
 - Faith/Coach: SPEC_faith_ai.md, SPEC_faith_tab.md, SPEC_smart_tips.md, SMART_COACH_SPEC.md, TRIGGER_LIBRARY.md | Cards: SPEC_card_gradient.md | Vacation: SPEC_vacation_mode.md | Tutorials: tutorial_system_spec.md
 - Body: SPEC_body_measurements.md, SPEC_body_progress.md, SPEC_weight_history.md
+- Look & feel: **SPEC_visual_refresh.md** (type system, molded buttons, glass cards, background layers, grain,
+  stagger -- plus the open device A/Bs and the do-not-resurrect list)
 - App Store: APP_STORE_CHECKLIST.md, COMPLIANCE_SCAN_findings.md | Launch: **LAUNCH_CHECKLIST.md** (the single
   ordered launch list; supersedes the REVERT + LAUNCH BLOCKERS sections above)
 - Monetization: SPEC_monetization.md | Restaurant Mode (researched, unbuilt): SPEC_restaurant_mode.md

@@ -13,6 +13,7 @@ import { THEMES } from '../../theme';
 import { isOnboardingPreview } from '../../utils/onboardingPreview';
 import { storageSet } from '../../utils/storage';
 import { requestNotificationPermission } from '../../services/notifications';
+import { Type, numLine } from '../../typography';
 
 const theme = THEMES['light'];
 
@@ -173,7 +174,7 @@ export default function NotificationsScreen() {
           </Text>
           <Text style={[styles.pointer, { color: theme.textMuted }]}>
             Fine-tune exactly what you get anytime in{' '}
-            <Text style={{ color: theme.accentBlueRaw, fontFamily: 'DMSans_600SemiBold' }}>Settings {'>'} Notifications</Text>.
+            <Text style={{ color: theme.accentBlueRaw, fontFamily: Type.uiSemibold }}>Settings {'>'} Notifications</Text>.
           </Text>
         </Animated.View>
 
@@ -218,30 +219,30 @@ const styles = StyleSheet.create({
   backBtn:        { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
 
   content:        { flex: 1, paddingHorizontal: 24, paddingTop: 24 },
-  screenLabel:    { fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 16 },
+  screenLabel:    { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 16 },
 
   iconBox:        { width: 56, height: 56, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
 
-  title:          { fontSize: 40, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1.5, lineHeight: 42, marginBottom: 10,
+  title:          { fontSize: 40, fontFamily: Type.display, letterSpacing: 0.3, lineHeight: numLine(40), marginBottom: 10,
                     textShadowColor: 'rgba(0,0,0,0.12)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
-  subtitle:       { fontSize: 13, fontFamily: 'DMSans_400Regular', lineHeight: 20, marginBottom: 22 },
+  subtitle:       { fontSize: 13, fontFamily: Type.ui, lineHeight: 20, marginBottom: 22 },
 
   card:           { borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14,
                     shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 },
   row:            { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 11, gap: 12 },
   iconCircle:     { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   rowText:        { flex: 1 },
-  rowLabel:       { fontSize: 13, fontFamily: 'DMSans_600SemiBold', marginBottom: 1 },
-  rowDesc:        { fontSize: 11, fontFamily: 'DMSans_400Regular', lineHeight: 16 },
+  rowLabel:       { fontSize: 13, fontFamily: Type.uiSemibold, marginBottom: 1 },
+  rowDesc:        { fontSize: 11, fontFamily: Type.ui, lineHeight: 16 },
 
-  reassure:       { fontSize: 11, fontFamily: 'DMSans_400Regular', lineHeight: 16, textAlign: 'center', marginTop: 16, paddingHorizontal: 8 },
+  reassure:       { fontSize: 11, fontFamily: Type.ui, lineHeight: 16, textAlign: 'center', marginTop: 16, paddingHorizontal: 8 },
 
   footer:         { paddingHorizontal: 24, paddingTop: 12, borderTopWidth: 0.5, alignItems: 'center' },
   connectBtn:     { width: '100%', borderRadius: 14, paddingVertical: 17,
                     alignItems: 'center', justifyContent: 'center',
                     shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8 },
-  connectBtnText: { fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 3, color: '#ffffff' },
+  connectBtnText: { fontSize: 16, fontFamily: Type.uiBold, letterSpacing: 1, color: '#ffffff' },
   skipBtn:        { paddingVertical: 12 },
-  skipText:       { fontSize: 14, fontFamily: 'DMSans_400Regular' },
-  pointer:        { fontSize: 12, fontFamily: 'DMSans_400Regular', marginTop: 10, textAlign: 'center', paddingHorizontal: 8 },
+  skipText:       { fontSize: 14, fontFamily: Type.ui },
+  pointer:        { fontSize: 12, fontFamily: Type.ui, marginTop: 10, textAlign: 'center', paddingHorizontal: 8 },
 });

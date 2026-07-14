@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
+import { Type, numLine } from '../typography';
 
 type MissionCard = {
   icon: string;
@@ -113,7 +114,7 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontSize: 15,
-    fontFamily: 'DMSans_400Regular',
+    fontFamily: Type.ui,
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -126,9 +127,9 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     fontSize: 48,
-    fontFamily: 'BebasNeue_400Regular',
-    letterSpacing: 3,
-    lineHeight: 52,
+    fontFamily: Type.display,
+    letterSpacing: 0.3,
+    lineHeight: numLine(48),
   },
   cardShadow: {
     borderRadius: 14,
@@ -160,20 +161,20 @@ const styles = StyleSheet.create({
   },
   cardLabel: {
     fontSize: 9,
-    fontFamily: 'DMSans_700Bold',
+    fontFamily: Type.uiBold,
     letterSpacing: 3,
     textTransform: 'uppercase',
   },
   cardHeadline: {
     fontSize: 22,
-    fontFamily: 'BebasNeue_400Regular',
-    letterSpacing: 1,
-    lineHeight: 26,
+    fontFamily: Type.display,
+    letterSpacing: 0.3,
+    lineHeight: numLine(22),
     marginBottom: 8,
   },
   cardBody: {
     fontSize: 14,
-    fontFamily: 'DMSans_400Regular',
+    fontFamily: Type.ui,
     lineHeight: 22,
   },
 });

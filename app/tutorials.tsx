@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TAB_TUTORIALS, Tutorial, getTutorialById } from '../data/tutorials';
 import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
+import { Type } from '../typography';
 
 const TAB_FILTERS = ['All', 'Home', 'Nutrition', 'Workout', 'Stats', 'Faith', 'Profile'] as const;
 type TabFilter = typeof TAB_FILTERS[number];
@@ -58,16 +59,16 @@ function TutorialCard({ tutorial, theme, onStart }: { tutorial: Tutorial; theme:
       </View>
 
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 9, letterSpacing: 2, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', color: theme.accentBlue, marginBottom: 3 }}>
+        <Text style={{ fontSize: 9, letterSpacing: 2, fontFamily: Type.uiBold, textTransform: 'uppercase', color: theme.accentBlue, marginBottom: 3 }}>
           {tutorial.tab === 'log' ? 'Nutrition' : tutorial.tab.charAt(0).toUpperCase() + tutorial.tab.slice(1)}
         </Text>
-        <Text style={{ fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary, marginBottom: 2 }}>
+        <Text style={{ fontSize: 15, fontFamily: Type.uiSemibold, color: theme.textPrimary, marginBottom: 2 }}>
           {tutorial.name}
         </Text>
-        <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 18 }}>
+        <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textSecondary, lineHeight: 18 }}>
           {tutorial.description}
         </Text>
-        <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 6 }}>
+        <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textMuted, marginTop: 6 }}>
           {stepCount} {stepCount === 1 ? 'step' : 'steps'}
         </Text>
       </View>
@@ -118,10 +119,8 @@ export default function TutorialsScreen() {
             <Ionicons name="chevron-back" size={22} color={theme.accentBlue} />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 9, letterSpacing: 3, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', color: theme.textMuted, marginBottom: 2 }}>
-              PROJECT J
-            </Text>
-            <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', color: theme.accentBlueRaw, letterSpacing: 1 }}>
+            {/* NO EYEBROWS OVER TITLES. */}
+            <Text style={{ fontSize: 22, fontFamily: Type.display, color: theme.accentBlueRaw, letterSpacing: 0.3 }}>
               Guided Tutorials
             </Text>
           </View>
@@ -148,7 +147,7 @@ export default function TutorialsScreen() {
                   }}
                   activeOpacity={0.7}
                 >
-                  <Text style={{ fontSize: 12, fontFamily: active ? 'DMSans_700Bold' : 'DMSans_400Regular', color: active ? '#ffffff' : theme.textMuted }}>
+                  <Text style={{ fontSize: 12, fontFamily: active ? Type.uiBold : Type.ui, color: active ? '#ffffff' : theme.textMuted }}>
                     {filter}
                   </Text>
                 </TouchableOpacity>
@@ -165,8 +164,8 @@ export default function TutorialsScreen() {
         {filtered.length === 0 ? (
           <View style={{ alignItems: 'center', paddingTop: 48, gap: 8 }}>
             <Ionicons name="play-circle-outline" size={40} color={theme.textMuted} />
-            <Text style={{ fontSize: 16, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary }}>No tutorials here yet</Text>
-            <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textMuted, textAlign: 'center' }}>
+            <Text style={{ fontSize: 16, fontFamily: Type.uiSemibold, color: theme.textSecondary }}>No tutorials here yet</Text>
+            <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textMuted, textAlign: 'center' }}>
               Tutorials for this section are coming soon.
             </Text>
           </View>

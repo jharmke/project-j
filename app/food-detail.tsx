@@ -27,6 +27,7 @@ import { DEFAULT_MEAL_SLOTS, MealSlot, loadMealSlots, getMealDisplayName } from 
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { TUTORIAL_CHICKEN_BREAST } from '../data/tutorialFood';
+import { Type } from '../typography';
 
 function buildTutorialChickenFood() {
   const fsServings = TUTORIAL_CHICKEN_BREAST.servings.serving.map(s => ({
@@ -106,7 +107,7 @@ function MacroDonut({ protein, carbs, fat, calories, theme }: { protein: number;
           <Circle cx={size/2} cy={size/2} r={radius} stroke={theme.donutTrack} strokeWidth={strokeWidth} fill="none" />
         </Svg>
         <View style={{ position: 'absolute', alignItems: 'center' }}>
-          <Text style={{ color: theme.textDim, fontSize: 10, fontFamily: 'DMSans_400Regular' }}>--</Text>
+          <Text style={{ color: theme.textDim, fontSize: 10, fontFamily: Type.ui }}>--</Text>
         </View>
       </View>
     );
@@ -125,7 +126,7 @@ function MacroDonut({ protein, carbs, fat, calories, theme }: { protein: number;
       </Svg>
       <View style={{ position: 'absolute', alignItems: 'center' }}>
         <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'Bebas_400Regular' }}>{Math.round(calories)}</Text>
-        <Text style={{ color: theme.textDim, fontSize: 8, fontFamily: 'DMSans_400Regular', letterSpacing: 1 }}>KCAL</Text>
+        <Text style={{ color: theme.textDim, fontSize: 8, fontFamily: Type.ui, letterSpacing: 1 }}>KCAL</Text>
       </View>
     </View>
   );
@@ -1146,7 +1147,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             <TouchableOpacity
               style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 }}
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openEditFoodModal(); }}>
-              <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Edit</Text>
+              <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: Type.uiSemibold }}>Edit</Text>
             </TouchableOpacity>
           ) : food?.fsId ? (
             <TouchableOpacity
@@ -1183,17 +1184,17 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             {food?.aiEstimated && (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 3, paddingHorizontal: 5, paddingVertical: 2, alignSelf: 'flex-start', marginBottom: 4 }}>
                 <Ionicons name="sparkles" size={8} color={theme.accentBlue} />
-                <Text style={{ fontSize: 8, color: theme.accentBlue, fontFamily: 'DMSans_700Bold' }}>AI ESTIMATE</Text>
+                <Text style={{ fontSize: 8, color: theme.accentBlue, fontFamily: Type.uiBold }}>AI ESTIMATE</Text>
               </View>
             )}
             {(food?.isMyFood || food?.isCustom) && (
               <View style={{ backgroundColor: theme.accentGreenBg, borderRadius: 3, paddingHorizontal: 5, paddingVertical: 1, alignSelf: 'flex-start', marginBottom: 4 }}>
-                <Text style={{ fontSize: 8, color: theme.accentGreen, fontFamily: 'DMSans_700Bold' }}>MY FOOD</Text>
+                <Text style={{ fontSize: 8, color: theme.accentGreen, fontFamily: Type.uiBold }}>MY FOOD</Text>
               </View>
             )}
             <Text style={[styles.foodName, { marginBottom: (food.brand || food.description?.includes(' · ')) ? 4 : 0 }]}>{food.brand ? food.description : (food.description?.split(' · ')[0] ?? food.description)}</Text>
             {(food.brand || food.description?.split(' · ')[1]) && (
-              <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{food.brand || food.description?.split(' · ')[1]}</Text>
+              <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.uiMedium }}>{food.brand || food.description?.split(' · ')[1]}</Text>
             )}
           </View>
           {foodId && (
@@ -1239,7 +1240,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           <View ref={stepperRowRef} style={[styles.amountRow, { marginBottom: 12 }]}>
             <View>
               <Text style={styles.amountLabel}>Servings</Text>
-              {effectiveServing.label && /\d/.test(effectiveServing.label) ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>{effectiveServing.label}</Text> : null}
+              {effectiveServing.label && /\d/.test(effectiveServing.label) ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, marginTop: 2 }}>{effectiveServing.label}</Text> : null}
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <TouchableOpacity
@@ -1254,10 +1255,10 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                   if (effectiveServing.grams > 0) setAmount((effectiveServing.grams * next).toString());
                 }}
                 style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8 }}>
-                <Text style={{ fontSize: 22, color: theme.accentBlue, fontFamily: 'DMSans_400Regular', lineHeight: 26 }}>−</Text>
+                <Text style={{ fontSize: 22, color: theme.accentBlue, fontFamily: Type.ui, lineHeight: 26 }}>−</Text>
               </TouchableOpacity>
               <TextInput
-                style={{ width: 54, textAlign: 'center', fontSize: 22, color: theme.textSecondary, fontFamily: 'BebasNeue_400Regular', backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, paddingVertical: 4 }}
+                style={{ width: 54, textAlign: 'center', fontSize: 22, color: theme.textSecondary, fontFamily: Type.num, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, paddingVertical: 4 }}
                 value={servingCountStr}
                 onChangeText={v => {
                   const stripped = v.replace(/[^0-9.]/g, '');
@@ -1288,7 +1289,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                   if (effectiveServing.grams > 0) setAmount((effectiveServing.grams * next).toString());
                 }}
                 style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8 }}>
-                <Text style={{ fontSize: 22, color: theme.accentBlue, fontFamily: 'DMSans_400Regular', lineHeight: 26 }}>+</Text>
+                <Text style={{ fontSize: 22, color: theme.accentBlue, fontFamily: Type.ui, lineHeight: 26 }}>+</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1330,18 +1331,18 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             <View style={{ flex: 1, gap: 8 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.macroProtein }} />
-                <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_400Regular', flex: 1 }}>Protein</Text>
-                <Text style={{ color: theme.macroProtein, fontSize: 15, fontFamily: 'DMSans_600SemiBold' }}>{protein}g</Text>
+                <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: Type.ui, flex: 1 }}>Protein</Text>
+                <Text style={{ color: theme.macroProtein, fontSize: 15, fontFamily: Type.uiSemibold }}>{protein}g</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.macroCarbs }} />
-                <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_400Regular', flex: 1 }}>Carbs</Text>
-                <Text style={{ color: theme.macroCarbs, fontSize: 15, fontFamily: 'DMSans_600SemiBold' }}>{carbs}g</Text>
+                <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: Type.ui, flex: 1 }}>Carbs</Text>
+                <Text style={{ color: theme.macroCarbs, fontSize: 15, fontFamily: Type.uiSemibold }}>{carbs}g</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.macroFat }} />
-                <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_400Regular', flex: 1 }}>Fat</Text>
-                <Text style={{ color: theme.macroFat, fontSize: 15, fontFamily: 'DMSans_600SemiBold' }}>{fat}g</Text>
+                <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: Type.ui, flex: 1 }}>Fat</Text>
+                <Text style={{ color: theme.macroFat, fontSize: 15, fontFamily: Type.uiSemibold }}>{fat}g</Text>
               </View>
             </View>
           </View>
@@ -1362,13 +1363,13 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             return (
               <View style={{ marginTop: 4 }}>
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setFatsOpen(o => !o); }} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: theme.borderSubtle }}>
-                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Extended Fats</Text>
+                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase' }}>Extended Fats</Text>
                   <Ionicons name={fatsOpen ? 'chevron-up' : 'chevron-down'} size={13} color={theme.textDim} />
                 </TouchableOpacity>
                 {fatsOpen && rows.map(r => (
                   <View key={r.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
-                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{r.label}</Text>
-                    <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{r.val}{r.unit}</Text>
+                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui }}>{r.label}</Text>
+                    <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiMedium }}>{r.val}{r.unit}</Text>
                   </View>
                 ))}
               </View>
@@ -1397,13 +1398,13 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             return (
               <View style={{ marginTop: 4 }}>
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setCarbsOpen(o => !o); }} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: theme.borderSubtle }}>
-                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Carb Breakdown</Text>
+                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase' }}>Carb Breakdown</Text>
                   <Ionicons name={carbsOpen ? 'chevron-up' : 'chevron-down'} size={13} color={theme.textDim} />
                 </TouchableOpacity>
                 {carbsOpen && rows.map(r => (
                   <View key={r.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
-                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{r.label}</Text>
-                    <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{r.val}{r.unit}</Text>
+                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui }}>{r.label}</Text>
+                    <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiMedium }}>{r.val}{r.unit}</Text>
                   </View>
                 ))}
               </View>
@@ -1426,13 +1427,13 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             return (
               <View style={{ marginTop: 4 }}>
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setOtherOpen(o => !o); }} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: theme.borderSubtle }}>
-                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Other Nutrients</Text>
+                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase' }}>Other Nutrients</Text>
                   <Ionicons name={otherOpen ? 'chevron-up' : 'chevron-down'} size={13} color={theme.textDim} />
                 </TouchableOpacity>
                 {otherOpen && rows.map(r => (
                   <View key={r.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
-                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{r.label}</Text>
-                    <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{r.val}{r.unit}</Text>
+                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui }}>{r.label}</Text>
+                    <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiMedium }}>{r.val}{r.unit}</Text>
                   </View>
                 ))}
               </View>
@@ -1457,13 +1458,13 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             return (
               <View style={{ marginTop: 4 }}>
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setVitaminsOpen(o => !o); }} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: theme.borderSubtle }}>
-                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Vitamins</Text>
+                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase' }}>Vitamins</Text>
                   <Ionicons name={vitaminsOpen ? 'chevron-up' : 'chevron-down'} size={13} color={theme.textDim} />
                 </TouchableOpacity>
                 {vitaminsOpen && rows.map(r => (
                   <View key={r.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
-                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{r.label}</Text>
-                    <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{r.val}{r.unit}</Text>
+                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui }}>{r.label}</Text>
+                    <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiMedium }}>{r.val}{r.unit}</Text>
                   </View>
                 ))}
               </View>
@@ -1486,13 +1487,13 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             return (
               <View style={{ marginTop: 4 }}>
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setBVitaminsOpen(o => !o); }} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: theme.borderSubtle }}>
-                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>B Vitamins</Text>
+                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase' }}>B Vitamins</Text>
                   <Ionicons name={bVitaminsOpen ? 'chevron-up' : 'chevron-down'} size={13} color={theme.textDim} />
                 </TouchableOpacity>
                 {bVitaminsOpen && rows.map(r => (
                   <View key={r.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
-                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{r.label}</Text>
-                    <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{r.val}{r.unit}</Text>
+                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui }}>{r.label}</Text>
+                    <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiMedium }}>{r.val}{r.unit}</Text>
                   </View>
                 ))}
               </View>
@@ -1517,13 +1518,13 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             return (
               <View style={{ marginTop: 4 }}>
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setMineralsOpen(o => !o); }} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: theme.borderSubtle }}>
-                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Minerals</Text>
+                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase' }}>Minerals</Text>
                   <Ionicons name={mineralsOpen ? 'chevron-up' : 'chevron-down'} size={13} color={theme.textDim} />
                 </TouchableOpacity>
                 {mineralsOpen && rows.map(r => (
                   <View key={r.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
-                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{r.label}</Text>
-                    <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{r.val}{r.unit}</Text>
+                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui }}>{r.label}</Text>
+                    <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiMedium }}>{r.val}{r.unit}</Text>
                   </View>
                 ))}
               </View>
@@ -1534,22 +1535,22 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
         {foodStats && foodStats.count > 0 && (
           <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16, marginTop: -4 }}>
             <View style={{ flex: 1, backgroundColor: theme.bgCard, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, padding: 10 }}>
-              <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>LOGGED</Text>
-              <Text style={{ fontSize: 18, color: theme.textSecondary, fontFamily: 'BebasNeue_400Regular' }}>{foodStats.count}x</Text>
+              <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>LOGGED</Text>
+              <Text style={{ fontSize: 18, color: theme.textSecondary, fontFamily: Type.num }}>{foodStats.count}x</Text>
             </View>
             <View style={{ flex: 1.8, backgroundColor: theme.bgCard, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, padding: 10 }}>
-              <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>LAST LOGGED</Text>
-              <Text style={{ fontSize: 18, color: theme.textSecondary, fontFamily: 'BebasNeue_400Regular' }}>
+              <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>LAST LOGGED</Text>
+              <Text style={{ fontSize: 18, color: theme.textSecondary, fontFamily: Type.num }}>
                 {foodStats.lastDate ? new Date(foodStats.lastDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '--'}
               </Text>
             </View>
             <View style={{ flex: 1.8, backgroundColor: theme.bgCard, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, padding: 10 }}>
-              <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>AVG SERVING</Text>
+              <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>AVG SERVING</Text>
               <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                <Text style={{ fontSize: 18, color: theme.textSecondary, fontFamily: 'BebasNeue_400Regular' }}>
+                <Text style={{ fontSize: 18, color: theme.textSecondary, fontFamily: Type.num }}>
                   {foodStats.avgGrams > 0 ? Math.round(foodStats.avgGrams) : '--'}
                 </Text>
-                {foodStats.avgGrams > 0 && <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_500Medium', marginLeft: 1 }}>{effectiveServing?.unit || food?.servingUnitType || 'g'}</Text>}
+                {foodStats.avgGrams > 0 && <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiMedium, marginLeft: 1 }}>{effectiveServing?.unit || food?.servingUnitType || 'g'}</Text>}
               </View>
             </View>
           </View>
@@ -1599,10 +1600,10 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                 />
               </View>
               <TouchableOpacity style={{ padding: 16, alignItems: 'center', marginTop: 4 }} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeTimePicker(); }}>
-                <Text style={{ fontSize: 15, color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold' }}>Confirm</Text>
+                <Text style={{ fontSize: 15, color: theme.accentGreen, fontFamily: Type.uiSemibold }}>Confirm</Text>
               </TouchableOpacity>
               <TouchableOpacity style={{ paddingBottom: 8, paddingTop: 4, alignItems: 'center' }} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeTimePicker(); }}>
-                <Text style={{ fontSize: 15, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>Cancel</Text>
+                <Text style={{ fontSize: 15, color: theme.textMuted, fontFamily: Type.uiMedium }}>Cancel</Text>
               </TouchableOpacity>
             </View>
           </Animated.View>
@@ -1642,12 +1643,12 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             setHasChanges(true);
             closeMealPicker();
           }}>
-          <Text style={[styles.mealOptionText, (currentMeal === slot.id || currentMeal === slot.name) && { color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }]}>{slot.name}</Text>
+          <Text style={[styles.mealOptionText, (currentMeal === slot.id || currentMeal === slot.name) && { color: theme.accentBlue, fontFamily: Type.uiSemibold }]}>{slot.name}</Text>
           {(currentMeal === slot.id || currentMeal === slot.name) && <Ionicons name="checkmark" size={16} color={theme.accentBlue} />}
         </TouchableOpacity>
       ))}
       <TouchableOpacity style={{ padding: 16, alignItems: 'center', marginTop: 4 }} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeMealPicker(); }}>
-        <Text style={{ fontSize: 15, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>Cancel</Text>
+        <Text style={{ fontSize: 15, color: theme.textMuted, fontFamily: Type.uiMedium }}>Cancel</Text>
       </TouchableOpacity>
     </View>
   </Animated.View>
@@ -1730,7 +1731,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowEllipsisMenu(false); setTimeout(() => setShowSaveAsCopy(true), 50); }}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 14 }}>
               <Ionicons name="copy-outline" size={17} color={theme.accentBlue} />
-              <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: 'DMSans_500Medium' }}>Save as Copy</Text>
+              <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: Type.uiMedium }}>Save as Copy</Text>
             </TouchableOpacity>
           </Animated.View>
         </TouchableOpacity>
@@ -1792,7 +1793,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                   Animated.timing(servingPickerAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => setShowServingPicker(false));
                 }}>
                 <Text style={[styles.mealOptionText, selectedServing?.label === s.label && { color: theme.accentBlue }]}>{s.label}</Text>
-                <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{s.calories} kcal</Text>
+                <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui }}>{s.calories} kcal</Text>
               </TouchableOpacity>
             ))}
           </Animated.View>
@@ -1818,7 +1819,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeEditFoodModal(); }} style={{ alignSelf: 'center', paddingTop: 12, paddingBottom: 4, paddingHorizontal: 20 }} hitSlop={{ top: 8, bottom: 8, left: 20, right: 20 }}>
                 <View style={{ height: 4, width: 40, backgroundColor: theme.borderCard, borderRadius: 2 }} />
               </TouchableOpacity>
-              <Text style={{ fontSize: 16, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, textAlign: 'center', marginTop: 8, marginBottom: 4 }}>EDIT FOOD</Text>
+              <Text style={{ fontSize: 16, color: theme.accentBlueRaw, fontFamily: Type.display, letterSpacing: 0.3, textAlign: 'center', marginTop: 8, marginBottom: 4 }}>EDIT FOOD</Text>
               <ScrollView style={{ maxHeight: 580 }} contentContainerStyle={{ padding: 16, paddingTop: 8 }} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets={true}>
                 {/* Type selector */}
                 <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
@@ -1827,27 +1828,27 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                     style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, backgroundColor: editFoodData?.type !== 'supplement' ? theme.accentBlueBg : theme.bgInput, borderColor: editFoodData?.type !== 'supplement' ? theme.accentBlueBorder : theme.borderInput }}
                   >
                     <Ionicons name="nutrition" size={16} color={editFoodData?.type !== 'supplement' ? theme.accentBlue : theme.textMuted} />
-                    <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', marginTop: 3, color: editFoodData?.type !== 'supplement' ? theme.accentBlue : theme.textMuted }}>Food</Text>
+                    <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, marginTop: 3, color: editFoodData?.type !== 'supplement' ? theme.accentBlue : theme.textMuted }}>Food</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditFoodData((p: any) => p ? { ...p, type: 'supplement' } : null); }}
                     style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, backgroundColor: editFoodData?.type === 'supplement' ? theme.accentBlueBg : theme.bgInput, borderColor: editFoodData?.type === 'supplement' ? theme.accentBlueBorder : theme.borderInput }}
                   >
                     <Ionicons name="medical" size={16} color={editFoodData?.type === 'supplement' ? theme.accentBlue : theme.textMuted} />
-                    <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', marginTop: 3, color: editFoodData?.type === 'supplement' ? theme.accentBlue : theme.textMuted }}>Supplement</Text>
+                    <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, marginTop: 3, color: editFoodData?.type === 'supplement' ? theme.accentBlue : theme.textMuted }}>Supplement</Text>
                   </TouchableOpacity>
                 </View>
                 {/* Basic Info */}
-                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Basic Info</Text>
+                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Basic Info</Text>
                 {([
                   { label: 'Food Name', key: 'name', keyboard: 'default' as const },
                   { label: 'Brand (optional)', key: 'brand', keyboard: 'default' as const },
                   { label: 'Calories (kcal)', key: 'cal', keyboard: 'decimal-pad' as const },
                 ] as { label: string; key: string; keyboard: 'default' | 'decimal-pad' }[]).map(f => (
                   <View key={f.key} style={{ marginBottom: 10 }}>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4 }}>{f.label}</Text>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4 }}>{f.label}</Text>
                     <TextInput
-                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 15, fontFamily: 'DMSans_400Regular' }}
+                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 15, fontFamily: Type.ui }}
                       value={editFoodData?.[f.key] || ''}
                       onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: f.keyboard === 'decimal-pad' ? filterDecimal(v) : v } : null)}
                       keyboardType={f.keyboard}
@@ -1858,7 +1859,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                 ))}
                 {/* Macronutrients -- 3 column */}
                 <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Macronutrients</Text>
+                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Macronutrients</Text>
                 <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
                   {([
                     { label: 'PROTEIN (g)', key: 'protein', dot: '#0d9268' },
@@ -1868,10 +1869,10 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                     <View key={f.key} style={{ flex: 1 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                         <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: f.dot, marginRight: 4 }} />
-                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2 }}>{f.label}</Text>
+                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2 }}>{f.label}</Text>
                       </View>
                       <TextInput
-                        style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: 'DMSans_400Regular', textAlign: 'center' }}
+                        style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: Type.ui, textAlign: 'center' }}
                         value={editFoodData?.[f.key] || ''}
                         onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: filterDecimal(v) } : null)}
                         keyboardType="decimal-pad"
@@ -1883,7 +1884,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                 </View>
                 {/* Extended Nutrition -- 2 column pairs */}
                 <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Extended Nutrition</Text>
+                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Extended Nutrition</Text>
                 {[
                   [{ label: 'FIBER (g)',           key: 'fiber' },             { label: 'SUGAR (g)',          key: 'sugar' }],
                   [{ label: 'SUGAR ALCOHOLS (g)',   key: 'sugarAlcohols' },     { label: 'SODIUM (mg)',        key: 'sodium' }],
@@ -1896,9 +1897,9 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                   <View key={ri} style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
                     {row.map((f, fi) => f ? (
                       <View key={f.key} style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, marginBottom: 4 }}>{f.label}</Text>
+                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, marginBottom: 4 }}>{f.label}</Text>
                         <TextInput
-                          style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: 'DMSans_400Regular' }}
+                          style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: Type.ui }}
                           value={editFoodData?.[f.key] || ''}
                           onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: filterDecimal(v) } : null)}
                           keyboardType="decimal-pad"
@@ -1912,7 +1913,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                 ))}
                 {/* Vitamins D/E/K + B Vitamins + Minerals + Other */}
                 <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Vitamins</Text>
+                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Vitamins</Text>
                 {[
                   [{ label: 'VITAMIN A (mcg)', key: 'vitaminA' }, { label: 'VITAMIN C (mg)', key: 'vitaminC' }],
                   [{ label: 'VITAMIN D (mcg)', key: 'vitaminD' }, { label: 'VITAMIN E (mg)', key: 'vitaminE' }],
@@ -1921,9 +1922,9 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                   <View key={ri} style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
                     {row.map((f, fi) => f ? (
                       <View key={f.key} style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, marginBottom: 4 }}>{f.label}</Text>
+                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, marginBottom: 4 }}>{f.label}</Text>
                         <TextInput
-                          style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: 'DMSans_400Regular' }}
+                          style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: Type.ui }}
                           value={editFoodData?.[f.key] || ''}
                           onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: filterDecimal(v) } : null)}
                           keyboardType="decimal-pad"
@@ -1936,7 +1937,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                   </View>
                 ))}
                 <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>B Vitamins</Text>
+                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>B Vitamins</Text>
                 {[
                   [{ label: 'B6 (mg)', key: 'vitaminB6' }, { label: 'FOLATE (mcg)', key: 'folate' }],
                   [{ label: 'B12 (mcg)', key: 'vitaminB12' }, { label: 'BIOTIN (mcg)', key: 'biotin' }],
@@ -1944,9 +1945,9 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                   <View key={ri} style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
                     {row.map((f, fi) => f ? (
                       <View key={f.key} style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, marginBottom: 4 }}>{f.label}</Text>
+                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, marginBottom: 4 }}>{f.label}</Text>
                         <TextInput
-                          style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: 'DMSans_400Regular' }}
+                          style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: Type.ui }}
                           value={editFoodData?.[f.key] || ''}
                           onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: filterDecimal(v) } : null)}
                           keyboardType="decimal-pad"
@@ -1959,7 +1960,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                   </View>
                 ))}
                 <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Minerals</Text>
+                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Minerals</Text>
                 {[
                   [{ label: 'MAGNESIUM (mg)', key: 'magnesium' }, { label: 'ZINC (mg)', key: 'zinc' }],
                   [{ label: 'COPPER (mg)', key: 'copper' }, null],
@@ -1967,9 +1968,9 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                   <View key={ri} style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
                     {row.map((f, fi) => f ? (
                       <View key={f.key} style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, marginBottom: 4 }}>{f.label}</Text>
+                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, marginBottom: 4 }}>{f.label}</Text>
                         <TextInput
-                          style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: 'DMSans_400Regular' }}
+                          style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: Type.ui }}
                           value={editFoodData?.[f.key] || ''}
                           onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: filterDecimal(v) } : null)}
                           keyboardType="decimal-pad"
@@ -1982,16 +1983,16 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                   </View>
                 ))}
                 <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Other</Text>
+                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Other</Text>
                 {[
                   [{ label: 'CAFFEINE (mg)', key: 'caffeine' }, null],
                 ].map((row, ri) => (
                   <View key={ri} style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
                     {row.map((f, fi) => f ? (
                       <View key={f.key} style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, marginBottom: 4 }}>{f.label}</Text>
+                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, marginBottom: 4 }}>{f.label}</Text>
                         <TextInput
-                          style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: 'DMSans_400Regular' }}
+                          style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: Type.ui }}
                           value={editFoodData?.[f.key] || ''}
                           onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: filterDecimal(v) } : null)}
                           keyboardType="decimal-pad"
@@ -2005,12 +2006,12 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                 ))}
                 {/* Serving */}
                 <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Serving</Text>
+                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Serving</Text>
                 <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, marginBottom: 4 }}>AMOUNT ({editFoodData?.servingUnitType || 'g'})</Text>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, marginBottom: 4 }}>AMOUNT ({editFoodData?.servingUnitType || 'g'})</Text>
                     <TextInput
-                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: 'DMSans_400Regular' }}
+                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: Type.ui }}
                       value={editFoodData?.servingGrams || ''}
                       onChangeText={v => setEditFoodData((p: any) => p ? { ...p, servingGrams: filterDecimal(v) } : null)}
                       keyboardType="decimal-pad"
@@ -2019,41 +2020,41 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                     />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, marginBottom: 4 }}>LABEL (OPTIONAL)</Text>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, marginBottom: 4 }}>LABEL (OPTIONAL)</Text>
                     <TextInput
-                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: 'DMSans_400Regular' }}
+                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: Type.ui }}
                       value={editFoodData?.servingLabel || ''}
                       onChangeText={v => setEditFoodData((p: any) => p ? { ...p, servingLabel: v } : null)}
                       placeholderTextColor={theme.textDim}
                     />
                   </View>
                 </View>
-                <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, marginBottom: 8 }}>UNIT</Text>
+                <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, marginBottom: 8 }}>UNIT</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingRight: 4, marginBottom: 10 }}>
                   {['g', 'ml', 'fl oz', 'oz', 'container', 'serving', 'tbsp', 'tsp', 'cup'].map(u => (
                     <TouchableOpacity
                       key={u}
                       onPress={() => setEditFoodData((p: any) => p ? { ...p, servingUnitType: u } : null)}
                       style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, borderWidth: 1, backgroundColor: editFoodData?.servingUnitType === u ? theme.accentBlueBg : 'transparent', borderColor: editFoodData?.servingUnitType === u ? theme.accentBlueBorder : theme.borderInput }}>
-                      <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: editFoodData?.servingUnitType === u ? theme.accentBlue : theme.textMuted }}>{u}</Text>
+                      <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: editFoodData?.servingUnitType === u ? theme.accentBlue : theme.textMuted }}>{u}</Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
                 {/* Additional Servings */}
                 <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                  <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase' }}>Additional Servings</Text>
+                  <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase' }}>Additional Servings</Text>
                   <TouchableOpacity
                     onPress={() => setEditFoodData((p: any) => p ? { ...p, additionalServings: [...(p.additionalServings || []), { id: `as_${Date.now()}`, label: '', grams: '' }] } : null)}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
                     <Ionicons name="add" size={12} color={theme.accentBlue} />
-                    <Text style={{ fontSize: 11, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>Add</Text>
+                    <Text style={{ fontSize: 11, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Add</Text>
                   </TouchableOpacity>
                 </View>
                 {(editFoodData?.additionalServings || []).map((s: any, i: number) => (
                   <View key={s.id} style={{ flexDirection: 'row', gap: 6, marginBottom: 8, alignItems: 'center' }}>
                     <TextInput
-                      style={{ flex: 1.4, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 8, paddingHorizontal: 10, fontSize: 13, fontFamily: 'DMSans_400Regular' }}
+                      style={{ flex: 1.4, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 8, paddingHorizontal: 10, fontSize: 13, fontFamily: Type.ui }}
                       placeholder="Label (e.g. 1 link)"
                       placeholderTextColor={theme.textDim}
                       value={s.label}
@@ -2065,7 +2066,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                       })}
                     />
                     <TextInput
-                      style={{ flex: 0.8, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 8, paddingHorizontal: 10, fontSize: 13, fontFamily: 'DMSans_400Regular' }}
+                      style={{ flex: 0.8, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 8, paddingHorizontal: 10, fontSize: 13, fontFamily: Type.ui }}
                       placeholder="g"
                       placeholderTextColor={theme.textDim}
                       keyboardType="decimal-pad"
@@ -2086,18 +2087,18 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                   </View>
                 ))}
                 {(editFoodData?.additionalServings || []).length === 0 && (
-                  <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}>Tap Add to define extra serving sizes (e.g. 1 link, 6 pieces)</Text>
+                  <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, marginBottom: 10 }}>Tap Add to define extra serving sizes (e.g. 1 link, 6 pieces)</Text>
                 )}
               </ScrollView>
               <View style={{ flexDirection: 'row', gap: 10, padding: 16, paddingTop: 12 }}>
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeEditFoodModal(); }} style={{ flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, alignItems: 'center' }}>
-                  <Text style={{ color: theme.textMuted, fontFamily: 'DMSans_500Medium', fontSize: 14 }}>Cancel</Text>
+                  <Text style={{ color: theme.textMuted, fontFamily: Type.uiMedium, fontSize: 14 }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={saveEditFoodFromDetail}
                   disabled={!editFoodData?.name?.trim() || !editFoodData?.cal}
                   style={{ flex: 2, padding: 12, backgroundColor: theme.accentBlue, borderRadius: 8, alignItems: 'center', opacity: editFoodData?.name?.trim() && editFoodData?.cal ? 1 : 0.4 }}>
-                  <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 1 }}>SAVE</Text>
+                  <Text style={{ color: '#ffffff', fontFamily: Type.uiBold, fontSize: 16, letterSpacing: 1 }}>SAVE</Text>
                 </TouchableOpacity>
               </View>
             </Animated.View>
@@ -2121,16 +2122,16 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             <TouchableOpacity
               onPress={handlePhotoAdd}
               style={{ paddingHorizontal: 28, paddingVertical: 12, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 10 }}>
-              <Text style={{ color: theme.accentBlue, fontSize: 15, fontFamily: 'DMSans_600SemiBold' }}>Replace</Text>
+              <Text style={{ color: theme.accentBlue, fontSize: 15, fontFamily: Type.uiSemibold }}>Replace</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handlePhotoRemove}
               style={{ paddingHorizontal: 28, paddingVertical: 12, backgroundColor: 'rgba(204,51,51,0.15)', borderWidth: 1, borderColor: 'rgba(204,51,51,0.4)', borderRadius: 10 }}>
-              <Text style={{ color: '#cc3333', fontSize: 15, fontFamily: 'DMSans_600SemiBold' }}>Remove</Text>
+              <Text style={{ color: '#cc3333', fontSize: 15, fontFamily: Type.uiSemibold }}>Remove</Text>
             </TouchableOpacity>
           </View>
           <TouchableOpacity onPress={() => setShowPhotoFullscreen(false)} style={{ marginTop: 20, padding: 8 }}>
-            <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_500Medium' }}>Close</Text>
+            <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: Type.uiMedium }}>Close</Text>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -2143,40 +2144,40 @@ const useStyles = (theme: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.bgPrimary },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: theme.borderCard },
   backBtn: { padding: 4, width: 60 },
-  backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_500Medium' },
-  headerTitle: { fontSize: 20, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, flex: 1, textAlign: 'center' },
+  backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: Type.uiMedium },
+  headerTitle: { fontSize: 20, color: theme.accentBlueRaw, fontFamily: Type.display, letterSpacing: 0.3, flex: 1, textAlign: 'center' },
   content: { padding: 16 },
-  foodName: { fontSize: 18, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', marginBottom: 20, lineHeight: 24 },
+  foodName: { fontSize: 18, color: theme.textSecondary, fontFamily: Type.uiSemibold, marginBottom: 20, lineHeight: 24 },
   unitRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   unitBtn: { flex: 1, padding: 10, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, alignItems: 'center' },
   unitBtnActive: { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder },
-  unitBtnText: { fontSize: 14, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold' },
+  unitBtnText: { fontSize: 14, color: theme.textMuted, fontFamily: Type.uiSemibold },
   unitBtnTextActive: { color: theme.accentBlue },
   amountRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
-  amountLabel: { fontSize: 14, color: theme.textMuted, fontFamily: 'DMSans_400Regular' },
-  amountInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textSecondary, padding: 12, fontSize: 24, fontFamily: 'BebasNeue_400Regular', width: 120, textAlign: 'center' },
+  amountLabel: { fontSize: 14, color: theme.textMuted, fontFamily: Type.ui },
+  amountInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textSecondary, padding: 12, fontSize: 24, fontFamily: Type.num, width: 120, textAlign: 'center' },
   nutritionCard: { backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, padding: 16, marginBottom: 20 },
-  nutritionTitle: { fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 },
+  nutritionTitle: { fontSize: 11, color: theme.textMuted, fontFamily: Type.uiMedium, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 },
   nutritionRow: { flexDirection: 'row', justifyContent: 'space-between' },
   nutritionStat: { alignItems: 'center', flex: 1 },
-  nutritionVal: { fontSize: 28, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
-  nutritionLabel: { fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 2 },
-  noDataText: { fontSize: 12, color: theme.textMuted, fontStyle: 'italic', fontFamily: 'DMSans_400Regular', marginBottom: 16, textAlign: 'center' },
+  nutritionVal: { fontSize: 28, fontFamily: Type.num, letterSpacing: 1 },
+  nutritionLabel: { fontSize: 10, color: theme.textMuted, fontFamily: Type.ui, marginTop: 2 },
+  noDataText: { fontSize: 12, color: theme.textMuted, fontStyle: 'italic', fontFamily: Type.ui, marginBottom: 16, textAlign: 'center' },
   logBtn: { backgroundColor: theme.accentGreen, borderRadius: 10, padding: 16, alignItems: 'center', marginBottom: 12 },
-  logBtnText: { color: theme.bgPrimary, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  logBtnText: { color: theme.bgPrimary, fontSize: 18, fontFamily: Type.uiBold, letterSpacing: 2 },
   deleteBtn: { backgroundColor: '#cc3333', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 16, alignItems: 'center', marginTop: 8, alignSelf: 'center', minWidth: 220 },
-  deleteBtnText: { color: theme.bgPrimary, fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  deleteBtnText: { color: theme.bgPrimary, fontSize: 16, fontFamily: Type.uiBold, letterSpacing: 2 },
   mealSelector: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, padding: 12, marginBottom: 10 },
-  mealSelectorLabel: { fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' },
-  mealSelectorValue: { fontSize: 14, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' },
+  mealSelectorLabel: { fontSize: 12, color: theme.textMuted, fontFamily: Type.ui },
+  mealSelectorValue: { fontSize: 14, color: theme.accentBlue, fontFamily: Type.uiSemibold },
   modalOverlay: { flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'flex-end' },
   modal: { backgroundColor: theme.bgSheet, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, borderWidth: 1, borderColor: theme.borderCard },
-  modalTitle: { fontSize: 18, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', marginBottom: 16 },
+  modalTitle: { fontSize: 18, color: theme.textPrimary, fontFamily: Type.uiSemibold, marginBottom: 16 },
   servingPickerBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, borderRadius: 10, padding: 14, marginBottom: 12 },
-  servingPickerLabel: { fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 3 },
-  servingPickerValue: { fontSize: 15, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' },
-  servingPickerCal: { fontSize: 18, color: theme.accentGreen, fontFamily: 'BebasNeue_400Regular' },
+  servingPickerLabel: { fontSize: 10, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 3 },
+  servingPickerValue: { fontSize: 15, color: theme.textPrimary, fontFamily: Type.uiSemibold },
+  servingPickerCal: { fontSize: 18, color: theme.accentGreen, fontFamily: Type.num },
   mealOption: { padding: 16, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle, alignItems: 'center' },
   mealOptionActive: { backgroundColor: theme.accentGreenBg },
-  mealOptionText: { fontSize: 16, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' },
+  mealOptionText: { fontSize: 16, color: theme.textSecondary, fontFamily: Type.uiMedium },
 });

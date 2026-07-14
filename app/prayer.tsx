@@ -20,6 +20,7 @@ import {
 import { useTheme, type Theme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
+import { Type, numLine } from '../typography';
 
 // Static demo prayers for the faith_prayer tutorial (?tutorial=1). Rendered without ever touching
 // pj_prayers, so a brand-new user with zero prayers still sees a full screen to learn on, and no
@@ -388,25 +389,25 @@ function PrayerRow({
 const styles = StyleSheet.create({
   header:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5 },
   headerBtn:     { borderWidth: 1, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' },
-  headerTitle:   { fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  headerTitle:   { fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3 },
   heroBox:       { alignItems: 'flex-end' },
-  heroNum:       { fontSize: 26, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, lineHeight: 28 },
-  heroLabel:     { fontSize: 8, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', marginTop: -1 },
+  heroNum:       { fontSize: 26, fontFamily: Type.num, letterSpacing: 1, lineHeight: numLine(26) },
+  heroLabel:     { fontSize: 8, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: Type.uiBold, marginTop: -1 },
   loading:       { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyState:    { alignItems: 'center', paddingTop: 72, paddingBottom: 8, gap: 12 },
-  emptyTitle:    { fontSize: 16, fontFamily: 'DMSans_600SemiBold' },
-  emptySubtitle: { fontSize: 13, fontFamily: 'DMSans_400Regular', textAlign: 'center', lineHeight: 20, paddingHorizontal: 28 },
-  sectionLabel:  { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', marginBottom: 8, marginLeft: 4 },
+  emptyTitle:    { fontSize: 16, fontFamily: Type.uiSemibold },
+  emptySubtitle: { fontSize: 13, fontFamily: Type.ui, textAlign: 'center', lineHeight: 20, paddingHorizontal: 28 },
+  sectionLabel:  { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold, marginBottom: 8, marginLeft: 4 },
   sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: 4, paddingVertical: 6, marginTop: 4 },
-  ebenezer:      { fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginLeft: 4, marginBottom: 8 },
+  ebenezer:      { fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic', marginLeft: 4, marginBottom: 8 },
   pageBox:       { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, minHeight: 44, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 3 },
   pageText:      { fontSize: 15, fontFamily: 'Lora_500Medium', lineHeight: 22 },
-  answeredDate:  { fontSize: 10, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase', marginTop: 4 },
+  answeredDate:  { fontSize: 10, fontFamily: Type.uiBold, letterSpacing: 1, textTransform: 'uppercase', marginTop: 4 },
   praiseInline:  { position: 'absolute', left: 0, top: 0, fontSize: 16, fontFamily: 'Lora_500Medium', letterSpacing: 0.3 },
   askRow:        { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 14, borderWidth: 0.5, padding: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.18, shadowRadius: 8, elevation: 4 },
   askIcon:       { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
-  askTitle:      { fontSize: 15, fontFamily: 'DMSans_600SemiBold' },
-  askSub:        { fontSize: 12, fontFamily: 'DMSans_400Regular', marginTop: 2, lineHeight: 17 },
+  askTitle:      { fontSize: 15, fontFamily: Type.uiSemibold },
+  askSub:        { fontSize: 12, fontFamily: Type.ui, marginTop: 2, lineHeight: 17 },
   fab:           { position: 'absolute', right: 24 },
   fabBtn:        { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 },
 });

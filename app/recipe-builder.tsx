@@ -13,6 +13,7 @@ import { storageSet } from '../utils/storage';
 import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
+import { Type } from '../typography';
 
 interface Ingredient {
   id: string;
@@ -538,8 +539,8 @@ export default function RecipeBuilderScreen() {
                   </View>
                 </View>
                 <View style={{ alignItems: 'flex-end', justifyContent: 'flex-start', marginRight: 12 }}>
-                  <Text style={{ fontSize: 18, color: theme.accentGreen, fontFamily: 'BebasNeue_400Regular' }}>{ing.cal}</Text>
-                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_400Regular', letterSpacing: 1 }}>kcal</Text>
+                  <Text style={{ fontSize: 18, color: theme.accentGreen, fontFamily: Type.num }}>{ing.cal}</Text>
+                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.ui, letterSpacing: 1 }}>kcal</Text>
                 </View>
                 <TouchableOpacity onPress={() => removeIngredient(ing.id)} style={styles.removeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                   <Ionicons name="trash-outline" size={16} color={theme.accentRed || '#cc3333'} />
@@ -681,7 +682,7 @@ export default function RecipeBuilderScreen() {
                 key={u}
                 style={[styles.unitDropdownItem, i < WEIGHT_UNITS.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.borderSubtle }]}
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setTotalWeightUnit(u); closeWeightUnitDropdown(); }}>
-                <Text style={[styles.unitDropdownText, totalWeightUnit === u && { color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }]}>{u}</Text>
+                <Text style={[styles.unitDropdownText, totalWeightUnit === u && { color: theme.accentBlue, fontFamily: Type.uiSemibold }]}>{u}</Text>
                 {totalWeightUnit === u && <Ionicons name="checkmark" size={12} color={theme.accentBlue} />}
               </TouchableOpacity>
             ))}
@@ -706,10 +707,10 @@ const useStyles = (theme: any) => StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: theme.borderCard,
   },
   backBtn: { width: 60, paddingVertical: 4 },
-  backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_500Medium' },
-  headerTitle: { fontSize: 20, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
+  backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: Type.uiMedium },
+  headerTitle: { fontSize: 20, color: theme.accentBlueRaw, fontFamily: Type.display, letterSpacing: 0.3 },
   saveBtn: { backgroundColor: theme.accentGreen, borderRadius: 8, paddingHorizontal: 18, paddingVertical: 8 },
-  saveBtnText: { color: theme.bgPrimary, fontSize: 14, fontFamily: 'DMSans_700Bold' },
+  saveBtnText: { color: theme.bgPrimary, fontSize: 14, fontFamily: Type.uiBold },
   content: { padding: 12, paddingBottom: 40, gap: 12 },
   card: {
     backgroundColor: theme.bgCard,
@@ -727,10 +728,10 @@ const useStyles = (theme: any) => StyleSheet.create({
   },
   cardLabel: {
     fontSize: 9, letterSpacing: 3, color: theme.textMuted,
-    textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', marginBottom: 12,
+    textTransform: 'uppercase', fontFamily: Type.uiBold, marginBottom: 12,
   },
   recipeNameInput: {
-    color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_600SemiBold',
+    color: theme.textPrimary, fontSize: 16, fontFamily: Type.uiSemibold,
     backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput,
     borderRadius: 8, padding: 12,
   },
@@ -740,56 +741,56 @@ const useStyles = (theme: any) => StyleSheet.create({
     backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
     borderRadius: 10, padding: 14,
   },
-  addIngredientText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
+  addIngredientText: { color: theme.accentBlue, fontSize: 14, fontFamily: Type.uiSemibold },
   addCustomBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
     backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
     borderRadius: 10, paddingHorizontal: 16, paddingVertical: 14,
   },
-  addCustomText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
+  addCustomText: { color: theme.accentBlue, fontSize: 14, fontFamily: Type.uiSemibold },
   emptyState: { alignItems: 'center', paddingVertical: 20, gap: 6 },
-  emptyTitle: { fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' },
-  emptySubtitle: { fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', textAlign: 'center' },
+  emptyTitle: { fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiSemibold },
+  emptySubtitle: { fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, textAlign: 'center' },
   ingredientRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 12 },
   ingredientBorder: { borderBottomWidth: 1, borderBottomColor: theme.borderSubtle },
   ingredientLeft: { flex: 1, marginRight: 12 },
-  ingredientName: { fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' },
-  ingMacro: { fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular' },
+  ingredientName: { fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiSemibold },
+  ingMacro: { fontSize: 11, color: theme.textMuted, fontFamily: Type.ui },
   removeBtn: { padding: 4 },
   macroRow: { flexDirection: 'row', alignItems: 'center' },
   macroStat: { flex: 1, alignItems: 'center' },
-  macroVal: { fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
-  macroUnit: { fontSize: 14, fontFamily: 'DMSans_400Regular', letterSpacing: 0 },
-  macroLabel: { fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 1, letterSpacing: 1 },
+  macroVal: { fontSize: 22, fontFamily: Type.num, letterSpacing: 1 },
+  macroUnit: { fontSize: 14, fontFamily: Type.ui, letterSpacing: 0 },
+  macroLabel: { fontSize: 9, color: theme.textMuted, fontFamily: Type.ui, marginTop: 1, letterSpacing: 1 },
   macroDivider: { width: 1, height: 32, backgroundColor: theme.borderSubtle },
   extendedRow: {
     flexDirection: 'row', marginTop: 12, paddingTop: 12,
     borderTopWidth: 1, borderTopColor: theme.borderSubtle,
   },
   extStat: { flex: 1, alignItems: 'center' },
-  extVal: { fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' },
-  extLabel: { fontSize: 8, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 2, letterSpacing: 0.5, textTransform: 'uppercase' },
+  extVal: { fontSize: 13, color: theme.textSecondary, fontFamily: Type.uiSemibold },
+  extLabel: { fontSize: 8, color: theme.textMuted, fontFamily: Type.ui, marginTop: 2, letterSpacing: 0.5, textTransform: 'uppercase' },
   perServingCard: {
     backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
     borderRadius: 10, padding: 14, marginTop: 14,
   },
   servingRow: { flexDirection: 'row', gap: 10 },
-  fieldLabel: { fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 },
+  fieldLabel: { fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 },
   fieldInput: {
     backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput,
-    borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 14, fontFamily: 'DMSans_400Regular',
+    borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 14, fontFamily: Type.ui,
   },
   weightRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-end' },
   defaultWeightToggleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14 },
   defaultWeightCheckbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 1, borderColor: theme.borderInput, backgroundColor: theme.bgInput, alignItems: 'center', justifyContent: 'center' },
   defaultWeightCheckboxActive: { backgroundColor: theme.accentBlue, borderColor: theme.accentBlue },
-  defaultWeightLabel: { fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_400Regular' },
+  defaultWeightLabel: { fontSize: 13, color: theme.textSecondary, fontFamily: Type.ui },
   unitPickerBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
     borderRadius: 8, paddingHorizontal: 12, paddingVertical: 13,
   },
-  unitPickerBtnText: { color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
+  unitPickerBtnText: { color: theme.accentBlue, fontSize: 13, fontFamily: Type.uiSemibold },
   unitDropdown: {
     backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.borderCard,
     borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw,
@@ -801,5 +802,5 @@ const useStyles = (theme: any) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 14, paddingVertical: 12,
   },
-  unitDropdownText: { fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' },
+  unitDropdownText: { fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiMedium },
 });

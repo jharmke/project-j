@@ -24,6 +24,7 @@ import { useToast } from '../components/Toast';
 import { useTheme, type Theme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
+import { Type } from '../typography';
 
 /**
  * Plans hub. One Stack screen (so the faith-tab keyboard bug never applies) with two tabs:
@@ -522,36 +523,36 @@ function PressScale({ onPress, style, children }: { onPress: () => void; style: 
 const styles = StyleSheet.create({
   header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5 },
   headerBtn:    { borderWidth: 1, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' },
-  headerTitle:  { fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  headerTitle:  { fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3 },
   segmentRow:   { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 4 },
   segment:      { flexDirection: 'row', borderRadius: 12, borderWidth: 1, padding: 4, gap: 4 },
   segmentBtn:   { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 9, borderRadius: 9, minHeight: 40 },
-  segmentText:  { fontSize: 13, fontFamily: 'DMSans_700Bold', letterSpacing: 0.3 },
+  segmentText:  { fontSize: 13, fontFamily: Type.uiBold, letterSpacing: 0.3 },
   loading:      { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  intro:        { fontSize: 14, fontFamily: 'DMSans_500Medium', lineHeight: 20, marginTop: 8, marginBottom: 16 },
-  sectionLabel: { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', marginBottom: 10, marginTop: 8, marginLeft: 2 },
-  capNote:      { fontSize: 12, fontFamily: 'DMSans_500Medium', fontStyle: 'italic', marginBottom: 10, marginLeft: 2 },
+  intro:        { fontSize: 14, fontFamily: Type.uiMedium, lineHeight: 20, marginTop: 8, marginBottom: 16 },
+  sectionLabel: { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold, marginBottom: 10, marginTop: 8, marginLeft: 2 },
+  capNote:      { fontSize: 12, fontFamily: Type.uiMedium, fontStyle: 'italic', marginBottom: 10, marginLeft: 2 },
   sortRow:      { flexDirection: 'row', gap: 6, marginBottom: 12, marginTop: 2 },
   sortChip:     { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 14, borderWidth: 1, minHeight: 32, justifyContent: 'center' },
-  sortChipText: { fontSize: 12, fontFamily: 'DMSans_600SemiBold', letterSpacing: 0.3 },
+  sortChipText: { fontSize: 12, fontFamily: Type.uiSemibold, letterSpacing: 0.3 },
   card:         { borderRadius: 14, borderWidth: 0.5, borderTopWidth: 2.5, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.24, shadowRadius: 11, elevation: 5 },
   cardTop:      { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
   iconBadge:    { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  cardTitle:    { fontSize: 16, fontFamily: 'DMSans_600SemiBold' },
-  cardLength:   { fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase', marginTop: 2 },
-  cardDesc:     { fontSize: 13, fontFamily: 'DMSans_400Regular', lineHeight: 19, marginBottom: 12 },
+  cardTitle:    { fontSize: 16, fontFamily: Type.uiSemibold },
+  cardLength:   { fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 1, textTransform: 'uppercase', marginTop: 2 },
+  cardDesc:     { fontSize: 13, fontFamily: Type.ui, lineHeight: 19, marginBottom: 12 },
   progressWrap: { marginBottom: 12 },
   barTrack:     { height: 6, borderRadius: 3, overflow: 'hidden' },
   barFill:      { height: 6, borderRadius: 3 },
   dotsRow:      { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   dot:          { width: 14, height: 14, borderRadius: 7, borderWidth: 1.5 },
-  progressText: { fontSize: 11, fontFamily: 'DMSans_600SemiBold', marginTop: 6 },
+  progressText: { fontSize: 11, fontFamily: Type.uiSemibold, marginTop: 6 },
   cardActions:  { flexDirection: 'row', alignItems: 'center', gap: 10 },
   primaryBtn:   { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 10, paddingVertical: 12, minHeight: 44 },
-  primaryBtnText: { fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
+  primaryBtnText: { fontSize: 14, fontFamily: Type.uiSemibold },
   dropBtn:      { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   emptyState:   { alignItems: 'center', paddingTop: 48, gap: 12 },
-  emptyTitle:   { fontSize: 16, fontFamily: 'DMSans_600SemiBold' },
-  emptySub:     { fontSize: 13, fontFamily: 'DMSans_400Regular', textAlign: 'center', lineHeight: 19, paddingHorizontal: 28 },
-  allInLabel:   { fontSize: 12, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', textAlign: 'center', marginTop: 16 },
+  emptyTitle:   { fontSize: 16, fontFamily: Type.uiSemibold },
+  emptySub:     { fontSize: 13, fontFamily: Type.ui, textAlign: 'center', lineHeight: 19, paddingHorizontal: 28 },
+  allInLabel:   { fontSize: 12, fontFamily: Type.ui, fontStyle: 'italic', textAlign: 'center', marginTop: 16 },
 });

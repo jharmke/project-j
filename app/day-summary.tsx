@@ -32,6 +32,7 @@ import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { useTutorial } from '../context/TutorialContext';
 import { refreshDayCoachTip, resolveTipBody } from '../utils/coachAI';
 import { effectiveExerciseMinutes } from '../utils/exerciseMinutes';
+import { Type, numLine } from '../typography';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -211,7 +212,7 @@ export default function DaySummaryScreen() {
       <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={{ padding: 4 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
         <Ionicons name="chevron-back" size={24} color={accent} />
       </TouchableOpacity>
-      <Text style={{ fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: accent, flex: 1 }}>DAY SUMMARY</Text>
+      <Text style={{ fontSize: 24, fontFamily: Type.display, letterSpacing: 0.3, color: accent, flex: 1 }}>DAY SUMMARY</Text>
       <View style={{ transform: [{ translateY: -1 }] }}>
         <TooltipIcon tooltipKey="day_score" size={18} />
       </View>
@@ -236,10 +237,10 @@ export default function DaySummaryScreen() {
         {Header}
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 }}>
           <Ionicons name={excluded ? 'remove-circle-outline' : 'calendar-outline'} size={44} color={theme.textDim} />
-          <Text style={{ fontSize: 16, fontFamily: 'DMSans_700Bold', color: theme.textSecondary, marginTop: 14, textAlign: 'center' }}>
+          <Text style={{ fontSize: 16, fontFamily: Type.uiBold, color: theme.textSecondary, marginTop: 14, textAlign: 'center' }}>
             {excluded ? 'This day was excluded' : 'No score for this day'}
           </Text>
-          <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 6, textAlign: 'center', lineHeight: 19 }}>
+          <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textMuted, marginTop: 6, textAlign: 'center', lineHeight: 19 }}>
             {excluded
               ? 'Excluded days are kept out of your scores and weekly averages.'
               : 'Scores appear the morning after a logged day. Log food, activity, or sleep to get one.'}
@@ -286,14 +287,14 @@ export default function DaySummaryScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Ionicons name={icon} size={17} color={barC} />
-            <Text style={{ fontSize: 17, letterSpacing: 1.5, color: theme.textSecondary, fontFamily: 'BebasNeue_400Regular' }}>{label.toUpperCase()}</Text>
+            <Text style={{ fontSize: 17, letterSpacing: 1.5, color: theme.textSecondary, fontFamily: Type.num }}>{label.toUpperCase()}</Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={{ fontSize: 26, lineHeight: 28, fontFamily: 'BebasNeue_400Regular', color: barC }}>
+            <Text style={{ fontSize: 26, lineHeight: numLine(26), fontFamily: Type.num, color: barC }}>
               {value !== null ? Math.round(value) : '--'}
             </Text>
             {value !== null && weightPct != null && (
-              <Text style={{ fontSize: 8, letterSpacing: 0.8, color: theme.textMuted, fontFamily: 'DMSans_700Bold' }}>{weightPct}% OF SCORE</Text>
+              <Text style={{ fontSize: 8, letterSpacing: 0.8, color: theme.textMuted, fontFamily: Type.uiBold }}>{weightPct}% OF SCORE</Text>
             )}
           </View>
         </View>
@@ -306,13 +307,13 @@ export default function DaySummaryScreen() {
     return (
       <View style={{ flexDirection: 'row', marginTop: 6 }}>
         <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 2 }}>
-          <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1.5 }}>{left.label}</Text>
-          <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginTop: 1 }}>{left.value}</Text>
+          <Text style={{ fontSize: 9, fontFamily: Type.uiBold, color: theme.textMuted, letterSpacing: 1.5 }}>{left.label}</Text>
+          <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textSecondary, marginTop: 1 }}>{left.value}</Text>
         </View>
         {right && (
           <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 2 }}>
-            <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1.5 }}>{right.label}</Text>
-            <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginTop: 1 }}>{right.value}</Text>
+            <Text style={{ fontSize: 9, fontFamily: Type.uiBold, color: theme.textMuted, letterSpacing: 1.5 }}>{right.label}</Text>
+            <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textSecondary, marginTop: 1 }}>{right.value}</Text>
           </View>
         )}
       </View>
@@ -330,12 +331,12 @@ export default function DaySummaryScreen() {
   const SubRow = ({ name, detail, pts, subBlock, labelColor }: { name: string; detail?: string; pts?: string; subBlock?: React.ReactNode; labelColor?: string }) => (
     <View style={{ paddingVertical: 7, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text style={{ fontSize: 13, color: labelColor ?? theme.textSecondary, fontFamily: 'DMSans_600SemiBold', flex: 1 }}>{name}</Text>
+        <Text style={{ fontSize: 13, color: labelColor ?? theme.textSecondary, fontFamily: Type.uiSemibold, flex: 1 }}>{name}</Text>
         {!!pts && (
-          <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }}>{pts}</Text>
+          <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiSemibold }}>{pts}</Text>
         )}
       </View>
-      {!!detail && <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 1 }}>{detail}</Text>}
+      {!!detail && <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginTop: 1 }}>{detail}</Text>}
       {subBlock}
     </View>
   );
@@ -361,7 +362,7 @@ export default function DaySummaryScreen() {
       <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 120 }} showsVerticalScrollIndicator={false}>
 
         {/* Date */}
-        <Text style={{ fontSize: 17, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, textAlign: 'center', marginTop: 4 }}>
+        <Text style={{ fontSize: 17, color: theme.textPrimary, fontFamily: Type.num, letterSpacing: 2, textAlign: 'center', marginTop: 4 }}>
           {date ? formatLongDate(date) : ''}
         </Text>
 
@@ -369,12 +370,12 @@ export default function DaySummaryScreen() {
         <View ref={ringRef} collapsable={false} style={{ alignItems: 'center', marginTop: 10, marginBottom: 18 }}>
           <ScoreRing value={score.composite} color={heroColor} theme={theme} celebrate={celebrate} />
           <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0, marginTop: 10 }}>
-            <Text style={{ fontSize: 24, letterSpacing: 2, fontFamily: 'BebasNeue_400Regular', color: heroColor }}>
+            <Text style={{ fontSize: 24, letterSpacing: 2, fontFamily: Type.num, color: heroColor }}>
               {scoreLabel(shown, styleMode).toUpperCase()}
             </Text>
           </View>
           {!!contextLine && (
-            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', textAlign: 'center', marginTop: 8 }}>{contextLine}</Text>
+            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, fontStyle: 'italic', textAlign: 'center', marginTop: 8 }}>{contextLine}</Text>
           )}
         </View>
 
@@ -395,17 +396,17 @@ export default function DaySummaryScreen() {
           }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 10 }}>
               <Ionicons name="sparkles" size={12} color={accent} />
-              <Text style={{ fontSize: 9, letterSpacing: 3, color: accent, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Coach Insight</Text>
+              <Text style={{ fontSize: 9, letterSpacing: 3, color: accent, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>Coach Insight</Text>
             </View>
             <View style={{ width: '100%', height: 0.5, backgroundColor: `${accent}40`, marginBottom: 10 }} />
-            <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', lineHeight: 22, fontStyle: 'italic', textAlign: 'center' }}>
+            <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiSemibold, lineHeight: 22, fontStyle: 'italic', textAlign: 'center' }}>
               {dayCoachBody}
             </Text>
           </View>
         )}
 
         {presentCats.length < 3 && (
-          <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 2, marginBottom: 12, textAlign: 'center', fontStyle: 'italic' }}>
+          <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.ui, marginTop: 2, marginBottom: 12, textAlign: 'center', fontStyle: 'italic' }}>
             Areas you did not log drop out, and the rest rebalance.
           </Text>
         )}
@@ -421,14 +422,14 @@ export default function DaySummaryScreen() {
                 subBlock={
                   <View style={{ flexDirection: 'row', marginTop: 6 }}>
                     <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 2 }}>
-                      <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1.5 }}>EATEN</Text>
-                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginTop: 1 }}>{Math.round(input.consumed).toLocaleString()}</Text>
+                      <Text style={{ fontSize: 9, fontFamily: Type.uiBold, color: theme.textMuted, letterSpacing: 1.5 }}>EATEN</Text>
+                      <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textSecondary, marginTop: 1 }}>{Math.round(input.consumed).toLocaleString()}</Text>
                     </View>
                     <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 2 }}>
-                      <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1.5 }}>
+                      <Text style={{ fontSize: 9, fontFamily: Type.uiBold, color: theme.textMuted, letterSpacing: 1.5 }}>
                         {!isMindful && net !== null ? (net < 0 ? 'DEFICIT' : 'SURPLUS') : 'DAILY GOAL'}
                       </Text>
-                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginTop: 1 }}>
+                      <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textSecondary, marginTop: 1 }}>
                         {!isMindful && net !== null
                           ? Math.abs(net).toLocaleString()
                           : Math.round(input.calTarget).toLocaleString()}
@@ -446,12 +447,12 @@ export default function DaySummaryScreen() {
                 subBlock={
                   <View style={{ flexDirection: 'row', marginTop: 6 }}>
                     <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 2 }}>
-                      <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1.5 }}>EATEN</Text>
-                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginTop: 1 }}>{Math.round(input.actualProteinG)}g</Text>
+                      <Text style={{ fontSize: 9, fontFamily: Type.uiBold, color: theme.textMuted, letterSpacing: 1.5 }}>EATEN</Text>
+                      <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textSecondary, marginTop: 1 }}>{Math.round(input.actualProteinG)}g</Text>
                     </View>
                     <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 2 }}>
-                      <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1.5 }}>DAILY GOAL</Text>
-                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginTop: 1 }}>{Math.round(input.proteinGoalG)}g</Text>
+                      <Text style={{ fontSize: 9, fontFamily: Type.uiBold, color: theme.textMuted, letterSpacing: 1.5 }}>DAILY GOAL</Text>
+                      <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textSecondary, marginTop: 1 }}>{Math.round(input.proteinGoalG)}g</Text>
                     </View>
                   </View>
                 }
@@ -465,12 +466,12 @@ export default function DaySummaryScreen() {
                 subBlock={
                   <View style={{ flexDirection: 'row', marginTop: 6 }}>
                     <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 2 }}>
-                      <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1.5 }}>LOGGED</Text>
-                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginTop: 1 }}>{Math.round(input.waterLogged)} oz</Text>
+                      <Text style={{ fontSize: 9, fontFamily: Type.uiBold, color: theme.textMuted, letterSpacing: 1.5 }}>LOGGED</Text>
+                      <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textSecondary, marginTop: 1 }}>{Math.round(input.waterLogged)} oz</Text>
                     </View>
                     <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 2 }}>
-                      <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1.5 }}>DAILY GOAL</Text>
-                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginTop: 1 }}>{Math.round(input.waterGoal)} oz</Text>
+                      <Text style={{ fontSize: 9, fontFamily: Type.uiBold, color: theme.textMuted, letterSpacing: 1.5 }}>DAILY GOAL</Text>
+                      <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textSecondary, marginTop: 1 }}>{Math.round(input.waterGoal)} oz</Text>
                     </View>
                   </View>
                 }
@@ -481,18 +482,18 @@ export default function DaySummaryScreen() {
           <SectionCard label="Nutrition" icon="restaurant" value={null} innerRef={nutritionRef} categoryColor="#0d9268">
             {score.nutritionIncomplete && !dietExcluded && !waterExcluded ? (
               <View style={{ paddingVertical: 4, gap: 10 }}>
-                <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', lineHeight: 18 }}>
+                <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, lineHeight: 18 }}>
                   {underLoggedNutritionLine(isMindful)}
                 </Text>
                 <TouchableOpacity
                   onPress={handleMarkComplete}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   style={{ alignSelf: 'flex-start', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 }}>
-                  <Text style={{ fontSize: 12, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>This was my full day</Text>
+                  <Text style={{ fontSize: 12, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>This was my full day</Text>
                 </TouchableOpacity>
               </View>
             ) : (
-              <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 4 }}>
+              <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, paddingVertical: 4 }}>
                 {dietExcluded || waterExcluded ? 'Nutrition was excluded for this day.' : 'No food logged this day.'}
               </Text>
             )}
@@ -540,7 +541,7 @@ export default function DaySummaryScreen() {
             )}
             {(input?.dayData?.vo2Max != null || input?.dayData?.cardioRecovery != null || recoSpo2 != null) && (
               <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, marginTop: 4, paddingTop: 8 }}>
-                <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', marginBottom: 2 }}>INFORMATIONAL</Text>
+                <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: Type.uiBold, marginBottom: 2 }}>INFORMATIONAL</Text>
                 <SubBlock
                   left={{ label: 'VO2 MAX', value: input?.dayData?.vo2Max != null ? `${input.dayData.vo2Max} mL/kg/min` : '--' }}
                   right={{ label: 'CARDIO RECOVERY', value: input?.dayData?.cardioRecovery != null ? `${input.dayData.cardioRecovery} bpm` : '--' }}
@@ -553,7 +554,7 @@ export default function DaySummaryScreen() {
           </SectionCard>
         ) : (
           <SectionCard label="Recovery" icon="heart" value={null} innerRef={recoveryRef} categoryColor="#9b7adb">
-            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 4 }}>No recovery or sleep data this day.</Text>
+            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, paddingVertical: 4 }}>No recovery or sleep data this day.</Text>
           </SectionCard>
         )}
 
@@ -627,14 +628,14 @@ export default function DaySummaryScreen() {
           </SectionCard>
         ) : (
           <SectionCard label="Activity" icon="barbell" value={null} innerRef={activityRef} categoryColor="#d4860a">
-            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 4 }}>
+            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, paddingVertical: 4 }}>
               {exerciseExcluded ? 'Activity was excluded for this day.' : 'No activity data this day.'}
             </Text>
           </SectionCard>
         )}
 
         {/* Disclaimer */}
-        <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 10 }}>
+        <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, textAlign: 'center', marginTop: 10 }}>
           For informational purposes only. Not medical advice.
         </Text>
 
@@ -644,17 +645,17 @@ export default function DaySummaryScreen() {
         <View ref={excludeRef} collapsable={false} style={{ marginTop: 16 }}>
           {confirmingExclude ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14, flexWrap: 'wrap' }}>
-              <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Remove from your weekly average?</Text>
+              <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui }}>Remove from your weekly average?</Text>
               <TouchableOpacity onPress={() => setConfirmingExclude(false)} hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}>
-                <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }}>Cancel</Text>
+                <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.uiSemibold }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleExclude} hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}>
-                <Text style={{ fontSize: 13, color: theme.statusBad, fontFamily: 'DMSans_600SemiBold' }}>Exclude</Text>
+                <Text style={{ fontSize: 13, color: theme.statusBad, fontFamily: Type.uiSemibold }}>Exclude</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <TouchableOpacity onPress={() => setConfirmingExclude(true)} hitSlop={{ top: 10, bottom: 10, left: 20, right: 20 }} style={{ alignItems: 'center' }}>
-              <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular', textDecorationLine: 'underline' }}>Exclude this day</Text>
+              <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui, textDecorationLine: 'underline' }}>Exclude this day</Text>
             </TouchableOpacity>
           )}
         </View>

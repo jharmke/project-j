@@ -26,6 +26,7 @@ import {
   buildComparison, dateKeysInRange, METRIC_META,
   ComparisonResult, MetricComparison, MetricId,
 } from '../utils/comparisonEngine';
+import { Type, numLine } from '../typography';
 
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
@@ -247,7 +248,7 @@ export default function ComparisonReportScreen() {
           <TouchableOpacity onPress={() => { if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1); } else { setCalMonth(m => m - 1); } }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="chevron-back" size={20} color={accent} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{CAL_MONTHS[calMonth]} {calYear}</Text>
+          <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: Type.num, letterSpacing: 1 }}>{CAL_MONTHS[calMonth]} {calYear}</Text>
           <TouchableOpacity onPress={() => { if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1); } else { setCalMonth(m => m + 1); } }} disabled={!calCanGoNext()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="chevron-forward" size={20} color={calCanGoNext() ? accent : theme.textDim} />
           </TouchableOpacity>
@@ -255,7 +256,7 @@ export default function ComparisonReportScreen() {
         <View style={{ flexDirection: 'row', marginBottom: 6 }}>
           {CAL_DAYS.map(d => (
             <View key={d} style={{ flex: 1, alignItems: 'center' }}>
-              <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>{d}</Text>
+              <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: Type.uiBold, letterSpacing: 1 }}>{d}</Text>
             </View>
           ))}
         </View>
@@ -271,7 +272,7 @@ export default function ComparisonReportScreen() {
                   onPress={() => { if (pickerOpen) { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); onPickDate(pickerOpen, new Date(calYear, calMonth, day)); } }}
                   disabled={isFut} activeOpacity={0.7}>
                   <View style={{ width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: isSel ? accent : 'transparent' }}>
-                    <Text style={{ fontSize: 13, fontFamily: isSel ? 'DMSans_700Bold' : 'DMSans_400Regular', color: isSel ? theme.bgPrimary : isFut ? theme.textDim : theme.textSecondary }}>
+                    <Text style={{ fontSize: 13, fontFamily: isSel ? Type.uiBold : Type.ui, color: isSel ? theme.bgPrimary : isFut ? theme.textDim : theme.textSecondary }}>
                       {day}
                     </Text>
                   </View>
@@ -293,7 +294,7 @@ export default function ComparisonReportScreen() {
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={{ padding: 4 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Ionicons name="chevron-back" size={24} color={accent} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: accent, flex: 1 }}>COMPARISON</Text>
+          <Text style={{ fontSize: 24, fontFamily: Type.display, letterSpacing: 0.3, color: accent, flex: 1 }}>COMPARISON</Text>
         </View>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
           <View style={{ backgroundColor: theme.bgCard, borderWidth: 1, borderColor: `${accent}40`, borderRadius: 14, padding: 20, alignItems: 'center' }}>
@@ -301,12 +302,12 @@ export default function ComparisonReportScreen() {
             <View style={{ marginBottom: 12 }}>
               <Ionicons name="lock-closed" size={20} color={theme.textMuted} />
             </View>
-            <Text style={{ fontSize: 17, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', textAlign: 'center', marginBottom: 8 }}>Comparison is a Supporter feature</Text>
-            <Text style={{ fontSize: 14, color: theme.textMuted, fontFamily: 'DMSans_400Regular', lineHeight: 21, textAlign: 'center', marginBottom: 18 }}>
+            <Text style={{ fontSize: 17, color: theme.textSecondary, fontFamily: Type.uiBold, textAlign: 'center', marginBottom: 8 }}>Comparison is a Supporter feature</Text>
+            <Text style={{ fontSize: 14, color: theme.textMuted, fontFamily: Type.ui, lineHeight: 21, textAlign: 'center', marginBottom: 18 }}>
               Pick your time frames, line them up side by side, and see exactly how you compared.
             </Text>
             <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/support'); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ paddingVertical: 8 }}>
-              <Text style={{ fontSize: 15, color: accent, fontFamily: 'DMSans_600SemiBold' }}>Become a Supporter →</Text>
+              <Text style={{ fontSize: 15, color: accent, fontFamily: Type.uiSemibold }}>Become a Supporter →</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -321,7 +322,7 @@ export default function ComparisonReportScreen() {
         <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={{ padding: 4 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <Ionicons name="chevron-back" size={24} color={accent} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: accent, flex: 1 }}>COMPARISON</Text>
+        <Text style={{ fontSize: 24, fontFamily: Type.display, letterSpacing: 0.3, color: accent, flex: 1 }}>COMPARISON</Text>
         <View style={{ transform: [{ translateY: -1 }] }}>
           <TooltipIcon tooltipKey="comparison_report" size={18} />
         </View>
@@ -352,8 +353,8 @@ export default function ComparisonReportScreen() {
               >
                 <Ionicons name={p.icon as any} size={20} color={isSel ? accent : theme.textSecondary} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 10, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: isSel ? accent : theme.textPrimary }}>{p.line1}</Text>
-                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 2 }}>{p.line2}</Text>
+                  <Text style={{ fontSize: 10, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', color: isSel ? accent : theme.textPrimary }}>{p.line1}</Text>
+                  <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textDim, marginTop: 2 }}>{p.line2}</Text>
                 </View>
                 {isSel && <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: accent }} />}
               </TouchableOpacity>
@@ -374,9 +375,9 @@ export default function ComparisonReportScreen() {
           }}
         >
           <Ionicons name={isPro ? 'calendar-outline' : 'lock-closed'} size={16} color={mode === 'dayvsday' ? accent : theme.textSecondary} />
-          <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: mode === 'dayvsday' ? accent : theme.textSecondary }}>Day vs Day</Text>
+          <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: mode === 'dayvsday' ? accent : theme.textSecondary }}>Day vs Day</Text>
           {!isPro && <View style={{ backgroundColor: `${accent}20`, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
-            <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: accent }}>SUPPORTER</Text>
+            <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, color: accent }}>SUPPORTER</Text>
           </View>}
         </TouchableOpacity>
 
@@ -394,10 +395,10 @@ export default function ComparisonReportScreen() {
                   shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4,
                 }}
               >
-                <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textDim, marginBottom: 5 }}>{which === 'a' ? 'Day A' : 'Day B'}</Text>
+                <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', color: theme.textDim, marginBottom: 5 }}>{which === 'a' ? 'Day A' : 'Day B'}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                   <Ionicons name="calendar-outline" size={13} color={accent} />
-                  <Text style={{ fontSize: 17, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: accent }}>{fmtDayLabel(which === 'a' ? dayA : dayB)}</Text>
+                  <Text style={{ fontSize: 17, fontFamily: Type.num, letterSpacing: 1, color: accent }}>{fmtDayLabel(which === 'a' ? dayA : dayB)}</Text>
                 </View>
               </TouchableOpacity>
             ))}
@@ -423,12 +424,12 @@ export default function ComparisonReportScreen() {
         {/* ── Disclaimer ── */}
         {!loading && result && (
           <View style={{ marginTop: 8, alignItems: 'center' }}>
-            <Text style={{ fontSize: 11, lineHeight: 17, fontFamily: 'DMSans_400Regular', color: theme.textDim, textAlign: 'center' }}>
+            <Text style={{ fontSize: 11, lineHeight: 17, fontFamily: Type.ui, color: theme.textDim, textAlign: 'center' }}>
               {mode === 'dayvsday'
                 ? 'Each column is a single day. Metrics with no log that day show no data. Today is not selectable.'
                 : 'Values are daily averages using only logged days. Today is not included.'}
             </Text>
-            <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 6, fontStyle: 'italic', textAlign: 'center' }}>For informational purposes only. Not medical advice.</Text>
+            <Text style={{ fontSize: 10, fontFamily: Type.ui, color: theme.textDim, marginTop: 6, fontStyle: 'italic', textAlign: 'center' }}>For informational purposes only. Not medical advice.</Text>
           </View>
         )}
 
@@ -436,8 +437,8 @@ export default function ComparisonReportScreen() {
         {!checking && !loading && !result && (
           <View style={{ paddingVertical: 50, alignItems: 'center', paddingHorizontal: 30 }}>
             <Ionicons name="bar-chart-outline" size={44} color={theme.textDim} />
-            <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: theme.textSecondary, marginTop: 12, textAlign: 'center' }}>Not enough data yet</Text>
-            <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 6, textAlign: 'center', lineHeight: 19 }}>Keep logging and your periods will fill in. Comparisons need data on both sides.</Text>
+            <Text style={{ fontSize: 15, fontFamily: Type.uiBold, color: theme.textSecondary, marginTop: 12, textAlign: 'center' }}>Not enough data yet</Text>
+            <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textDim, marginTop: 6, textAlign: 'center', lineHeight: 19 }}>Keep logging and your periods will fill in. Comparisons need data on both sides.</Text>
           </View>
         )}
       </ScrollView>
@@ -454,12 +455,12 @@ export default function ComparisonReportScreen() {
             transform: [{ scale: pickerAnim.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) }],
           }}>
             <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard, alignSelf: 'center', marginBottom: 12 }} />
-            <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, textAlign: 'center', marginBottom: 12 }}>
+            <Text style={{ fontSize: 13, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, textAlign: 'center', marginBottom: 12 }}>
               {pickerOpen === 'a' ? 'Day A' : 'Day B'}
             </Text>
             {renderCalGrid()}
             <TouchableOpacity onPress={closePicker} style={{ backgroundColor: accent, borderRadius: 8, paddingVertical: 11, alignItems: 'center', marginTop: 12 }}>
-              <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: '#fff' }}>Done</Text>
+              <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: '#fff' }}>Done</Text>
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -499,45 +500,45 @@ function MetricCard({ row, theme, accent, labelA, labelB, dayMode }: {
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingTop: 11, paddingBottom: 10, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, flex: 1 }}>
           <Ionicons name={icon as any} size={13} color={accent} />
-          <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted }}>{meta.label}</Text>
+          <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted }}>{meta.label}</Text>
         </View>
-        <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textDim }}>{meta.unit}</Text>
+        <Text style={{ fontSize: 10, fontFamily: Type.ui, color: theme.textDim }}>{meta.unit}</Text>
       </View>
 
       {/* Values */}
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', paddingLeft: 16, paddingRight: 14, paddingTop: 12, paddingBottom: 14 }}>
         {/* Period A */}
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', color: aLabelColor, marginBottom: 4 }}>{labelA}</Text>
+          <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase', color: aLabelColor, marginBottom: 4 }}>{labelA}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
-            <Text style={{ fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: aColor, letterSpacing: 0.5, lineHeight: 34 }}>{formatValueNum(row.id, row.a.avg)}</Text>
+            <Text style={{ fontSize: 32, fontFamily: Type.num, color: aColor, letterSpacing: 0.5, lineHeight: numLine(32) }}>{formatValueNum(row.id, row.a.avg)}</Text>
             {!!inlineUnit(row.id) && row.a.avg !== null && (
-              <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: aColor, paddingBottom: 3, marginLeft: 1 }}>{inlineUnit(row.id)}</Text>
+              <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: aColor, paddingBottom: 3, marginLeft: 1 }}>{inlineUnit(row.id)}</Text>
             )}
           </View>
-          {!dayMode && <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 4 }}>{subCount(row.a)}</Text>}
+          {!dayMode && <Text style={{ fontSize: 10, fontFamily: Type.ui, color: theme.textDim, marginTop: 4 }}>{subCount(row.a)}</Text>}
         </View>
 
         {/* Delta chip */}
         <View style={{ alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8, paddingTop: dayMode ? 12 : 18, minWidth: 62 }}>
           {delta ? (
             <View style={{ backgroundColor: `${accent}15`, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 0.5, borderColor: `${accent}30`, alignItems: 'center', gap: 2 }}>
-              <Text style={{ fontSize: 7, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, color: theme.textDim, textTransform: 'uppercase' }}>DIFF</Text>
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.textDim, textAlign: 'center' }}>{delta}</Text>
+              <Text style={{ fontSize: 7, fontFamily: Type.uiBold, letterSpacing: 1.5, color: theme.textDim, textTransform: 'uppercase' }}>DIFF</Text>
+              <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: theme.textDim, textAlign: 'center' }}>{delta}</Text>
             </View>
           ) : null}
         </View>
 
         {/* Period B */}
         <View style={{ flex: 1, alignItems: 'flex-end' }}>
-          <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', color: bLabelColor, marginBottom: 4, textAlign: 'right' }}>{labelB}</Text>
+          <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase', color: bLabelColor, marginBottom: 4, textAlign: 'right' }}>{labelB}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'flex-end' }}>
-            <Text style={{ fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: bColor, letterSpacing: 0.5, lineHeight: 34 }}>{formatValueNum(row.id, row.b.avg)}</Text>
+            <Text style={{ fontSize: 32, fontFamily: Type.num, color: bColor, letterSpacing: 0.5, lineHeight: numLine(32) }}>{formatValueNum(row.id, row.b.avg)}</Text>
             {!!inlineUnit(row.id) && row.b.avg !== null && (
-              <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: bColor, paddingBottom: 3, marginLeft: 1 }}>{inlineUnit(row.id)}</Text>
+              <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: bColor, paddingBottom: 3, marginLeft: 1 }}>{inlineUnit(row.id)}</Text>
             )}
           </View>
-          {!dayMode && <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 4, textAlign: 'right' }}>{subCount(row.b)}</Text>}
+          {!dayMode && <Text style={{ fontSize: 10, fontFamily: Type.ui, color: theme.textDim, marginTop: 4, textAlign: 'right' }}>{subCount(row.b)}</Text>}
         </View>
       </View>
     </View>

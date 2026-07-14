@@ -7,6 +7,7 @@ import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TOOLTIP_REGISTRY, TooltipDefinition } from '../tooltipRegistry';
 import { useTheme } from '../theme';
+import { Type } from '../typography';
 
 const CATEGORIES = ['All', 'Nutrition', 'Fitness', 'Sleep & Recovery', 'Faith', 'Reports', 'Habits'] as const;
 
@@ -29,10 +30,10 @@ function DefinitionCard({ def, theme }: { def: TooltipDefinition; theme: any }) 
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, paddingBottom: expanded ? 8 : 16 }}>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 9, letterSpacing: 2, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', color: theme.accentBlue, marginBottom: 4 }}>
+          <Text style={{ fontSize: 9, letterSpacing: 2, fontFamily: Type.uiBold, textTransform: 'uppercase', color: theme.accentBlue, marginBottom: 4 }}>
             {def.category}
           </Text>
-          <Text style={{ fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary }}>
+          <Text style={{ fontSize: 15, fontFamily: Type.uiSemibold, color: theme.textPrimary }}>
             {def.title}
           </Text>
         </View>
@@ -41,7 +42,7 @@ function DefinitionCard({ def, theme }: { def: TooltipDefinition; theme: any }) 
 
       {expanded && (
         <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-          <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 20 }}>
+          <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textSecondary, lineHeight: 20 }}>
             {def.body}
           </Text>
 
@@ -49,10 +50,10 @@ function DefinitionCard({ def, theme }: { def: TooltipDefinition; theme: any }) 
             <View style={{ marginTop: 12, gap: 10 }}>
               {def.definitions.map(d => (
                 <View key={d.term}>
-                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, marginBottom: 2 }}>
+                  <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: theme.textPrimary, marginBottom: 2 }}>
                     {d.term}
                   </Text>
-                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 18 }}>
+                  <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textSecondary, lineHeight: 18 }}>
                     {d.explanation}
                   </Text>
                 </View>
@@ -62,19 +63,19 @@ function DefinitionCard({ def, theme }: { def: TooltipDefinition; theme: any }) 
 
           {def.example && (
             <View style={{ marginTop: 12, backgroundColor: theme.bgInset, borderRadius: 8, padding: 12 }}>
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>
+              <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.textMuted, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>
                 {def.example.label}
               </Text>
               {def.example.lines.map((line, i) => (
                 <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, flex: 1 }}>{line.desc}</Text>
-                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary }}>{line.value}</Text>
+                  <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textSecondary, flex: 1 }}>{line.desc}</Text>
+                  <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: theme.textPrimary }}>{line.value}</Text>
                 </View>
               ))}
               <View style={{ height: 1, backgroundColor: theme.borderCard, marginVertical: 6 }} />
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary }}>{def.example.result.desc}</Text>
-                <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.accentBlue }}>{def.example.result.value}</Text>
+                <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: theme.textSecondary }}>{def.example.result.desc}</Text>
+                <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: theme.accentBlue }}>{def.example.result.value}</Text>
               </View>
             </View>
           )}
@@ -110,10 +111,8 @@ export default function DefinitionsScreen() {
             <Ionicons name="chevron-back" size={22} color={theme.accentBlue} />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 9, letterSpacing: 3, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', color: theme.textMuted, marginBottom: 2 }}>
-              PROJECT J
-            </Text>
-            <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', color: theme.accentBlueRaw, letterSpacing: 1 }}>
+            {/* NO EYEBROWS OVER TITLES. */}
+            <Text style={{ fontSize: 22, fontFamily: Type.display, color: theme.accentBlueRaw, letterSpacing: 0.3 }}>
               Definitions
             </Text>
           </View>
@@ -140,7 +139,7 @@ export default function DefinitionsScreen() {
                   }}
                   activeOpacity={0.7}
                 >
-                  <Text style={{ fontSize: 12, fontFamily: active ? 'DMSans_700Bold' : 'DMSans_400Regular', color: active ? '#ffffff' : theme.textMuted }}>
+                  <Text style={{ fontSize: 12, fontFamily: active ? Type.uiBold : Type.ui, color: active ? '#ffffff' : theme.textMuted }}>
                     {cat}
                   </Text>
                 </TouchableOpacity>

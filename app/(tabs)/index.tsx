@@ -73,10 +73,10 @@ import {
 import { METRIC_META } from '../../utils/comparisonEngine';
 import { getVacation, endVacationEarly, vacationTodayKey, addDaysKey, VacationState } from '../../utils/vacationMode';
 import { BlurView } from 'expo-blur';
-import { Type, DISPLAY_CAPS, DISPLAY_TRACKING, displaySize, numLine } from '../../typography';
 import DurationValue from '../../components/DurationValue';
 import GradientNumber from '../../components/GradientNumber';
 import BackgroundLayers from '../../components/BackgroundLayers';
+import { Type, DISPLAY_CAPS, DISPLAY_TRACKING, displaySize, numLine } from '../../typography';
 
 const RECOVERY_PURPLE = '#9b7adb';
 const CAROUSEL_PAGE_W = Dimensions.get('window').width - 32;

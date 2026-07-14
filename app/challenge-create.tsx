@@ -22,6 +22,7 @@ import {
   CHALLENGE_METRICS, ChallengeMetric, ChallengeType, StartMode,
   createChallenge, maxWeightChangeLbs,
 } from '../utils/challenges';
+import { Type } from '../typography';
 
 const METRIC_ICON: Record<ChallengeMetric, string> = {
   net: 'flame', protein: 'restaurant', steps: 'footsteps', water: 'water', sleepScore: 'moon', weight: 'barbell',
@@ -154,7 +155,7 @@ export default function ChallengeCreateScreen() {
           <TouchableOpacity onPress={() => { if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1); } else { setCalMonth(m => m - 1); } }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="chevron-back" size={20} color={accent} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 15, color: theme.textSecondary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>
+          <Text style={{ fontSize: 15, color: theme.textSecondary, fontFamily: Type.num, letterSpacing: 1 }}>
             {CAL_MONTHS[calMonth]} {calYear}
           </Text>
           <TouchableOpacity onPress={() => { if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1); } else { setCalMonth(m => m + 1); } }} disabled={!calCanGoNext()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
@@ -164,7 +165,7 @@ export default function ChallengeCreateScreen() {
         <View style={{ flexDirection: 'row', marginBottom: 6 }}>
           {CAL_DAYS.map(d => (
             <View key={d} style={{ flex: 1, alignItems: 'center' }}>
-              <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>{d}</Text>
+              <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: Type.uiBold, letterSpacing: 1 }}>{d}</Text>
             </View>
           ))}
         </View>
@@ -180,7 +181,7 @@ export default function ChallengeCreateScreen() {
                   onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setBenchStart(new Date(calYear, calMonth, day)); }}
                   disabled={isFut} activeOpacity={0.7}>
                   <View style={{ width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: isSel ? accent : 'transparent' }}>
-                    <Text style={{ fontSize: 13, fontFamily: isSel ? 'DMSans_700Bold' : 'DMSans_400Regular', color: isSel ? theme.bgPrimary : isFut ? theme.textDim : theme.textSecondary }}>
+                    <Text style={{ fontSize: 13, fontFamily: isSel ? Type.uiBold : Type.ui, color: isSel ? theme.bgPrimary : isFut ? theme.textDim : theme.textSecondary }}>
                       {day}
                     </Text>
                   </View>
@@ -238,7 +239,7 @@ export default function ChallengeCreateScreen() {
 
   // ── Small UI helpers ──
   const SectionLabel = ({ children }: { children: string }) => (
-    <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', marginBottom: 10, marginTop: 22 }}>{children}</Text>
+    <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, textTransform: 'uppercase', fontFamily: Type.uiBold, marginBottom: 10, marginTop: 22 }}>{children}</Text>
   );
 
   if (!loaded) {
@@ -256,7 +257,7 @@ export default function ChallengeCreateScreen() {
         <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={{ padding: 4 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <Ionicons name="chevron-back" size={24} color={accent} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: accent, flex: 1 }}>NEW CHALLENGE</Text>
+        <Text style={{ fontSize: 24, fontFamily: Type.display, letterSpacing: 0.3, color: accent, flex: 1 }}>NEW CHALLENGE</Text>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 160 }} keyboardShouldPersistTaps="handled">
@@ -275,8 +276,8 @@ export default function ChallengeCreateScreen() {
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: sel ? `${accent}14` : theme.bgCard, borderWidth: 1, borderColor: sel ? `${accent}80` : theme.borderCard, borderRadius: 12, padding: 14 }}>
                 <Ionicons name={opt.icon as any} size={22} color={sel ? accent : theme.textSecondary} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: sel ? accent : theme.textSecondary }}>{opt.title}</Text>
-                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, marginTop: 2, lineHeight: 17 }}>{opt.sub}</Text>
+                  <Text style={{ fontSize: 15, fontFamily: Type.uiBold, color: sel ? accent : theme.textSecondary }}>{opt.title}</Text>
+                  <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textSecondary, marginTop: 2, lineHeight: 17 }}>{opt.sub}</Text>
                 </View>
               </TouchableOpacity>
             );
@@ -294,12 +295,12 @@ export default function ChallengeCreateScreen() {
                   <TouchableOpacity key={m} activeOpacity={0.7} onPress={() => toggleMetric(m)}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: sel ? `${accent}1F` : theme.bgCard, borderWidth: 1, borderColor: sel ? `${accent}80` : theme.borderCard, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 12 }}>
                     <Ionicons name={METRIC_ICON[m] as any} size={14} color={sel ? accent : theme.textSecondary} />
-                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: sel ? accent : theme.textSecondary }}>{METRIC_META[m].label}</Text>
+                    <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: sel ? accent : theme.textSecondary }}>{METRIC_META[m].label}</Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
-            <Text style={{ fontSize: 11, color: theme.textDim, marginTop: 8, fontFamily: 'DMSans_400Regular' }}>{isMindful ? 'Grow past your previous period on each metric you pick.' : 'Beat the past period on all chosen metrics to win.'}</Text>
+            <Text style={{ fontSize: 11, color: theme.textDim, marginTop: 8, fontFamily: Type.ui }}>{isMindful ? 'Grow past your previous period on each metric you pick.' : 'Beat the past period on all chosen metrics to win.'}</Text>
 
             <SectionLabel>Compare Against</SectionLabel>
             <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -308,7 +309,7 @@ export default function ChallengeCreateScreen() {
                 return (
                   <TouchableOpacity key={o.id} activeOpacity={0.7} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setBenchmarkMode(o.id); }}
                     style={{ flex: 1, alignItems: 'center', backgroundColor: sel ? `${accent}1F` : theme.bgCard, borderWidth: 1, borderColor: sel ? `${accent}80` : theme.borderCard, borderRadius: 10, paddingVertical: 11 }}>
-                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: sel ? accent : theme.textSecondary }}>{o.label}</Text>
+                    <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: sel ? accent : theme.textSecondary }}>{o.label}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -316,8 +317,8 @@ export default function ChallengeCreateScreen() {
             {benchmarkMode === 'custom' && (
               <TouchableOpacity activeOpacity={0.7} onPress={openCalPicker}
                 style={{ marginTop: 10, backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}>
-                <Text style={{ fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', color: theme.textDim, fontFamily: 'DMSans_700Bold', marginBottom: 3 }}>Past period starts</Text>
-                <Text style={{ fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: accent }}>{fmtDayLabel(benchStart)} ({durationDays} days)</Text>
+                <Text style={{ fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', color: theme.textDim, fontFamily: Type.uiBold, marginBottom: 3 }}>Past period starts</Text>
+                <Text style={{ fontSize: 15, fontFamily: Type.uiSemibold, color: accent }}>{fmtDayLabel(benchStart)} ({durationDays} days)</Text>
               </TouchableOpacity>
             )}
           </>
@@ -334,7 +335,7 @@ export default function ChallengeCreateScreen() {
                   <TouchableOpacity key={m} activeOpacity={0.7} onPress={() => pickCustomMetric(m)}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: sel ? `${accent}1F` : theme.bgCard, borderWidth: 1, borderColor: sel ? `${accent}80` : theme.borderCard, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 12 }}>
                     <Ionicons name={METRIC_ICON[m] as any} size={14} color={sel ? accent : theme.textSecondary} />
-                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: sel ? accent : theme.textSecondary }}>{METRIC_META[m].label}</Text>
+                    <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: sel ? accent : theme.textSecondary }}>{METRIC_META[m].label}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -352,8 +353,8 @@ export default function ChallengeCreateScreen() {
                 <Ionicons name="remove-circle" size={32} color={parseFloat(target) <= STEP_CONFIG[customMetric].min ? theme.textDim : accent} />
               </TouchableOpacity>
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 28, fontFamily: 'BebasNeue_400Regular', color: theme.textPrimary, letterSpacing: 1 }}>{target || '0'}</Text>
-                <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>
+                <Text style={{ fontSize: 28, fontFamily: Type.num, color: theme.textPrimary, letterSpacing: 1 }}>{target || '0'}</Text>
+                <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.uiMedium }}>
                   {customMetric === 'weight' ? 'lbs total' : `${METRIC_META[customMetric].unit}/day`}
                 </Text>
               </View>
@@ -369,12 +370,12 @@ export default function ChallengeCreateScreen() {
               </TouchableOpacity>
             </View>
             {customMetric === 'weight' && (
-              <Text style={{ fontSize: 11, color: theme.textDim, marginTop: 8, fontFamily: 'DMSans_400Regular', lineHeight: 16 }}>
+              <Text style={{ fontSize: 11, color: theme.textDim, marginTop: 8, fontFamily: Type.ui, lineHeight: 16 }}>
                 Healthy {weightVerb.toLowerCase()} tops out around {weightGoal.startsWith('gain') ? '1 lb' : '2 lbs'} a week, so this challenge maxes at {weightCap} lbs. For informational purposes only. Not medical advice.
               </Text>
             )}
             {customMetric === 'net' && (
-              <Text style={{ fontSize: 11, color: theme.textDim, marginTop: 8, fontFamily: 'DMSans_400Regular' }}>
+              <Text style={{ fontSize: 11, color: theme.textDim, marginTop: 8, fontFamily: Type.ui }}>
                 A tougher daily net than your usual pace ({paceTarget} kcal). Use a negative number for a bigger deficit.
               </Text>
             )}
@@ -391,13 +392,13 @@ export default function ChallengeCreateScreen() {
                 return (
                   <TouchableOpacity key={d.id} activeOpacity={0.7} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setDurationId(d.id); }}
                     style={{ backgroundColor: sel ? `${accent}1F` : theme.bgCard, borderWidth: 1, borderColor: sel ? `${accent}80` : theme.borderCard, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16 }}>
-                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: sel ? accent : theme.textSecondary }}>{d.label}</Text>
+                    <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: sel ? accent : theme.textSecondary }}>{d.label}</Text>
                   </TouchableOpacity>
                 );
               })}
               <TouchableOpacity activeOpacity={0.7} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setDurationId('custom'); }}
                 style={{ backgroundColor: durationId === 'custom' ? `${accent}1F` : theme.bgCard, borderWidth: 1, borderColor: durationId === 'custom' ? `${accent}80` : theme.borderCard, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16 }}>
-                <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: durationId === 'custom' ? accent : theme.textSecondary }}>Custom</Text>
+                <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: durationId === 'custom' ? accent : theme.textSecondary }}>Custom</Text>
               </TouchableOpacity>
             </View>
             {durationId === 'custom' && (
@@ -405,7 +406,7 @@ export default function ChallengeCreateScreen() {
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setCustomDays(d => Math.max(2, d - 1)); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                   <Ionicons name="remove-circle" size={32} color={accent} />
                 </TouchableOpacity>
-                <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', color: theme.textPrimary, minWidth: 80, textAlign: 'center' }}>{customDays} DAYS</Text>
+                <Text style={{ fontSize: 22, fontFamily: Type.num, color: theme.textPrimary, minWidth: 80, textAlign: 'center' }}>{customDays} DAYS</Text>
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setCustomDays(d => Math.min(90, d + 1)); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                   <Ionicons name="add-circle" size={32} color={accent} />
                 </TouchableOpacity>
@@ -419,7 +420,7 @@ export default function ChallengeCreateScreen() {
                 return (
                   <TouchableOpacity key={o.id} activeOpacity={0.7} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setStartMode(o.id); }}
                     style={{ flex: 1, alignItems: 'center', backgroundColor: sel ? `${accent}1F` : theme.bgCard, borderWidth: 1, borderColor: sel ? `${accent}80` : theme.borderCard, borderRadius: 10, paddingVertical: 11 }}>
-                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: sel ? accent : theme.textSecondary }}>{o.label}</Text>
+                    <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: sel ? accent : theme.textSecondary }}>{o.label}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -431,10 +432,10 @@ export default function ChallengeCreateScreen() {
       {/* ── Confirm bar ── */}
       {type && (
         <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingTop: 12, paddingBottom: insets.bottom + 12, backgroundColor: theme.bgPrimary, borderTopWidth: 0.5, borderTopColor: theme.borderCard }}>
-          {!!summary && <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginBottom: 10, lineHeight: 17 }}>{summary}</Text>}
+          {!!summary && <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.ui, textAlign: 'center', marginBottom: 10, lineHeight: 17 }}>{summary}</Text>}
           <TouchableOpacity activeOpacity={0.85} disabled={!canConfirm || saving} onPress={confirm}
             style={{ backgroundColor: accent, borderRadius: 10, paddingVertical: 15, alignItems: 'center', opacity: canConfirm && !saving ? 1 : 0.4 }}>
-            {saving ? <ActivityIndicator color="#fff" /> : <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: '#fff' }}>Start Challenge</Text>}
+            {saving ? <ActivityIndicator color="#fff" /> : <Text style={{ fontSize: 15, fontFamily: Type.uiBold, color: '#fff' }}>Start Challenge</Text>}
           </TouchableOpacity>
         </View>
       )}
@@ -446,10 +447,10 @@ export default function ChallengeCreateScreen() {
           <TouchableOpacity activeOpacity={1} onPress={closeCalPicker} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' }} />
           <Animated.View style={{ width: '88%', backgroundColor: modalCardBg, borderRadius: 18, borderTopWidth: 1.5, borderTopColor: accent, borderWidth: 0.5, borderColor: theme.borderCard, padding: 16, transform: [{ scale: calPickerAnim.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) }] }}>
             <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard, alignSelf: 'center', marginBottom: 12 }} />
-            <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase', color: theme.textMuted, textAlign: 'center', marginBottom: 8 }}>Past period start</Text>
+            <Text style={{ fontSize: 13, fontFamily: Type.uiBold, letterSpacing: 1, textTransform: 'uppercase', color: theme.textMuted, textAlign: 'center', marginBottom: 8 }}>Past period start</Text>
             {renderBenchCalGrid()}
             <TouchableOpacity onPress={closeCalPicker} style={{ backgroundColor: accent, borderRadius: 8, paddingVertical: 11, alignItems: 'center', marginTop: 8 }}>
-              <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: '#fff' }}>Done</Text>
+              <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: '#fff' }}>Done</Text>
             </TouchableOpacity>
           </Animated.View>
         </View>

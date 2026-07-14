@@ -19,6 +19,7 @@ import TooltipIcon from '../components/TooltipIcon';
 import { useToast, ToastRenderer } from '../components/Toast';
 import { computeAdaptiveTdee, applyAdaptiveTarget, type AdaptiveTdeeResult } from '../utils/adaptiveTdee';
 import { clearNotification } from '../utils/notifications';
+import { Type } from '../typography';
 
 const DISCLAIMER_KEY = 'pj_adaptive_tdee_disclaimer_seen';
 
@@ -100,7 +101,7 @@ export default function AdaptiveTargetScreen() {
             <Text style={[styles.title, { color: theme.textSecondary }]}>Your target may need a small adjustment</Text>
             <Text style={[styles.lede, { color: theme.textSecondary }]}>
               Based on your weight trend and what you've been eating, your real daily burn looks like about{' '}
-              <Text style={{ fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{result!.realTdee} kcal</Text>.
+              <Text style={{ fontFamily: Type.uiBold, color: theme.textSecondary }}>{result!.realTdee} kcal</Text>.
               To keep matching your goal pace, your target should shift a bit {dir}.
             </Text>
 
@@ -187,26 +188,26 @@ export default function AdaptiveTargetScreen() {
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 0.5 },
   backBtn: { width: 26, alignItems: 'flex-start' },
-  headerTitle: { fontSize: 15, fontFamily: 'DMSans_700Bold', letterSpacing: 2 },
+  headerTitle: { fontSize: 15, fontFamily: Type.uiBold, letterSpacing: 2 },
   iconWrap: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-  title: { fontSize: 22, fontFamily: 'DMSans_700Bold', lineHeight: 28, marginBottom: 10 },
-  lede: { fontSize: 15, fontFamily: 'DMSans_400Regular', lineHeight: 22, marginBottom: 20 },
+  title: { fontSize: 22, fontFamily: Type.uiBold, lineHeight: 28, marginBottom: 10 },
+  lede: { fontSize: 15, fontFamily: Type.ui, lineHeight: 22, marginBottom: 20 },
   compareCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', borderRadius: 14, borderWidth: 0.5, paddingVertical: 18, marginBottom: 16 },
   compareCol: { alignItems: 'center' },
-  compareLabel: { fontSize: 9, letterSpacing: 2, fontFamily: 'DMSans_700Bold', marginBottom: 6 },
-  compareVal: { fontSize: 30, fontFamily: 'DMSans_700Bold' },
-  compareValMuted: { fontSize: 30, fontFamily: 'DMSans_700Bold' },
-  detail: { fontSize: 12.5, fontFamily: 'DMSans_400Regular', lineHeight: 18, marginBottom: 14 },
+  compareLabel: { fontSize: 9, letterSpacing: 2, fontFamily: Type.uiBold, marginBottom: 6 },
+  compareVal: { fontSize: 30, fontFamily: Type.uiBold },
+  compareValMuted: { fontSize: 30, fontFamily: Type.uiBold },
+  detail: { fontSize: 12.5, fontFamily: Type.ui, lineHeight: 18, marginBottom: 14 },
   caveatBox: { flexDirection: 'row', gap: 8, borderRadius: 12, borderWidth: 1, padding: 12, marginBottom: 16 },
-  caveatText: { flex: 1, fontSize: 12.5, fontFamily: 'DMSans_400Regular', lineHeight: 18 },
-  micro: { fontSize: 11, fontFamily: 'DMSans_400Regular', marginBottom: 22, fontStyle: 'italic' },
+  caveatText: { flex: 1, fontSize: 12.5, fontFamily: Type.ui, lineHeight: 18 },
+  micro: { fontSize: 11, fontFamily: Type.ui, marginBottom: 22, fontStyle: 'italic' },
   primaryBtn: { borderRadius: 12, paddingVertical: 16, alignItems: 'center', justifyContent: 'center' },
-  primaryText: { fontSize: 15, fontFamily: 'DMSans_700Bold', color: '#ffffff' },
+  primaryText: { fontSize: 15, fontFamily: Type.uiBold, color: '#ffffff' },
   ghostBtn: { paddingVertical: 14, alignItems: 'center', marginTop: 4 },
-  ghostText: { fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
+  ghostText: { fontSize: 14, fontFamily: Type.uiSemibold },
   modalWrap: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 26 },
   modalCard: { width: '100%', maxWidth: 380, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 2.5, padding: 20, alignItems: 'stretch' },
   handle: { width: 40, height: 5, borderRadius: 3, opacity: 0.5, alignSelf: 'center', marginBottom: 14 },
-  modalTitle: { fontSize: 12, letterSpacing: 2, fontFamily: 'DMSans_700Bold', marginBottom: 10, textAlign: 'center' },
-  modalBody: { fontSize: 14, fontFamily: 'DMSans_400Regular', lineHeight: 21, marginBottom: 18, textAlign: 'center' },
+  modalTitle: { fontSize: 12, letterSpacing: 2, fontFamily: Type.uiBold, marginBottom: 10, textAlign: 'center' },
+  modalBody: { fontSize: 14, fontFamily: Type.ui, lineHeight: 21, marginBottom: 18, textAlign: 'center' },
 });

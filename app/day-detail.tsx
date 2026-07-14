@@ -10,6 +10,7 @@ import { storageSet } from '../utils/storage';
 import { DEFAULT_MEAL_SLOTS, MealSlot, findSlotForMeal, loadMealSlots, getMealDisplayName } from '../utils/mealSlots';
 import { calcSleepScore, sleepScoreColor as getSleepScoreColor } from '../utils/sleepScore';
 import { recoveryZone } from '../utils/recoveryScore';
+import { Type } from '../typography';
 
 type SleepStages = { core: number; deep: number; rem: number; totalMs: number };
 
@@ -290,7 +291,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
           <TouchableOpacity onPress={calPickerPrev} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="chevron-back" size={20} color={theme.accentBlueRaw} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>
+          <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: Type.num, letterSpacing: 1 }}>
             {CAL_MONTHS[pickerMonth]} {pickerYear}
           </Text>
           <TouchableOpacity onPress={calPickerNext} disabled={!calPickerCanGoNext()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
@@ -300,7 +301,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
         <View style={{ flexDirection: 'row', marginBottom: 6 }}>
           {CAL_DAYS.map(d => (
             <View key={d} style={{ flex: 1, alignItems: 'center' }}>
-              <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>{d}</Text>
+              <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: Type.uiBold, letterSpacing: 1 }}>{d}</Text>
             </View>
           ))}
         </View>
@@ -319,7 +320,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                     backgroundColor: isSel ? theme.accentBlueRaw : isTod ? `${theme.accentBlueRaw}26` : 'transparent',
                     borderWidth: isTod && !isSel ? 0.5 : 0, borderColor: theme.accentBlueRaw,
                   }}>
-                    <Text style={{ fontSize: 13, fontFamily: isSel ? 'DMSans_700Bold' : 'DMSans_400Regular', color: isSel ? theme.bgPrimary : isFut ? theme.textDim : theme.textSecondary }}>
+                    <Text style={{ fontSize: 13, fontFamily: isSel ? Type.uiBold : Type.ui, color: isSel ? theme.bgPrimary : isFut ? theme.textDim : theme.textSecondary }}>
                       {day}
                     </Text>
                   </View>
@@ -370,12 +371,12 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
               <TouchableOpacity onPress={closeCalPicker} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 16 }}>
                 <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
               </TouchableOpacity>
-              <Text style={{ fontSize: 10, color: theme.accentBlueRaw, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', textAlign: 'center', marginBottom: 16 }}>Jump to Date</Text>
+              <Text style={{ fontSize: 10, color: theme.accentBlueRaw, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', textAlign: 'center', marginBottom: 16 }}>Jump to Date</Text>
               {calPickerVisible && renderCalGrid()}
               <TouchableOpacity
                 onPress={closeCalPicker}
                 style={{ marginTop: 16, alignItems: 'center', paddingVertical: 8, paddingHorizontal: 16, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8 }}>
-                <Text style={{ fontSize: 14, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>Cancel</Text>
+                <Text style={{ fontSize: 14, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Cancel</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -492,7 +493,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                     <View style={styles.divider} />
                     <View style={styles.metaRow}>
                       <Text style={styles.metaLabel}>How you felt</Text>
-                      <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }}>
+                      <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.uiSemibold }}>
                         {({ 1:'Rough night', 2:'Very poor', 3:'Poor sleep', 4:'Below average', 5:'Okay', 6:'Decent', 7:'Pretty good', 8:'Good night', 9:'Great sleep', 10:'Slept amazing' } as Record<number,string>)[sleepFeelRating] ?? ''}
                       </Text>
                     </View>
@@ -568,12 +569,12 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8, marginBottom: 4 }}>
                 {tagObjs.length === 0 ? (
                   <View style={{ borderWidth: 1, borderColor: theme.borderSubtle, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
-                    <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.textDim }}>UNASSIGNED</Text>
+                    <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, color: theme.textDim }}>UNASSIGNED</Text>
                   </View>
                 ) : (
                   tagObjs.map((tag: any) => (
                     <View key={tag.id} style={{ backgroundColor: tag.color + '99', borderWidth: 1, borderColor: tag.color, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
-                      <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: '#ffffff' }}>{tag.label.toUpperCase()}</Text>
+                      <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, color: '#ffffff' }}>{tag.label.toUpperCase()}</Text>
                     </View>
                   ))
                 )}
@@ -653,7 +654,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                       <View key={mealKey} style={{ marginBottom: 12 }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
                           <Text style={styles.sectionLabel}>{displayName}</Text>
-                          <Text style={{ fontSize: 12, color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold' }}>{mealTotal} kcal</Text>
+                          <Text style={{ fontSize: 12, color: theme.accentGreen, fontFamily: Type.uiSemibold }}>{mealTotal} kcal</Text>
                         </View>
                         {mealEntries.map((entry: any, i: number) => (
                           <View key={i} style={styles.foodRow}>
@@ -684,7 +685,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                 {/* Carb Breakdown */}
                 {(totalFiber > 0 || totalAddedSugars > 0 || totalSugar > 0) && (
                   <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, marginBottom: 12 }}>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Carb Breakdown</Text>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Carb Breakdown</Text>
                     {[
                       { label: 'Total Carbs',    value: `${totalCarbs}g`,           bold: false },
                       { label: 'Fiber',           value: `${totalFiber}g`,           bold: false },
@@ -694,8 +695,8 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                       { label: 'Net Carbs',       value: `${totalNetCarbs}g`,        bold: true  },
                     ].filter(r => parseFloat(r.value) > 0 || r.bold).map((row, i, arr) => (
                       <View key={row.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
-                        <Text style={[styles.sectionLabel, row.bold && { fontFamily: 'DMSans_700Bold', color: theme.textPrimary }]}>{row.label}</Text>
-                        <Text style={{ fontSize: 13, color: row.bold ? '#c47d1a' : theme.textMuted, fontFamily: row.bold ? 'DMSans_700Bold' : 'DMSans_600SemiBold' }}>{row.value}</Text>
+                        <Text style={[styles.sectionLabel, row.bold && { fontFamily: Type.uiBold, color: theme.textPrimary }]}>{row.label}</Text>
+                        <Text style={{ fontSize: 13, color: row.bold ? '#c47d1a' : theme.textMuted, fontFamily: row.bold ? Type.uiBold : Type.uiSemibold }}>{row.value}</Text>
                       </View>
                     ))}
                   </View>
@@ -704,7 +705,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                 {/* Extended Fats */}
                 {(totalSatFat > 0 || totalPolyFat > 0 || totalMonoFat > 0 || totalTransFat > 0) && (
                   <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, marginBottom: 12 }}>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Extended Fats</Text>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Extended Fats</Text>
                     {[
                       { label: 'Saturated Fat',   value: totalSatFat,   unit: 'g' },
                       { label: 'Polyunsaturated', value: totalPolyFat,  unit: 'g' },
@@ -713,7 +714,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                     ].filter(n => n.value > 0).map((n, i, arr) => (
                       <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
                         <Text style={styles.sectionLabel}>{n.label}</Text>
-                        <Text style={{ fontSize: 13, color: '#a83232', fontFamily: 'DMSans_600SemiBold' }}>{n.value}{n.unit}</Text>
+                        <Text style={{ fontSize: 13, color: '#a83232', fontFamily: Type.uiSemibold }}>{n.value}{n.unit}</Text>
                       </View>
                     ))}
                   </View>
@@ -722,7 +723,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                 {/* Other Nutrients */}
                 {(totalCholesterol > 0 || totalSodium > 0 || totalPotassium > 0 || totalCaffeine > 0) && (
                   <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, marginBottom: 12 }}>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Other Nutrients</Text>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Other Nutrients</Text>
                     {[
                       { label: 'Cholesterol', value: totalCholesterol, unit: 'mg', color: theme.textSecondary },
                       { label: 'Sodium',      value: totalSodium,      unit: 'mg', color: '#8b5cf6' },
@@ -731,7 +732,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                     ].filter(n => n.value > 0).map((n, i, arr) => (
                       <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
                         <Text style={styles.sectionLabel}>{n.label}</Text>
-                        <Text style={{ fontSize: 13, color: n.color, fontFamily: 'DMSans_600SemiBold' }}>{n.value}{n.unit}</Text>
+                        <Text style={{ fontSize: 13, color: n.color, fontFamily: Type.uiSemibold }}>{n.value}{n.unit}</Text>
                       </View>
                     ))}
                   </View>
@@ -740,7 +741,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                 {/* Vitamins */}
                 {(totalVitaminA > 0 || totalVitaminC > 0 || totalVitaminD > 0 || totalVitaminE > 0 || totalVitaminK > 0) && (
                   <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, marginBottom: 12 }}>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Vitamins</Text>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Vitamins</Text>
                     {[
                       { label: 'Vitamin A', value: totalVitaminA, unit: 'mcg' },
                       { label: 'Vitamin C', value: totalVitaminC, unit: 'mg'  },
@@ -750,7 +751,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                     ].filter(n => n.value > 0).map((n, i, arr) => (
                       <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
                         <Text style={styles.sectionLabel}>{n.label}</Text>
-                        <Text style={{ fontSize: 13, color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold' }}>{n.value}{n.unit}</Text>
+                        <Text style={{ fontSize: 13, color: theme.accentGreen, fontFamily: Type.uiSemibold }}>{n.value}{n.unit}</Text>
                       </View>
                     ))}
                   </View>
@@ -759,7 +760,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                 {/* B Vitamins */}
                 {(totalVitaminB6 > 0 || totalFolate > 0 || totalVitaminB12 > 0 || totalBiotin > 0) && (
                   <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, marginBottom: 12 }}>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>B Vitamins</Text>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>B Vitamins</Text>
                     {[
                       { label: 'Vitamin B6', value: totalVitaminB6,  unit: 'mg'  },
                       { label: 'Folate',     value: totalFolate,     unit: 'mcg' },
@@ -768,7 +769,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                     ].filter(n => n.value > 0).map((n, i, arr) => (
                       <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
                         <Text style={styles.sectionLabel}>{n.label}</Text>
-                        <Text style={{ fontSize: 13, color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold' }}>{n.value}{n.unit}</Text>
+                        <Text style={{ fontSize: 13, color: theme.accentGreen, fontFamily: Type.uiSemibold }}>{n.value}{n.unit}</Text>
                       </View>
                     ))}
                   </View>
@@ -777,7 +778,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                 {/* Minerals */}
                 {(totalCalcium > 0 || totalIron > 0 || totalMagnesium > 0 || totalZinc > 0 || totalCopper > 0) && (
                   <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, marginBottom: 4 }}>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Minerals</Text>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Minerals</Text>
                     {[
                       { label: 'Calcium',   value: totalCalcium,   unit: 'mg' },
                       { label: 'Iron',      value: totalIron,      unit: 'mg' },
@@ -787,7 +788,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                     ].filter(n => n.value > 0).map((n, i, arr) => (
                       <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
                         <Text style={styles.sectionLabel}>{n.label}</Text>
-                        <Text style={{ fontSize: 13, color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold' }}>{n.value}{n.unit}</Text>
+                        <Text style={{ fontSize: 13, color: theme.accentGreen, fontFamily: Type.uiSemibold }}>{n.value}{n.unit}</Text>
                       </View>
                     ))}
                   </View>
@@ -816,7 +817,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                       <Ionicons name={meta.icon as any} size={10} color={meta.color} />
                       <Text style={[styles.catPillText, { color: meta.color }]}>{meta.label}</Text>
                     </View>
-                    <Text style={{ flex: 1, fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }} numberOfLines={1}>
+                    <Text style={{ flex: 1, fontSize: 13, color: theme.textSecondary, fontFamily: Type.uiSemibold }} numberOfLines={1}>
                       {entry.title}
                     </Text>
                     <Ionicons name="chevron-forward" size={14} color={theme.textDim} />
@@ -867,11 +868,11 @@ const useStyles = (theme: any, themeId: string) => {
   return StyleSheet.create({
     container:        { flex: 1, backgroundColor: theme.bgSheet },
     header:           { alignItems: 'center', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 10, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard },
-    headerTitle:      { fontSize: 10, color: theme.accentBlueRaw, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase' },
+    headerTitle:      { fontSize: 10, color: theme.accentBlueRaw, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase' },
     dateNav:          { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    headerDate:       { fontSize: 15, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, textAlign: 'center', flex: 1 },
+    headerDate:       { fontSize: 15, color: theme.textPrimary, fontFamily: Type.display, letterSpacing: 0.3, textAlign: 'center', flex: 1 },
     historyBadge:     { marginTop: 6, backgroundColor: `${theme.accentBlueRaw}26`, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2 },
-    historyBadgeText: { fontSize: 9, color: theme.accentBlueRaw, fontFamily: 'DMSans_700Bold', letterSpacing: 2 },
+    historyBadgeText: { fontSize: 9, color: theme.accentBlueRaw, fontFamily: Type.uiBold, letterSpacing: 2 },
     content:          { padding: 14, paddingBottom: 80 },
     card: {
       backgroundColor: theme.bgCard,
@@ -890,36 +891,36 @@ const useStyles = (theme: any, themeId: string) => {
       overflow: 'hidden',
     },
     heroIcon:       { position: 'absolute', right: -24, bottom: -28, opacity: 0.10 },
-    cardLabel:      { fontSize: 9, letterSpacing: 3, color: theme.textDim, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', marginBottom: 10 },
+    cardLabel:      { fontSize: 9, letterSpacing: 3, color: theme.textDim, textTransform: 'uppercase', fontFamily: Type.uiBold, marginBottom: 10 },
     cardRow:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     statRow:        { flexDirection: 'row' },
     stat:           { flex: 1, alignItems: 'center', paddingVertical: 2 },
-    statVal:        { fontSize: 20, color: theme.textSecondary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
-    statUnit:       { fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular' },
-    statLabel:      { fontSize: 8, color: theme.textDim, fontFamily: 'DMSans_700Bold', marginTop: 2, letterSpacing: 1, textTransform: 'uppercase', textAlign: 'center' },
+    statVal:        { fontSize: 20, color: theme.textSecondary, fontFamily: Type.num, letterSpacing: 1 },
+    statUnit:       { fontSize: 11, color: theme.textDim, fontFamily: Type.ui },
+    statLabel:      { fontSize: 8, color: theme.textDim, fontFamily: Type.uiBold, marginTop: 2, letterSpacing: 1, textTransform: 'uppercase', textAlign: 'center' },
     divider:        { height: 0.5, backgroundColor: theme.borderSubtle, marginVertical: 10 },
     scorePill:      { borderRadius: 4, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 0.5 },
-    scorePillText:  { fontSize: 10, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5 },
+    scorePillText:  { fontSize: 10, fontFamily: Type.uiBold, letterSpacing: 0.5 },
     exerciseRow:    { flexDirection: 'row', alignItems: 'center', paddingVertical: 7, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle },
     check:          { width: 18, height: 18, borderRadius: 9, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
-    exerciseName:   { flex: 1, fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
-    cardioMeta:     { fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 1 },
+    exerciseName:   { flex: 1, fontSize: 13, fontFamily: Type.uiSemibold },
+    cardioMeta:     { fontSize: 10, color: theme.textDim, fontFamily: Type.uiBold, letterSpacing: 1 },
     metaRow:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 },
-    metaLabel:      { fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' },
-    metaVal:        { fontSize: 18, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
-    sectionLabel:   { fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' },
+    metaLabel:      { fontSize: 9, color: theme.textDim, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase' },
+    metaVal:        { fontSize: 18, color: theme.textPrimary, fontFamily: Type.num, letterSpacing: 1 },
+    sectionLabel:   { fontSize: 10, color: theme.textDim, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase' },
     foodRow:        { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle },
-    foodName:       { fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', flex: 1, marginRight: 8 },
-    foodCal:        { fontSize: 13, color: theme.textDim, fontFamily: 'DMSans_600SemiBold' },
+    foodName:       { fontSize: 13, color: theme.textSecondary, fontFamily: Type.uiSemibold, flex: 1, marginRight: 8 },
+    foodCal:        { fontSize: 13, color: theme.textDim, fontFamily: Type.uiSemibold },
     journalEntry:   { paddingVertical: 10 },
     catPill:        { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 0.5 },
-    catPillText:    { fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5 },
-    emptyText:      { fontSize: 13, color: theme.textPlaceholder, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' },
-    noteText:       { fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular', lineHeight: 20 },
-    excludeSubtitle: { fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginBottom: 12 },
+    catPillText:    { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 0.5 },
+    emptyText:      { fontSize: 13, color: theme.textPlaceholder, fontFamily: Type.ui, fontStyle: 'italic' },
+    noteText:       { fontSize: 13, color: theme.textMuted, fontFamily: Type.ui, lineHeight: 20 },
+    excludeSubtitle: { fontSize: 10, color: theme.textDim, fontFamily: Type.ui, marginBottom: 12 },
     excludeBtn:     { flex: 1, paddingVertical: 8, borderRadius: 6, alignItems: 'center', borderWidth: 0.5 },
-    excludeBtnText: { fontSize: 10, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', letterSpacing: 1 },
+    excludeBtnText: { fontSize: 10, fontFamily: Type.uiBold, textTransform: 'uppercase', letterSpacing: 1 },
     backBtn:        { padding: 16, alignItems: 'center' },
-    backBtnText:    { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
+    backBtnText:    { color: theme.accentBlue, fontSize: 14, fontFamily: Type.uiSemibold },
   });
 };

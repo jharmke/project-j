@@ -20,6 +20,7 @@ import { useTheme } from '../theme';
 import { ACHIEVEMENTS, checkAndUnlock, loadAchievements, checkMomentumAchievements, checkFaithAchievements, getCelebTier } from '../achievementData';
 import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
+import { Type } from '../typography';
 
 type Category = 'verse' | 'prayer' | 'study' | 'personal' | 'gratitude' | 'fitness';
 
@@ -195,7 +196,7 @@ function SwipeableEntry({
           style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
         >
           <Ionicons name="trash-outline" size={20} color="#ffffff" />
-          <Text style={{ color: '#ffffff', fontSize: 10, fontFamily: 'DMSans_700Bold', marginTop: 2 }}>Delete</Text>
+          <Text style={{ color: '#ffffff', fontSize: 10, fontFamily: Type.uiBold, marginTop: 2 }}>Delete</Text>
         </TouchableOpacity>
       </View>
 
@@ -258,7 +259,7 @@ function SwipeableEntry({
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
                     <Ionicons name="pencil-outline" size={12} color={theme.accentBlue} />
-                    <Text style={{ fontSize: 11, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>Edit</Text>
+                    <Text style={{ fontSize: 11, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Edit</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -609,19 +610,22 @@ export default function JournalScreen() {
     >
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
+        {/* Matches Achievements / Settings: a BARE chevron (the boxed one made Back look like an action),
+            and a LEFT-aligned mixed-case title. A centred title is a different header pattern and the app
+            only gets to have one. */}
         <TouchableOpacity
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
-          style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+          style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginLeft: -10 }}
         >
-          <Ionicons name="chevron-back" size={14} color={theme.accentBlue} />
+          <Ionicons name="chevron-back" size={22} color={theme.accentBlue} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>JOURNAL</Text>
+        <Text style={[styles.headerTitle, { color: theme.accentBlueRaw, flex: 1 }]}>Journal</Text>
         <TouchableOpacity
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setSortOrder(p => p === 'desc' ? 'asc' : 'desc'); }}
           style={[styles.headerBtn, { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
         >
           <Ionicons name={sortOrder === 'desc' ? 'arrow-down' : 'arrow-up'} size={14} color={theme.accentBlue} />
-          <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>{sortOrder === 'desc' ? 'Newest' : 'Oldest'}</Text>
+          <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>{sortOrder === 'desc' ? 'Newest' : 'Oldest'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -794,14 +798,14 @@ export default function JournalScreen() {
             onPress={() => { setEditingId(null); setEditTitle(''); setEditNotes(''); Keyboard.dismiss(); }}
             style={[styles.floatingEditBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]}
           >
-            <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold' }}>Cancel</Text>
+            <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.uiSemibold }}>Cancel</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => { saveEdit(); Keyboard.dismiss(); }}
             style={[styles.floatingEditBtn, { flex: 2, backgroundColor: theme.accentGreenBg, borderColor: theme.accentGreenBorder }]}
           >
             <Ionicons name="checkmark" size={14} color={theme.accentGreen} />
-            <Text style={{ fontSize: 13, color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold' }}>Save</Text>
+            <Text style={{ fontSize: 13, color: theme.accentGreen, fontFamily: Type.uiSemibold }}>Save</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -885,14 +889,14 @@ export default function JournalScreen() {
                   onPress={() => setShowCreateModal(false)}
                   style={[styles.modalBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]}
                 >
-                  <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold' }}>Cancel</Text>
+                  <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.uiSemibold }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={createEntry}
                   style={[styles.modalBtn, { flex: 2, backgroundColor: theme.accentGreenBg, borderColor: theme.accentGreenBorder }]}
                 >
                   <Ionicons name="checkmark" size={14} color={theme.accentGreen} />
-                  <Text style={{ fontSize: 13, color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold' }}>Save Entry</Text>
+                  <Text style={{ fontSize: 13, color: theme.accentGreen, fontFamily: Type.uiSemibold }}>Save Entry</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -907,24 +911,24 @@ const styles = StyleSheet.create({
   container:         { flex: 1 },
   header:            { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5 },
   headerBtn:         { borderWidth: 1, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' },
-  headerTitle:       { fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  headerTitle:       { fontSize: 22, fontFamily: Type.display, letterSpacing: 0.3 },
   emptyState:        { alignItems: 'center', paddingTop: 80, gap: 12 },
-  emptyTitle:        { fontSize: 16, fontFamily: 'DMSans_600SemiBold' },
-  emptySubtitle:     { fontSize: 13, fontFamily: 'DMSans_400Regular', textAlign: 'center', lineHeight: 20, paddingHorizontal: 24 },
+  emptyTitle:        { fontSize: 16, fontFamily: Type.uiSemibold },
+  emptySubtitle:     { fontSize: 13, fontFamily: Type.ui, textAlign: 'center', lineHeight: 20, paddingHorizontal: 24 },
   card:              { borderWidth: 0.5, borderRadius: 14, padding: 16, borderTopWidth: 0.5, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
-  dateText:          { fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' },
-  entryTitle:        { fontSize: 15, fontFamily: 'DMSans_600SemiBold', marginBottom: 2 },
+  dateText:          { fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 1, textTransform: 'uppercase' },
+  entryTitle:        { fontSize: 15, fontFamily: Type.uiSemibold, marginBottom: 2 },
   categoryPill:      { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 3 },
-  categoryPillText:  { fontSize: 9, fontFamily: 'DMSans_700Bold' },
+  categoryPillText:  { fontSize: 9, fontFamily: Type.uiBold },
   filterPill:        { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
-  filterPillText:    { fontSize: 11, fontFamily: 'DMSans_600SemiBold' },
-  verseRef:          { fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginTop: 2 },
+  filterPillText:    { fontSize: 11, fontFamily: Type.uiSemibold },
+  verseRef:          { fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginTop: 2 },
   verseBox:          { borderWidth: 1, borderRadius: 8, padding: 12 },
-  verseText:         { fontSize: 13, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', lineHeight: 20 },
-  reflectionLabel:   { fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' },
-  reflectionText:    { fontSize: 14, fontFamily: 'DMSans_400Regular', lineHeight: 22 },
-  noReflection:      { fontSize: 12, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginTop: 4 },
-  editInput:         { borderWidth: 1, borderRadius: 8, padding: 12, fontSize: 13, fontFamily: 'DMSans_400Regular', minHeight: 80, textAlignVertical: 'top' },
+  verseText:         { fontSize: 13, fontFamily: Type.ui, fontStyle: 'italic', lineHeight: 20 },
+  reflectionLabel:   { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase' },
+  reflectionText:    { fontSize: 14, fontFamily: Type.ui, lineHeight: 22 },
+  noReflection:      { fontSize: 12, fontFamily: Type.ui, fontStyle: 'italic', marginTop: 4 },
+  editInput:         { borderWidth: 1, borderRadius: 8, padding: 12, fontSize: 13, fontFamily: Type.ui, minHeight: 80, textAlignVertical: 'top' },
   editBtn:           { flex: 1, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 8, paddingVertical: 10 },
   deleteBtn:         { position: 'absolute', right: 0, top: 0, bottom: 0, width: 80, alignItems: 'center', justifyContent: 'center', borderRadius: 14, overflow: 'hidden' },
   fab:               { position: 'absolute', bottom: 32, right: 24 },
@@ -932,17 +936,17 @@ const styles = StyleSheet.create({
   overlay:           { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   sheet:             { position: 'absolute', bottom: 0, left: 0, right: 0, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 48, borderTopWidth: 0.5 },
   sheetHandle:       { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
-  sheetTitle:        { fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginBottom: 4 },
-  sheetSubtitle:     { fontSize: 12, fontFamily: 'DMSans_400Regular', marginBottom: 8 },
+  sheetTitle:        { fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, marginBottom: 4 },
+  sheetSubtitle:     { fontSize: 12, fontFamily: Type.ui, marginBottom: 8 },
   categoryRow:       { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 0.5, borderRadius: 12, padding: 14 },
   categoryIcon:      { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  categoryRowLabel:  { fontSize: 14, fontFamily: 'DMSans_600SemiBold', marginBottom: 2 },
-  categoryRowDesc:   { fontSize: 11, fontFamily: 'DMSans_400Regular' },
+  categoryRowLabel:  { fontSize: 14, fontFamily: Type.uiSemibold, marginBottom: 2 },
+  categoryRowDesc:   { fontSize: 11, fontFamily: Type.ui },
   createModal:       { width: '92%', borderRadius: 14, borderWidth: 0.5, padding: 20 },
-  createModalTitle:  { fontSize: 16, fontFamily: 'DMSans_700Bold' },
-  fieldLabel:        { fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 },
-  fieldInput:        { borderWidth: 1, borderRadius: 8, padding: 10, fontSize: 14, fontFamily: 'DMSans_400Regular' },
-  notesInput:        { borderWidth: 1, borderRadius: 8, padding: 12, fontSize: 13, fontFamily: 'DMSans_400Regular', minHeight: 100, textAlignVertical: 'top' },
+  createModalTitle:  { fontSize: 16, fontFamily: Type.uiBold },
+  fieldLabel:        { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 },
+  fieldInput:        { borderWidth: 1, borderRadius: 8, padding: 10, fontSize: 14, fontFamily: Type.ui },
+  notesInput:        { borderWidth: 1, borderRadius: 8, padding: 12, fontSize: 13, fontFamily: Type.ui, minHeight: 100, textAlignVertical: 'top' },
   modalBtn:          { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 8, paddingVertical: 12 },
   floatingEditBar:   { position: 'absolute', left: 0, right: 0, flexDirection: 'row', gap: 10, padding: 12, borderTopWidth: 0.5, zIndex: 100 },
   floatingEditBtn:   { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 8, paddingVertical: 12 },

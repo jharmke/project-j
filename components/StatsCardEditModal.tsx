@@ -268,7 +268,7 @@ export function StatsCardEditModal({ card, onClose, onSave, onDelete, theme }: P
 const styles = {
   sectionLabel: (theme: any) => ({
     fontSize: 9 as const,
-    fontFamily: Type.uiBold as const,
+    fontFamily: Type.uiBold,
     letterSpacing: 3,
     textTransform: 'uppercase' as const,
     color: theme.textMuted,

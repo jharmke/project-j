@@ -16,6 +16,7 @@ import { loadMonthlySummary, MonthlySummaryData, MonthDayEntry } from '../utils/
 import { cancelMonthlySummaryNotification } from '../services/notifications';
 import { TIPS_GATED, CoachTipCache, loadCoachTipCache } from '../utils/smartTipsEngine';
 import { refreshCoachTipMonthly, resolveTipBody } from '../utils/coachAI';
+import { Type, numLine } from '../typography';
 
 const MONTHS_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -72,13 +73,13 @@ function SectionCard({ label, icon, score, pct, borderColor, children }: {
       <CardWash color={borderColor} scored={score !== null} />
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 6 }}>
         <Ionicons name={icon as any} size={14} color={barC} />
-        <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', flex: 1 }}>{label}</Text>
+        <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase', flex: 1 }}>{label}</Text>
         <View style={{ alignItems: 'flex-end' }}>
           {score !== null && (
-            <Text style={{ fontSize: 20, lineHeight: 22, fontFamily: 'BebasNeue_400Regular', color: barC }}>{Math.round(score)}</Text>
+            <Text style={{ fontSize: 20, lineHeight: numLine(20), fontFamily: Type.num, color: barC }}>{Math.round(score)}</Text>
           )}
           {!!pct && (
-            <Text style={{ fontSize: 8, letterSpacing: 0.8, color: theme.textMuted, fontFamily: 'DMSans_700Bold' }}>{pct}</Text>
+            <Text style={{ fontSize: 8, letterSpacing: 0.8, color: theme.textMuted, fontFamily: Type.uiBold }}>{pct}</Text>
           )}
         </View>
       </View>
@@ -94,15 +95,15 @@ function StatRow({ label, value, sub, valueColor, labelColor, subNode, deltaStr,
   return (
     <View style={{ paddingVertical: 8, borderTopWidth: 0.5, borderTopColor: theme.borderCard }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text style={{ fontSize: 13, color: labelColor ?? theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }}>{label}</Text>
+        <Text style={{ fontSize: 13, color: labelColor ?? theme.textSecondary, fontFamily: Type.uiSemibold }}>{label}</Text>
         <View style={{ alignItems: 'flex-end', paddingLeft: 8 }}>
-          <Text style={{ fontSize: 13, color: valueColor ?? theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }}>{value}</Text>
+          <Text style={{ fontSize: 13, color: valueColor ?? theme.textPrimary, fontFamily: Type.uiSemibold }}>{value}</Text>
           {!!deltaStr && (
-            <Text style={{ fontSize: 10, color: deltaColor ?? theme.textDim, fontFamily: 'DMSans_600SemiBold', marginTop: 1 }}>{deltaStr}</Text>
+            <Text style={{ fontSize: 10, color: deltaColor ?? theme.textDim, fontFamily: Type.uiSemibold, marginTop: 1 }}>{deltaStr}</Text>
           )}
         </View>
       </View>
-      {subNode ?? (!!sub && <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>{sub}</Text>)}
+      {subNode ?? (!!sub && <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.ui, marginTop: 2 }}>{sub}</Text>)}
     </View>
   );
 }
@@ -115,13 +116,13 @@ function SubBlock({ left, right }: {
   return (
     <View style={{ flexDirection: 'row', marginTop: 6 }}>
       <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 2 }}>
-        <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1.5 }}>{left.label}</Text>
-        <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginTop: 1 }}>{left.value}</Text>
+        <Text style={{ fontSize: 9, fontFamily: Type.uiBold, color: theme.textMuted, letterSpacing: 1.5 }}>{left.label}</Text>
+        <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textSecondary, marginTop: 1 }}>{left.value}</Text>
       </View>
       {right && (
         <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 2 }}>
-          <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1.5 }}>{right.label}</Text>
-          <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginTop: 1 }}>{right.value}</Text>
+          <Text style={{ fontSize: 9, fontFamily: Type.uiBold, color: theme.textMuted, letterSpacing: 1.5 }}>{right.label}</Text>
+          <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textSecondary, marginTop: 1 }}>{right.value}</Text>
         </View>
       )}
     </View>
@@ -150,7 +151,7 @@ function CalendarGrid({ days, isMindful, theme, onDayPress }: {
       <View style={{ flexDirection: 'row', marginBottom: 6 }}>
         {DOW_LABELS.map((l, i) => (
           <View key={i} style={{ flex: 1, alignItems: 'center' }}>
-            <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1 }}>{l}</Text>
+            <Text style={{ fontSize: 9, fontFamily: Type.uiBold, color: theme.textMuted, letterSpacing: 1 }}>{l}</Text>
           </View>
         ))}
       </View>
@@ -183,9 +184,9 @@ function CalendarGrid({ days, isMindful, theme, onDayPress }: {
                   paddingVertical: 2,
                 }}>
                   {hasScore && (
-                    <Text style={{ fontSize: 12, fontFamily: 'BebasNeue_400Regular', color: scoreColor!, lineHeight: 14 }}>{cell.score}</Text>
+                    <Text style={{ fontSize: 12, fontFamily: Type.num, color: scoreColor!, lineHeight: numLine(12) }}>{cell.score}</Text>
                   )}
-                  <Text style={{ fontSize: 8, fontFamily: 'DMSans_400Regular', color: hasScore ? scoreColor! + 'bb' : theme.textDim, lineHeight: 10 }}>{dd}</Text>
+                  <Text style={{ fontSize: 8, fontFamily: Type.ui, color: hasScore ? scoreColor! + 'bb' : theme.textDim, lineHeight: 10 }}>{dd}</Text>
                 </View>
               </TouchableOpacity>
             );
@@ -285,14 +286,14 @@ export default function MonthlySummaryScreen() {
             <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <Ionicons name="chevron-back" size={22} color={accent} />
             </TouchableOpacity>
-            <Text style={{ fontSize: 22, letterSpacing: 2, fontFamily: 'BebasNeue_400Regular', color: accent, flex: 1 }}>MONTHLY SUMMARY</Text>
+            <Text style={{ fontSize: 22, letterSpacing: 0.3, fontFamily: Type.display, color: accent, flex: 1 }}>MONTHLY SUMMARY</Text>
             <View style={{ transform: [{ translateY: -1 }] }}>
               <TooltipIcon tooltipKey="day_score" size={18} />
             </View>
           </View>
         </View>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 }}>
-          <Text style={{ fontSize: 14, color: theme.textMuted, fontFamily: 'DMSans_400Regular', textAlign: 'center' }}>
+          <Text style={{ fontSize: 14, color: theme.textMuted, fontFamily: Type.ui, textAlign: 'center' }}>
             No summary found for this month.
           </Text>
         </View>
@@ -354,14 +355,14 @@ export default function MonthlySummaryScreen() {
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Ionicons name="chevron-back" size={22} color={accent} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 22, letterSpacing: 2, fontFamily: 'BebasNeue_400Regular', color: accent, flex: 1 }}>
+          <Text style={{ fontSize: 22, letterSpacing: 0.3, fontFamily: Type.display, color: accent, flex: 1 }}>
             MONTHLY SUMMARY
           </Text>
           <View style={{ transform: [{ translateY: -1 }] }}>
             <TooltipIcon tooltipKey="day_score" size={18} />
           </View>
         </View>
-        <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginLeft: 34, marginTop: 2 }}>
+        <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginLeft: 34, marginTop: 2 }}>
           {monthYearLabel}
         </Text>
       </View>
@@ -373,13 +374,13 @@ export default function MonthlySummaryScreen() {
           {hasScore ? (
             <View style={{ alignItems: 'center', marginBottom: 8 }}>
               <ScoreRing value={avgComposite!} color={heroColor} theme={theme} celebrate="none" />
-              <Text style={{ fontSize: 11, letterSpacing: 3, color: heroColor, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginTop: 8 }}>
+              <Text style={{ fontSize: 11, letterSpacing: 3, color: heroColor, fontFamily: Type.uiBold, textTransform: 'uppercase', marginTop: 8 }}>
                 {scoreLabel(avgComposite!, styleMode).toUpperCase()}
               </Text>
             </View>
           ) : (
             <View style={{ alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ fontSize: 13, color: theme.textDim, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>No scored days this month</Text>
+              <Text style={{ fontSize: 13, color: theme.textDim, fontFamily: Type.ui, fontStyle: 'italic' }}>No scored days this month</Text>
             </View>
           )}
 
@@ -391,9 +392,9 @@ export default function MonthlySummaryScreen() {
             }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                 <Ionicons name="information-circle-outline" size={14} color={theme.textMuted} />
-                <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Coach Insight</Text>
+                <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>Coach Insight</Text>
               </View>
-              <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_400Regular', lineHeight: 20 }}>
+              <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.ui, lineHeight: 20 }}>
                 Not enough logged days this month to generate a coaching insight. Log consistently and your monthly summary will have more to work with.
               </Text>
             </View>
@@ -404,7 +405,7 @@ export default function MonthlySummaryScreen() {
             }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <ActivityIndicator size="small" color={accent} />
-                <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textMuted, fontStyle: 'italic' }}>Analyzing your month...</Text>
+                <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textMuted, fontStyle: 'italic' }}>Analyzing your month...</Text>
               </View>
             </View>
           ) : coachBody ? (
@@ -414,17 +415,17 @@ export default function MonthlySummaryScreen() {
             }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 10 }}>
                 <Ionicons name="sparkles" size={12} color={accent} />
-                <Text style={{ fontSize: 9, letterSpacing: 3, color: accent, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Coach Insight</Text>
+                <Text style={{ fontSize: 9, letterSpacing: 3, color: accent, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>Coach Insight</Text>
               </View>
               <View style={{ width: '100%', height: 0.5, backgroundColor: `${accent}40`, marginBottom: 10 }} />
-              <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', lineHeight: 22, fontStyle: 'italic', textAlign: 'center' }}>
+              <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiSemibold, lineHeight: 22, fontStyle: 'italic', textAlign: 'center' }}>
                 {coachBody}
               </Text>
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/diagnostic-report'); }}
                 style={{ marginTop: 12, alignSelf: 'center' }}
               >
-                <Text style={{ fontSize: 11, color: accent, fontFamily: 'DMSans_600SemiBold' }}>View in Effort vs Results</Text>
+                <Text style={{ fontSize: 11, color: accent, fontFamily: Type.uiSemibold }}>View in Effort vs Results</Text>
               </TouchableOpacity>
             </View>
           ) : null}
@@ -437,9 +438,9 @@ export default function MonthlySummaryScreen() {
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setCalendarOpen(o => !o); }}
               style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: calendarOpen ? 12 : 0 }}
             >
-              <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Month at a Glance</Text>
+              <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>Month at a Glance</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>
+                <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui }}>
                   {daysLoggedNutrition} of {daysInMonth} days logged
                 </Text>
                 <Ionicons name={calendarOpen ? 'chevron-up' : 'chevron-down'} size={14} color={theme.textMuted} />
@@ -454,7 +455,7 @@ export default function MonthlySummaryScreen() {
               />
             )}
             {calendarOpen && (
-              <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 10 }}>
+              <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, textAlign: 'center', marginTop: 10 }}>
                 {daysScored} of {daysInMonth} days scored
               </Text>
             )}
@@ -518,7 +519,7 @@ export default function MonthlySummaryScreen() {
                 left={{ label: 'AVG FIBER', value: avgFiber !== null ? `${formatNumber(avgFiber)}g` : '--' }}
                 right={{ label: 'AVG SODIUM', value: avgSodium !== null ? `${formatNumber(avgSodium)}mg` : '--' }}
               />
-              <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 5, marginLeft: 2 }}>
+              <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, marginTop: 5, marginLeft: 2 }}>
                 Fiber and sodium only count foods with complete data
               </Text>
             </View>
@@ -527,7 +528,7 @@ export default function MonthlySummaryScreen() {
           {/* Recovery card -- headline is the avg real Recovery Score (raw sleep on fallback) */}
           <SectionCard label="Recovery" icon="heart" score={avgRecoveryScore} pct={avgRecoveryScore == null ? '' : '35% OF SCORE'} borderColor={COLOR_RECOVERY}>
             {avgRecoveryScore == null ? (
-              <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 4 }}>Recovery needs a smartwatch or fitness tracker worn overnight. No recovery or sleep data this month.</Text>
+              <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, paddingVertical: 4 }}>Recovery needs a smartwatch or fitness tracker worn overnight. No recovery or sleep data this month.</Text>
             ) : (
             <>
             {avgHRV !== null && (
@@ -557,7 +558,7 @@ export default function MonthlySummaryScreen() {
             <StatRow label="Prev. Activity" labelColor={COLOR_RECOVERY} value={avgPrevActivity !== null ? `${formatNumber(avgPrevActivity)} kcal` : '--'} />
             {(monthVo2Max !== null || monthCardioRecovery !== null || avgBloodOxygen !== null) && (
               <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, marginTop: 4, paddingTop: 8 }}>
-                <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', marginBottom: 2 }}>INFORMATIONAL</Text>
+                <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: Type.uiBold, marginBottom: 2 }}>INFORMATIONAL</Text>
                 <SubBlock
                   left={{ label: 'VO2 MAX', value: monthVo2Max !== null ? `${monthVo2Max} mL/kg/min` : '--' }}
                   right={{ label: 'CARDIO RECOVERY', value: monthCardioRecovery !== null ? `${monthCardioRecovery} bpm` : '--' }}
@@ -633,7 +634,7 @@ export default function MonthlySummaryScreen() {
           )}
 
           {/* Disclaimer */}
-          <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 4 }}>
+          <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, textAlign: 'center', marginTop: 4 }}>
             For informational purposes only. Not medical advice.
           </Text>
 

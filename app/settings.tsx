@@ -78,6 +78,7 @@ import { resetAllTutorials, useTutorial } from '../context/TutorialContext';
 import { showToolkit } from '../components/ToolkitSheet';
 import { generateWeeklySummary } from '../utils/weeklySummary';
 import { generateMonthlySummary } from '../utils/monthlySummary';
+import { Type } from '../typography';
 
 type FaithJourney = 'rooted' | 'exploring' | 'notrightnow';
 
@@ -197,7 +198,7 @@ function SleepGoalPicker({ value, onChange, theme }: { value: string; onChange: 
     <View>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
         <View style={{ alignItems: 'center' }}>
-          <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 }}>Hours</Text>
+          <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 }}>Hours</Text>
           <View style={{ height: ITEM_HEIGHT * 3, width: 80, overflow: 'hidden' }}>
             <View style={{ position: 'absolute', top: ITEM_HEIGHT, left: 0, right: 0, height: ITEM_HEIGHT, borderTopWidth: 0.5, borderBottomWidth: 0.5, borderColor: theme.accentBlueBorder, zIndex: 1 }} pointerEvents="none" />
             <ScrollView ref={hourScrollRef} style={{ flex: 1 }} showsVerticalScrollIndicator={false} snapToInterval={ITEM_HEIGHT} decelerationRate="fast" contentContainerStyle={{ paddingVertical: ITEM_HEIGHT }} onMomentumScrollEnd={handleHourScroll} onScrollEndDrag={handleHourScroll}>
@@ -205,16 +206,16 @@ function SleepGoalPicker({ value, onChange, theme }: { value: string; onChange: 
                 const isSelected = h === currentHourStr;
                 return (
                   <View key={h} style={{ height: ITEM_HEIGHT, alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ fontSize: isSelected ? 30 : 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: isSelected ? theme.accentBlue : theme.textMuted, opacity: isSelected ? 1 : 0.4 }}>{h}</Text>
+                    <Text style={{ fontSize: isSelected ? 30 : 20, fontFamily: Type.num, letterSpacing: 1, color: isSelected ? theme.accentBlue : theme.textMuted, opacity: isSelected ? 1 : 0.4 }}>{h}</Text>
                   </View>
                 );
               })}
             </ScrollView>
           </View>
         </View>
-        <Text style={{ fontSize: 30, color: theme.textMuted, fontFamily: 'BebasNeue_400Regular', marginTop: 20 }}>:</Text>
+        <Text style={{ fontSize: 30, color: theme.textMuted, fontFamily: Type.num, marginTop: 20 }}>:</Text>
         <View style={{ alignItems: 'center' }}>
-          <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 }}>Minutes</Text>
+          <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 }}>Minutes</Text>
           <View style={{ height: ITEM_HEIGHT * 3, width: 80, overflow: 'hidden' }}>
             <View style={{ position: 'absolute', top: ITEM_HEIGHT, left: 0, right: 0, height: ITEM_HEIGHT, borderTopWidth: 0.5, borderBottomWidth: 0.5, borderColor: theme.accentBlueBorder, zIndex: 1 }} pointerEvents="none" />
             <ScrollView ref={minScrollRef} style={{ flex: 1 }} showsVerticalScrollIndicator={false} snapToInterval={ITEM_HEIGHT} decelerationRate="fast" contentContainerStyle={{ paddingVertical: ITEM_HEIGHT }} onMomentumScrollEnd={handleMinScroll} onScrollEndDrag={handleMinScroll}>
@@ -222,7 +223,7 @@ function SleepGoalPicker({ value, onChange, theme }: { value: string; onChange: 
                 const isSelected = m === currentMinStr;
                 return (
                   <View key={m} style={{ height: ITEM_HEIGHT, alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ fontSize: isSelected ? 30 : 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: isSelected ? theme.accentBlue : theme.textMuted, opacity: isSelected ? 1 : 0.4 }}>{m}</Text>
+                    <Text style={{ fontSize: isSelected ? 30 : 20, fontFamily: Type.num, letterSpacing: 1, color: isSelected ? theme.accentBlue : theme.textMuted, opacity: isSelected ? 1 : 0.4 }}>{m}</Text>
                   </View>
                 );
               })}
@@ -231,7 +232,7 @@ function SleepGoalPicker({ value, onChange, theme }: { value: string; onChange: 
         </View>
       </View>
       <View style={{ alignItems: 'center', marginTop: 10 }}>
-        <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }}>Goal: {displayGoal}</Text>
+        <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: Type.uiSemibold }}>Goal: {displayGoal}</Text>
       </View>
     </View>
   );
@@ -342,7 +343,7 @@ function CollapsibleSection({
         <View style={{ flex: 1 }}>
           <Text style={[styles.sectionLabel, { color: theme.accentBlue }]}>{label}</Text>
           {subtitle && !open && (
-            <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 3 }}>
+            <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textMuted, marginTop: 3 }}>
               {subtitle}
             </Text>
           )}
@@ -405,8 +406,8 @@ function NotifGroup({
         activeOpacity={0.7}
         style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, backgroundColor: theme.bgInput, minHeight: 44 }}>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.textPrimary }}>{label}</Text>
-          <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 2 }}>{summary}</Text>
+          <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.textPrimary }}>{label}</Text>
+          <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textMuted, marginTop: 2 }}>{summary}</Text>
         </View>
         <Animated.View style={{ transform: [{ rotate: chevronRotate }] }}>
           <Ionicons name="chevron-down" size={14} color={theme.textMuted} />
@@ -785,7 +786,7 @@ export default function SettingsScreen() {
           <TouchableOpacity hitSlop={hit} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); if (vacCalMonth === 0) { setVacCalMonth(11); setVacCalYear(y => y - 1); } else setVacCalMonth(m => m - 1); }}>
             <Ionicons name="chevron-back" size={20} color={theme.accentBlue} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 15, color: theme.accentBlue, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{VAC_MONTHS[vacCalMonth]} {vacCalYear}</Text>
+          <Text style={{ fontSize: 15, color: theme.accentBlue, fontFamily: Type.num, letterSpacing: 1 }}>{VAC_MONTHS[vacCalMonth]} {vacCalYear}</Text>
           <TouchableOpacity hitSlop={hit} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); if (vacCalMonth === 11) { setVacCalMonth(0); setVacCalYear(y => y + 1); } else setVacCalMonth(m => m + 1); }}>
             <Ionicons name="chevron-forward" size={20} color={theme.accentBlue} />
           </TouchableOpacity>
@@ -793,7 +794,7 @@ export default function SettingsScreen() {
         <View style={{ flexDirection: 'row', marginBottom: 6 }}>
           {VAC_DAYS_OF_WEEK.map(d => (
             <View key={d} style={{ flex: 1, alignItems: 'center' }}>
-              <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>{d}</Text>
+              <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: Type.uiBold, letterSpacing: 1 }}>{d}</Text>
             </View>
           ))}
         </View>
@@ -807,7 +808,7 @@ export default function SettingsScreen() {
                 <TouchableOpacity key={ci} style={{ flex: 1, alignItems: 'center', paddingVertical: 5 }} activeOpacity={0.7}
                   onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setVacStartKey(dk); }}>
                   <View style={{ width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: isSel ? theme.accentBlueRaw : 'transparent' }}>
-                    <Text style={{ fontSize: 13, fontFamily: isSel ? 'DMSans_700Bold' : 'DMSans_400Regular', color: isSel ? '#fff' : theme.textSecondary }}>{day}</Text>
+                    <Text style={{ fontSize: 13, fontFamily: isSel ? Type.uiBold : Type.ui, color: isSel ? '#fff' : theme.textSecondary }}>{day}</Text>
                   </View>
                 </TouchableOpacity>
               );
@@ -1224,7 +1225,7 @@ export default function SettingsScreen() {
                     borderColor: isActive ? previewAccent[id] : 'transparent',
                     borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
                   }}>
-                  <Text style={{ flex: 1, fontSize: 14, color: previewText[id], fontFamily: 'DMSans_600SemiBold' }}>
+                  <Text style={{ flex: 1, fontSize: 14, color: previewText[id], fontFamily: Type.uiSemibold }}>
                     {t.name}
                   </Text>
                   {isActive && <Ionicons name="checkmark-circle" size={18} color={previewAccent[id]} />}
@@ -1234,7 +1235,7 @@ export default function SettingsScreen() {
           </View>
 
           <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Accent Color</Text>
+            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Accent Color</Text>
             {(() => {
               const accents = ACCENT_PALETTES[themeId];
               const COLS = 6;
@@ -1256,7 +1257,7 @@ export default function SettingsScreen() {
                           shadowOpacity: isActiveAccent ? 0.6 : 0,
                           shadowRadius: 6,
                         }} />
-                        <Text style={{ fontSize: 9, color: isActiveAccent ? theme.textPrimary : theme.textMuted, fontFamily: 'DMSans_600SemiBold', letterSpacing: 0.5 }}>{accent.label}</Text>
+                        <Text style={{ fontSize: 9, color: isActiveAccent ? theme.textPrimary : theme.textMuted, fontFamily: Type.uiSemibold, letterSpacing: 0.5 }}>{accent.label}</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -1317,7 +1318,7 @@ export default function SettingsScreen() {
 
             {/* FITNESS GOALS */}
             <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginBottom: 16, marginTop: 4 }}>
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Fitness Goals</Text>
+              <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Fitness Goals</Text>
             </View>
 
             {/* Steps */}
@@ -1375,7 +1376,7 @@ export default function SettingsScreen() {
             {/* Sleep Goal */}
             <View ref={goalsSleepRef}>
               <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Sleep Goal</Text>
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', color: theme.textMuted, marginBottom: 12 }}>How many hours of sleep are you aiming for each night?</Text>
+              <Text style={{ fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic', color: theme.textMuted, marginBottom: 12 }}>How many hours of sleep are you aiming for each night?</Text>
               <View style={{ backgroundColor: theme.bgInset, borderRadius: 10, paddingVertical: 16, paddingHorizontal: 8 }}>
                 <SleepGoalPicker value={goalProfile.sleepGoal || '7'} onChange={v => updateGoalField('sleepGoal', v)} theme={theme} />
               </View>
@@ -1385,17 +1386,17 @@ export default function SettingsScreen() {
 
             {/* NUTRITION GOALS */}
             <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginBottom: 16 }}>
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Nutrition Goals</Text>
+              <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Nutrition Goals</Text>
             </View>
 
             {/* Calorie Target */}
             <View ref={goalsCaloriesRef}>
               <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Daily Calorie Target</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Use recommended value</Text>
+                <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.ui }}>Use recommended value</Text>
                 <ToggleSwitch value={goalProfile.useRecommendedCal !== false} onValueChange={v => updateGoalField('useRecommendedCal', v)} />
               </View>
-              <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginBottom: 10 }}>Based on your BMR, activity level, and weight goal set in Profile.</Text>
+              <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.ui, fontStyle: 'italic', marginBottom: 10 }}>Based on your BMR, activity level, and weight goal set in Profile.</Text>
               <TextInput
                 style={[styles.goalInput, { backgroundColor: goalProfile.useRecommendedCal !== false ? theme.bgProgressTrack : theme.bgInput, borderColor: theme.borderInput, color: goalProfile.useRecommendedCal !== false ? theme.textMuted : theme.textPrimary }]}
                 value={goalProfile.useRecommendedCal !== false ? (goalSuggested > 0 ? goalSuggested.toString() : 'Set stats in Profile') : goalProfile.calTarget}
@@ -1419,7 +1420,7 @@ export default function SettingsScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                 <View style={{ flex: 1, paddingRight: 12 }}>
                   <Text style={[styles.goalLabel, { color: theme.textMuted, marginBottom: 2 }]}>Auto-Adjust Target</Text>
-                  <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', lineHeight: 15 }}>
+                  <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, lineHeight: 15 }}>
                     Quietly keep your calorie target matched to your real burn, estimated from your weight trend. Off by default: when off, we only suggest a change and you tap to apply it.
                   </Text>
                 </View>
@@ -1432,7 +1433,7 @@ export default function SettingsScreen() {
               >
                 <View style={{ flex: 1, paddingRight: 12 }}>
                   <Text style={[styles.goalLabel, { color: theme.textMuted, marginBottom: 2 }]}>Check My Target</Text>
-                  <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', lineHeight: 15 }}>
+                  <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, lineHeight: 15 }}>
                     See whether your target still matches your real burn right now.
                   </Text>
                 </View>
@@ -1447,7 +1448,7 @@ export default function SettingsScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                 <View style={{ flex: 1, paddingRight: 12 }}>
                   <Text style={[styles.goalLabel, { color: theme.textMuted, marginBottom: 2 }]}>Net Carbs Mode</Text>
-                  <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', lineHeight: 15 }}>
+                  <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, lineHeight: 15 }}>
                     Shows total carbs minus fiber everywhere in the app.
                   </Text>
                 </View>
@@ -1455,7 +1456,7 @@ export default function SettingsScreen() {
               </View>
               {showNetCarbs && (
                 <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, marginBottom: 8 }}>
-                  <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', lineHeight: 16 }}>
+                  <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.ui, lineHeight: 16 }}>
                     Net carbs mode is on. Your Carbs goal below now represents your net carbs target. Update it if you'd like a more specific number.
                   </Text>
                 </View>
@@ -1467,7 +1468,7 @@ export default function SettingsScreen() {
             {/* Macros */}
             <View ref={goalsMacrosRef}>
               <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Macros</Text>
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', color: theme.textMuted, marginBottom: 14 }}>
+              <Text style={{ fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic', color: theme.textMuted, marginBottom: 14 }}>
                 {goalProfile.macroMode === 'ratio'
                   ? 'Set percentages. Grams update automatically when your calorie target changes.'
                   : 'Set grams directly. Percentages and kcal update live.'}
@@ -1481,7 +1482,7 @@ export default function SettingsScreen() {
                     style={[styles.modeBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput },
                       goalProfile.macroMode === mode && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
                     onPress={() => updateGoalField('macroMode', mode)}>
-                    <Text style={[{ fontSize: 14, fontFamily: 'DMSans_500Medium', color: theme.textMuted },
+                    <Text style={[{ fontSize: 14, fontFamily: Type.uiMedium, color: theme.textMuted },
                       goalProfile.macroMode === mode && { color: theme.accentBlue }]}>
                       {mode === 'ratio' ? 'Ratio' : 'Fixed'}
                     </Text>
@@ -1506,7 +1507,7 @@ export default function SettingsScreen() {
                       <Text style={[styles.goalLabel, { color: theme.textMuted }]}>{label}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                         <TextInput
-                          style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, borderLeftColor: color, borderLeftWidth: 3, color, flex: 1, marginBottom: 0, textAlign: 'center', fontSize: 20, fontFamily: 'BebasNeue_400Regular' }]}
+                          style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, borderLeftColor: color, borderLeftWidth: 3, color, flex: 1, marginBottom: 0, textAlign: 'center', fontSize: 20, fontFamily: Type.num }]}
                           value={goalProfile[pctKey] as string}
                           onChangeText={v => updateGoalField(pctKey, v)}
                           keyboardType="number-pad"
@@ -1514,13 +1515,13 @@ export default function SettingsScreen() {
                           placeholder="0"
                           placeholderTextColor={theme.textPlaceholder}
                         />
-                        <Text style={{ color: theme.textMuted, fontSize: 16, fontFamily: 'DMSans_400Regular' }}>%</Text>
+                        <Text style={{ color: theme.textMuted, fontSize: 16, fontFamily: Type.ui }}>%</Text>
                         <View style={{ flex: 2, backgroundColor: theme.bgInset, borderRadius: 8, borderWidth: 0.5, borderColor: color + '50', padding: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
                           <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
-                            <Text style={{ color, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{grams}</Text>
-                            <Text style={{ color, fontSize: 11, fontFamily: 'DMSans_500Medium' }}>g</Text>
+                            <Text style={{ color, fontSize: 18, fontFamily: Type.num, letterSpacing: 1 }}>{grams}</Text>
+                            <Text style={{ color, fontSize: 11, fontFamily: Type.uiMedium }}>g</Text>
                           </View>
-                          <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: 'DMSans_400Regular', alignSelf: 'center' }}>{kcal} kcal</Text>
+                          <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: Type.ui, alignSelf: 'center' }}>{kcal} kcal</Text>
                         </View>
                       </View>
                     </View>
@@ -1531,8 +1532,8 @@ export default function SettingsScreen() {
                   const color = total === 100 ? theme.accentGreen : theme.accentRed;
                   return (
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4, padding: 10, backgroundColor: theme.bgInset, borderRadius: 8 }}>
-                      <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Total</Text>
-                      <Text style={{ fontSize: 16, color, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>
+                      <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.ui }}>Total</Text>
+                      <Text style={{ fontSize: 16, color, fontFamily: Type.num, letterSpacing: 1 }}>
                         {total}% {total === 100 ? '✓' : '-- needs to equal 100%'}
                       </Text>
                     </View>
@@ -1554,7 +1555,7 @@ export default function SettingsScreen() {
                       <Text style={[styles.goalLabel, { color: theme.textMuted }]}>{label}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                         <TextInput
-                          style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, borderLeftColor: color, borderLeftWidth: 3, color, flex: 1, marginBottom: 0, textAlign: 'center', fontSize: 20, fontFamily: 'BebasNeue_400Regular' }]}
+                          style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, borderLeftColor: color, borderLeftWidth: 3, color, flex: 1, marginBottom: 0, textAlign: 'center', fontSize: 20, fontFamily: Type.num }]}
                           value={goalProfile[gKey] as string}
                           onChangeText={v => updateGoalField(gKey, v)}
                           keyboardType="number-pad"
@@ -1562,10 +1563,10 @@ export default function SettingsScreen() {
                           placeholder="0"
                           placeholderTextColor={theme.textPlaceholder}
                         />
-                        <Text style={{ color: theme.textMuted, fontSize: 16, fontFamily: 'DMSans_400Regular' }}>g</Text>
+                        <Text style={{ color: theme.textMuted, fontSize: 16, fontFamily: Type.ui }}>g</Text>
                         <View style={{ flex: 2, backgroundColor: theme.bgInset, borderRadius: 8, borderWidth: 0.5, borderColor: color + '50', padding: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
-                          <Text style={{ color, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{kcal} kcal</Text>
-                          <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: 'DMSans_400Regular', alignSelf: 'center' }}>{pct}%</Text>
+                          <Text style={{ color, fontSize: 18, fontFamily: Type.num, letterSpacing: 1 }}>{kcal} kcal</Text>
+                          <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: Type.ui, alignSelf: 'center' }}>{pct}%</Text>
                         </View>
                       </View>
                     </View>
@@ -1577,8 +1578,8 @@ export default function SettingsScreen() {
                   const color = Math.abs(diff) <= 50 ? theme.accentGreen : Math.abs(diff) <= 150 ? theme.accentAmber : theme.accentRed;
                   return (
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4, padding: 10, backgroundColor: theme.bgInset, borderRadius: 8 }}>
-                      <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Total · {Math.round(totalKcal)} kcal</Text>
-                      <Text style={{ fontSize: 13, color, fontFamily: 'DMSans_600SemiBold' }}>
+                      <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.ui }}>Total · {Math.round(totalKcal)} kcal</Text>
+                      <Text style={{ fontSize: 13, color, fontFamily: Type.uiSemibold }}>
                         {Math.abs(diff) <= 50 ? 'Matches target ✓' : diff > 0 ? `+${diff} kcal over · adjust to save` : `${Math.abs(diff)} kcal under · adjust to save`}
                       </Text>
                     </View>
@@ -1601,7 +1602,7 @@ export default function SettingsScreen() {
                   placeholder="e.g. 128"
                   placeholderTextColor={theme.textPlaceholder}
                 />
-                <Text style={{ color: theme.textMuted, fontSize: 16, fontFamily: 'DMSans_400Regular' }}>oz</Text>
+                <Text style={{ color: theme.textMuted, fontSize: 16, fontFamily: Type.ui }}>oz</Text>
               </View>
               <Text style={[styles.goalHint, { color: theme.textMuted }]}>Daily hydration target in oz. Progress bar fills to this amount.</Text>
             </View>
@@ -1613,7 +1614,7 @@ export default function SettingsScreen() {
         {/* ── Faith & Style ── */}
         <CollapsibleSection label="Faith & Style" subtitle="Coaching Mode · Faith Journey" defaultOpen={deepLinkSection === 'faith_style'} forceOpen={faithStyleForceOpen} theme={theme}>
           <View ref={fsCoachingSectionRef} style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginBottom: 8 }}>
-            <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Coaching Mode</Text>
+            <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Coaching Mode</Text>
           </View>
           {([
             { key: 'discipline', label: 'Discipline', sub: 'Tight targets. Direct feedback. Commit fully.' },
@@ -1658,7 +1659,7 @@ export default function SettingsScreen() {
           )}
 
           <View ref={fsFaithSectionRef} style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 16, marginBottom: 8 }}>
-            <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Faith Journey</Text>
+            <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Faith Journey</Text>
           </View>
           {([
             { key: 'rooted',      label: 'Rooted',        sub: 'Full faith experience. Daily verse, prayer, Bible reader.' },
@@ -1695,10 +1696,10 @@ export default function SettingsScreen() {
         <CollapsibleSection label="Health" subtitle="Burn Accuracy · HR Zones · Apple Health" defaultOpen={deepLinkSection === 'health'} theme={theme}>
           <View style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}>
             <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', flex: 1 }}>Active Calorie Accuracy</Text>
+              <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', flex: 1 }}>Active Calorie Accuracy</Text>
               <TooltipIcon tooltipKey="burn_accuracy" />
             </View>
-            <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 18 }}>
+            <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textMuted, lineHeight: 18 }}>
               Smartwatches often overestimate burn. Apply a correction factor to keep your net calories honest.
             </Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -1711,14 +1712,14 @@ export default function SettingsScreen() {
                     borderColor: burnAccuracyPct === pct ? theme.accentBlueBorder : theme.borderInput,
                     backgroundColor: burnAccuracyPct === pct ? theme.accentBlueBg : theme.bgInput,
                   }}>
-                  <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: burnAccuracyPct === pct ? theme.accentBlue : theme.textMuted }}>
+                  <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: burnAccuracyPct === pct ? theme.accentBlue : theme.textMuted }}>
                     {pct}%
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
             {burnAccuracyPct < 100 && (
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 16 }}>
+              <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textMuted, lineHeight: 16 }}>
                 e.g. Apple reports 400 kcal active → you use {Math.round(400 * burnAccuracyPct / 100)} kcal in your net
               </Text>
             )}
@@ -1726,11 +1727,11 @@ export default function SettingsScreen() {
 
           {/* Heart Rate Zones */}
           <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 4, marginBottom: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', flex: 1 }}>Heart Rate Zones</Text>
+            <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', flex: 1 }}>Heart Rate Zones</Text>
             <TooltipIcon tooltipKey="hr_zones" />
           </View>
           <View style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 14 }}>
-            <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 18 }}>
+            <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textMuted, lineHeight: 18 }}>
               These set how your training zones are calculated from each recorded workout.
             </Text>
 
@@ -1747,9 +1748,9 @@ export default function SettingsScreen() {
                   placeholderTextColor={theme.textDim}
                   style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1, marginBottom: 0 }]}
                 />
-                <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted }}>bpm</Text>
+                <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textMuted }}>bpm</Text>
               </View>
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 16, marginTop: 6 }}>
+              <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textMuted, lineHeight: 16, marginTop: 6 }}>
                 {hrMaxOverride != null
                   ? `Using your number, ${hrMaxOverride} bpm.`
                   : `Leave blank to use the estimate${hrMaxEstimate ? ` (${hrMaxEstimate} bpm, based on your age)` : ''}. Only set your own if you know it from a test or race.`}
@@ -1768,11 +1769,11 @@ export default function SettingsScreen() {
                       borderColor: hrZoneModel === val ? theme.accentBlueBorder : theme.borderInput,
                       backgroundColor: hrZoneModel === val ? theme.accentBlueBg : theme.bgInput,
                     }}>
-                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: hrZoneModel === val ? theme.accentBlue : theme.textMuted }}>{label}</Text>
+                    <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: hrZoneModel === val ? theme.accentBlue : theme.textMuted }}>{label}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 16, marginTop: 6 }}>
+              <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textMuted, lineHeight: 16, marginTop: 6 }}>
                 {hrZoneModel === 'hrr'
                   ? 'Personalized uses your resting heart rate, so your zones fit your fitness.'
                   : 'Max HR uses a simple percentage of your maximum heart rate.'}
@@ -1781,10 +1782,10 @@ export default function SettingsScreen() {
           </View>
 
           <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 4, marginBottom: 12 }}>
-            <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Workout History Import</Text>
+            <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Workout History Import</Text>
           </View>
           <View style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 12 }}>
-            <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 18 }}>
+            <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textMuted, lineHeight: 18 }}>
               Import your Apple Health workout history into Project J. Existing data and manual entries will not be affected.
             </Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -1793,7 +1794,7 @@ export default function SettingsScreen() {
                   key={d}
                   onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setImportRange(d); }}
                   style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: importRange === d ? theme.accentBlueBorder : theme.borderInput, backgroundColor: importRange === d ? theme.accentBlueBg : theme.bgInput }}>
-                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: importRange === d ? theme.accentBlue : theme.textMuted }}>
+                  <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: importRange === d ? theme.accentBlue : theme.textMuted }}>
                     {d === 14 ? '2 WEEKS' : d === 30 ? '1 MONTH' : '3 MONTHS'}
                   </Text>
                 </TouchableOpacity>
@@ -1806,7 +1807,7 @@ export default function SettingsScreen() {
               {importing
                 ? <ActivityIndicator size="small" color={theme.accentBlue} />
                 : <Ionicons name="download-outline" size={16} color={theme.accentBlue} />}
-              <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 1 }}>
+              <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 1 }}>
                 {importing ? 'IMPORTING...' : 'IMPORT WORKOUT HISTORY'}
               </Text>
             </TouchableOpacity>
@@ -1816,7 +1817,7 @@ export default function SettingsScreen() {
         {/* ── Vacation Mode ── */}
         <CollapsibleSection label="Vacation Mode" subtitle="Pause everything for a trip" defaultOpen={deepLinkSection === 'vacation'} forceOpen={vacationForceOpen} theme={theme}>
           <View ref={vacCardRef} collapsable={false} style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-            <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 20, marginBottom: 16 }}>
+            <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textMuted, lineHeight: 20, marginBottom: 16 }}>
               {VAC_INTRO[styleMode]}
             </Text>
 
@@ -1824,19 +1825,19 @@ export default function SettingsScreen() {
               <View>
                 <View style={{ backgroundColor: theme.bgInput, borderRadius: 12, borderWidth: 1, borderColor: theme.borderInput, padding: 16, marginBottom: 14, alignItems: 'center' }}>
                   <Ionicons name="airplane" size={26} color={theme.accentBlue} style={{ marginBottom: 8 }} />
-                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.textMuted, textTransform: 'uppercase', marginBottom: 4 }}>
+                  <Text style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, color: theme.textMuted, textTransform: 'uppercase', marginBottom: 4 }}>
                     {vacationTodayKey() < vacation.startKey ? 'Scheduled' : 'On vacation'}
                   </Text>
-                  <Text style={{ fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.accentBlue, textAlign: 'center' }}>
+                  <Text style={{ fontSize: 24, fontFamily: Type.num, letterSpacing: 1, color: theme.accentBlue, textAlign: 'center' }}>
                     {vacFmtNice(vacation.startKey)}  to  {vacFmtNice(vacation.endKey)}
                   </Text>
-                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 4 }}>
+                  <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textMuted, marginTop: 4 }}>
                     Resumes {vacFmtNice(addDaysKey(vacation.endKey, 1))}
                   </Text>
                 </View>
                 <TouchableOpacity disabled={vacBusy} activeOpacity={0.7} onPress={handleEndVacation}
                   style={{ borderWidth: 1, borderColor: theme.accentRedBorder, backgroundColor: theme.accentRedBg, borderRadius: 8, paddingVertical: 12, alignItems: 'center', opacity: vacBusy ? 0.5 : 1 }}>
-                  <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.accentRed, letterSpacing: 1 }}>END EARLY</Text>
+                  <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.accentRed, letterSpacing: 1 }}>END EARLY</Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -1851,8 +1852,8 @@ export default function SettingsScreen() {
                     <Ionicons name="remove-circle" size={34} color={vacDays <= 1 ? theme.textDim : theme.accentBlue} />
                   </TouchableOpacity>
                   <View style={{ alignItems: 'center', minWidth: 80 }}>
-                    <Text style={{ fontSize: 34, fontFamily: 'BebasNeue_400Regular', color: theme.accentBlue }}>{vacDays}</Text>
-                    <Text style={{ fontSize: 10, fontFamily: 'DMSans_700Bold', letterSpacing: 1, color: theme.textMuted, textTransform: 'uppercase' }}>{vacDays === 1 ? 'day' : 'days'}</Text>
+                    <Text style={{ fontSize: 34, fontFamily: Type.num, color: theme.accentBlue }}>{vacDays}</Text>
+                    <Text style={{ fontSize: 10, fontFamily: Type.uiBold, letterSpacing: 1, color: theme.textMuted, textTransform: 'uppercase' }}>{vacDays === 1 ? 'day' : 'days'}</Text>
                   </View>
                   <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} disabled={vacDays >= MAX_VACATION_DAYS}
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setVacDays(d => Math.min(MAX_VACATION_DAYS, d + 1)); }}>
@@ -1860,16 +1861,16 @@ export default function SettingsScreen() {
                   </TouchableOpacity>
                 </View>
                 <View style={{ alignItems: 'center', marginBottom: 16 }}>
-                  <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 0.3 }}>
+                  <Text style={{ fontSize: 14, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 0.3 }}>
                     {vacFmtNice(vacStartKey)}  to  {vacFmtNice(addDaysKey(vacStartKey, vacDays - 1))}
                   </Text>
-                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 3 }}>
+                  <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textMuted, marginTop: 3 }}>
                     {vacDays} {vacDays === 1 ? 'Day Off' : 'Days Off'} · Resumes {vacFmtNice(addDaysKey(vacStartKey, vacDays))}
                   </Text>
                 </View>
                 <TouchableOpacity disabled={vacBusy} activeOpacity={0.85} onPress={handleStartVacation}
                   style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingVertical: 13, alignItems: 'center', opacity: vacBusy ? 0.5 : 1 }}>
-                  <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: '#fff', letterSpacing: 1 }}>START VACATION</Text>
+                  <Text style={{ fontSize: 14, fontFamily: Type.uiBold, color: '#fff', letterSpacing: 1 }}>START VACATION</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -1883,8 +1884,8 @@ export default function SettingsScreen() {
             {/* Permission banner */}
             {notifPermission === 'denied' && (
               <View style={{ backgroundColor: theme.accentRedBg ?? 'rgba(204,51,51,0.12)', borderWidth: 1, borderColor: theme.accentRed, borderRadius: 10, padding: 12, marginBottom: 16 }}>
-                <Text style={{ color: theme.accentRed, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Notifications Blocked</Text>
-                <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_400Regular', marginTop: 4 }}>iOS permission was denied. Go to Settings then Project J then Notifications to enable.</Text>
+                <Text style={{ color: theme.accentRed, fontSize: 13, fontFamily: Type.uiSemibold }}>Notifications Blocked</Text>
+                <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: Type.ui, marginTop: 4 }}>iOS permission was denied. Go to Settings then Project J then Notifications to enable.</Text>
               </View>
             )}
 
@@ -1911,22 +1912,22 @@ export default function SettingsScreen() {
             {(notifSettings.masterEnabled || notifTutorialActive) && (
               <>
                 {/* ── Quiet Hours ── */}
-                <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginTop: 16, marginBottom: 10 }}>Quiet Hours</Text>
+                <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginTop: 16, marginBottom: 10 }}>Quiet Hours</Text>
                 <View ref={quietHoursRowRef} style={{ flexDirection: 'row', gap: 12, marginBottom: 4 }}>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold', marginBottom: 6 }}>From</Text>
+                    <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.uiSemibold, marginBottom: 6 }}>From</Text>
                     <TouchableOpacity
                       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openTimePicker('quietStart', notifSettings.quietStart); }}
                       style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 10, alignItems: 'center' }}>
-                      <Text style={{ color: theme.textPrimary, fontSize: 15, fontFamily: 'DMSans_600SemiBold' }}>{formatNotifTime(notifSettings.quietStart)}</Text>
+                      <Text style={{ color: theme.textPrimary, fontSize: 15, fontFamily: Type.uiSemibold }}>{formatNotifTime(notifSettings.quietStart)}</Text>
                     </TouchableOpacity>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold', marginBottom: 6 }}>Until</Text>
+                    <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.uiSemibold, marginBottom: 6 }}>Until</Text>
                     <TouchableOpacity
                       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openTimePicker('quietEnd', notifSettings.quietEnd); }}
                       style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 10, alignItems: 'center' }}>
-                      <Text style={{ color: theme.textPrimary, fontSize: 15, fontFamily: 'DMSans_600SemiBold' }}>{formatNotifTime(notifSettings.quietEnd)}</Text>
+                      <Text style={{ color: theme.textPrimary, fontSize: 15, fontFamily: Type.uiSemibold }}>{formatNotifTime(notifSettings.quietEnd)}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1947,15 +1948,15 @@ export default function SettingsScreen() {
                 {/* ── Daily cap ── */}
                 <View style={{ height: 1, backgroundColor: theme.borderInput, marginTop: 16, marginBottom: 12 }} />
                 <View ref={notifCapRef}>
-                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>How Many Per Day</Text>
-                  <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}>Streaks, IF window, summaries, and water reminders are not counted toward this.</Text>
+                  <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>How Many Per Day</Text>
+                  <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginBottom: 10 }}>Streaks, IF window, summaries, and water reminders are not counted toward this.</Text>
                   <View style={{ flexDirection: 'row', gap: 8 }}>
                     {([3, 5, 'all'] as const).map(cap => (
                       <TouchableOpacity
                         key={String(cap)}
                         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateNotifSettings({ ...notifSettings, dailyCap: cap }); }}
                         style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: notifSettings.dailyCap === cap ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: notifSettings.dailyCap === cap ? theme.accentBlueBorder : theme.borderInput }}>
-                        <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: notifSettings.dailyCap === cap ? theme.accentBlue : theme.textMuted }}>{cap === 'all' ? 'All' : String(cap)}</Text>
+                        <Text style={{ fontSize: 14, fontFamily: Type.uiBold, color: notifSettings.dailyCap === cap ? theme.accentBlue : theme.textMuted }}>{cap === 'all' ? 'All' : String(cap)}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -1964,7 +1965,7 @@ export default function SettingsScreen() {
                 {/* ── Category pills ── */}
                 <View style={{ height: 1, backgroundColor: theme.borderInput, marginTop: 16, marginBottom: 12 }} />
                 <View ref={notifCategoriesRef}>
-                <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>What Can We Notify You About</Text>
+                <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>What Can We Notify You About</Text>
                 <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
                   {([
                     { key: 'categoryFitness' as const, label: 'Fitness' },
@@ -1984,7 +1985,7 @@ export default function SettingsScreen() {
                         }}
                         activeOpacity={isNRN ? 1 : 0.7}
                         style={{ paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: isOn ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: isOn ? theme.accentBlueBorder : theme.borderInput, opacity: isNRN ? 0.4 : 1 }}>
-                        <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: isOn ? theme.accentBlue : theme.textMuted }}>{label}</Text>
+                        <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: isOn ? theme.accentBlue : theme.textMuted }}>{label}</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -1995,15 +1996,15 @@ export default function SettingsScreen() {
                 {(notifSettings.categoryFitness || notifTutorialActive) && (
                   <View ref={notifWaterRef}>
                     <View style={{ height: 1, backgroundColor: theme.borderInput, marginTop: 16, marginBottom: 12 }} />
-                    <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>Water Reminders</Text>
-                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}>Spaced evenly through your waking hours. Does not count toward the daily cap.</Text>
+                    <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>Water Reminders</Text>
+                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginBottom: 10 }}>Spaced evenly through your waking hours. Does not count toward the daily cap.</Text>
                     <View style={{ flexDirection: 'row', gap: 8 }}>
                       {([0, 1, 2, 3, 4] as const).map(count => (
                         <TouchableOpacity
                           key={count}
                           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateNotifSettings({ ...notifSettings, waterCount: count }); }}
                           style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: notifSettings.waterCount === count ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: notifSettings.waterCount === count ? theme.accentBlueBorder : theme.borderInput }}>
-                          <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: notifSettings.waterCount === count ? theme.accentBlue : theme.textMuted }}>{count === 0 ? 'Off' : String(count)}</Text>
+                          <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: notifSettings.waterCount === count ? theme.accentBlue : theme.textMuted }}>{count === 0 ? 'Off' : String(count)}</Text>
                         </TouchableOpacity>
                       ))}
                     </View>
@@ -2016,19 +2017,19 @@ export default function SettingsScreen() {
                 <NotifGroup label="Advanced" summary="Activity time, weight frequency, and more" theme={theme}>
 
                   {/* Activity reminder time */}
-                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>Activity Reminder Time</Text>
+                  <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>Activity Reminder Time</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                    <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', flex: 1, paddingRight: 10 }}>Fires if no workout and steps below 75% of goal</Text>
+                    <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: Type.ui, flex: 1, paddingRight: 10 }}>Fires if no workout and steps below 75% of goal</Text>
                     <TouchableOpacity
                       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openTimePicker('activityTime', notifSettings.activityTime); }}
                       style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14, marginLeft: 12 }}>
-                      <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>{formatNotifTime(notifSettings.activityTime)}</Text>
+                      <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: Type.uiSemibold }}>{formatNotifTime(notifSettings.activityTime)}</Text>
                     </TouchableOpacity>
                   </View>
 
                   {/* Weight log frequency */}
                   <View style={{ height: 1, backgroundColor: theme.borderInput, marginBottom: 12 }} />
-                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>Weight Log Frequency</Text>
+                  <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>Weight Log Frequency</Text>
                   <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
                     {([
                       { value: 'daily' as const, label: 'Daily' },
@@ -2039,7 +2040,7 @@ export default function SettingsScreen() {
                         key={value}
                         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateNotifSettings({ ...notifSettings, weightFrequency: value }); }}
                         style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center', backgroundColor: notifSettings.weightFrequency === value ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: notifSettings.weightFrequency === value ? theme.accentBlueBorder : theme.borderInput }}>
-                        <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: notifSettings.weightFrequency === value ? theme.accentBlue : theme.textMuted, textAlign: 'center' }}>{label}</Text>
+                        <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: notifSettings.weightFrequency === value ? theme.accentBlue : theme.textMuted, textAlign: 'center' }}>{label}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -2048,13 +2049,13 @@ export default function SettingsScreen() {
                   {faithJourney === 'rooted' && (
                     <>
                       <View style={{ height: 1, backgroundColor: theme.borderInput, marginBottom: 12 }} />
-                      <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>Prayer Check-In Time</Text>
+                      <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>Prayer Check-In Time</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                        <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular' }}>Fires if no prayer logged today</Text>
+                        <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: Type.ui }}>Fires if no prayer logged today</Text>
                         <TouchableOpacity
                           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openTimePicker('prayerTime', notifSettings.prayerTime); }}
                           style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14, marginLeft: 12 }}>
-                          <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>{formatNotifTime(notifSettings.prayerTime)}</Text>
+                          <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: Type.uiSemibold }}>{formatNotifTime(notifSettings.prayerTime)}</Text>
                         </TouchableOpacity>
                       </View>
                     </>
@@ -2062,33 +2063,33 @@ export default function SettingsScreen() {
 
                   {/* IF window reminder lead time */}
                   <View style={{ height: 1, backgroundColor: theme.borderInput, marginBottom: 12 }} />
-                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>IF Window Reminder</Text>
+                  <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>IF Window Reminder</Text>
                   <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
                     {([15, 30, 60] as const).map(mins => (
                       <TouchableOpacity
                         key={mins}
                         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateNotifSettings({ ...notifSettings, ifLeadMins: mins }); }}
                         style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center', backgroundColor: notifSettings.ifLeadMins === mins ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: notifSettings.ifLeadMins === mins ? theme.accentBlueBorder : theme.borderInput }}>
-                        <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: notifSettings.ifLeadMins === mins ? theme.accentBlue : theme.textMuted }}>{mins} min</Text>
+                        <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: notifSettings.ifLeadMins === mins ? theme.accentBlue : theme.textMuted }}>{mins} min</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
-                  <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 4 }}>Minutes before eating window closes</Text>
+                  <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.ui, marginBottom: 4 }}>Minutes before eating window closes</Text>
 
                   {/* Streak protection offset */}
                   <View style={{ height: 1, backgroundColor: theme.borderInput, marginTop: 8, marginBottom: 12 }} />
-                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>Streak Protection Timing</Text>
+                  <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>Streak Protection Timing</Text>
                   <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
                     {([30, 45, 60] as const).map(mins => (
                       <TouchableOpacity
                         key={mins}
                         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateNotifSettings({ ...notifSettings, streakOffsetMins: mins }); }}
                         style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center', backgroundColor: notifSettings.streakOffsetMins === mins ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: notifSettings.streakOffsetMins === mins ? theme.accentBlueBorder : theme.borderInput }}>
-                        <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: notifSettings.streakOffsetMins === mins ? theme.accentBlue : theme.textMuted }}>{mins} min</Text>
+                        <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: notifSettings.streakOffsetMins === mins ? theme.accentBlue : theme.textMuted }}>{mins} min</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
-                  <Text style={{ fontSize: 11, color: avgBedtime ? theme.accentBlue : theme.textDim, fontFamily: 'DMSans_400Regular' }}>
+                  <Text style={{ fontSize: 11, color: avgBedtime ? theme.accentBlue : theme.textDim, fontFamily: Type.ui }}>
                     {avgBedtime ? `Minutes before your avg bedtime of ${avgBedtime}` : 'Not enough sleep data yet (needs 3+ nights). Defaults to 9:00 PM.'}
                   </Text>
 
@@ -2104,7 +2105,7 @@ export default function SettingsScreen() {
         <CollapsibleSection label="Help" subtitle="Definitions · Guides · Prayer · Feedback" defaultOpen={false} theme={theme}>
           <View style={{ paddingBottom: 8 }}>
             <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 8, marginBottom: 8 }}>
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Definitions</Text>
+              <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Definitions</Text>
             </View>
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/definitions'); }} activeOpacity={0.7}>
               <View style={{ flex: 1 }}>
@@ -2114,7 +2115,7 @@ export default function SettingsScreen() {
               <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
             </TouchableOpacity>
             <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 16, marginBottom: 8 }}>
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Tips {'&'} Guides</Text>
+              <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Tips {'&'} Guides</Text>
             </View>
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/mission'); }} activeOpacity={0.7}>
               <View style={{ flex: 1 }}>
@@ -2124,7 +2125,7 @@ export default function SettingsScreen() {
               <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
             </TouchableOpacity>
             <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 16, marginBottom: 8 }}>
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Tutorials</Text>
+              <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Tutorials</Text>
             </View>
             <TouchableOpacity
               style={[styles.row, { borderTopColor: theme.borderCard }]}
@@ -2138,7 +2139,7 @@ export default function SettingsScreen() {
               <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
             </TouchableOpacity>
             <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 16, marginBottom: 8 }}>
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Prayer</Text>
+              <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Prayer</Text>
             </View>
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowPrayerModal(true); }} activeOpacity={0.7}>
               <View style={{ flex: 1 }}>
@@ -2148,7 +2149,7 @@ export default function SettingsScreen() {
               <Ionicons name="heart" size={15} color={theme.textMuted} />
             </TouchableOpacity>
             <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 16, marginBottom: 8 }}>
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Feedback</Text>
+              <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Feedback</Text>
             </View>
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setFeedbackOpen(true); }} activeOpacity={0.7}>
               <View style={{ flex: 1 }}>
@@ -2203,7 +2204,7 @@ export default function SettingsScreen() {
                 if (!label) return null;
                 return (
                   <View style={{ backgroundColor: theme.bgInput, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, marginLeft: 8 }}>
-                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold' }}>{label}</Text>
+                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.uiSemibold }}>{label}</Text>
                   </View>
                 );
               })()}
@@ -3816,14 +3817,17 @@ export default function SettingsScreen() {
                 setHasGoalChanges(false);
                 Animated.timing(goalFloatAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start();
               }}
-              style={{ backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput, borderRadius: 10, padding: 16, alignItems: 'center', width: 90 }}>
-              <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.textMuted }}>CANCEL</Text>
+              // The old hardcoded width:90 was sized around BEBAS, which is extremely condensed. Onest at
+              // the same point size is much wider, so "CANCEL" wrapped to two lines. Let the button size
+              // to its label instead of pinning it to a width the new face cannot honour.
+              style={{ backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput, borderRadius: 10, paddingVertical: 16, paddingHorizontal: 18, alignItems: 'center' }}>
+              <Text numberOfLines={1} style={{ fontSize: 18, fontFamily: Type.uiBold, letterSpacing: 1, color: theme.textMuted }}>CANCEL</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); saveGoals(); }}
               disabled={!isMacroValid()}
               style={{ flex: 1, backgroundColor: isMacroValid() ? theme.accentBlue : theme.bgInput, borderWidth: isMacroValid() ? 0 : 0.5, borderColor: theme.borderInput, borderRadius: 10, padding: 16, alignItems: 'center' }}>
-              <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: isMacroValid() ? theme.bgPrimary : theme.textMuted }}>
+              <Text style={{ fontSize: 18, fontFamily: Type.uiBold, letterSpacing: 2, color: isMacroValid() ? theme.bgPrimary : theme.textMuted }}>
                 {goalSaved ? 'SAVED' : !isMacroValid() ? 'FIX MACROS TO SAVE' : 'SAVE GOALS'}
               </Text>
             </TouchableOpacity>
@@ -3860,28 +3864,28 @@ export default function SettingsScreen() {
             </TouchableOpacity>
             {modeSwitchTarget && (
               <View style={{ paddingHorizontal: 20, paddingBottom: 18, paddingTop: 4 }}>
-                <Text style={{ fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.accentBlue, textAlign: 'center', marginBottom: 8 }}>
+                <Text style={{ fontSize: 24, fontFamily: Type.num, letterSpacing: 1, color: theme.accentBlue, textAlign: 'center', marginBottom: 8 }}>
                   Switch to {MODE_LABEL[modeSwitchTarget]}?
                 </Text>
 
-                <Text style={{ fontSize: 13.5, lineHeight: 20, fontFamily: 'DMSans_400Regular', color: theme.textMuted, textAlign: 'center', marginBottom: 16 }}>
+                <Text style={{ fontSize: 13.5, lineHeight: 20, fontFamily: Type.ui, color: theme.textMuted, textAlign: 'center', marginBottom: 16 }}>
                   {MODE_SWITCH_COPY[modeSwitchTarget]}
                 </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.bgInput, borderRadius: 12, borderWidth: 0.5, borderColor: theme.borderInput, padding: 12, marginBottom: 16 }}>
                   <View style={{ flex: 1, paddingRight: 12 }}>
-                    <Text style={{ fontSize: 14, fontFamily: 'DMSans_500Medium', color: theme.textPrimary, marginBottom: 2 }}>Apply {MODE_LABEL[modeSwitchTarget]} layout</Text>
-                    <Text style={{ fontSize: 11, lineHeight: 16, fontFamily: 'DMSans_400Regular', color: theme.textMuted }}>Off keeps your current home cards. On rearranges them to this mode's defaults.</Text>
+                    <Text style={{ fontSize: 14, fontFamily: Type.uiMedium, color: theme.textPrimary, marginBottom: 2 }}>Apply {MODE_LABEL[modeSwitchTarget]} layout</Text>
+                    <Text style={{ fontSize: 11, lineHeight: 16, fontFamily: Type.ui, color: theme.textMuted }}>Off keeps your current home cards. On rearranges them to this mode's defaults.</Text>
                   </View>
                   <ToggleSwitch value={applyLayoutDefaults} onValueChange={val => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setApplyLayoutDefaults(val); }} />
                 </View>
                 <View style={{ flexDirection: 'row', gap: 10 }}>
                   <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeModeModal(); }} activeOpacity={0.8}
                     style={{ flex: 1, paddingVertical: 13, borderRadius: 10, borderWidth: 1, borderColor: theme.borderCard, alignItems: 'center' }}>
-                    <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary }}>Cancel</Text>
+                    <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.textSecondary }}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={confirmModeSwitch} activeOpacity={0.85}
                     style={{ flex: 1, paddingVertical: 13, borderRadius: 10, backgroundColor: theme.accentBlueRaw, alignItems: 'center' }}>
-                    <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: '#ffffff' }}>{modeSwitchTarget === 'discipline' ? "I'm In" : 'Switch'}</Text>
+                    <Text style={{ fontSize: 14, fontFamily: Type.uiBold, color: '#ffffff' }}>{modeSwitchTarget === 'discipline' ? "I'm In" : 'Switch'}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -3911,11 +3915,11 @@ export default function SettingsScreen() {
           <Animated.View style={{ backgroundColor: theme.bgSheet, borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingBottom: insets.bottom + 8, transform: [{ translateY: sheetAnim }] }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 6 }}>
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeTimePicker(); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                <Text style={{ fontSize: 14, fontFamily: 'DMSans_400Regular', color: theme.textMuted }}>Cancel</Text>
+                <Text style={{ fontSize: 14, fontFamily: Type.ui, color: theme.textMuted }}>Cancel</Text>
               </TouchableOpacity>
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.accentBlueRaw, textTransform: 'uppercase' }}>Set Time</Text>
+              <Text style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, color: theme.accentBlueRaw, textTransform: 'uppercase' }}>Set Time</Text>
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); confirmTimePicker(); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlueRaw }}>Done</Text>
+                <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.accentBlueRaw }}>Done</Text>
               </TouchableOpacity>
             </View>
             <View style={{ width: Dimensions.get('window').width, alignItems: 'center' }}>
@@ -3961,16 +3965,16 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   header:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5, marginBottom: 0 },
-  headerLabel: { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: 'DMSans_700Bold' },
-  headerTitle: { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  headerLabel: { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: Type.uiBold },
+  headerTitle: { fontSize: 32, fontFamily: Type.display, letterSpacing: 0.3 },
   content:     { padding: 16, paddingBottom: 80 },
   section:     { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, marginBottom: 12, overflow: 'hidden', shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 6 },
-  sectionLabel:{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold' },
+  sectionLabel:{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold },
   row:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 0.5 },
-  rowTitle:    { fontSize: 14, fontFamily: 'DMSans_500Medium', marginBottom: 2 },
-  rowSub:      { fontSize: 11, fontFamily: 'DMSans_400Regular' },
-  goalLabel:   { fontSize: 9, fontFamily: 'DMSans_600SemiBold', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4, marginTop: 2 },
-  goalHint:    { fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginTop: 4 },
-  goalInput:   { borderWidth: 1, borderRadius: 8, padding: 10, fontSize: 15, fontFamily: 'DMSans_400Regular', marginBottom: 4 },
+  rowTitle:    { fontSize: 14, fontFamily: Type.uiMedium, marginBottom: 2 },
+  rowSub:      { fontSize: 11, fontFamily: Type.ui },
+  goalLabel:   { fontSize: 9, fontFamily: Type.uiSemibold, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4, marginTop: 2 },
+  goalHint:    { fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic', marginTop: 4 },
+  goalInput:   { borderWidth: 1, borderRadius: 8, padding: 10, fontSize: 15, fontFamily: Type.ui, marginBottom: 4 },
   modeBtn:     { flex: 1, padding: 10, borderWidth: 0.5, borderRadius: 8, alignItems: 'center' },
 });

@@ -13,6 +13,7 @@ import { DEFAULT_MEAL_SLOTS, MealSlot, loadMealSlots } from '../utils/mealSlots'
 import { ACHIEVEMENTS, checkAndUnlock, loadAchievements, checkMomentumAchievements, checkNutritionAchievements, getCelebTier } from '../achievementData';
 import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
+import { Type } from '../typography';
 
 export default function RecipeLogScreen() {
   const insets = useSafeAreaInsets();
@@ -260,8 +261,8 @@ export default function RecipeLogScreen() {
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 14, paddingTop: 14, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
                 {exts.map(e => (
                   <View key={e.label} style={{ width: '25%', alignItems: 'center', marginBottom: 12 }}>
-                    <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }}>{e.val}{e.unit}</Text>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_400Regular', letterSpacing: 1, marginTop: 2, textAlign: 'center' }}>{e.label}</Text>
+                    <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.uiSemibold }}>{e.val}{e.unit}</Text>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.ui, letterSpacing: 1, marginTop: 2, textAlign: 'center' }}>{e.label}</Text>
                   </View>
                 ))}
               </View>
@@ -293,8 +294,8 @@ export default function RecipeLogScreen() {
                   </View>
                 </View>
                 <View style={{ alignItems: 'flex-end', justifyContent: 'flex-start' }}>
-                  <Text style={{ fontSize: 18, color: theme.accentGreen, fontFamily: 'BebasNeue_400Regular' }}>{ing.cal}</Text>
-                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_400Regular', letterSpacing: 1 }}>kcal</Text>
+                  <Text style={{ fontSize: 18, color: theme.accentGreen, fontFamily: Type.num }}>{ing.cal}</Text>
+                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.ui, letterSpacing: 1 }}>kcal</Text>
                 </View>
               </View>
             ))}
@@ -409,38 +410,38 @@ const useStyles = (theme: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.bgPrimary },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: theme.borderCard },
   backBtn: { padding: 4, width: 60 },
-  backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_500Medium' },
-  headerTitle: { fontSize: 20, color: theme.textSecondary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, flex: 1, textAlign: 'center' },
+  backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: Type.uiMedium },
+  headerTitle: { fontSize: 20, color: theme.textSecondary, fontFamily: Type.display, letterSpacing: 0.3, flex: 1, textAlign: 'center' },
   editBtn: { backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 },
-  editBtnText: { color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
+  editBtnText: { color: theme.accentBlue, fontSize: 13, fontFamily: Type.uiSemibold },
   content: { padding: 16, paddingBottom: 80 },
   infoCard: { backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, padding: 16, marginBottom: 16 },
-  infoText: { fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 12 },
+  infoText: { fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginBottom: 12 },
   macroRow: { flexDirection: 'row', justifyContent: 'space-between' },
   macroStat: { alignItems: 'center', flex: 1 },
-  macroVal: { fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
-  macroUnit: { fontSize: 13, fontFamily: 'DMSans_400Regular', letterSpacing: 0 },
-  macroLabel: { fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 2, textAlign: 'center' },
+  macroVal: { fontSize: 22, fontFamily: Type.num, letterSpacing: 1 },
+  macroUnit: { fontSize: 13, fontFamily: Type.ui, letterSpacing: 0 },
+  macroLabel: { fontSize: 10, color: theme.textMuted, fontFamily: Type.ui, marginTop: 2, textAlign: 'center' },
   section: { marginBottom: 16 },
-  sectionLabel: { fontSize: 9, letterSpacing: 3, color: theme.textMuted, textTransform: 'uppercase', fontFamily: 'DMSans_500Medium', marginBottom: 8 },
+  sectionLabel: { fontSize: 9, letterSpacing: 3, color: theme.textMuted, textTransform: 'uppercase', fontFamily: Type.uiMedium, marginBottom: 8 },
   ingredientRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle },
-  ingredientName: { fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_500Medium' },
-  ingredientMacro: { fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular' },
+  ingredientName: { fontSize: 13, color: theme.textPrimary, fontFamily: Type.uiMedium },
+  ingredientMacro: { fontSize: 11, color: theme.textMuted, fontFamily: Type.ui },
   toggleRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   toggleBtn: { flex: 1, padding: 10, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, alignItems: 'center' },
   toggleBtnActive: { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder },
-  toggleBtnText: { color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_500Medium' },
+  toggleBtnText: { color: theme.textMuted, fontSize: 13, fontFamily: Type.uiMedium },
   amountRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  amountLabel: { fontSize: 14, color: theme.textMuted, fontFamily: 'DMSans_400Regular' },
-  amountInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 24, fontFamily: 'BebasNeue_400Regular', width: 120, textAlign: 'center' },
+  amountLabel: { fontSize: 14, color: theme.textMuted, fontFamily: Type.ui },
+  amountInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 24, fontFamily: Type.num, width: 120, textAlign: 'center' },
   servingBtns: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   servingBtn: { flex: 1, padding: 10, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, alignItems: 'center' },
   servingBtnActive: { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder },
-  servingBtnText: { color: theme.textMuted, fontSize: 14, fontFamily: 'DMSans_500Medium' },
+  servingBtnText: { color: theme.textMuted, fontSize: 14, fontFamily: Type.uiMedium },
   nutritionCard: { backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, padding: 16, marginBottom: 20 },
-  nutritionTitle: { fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 },
+  nutritionTitle: { fontSize: 11, color: theme.textMuted, fontFamily: Type.uiMedium, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 },
   logBtn: { backgroundColor: theme.accentGreen, borderRadius: 10, padding: 16, alignItems: 'center' },
-  logBtnText: { color: theme.bgPrimary, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  logBtnText: { color: theme.bgPrimary, fontSize: 18, fontFamily: Type.uiBold, letterSpacing: 2 },
   modalOverlay: { flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
   modal: {
     backgroundColor: theme.bgSheet,
@@ -455,9 +456,9 @@ const useStyles = (theme: any) => StyleSheet.create({
     alignItems: 'center',
   },
   handlePill: { width: 36, height: 4, backgroundColor: theme.borderCard, borderRadius: 2, marginBottom: 16 },
-  modalTitle: { fontSize: 18, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginBottom: 16 },
+  modalTitle: { fontSize: 18, color: theme.accentBlueRaw, fontFamily: Type.display, letterSpacing: 0.3, marginBottom: 16 },
   mealOption: { width: '100%', padding: 14, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle, alignItems: 'center' },
-  mealOptionText: { fontSize: 16, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' },
+  mealOptionText: { fontSize: 16, color: theme.textSecondary, fontFamily: Type.uiMedium },
   cancelBtn: { width: '100%', padding: 14, alignItems: 'center', marginTop: 4 },
-  cancelBtnText: { color: theme.accentRed, fontSize: 14, fontFamily: 'DMSans_500Medium' },
+  cancelBtnText: { color: theme.accentRed, fontSize: 14, fontFamily: Type.uiMedium },
 });

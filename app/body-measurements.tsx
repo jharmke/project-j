@@ -25,6 +25,7 @@ import {
   toDisplay, unitLabel, relativeAge, daysSince, STALE_DAYS,
   BodyMeasureSettings, BodyProfile, MeasureFieldKey,
 } from '../utils/bodyMeasurements';
+import { Type } from '../typography';
 
 const DISCLAIMER_KEY = 'pj_navy_bf_disclaimer_seen';
 
@@ -105,7 +106,7 @@ export default function BodyMeasurementsScreen() {
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="chevron-back" size={20} color={theme.accentBlue} />
           </TouchableOpacity>
-          <Text style={{ flex: 1, textAlign: 'center', fontSize: 26, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.accentBlueRaw }}>BODY</Text>
+          <Text style={{ flex: 1, textAlign: 'center', fontSize: 26, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentBlueRaw }}>BODY</Text>
           <View style={{ width: 38, alignItems: 'center', justifyContent: 'center' }}>
             <TooltipIcon tooltipKey="body_measurements" size={18} />
           </View>
@@ -117,8 +118,8 @@ export default function BodyMeasurementsScreen() {
               <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: accent + '1A', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
                 <Ionicons name="body" size={28} color={accent} />
               </View>
-              <Text style={{ fontSize: 16, fontFamily: 'DMSans_700Bold', color: theme.textSecondary, marginBottom: 6 }}>No measurements yet</Text>
-              <Text style={{ fontSize: 13, lineHeight: 19, fontFamily: 'DMSans_400Regular', color: theme.textMuted, textAlign: 'center', paddingHorizontal: 24 }}>
+              <Text style={{ fontSize: 16, fontFamily: Type.uiBold, color: theme.textSecondary, marginBottom: 6 }}>No measurements yet</Text>
+              <Text style={{ fontSize: 13, lineHeight: 19, fontFamily: Type.ui, color: theme.textMuted, textAlign: 'center', paddingHorizontal: 24 }}>
                 Grab a tape measure and tap the + to log your first session. Tracking a few key spots over time tells the real story.
               </Text>
             </View>
@@ -131,22 +132,22 @@ export default function BodyMeasurementsScreen() {
                 {/* Hero: Navy BF% + Weight */}
                 <View style={{ flexDirection: 'row', marginBottom: 4 }}>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: 'DMSans_700Bold' }}>BODY FAT</Text>
-                    <Text style={{ fontSize: 34, fontFamily: 'BebasNeue_400Regular', color: theme.textPrimary, letterSpacing: 0.5 }}>
+                    <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: Type.uiBold }}>BODY FAT</Text>
+                    <Text style={{ fontSize: 34, fontFamily: Type.num, color: theme.textPrimary, letterSpacing: 0.5 }}>
                       {bf ? `${bf.value}%` : '--'}
                     </Text>
-                    <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textDim }}>{bf ? `Navy · ${relativeAge(bf.date)}` : 'Log neck + waist'}</Text>
+                    <Text style={{ fontSize: 10, fontFamily: Type.ui, color: theme.textDim }}>{bf ? `Navy · ${relativeAge(bf.date)}` : 'Log neck + waist'}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: 'DMSans_700Bold' }}>WEIGHT</Text>
-                    <Text style={{ fontSize: 34, fontFamily: 'BebasNeue_400Regular', color: theme.textPrimary, letterSpacing: 0.5 }}>
+                    <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: Type.uiBold }}>WEIGHT</Text>
+                    <Text style={{ fontSize: 34, fontFamily: Type.num, color: theme.textPrimary, letterSpacing: 0.5 }}>
                       {profile.weight ? `${profile.weight}` : '--'}<Text style={{ fontSize: 15, color: theme.textMuted }}>{profile.weight ? ' lb' : ''}</Text>
                     </Text>
-                    <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textDim }}>From your profile</Text>
+                    <Text style={{ fontSize: 10, fontFamily: Type.ui, color: theme.textDim }}>From your profile</Text>
                   </View>
                 </View>
 
-                <Text style={{ fontSize: 9.5, fontFamily: 'DMSans_400Regular', color: theme.textDim, fontStyle: 'italic', marginTop: 2, marginBottom: 12 }}>
+                <Text style={{ fontSize: 9.5, fontFamily: Type.ui, color: theme.textDim, fontStyle: 'italic', marginTop: 2, marginBottom: 12 }}>
                   For informational purposes only. Not medical advice.
                 </Text>
 
@@ -157,16 +158,16 @@ export default function BodyMeasurementsScreen() {
                     const stale = lk ? daysSince(lk.date) > STALE_DAYS : false;
                     return (
                       <View key={f.key} style={{ width: '50%', paddingVertical: 6, paddingRight: 8 }}>
-                        <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1, textTransform: 'uppercase' }} numberOfLines={1}>{f.label}</Text>
+                        <Text style={{ fontSize: 9, fontFamily: Type.uiBold, color: theme.textMuted, letterSpacing: 1, textTransform: 'uppercase' }} numberOfLines={1}>{f.label}</Text>
                         {lk ? (
                           <>
-                            <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5, color: stale ? theme.textDim : theme.textSecondary }}>
-                              {toDisplay(lk.value, u)}<Text style={{ fontSize: 11, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}> {unitLabel(u)}</Text>
+                            <Text style={{ fontSize: 22, fontFamily: Type.num, letterSpacing: 0.5, color: stale ? theme.textDim : theme.textSecondary }}>
+                              {toDisplay(lk.value, u)}<Text style={{ fontSize: 11, fontFamily: Type.uiMedium, color: theme.textMuted }}> {unitLabel(u)}</Text>
                             </Text>
-                            <Text style={{ fontSize: 9.5, fontFamily: 'DMSans_400Regular', color: stale ? theme.accentAmber : theme.textDim }}>{relativeAge(lk.date)}</Text>
+                            <Text style={{ fontSize: 9.5, fontFamily: Type.ui, color: stale ? theme.accentAmber : theme.textDim }}>{relativeAge(lk.date)}</Text>
                           </>
                         ) : (
-                          <Text style={{ fontSize: 14, fontFamily: 'DMSans_500Medium', color: theme.textDim, marginTop: 2 }}>Not logged</Text>
+                          <Text style={{ fontSize: 14, fontFamily: Type.uiMedium, color: theme.textDim, marginTop: 2 }}>Not logged</Text>
                         )}
                       </View>
                     );
@@ -192,7 +193,7 @@ export default function BodyMeasurementsScreen() {
                     return <Sparkline key={f.key} label={f.label} series={series} unit={u} theme={theme} isMindful={isMindful} />;
                   })}
                   {MEASURE_FIELDS.every(f => entries.filter(e => typeof e.values[f.key] === 'number').length < 2) && (
-                    <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, textAlign: 'center', paddingVertical: 12 }}>
+                    <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textMuted, textAlign: 'center', paddingVertical: 12 }}>
                       Log a field at least twice to see its trend.
                     </Text>
                   )}
@@ -210,8 +211,8 @@ export default function BodyMeasurementsScreen() {
                       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setExpandedId(isOpen ? null : entry.id); }}
                       style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14 }}>
                       <View>
-                        <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: theme.textPrimary }}>{formatDate(entry.date)}</Text>
-                        <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted }}>
+                        <Text style={{ fontSize: 15, fontFamily: Type.uiBold, color: theme.textPrimary }}>{formatDate(entry.date)}</Text>
+                        <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textMuted }}>
                           {count} field{count === 1 ? '' : 's'}{typeof entry.bodyFat === 'number' ? ` · ${entry.bodyFat}% BF` : ''}
                         </Text>
                       </View>
@@ -222,8 +223,8 @@ export default function BodyMeasurementsScreen() {
                         <View style={{ height: 0.5, backgroundColor: theme.borderCard, marginBottom: 10 }} />
                         {MEASURE_FIELDS.filter(f => typeof entry.values[f.key] === 'number').map(f => (
                           <View key={f.key} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                            <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary }}>{f.label}</Text>
-                            <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary }}>
+                            <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textSecondary }}>{f.label}</Text>
+                            <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textPrimary }}>
                               {toDisplay(entry.values[f.key] as number, u)} {unitLabel(u)}
                             </Text>
                           </View>
@@ -233,13 +234,13 @@ export default function BodyMeasurementsScreen() {
                             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/body-measurement-log', params: { id: entry.id } }); }}
                             style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder, borderWidth: 1, borderRadius: 8, paddingVertical: 10 }}>
                             <Ionicons name="create-outline" size={15} color={theme.accentBlue} />
-                            <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>Edit</Text>
+                            <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>Edit</Text>
                           </TouchableOpacity>
                           <TouchableOpacity
                             onPress={() => onDelete(entry.id)}
                             style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder, borderWidth: 1, borderRadius: 8, paddingVertical: 10, paddingHorizontal: 16 }}>
                             <Ionicons name="trash-outline" size={15} color={theme.accentRed} />
-                            <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.accentRed }}>Delete</Text>
+                            <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.accentRed }}>Delete</Text>
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -270,15 +271,15 @@ export default function BodyMeasurementsScreen() {
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.overlayBg, paddingHorizontal: 28 }}>
             <View style={{ width: '100%', backgroundColor: theme.bgSheet, borderRadius: 18, borderTopWidth: 4, borderTopColor: accent, padding: 22, ...shadowStyle }}>
               <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle, alignSelf: 'center', marginBottom: 14 }} />
-              <Text style={{ fontSize: 18, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, marginBottom: 10, textAlign: 'center' }}>About Body Fat %</Text>
-              <Text style={{ fontSize: 13.5, lineHeight: 21, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, textAlign: 'center' }}>
+              <Text style={{ fontSize: 18, fontFamily: Type.uiBold, color: theme.textPrimary, marginBottom: 10, textAlign: 'center' }}>About Body Fat %</Text>
+              <Text style={{ fontSize: 13.5, lineHeight: 21, fontFamily: Type.ui, color: theme.textSecondary, textAlign: 'center' }}>
                 This uses the U.S. Navy tape method to estimate body fat from your neck, waist{profile.sex === 'female' ? ', hips' : ''} and height. It is an estimate, not a clinical scan like DEXA, and can be off by a few points. Use the trend over time, not any single number.
               </Text>
-              <Text style={{ fontSize: 11, lineHeight: 17, fontFamily: 'DMSans_400Regular', color: theme.textDim, textAlign: 'center', marginTop: 12, fontStyle: 'italic' }}>
+              <Text style={{ fontSize: 11, lineHeight: 17, fontFamily: Type.ui, color: theme.textDim, textAlign: 'center', marginTop: 12, fontStyle: 'italic' }}>
                 For informational purposes only. Not medical advice.
               </Text>
               <TouchableOpacity onPress={dismissDisclaimer} style={{ backgroundColor: accent, borderRadius: 10, paddingVertical: 13, alignItems: 'center', marginTop: 18 }}>
-                <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: '#fff' }}>Got it</Text>
+                <Text style={{ fontSize: 14, fontFamily: Type.uiBold, color: '#fff' }}>Got it</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -308,8 +309,8 @@ function Sparkline({ label, series, unit, theme, isMindful }: {
   return (
     <View style={{ backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, borderWidth: 0.5, borderRadius: 12, padding: 12, marginBottom: 8, flexDirection: 'row', alignItems: 'center' }}>
       <View style={{ width: 84 }}>
-        <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary }} numberOfLines={1}>{label}</Text>
-        <Text style={{ fontSize: 11, fontFamily: 'DMSans_500Medium', color: changeColor }}>
+        <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: theme.textSecondary }} numberOfLines={1}>{label}</Text>
+        <Text style={{ fontSize: 11, fontFamily: Type.uiMedium, color: changeColor }}>
           {change > 0 ? '+' : ''}{change} {unit}
         </Text>
       </View>
@@ -331,6 +332,6 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 },
   headerBtn: { width: 38, height: 38, borderRadius: 19, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   card: { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, padding: 16, marginBottom: 12 },
-  cardLabel: { fontSize: 9, letterSpacing: 3, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 12 },
+  cardLabel: { fontSize: 9, letterSpacing: 3, fontFamily: Type.uiBold, textTransform: 'uppercase', marginBottom: 12 },
   fab: { position: 'absolute', right: 22, width: 58, height: 58, borderRadius: 29, alignItems: 'center', justifyContent: 'center', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 10 },
 });

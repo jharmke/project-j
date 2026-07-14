@@ -14,6 +14,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { isOnboardingPreview, setOnboardingPreview } from '../../utils/onboardingPreview';
+import { Type } from '../../typography';
 
 const theme = THEMES['light'];
 
@@ -185,7 +186,7 @@ export default function ProfileSetupScreen() {
                 setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
               }}
             >
-              <Text style={{ color: birthday ? theme.textPrimary : theme.textPlaceholder, fontFamily: 'DMSans_400Regular', fontSize: 16 }}>
+              <Text style={{ color: birthday ? theme.textPrimary : theme.textPlaceholder, fontFamily: Type.ui, fontSize: 16 }}>
                 {birthday ? birthday.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Select your birthday'}
               </Text>
             </TouchableOpacity>
@@ -198,10 +199,10 @@ export default function ProfileSetupScreen() {
                 />
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, paddingHorizontal: 4, zIndex: 1 }}>
                   <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowPicker(false); setTempBirthday(null); }} style={{ paddingVertical: 12, paddingHorizontal: 16 }}>
-                    <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Cancel</Text>
+                    <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: Type.uiMedium }}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); if (tempBirthday) setBirthday(tempBirthday); setShowPicker(false); }} style={{ paddingVertical: 12, paddingHorizontal: 16 }}>
-                    <Text style={{ color: theme.accentBlueRaw, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Confirm</Text>
+                    <Text style={{ color: theme.accentBlueRaw, fontSize: 12, fontFamily: Type.uiSemibold }}>Confirm</Text>
                   </TouchableOpacity>
                 </View>
                 <View style={{ alignItems: 'center', width: '100%' }}>
@@ -277,23 +278,23 @@ const styles = StyleSheet.create({
   progressFill:     { height: '100%', borderRadius: 2 },
   backBtn:          { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   content:          { padding: 24, paddingTop: 16 },
-  screenLabel:      { fontSize: 9,  fontFamily: 'DMSans_700Bold',   letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 },
-  title:            { fontSize: 36, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginBottom: 6,
+  screenLabel:      { fontSize: 9,  fontFamily: Type.uiBold,   letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 },
+  title:            { fontSize: 36, fontFamily: Type.display, letterSpacing: 0.3, marginBottom: 6,
                       textShadowColor: 'rgba(0,0,0,0.12)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
-  subtitle:         { fontSize: 13, fontFamily: 'DMSans_400Regular', lineHeight: 20, marginBottom: 28 },
-  fieldLabel:       { fontSize: 9,  fontFamily: 'DMSans_700Bold',   letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8, marginTop: 20 },
-  input:            { borderWidth: 0.5, borderRadius: 10, padding: 14, fontSize: 16, fontFamily: 'DMSans_400Regular',
+  subtitle:         { fontSize: 13, fontFamily: Type.ui, lineHeight: 20, marginBottom: 28 },
+  fieldLabel:       { fontSize: 9,  fontFamily: Type.uiBold,   letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8, marginTop: 20 },
+  input:            { borderWidth: 0.5, borderRadius: 10, padding: 14, fontSize: 16, fontFamily: Type.ui,
                       shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 },
   inputRow:         { flexDirection: 'row', alignItems: 'center', gap: 8 },
   unitTag:          { borderWidth: 0.5, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 14,
                       shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 },
-  unitTagText:      { fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
+  unitTagText:      { fontSize: 14, fontFamily: Type.uiSemibold },
   segmentRow:       { flexDirection: 'row', gap: 8 },
   segmentBtn:       { flex: 1, borderWidth: 0.5, borderRadius: 10, paddingVertical: 12, alignItems: 'center',
                       shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 },
-  segmentText:      { fontSize: 12, fontFamily: 'DMSans_600SemiBold' },
+  segmentText:      { fontSize: 12, fontFamily: Type.uiSemibold },
   
   footer:           { paddingHorizontal: 24, paddingTop: 12, borderTopWidth: 0.5 },
   continueBtn:      { borderRadius: 14, paddingVertical: 18, alignItems: 'center' },
-  continueBtnText:  { fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 3 },
+  continueBtnText:  { fontSize: 18, fontFamily: Type.uiBold, letterSpacing: 1 },
 });

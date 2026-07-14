@@ -26,6 +26,7 @@ import { useAuth } from '../AuthContext';
 import { runRestoreGate } from '../services/syncService';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
+import { Type } from '../typography';
 
 const IOS_CLIENT_ID = '841973180275-obscsfo4ad9ibir9dtpcago5fuptojlg.apps.googleusercontent.com';
 
@@ -325,9 +326,9 @@ const styles = StyleSheet.create({
     height: 140,
   },
   wordmark: {
-    fontFamily: 'BebasNeue_400Regular',
+    fontFamily: Type.display,
     fontSize: 24,
-    letterSpacing: 10,
+    letterSpacing: 0.30,
     color: 'rgba(255,255,255,0.28)',
     marginTop: 8,
   },
@@ -349,7 +350,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   googleButtonText: {
-    fontFamily: 'DMSans_600SemiBold',
+    fontFamily: Type.uiSemibold,
     fontSize: 17,
     color: '#1a1a1a',
   },
@@ -359,14 +360,14 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   missionLink: {
-    fontFamily: 'DMSans_600SemiBold',
+    fontFamily: Type.uiSemibold,
     fontSize: 13,
     color: '#8a8ad8',
     textDecorationLine: 'underline',
     textAlign: 'center',
   },
   legal: {
-    fontFamily: 'DMSans_400Regular',
+    fontFamily: Type.ui,
     fontSize: 11,
     color: '#444460',
     textAlign: 'center',
@@ -389,7 +390,7 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
   },
   getStartedText: {
-    fontFamily: 'BebasNeue_400Regular',
+    fontFamily: Type.uiBold,
     fontSize: 18,
     letterSpacing: 3,
     color: '#ffffff',
@@ -397,7 +398,7 @@ const styles = StyleSheet.create({
   devSkip: {
     color: 'rgba(255,255,255,0.15)',
     fontSize: 11,
-    fontFamily: 'DMSans_400Regular',
+    fontFamily: Type.ui,
     textAlign: 'center',
   },
   loadingOverlay: {

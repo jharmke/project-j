@@ -33,6 +33,7 @@ import { checkFaithAchievements, getCelebTier } from '../achievementData';
 import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
 import { cancelFaithReadingNotification } from '../services/notifications';
+import { Type } from '../typography';
 
 interface BibleFavorite {
   ref: string;
@@ -52,8 +53,13 @@ const TEXT_SIZES = [
   { label: 'XL', size: 22, lineHeight: 35 },
 ];
 
+// The reader is the ONE screen where the user owns the typography. "Default" is the app's own interface
+// sans -- it used to name DM Sans explicitly, which after the type sweep would have been a lie (the label
+// said DM Sans, the family pointed at Onest) AND the last reference to DM Sans anywhere in the app.
+// Georgia and Palatino are iOS system serifs, kept because scripture wants a serif. They were never
+// really CHOSEN though, and the reader's type deserves its own pass.
 const FONT_OPTIONS = [
-  { label: 'DM Sans', family: 'DMSans_400Regular' },
+  { label: 'Default', family: Type.ui },
   { label: 'Georgia', family: 'Georgia' },
   { label: 'Palatino', family: 'Palatino' },
 ];
@@ -123,10 +129,12 @@ export default function BibleScreen() {
   const tutPrevHighlight = useRef<{ verse: number | null; ref: string | null; text: string | null; ack: boolean } | null>(null);
 
   const [bibleTextSize, setBibleTextSize] = useState(16);
-  const [bibleFontFamily, setBibleFontFamily] = useState('DMSans_400Regular');
+  // Explicit string: Type.ui is a literal, so useState would narrow the state to that ONE family and
+  // reject Georgia/Palatino coming back out of pj_settings.
+  const [bibleFontFamily, setBibleFontFamily] = useState<string>(Type.ui);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [draftTextSize, setDraftTextSize] = useState(16);
-  const [draftFontFamily, setDraftFontFamily] = useState('DMSans_400Regular');
+  const [draftFontFamily, setDraftFontFamily] = useState<string>(Type.ui);
 
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const [showSpeedPicker, setShowSpeedPicker] = useState(false);
@@ -660,7 +668,7 @@ export default function BibleScreen() {
       {READING_PLANS.filter(p => !!planProgress[p.id]).length > 0 && (
         <View style={{ borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
           <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 2 }}>
-            <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 3, color: theme.textDim, textTransform: 'uppercase', marginBottom: 6 }}>
+            <Text style={{ fontSize: 8, fontFamily: Type.uiBold, letterSpacing: 3, color: theme.textDim, textTransform: 'uppercase', marginBottom: 6 }}>
               TODAY'S READING
             </Text>
           </View>
@@ -673,12 +681,12 @@ export default function BibleScreen() {
                 <Ionicons name={plan.icon as any} size={12} color={theme.textDim} />
                 {reading === 'complete' ? (
                   <>
-                    <Text style={{ flex: 1, fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted }} numberOfLines={1}>
+                    <Text style={{ flex: 1, fontSize: 11, fontFamily: Type.uiSemibold, color: theme.textMuted }} numberOfLines={1}>
                       {plan.shortName}
                     </Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                       <Ionicons name="checkmark-circle" size={13} color={theme.accentGreen} />
-                      <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.accentGreen }}>
+                      <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: theme.accentGreen }}>
                         Complete
                       </Text>
                     </View>
@@ -689,10 +697,10 @@ export default function BibleScreen() {
                       style={{ flex: 1 }}
                       onPress={() => navigateToPlanPassage(reading.day.passages[0].book, reading.day.passages[0].startChapter)}
                     >
-                      <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlueRaw }} numberOfLines={1}>
+                      <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: theme.accentBlueRaw }} numberOfLines={1}>
                         {formatDayReading(reading.day)}
                       </Text>
-                      <Text style={{ fontSize: 9, fontFamily: 'DMSans_400Regular', color: theme.textDim }}>
+                      <Text style={{ fontSize: 9, fontFamily: Type.ui, color: theme.textDim }}>
                         Day {reading.dayIndex + 1}/{total} · {plan.shortName}
                       </Text>
                     </TouchableOpacity>
@@ -715,7 +723,7 @@ export default function BibleScreen() {
                         size={11}
                         color={reading.isRead ? theme.accentGreen : theme.accentBlue}
                       />
-                      <Text style={{ fontSize: 10, fontFamily: 'DMSans_600SemiBold', color: reading.isRead ? theme.accentGreen : theme.accentBlue }}>
+                      <Text style={{ fontSize: 10, fontFamily: Type.uiSemibold, color: reading.isRead ? theme.accentGreen : theme.accentBlue }}>
                         {reading.isRead ? 'Read' : 'Mark Read'}
                       </Text>
                     </TouchableOpacity>
@@ -829,7 +837,7 @@ export default function BibleScreen() {
           <Animated.View style={{ opacity: fabItem3Anim, transform: [{ translateY: fabItem3Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <TouchableOpacity onPress={() => startAutoScroll('fast')} style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Fast</Text>
+                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Fast</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => startAutoScroll('fast')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Ionicons name="flash-outline" size={20} color="#ffffff" />
@@ -841,7 +849,7 @@ export default function BibleScreen() {
           <Animated.View style={{ opacity: fabItem2Anim, transform: [{ translateY: fabItem2Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <TouchableOpacity onPress={() => startAutoScroll('medium')} style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Medium</Text>
+                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Medium</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => startAutoScroll('medium')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Ionicons name="play-outline" size={20} color="#ffffff" />
@@ -853,7 +861,7 @@ export default function BibleScreen() {
           <Animated.View style={{ opacity: fabItem1Anim, transform: [{ translateY: fabItem1Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <TouchableOpacity onPress={() => startAutoScroll('slow')} style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Slow</Text>
+                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Slow</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => startAutoScroll('slow')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Ionicons name="leaf-outline" size={20} color="#ffffff" />
@@ -908,7 +916,7 @@ export default function BibleScreen() {
                 const isSelected = selectedBook.name === item.book.name;
                 return (
                   <TouchableOpacity onPress={() => selectBook(item.book)} style={[styles.bookRow, { borderBottomColor: theme.borderSubtle, backgroundColor: isSelected ? theme.accentBlueBg : 'transparent' }]}>
-                    <Text style={[styles.bookRowText, { color: isSelected ? theme.accentBlue : theme.textPrimary, fontFamily: isSelected ? 'DMSans_700Bold' : 'DMSans_400Regular' }]}>{item.book.name}</Text>
+                    <Text style={[styles.bookRowText, { color: isSelected ? theme.accentBlue : theme.textPrimary, fontFamily: isSelected ? Type.uiBold : Type.ui }]}>{item.book.name}</Text>
                     <Text style={[styles.bookRowChapters, { color: theme.textDim }]}>{item.book.chapters.length} ch</Text>
                   </TouchableOpacity>
                 );
@@ -973,7 +981,7 @@ export default function BibleScreen() {
                 <View style={{ flexDirection: 'row', backgroundColor: theme.bgInput, borderRadius: 8, borderWidth: 1, borderColor: theme.borderInput, overflow: 'hidden' }}>
                   {(['book', 'recent'] as const).map(s => (
                     <TouchableOpacity key={s} onPress={() => toggleFavoritesSort(s)} style={{ paddingHorizontal: 10, paddingVertical: 6, backgroundColor: favoritesSort === s ? theme.accentBlueBg : 'transparent' }}>
-                      <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: favoritesSort === s ? theme.accentBlue : theme.textMuted }}>
+                      <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: favoritesSort === s ? theme.accentBlue : theme.textMuted }}>
                         {s === 'book' ? 'Book Order' : 'Recent'}
                       </Text>
                     </TouchableOpacity>
@@ -983,16 +991,16 @@ export default function BibleScreen() {
               {sortedFavorites.length === 0 ? (
                 <View style={{ alignItems: 'center', paddingVertical: 32, gap: 8 }}>
                   <Ionicons name="star-outline" size={32} color={theme.textDim} />
-                  <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>No saved verses yet</Text>
-                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, textAlign: 'center' }}>Tap a verse, then tap the star to save it here.</Text>
+                  <Text style={{ fontSize: 14, fontFamily: Type.uiBold, color: theme.textSecondary }}>No saved verses yet</Text>
+                  <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textMuted, textAlign: 'center' }}>Tap a verse, then tap the star to save it here.</Text>
                 </View>
               ) : (
                 <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={false}>
                   {sortedFavorites.map(fav => (
                     <TouchableOpacity key={fav.ref} onPress={() => navigateToFavorite(fav)} style={[styles.favRow, { borderBottomColor: theme.borderSubtle }]}>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, marginBottom: 2 }}>{fav.ref}</Text>
-                        <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textSecondary }} numberOfLines={2}>{fav.text}</Text>
+                        <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: theme.accentBlue, marginBottom: 2 }}>{fav.ref}</Text>
+                        <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textSecondary }} numberOfLines={2}>{fav.text}</Text>
                       </View>
                       <TouchableOpacity onPress={() => removeFavorite(fav.ref)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                         <Ionicons name="trash-outline" size={16} color={theme.statusBad} />
@@ -1024,7 +1032,7 @@ export default function BibleScreen() {
                   <Text style={{ fontFamily: draftFontFamily, fontSize: draftTextSize, lineHeight: draftLineHeight, color: theme.textPrimary, marginBottom: 6 }} numberOfLines={4}>
                     {PREVIEW_TEXT}
                   </Text>
-                  <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.textMuted, textTransform: 'uppercase' }}>{PREVIEW_REF}</Text>
+                  <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, color: theme.textMuted, textTransform: 'uppercase' }}>{PREVIEW_REF}</Text>
                 </View>
 
                 {/* Text size */}
@@ -1034,7 +1042,7 @@ export default function BibleScreen() {
                     <TouchableOpacity key={opt.label} onPress={() => setDraftTextSize(opt.size)}
                       style={[styles.settingPill, { flex: 1, backgroundColor: draftTextSize === opt.size ? theme.accentBlueBg : theme.bgInput, borderColor: draftTextSize === opt.size ? theme.accentBlueBorder : theme.borderInput }]}
                     >
-                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: draftTextSize === opt.size ? theme.accentBlue : theme.textMuted }}>{opt.label}</Text>
+                      <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: draftTextSize === opt.size ? theme.accentBlue : theme.textMuted }}>{opt.label}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -1060,9 +1068,9 @@ export default function BibleScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <Ionicons name="calendar-outline" size={16} color={theme.accentBlue} />
                     <View>
-                      <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary }}>Plans</Text>
+                      <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.textPrimary }}>Plans</Text>
                       {Object.keys(planProgress).length > 0 && (
-                        <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted }}>
+                        <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textMuted }}>
                           {Object.keys(planProgress).length} active plan{Object.keys(planProgress).length !== 1 ? 's' : ''}
                         </Text>
                       )}
@@ -1101,36 +1109,36 @@ const styles = StyleSheet.create({
   header:              { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5 },
   headerBtn:           { borderWidth: 1, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' },
   headerTitle:         { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  headerBookName:      { fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  headerBookName:      { fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3 },
   chapterBar:          { height: 52, borderBottomWidth: 0.5 },
   chapterPill:         { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
-  chapterPillText:     { fontSize: 12, fontFamily: 'DMSans_600SemiBold' },
+  chapterPillText:     { fontSize: 12, fontFamily: Type.uiSemibold },
   acknowledgeBanner:   { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 16, marginTop: 12, borderRadius: 8, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8 },
-  acknowledgeText:     { fontSize: 11, fontFamily: 'DMSans_600SemiBold', flex: 1 },
-  chapterHeader:       { fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 20 },
+  acknowledgeText:     { fontSize: 11, fontFamily: Type.uiSemibold, flex: 1 },
+  chapterHeader:       { fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 20 },
   verseRow:            { flexDirection: 'row', gap: 12, marginBottom: 16 },
-  verseNum:            { fontSize: 11, fontFamily: 'DMSans_700Bold', marginTop: 2, minWidth: 20 },
+  verseNum:            { fontSize: 11, fontFamily: Type.uiBold, marginTop: 2, minWidth: 20 },
   verseText:           { flex: 1 },
-  partialNote:         { fontSize: 10, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 24, fontStyle: 'italic' },
+  partialNote:         { fontSize: 10, fontFamily: Type.ui, textAlign: 'center', marginTop: 24, fontStyle: 'italic' },
   overlay:             { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   bookSheet:           { position: 'absolute', bottom: 0, left: 0, right: 0, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '85%', borderTopWidth: 0.5, padding: 20, paddingBottom: 0 },
   centeredModal:       { width: '90%', borderRadius: 14, borderWidth: 0.5, padding: 20, maxHeight: '88%' },
   sheetHandle:         { width: 36, height: 4, borderRadius: 2 },
-  sheetTitle:          { fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginBottom: 12 },
+  sheetTitle:          { fontSize: 18, fontFamily: Type.display, letterSpacing: 0.3, marginBottom: 12 },
   searchBox:           { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 12 },
-  searchInput:         { flex: 1, fontSize: 14, fontFamily: 'DMSans_400Regular' },
-  testamentHeader:     { fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', paddingVertical: 8, paddingHorizontal: 4 },
+  searchInput:         { flex: 1, fontSize: 14, fontFamily: Type.ui },
+  testamentHeader:     { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', paddingVertical: 8, paddingHorizontal: 4 },
   bookRow:             { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 4, borderBottomWidth: 0.5 },
   bookRowText:         { fontSize: 15 },
-  bookRowChapters:     { fontSize: 11, fontFamily: 'DMSans_400Regular' },
+  bookRowChapters:     { fontSize: 11, fontFamily: Type.ui },
   favRow:              { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: 0.5 },
-  settingLabel:        { fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 },
+  settingLabel:        { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 },
   settingPill:         { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, alignItems: 'center' },
-  reflectionTitle:     { fontSize: 15, fontFamily: 'DMSans_700Bold' },
+  reflectionTitle:     { fontSize: 15, fontFamily: Type.uiBold },
   reflectionVerse:     { borderRadius: 8, borderWidth: 1, padding: 12, marginBottom: 12 },
-  reflectionVerseText: { fontSize: 13, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', lineHeight: 20, marginBottom: 6 },
-  reflectionVerseRef:  { fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', textAlign: 'right' },
-  reflectionInput:     { borderWidth: 1, borderRadius: 8, padding: 12, fontSize: 13, fontFamily: 'DMSans_400Regular', minHeight: 80, textAlignVertical: 'top' },
+  reflectionVerseText: { fontSize: 13, fontFamily: Type.ui, fontStyle: 'italic', lineHeight: 20, marginBottom: 6 },
+  reflectionVerseRef:  { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', textAlign: 'right' },
+  reflectionInput:     { borderWidth: 1, borderRadius: 8, padding: 12, fontSize: 13, fontFamily: Type.ui, minHeight: 80, textAlignVertical: 'top' },
   modalBtn:            { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 8, paddingVertical: 12 },
-  modalBtnText:        { fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
+  modalBtnText:        { fontSize: 13, fontFamily: Type.uiSemibold },
 });

@@ -12,6 +12,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { THEMES, useTheme } from '../../theme';
 import { storageSet } from '../../utils/storage';
 import { isOnboardingPreview, setOnboardingPreview } from '../../utils/onboardingPreview';
+import { Type, numLine } from '../../typography';
 
 const theme = THEMES['light'];
 
@@ -344,21 +345,21 @@ const styles = StyleSheet.create({
   iconBox:          { width: 68, height: 68, borderRadius: 20, borderWidth: 1,
                       alignItems: 'center', justifyContent: 'center', marginBottom: 28 },
 
-  screenLabel:      { fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3,
+  screenLabel:      { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3,
                       textTransform: 'uppercase', marginBottom: 12 },
 
-  headline:         { fontSize: 36, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1.5,
-                      lineHeight: 40, marginBottom: 14,
+  headline:         { fontSize: 36, fontFamily: Type.display, letterSpacing: 0.3,
+                      lineHeight: numLine(36), marginBottom: 14,
                       textShadowColor: 'rgba(0,0,0,0.12)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
 
-  subtext:          { fontSize: 15, fontFamily: 'DMSans_400Regular', lineHeight: 22, maxWidth: 300 },
+  subtext:          { fontSize: 15, fontFamily: Type.ui, lineHeight: 22, maxWidth: 300 },
 
   tipCard:          { width: '100%', borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14,
                       shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 },
   tipRow:           { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 13, gap: 12 },
   tipIconCircle:    { width: 36, height: 36, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  tipLead:          { fontSize: 13, fontFamily: 'DMSans_600SemiBold', marginBottom: 2 },
-  tipBody:          { fontSize: 11, fontFamily: 'DMSans_400Regular', lineHeight: 16 },
+  tipLead:          { fontSize: 13, fontFamily: Type.uiSemibold, marginBottom: 2 },
+  tipBody:          { fontSize: 11, fontFamily: Type.ui, lineHeight: 16 },
 
   footer:           { paddingHorizontal: 24, paddingTop: 14, borderTopWidth: 0.5,
                       alignItems: 'center', gap: 0 },
@@ -367,14 +368,14 @@ const styles = StyleSheet.create({
                       alignItems: 'center', justifyContent: 'center',
                       shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
                       shadowOpacity: 0.12, shadowRadius: 8 },
-  primaryBtnText:   { fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 3, color: '#ffffff' },
+  primaryBtnText:   { fontSize: 16, fontFamily: Type.uiBold, letterSpacing: 1, color: '#ffffff' },
 
   secondaryBtn:     { width: '100%', borderRadius: 14, paddingVertical: 15,
                       alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
-  secondaryBtnText: { fontSize: 14, fontFamily: 'DMSans_600SemiBold', letterSpacing: 0.3 },
+  secondaryBtnText: { fontSize: 14, fontFamily: Type.uiSemibold, letterSpacing: 0.3 },
 
-  footnote:         { fontSize: 11, fontFamily: 'DMSans_400Regular', marginTop: 14,
+  footnote:         { fontSize: 11, fontFamily: Type.ui, marginTop: 14,
                       textAlign: 'center' },
-  missionLink:      { fontSize: 12, fontFamily: 'DMSans_600SemiBold', textAlign: 'center',
+  missionLink:      { fontSize: 12, fontFamily: Type.uiSemibold, textAlign: 'center',
                       textDecorationLine: 'underline' },
 });

@@ -22,6 +22,7 @@ import {
   navyBodyFat, fromInput, toDisplay, unitLabel, hasAnyValue,
   BodyProfile, MeasurementUnit,
 } from '../utils/bodyMeasurements';
+import { Type } from '../typography';
 
 export default function BodyMeasurementLogScreen() {
   const { theme } = useTheme();
@@ -99,7 +100,7 @@ export default function BodyMeasurementLogScreen() {
     <View key={key} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 7 }}>
       <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
         <View style={{ width: 3, height: 16, borderRadius: 2, backgroundColor: accent, marginRight: 10 }} />
-        <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary }}>{label}</Text>
+        <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.textSecondary }}>{label}</Text>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', width: 130, backgroundColor: theme.bgInput, borderColor: theme.borderInput, borderWidth: 1, borderRadius: 8, paddingHorizontal: 10 }}>
         <TextInput
@@ -108,9 +109,9 @@ export default function BodyMeasurementLogScreen() {
           placeholder={placeholders[key] ?? ''}
           placeholderTextColor={theme.textPlaceholder}
           keyboardType="decimal-pad"
-          style={{ flex: 1, fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary, paddingVertical: 9 }}
+          style={{ flex: 1, fontSize: 15, fontFamily: Type.uiSemibold, color: theme.textPrimary, paddingVertical: 9 }}
         />
-        <Text style={{ fontSize: 12, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>{unitLabel(unit)}</Text>
+        <Text style={{ fontSize: 12, fontFamily: Type.uiMedium, color: theme.textMuted }}>{unitLabel(unit)}</Text>
       </View>
     </View>
   );
@@ -127,7 +128,7 @@ export default function BodyMeasurementLogScreen() {
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <Ionicons name="chevron-back" size={20} color={theme.accentBlue} />
             </TouchableOpacity>
-            <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1.5, color: theme.accentBlueRaw }}>{isEdit ? 'Edit Measurements' : 'Log Measurements'}</Text>
+            <Text style={{ fontSize: 22, fontFamily: Type.num, letterSpacing: 1.5, color: theme.accentBlueRaw }}>{isEdit ? 'Edit Measurements' : 'Log Measurements'}</Text>
             <View style={{ width: 38 }} />
           </View>
 
@@ -137,7 +138,7 @@ export default function BodyMeasurementLogScreen() {
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setHowToOpen(true); }}
               style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: theme.bgCard, borderColor: theme.accentBlueBorder, borderWidth: 1, borderRadius: 10, paddingVertical: 12, marginBottom: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 3 }}>
               <Ionicons name="help-circle-outline" size={17} color={theme.accentBlue} />
-              <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>How to measure</Text>
+              <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>How to measure</Text>
             </TouchableOpacity>
 
             {MEASURE_REGIONS.map(region => (
@@ -152,16 +153,16 @@ export default function BodyMeasurementLogScreen() {
               <Text style={[styles.cardLabel, { color: theme.textMuted }]}>CALCULATED</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 14, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>Navy Body Fat %</Text>
-                  <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_400Regular', color: theme.textDim }}>
+                  <Text style={{ fontSize: 14, fontFamily: Type.uiMedium, color: theme.textSecondary }}>Navy Body Fat %</Text>
+                  <Text style={{ fontSize: 10.5, fontFamily: Type.ui, color: theme.textDim }}>
                     {profile.heightIn ? `Needs neck + waist${profile.sex === 'female' ? ' + hips' : ''}` : 'Add height in your profile first'}
                   </Text>
                 </View>
-                <Text style={{ fontSize: 24, fontFamily: 'BebasNeue_400Regular', color: liveBF != null ? theme.textPrimary : theme.textDim, letterSpacing: 0.5 }}>
+                <Text style={{ fontSize: 24, fontFamily: Type.num, color: liveBF != null ? theme.textPrimary : theme.textDim, letterSpacing: 0.5 }}>
                   {liveBF != null ? `${liveBF}%` : '--'}
                 </Text>
               </View>
-              <Text style={{ fontSize: 9.5, fontFamily: 'DMSans_400Regular', color: theme.textDim, fontStyle: 'italic', marginTop: 8 }}>
+              <Text style={{ fontSize: 9.5, fontFamily: Type.ui, color: theme.textDim, fontStyle: 'italic', marginTop: 8 }}>
                 For informational purposes only. Not medical advice.
               </Text>
             </View>
@@ -174,7 +175,7 @@ export default function BodyMeasurementLogScreen() {
               onPress={onSave}
               activeOpacity={0.85}
               style={{ backgroundColor: canSave ? accent : theme.bgInput, borderWidth: canSave ? 0 : 1, borderColor: theme.borderInput, borderRadius: 12, paddingVertical: 15, alignItems: 'center' }}>
-              <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: canSave ? '#fff' : theme.textDim }}>
+              <Text style={{ fontSize: 15, fontFamily: Type.uiBold, color: canSave ? '#fff' : theme.textDim }}>
                 {isEdit ? 'Save Changes' : 'Save Measurements'}
               </Text>
             </TouchableOpacity>
@@ -191,5 +192,5 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 },
   headerBtn: { width: 38, height: 38, borderRadius: 19, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   card: { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, padding: 16, marginBottom: 12 },
-  cardLabel: { fontSize: 9, letterSpacing: 3, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 8 },
+  cardLabel: { fontSize: 9, letterSpacing: 3, fontFamily: Type.uiBold, textTransform: 'uppercase', marginBottom: 8 },
 });

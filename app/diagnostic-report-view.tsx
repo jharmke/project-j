@@ -31,6 +31,7 @@ import {
   loadSmartTips,
 } from '../utils/smartTipsEngine';
 import { refreshCoachTip, resolveTipBody, resolveTipTitle, voiceDiagnosticCards } from '../utils/coachAI';
+import { Type, numLine } from '../typography';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -60,7 +61,7 @@ function localDateKey(iso: string): string {
 function ChipLabel({ label, theme }: { label: string; theme: any }) {
   return (
     <View style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-      <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.accentBlueRaw }}>{label}</Text>
+      <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, color: theme.accentBlueRaw }}>{label}</Text>
     </View>
   );
 }
@@ -79,7 +80,7 @@ function AxisTicks({ theme, ticks }: { theme: any; ticks: { pct: number; label: 
       ))}
       {ticks.map((tk, i) => (
         <View key={`lb${i}`} style={{ position: 'absolute', top: 19, left: `${tk.pct * 100}%`, width: 30, marginLeft: -15, alignItems: 'center' }}>
-          <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: t.textMuted }}>{tk.label}</Text>
+          <Text style={{ fontSize: 9, fontFamily: Type.uiBold, color: t.textMuted }}>{tk.label}</Text>
         </View>
       ))}
     </>
@@ -123,11 +124,11 @@ function StatBar({ metric, accent, theme, positive }: { metric: NonNullable<Diag
     Animated.timing(reveal, { toValue: 1, duration: 700, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
   }, [fill, fillB]);
 
-  const numStyle = { fontSize: 32, fontFamily: 'BebasNeue_400Regular' as const, letterSpacing: 0.5, lineHeight: 34 };
+  const numStyle = { fontSize: 32, fontFamily: Type.num, letterSpacing: 0.5, lineHeight: numLine(32) };
   // Unit (G, LB...) -- BebasNeue like the number (stays capitalized), just smaller so it
   // reads as a unit, not part of the value.
-  const unitStyle = { fontSize: 13, fontFamily: 'BebasNeue_400Regular' as const };
-  const labelStyle = { fontSize: 9, letterSpacing: 2, fontFamily: 'DMSans_700Bold' as const, color: t.textMuted, textTransform: 'uppercase' as const, marginTop: 2 };
+  const unitStyle = { fontSize: 13, fontFamily: Type.num };
+  const labelStyle = { fontSize: 9, letterSpacing: 2, fontFamily: Type.uiBold, color: t.textMuted, textTransform: 'uppercase' as const, marginTop: 2 };
   const barTrack = { height: 8, borderRadius: 4, backgroundColor: accent + '22', overflow: 'hidden' as const };
   const widthOf = (a: Animated.Value) => a.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
 
@@ -169,8 +170,8 @@ function StatBar({ metric, accent, theme, positive }: { metric: NonNullable<Diag
           {/* PREDICTED tick (grey, matches the predicted number) */}
           <View style={{ position: 'absolute', top: -1, left: `${goalPct * 100}%`, marginLeft: -1.5, width: 3, height: 14, borderRadius: 1.5, backgroundColor: t.textSecondary }} />
           {/* axis ends */}
-          <Text style={{ position: 'absolute', top: 15, left: 0, fontSize: 9, fontFamily: 'DMSans_700Bold', color: t.textMuted }}>0</Text>
-          <Text style={{ position: 'absolute', top: 15, left: `${goalPct * 100}%`, marginLeft: -24, fontSize: 8, letterSpacing: 1, fontFamily: 'DMSans_700Bold', color: t.textMuted }}>PREDICTED</Text>
+          <Text style={{ position: 'absolute', top: 15, left: 0, fontSize: 9, fontFamily: Type.uiBold, color: t.textMuted }}>0</Text>
+          <Text style={{ position: 'absolute', top: 15, left: `${goalPct * 100}%`, marginLeft: -24, fontSize: 8, letterSpacing: 1, fontFamily: Type.uiBold, color: t.textMuted }}>PREDICTED</Text>
         </View>
       </View>
     );
@@ -190,7 +191,7 @@ function StatBar({ metric, accent, theme, positive }: { metric: NonNullable<Diag
         </View>
         <Text style={labelStyle}>{metric.primaryLabel}</Text>
         {!!metric.caption && (
-          <Text style={{ marginTop: 4, fontSize: 12, fontFamily: 'DMSans_700Bold', color: accent }}>{metric.caption}</Text>
+          <Text style={{ marginTop: 4, fontSize: 12, fontFamily: Type.uiBold, color: accent }}>{metric.caption}</Text>
         )}
       </View>
     );
@@ -230,7 +231,7 @@ function StatBar({ metric, accent, theme, positive }: { metric: NonNullable<Diag
             <Text style={labelStyle}>{metric.primaryLabel}</Text>
           </View>
           {!!metric.caption && (
-            <Text style={{ marginLeft: 'auto', alignSelf: 'center', fontSize: 11, letterSpacing: 1.5, fontFamily: 'DMSans_700Bold', color: t.textMuted, textTransform: 'uppercase' }}>{metric.caption}</Text>
+            <Text style={{ marginLeft: 'auto', alignSelf: 'center', fontSize: 11, letterSpacing: 1.5, fontFamily: Type.uiBold, color: t.textMuted, textTransform: 'uppercase' }}>{metric.caption}</Text>
           )}
         </View>
         <View style={{ height: 34, paddingTop: 4 }}>
@@ -251,7 +252,7 @@ function StatBar({ metric, accent, theme, positive }: { metric: NonNullable<Diag
     const bandLeft = lo / scaleMax;
     const bandWidth = (hi - lo) / scaleMax;
     const markerPct = Math.max(0, Math.min(1, metric.value / scaleMax));
-    const tickText = { fontSize: 9, fontFamily: 'DMSans_700Bold' as const, color: t.textMuted };
+    const tickText = { fontSize: 9, fontFamily: Type.uiBold, color: t.textMuted };
     const tickLabel = (pct: number, txt: string | number) => (
       <View style={{ position: 'absolute', top: 19, left: `${pct * 100}%`, width: 30, marginLeft: -15, alignItems: 'center' }}>
         <Text style={tickText}>{txt}</Text>
@@ -270,7 +271,7 @@ function StatBar({ metric, accent, theme, positive }: { metric: NonNullable<Diag
           </View>
           {pill && (
             <View style={{ marginLeft: 'auto', alignSelf: 'center', backgroundColor: accent + '1f', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: accent }}>{pill}</Text>
+              <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: accent }}>{pill}</Text>
             </View>
           )}
         </View>
@@ -308,7 +309,7 @@ function StatBar({ metric, accent, theme, positive }: { metric: NonNullable<Diag
         </View>
         {pill && (
           <View style={{ marginLeft: 'auto', alignSelf: 'center', backgroundColor: accent + '1f', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-            <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: accent }}>{pill}</Text>
+            <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: accent }}>{pill}</Text>
           </View>
         )}
       </View>
@@ -376,27 +377,27 @@ function DiagnosticFeedCard({ card, theme, shadowStyle, isMindful }: { card: Dia
         <Text style={[styles.cardLabel, { color: t.textMuted }]}>{(card.window || '').toUpperCase()}</Text>
         {!isMindful && (
           <View style={{ backgroundColor: accent + '22', borderColor: accent + '55', borderWidth: 1, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-            <Text style={{ fontSize: 9, letterSpacing: 1.5, fontFamily: 'DMSans_700Bold', color: accent }}>{chip}</Text>
+            <Text style={{ fontSize: 9, letterSpacing: 1.5, fontFamily: Type.uiBold, color: accent }}>{chip}</Text>
           </View>
         )}
       </View>
-      <Text style={{ fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: t.textSecondary, lineHeight: 21, marginBottom: 12 }}>{card.claim}</Text>
+      <Text style={{ fontSize: 15, fontFamily: Type.uiSemibold, color: t.textSecondary, lineHeight: 21, marginBottom: 12 }}>{card.claim}</Text>
       {card.metric ? (
         <StatBar metric={card.metric} accent={accent} theme={t} positive={card.positive} />
       ) : (
-        <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: accent, marginBottom: card.insight ? 8 : 10 }}>{card.proof}</Text>
+        <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: accent, marginBottom: card.insight ? 8 : 10 }}>{card.proof}</Text>
       )}
       {card.insight ? (
-        <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: t.textSecondary, lineHeight: 20, marginBottom: 10 }}>{card.insight}</Text>
+        <Text style={{ fontSize: 13, fontFamily: Type.ui, color: t.textSecondary, lineHeight: 20, marginBottom: 10 }}>{card.insight}</Text>
       ) : null}
       {softenLever ? (
         // Mindful corrective: no arrow, no bold directive color -- a quiet italic note to notice,
         // not an instruction to follow.
-        <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', color: t.textSecondary, lineHeight: 20 }}>{card.lever}</Text>
+        <Text style={{ fontSize: 13, fontFamily: Type.ui, fontStyle: 'italic', color: t.textSecondary, lineHeight: 20 }}>{card.lever}</Text>
       ) : (
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 7 }}>
-          <Text style={{ fontSize: 14, color: accent, marginTop: 1, fontFamily: 'DMSans_700Bold' }}>→</Text>
-          <Text style={{ flex: 1, fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: accent, lineHeight: 20 }}>{card.lever}</Text>
+          <Text style={{ fontSize: 14, color: accent, marginTop: 1, fontFamily: Type.uiBold }}>→</Text>
+          <Text style={{ flex: 1, fontSize: 13, fontFamily: Type.uiSemibold, color: accent, lineHeight: 20 }}>{card.lever}</Text>
         </View>
       )}
     </View>
@@ -434,11 +435,11 @@ function InsightTipCard({ tip, isBlurred, theme, shadowStyle }: { tip: StoredTip
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Ionicons name="lock-closed" size={12} color={theme.textMuted} />
             <View style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
-              <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.accentBlueRaw }}>SUPPORTER</Text>
+              <Text style={{ fontSize: 8, fontFamily: Type.uiBold, letterSpacing: 2, color: theme.accentBlueRaw }}>SUPPORTER</Text>
             </View>
           </View>
         </View>
-        <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, lineHeight: 20, marginBottom: 10 }}>
+        <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.textSecondary, lineHeight: 20, marginBottom: 10 }}>
           {tip.title}
         </Text>
         <View style={{ gap: 6 }}>
@@ -454,10 +455,10 @@ function InsightTipCard({ tip, isBlurred, theme, shadowStyle }: { tip: StoredTip
       <View style={{ marginBottom: 10 }}>
         <ChipLabel label={chipLabel} theme={theme} />
       </View>
-      <Text style={{ fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, lineHeight: 21, marginBottom: 8 }}>
+      <Text style={{ fontSize: 15, fontFamily: Type.uiSemibold, color: theme.textSecondary, lineHeight: 21, marginBottom: 8 }}>
         {tip.title}
       </Text>
-      <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 20 }}>
+      <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textSecondary, lineHeight: 20 }}>
         {tip.body}
       </Text>
     </View>
@@ -527,10 +528,10 @@ function LockedInsightCard({ topic, accent, title, body, theme, shadowStyle, isD
           crisply ON TOP of the frost. */}
       <CardWash color={accent} scored radius={14} />
       <View style={{ paddingTop: 30, paddingBottom: 26 }}>
-        <Text style={{ fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, lineHeight: 21, marginBottom: 8 }}>
+        <Text style={{ fontSize: 15, fontFamily: Type.uiSemibold, color: theme.textSecondary, lineHeight: 21, marginBottom: 8 }}>
           {title}
         </Text>
-        <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 20 }}>
+        <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textSecondary, lineHeight: 20 }}>
           {body}
         </Text>
       </View>
@@ -545,7 +546,7 @@ function LockedInsightCard({ topic, accent, title, body, theme, shadowStyle, isD
           <Ionicons name="lock-closed" size={13} color={theme.textMuted} />
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
-          <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlueRaw }}>Unlock</Text>
+          <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: theme.accentBlueRaw }}>Unlock</Text>
           <Ionicons name="arrow-forward" size={12} color={theme.accentBlueRaw} />
         </View>
       </View>
@@ -561,13 +562,13 @@ function SmartTipCard({ tip, theme, shadowStyle }: { tip: StoredTip; theme: any;
     <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: borderColor, ...shadowStyle }]}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
         <View style={{ backgroundColor: chipColor + '22', borderWidth: 1, borderColor: chipColor + '55', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-          <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: chipColor }}>{chipLabel}</Text>
+          <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, color: chipColor }}>{chipLabel}</Text>
         </View>
       </View>
-      <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, lineHeight: 20, marginBottom: 6 }}>
+      <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.textSecondary, lineHeight: 20, marginBottom: 6 }}>
         {tip.title}
       </Text>
-      <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 18 }}>
+      <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textSecondary, lineHeight: 18 }}>
         {tip.body}
       </Text>
     </View>
@@ -775,12 +776,12 @@ export default function DiagnosticReportViewScreen() {
       {notFound && (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
           <Ionicons name="alert-circle-outline" size={48} color={t.textMuted} style={{ marginBottom: 14 }} />
-          <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', color: t.textPrimary, letterSpacing: 1, marginBottom: 8 }}>Report Not Found</Text>
-          <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: t.textSecondary, textAlign: 'center', lineHeight: 20 }}>
+          <Text style={{ fontSize: 18, fontFamily: Type.display, color: t.textPrimary, letterSpacing: 0.3, marginBottom: 8 }}>Report Not Found</Text>
+          <Text style={{ fontSize: 13, fontFamily: Type.ui, color: t.textSecondary, textAlign: 'center', lineHeight: 20 }}>
             This report may have been deleted.
           </Text>
           <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 20 }}>
-            <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: t.accentBlueRaw }}>Go back</Text>
+            <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: t.accentBlueRaw }}>Go back</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -790,14 +791,14 @@ export default function DiagnosticReportViewScreen() {
 
           {/* Title + window info */}
           <View style={{ paddingHorizontal: 4, marginBottom: 8, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-            <Text style={[styles.heroTitle, { color: t.accentBlueRaw }]}>{'EFFORT VS\nRESULTS'}</Text>
+            <Text style={[styles.heroTitle, { color: t.accentBlueRaw }]}>{'Effort vs\nResults'}</Text>
             <TooltipIcon tooltipKey="effort_vs_results" size={18} />
           </View>
 
           {/* "As of" stamp -- no single window now; each card states its own timeframe */}
           <View style={{ alignItems: 'flex-start', marginBottom: 16 }}>
             <View style={{ backgroundColor: t.accentBlueBg, borderWidth: 1, borderColor: t.accentBlueBorder, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5 }}>
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: t.accentBlueRaw }}>
+              <Text style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', color: t.accentBlueRaw }}>
                 GENERATED {fmtDateFull(localDateKey(report.generatedAt))}
               </Text>
             </View>
@@ -809,8 +810,8 @@ export default function DiagnosticReportViewScreen() {
           {report.insufficientData && (
             <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.statusWarn, ...shadowStyle }]}>
               <View style={{ backgroundColor: t.statusWarn + '18', borderRadius: 8, padding: 12, borderLeftWidth: 3, borderLeftColor: t.statusWarn }}>
-                <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: t.statusWarn, marginBottom: 2 }}>Needs more data</Text>
-                <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: t.textSecondary, lineHeight: 18 }}>
+                <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: t.statusWarn, marginBottom: 2 }}>Needs more data</Text>
+                <Text style={{ fontSize: 12, fontFamily: Type.ui, color: t.textSecondary, lineHeight: 18 }}>
                   Log food for at least 7 days in this window to unlock the full analysis.
                 </Text>
               </View>
@@ -830,10 +831,10 @@ export default function DiagnosticReportViewScreen() {
                   }]}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 10 }}>
                       <Ionicons name="sparkles" size={12} color={t.accentBlueRaw} />
-                      <Text style={{ fontSize: 9, letterSpacing: 3, color: t.accentBlueRaw, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Coach Insight</Text>
+                      <Text style={{ fontSize: 9, letterSpacing: 3, color: t.accentBlueRaw, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>Coach Insight</Text>
                     </View>
                     <View style={{ width: '100%', height: 0.5, backgroundColor: t.accentBlueRaw + '40', marginBottom: 10 }} />
-                    <Text style={{ fontSize: 14, color: t.textSecondary, fontFamily: 'DMSans_600SemiBold', lineHeight: 22, fontStyle: 'italic', textAlign: 'center' }}>
+                    <Text style={{ fontSize: 14, color: t.textSecondary, fontFamily: Type.uiSemibold, lineHeight: 22, fontStyle: 'italic', textAlign: 'center' }}>
                       Your weekend pattern is the main lever. Close that gap and your deficit holds most weeks.
                     </Text>
                   </View>
@@ -850,7 +851,7 @@ export default function DiagnosticReportViewScreen() {
                       }]}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                           <ActivityIndicator size="small" color={t.accentBlueRaw} />
-                          <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: t.textMuted, fontStyle: 'italic' }}>Analyzing your data...</Text>
+                          <Text style={{ fontSize: 13, fontFamily: Type.ui, color: t.textMuted, fontStyle: 'italic' }}>Analyzing your data...</Text>
                         </View>
                       </View>
                     </View>
@@ -869,10 +870,10 @@ export default function DiagnosticReportViewScreen() {
                     }]}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 10 }}>
                         <Ionicons name="sparkles" size={12} color={t.accentBlueRaw} />
-                        <Text style={{ fontSize: 9, letterSpacing: 3, color: t.accentBlueRaw, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Coach Insight</Text>
+                        <Text style={{ fontSize: 9, letterSpacing: 3, color: t.accentBlueRaw, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>Coach Insight</Text>
                       </View>
                       <View style={{ width: '100%', height: 0.5, backgroundColor: t.accentBlueRaw + '40', marginBottom: 10 }} />
-                      <Text style={{ fontSize: 14, color: t.textSecondary, fontFamily: 'DMSans_600SemiBold', lineHeight: 22, fontStyle: 'italic', textAlign: 'center' }}>
+                      <Text style={{ fontSize: 14, color: t.textSecondary, fontFamily: Type.uiSemibold, lineHeight: 22, fontStyle: 'italic', textAlign: 'center' }}>
                         {body}
                       </Text>
                     </View>
@@ -916,7 +917,7 @@ export default function DiagnosticReportViewScreen() {
                   })
                 ) : (
                   <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: 'rgba(255,255,255,0.1)', ...shadowStyle }]}>
-                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: t.textSecondary, lineHeight: 20 }}>
+                    <Text style={{ fontSize: 13, fontFamily: Type.ui, color: t.textSecondary, lineHeight: 20 }}>
                       Nothing stands out in this window. Keep logging and patterns will surface here as they develop.
                     </Text>
                   </View>
@@ -955,7 +956,7 @@ export default function DiagnosticReportViewScreen() {
               })()}
 
               {/* Disclaimer */}
-              <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: t.textMuted, textAlign: 'center', lineHeight: 16, paddingHorizontal: 16 }}>
+              <Text style={{ fontSize: 10, fontFamily: Type.ui, color: t.textMuted, textAlign: 'center', lineHeight: 16, paddingHorizontal: 16 }}>
                 Based on your logged data only. For informational purposes only. Not medical advice.
               </Text>
             </>
@@ -982,7 +983,7 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontSize: 15,
-    fontFamily: 'DMSans_400Regular',
+    fontFamily: Type.ui,
   },
   content: {
     paddingHorizontal: 16,
@@ -991,9 +992,9 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     fontSize: 48,
-    fontFamily: 'BebasNeue_400Regular',
-    letterSpacing: 3,
-    lineHeight: 52,
+    fontFamily: Type.display,
+    letterSpacing: 0.3,
+    lineHeight: numLine(48),
   },
   card: {
     borderRadius: 14,
@@ -1003,13 +1004,13 @@ const styles = StyleSheet.create({
   },
   cardLabel: {
     fontSize: 9,
-    fontFamily: 'DMSans_700Bold',
+    fontFamily: Type.uiBold,
     letterSpacing: 3,
     textTransform: 'uppercase',
   },
   sectionLabel: {
     fontSize: 9,
-    fontFamily: 'DMSans_700Bold',
+    fontFamily: Type.uiBold,
     letterSpacing: 3,
     textTransform: 'uppercase',
     marginBottom: 10,

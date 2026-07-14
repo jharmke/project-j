@@ -19,6 +19,7 @@ import { useTheme } from '../theme';
 import { useMembership } from '../MembershipContext';
 import { useToast } from '../components/Toast';
 import { loadReports, deleteReport, newReportId, RANGE_LABELS, Report } from '../utils/reports';
+import { Type } from '../typography';
 
 // 🚧 BETA HACK (revert before App Store launch): Reports is a Pro feature, but every TestFlight user gets
 // full access during beta. Flip to false (or gate on the real subscription) before public release.
@@ -67,7 +68,7 @@ export default function ReportsHub() {
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="chevron-back" size={26} color={theme.textSecondary} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.textSecondary }}>REPORTS</Text>
+          <Text style={{ fontSize: 24, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentBlueRaw }}>Reports</Text>
         </View>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
           <View style={{ backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 14, padding: 20, alignItems: 'center' }}>
@@ -75,12 +76,12 @@ export default function ReportsHub() {
             <View style={{ marginBottom: 12 }}>
               <Ionicons name="lock-closed" size={20} color={theme.textMuted} />
             </View>
-            <Text style={{ fontSize: 17, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', textAlign: 'center', marginBottom: 8 }}>Custom Reports is a Supporter feature</Text>
-            <Text style={{ fontSize: 14, color: theme.textMuted, fontFamily: 'DMSans_400Regular', lineHeight: 21, textAlign: 'center', marginBottom: 18 }}>
+            <Text style={{ fontSize: 17, color: theme.textSecondary, fontFamily: Type.uiBold, textAlign: 'center', marginBottom: 8 }}>Custom Reports is a Supporter feature</Text>
+            <Text style={{ fontSize: 14, color: theme.textMuted, fontFamily: Type.ui, lineHeight: 21, textAlign: 'center', marginBottom: 18 }}>
               Build your own report from any period, with the stats that matter most to you.
             </Text>
             <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/support'); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ paddingVertical: 8 }}>
-              <Text style={{ fontSize: 15, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>Become a Supporter →</Text>
+              <Text style={{ fontSize: 15, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Become a Supporter →</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -96,8 +97,8 @@ export default function ReportsHub() {
           <Ionicons name="chevron-back" size={26} color={theme.textSecondary} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.textSecondary }}>REPORTS</Text>
-          <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 1 }}>Build your own, from any period.</Text>
+          <Text style={{ fontSize: 24, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentBlueRaw }}>Reports</Text>
+          <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textMuted, marginTop: 1 }}>Build your own, from any period.</Text>
         </View>
       </View>
 
@@ -107,8 +108,8 @@ export default function ReportsHub() {
             <View style={{ width: 64, height: 64, borderRadius: 18, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
               <Ionicons name="documents" size={30} color={theme.accentBlue} />
             </View>
-            <Text style={{ fontSize: 17, fontFamily: 'DMSans_700Bold', color: theme.textSecondary, marginBottom: 6 }}>No reports yet</Text>
-            <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textMuted, textAlign: 'center', lineHeight: 19 }}>
+            <Text style={{ fontSize: 17, fontFamily: Type.uiBold, color: theme.textSecondary, marginBottom: 6 }}>No reports yet</Text>
+            <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textMuted, textAlign: 'center', lineHeight: 19 }}>
               Create a report, pick a date range, and add the blocks you care about: nutrition, workouts, sleep, and more. Tap New Report to start.
             </Text>
           </View>
@@ -121,8 +122,8 @@ export default function ReportsHub() {
                   <Ionicons name="document-text" size={20} color={theme.accentBlue} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text numberOfLines={1} style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{r.name}</Text>
-                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_500Medium', color: theme.textMuted, marginTop: 2 }}>
+                  <Text numberOfLines={1} style={{ fontSize: 15, fontFamily: Type.uiBold, color: theme.textSecondary }}>{r.name}</Text>
+                  <Text style={{ fontSize: 12, fontFamily: Type.uiMedium, color: theme.textMuted, marginTop: 2 }}>
                     {RANGE_LABELS[r.range.preset]} · {r.blockIds.length} block{r.blockIds.length === 1 ? '' : 's'}
                   </Text>
                 </View>
@@ -140,7 +141,7 @@ export default function ReportsHub() {
         <TouchableOpacity onPress={startNew} activeOpacity={0.85}
           style={{ backgroundColor: theme.accentBlue, borderRadius: 12, paddingVertical: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           <Ionicons name="add" size={20} color="#fff" />
-          <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: '#fff' }}>New Report</Text>
+          <Text style={{ fontSize: 15, fontFamily: Type.uiBold, color: '#fff' }}>New Report</Text>
         </TouchableOpacity>
       </View>
     </View>

@@ -21,6 +21,7 @@ import {
 } from '../achievementData';
 import { loadProgressValues } from '../utils/achievementProgress';
 import { useTheme } from '../theme';
+import { Type, numLine } from '../typography';
 
 // ─── Tier Config ──────────────────────────────────────────────────────────────
 
@@ -343,7 +344,7 @@ function AchievementCard({ def, unlocked, progressValue = 0, highlight = false }
         }}>
           <Text style={{
             fontSize: 7,
-            fontFamily: 'DMSans_700Bold',
+            fontFamily: Type.uiBold,
             letterSpacing: 1.5,
             textTransform: 'uppercase',
             color: isUnlocked ? '#000000aa' : theme.textDim,
@@ -352,7 +353,7 @@ function AchievementCard({ def, unlocked, progressValue = 0, highlight = false }
           </Text>
         </View>
         {unlocked && unlocked.count > 1 && (
-          <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_500Medium', marginLeft: 6 }}>
+          <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiMedium, marginLeft: 6 }}>
             x{unlocked.count}
           </Text>
         )}
@@ -366,7 +367,7 @@ function AchievementCard({ def, unlocked, progressValue = 0, highlight = false }
       {/* Name */}
       <Text style={{
         fontSize: 13,
-        fontFamily: 'DMSans_700Bold',
+        fontFamily: Type.uiBold,
         color: isUnlocked ? theme.textPrimary : theme.textMuted,
         textAlign: 'center',
         marginBottom: 3,
@@ -378,7 +379,7 @@ function AchievementCard({ def, unlocked, progressValue = 0, highlight = false }
       {/* Criteria */}
       <Text style={{
         fontSize: 9,
-        fontFamily: 'DMSans_500Medium',
+        fontFamily: Type.uiMedium,
         color: theme.textDim,
         textAlign: 'center',
         lineHeight: 13,
@@ -390,7 +391,7 @@ function AchievementCard({ def, unlocked, progressValue = 0, highlight = false }
       {/* Description */}
       <Text style={{
         fontSize: 10,
-        fontFamily: 'DMSans_400Regular',
+        fontFamily: Type.ui,
         color: theme.textMuted,
         textAlign: 'center',
         lineHeight: 14,
@@ -403,7 +404,7 @@ function AchievementCard({ def, unlocked, progressValue = 0, highlight = false }
       {isUnlocked && dateStr && (
         <Text style={{
           fontSize: 9,
-          fontFamily: 'DMSans_600SemiBold',
+          fontFamily: Type.uiSemibold,
           color: isPlat ? '#93c5fd' : config.badgeColor,
           textAlign: 'center',
           letterSpacing: 0.5,
@@ -432,7 +433,7 @@ function AchievementCard({ def, unlocked, progressValue = 0, highlight = false }
           </View>
           <Text style={{
             fontSize: 9,
-            fontFamily: 'DMSans_600SemiBold',
+            fontFamily: Type.uiSemibold,
             color: theme.textDim,
             textAlign: 'center',
           }}>
@@ -522,16 +523,16 @@ function DailyGoalCard({ def, count, lastEarned }: { def: DailyGoalDef; count: n
       <View style={{ alignItems: 'center', marginBottom: 8 }}>
         <DailyGoalHexBadge color={def.color} icon={def.icon} size={56} />
       </View>
-      <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, textAlign: 'center', marginBottom: 6, letterSpacing: 0.3 }}>
+      <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.textPrimary, textAlign: 'center', marginBottom: 6, letterSpacing: 0.3 }}>
         {def.name}
       </Text>
-      <Text style={{ fontSize: 30, fontFamily: 'BebasNeue_400Regular', color: count > 0 ? def.color : theme.textMuted, textAlign: 'center', letterSpacing: 1, lineHeight: 32 }}>
+      <Text style={{ fontSize: 30, fontFamily: Type.num, color: count > 0 ? def.color : theme.textMuted, textAlign: 'center', letterSpacing: 1, lineHeight: numLine(30) }}>
         {count}×
       </Text>
-      <Text style={{ fontSize: 8, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted, textAlign: 'center', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>
+      <Text style={{ fontSize: 8, fontFamily: Type.uiSemibold, color: theme.textMuted, textAlign: 'center', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>
         achieved
       </Text>
-      <Text style={{ fontSize: 9, fontFamily: 'DMSans_500Medium', color: lastEarned && lastEarned === today ? def.color : (lastEarned ? theme.textMuted : theme.textDim), textAlign: 'center', opacity: 0.85 }}>
+      <Text style={{ fontSize: 9, fontFamily: Type.uiMedium, color: lastEarned && lastEarned === today ? def.color : (lastEarned ? theme.textMuted : theme.textDim), textAlign: 'center', opacity: 0.85 }}>
         {lastLabel}
       </Text>
     </View>
@@ -607,14 +608,16 @@ function CollapsibleCategory({
         onPress={toggle}
         style={{ flexDirection: 'row', alignItems: 'center', marginBottom: open ? 14 : 0, gap: 8, paddingVertical: 4 }}
       >
-        <Ionicons name={icon as any} size={14} color={theme.textMuted} />
-        <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, flex: 1 }}>
+        {/* SECTION headers are ink, matching Stats and Profile. These are the page's structure, not a
+            card's quiet caption -- on a glowing accent ground a muted label just dissolves. */}
+        <Ionicons name={icon as any} size={14} color={theme.textSecondary} />
+        <Text style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', color: theme.textSecondary, flex: 1 }}>
           {label}
         </Text>
-        <Text style={{ fontSize: 9, fontFamily: 'DMSans_600SemiBold', color: catUnlocked === total ? theme.accentGreen : theme.textMuted, letterSpacing: 1, marginRight: 6 }}>
+        <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: catUnlocked === total ? theme.accentGreen : theme.textSecondary, letterSpacing: 1, marginRight: 6 }}>
           {catUnlocked}/{total}
         </Text>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={12} color={theme.textMuted} />
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={12} color={theme.textSecondary} />
       </TouchableOpacity>
 
       {open && (
@@ -719,7 +722,7 @@ export default function AchievementsScreen() {
           <Ionicons name="chevron-back" size={22} color={theme.accentBlue} />
         </TouchableOpacity>
         <View style={{ flex: 1, marginLeft: 4 }}>
-          <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
+          {/* NO EYEBROWS OVER TITLES. The app does not need to tell you which app you are in. */}
           <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Achievements</Text>
         </View>
         <View style={{
@@ -731,10 +734,10 @@ export default function AchievementsScreen() {
           paddingVertical: 6,
           alignItems: 'center',
         }}>
-          <Text style={{ fontSize: 16, fontFamily: 'BebasNeue_400Regular', color: theme.accentBlue, letterSpacing: 1 }}>
+          <Text style={{ fontSize: 16, fontFamily: Type.num, color: theme.accentBlue, letterSpacing: 1 }}>
             {totalUnlocked}
           </Text>
-          <Text style={{ fontSize: 7, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', color: theme.textMuted }}>
+          <Text style={{ fontSize: 7, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase', color: theme.textMuted }}>
             Earned
           </Text>
         </View>
@@ -742,7 +745,7 @@ export default function AchievementsScreen() {
 
       {loading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontSize: 13 }}>Loading...</Text>
+          <Text style={{ color: theme.textMuted, fontFamily: Type.ui, fontSize: 13 }}>Loading...</Text>
         </View>
       ) : (
         <ScrollView ref={scrollRef} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
@@ -797,8 +800,8 @@ export default function AchievementsScreen() {
           {/* Daily Goals */}
           <View style={{ marginBottom: 28 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 8 }}>
-              <Ionicons name="trophy" size={14} color={theme.textMuted} />
-              <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, flex: 1 }}>
+              <Ionicons name="trophy" size={14} color={theme.textSecondary} />
+              <Text style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', color: theme.textSecondary, flex: 1 }}>
                 Daily Goals
               </Text>
             </View>
@@ -823,7 +826,7 @@ export default function AchievementsScreen() {
           {/* Disclaimer */}
           <Text style={{
             fontSize: 9,
-            fontFamily: 'DMSans_400Regular',
+            fontFamily: Type.ui,
             color: theme.textDim,
             textAlign: 'center',
             marginTop: 8,
@@ -854,12 +857,12 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     textTransform: 'uppercase',
     marginBottom: 2,
-    fontFamily: 'DMSans_700Bold',
+    fontFamily: Type.uiBold,
   },
   headerTitle: {
     fontSize: 28,
-    fontFamily: 'BebasNeue_400Regular',
-    letterSpacing: 2,
+    fontFamily: Type.display,
+    letterSpacing: 0.3,
   },
   card: {
     borderWidth: 0.5,

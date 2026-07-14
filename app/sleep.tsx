@@ -32,6 +32,7 @@ import { useHealthKit } from '../useHealthKit';
 import { useTheme } from '../theme';
 import { refreshCoachTipSleep, refreshCoachTipRecovery, resolveTipBody } from '../utils/coachAI';
 import { loadCoachTipCacheSleep, loadCoachTipCacheRecovery, CoachTipCache } from '../utils/smartTipsEngine';
+import { Type, numLine } from '../typography';
 
 type SleepTab = 'sleep' | 'recovery';
 
@@ -326,21 +327,21 @@ function StageHistoryChart({ nights, theme }: { nights: SleepNight[]; theme: any
           return (
             <TouchableOpacity activeOpacity={1} onPress={() => setSel(null)} style={{ position: 'absolute', top: 0, left, width: W }}>
               <View style={{ backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderWidth: 0.5, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 4 }}>
-                <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5, marginBottom: 6 }}>{fmtDay(nt.dateKey)}</Text>
+                <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.uiBold, letterSpacing: 0.5, marginBottom: 6 }}>{fmtDay(nt.dateKey)}</Text>
                 <View style={{ height: 0.5, backgroundColor: theme.borderCard, marginBottom: 6 }} />
                 {rows.map(r => (
                   <View key={r.label} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                       <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: r.color }} />
-                      <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5, textTransform: 'uppercase' }}>{r.label}</Text>
+                      <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 0.5, textTransform: 'uppercase' }}>{r.label}</Text>
                     </View>
-                    <Text style={{ fontSize: 11, color: r.color, fontFamily: 'DMSans_700Bold' }}>{fmtMs(r.ms)}</Text>
+                    <Text style={{ fontSize: 11, color: r.color, fontFamily: Type.uiBold }}>{fmtMs(r.ms)}</Text>
                   </View>
                 ))}
                 <View style={{ height: 0.5, backgroundColor: theme.borderCard, marginTop: 2, marginBottom: 6 }} />
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5, textTransform: 'uppercase' }}>Duration</Text>
-                  <Text style={{ fontSize: 11, color: theme.textPrimary, fontFamily: 'DMSans_700Bold' }}>{fmtMs(nt.totalMs)}</Text>
+                  <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 0.5, textTransform: 'uppercase' }}>Duration</Text>
+                  <Text style={{ fontSize: 11, color: theme.textPrimary, fontFamily: Type.uiBold }}>{fmtMs(nt.totalMs)}</Text>
                 </View>
               </View>
             </TouchableOpacity>
@@ -426,8 +427,8 @@ function Hypnogram({ segments, theme, hideAxis }: { segments: SleepSeg[]; theme:
       {cursor && (
         <View style={{ position: 'absolute', top: 0, left: Math.max(0, Math.min(CHART_W - 96, cursor.x - 48)), backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderWidth: 0.5, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 6, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } }}>
           <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: cursor.color }} />
-          <Text style={{ fontSize: 11, color: theme.textPrimary, fontFamily: 'DMSans_700Bold' }}>{cursor.stage}</Text>
-          <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>{cursor.time}</Text>
+          <Text style={{ fontSize: 11, color: theme.textPrimary, fontFamily: Type.uiBold }}>{cursor.stage}</Text>
+          <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.uiMedium }}>{cursor.time}</Text>
         </View>
       )}
     </ReAnimated.View>
@@ -1082,8 +1083,8 @@ export default function SleepHub() {
       return (
         <View style={[cardStyle, { alignItems: 'center', paddingVertical: 28 }]}>
           <Ionicons name="moon-outline" size={34} color={theme.iconMuted} />
-          <Text style={{ fontSize: 14, color: theme.textPrimary, fontFamily: 'DMSans_700Bold', marginTop: 10 }}>No sleep logged last night</Text>
-          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 4, textAlign: 'center' }}>
+          <Text style={{ fontSize: 14, color: theme.textPrimary, fontFamily: Type.uiBold, marginTop: 10 }}>No sleep logged last night</Text>
+          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginTop: 4, textAlign: 'center' }}>
             Sleep syncs from Apple Health, or you can log it by hand on the home Sleep card.
           </Text>
         </View>
@@ -1102,8 +1103,8 @@ export default function SleepHub() {
         <Text style={[cardLabel, { marginBottom: 14 }]}>Last Night</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <View style={{ flex: 1, alignItems: 'center' }}>
-            <Text style={{ fontSize: 38, color: scoreColor, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5, lineHeight: 44 }}>{hrs}h {mins}m</Text>
-            <Text style={{ fontSize: 9, color: scoreLabel ? scoreColor : theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginTop: 3 }}>
+            <Text style={{ fontSize: 38, color: scoreColor, fontFamily: Type.num, letterSpacing: 0.5, lineHeight: numLine(38) }}>{hrs}h {mins}m</Text>
+            <Text style={{ fontSize: 9, color: scoreLabel ? scoreColor : theme.textDim, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginTop: 3 }}>
               {scoreLabel ?? (isManual ? 'MANUAL' : 'HEALTHKIT')}
             </Text>
           </View>
@@ -1111,8 +1112,8 @@ export default function SleepHub() {
             <>
               <View style={{ width: 1, height: 52, backgroundColor: theme.borderSubtle }} />
               <View style={{ flex: 1, alignItems: 'center' }}>
-                <Text style={{ fontSize: 38, color: scoreColor, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, lineHeight: 44 }}>{score}</Text>
-                <Text style={{ fontSize: 8, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 4 }}>Sleep Score</Text>
+                <Text style={{ fontSize: 38, color: scoreColor, fontFamily: Type.num, letterSpacing: 1, lineHeight: numLine(38) }}>{score}</Text>
+                <Text style={{ fontSize: 8, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 4 }}>Sleep Score</Text>
               </View>
             </>
           )}
@@ -1124,7 +1125,7 @@ export default function SleepHub() {
         )}
         <View style={{ alignItems: 'center', marginTop: 14 }}>
           {((storedBed && storedWake) || sleepTimes) && (
-            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>
+            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.uiMedium }}>
               {storedBed || sleepTimes?.bed} → {storedWake || sleepTimes?.wake}
             </Text>
           )}
@@ -1150,10 +1151,10 @@ export default function SleepHub() {
                     <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: s.color }} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>{s.label}</Text>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 1, textTransform: 'uppercase' }}>{s.label}</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 3 }}>
-                      <Text style={{ fontSize: 19, color: s.color, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5 }}>{s.value}</Text>
-                      <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>{s.unit}</Text>
+                      <Text style={{ fontSize: 19, color: s.color, fontFamily: Type.num, letterSpacing: 0.5 }}>{s.value}</Text>
+                      <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: Type.ui }}>{s.unit}</Text>
                     </View>
                   </View>
                 </View>
@@ -1161,7 +1162,7 @@ export default function SleepHub() {
             </View>
           );
         })()}
-        <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 16, textAlign: 'center' }}>
+        <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, marginTop: 16, textAlign: 'center' }}>
           For informational purposes only. Not medical advice.
         </Text>
       </View>
@@ -1181,7 +1182,7 @@ export default function SleepHub() {
       if (loadingRecovery && recoveryResult === null) {
         return (
           <View style={[cardStyle, { alignItems: 'center', paddingVertical: 32 }]}>
-            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Loading recovery data...</Text>
+            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui }}>Loading recovery data...</Text>
           </View>
         );
       }
@@ -1189,8 +1190,8 @@ export default function SleepHub() {
         return (
           <View style={[cardStyle, { alignItems: 'center', paddingVertical: 28 }]}>
             <Ionicons name="pulse-outline" size={34} color={theme.iconMuted} />
-            <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', marginTop: 10 }}>Recovery data unavailable</Text>
-            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 4, textAlign: 'center', lineHeight: 18 }}>
+            <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiBold, marginTop: 10 }}>Recovery data unavailable</Text>
+            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginTop: 4, textAlign: 'center', lineHeight: 18 }}>
               Recovery needs overnight heart data synced to Apple Health. Wear a watch overnight and let it sync to see your Recovery Score.
             </Text>
           </View>
@@ -1237,10 +1238,10 @@ export default function SleepHub() {
             <Text style={[cardLabel, { marginBottom: 14 }]}>Today's Recovery</Text>
             <View style={{ alignItems: 'center', marginBottom: 16 }}>
               <Ionicons name="contrast" size={30} color={theme.accentBlueRaw} />
-              <Text style={{ fontSize: 26, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginTop: 8 }}>{mindfulWord}</Text>
-              <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 4, textAlign: 'center' }}>{mindfulLine}</Text>
+              <Text style={{ fontSize: 26, color: theme.accentBlueRaw, fontFamily: Type.num, letterSpacing: 2, marginTop: 8 }}>{mindfulWord}</Text>
+              <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.ui, marginTop: 4, textAlign: 'center' }}>{mindfulLine}</Text>
             </View>
-            <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginBottom: 10 }}>
+            <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, textAlign: 'center', marginBottom: 10 }}>
               Where each signal sits next to your 7-day baseline.
             </Text>
             <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
@@ -1251,8 +1252,8 @@ export default function SleepHub() {
                 return (
                   <TouchableOpacity key={key} activeOpacity={0.6} onPress={() => openDrill(dkey)} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 11, borderBottomWidth: isLast ? 0 : 0.5, borderBottomColor: theme.borderSubtle }}>
                     <View style={{ width: 88 }}>
-                      <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }} numberOfLines={1}>{key}</Text>
-                      {bSub ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 1 }} numberOfLines={1}>{bSub}</Text> : null}
+                      <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.uiMedium }} numberOfLines={1}>{key}</Text>
+                      {bSub ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, marginTop: 1 }} numberOfLines={1}>{bSub}</Text> : null}
                     </View>
                     <View style={{ flex: 1, marginHorizontal: 10 }}>
                       {dkey === 'sleepScore'
@@ -1260,15 +1261,15 @@ export default function SleepHub() {
                         : <DivergentBar score={comp.score} theme={theme} tone={theme.accentBlueRaw} />}
                     </View>
                     <View style={{ width: 78, alignItems: 'flex-end' }}>
-                      <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_700Bold' }}>{comp.value}</Text>
-                      {comp.delta ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_500Medium', marginTop: 1 }}>{comp.delta}</Text> : null}
+                      <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiBold }}>{comp.value}</Text>
+                      {comp.delta ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.uiMedium, marginTop: 1 }}>{comp.delta}</Text> : null}
                     </View>
                     <Ionicons name="chevron-forward" size={14} color={theme.textDim} style={{ marginLeft: 6 }} />
                   </TouchableOpacity>
                 );
               })}
             </View>
-            <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 14, textAlign: 'center' }}>
+            <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, marginTop: 14, textAlign: 'center' }}>
               For informational purposes only. Not medical advice.
             </Text>
           </View>
@@ -1282,16 +1283,16 @@ export default function SleepHub() {
           <View style={{ alignItems: 'center', marginBottom: 16 }}>
             <ScoreRing value={heroScore ?? recoveryResult.score} color={recColor} theme={theme} celebrate="none" />
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
-              <Text style={{ fontSize: 22, color: recColor, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 }}>{heroZoneInfo?.label}</Text>
+              <Text style={{ fontSize: 22, color: recColor, fontFamily: Type.num, letterSpacing: 2 }}>{heroZoneInfo?.label}</Text>
               {recoveryResult.isLimitedData && (
                 <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
-                  <Text style={{ fontSize: 9, color: theme.accentBlueRaw, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>Limited data</Text>
+                  <Text style={{ fontSize: 9, color: theme.accentBlueRaw, fontFamily: Type.uiBold, letterSpacing: 1, textTransform: 'uppercase' }}>Limited data</Text>
                 </View>
               )}
             </View>
           </View>
 
-          <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginBottom: 10 }}>
+          <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, textAlign: 'center', marginBottom: 10 }}>
             Each bar shows today vs your 7-day baseline. Right is helping, left is dragging.
           </Text>
           <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
@@ -1303,8 +1304,8 @@ export default function SleepHub() {
               return (
                 <TouchableOpacity key={key} activeOpacity={0.6} onPress={() => openDrill(dkey)} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 11, borderBottomWidth: isLast ? 0 : 0.5, borderBottomColor: theme.borderSubtle }}>
                   <View style={{ width: 88 }}>
-                    <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }} numberOfLines={1}>{key}</Text>
-                    {bSub ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 1 }} numberOfLines={1}>{bSub}</Text> : null}
+                    <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.uiMedium }} numberOfLines={1}>{key}</Text>
+                    {bSub ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, marginTop: 1 }} numberOfLines={1}>{bSub}</Text> : null}
                   </View>
                   <View style={{ flex: 1, marginHorizontal: 10 }}>
                     {dkey === 'sleepScore'
@@ -1312,9 +1313,9 @@ export default function SleepHub() {
                       : <DivergentBar score={comp.score} theme={theme} />}
                   </View>
                   <View style={{ width: 78, alignItems: 'flex-end' }}>
-                    <Text style={{ fontSize: 14, color: rc, fontFamily: 'DMSans_700Bold' }}>{comp.value}</Text>
+                    <Text style={{ fontSize: 14, color: rc, fontFamily: Type.uiBold }}>{comp.value}</Text>
                     {comp.delta && (
-                      <Text style={{ fontSize: 10, color: rc, fontFamily: 'DMSans_500Medium', marginTop: 1 }}>{comp.delta}</Text>
+                      <Text style={{ fontSize: 10, color: rc, fontFamily: Type.uiMedium, marginTop: 1 }}>{comp.delta}</Text>
                     )}
                   </View>
                   <Ionicons name="chevron-forward" size={14} color={theme.textDim} style={{ marginLeft: 6 }} />
@@ -1326,20 +1327,20 @@ export default function SleepHub() {
           {adjustedSignals?.todaySpO2 !== null && adjustedSignals?.todaySpO2 !== undefined && (
             <TouchableOpacity activeOpacity={0.6} onPress={() => openDrill('spo2')} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 11, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
               <View style={{ width: 88 }}>
-                <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }} numberOfLines={1}>Blood Oxygen</Text>
-                <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 1 }}>Healthy 95-100%</Text>
+                <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.uiMedium }} numberOfLines={1}>Blood Oxygen</Text>
+                <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, marginTop: 1 }}>Healthy 95-100%</Text>
               </View>
               <View style={{ flex: 1, marginHorizontal: 10 }}>
                 <RangeBar value={adjustedSignals.todaySpO2} theme={theme} />
               </View>
               <View style={{ width: 78, alignItems: 'flex-end' }}>
-                <Text style={{ fontSize: 14, color: adjustedSignals.todaySpO2 >= 95 ? theme.statusGood : theme.statusWarn, fontFamily: 'DMSans_700Bold' }}>{adjustedSignals.todaySpO2}%</Text>
+                <Text style={{ fontSize: 14, color: adjustedSignals.todaySpO2 >= 95 ? theme.statusGood : theme.statusWarn, fontFamily: Type.uiBold }}>{adjustedSignals.todaySpO2}%</Text>
               </View>
               <Ionicons name="chevron-forward" size={14} color={theme.textDim} style={{ marginLeft: 6 }} />
             </TouchableOpacity>
           )}
 
-          <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 14, textAlign: 'center' }}>
+          <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, marginTop: 14, textAlign: 'center' }}>
             For informational purposes only. Not medical advice.
           </Text>
         </View>
@@ -1356,8 +1357,8 @@ export default function SleepHub() {
               <Text style={cardLabel}>Recovery Trend</Text>
               {avg !== null && (
                 <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 6 }}>
-                  <Text style={{ fontSize: 24, color: theme.statusGood, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5 }}>{avg}</Text>
-                  <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>Avg over {recoveryTrend.length} {recoveryTrend.length === 1 ? 'day' : 'days'}</Text>
+                  <Text style={{ fontSize: 24, color: theme.statusGood, fontFamily: Type.num, letterSpacing: 0.5 }}>{avg}</Text>
+                  <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.uiMedium }}>Avg over {recoveryTrend.length} {recoveryTrend.length === 1 ? 'day' : 'days'}</Text>
                 </View>
               )}
             </View>
@@ -1365,7 +1366,7 @@ export default function SleepHub() {
           {recoveryTrend.length > 0 ? (
             <RecoveryTrendChart data={recoveryTrend} theme={theme} />
           ) : (
-            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center', lineHeight: 18 }}>
+            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, paddingVertical: 24, textAlign: 'center', lineHeight: 18 }}>
               Your recovery trend builds over time. Today's score is the first data point.
             </Text>
           )}
@@ -1396,7 +1397,7 @@ export default function SleepHub() {
           </View>
           <View style={{ flexDirection: 'row', gap: 10, padding: 12, borderRadius: 10, backgroundColor: theme.accentBlueBg }}>
             <Ionicons name="bulb" size={16} color={theme.accentBlueRaw} style={{ marginTop: 1 }} />
-            <Text style={{ flex: 1, fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_500Medium', lineHeight: 20 }}>{body}</Text>
+            <Text style={{ flex: 1, fontSize: 13, color: theme.textPrimary, fontFamily: Type.uiMedium, lineHeight: 20 }}>{body}</Text>
           </View>
         </View>
       );
@@ -1412,8 +1413,8 @@ export default function SleepHub() {
       return (
         <View style={[cardStyle, { alignItems: 'center', paddingVertical: 46, paddingHorizontal: 24 }]}>
           <Ionicons name="watch-outline" size={40} color={theme.iconMuted} />
-          <Text style={{ fontSize: 16, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', marginTop: 14 }}>Recovery needs a wearable</Text>
-          <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 6, textAlign: 'center', lineHeight: 20 }}>
+          <Text style={{ fontSize: 16, color: theme.textSecondary, fontFamily: Type.uiBold, marginTop: 14 }}>Recovery needs a wearable</Text>
+          <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.ui, marginTop: 6, textAlign: 'center', lineHeight: 20 }}>
             Recovery Score, HRV, and resting heart rate come from a smartwatch or fitness tracker worn overnight. Connect one to Apple Health and this fills in automatically. Your sleep, nutrition, and weight tracking all work fully without it.
           </Text>
         </View>
@@ -1429,7 +1430,7 @@ export default function SleepHub() {
     );
   };
 
-  const cardLabel = { fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' as const };
+  const cardLabel = { fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase' as const };
 
   const rangeToggle = () => (
     <View style={{ flexDirection: 'row', backgroundColor: theme.bgProgressTrack, borderRadius: 6, padding: 2 }}>
@@ -1437,7 +1438,7 @@ export default function SleepHub() {
         <TouchableOpacity key={r} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setRange(r); }}
           style={{ paddingVertical: 4, paddingHorizontal: 10, borderRadius: 4, backgroundColor: range === r ? theme.bgCard : 'transparent' }}
           hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
-          <Text style={{ fontSize: 11, color: range === r ? theme.textPrimary : theme.textMuted, fontFamily: range === r ? 'DMSans_700Bold' : 'DMSans_500Medium' }}>{r}D</Text>
+          <Text style={{ fontSize: 11, color: range === r ? theme.textPrimary : theme.textMuted, fontFamily: range === r ? Type.uiBold : Type.uiMedium }}>{r}D</Text>
         </TouchableOpacity>
       ))}
     </View>
@@ -1466,8 +1467,8 @@ export default function SleepHub() {
             <Text style={cardLabel}>Sleep Score Trend</Text>
             {avg !== null && (
               <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 6 }}>
-                <Text style={{ fontSize: 24, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5 }}>{avg}</Text>
-                <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>Avg over {trendData.length} {trendData.length === 1 ? 'night' : 'nights'}</Text>
+                <Text style={{ fontSize: 24, color: theme.accentBlueRaw, fontFamily: Type.num, letterSpacing: 0.5 }}>{avg}</Text>
+                <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.uiMedium }}>Avg over {trendData.length} {trendData.length === 1 ? 'night' : 'nights'}</Text>
               </View>
             )}
           </View>
@@ -1475,9 +1476,9 @@ export default function SleepHub() {
         {trendData.length > 0 ? (
           <ScoreTrendChart nights={trendData as unknown as SleepNight[]} scores={trendData.map(d => d.score)} theme={theme} />
         ) : firstLoad ? (
-          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center' }}>Loading…</Text>
+          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, paddingVertical: 24, textAlign: 'center' }}>Loading…</Text>
         ) : (
-          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center' }}>
+          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, paddingVertical: 24, textAlign: 'center' }}>
             No sleep logged in this range yet.
           </Text>
         )}
@@ -1501,16 +1502,16 @@ export default function SleepHub() {
               {legend.map(l => (
                 <View key={l.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: l.color }} />
-                  <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold', letterSpacing: 0.5, textTransform: 'uppercase' }}>{l.label}</Text>
+                  <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.uiSemibold, letterSpacing: 0.5, textTransform: 'uppercase' }}>{l.label}</Text>
                 </View>
               ))}
             </View>
-            <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 10 }}>Apple Health data only. Manual sleep nights not included.</Text>
+            <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, textAlign: 'center', marginTop: 10 }}>Apple Health data only. Manual sleep nights not included.</Text>
           </>
         ) : firstLoad ? (
-          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center' }}>Loading…</Text>
+          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, paddingVertical: 24, textAlign: 'center' }}>Loading…</Text>
         ) : (
-          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center', lineHeight: 18 }}>
+          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, paddingVertical: 24, textAlign: 'center', lineHeight: 18 }}>
             Sleep stages need Apple Health. Your manual sleep still counts toward your score and trend.
           </Text>
         )}
@@ -1532,17 +1533,17 @@ export default function SleepHub() {
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}>
                   <Ionicons name={r.icon} size={14} color={theme.textMuted} />
-                  <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{r.label}</Text>
+                  <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.uiMedium }}>{r.label}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
-                    <Text style={{ fontSize: 17, color: r.valueColor, fontFamily: 'DMSans_700Bold' }}>{r.value}</Text>
-                    {r.delta ? <Text style={{ fontSize: 11, color: r.deltaColor, fontFamily: 'DMSans_600SemiBold' }}>{r.delta}</Text> : null}
+                    <Text style={{ fontSize: 17, color: r.valueColor, fontFamily: Type.uiBold }}>{r.value}</Text>
+                    {r.delta ? <Text style={{ fontSize: 11, color: r.deltaColor, fontFamily: Type.uiSemibold }}>{r.delta}</Text> : null}
                   </View>
                   {tappable ? <Ionicons name="chevron-forward" size={14} color={theme.textDim} /> : null}
                 </View>
               </View>
-              {r.caption ? <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 3 }}>{r.caption}</Text> : null}
+              {r.caption ? <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, marginTop: 3 }}>{r.caption}</Text> : null}
             </>
           );
           return tappable ? (
@@ -1559,7 +1560,7 @@ export default function SleepHub() {
     <View style={cardStyle}>
       <Text style={[cardLabel, { marginBottom: 12 }]}>Options</Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text style={{ flex: 1, paddingRight: 12, fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>
+        <Text style={{ flex: 1, paddingRight: 12, fontSize: 13, color: theme.textSecondary, fontFamily: Type.uiMedium }}>
           Exclude last night from sleep and recovery trends
         </Text>
         <ToggleSwitch value={excludedToday} onValueChange={toggleExclude} />
@@ -1592,7 +1593,7 @@ export default function SleepHub() {
         </View>
         <View style={{ flexDirection: 'row', gap: 10, padding: 12, borderRadius: 10, backgroundColor: theme.accentBlueBg }}>
           <Ionicons name="bulb" size={16} color={theme.accentBlueRaw} style={{ marginTop: 1 }} />
-          <Text style={{ flex: 1, fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_500Medium', lineHeight: 20 }}>{body}</Text>
+          <Text style={{ flex: 1, fontSize: 13, color: theme.textPrimary, fontFamily: Type.uiMedium, lineHeight: 20 }}>{body}</Text>
         </View>
       </View>
     );
@@ -1617,7 +1618,7 @@ export default function SleepHub() {
           shadowRadius: 3,
         }}
       >
-        <Text style={{ fontSize: 12, color: active ? theme.accentBlueRaw : theme.textMuted, fontFamily: active ? 'DMSans_700Bold' : 'DMSans_500Medium' }}>{label}</Text>
+        <Text style={{ fontSize: 12, color: active ? theme.accentBlueRaw : theme.textMuted, fontFamily: active ? Type.uiBold : Type.uiMedium }}>{label}</Text>
       </TouchableOpacity>
     );
   };
@@ -1797,7 +1798,7 @@ export default function SleepHub() {
         >
           <Ionicons name="chevron-back" size={16} color={theme.accentBlue} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw }}>SLEEP & RECOVERY</Text>
+        <Text style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentBlueRaw }}>SLEEP & RECOVERY</Text>
         <View style={{ width: 36, alignItems: 'flex-end', justifyContent: 'center' }}>
           <TooltipIcon tooltipKey="sleep_hub" size={20} />
         </View>
@@ -1819,7 +1820,7 @@ export default function SleepHub() {
       {backfilling && (
         <View style={{ marginHorizontal: 12, marginTop: 6, padding: 10, borderRadius: 8, backgroundColor: theme.accentBlueBg, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <ActivityIndicator size="small" color={theme.accentBlueRaw} />
-          <Text style={{ fontSize: 12, color: theme.accentBlueRaw, fontFamily: 'DMSans_600SemiBold' }}>{backfilling}</Text>
+          <Text style={{ fontSize: 12, color: theme.accentBlueRaw, fontFamily: Type.uiSemibold }}>{backfilling}</Text>
         </View>
       )}
 

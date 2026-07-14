@@ -122,10 +122,10 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
     commit(sets.filter((_, idx) => idx !== i));
   };
 
-  const headerCell = { fontSize: 8, letterSpacing: 1.2, color: t.textMuted, fontFamily: Type.uiBold as const, textTransform: 'uppercase' as const, textAlign: 'center' as const };
+  const headerCell = { fontSize: 8, letterSpacing: 1.2, color: t.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase' as const, textAlign: 'center' as const };
   const inputStyle = (done: boolean) => ({
     width: '100%' as const, height: 32, borderRadius: 8, borderWidth: 1, textAlign: 'center' as const,
-    fontSize: 15, fontFamily: Type.uiBold as const, paddingVertical: 0,
+    fontSize: 15, fontFamily: Type.uiBold, paddingVertical: 0,
     backgroundColor: t.bgInput, borderColor: done ? t.accentGreenBorder : t.borderInput, color: t.textSecondary,
   });
 

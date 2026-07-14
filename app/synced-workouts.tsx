@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
 import { useHealthKit } from '../useHealthKit';
 import { groupSyncedWorkouts, applySyncedLabels, loadSyncedLabels, saveSyncedLabel, formatDurationShort, SyncedWorkout } from '../utils/syncedWorkouts';
+import { Type } from '../typography';
 
 // Phase 1 verification screen (temporary): pulls the user's real Apple workouts, reads the indoor flag,
 // and shows them grouped by { type + indoor } so we can confirm the bucketing is correct on real data
@@ -75,19 +76,19 @@ export default function SyncedWorkoutsScreen() {
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={theme.accentBlue} />
-          <Text style={{ color: theme.textMuted, marginTop: 12, fontFamily: 'DMSans_400Regular' }}>Reading Apple Health workouts...</Text>
+          <Text style={{ color: theme.textMuted, marginTop: 12, fontFamily: Type.ui }}>Reading Apple Health workouts...</Text>
         </View>
       ) : raw.length === 0 ? (
         <View style={styles.center}>
           <Ionicons name="barbell-outline" size={32} color={theme.textDim} />
-          <Text style={{ color: theme.textSecondary, fontSize: 16, fontFamily: 'DMSans_600SemiBold', marginTop: 10 }}>No synced workouts found</Text>
-          <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginTop: 4, textAlign: 'center', paddingHorizontal: 32 }}>
+          <Text style={{ color: theme.textSecondary, fontSize: 16, fontFamily: Type.uiSemibold, marginTop: 10 }}>No synced workouts found</Text>
+          <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: Type.ui, marginTop: 4, textAlign: 'center', paddingHorizontal: 32 }}>
             No Apple Health workouts in the last year, or Health access isn't granted.
           </Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-          <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_400Regular', marginBottom: 14 }}>
+          <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: Type.ui, marginBottom: 14 }}>
             {raw.length} sessions · {groups.length} groups · {missingFlag} missing the indoor flag
           </Text>
 
@@ -99,8 +100,8 @@ export default function SyncedWorkoutsScreen() {
                   onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setExpanded(p => ({ ...p, [g.key]: !p[g.key] })); }}
                   style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: theme.textSecondary, fontSize: 16, fontFamily: 'DMSans_700Bold' }}>{g.label}</Text>
-                    <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>
+                    <Text style={{ color: theme.textSecondary, fontSize: 16, fontFamily: Type.uiBold }}>{g.label}</Text>
+                    <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: Type.ui, marginTop: 2 }}>
                       {g.sessions.length} session{g.sessions.length === 1 ? '' : 's'} · type {g.type}
                     </Text>
                   </View>
@@ -119,12 +120,12 @@ export default function SyncedWorkoutsScreen() {
                     {g.sessions.map(s => (
                       <View key={s.uuid} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6, borderTopWidth: 0.5, borderTopColor: theme.borderCard }}>
                         <View>
-                          <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>{fmtDate(s.startDate)}</Text>
-                          <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: 'DMSans_400Regular', marginTop: 1 }}>
+                          <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily: Type.uiSemibold }}>{fmtDate(s.startDate)}</Text>
+                          <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: Type.ui, marginTop: 1 }}>
                             {formatDurationShort(s.durationSec)}{s.distanceMi ? ` · ${s.distanceMi} mi` : ''}{s.calories ? ` · ${s.calories} cal` : ''}
                           </Text>
                         </View>
-                        <Text style={{ color: s.indoor === null ? theme.textDim : theme.accentBlue, fontSize: 10, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>
+                        <Text style={{ color: s.indoor === null ? theme.textDim : theme.accentBlue, fontSize: 10, fontFamily: Type.uiBold, letterSpacing: 1 }}>
                           {s.indoor === null ? '—' : s.indoor ? 'INDOOR' : 'OUTDOOR'}
                         </Text>
                       </View>
@@ -144,7 +145,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 0.5 },
   headerBtn: { width: 40, height: 32, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  headerTitle: { fontSize: 18, fontFamily: Type.display, letterSpacing: 0.3 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
   card: { borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14, padding: 16, marginBottom: 12 },
 });

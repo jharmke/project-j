@@ -13,6 +13,7 @@ import PrimaryCTA from '../components/PrimaryCTA';
 import { GoldIconRow } from '../components/MembershipCard';
 import { FoilChip, FoilEdge, GOLD_BASE, GOLD_DEEP, GOLD_EDGE, GOLD_ENGRAVE, GOLD_HI, GOLD_TINT } from '../components/SupporterFoil';
 import { useMembership } from '../MembershipContext';
+import { Type, numLine } from '../typography';
 
 // ─── Support the Mission (the reframed paywall) ──────────────────────────────
 // Copy locked in SPEC_monetization.md (DECISIONS #4). This renders the FREE-user
@@ -63,7 +64,7 @@ export default function SupportScreen() {
 
   // Emphasis run inside the mission paragraph: the user's accent + semibold, so the key beats tie to the
   // page instead of introducing a third hue.
-  const emph = { fontFamily: 'DMSans_600SemiBold' as const, color: t.accentBlue };
+  const emph = { fontFamily: Type.uiSemibold, color: t.accentBlue };
 
   const { isSupporter, details, offering, tipProducts, purchasePackage, purchaseTip, restore: restorePurchases } = useMembership();
 
@@ -443,37 +444,37 @@ export default function SupportScreen() {
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 8 },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  backText: { fontSize: 15, fontFamily: 'DMSans_400Regular' },
+  backText: { fontSize: 15, fontFamily: Type.ui },
 
   scrollContent: { paddingHorizontal: 16, paddingTop: 8, gap: 14 },
 
   hero: { paddingHorizontal: 4, paddingBottom: 2 },
-  heroTitle: { fontSize: 46, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, lineHeight: 50 },
+  heroTitle: { fontSize: 46, fontFamily: Type.num, letterSpacing: 2, lineHeight: numLine(46) },
 
-  mission: { fontSize: 14.5, fontFamily: 'DMSans_500Medium', lineHeight: 23, paddingHorizontal: 4, marginBottom: 2, textAlign: 'center' },
+  mission: { fontSize: 14.5, fontFamily: Type.uiMedium, lineHeight: 23, paddingHorizontal: 4, marginBottom: 2, textAlign: 'center' },
   // Padding + radius match memberCard exactly so the two foil cards line up edge for edge.
   missionCard: { borderWidth: 1, borderRadius: 14, padding: 16, overflow: 'hidden' },
-  missionTitle: { fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 2.5, textTransform: 'uppercase', textAlign: 'center', marginBottom: 10 },
-  missionClose: { fontSize: 14, fontFamily: 'DMSans_600SemiBold', lineHeight: 20, textAlign: 'center', marginTop: 12 },
+  missionTitle: { fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2.5, textTransform: 'uppercase', textAlign: 'center', marginBottom: 10 },
+  missionClose: { fontSize: 14, fontFamily: Type.uiSemibold, lineHeight: 20, textAlign: 'center', marginTop: 12 },
 
   cardShadow: { borderRadius: 14, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 },
   card: { borderRadius: 14, borderWidth: 0.5, borderTopWidth: 1.5, padding: 16, overflow: 'hidden' },
 
-  eyebrow: { fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 },
-  heading: { fontSize: 26, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, lineHeight: 28 },
-  sub: { fontSize: 12.5, fontFamily: 'DMSans_600SemiBold', marginTop: 4, marginBottom: 16 },
+  eyebrow: { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 },
+  heading: { fontSize: 26, fontFamily: Type.num, letterSpacing: 1, lineHeight: numLine(26) },
+  sub: { fontSize: 12.5, fontFamily: Type.uiSemibold, marginTop: 4, marginBottom: 16 },
 
   perks: { gap: 14, marginBottom: 18 },
   perk: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   perkIcon: { width: 30, height: 30, borderRadius: 9, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginTop: 1, overflow: 'hidden' },
   perkText: { flex: 1 },
-  perkTitle: { fontSize: 14.5, fontFamily: 'DMSans_700Bold', marginBottom: 2 },
-  perkBody: { fontSize: 13, fontFamily: 'DMSans_400Regular', lineHeight: 18 },
+  perkTitle: { fontSize: 14.5, fontFamily: Type.uiBold, marginBottom: 2 },
+  perkBody: { fontSize: 13, fontFamily: Type.ui, lineHeight: 18 },
 
   prices: { flexDirection: 'row', gap: 10, marginBottom: 14 },
   price: { flex: 1, borderRadius: 13, borderWidth: 1.5, paddingVertical: 13, alignItems: 'center' },
-  priceAmt: { fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5 },
-  pricePer: { fontSize: 11, fontFamily: 'DMSans_600SemiBold', marginTop: 1 },
+  priceAmt: { fontSize: 22, fontFamily: Type.num, letterSpacing: 0.5 },
+  pricePer: { fontSize: 11, fontFamily: Type.uiSemibold, marginTop: 1 },
 
   // Supporter membership card (dark object; see the palette block up top).
   memberCard: { borderRadius: 14, borderWidth: 1, padding: 16, overflow: 'hidden' },
@@ -482,14 +483,14 @@ const styles = StyleSheet.create({
   memberSprout: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   memberRows: { borderTopWidth: 0.5, marginTop: 12, paddingTop: 4 },
   memberRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 9 },
-  memberLabel: { fontSize: 13, fontFamily: 'DMSans_400Regular' },
-  memberValue: { fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
+  memberLabel: { fontSize: 13, fontFamily: Type.ui },
+  memberValue: { fontSize: 14, fontFamily: Type.uiSemibold },
   changePlan: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     borderWidth: 1, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14,
   },
-  changePlanText: { fontSize: 14, fontFamily: 'DMSans_700Bold' },
-  changePlanSub: { fontSize: 12, fontFamily: 'DMSans_400Regular', marginTop: 2 },
+  changePlanText: { fontSize: 14, fontFamily: Type.uiBold },
+  changePlanSub: { fontSize: 12, fontFamily: Type.ui, marginTop: 2 },
   // Accent-tinted glow (shadowColor is set per-theme at the call site) -- lives on a WRAPPER because
   // the button itself needs overflow:hidden to clip the sheen, which would clip a shadow too.
   ctaGlow: { shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 4 },
@@ -497,19 +498,19 @@ const styles = StyleSheet.create({
   ctaRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   // Bebas caps, like the card headings -- DMSans bold 15 was the same weight as body copy, which is why
   // the label read as plain text sitting on a colored rectangle.
-  ctaText: { fontSize: 19, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1.2, color: '#ffffff' },
+  ctaText: { fontSize: 19, fontFamily: Type.uiBold, letterSpacing: 1.2, color: '#ffffff' },
   supporterState: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, borderRadius: 13, borderWidth: 1, paddingVertical: 13, paddingHorizontal: 16 },
 
   tipTiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, marginTop: 0, marginBottom: 10 },
   tipTileWrap: { flexBasis: '47%', flexGrow: 1 },
   tipTile: { borderRadius: 14, borderWidth: 1, paddingVertical: 11, paddingHorizontal: 6, alignItems: 'center', gap: 2, overflow: 'hidden' },
-  tipLabel: { fontSize: 11, fontFamily: 'DMSans_600SemiBold', textAlign: 'center', lineHeight: 14, minHeight: 15 },
-  tipAmt: { fontSize: 23, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5 },
+  tipLabel: { fontSize: 11, fontFamily: Type.uiSemibold, textAlign: 'center', lineHeight: 14, minHeight: 15 },
+  tipAmt: { fontSize: 23, fontFamily: Type.num, letterSpacing: 0.5 },
   // Matches the tipAmt line box so swapping in the spinner doesn't resize the tile.
   tipSpinner: { height: 28 },
 
 
   restoreBtn: { alignSelf: 'center', paddingTop: 6 },
-  restore: { fontSize: 13.5, fontFamily: 'DMSans_600SemiBold' },
-  legal: { fontSize: 10.5, fontFamily: 'DMSans_400Regular', textAlign: 'center', lineHeight: 15, paddingHorizontal: 20, marginTop: 2 },
+  restore: { fontSize: 13.5, fontFamily: Type.uiSemibold },
+  legal: { fontSize: 10.5, fontFamily: Type.ui, textAlign: 'center', lineHeight: 15, paddingHorizontal: 20, marginTop: 2 },
 });

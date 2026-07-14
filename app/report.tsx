@@ -23,6 +23,7 @@ import { ACHIEVEMENTS, loadAchievements, type AchievementsStore } from '../achie
 import { loadChallengeHistory, computeChallengeProgress, challengeTitle } from '../utils/challenges';
 import { loadReports, saveReport, newReportId, resolveRange, RANGE_LABELS, Report, ReportRangePreset } from '../utils/reports';
 import { REPORT_CHAPTERS, REPORT_BLOCKS, blocksForChapter, getReportBlock, ReportBlock, REPORT_TEMPLATES, ReportTemplate } from '../utils/reportBlocks';
+import { Type } from '../typography';
 
 const PRESETS: ReportRangePreset[] = ['week', 'month', '3month', '6month', 'year'];
 const avg = (nums: number[]) => (nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0);
@@ -220,7 +221,7 @@ export default function ReportScreen() {
             return (
               <TouchableOpacity key={p} onPress={() => setRange(p)}
                 style={{ backgroundColor: sel ? theme.accentBlueBg : theme.bgCard, borderWidth: 1, borderColor: sel ? theme.accentBlueBorder : theme.borderCard, borderRadius: 16, paddingHorizontal: 13, paddingVertical: 6 }}>
-                <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: sel ? theme.accentBlue : theme.textMuted }}>{RANGE_LABELS[p]}</Text>
+                <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: sel ? theme.accentBlue : theme.textMuted }}>{RANGE_LABELS[p]}</Text>
               </TouchableOpacity>
             );
           })}
@@ -230,7 +231,7 @@ export default function ReportScreen() {
         {activeBlocks.length > 0 && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 9, marginBottom: 2 }}>
             <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.accentGreen }} />
-            <Text style={{ fontSize: 11, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>Live: these numbers update as you log. Export to save a snapshot.</Text>
+            <Text style={{ fontSize: 11, fontFamily: Type.uiMedium, color: theme.textMuted }}>Live: these numbers update as you log. Export to save a snapshot.</Text>
           </View>
         )}
 
@@ -241,8 +242,8 @@ export default function ReportScreen() {
             {/* Document header -- captured into the export image */}
             <View style={{ marginBottom: 14 }}>
               <TextInput ref={nameRef} value={report.name} onChangeText={rename} onBlur={commitName} placeholder="Report name" placeholderTextColor={theme.textDim}
-                style={{ fontSize: 26, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.textSecondary, padding: 0 }} />
-              <Text style={{ fontSize: 11.5, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted, marginTop: 3 }}>
+                style={{ fontSize: 26, fontFamily: Type.num, letterSpacing: 1, color: theme.textSecondary, padding: 0 }} />
+              <Text style={{ fontSize: 11.5, fontFamily: Type.uiSemibold, color: theme.textMuted, marginTop: 3 }}>
                 {RANGE_LABELS[report.range.preset]} · Generated {genDate} · Project J
               </Text>
             </View>
@@ -256,7 +257,7 @@ export default function ReportScreen() {
                   onUp={() => moveBlock(b.id, -1)} onDown={() => moveBlock(b.id, 1)} onRemove={() => toggleBlock(b.id)} />
               ))}
             </View>
-            <Text style={{ fontSize: 11, color: theme.textDim, textAlign: 'center', marginTop: 18, fontFamily: 'DMSans_400Regular' }}>For informational purposes only. Not medical advice.</Text>
+            <Text style={{ fontSize: 11, color: theme.textDim, textAlign: 'center', marginTop: 18, fontFamily: Type.ui }}>For informational purposes only. Not medical advice.</Text>
           </View>
         ) : !libraryOpen ? (
           <TemplateChooser onPick={applyTemplate} onCustom={() => setLibraryOpen(true)} theme={theme} />
@@ -268,15 +269,15 @@ export default function ReportScreen() {
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); setLibraryOpen(o => !o); }}
             style={{ marginTop: 16, borderRadius: 12, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: libraryOpen ? theme.bgCard : theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
             <Ionicons name={libraryOpen ? 'checkmark' : 'add'} size={18} color={theme.accentBlue} />
-            <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: theme.accentBlue }}>{libraryOpen ? 'Done Adding Blocks' : 'Add Blocks'}</Text>
+            <Text style={{ fontSize: 14, fontFamily: Type.uiBold, color: theme.accentBlue }}>{libraryOpen ? 'Done Adding Blocks' : 'Add Blocks'}</Text>
           </TouchableOpacity>
         )}
 
         {/* Block library */}
         {libraryOpen && (
           <View style={{ marginTop: 16, borderWidth: 1.5, borderStyle: 'dashed', borderColor: theme.borderCard, borderRadius: 12, padding: 14, backgroundColor: theme.bgCard }}>
-            <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.textSecondary, marginBottom: 3 }}>Block library</Text>
-            <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginBottom: 12 }}>Add what you care about, skip what you don't. Every block is designed to look premium.</Text>
+            <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.textSecondary, marginBottom: 3 }}>Block library</Text>
+            <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textMuted, marginBottom: 12 }}>Add what you care about, skip what you don't. Every block is designed to look premium.</Text>
             {REPORT_CHAPTERS.map(ch => {
               const blocks = blocksForChapter(ch.key);
               if (blocks.length === 0) return null;
@@ -284,7 +285,7 @@ export default function ReportScreen() {
                 <View key={ch.key} style={{ marginBottom: 12 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 7 }}>
                     <Ionicons name={ch.icon as any} size={14} color={theme.accentBlue} />
-                    <Text style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted }}>{ch.label}</Text>
+                    <Text style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textMuted }}>{ch.label}</Text>
                   </View>
                   <View style={{ gap: 7 }}>
                     {blocks.map(b => {
@@ -292,12 +293,12 @@ export default function ReportScreen() {
                       return (
                         <View key={b.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, padding: 10 }}>
                           <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{b.title}</Text>
-                            <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 1 }}>{b.desc}</Text>
+                            <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.textSecondary }}>{b.title}</Text>
+                            <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textMuted, marginTop: 1 }}>{b.desc}</Text>
                           </View>
                           <TouchableOpacity onPress={() => toggleBlock(b.id)}
                             style={{ borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: added ? 'transparent' : theme.accentBlue, borderWidth: added ? 1 : 0, borderColor: theme.accentBlueBorder }}>
-                            <Text style={{ fontSize: 11.5, fontFamily: 'DMSans_700Bold', color: added ? theme.accentBlue : '#fff' }}>{added ? '✓ Added' : '+ Add'}</Text>
+                            <Text style={{ fontSize: 11.5, fontFamily: Type.uiBold, color: added ? theme.accentBlue : '#fff' }}>{added ? '✓ Added' : '+ Add'}</Text>
                           </TouchableOpacity>
                         </View>
                       );
@@ -360,7 +361,7 @@ function BlockCard({ block, data, prior, foodDays, workoutState, mealSlots, slot
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: collapsed ? 0 : 12 }}>
         <TouchableOpacity onPress={onToggle} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
           <Ionicons name={collapsed ? 'chevron-forward' : 'chevron-down'} size={15} color={theme.textMuted} />
-          <Text style={{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted }}>{block.title}</Text>
+          <Text style={{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textMuted }}>{block.title}</Text>
         </TouchableOpacity>
         {editMode ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
@@ -375,7 +376,7 @@ function BlockCard({ block, data, prior, foodDays, workoutState, mealSlots, slot
             </TouchableOpacity>
           </View>
         ) : trendLatest != null ? (
-          <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: theme.accentBlue }}>{fmtAxis(trendLatest)}</Text>
+          <Text style={{ fontSize: 14, fontFamily: Type.uiBold, color: theme.accentBlue }}>{fmtAxis(trendLatest)}</Text>
         ) : null}
       </View>
       {!collapsed && (
@@ -400,15 +401,15 @@ function BlockCard({ block, data, prior, foodDays, workoutState, mealSlots, slot
   );
 }
 
-const emptyList = (theme: any, msg: string) => <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{msg}</Text>;
+const emptyList = (theme: any, msg: string) => <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.ui }}>{msg}</Text>;
 
 // New-report front door: pick a ready-made template or build your own. Solves the "too many blocks to
 // choose from" overwhelm -- most users tap a template and are done.
 function TemplateChooser({ onPick, onCustom, theme }: { onPick: (t: ReportTemplate) => void; onCustom: () => void; theme: any }) {
   return (
     <View style={{ marginTop: 18 }}>
-      <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: theme.textSecondary, marginBottom: 3 }}>Start from a template</Text>
-      <Text style={{ fontSize: 12.5, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginBottom: 14 }}>Pick a ready-made report, or build your own from scratch.</Text>
+      <Text style={{ fontSize: 15, fontFamily: Type.uiBold, color: theme.textSecondary, marginBottom: 3 }}>Start from a template</Text>
+      <Text style={{ fontSize: 12.5, fontFamily: Type.ui, color: theme.textMuted, marginBottom: 14 }}>Pick a ready-made report, or build your own from scratch.</Text>
       <View style={{ gap: 10 }}>
         {REPORT_TEMPLATES.map(t => (
           <TouchableOpacity key={t.id} activeOpacity={0.8} onPress={() => onPick(t)}
@@ -417,10 +418,10 @@ function TemplateChooser({ onPick, onCustom, theme }: { onPick: (t: ReportTempla
               <Ionicons name={t.icon as any} size={21} color={theme.accentBlue} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 14.5, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{t.name}</Text>
-              <Text numberOfLines={1} style={{ fontSize: 11.5, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 2 }}>{t.desc}</Text>
+              <Text style={{ fontSize: 14.5, fontFamily: Type.uiBold, color: theme.textSecondary }}>{t.name}</Text>
+              <Text numberOfLines={1} style={{ fontSize: 11.5, fontFamily: Type.ui, color: theme.textMuted, marginTop: 2 }}>{t.desc}</Text>
             </View>
-            <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.textDim }}>{t.blockIds.length} blocks</Text>
+            <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: theme.textDim }}>{t.blockIds.length} blocks</Text>
           </TouchableOpacity>
         ))}
         <TouchableOpacity activeOpacity={0.8} onPress={onCustom}
@@ -429,8 +430,8 @@ function TemplateChooser({ onPick, onCustom, theme }: { onPick: (t: ReportTempla
             <Ionicons name="add" size={22} color={theme.textMuted} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 14.5, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>Build your own</Text>
-            <Text style={{ fontSize: 11.5, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 2 }}>Start blank and pick blocks yourself</Text>
+            <Text style={{ fontSize: 14.5, fontFamily: Type.uiBold, color: theme.textSecondary }}>Build your own</Text>
+            <Text style={{ fontSize: 11.5, fontFamily: Type.ui, color: theme.textMuted, marginTop: 2 }}>Start blank and pick blocks yourself</Text>
           </View>
         </TouchableOpacity>
       </View>
@@ -458,16 +459,16 @@ function TopFoods({ foodDays, theme }: { foodDays: FoodDay[]; theme: any }) {
     <View style={{ gap: 10 }}>
       {rows.map((r, i) => (
         <View key={r.name} style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
-          <Text style={{ width: 16, fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textDim, textAlign: 'right' }}>{i + 1}</Text>
+          <Text style={{ width: 16, fontSize: 12, fontFamily: Type.uiBold, color: theme.textDim, textAlign: 'right' }}>{i + 1}</Text>
           <View style={{ flex: 1 }}>
-            <Text numberOfLines={1} style={{ fontSize: 13.5, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginBottom: 4 }}>{r.name}</Text>
+            <Text numberOfLines={1} style={{ fontSize: 13.5, fontFamily: Type.uiSemibold, color: theme.textSecondary, marginBottom: 4 }}>{r.name}</Text>
             <View style={{ height: 5, borderRadius: 3, backgroundColor: theme.bgInset, overflow: 'hidden' }}>
               <View style={{ height: '100%', borderRadius: 3, backgroundColor: theme.accentBlue, width: `${Math.max(6, (r.count / maxCount) * 100)}%` }} />
             </View>
           </View>
           <View style={{ alignItems: 'flex-end', minWidth: 58 }}>
-            <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>×{r.count}</Text>
-            <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>{r.cal.toLocaleString('en-US')} cal</Text>
+            <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.textSecondary }}>×{r.count}</Text>
+            <Text style={{ fontSize: 10.5, fontFamily: Type.uiMedium, color: theme.textMuted }}>{r.cal.toLocaleString('en-US')} cal</Text>
           </View>
         </View>
       ))}
@@ -494,16 +495,16 @@ function FoodLog({ foodDays, theme }: { foodDays: FoodDay[]; theme: any }) {
           <View key={d.date} style={{ backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, overflow: 'hidden' }}>
             <TouchableOpacity onPress={() => toggle(d.date)} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12 }}>
               <Ionicons name={isOpen ? 'chevron-down' : 'chevron-forward'} size={14} color={theme.textMuted} />
-              <Text style={{ flex: 1, fontSize: 12.5, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{FULL_DATE(d.date)}</Text>
-              <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>{d.entries.length} item{d.entries.length === 1 ? '' : 's'}</Text>
-              <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.accentBlue }}>{total.toLocaleString('en-US')} cal</Text>
+              <Text style={{ flex: 1, fontSize: 12.5, fontFamily: Type.uiBold, color: theme.textSecondary }}>{FULL_DATE(d.date)}</Text>
+              <Text style={{ fontSize: 10.5, fontFamily: Type.uiMedium, color: theme.textMuted }}>{d.entries.length} item{d.entries.length === 1 ? '' : 's'}</Text>
+              <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: theme.accentBlue }}>{total.toLocaleString('en-US')} cal</Text>
             </TouchableOpacity>
             {isOpen && (
               <View style={{ gap: 5, paddingHorizontal: 12, paddingBottom: 12 }}>
                 {d.entries.map((e, i) => (
                   <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
-                    <Text numberOfLines={1} style={{ flex: 1, fontSize: 12.5, fontFamily: 'DMSans_400Regular', color: theme.textSecondary }}>{String(e?.name || 'Food')}</Text>
-                    <Text style={{ fontSize: 12, fontFamily: 'DMSans_500Medium', color: theme.textMuted, fontVariant: ['tabular-nums'] }}>{Math.round(e?.cal || 0)}</Text>
+                    <Text numberOfLines={1} style={{ flex: 1, fontSize: 12.5, fontFamily: Type.ui, color: theme.textSecondary }}>{String(e?.name || 'Food')}</Text>
+                    <Text style={{ fontSize: 12, fontFamily: Type.uiMedium, color: theme.textMuted, fontVariant: ['tabular-nums'] }}>{Math.round(e?.cal || 0)}</Text>
                   </View>
                 ))}
               </View>
@@ -512,7 +513,7 @@ function FoodLog({ foodDays, theme }: { foodDays: FoodDay[]; theme: any }) {
         );
       })}
       {days.length > CAP && (
-        <Text style={{ fontSize: 11.5, color: theme.textDim, textAlign: 'center', fontFamily: 'DMSans_400Regular', marginTop: 2 }}>+{days.length - CAP} earlier days. Narrow the range to see them.</Text>
+        <Text style={{ fontSize: 11.5, color: theme.textDim, textAlign: 'center', fontFamily: Type.ui, marginTop: 2 }}>+{days.length - CAP} earlier days. Narrow the range to see them.</Text>
       )}
     </View>
   );
@@ -545,16 +546,16 @@ function Records({ workoutState, theme }: { workoutState: any; theme: any }) {
       {rows.map((r: any, i: number) => (
         <View key={r.name + i} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, borderTopWidth: i === 0 ? 0 : 0.5, borderTopColor: theme.borderCard, paddingTop: i === 0 ? 0 : 9 }}>
           <View style={{ flex: 1 }}>
-            <Text numberOfLines={1} style={{ fontSize: 13.5, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{r.name}</Text>
-            {r.date ? <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted, marginTop: 1 }}>{FULL_DATE(r.date)}</Text> : null}
+            <Text numberOfLines={1} style={{ fontSize: 13.5, fontFamily: Type.uiBold, color: theme.textSecondary }}>{r.name}</Text>
+            {r.date ? <Text style={{ fontSize: 10.5, fontFamily: Type.uiMedium, color: theme.textMuted, marginTop: 1 }}>{FULL_DATE(r.date)}</Text> : null}
           </View>
           <View style={{ alignItems: 'flex-end' }}>
             {r.bd && !r.bw ? (
-              <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{formatHold(r.bd.value)}{r.bd.weight != null && r.bd.weight > 0 ? ` · ${r.bd.weight} ${weightUnitLabel(r.bd.unit)}` : ''}</Text>
+              <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.textSecondary }}>{formatHold(r.bd.value)}{r.bd.weight != null && r.bd.weight > 0 ? ` · ${r.bd.weight} ${weightUnitLabel(r.bd.unit)}` : ''}</Text>
             ) : (
               <>
-                <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{r.bw ? `${r.bw.value} ${weightUnitLabel(r.bw.unit)} × ${r.bw.reps}` : '—'}</Text>
-                {r.e1 ? <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>Est. 1RM {r.e1.value} {weightUnitLabel(r.e1.unit)}</Text> : null}
+                <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.textSecondary }}>{r.bw ? `${r.bw.value} ${weightUnitLabel(r.bw.unit)} × ${r.bw.reps}` : '—'}</Text>
+                {r.e1 ? <Text style={{ fontSize: 10.5, fontFamily: Type.uiMedium, color: theme.textMuted }}>Est. 1RM {r.e1.value} {weightUnitLabel(r.e1.unit)}</Text> : null}
               </>
             )}
           </View>
@@ -618,23 +619,23 @@ function WorkoutHistory({ workoutState, startKey, endKey, theme }: { workoutStat
             <TouchableOpacity onPress={() => toggle(d.date)} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12 }}>
               <Ionicons name={isOpen ? 'chevron-down' : 'chevron-forward'} size={14} color={theme.textMuted} />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 12.5, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{FULL_DATE(d.date)}</Text>
-                <Text numberOfLines={1} style={{ fontSize: 10.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted, marginTop: 1 }}>{d.focus}</Text>
+                <Text style={{ fontSize: 12.5, fontFamily: Type.uiBold, color: theme.textSecondary }}>{FULL_DATE(d.date)}</Text>
+                <Text numberOfLines={1} style={{ fontSize: 10.5, fontFamily: Type.uiMedium, color: theme.textMuted, marginTop: 1 }}>{d.focus}</Text>
               </View>
               {d.prCount > 0 && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(212,134,10,0.14)', borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2 }}>
                   <Ionicons name="trophy" size={10} color={theme.accentAmber} />
-                  <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_700Bold', color: theme.accentAmber }}>{d.prCount}</Text>
+                  <Text style={{ fontSize: 10.5, fontFamily: Type.uiBold, color: theme.accentAmber }}>{d.prCount}</Text>
                 </View>
               )}
-              {(d.volLb > 0 || d.volKg > 0) && <Text style={{ fontSize: 11.5, fontFamily: 'DMSans_700Bold', color: theme.accentBlue }}>{[d.volLb > 0 ? `${d.volLb.toLocaleString('en-US')} lb` : null, d.volKg > 0 ? `${d.volKg.toLocaleString('en-US')} kg` : null].filter(Boolean).join(' · ')}</Text>}
+              {(d.volLb > 0 || d.volKg > 0) && <Text style={{ fontSize: 11.5, fontFamily: Type.uiBold, color: theme.accentBlue }}>{[d.volLb > 0 ? `${d.volLb.toLocaleString('en-US')} lb` : null, d.volKg > 0 ? `${d.volKg.toLocaleString('en-US')} kg` : null].filter(Boolean).join(' · ')}</Text>}
             </TouchableOpacity>
             {isOpen && (
               <View style={{ gap: 5, paddingHorizontal: 12, paddingBottom: 12 }}>
                 {d.items.map((it: any, i: number) => (
                   <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
-                    <Text numberOfLines={1} style={{ flex: 1, fontSize: 12.5, fontFamily: 'DMSans_400Regular', color: theme.textSecondary }}>{it.name}</Text>
-                    <Text style={{ fontSize: 11.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>
+                    <Text numberOfLines={1} style={{ flex: 1, fontSize: 12.5, fontFamily: Type.ui, color: theme.textSecondary }}>{it.name}</Text>
+                    <Text style={{ fontSize: 11.5, fontFamily: Type.uiMedium, color: theme.textMuted }}>
                       {it.isCardio ? cardioDetail(it) : it.top ? `${it.top.w} ${weightUnitLabel(it.unit)} × ${it.top.r}${it.setCount > 1 ? ` · ${it.setCount} sets` : ''}` : it.topDur ? `${formatHold(it.topDur)}${it.setCount > 1 ? ` · ${it.setCount} sets` : ''}` : `${it.setCount || 1} set${(it.setCount || 1) === 1 ? '' : 's'}`}
                     </Text>
                   </View>
@@ -644,7 +645,7 @@ function WorkoutHistory({ workoutState, startKey, endKey, theme }: { workoutStat
           </View>
         );
       })}
-      {days.length > CAP && <Text style={{ fontSize: 11.5, color: theme.textDim, textAlign: 'center', fontFamily: 'DMSans_400Regular', marginTop: 2 }}>+{days.length - CAP} earlier workouts. Narrow the range to see them.</Text>}
+      {days.length > CAP && <Text style={{ fontSize: 11.5, color: theme.textDim, textAlign: 'center', fontFamily: Type.ui, marginTop: 2 }}>+{days.length - CAP} earlier workouts. Narrow the range to see them.</Text>}
     </View>
   );
 }
@@ -670,14 +671,14 @@ function CaloriesByMeal({ foodDays, mealSlots, slotCache, theme }: { foodDays: F
         return (
           <View key={r.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
             <View style={{ flex: 1 }}>
-              <Text numberOfLines={1} style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginBottom: 4 }}>{r.label}</Text>
+              <Text numberOfLines={1} style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textSecondary, marginBottom: 4 }}>{r.label}</Text>
               <View style={{ height: 6, borderRadius: 3, backgroundColor: theme.bgInset, overflow: 'hidden' }}>
                 <View style={{ height: '100%', borderRadius: 3, backgroundColor: theme.accentBlue, width: `${Math.max(5, (r.cal / max) * 100)}%` }} />
               </View>
             </View>
             <View style={{ alignItems: 'flex-end', minWidth: 64 }}>
-              <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{pct}%</Text>
-              <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>~{Math.round(r.cal / nDays).toLocaleString('en-US')}/day</Text>
+              <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.textSecondary }}>{pct}%</Text>
+              <Text style={{ fontSize: 10.5, fontFamily: Type.uiMedium, color: theme.textMuted }}>~{Math.round(r.cal / nDays).toLocaleString('en-US')}/day</Text>
             </View>
           </View>
         );
@@ -694,11 +695,11 @@ function DayExtremes({ foodDays, theme }: { foodDays: FoodDay[]; theme: any }) {
   const lightest = perDay.length > 3 ? perDay.slice(-3).reverse() : [];
   const row = (d: { date: string; cal: number }) => (
     <View key={d.date} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 5 }}>
-      <Text style={{ fontSize: 12.5, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>{FULL_DATE(d.date)}</Text>
-      <Text style={{ fontSize: 12.5, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{d.cal.toLocaleString('en-US')} cal</Text>
+      <Text style={{ fontSize: 12.5, fontFamily: Type.uiMedium, color: theme.textSecondary }}>{FULL_DATE(d.date)}</Text>
+      <Text style={{ fontSize: 12.5, fontFamily: Type.uiBold, color: theme.textSecondary }}>{d.cal.toLocaleString('en-US')} cal</Text>
     </View>
   );
-  const label = (t: string) => <Text style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted, marginBottom: 3 }}>{t}</Text>;
+  const label = (t: string) => <Text style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textMuted, marginBottom: 3 }}>{t}</Text>;
   return (
     <View style={{ gap: 12 }}>
       <View>{label('Biggest days')}{biggest.map(row)}</View>
@@ -734,14 +735,14 @@ function ExerciseFrequency({ workoutState, startKey, endKey, theme }: { workoutS
     <View style={{ gap: 10 }}>
       {rows.map((r, i) => (
         <View key={r.name} style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
-          <Text style={{ width: 16, fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textDim, textAlign: 'right' }}>{i + 1}</Text>
+          <Text style={{ width: 16, fontSize: 12, fontFamily: Type.uiBold, color: theme.textDim, textAlign: 'right' }}>{i + 1}</Text>
           <View style={{ flex: 1 }}>
-            <Text numberOfLines={1} style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginBottom: 4 }}>{r.name}</Text>
+            <Text numberOfLines={1} style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textSecondary, marginBottom: 4 }}>{r.name}</Text>
             <View style={{ height: 5, borderRadius: 3, backgroundColor: theme.bgInset, overflow: 'hidden' }}>
               <View style={{ height: '100%', borderRadius: 3, backgroundColor: theme.accentBlue, width: `${Math.max(6, (r.count / maxCount) * 100)}%` }} />
             </View>
           </View>
-          <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.textSecondary, minWidth: 30, textAlign: 'right' }}>×{r.count}</Text>
+          <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.textSecondary, minWidth: 30, textAlign: 'right' }}>×{r.count}</Text>
         </View>
       ))}
     </View>
@@ -768,8 +769,8 @@ function SleepStages({ data, theme }: { data: TrendData; theme: any }) {
           <View key={name} style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
             <View style={{ width: 11, height: 11, borderRadius: 3.5, backgroundColor: COL[name] }} />
             <View>
-              <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{name} {Math.round((v / total) * 100)}%</Text>
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>{fmtMin(v)}/night</Text>
+              <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: theme.textSecondary }}>{name} {Math.round((v / total) * 100)}%</Text>
+              <Text style={{ fontSize: 11, fontFamily: Type.uiMedium, color: theme.textMuted }}>{fmtMin(v)}/night</Text>
             </View>
           </View>
         ))}
@@ -798,16 +799,16 @@ function BodyMeasurements({ entries, unit, startKey, endKey, theme }: { entries:
           <View key={s.id} style={{ backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, overflow: 'hidden' }}>
             <TouchableOpacity onPress={() => toggle(s.id)} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12 }}>
               <Ionicons name={isOpen ? 'chevron-down' : 'chevron-forward'} size={14} color={theme.textMuted} />
-              <Text style={{ flex: 1, fontSize: 12.5, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{FULL_DATE(s.date)}</Text>
-              <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>{fields.length} field{fields.length === 1 ? '' : 's'}</Text>
-              {typeof s.bodyFat === 'number' && <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.accentBlue }}>{s.bodyFat}% BF</Text>}
+              <Text style={{ flex: 1, fontSize: 12.5, fontFamily: Type.uiBold, color: theme.textSecondary }}>{FULL_DATE(s.date)}</Text>
+              <Text style={{ fontSize: 10.5, fontFamily: Type.uiMedium, color: theme.textMuted }}>{fields.length} field{fields.length === 1 ? '' : 's'}</Text>
+              {typeof s.bodyFat === 'number' && <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: theme.accentBlue }}>{s.bodyFat}% BF</Text>}
             </TouchableOpacity>
             {isOpen && (
               <View style={{ gap: 5, paddingHorizontal: 12, paddingBottom: 12 }}>
                 {fields.map(f => (
                   <View key={f.key} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 12.5, fontFamily: 'DMSans_400Regular', color: theme.textSecondary }}>{f.label}</Text>
-                    <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted }}>{toDisplay(s.values[f.key], unit)} {u}</Text>
+                    <Text style={{ fontSize: 12.5, fontFamily: Type.ui, color: theme.textSecondary }}>{f.label}</Text>
+                    <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: theme.textMuted }}>{toDisplay(s.values[f.key], unit)} {u}</Text>
                   </View>
                 ))}
               </View>
@@ -815,7 +816,7 @@ function BodyMeasurements({ entries, unit, startKey, endKey, theme }: { entries:
           </View>
         );
       })}
-      {sessions.length > CAP && <Text style={{ fontSize: 11.5, color: theme.textDim, textAlign: 'center', fontFamily: 'DMSans_400Regular', marginTop: 2 }}>+{sessions.length - CAP} earlier sessions. Narrow the range to see them.</Text>}
+      {sessions.length > CAP && <Text style={{ fontSize: 11.5, color: theme.textDim, textAlign: 'center', fontFamily: Type.ui, marginTop: 2 }}>+{sessions.length - CAP} earlier sessions. Narrow the range to see them.</Text>}
     </View>
   );
 }
@@ -859,10 +860,10 @@ function AchievementsEarned({ store, startKey, endKey, theme }: { store: Achieve
             <Ionicons name={(r.icon as any) || 'trophy'} size={15} color={r.tint} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text numberOfLines={1} style={{ fontSize: 13.5, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{r.name}</Text>
-            <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted, marginTop: 1, textTransform: 'capitalize' }}>{r.category}</Text>
+            <Text numberOfLines={1} style={{ fontSize: 13.5, fontFamily: Type.uiBold, color: theme.textSecondary }}>{r.name}</Text>
+            <Text style={{ fontSize: 10.5, fontFamily: Type.uiMedium, color: theme.textMuted, marginTop: 1, textTransform: 'capitalize' }}>{r.category}</Text>
           </View>
-          <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.textDim }}>{FULL_DATE(r.date)}</Text>
+          <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: theme.textDim }}>{FULL_DATE(r.date)}</Text>
         </View>
       ))}
     </View>
@@ -888,10 +889,10 @@ function ChallengeHistory({ rows, startKey, endKey, theme }: { rows: { id: strin
               <Ionicons name={m.icon} size={15} color={m.color} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text numberOfLines={1} style={{ fontSize: 13.5, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{r.title}</Text>
-              <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted, marginTop: 1 }}>{fmtDateKey(r.startKey)} – {fmtDateKey(r.endKey)}</Text>
+              <Text numberOfLines={1} style={{ fontSize: 13.5, fontFamily: Type.uiBold, color: theme.textSecondary }}>{r.title}</Text>
+              <Text style={{ fontSize: 10.5, fontFamily: Type.uiMedium, color: theme.textMuted, marginTop: 1 }}>{fmtDateKey(r.startKey)} – {fmtDateKey(r.endKey)}</Text>
             </View>
-            <Text style={{ fontSize: 11.5, fontFamily: 'DMSans_700Bold', color: m.color }}>{m.label}</Text>
+            <Text style={{ fontSize: 11.5, fontFamily: Type.uiBold, color: m.color }}>{m.label}</Text>
           </View>
         );
       })}
@@ -965,15 +966,15 @@ const HEADLINES: Record<string, TileSpec[]> = {
 function DeltaChip({ cur, prev, better, theme }: { cur: number; prev: number; better: 'up' | 'down' | 'none'; theme: any }) {
   if (!isFinite(prev) || prev === 0 || !isFinite(cur)) return null;
   const pct = Math.round(((cur - prev) / Math.abs(prev)) * 100);
-  if (pct === 0) return <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_700Bold', color: theme.textDim, marginTop: 6 }}>No change</Text>;
+  if (pct === 0) return <Text style={{ fontSize: 10.5, fontFamily: Type.uiBold, color: theme.textDim, marginTop: 6 }}>No change</Text>;
   const up = pct > 0;
   const good = better === 'none' ? null : (better === 'up') === up;
   const color = good === null ? theme.textMuted : good ? '#0d9268' : '#cc3333';
   const bg = good === null ? theme.bgCard : good ? 'rgba(13,146,104,0.13)' : 'rgba(204,51,51,0.13)';
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', backgroundColor: bg, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2, marginTop: 7, gap: 3 }}>
-      <Text style={{ fontSize: 10, color, fontFamily: 'DMSans_700Bold' }}>{up ? '▲' : '▼'}</Text>
-      <Text style={{ fontSize: 11, color, fontFamily: 'DMSans_700Bold' }}>{Math.abs(pct)}%</Text>
+      <Text style={{ fontSize: 10, color, fontFamily: Type.uiBold }}>{up ? '▲' : '▼'}</Text>
+      <Text style={{ fontSize: 11, color, fontFamily: Type.uiBold }}>{Math.abs(pct)}%</Text>
     </View>
   );
 }
@@ -988,8 +989,8 @@ function StatTiles({ blockId, data, prior, theme }: { blockId: string; data: Tre
         const prev = pv.length ? avg(pv) : null;
         return (
           <View key={spec.label} style={{ width: '47.6%', flexGrow: 1, backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, paddingVertical: 11, paddingHorizontal: 12 }}>
-            <Text style={{ fontSize: 8.5, letterSpacing: 1.3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted, marginBottom: 5 }}>{spec.label}</Text>
-            <Text style={{ fontSize: 20, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{cur != null ? spec.fmt(cur) : '—'}</Text>
+            <Text style={{ fontSize: 8.5, letterSpacing: 1.3, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textMuted, marginBottom: 5 }}>{spec.label}</Text>
+            <Text style={{ fontSize: 20, fontFamily: Type.uiBold, color: theme.textSecondary }}>{cur != null ? spec.fmt(cur) : '—'}</Text>
             {cur != null && prev != null && <DeltaChip cur={cur} prev={prev} better={spec.better} theme={theme} />}
           </View>
         );
@@ -1007,7 +1008,7 @@ function MacroSplit({ data, theme }: { data: TrendData; theme: any }) {
   const total = pC + cC + fC || 1;
   const pct = (n: number) => Math.round((n / total) * 100);
   const COL = { protein: '#0d9268', carbs: '#c47d1a', fat: '#a83232' };
-  if (p + c + f === 0) return <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>No macro data logged in this range.</Text>;
+  if (p + c + f === 0) return <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.ui }}>No macro data logged in this range.</Text>;
   return (
     <View>
       <View style={{ flexDirection: 'row', gap: 2, height: 24, borderRadius: 7, overflow: 'hidden' }}>
@@ -1020,8 +1021,8 @@ function MacroSplit({ data, theme }: { data: TrendData; theme: any }) {
           <View key={name} style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
             <View style={{ width: 11, height: 11, borderRadius: 3.5, backgroundColor: col }} />
             <View>
-              <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{name} {percent}%</Text>
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>{g} g/day</Text>
+              <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: theme.textSecondary }}>{name} {percent}%</Text>
+              <Text style={{ fontSize: 11, fontFamily: Type.uiMedium, color: theme.textMuted }}>{g} g/day</Text>
             </View>
           </View>
         ))}
@@ -1061,7 +1062,7 @@ function latestOf(series: { value: number }[]): number | null {
 function LineTrend({ series, theme }: { series: { date: string; value: number }[]; theme: any }) {
   const points = useMemo(() => series.filter(d => typeof d.value === 'number' && !isNaN(d.value) && d.value > 0), [series]);
   if (points.length < 2) {
-    return <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Not enough data in this range yet.</Text>;
+    return <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.ui }}>Not enough data in this range yet.</Text>;
   }
   const W = 320, H = 172, padL = 44, padR = 14, padT = 16, padB = 30;
   const plotW = W - padL - padR, plotH = H - padT - padB;

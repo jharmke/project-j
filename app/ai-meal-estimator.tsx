@@ -28,6 +28,7 @@ import {
   Confidence, EstimateResult, IMAGE_QUALITY, LineItem, computeTotals,
   generateMealEstimate, getRemainingUses, incrementQuota, limitFor, nextResetLabel,
 } from '../services/aiMealEstimator';
+import { Type } from '../typography';
 
 // Fixed brand macro colors (design system). Same values used across the app.
 const MACRO = { protein: '#0d9268', carbs: '#c47d1a', fat: '#a83232' };
@@ -484,7 +485,7 @@ export default function AIMealEstimatorScreen() {
 
   // ── Render ──────────────────────────────────────────────────────────────────────
 
-  const cardLabel = { fontSize: 9, letterSpacing: 3, color: theme.textMuted, textTransform: 'uppercase' as const, fontFamily: 'DMSans_700Bold' };
+  const cardLabel = { fontSize: 9, letterSpacing: 3, color: theme.textMuted, textTransform: 'uppercase' as const, fontFamily: Type.uiBold };
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
@@ -496,7 +497,7 @@ export default function AIMealEstimatorScreen() {
         </TouchableOpacity>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
           <Ionicons name="sparkles" size={16} color={theme.accentBlueRaw} />
-          <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>AI Estimate</Text>
+          <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: Type.display, letterSpacing: 0.3 }}>AI Estimate</Text>
         </View>
         <View style={{ width: 44 }} />
       </View>
@@ -504,9 +505,9 @@ export default function AIMealEstimatorScreen() {
       {step === 'loading' ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
           <ActivityIndicator size="large" color={theme.accentBlue} />
-          <Text style={{ marginTop: 18, fontSize: 16, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }}>Analyzing your meal...</Text>
+          <Text style={{ marginTop: 18, fontSize: 16, color: theme.textPrimary, fontFamily: Type.uiSemibold }}>Analyzing your meal...</Text>
           {slowLoad && (
-            <Text style={{ marginTop: 8, fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular', textAlign: 'center' }}>
+            <Text style={{ marginTop: 8, fontSize: 13, color: theme.textMuted, fontFamily: Type.ui, textAlign: 'center' }}>
               This can take a moment for complex meals.
             </Text>
           )}
@@ -525,8 +526,8 @@ export default function AIMealEstimatorScreen() {
                   <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowRecent(true); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, borderRadius: 12, padding: 14, marginBottom: 16 }}>
                     <Ionicons name="time-outline" size={20} color={theme.accentBlue} />
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }}>Recent Estimates Today</Text>
-                      <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>{todayEstimates.length} {todayEstimates.length === 1 ? 'estimate' : 'estimates'} saved earlier today</Text>
+                      <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiSemibold }}>Recent Estimates Today</Text>
+                      <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginTop: 2 }}>{todayEstimates.length} {todayEstimates.length === 1 ? 'estimate' : 'estimates'} saved earlier today</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
                   </TouchableOpacity>
@@ -536,7 +537,7 @@ export default function AIMealEstimatorScreen() {
                 {errorKind && (
                   <View style={{ backgroundColor: theme.accentRedBg, borderWidth: 1, borderColor: theme.accentRedBorder, borderRadius: 12, padding: 14, marginBottom: 16, flexDirection: 'row', gap: 10 }}>
                     <Ionicons name={errorKind === 'no_food' ? 'image-outline' : 'alert-circle'} size={20} color={theme.accentRed} />
-                    <Text style={{ flex: 1, fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_400Regular', lineHeight: 19 }}>
+                    <Text style={{ flex: 1, fontSize: 13, color: theme.textSecondary, fontFamily: Type.ui, lineHeight: 19 }}>
                       {errorKind === 'no_food'
                         ? "We couldn't find any food in that photo. Try a clearer photo or describe your meal in the text field."
                         : errorKind === 'network'
@@ -560,7 +561,7 @@ export default function AIMealEstimatorScreen() {
                 ) : (
                   <TouchableOpacity onPress={choosePhoto} style={{ height: 96, borderRadius: 12, borderWidth: 1, borderColor: theme.borderInput, borderStyle: 'dashed', backgroundColor: theme.bgInput, alignItems: 'center', justifyContent: 'center', marginBottom: 18, gap: 6 }}>
                     <Ionicons name="camera-outline" size={26} color={theme.textMuted} />
-                    <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>Add a photo</Text>
+                    <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.uiMedium }}>Add a photo</Text>
                   </TouchableOpacity>
                 )}
 
@@ -574,7 +575,7 @@ export default function AIMealEstimatorScreen() {
                     placeholder="The more detail you give, the better. Include portion size, cooking method, sauces, sides, oils, and anything you can see or guess."
                     placeholderTextColor={theme.textDim}
                     multiline
-                    style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 10, padding: 14, minHeight: 120, fontSize: 14, color: theme.textPrimary, fontFamily: 'DMSans_400Regular', textAlignVertical: 'top' }}
+                    style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 10, padding: 14, minHeight: 120, fontSize: 14, color: theme.textPrimary, fontFamily: Type.ui, textAlignVertical: 'top' }}
                     onBlur={() => descRef.current?.setNativeProps({ selection: { start: 0, end: 0 } })}
                   />
                 </View>
@@ -582,10 +583,10 @@ export default function AIMealEstimatorScreen() {
                 {/* Submit, or the calm inline "out of estimates" state (replaces the old popup) */}
                 {remaining !== null && remaining <= 0 ? (
                   <View style={{ marginTop: 12, borderRadius: 12, borderWidth: 1, borderColor: `${theme.accentBlue}33`, backgroundColor: `${theme.accentBlue}12`, padding: 16, alignItems: 'center' }}>
-                    <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', lineHeight: 21, textAlign: 'center' }}>
+                    <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiSemibold, lineHeight: 21, textAlign: 'center' }}>
                       {isPro ? "You've used all your estimates this month." : "You've used all your free estimates this month."}
                     </Text>
-                    <Text style={{ marginTop: 6, fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular', lineHeight: 19, textAlign: 'center' }}>
+                    <Text style={{ marginTop: 6, fontSize: 13, color: theme.textMuted, fontFamily: Type.ui, lineHeight: 19, textAlign: 'center' }}>
                       {isPro ? `They refresh on ${nextResetLabel()}.` : `Your free batch refreshes on ${nextResetLabel()}.`}
                     </Text>
                     {!isPro && (
@@ -594,7 +595,7 @@ export default function AIMealEstimatorScreen() {
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         style={{ marginTop: 12, paddingVertical: 8 }}
                       >
-                        <Text style={{ fontSize: 14, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>Become a Supporter to keep going →</Text>
+                        <Text style={{ fontSize: 14, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Become a Supporter to keep going →</Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -608,12 +609,12 @@ export default function AIMealEstimatorScreen() {
                       onPress={handleSubmit}
                       wrapperStyle={{ marginTop: 12 }}
                     />
-                    <Text style={{ marginTop: 10, textAlign: 'center', fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>
+                    <Text style={{ marginTop: 10, textAlign: 'center', fontSize: 12, color: theme.textMuted, fontFamily: Type.ui }}>
                       {remaining === null ? ' ' : `${remaining} ${remaining === 1 ? 'estimate' : 'estimates'} remaining this month`}
                     </Text>
                   </>
                 )}
-                <Text style={{ marginTop: 14, textAlign: 'center', fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>
+                <Text style={{ marginTop: 14, textAlign: 'center', fontSize: 11, color: theme.textDim, fontFamily: Type.ui }}>
                   For informational purposes only. Not medical advice.
                 </Text>
               </>
@@ -624,7 +625,7 @@ export default function AIMealEstimatorScreen() {
                 {/* Disclaimer (always visible, amber) */}
                 <View style={{ backgroundColor: 'rgba(212,134,10,0.09)', borderWidth: 1, borderColor: theme.accentAmber, borderRadius: 12, padding: 16, marginBottom: 18, alignItems: 'center' }}>
                   <Ionicons name="information-circle" size={22} color={theme.accentAmber} style={{ marginBottom: 8 }} />
-                  <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_500Medium', lineHeight: 20, textAlign: 'center' }}>{disclaimerCopy}</Text>
+                  <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: Type.uiMedium, lineHeight: 20, textAlign: 'center' }}>{disclaimerCopy}</Text>
                 </View>
 
                 {/* Section 3: low-confidence flagged (hard gate). Surfaced near the top
@@ -632,25 +633,25 @@ export default function AIMealEstimatorScreen() {
                 {hasPending && (
                   <View style={{ marginBottom: 18 }}>
                     <Text style={[cardLabel, { marginBottom: 6, color: theme.accentAmber }]}>NEEDS YOUR REVIEW</Text>
-                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', lineHeight: 18, marginBottom: 12 }}>
+                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, lineHeight: 18, marginBottom: 12 }}>
                       These were harder to estimate. Confirm, adjust, or remove each one before logging.
                     </Text>
                     {pendingRows.map((r) => (
                       <View key={r.id} style={{ backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.accentAmber, borderRadius: 12, padding: 14, marginBottom: 10 }}>
-                        <Text style={{ fontSize: 14, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }}>{r.name}</Text>
-                        {!!r.portion && <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 1 }}>{r.portion}</Text>}
-                        <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 6 }}>
+                        <Text style={{ fontSize: 14, color: theme.textPrimary, fontFamily: Type.uiSemibold }}>{r.name}</Text>
+                        {!!r.portion && <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginTop: 1 }}>{r.portion}</Text>}
+                        <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginTop: 6 }}>
                           Best guess: {r.baseCal} kcal · {r.baseP}p · {r.baseC}c · {r.baseF}f
                         </Text>
                         <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
                           <TouchableOpacity onPress={() => setRowStatus(r.id, 'kept')} style={{ flex: 1, alignItems: 'center', paddingVertical: 9, borderRadius: 8, backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder }}>
-                            <Text style={{ fontSize: 12, color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold' }}>Confirm</Text>
+                            <Text style={{ fontSize: 12, color: theme.accentGreen, fontFamily: Type.uiSemibold }}>Confirm</Text>
                           </TouchableOpacity>
                           <TouchableOpacity onPress={() => openEditor(r)} style={{ flex: 1, alignItems: 'center', paddingVertical: 9, borderRadius: 8, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
-                            <Text style={{ fontSize: 12, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>Edit</Text>
+                            <Text style={{ fontSize: 12, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Edit</Text>
                           </TouchableOpacity>
                           <TouchableOpacity onPress={() => setRowStatus(r.id, 'removed')} style={{ flex: 1, alignItems: 'center', paddingVertical: 9, borderRadius: 8, backgroundColor: theme.accentRedBg, borderWidth: 1, borderColor: theme.accentRedBorder }}>
-                            <Text style={{ fontSize: 12, color: theme.accentRed, fontFamily: 'DMSans_600SemiBold' }}>Remove</Text>
+                            <Text style={{ fontSize: 12, color: theme.accentRed, fontFamily: Type.uiSemibold }}>Remove</Text>
                           </TouchableOpacity>
                         </View>
                         {editingId === r.id && renderEditor()}
@@ -667,8 +668,8 @@ export default function AIMealEstimatorScreen() {
                       <View key={r.id} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 9, marginBottom: 8 }}>
                         <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: theme.accentBlueRaw, marginTop: 7 }} />
                         <Text style={{ flex: 1, fontSize: 14, lineHeight: 20 }}>
-                          <Text style={{ fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary }}>{r.name}</Text>
-                          {!!r.portion && <Text style={{ fontFamily: 'DMSans_400Regular', color: theme.textMuted }}>{`   ${r.portion}`}</Text>}
+                          <Text style={{ fontFamily: Type.uiSemibold, color: theme.textPrimary }}>{r.name}</Text>
+                          {!!r.portion && <Text style={{ fontFamily: Type.ui, color: theme.textMuted }}>{`   ${r.portion}`}</Text>}
                         </Text>
                       </View>
                     ))}
@@ -682,7 +683,7 @@ export default function AIMealEstimatorScreen() {
                     const active = m === multiplier;
                     return (
                       <TouchableOpacity key={m} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setMultiplier(m); }} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: active ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: active ? theme.accentBlueBorder : theme.borderInput }}>
-                        <Text style={{ fontSize: 13, color: active ? theme.accentBlue : theme.textMuted, fontFamily: active ? 'DMSans_700Bold' : 'DMSans_500Medium' }}>{m}x</Text>
+                        <Text style={{ fontSize: 13, color: active ? theme.accentBlue : theme.textMuted, fontFamily: active ? Type.uiBold : Type.uiMedium }}>{m}x</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -694,14 +695,14 @@ export default function AIMealEstimatorScreen() {
                     <TouchableOpacity activeOpacity={0.7} onPress={() => { if (editingId === r.id) { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditingId(null); } else openEditor(r); }} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                       <View style={{ flex: 1, marginRight: 12 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
-                          <Text style={{ fontSize: 14, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }}>{r.name}</Text>
+                          <Text style={{ fontSize: 14, color: theme.textPrimary, fontFamily: Type.uiSemibold }}>{r.name}</Text>
                           {r.edited && (
                             <View style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
-                              <Text style={{ fontSize: 8, letterSpacing: 1, color: theme.accentBlue, fontFamily: 'DMSans_700Bold' }}>CUSTOM</Text>
+                              <Text style={{ fontSize: 8, letterSpacing: 1, color: theme.accentBlue, fontFamily: Type.uiBold }}>CUSTOM</Text>
                             </View>
                           )}
                         </View>
-                        {!!r.portion && <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>{r.portion}</Text>}
+                        {!!r.portion && <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginTop: 2 }}>{r.portion}</Text>}
                         <View style={{ flexDirection: 'row', gap: 12, marginTop: 6 }}>
                           <MacroDot color={MACRO.protein} value={scaled(r.baseP)} />
                           <MacroDot color={MACRO.carbs} value={scaled(r.baseC)} />
@@ -709,10 +710,10 @@ export default function AIMealEstimatorScreen() {
                         </View>
                       </View>
                       <View style={{ alignItems: 'flex-end', marginRight: 8 }}>
-                        <Text style={{ fontSize: 20, color: mindful ? theme.textSecondary : theme.accentGreen, fontFamily: 'BebasNeue_400Regular' }}>{scaled(r.baseCal)}</Text>
-                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: -2 }}>KCAL</Text>
+                        <Text style={{ fontSize: 20, color: mindful ? theme.textSecondary : theme.accentGreen, fontFamily: Type.num }}>{scaled(r.baseCal)}</Text>
+                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.ui, marginTop: -2 }}>KCAL</Text>
                         {!r.edited && multiplier !== 1 ? (
-                          <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_500Medium', marginTop: 3 }}>{multiplier}x</Text>
+                          <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.uiMedium, marginTop: 3 }}>{multiplier}x</Text>
                         ) : null}
                       </View>
                       <Ionicons name={editingId === r.id ? 'chevron-up' : 'chevron-down'} size={18} color={theme.textMuted} />
@@ -728,7 +729,7 @@ export default function AIMealEstimatorScreen() {
                     {result.hidden_items.map((h, i) => (
                       <View key={i} style={{ flexDirection: 'row', gap: 8, marginBottom: 5 }}>
                         <Text style={{ color: theme.textMuted, fontSize: 13 }}>•</Text>
-                        <Text style={{ flex: 1, fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular', lineHeight: 19 }}>{h}</Text>
+                        <Text style={{ flex: 1, fontSize: 13, color: theme.textMuted, fontFamily: Type.ui, lineHeight: 19 }}>{h}</Text>
                       </View>
                     ))}
                   </View>
@@ -739,8 +740,8 @@ export default function AIMealEstimatorScreen() {
                   <Text style={cardLabel}>TOTAL</Text>
                   <View style={{ alignItems: 'center', marginTop: -2, marginBottom: 0 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
-                      <Text style={{ fontSize: 42, color: mindful ? theme.textSecondary : theme.accentGreen, fontFamily: 'BebasNeue_400Regular' }}>{liveTotals.calories}</Text>
-                      <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>KCAL</Text>
+                      <Text style={{ fontSize: 42, color: mindful ? theme.textSecondary : theme.accentGreen, fontFamily: Type.num }}>{liveTotals.calories}</Text>
+                      <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.uiMedium }}>KCAL</Text>
                     </View>
                   </View>
                   <View style={{ height: 1, backgroundColor: theme.borderCard, marginVertical: 12 }} />
@@ -753,7 +754,7 @@ export default function AIMealEstimatorScreen() {
                       <View key={m.label} style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
                         {i > 0 && <View style={{ width: 1, height: 34, backgroundColor: theme.borderCard }} />}
                         <View style={{ flex: 1, alignItems: 'center' }}>
-                          <Text style={{ fontSize: 19, color: m.color, fontFamily: 'DMSans_700Bold' }}>{m.value}g</Text>
+                          <Text style={{ fontSize: 19, color: m.color, fontFamily: Type.uiBold }}>{m.value}g</Text>
                           <Text style={[cardLabel, { marginTop: 3 }]}>{m.label}</Text>
                         </View>
                       </View>
@@ -768,7 +769,7 @@ export default function AIMealEstimatorScreen() {
                   onChangeText={setMealName}
                   placeholder="Name this meal"
                   placeholderTextColor={theme.textDim}
-                  style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 10, padding: 14, fontSize: 15, color: theme.textPrimary, fontFamily: 'DMSans_500Medium', marginBottom: 18 }}
+                  style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 10, padding: 14, fontSize: 15, color: theme.textPrimary, fontFamily: Type.uiMedium, marginBottom: 18 }}
                 />
 
                 {/* Primary + secondary actions. This is the results page's ONE primary action -> molded. */}
@@ -779,11 +780,11 @@ export default function AIMealEstimatorScreen() {
                   onPress={openConfirm}
                 />
                 {hasPending && (
-                  <Text style={{ marginTop: 8, textAlign: 'center', fontSize: 12, color: theme.accentAmber, fontFamily: 'DMSans_500Medium' }}>Resolve the flagged items above first.</Text>
+                  <Text style={{ marginTop: 8, textAlign: 'center', fontSize: 12, color: theme.accentAmber, fontFamily: Type.uiMedium }}>Resolve the flagged items above first.</Text>
                 )}
 
                 <TouchableOpacity onPress={handleResubmit} style={{ marginTop: 18, alignItems: 'center', paddingVertical: 6 }}>
-                  <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>Not right? Add more detail and resubmit.</Text>
+                  <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.uiMedium }}>Not right? Add more detail and resubmit.</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -798,8 +799,8 @@ export default function AIMealEstimatorScreen() {
   function renderRecentModal() {
     return (
       <CenteredModal visible={showRecent} onClose={() => setShowRecent(false)} theme={theme} insets={insets}>
-        <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginBottom: 6 }}>Recent Estimates Today</Text>
-        <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular', lineHeight: 20, marginBottom: 14 }}>
+        <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: Type.display, letterSpacing: 0.3, marginBottom: 6 }}>Recent Estimates Today</Text>
+        <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.ui, lineHeight: 20, marginBottom: 14 }}>
           Reopen one you generated earlier today. This does not use a new estimate. Cleared tomorrow.
         </Text>
         <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
@@ -808,8 +809,8 @@ export default function AIMealEstimatorScreen() {
             return (
               <TouchableOpacity key={e.id} onPress={() => loadEstimate(e)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 10, padding: 12, marginBottom: 8 }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 14, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }} numberOfLines={1}>{e.mealName}</Text>
-                  <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 1 }}>{t.calories} kcal · {new Date(e.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</Text>
+                  <Text style={{ fontSize: 14, color: theme.textPrimary, fontFamily: Type.uiSemibold }} numberOfLines={1}>{e.mealName}</Text>
+                  <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginTop: 1 }}>{t.calories} kcal · {new Date(e.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
               </TouchableOpacity>
@@ -817,7 +818,7 @@ export default function AIMealEstimatorScreen() {
           })}
         </ScrollView>
         <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowRecent(false); }} style={{ marginTop: 8, borderRadius: 10, paddingVertical: 12, alignItems: 'center', backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput }}>
-          <Text style={{ fontSize: 14, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold' }}>Close</Text>
+          <Text style={{ fontSize: 14, color: theme.textMuted, fontFamily: Type.uiSemibold }}>Close</Text>
         </TouchableOpacity>
       </CenteredModal>
     );
@@ -833,7 +834,7 @@ export default function AIMealEstimatorScreen() {
           onChangeText={(v) => setDraft((d) => ({ ...d, [key]: v, ...(numeric ? { mult: 0 } : {}) }))}
           keyboardType={numeric ? 'numeric' : 'default'}
           placeholderTextColor={theme.textDim}
-          style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 9, paddingHorizontal: 10, fontSize: 14, color: theme.textPrimary, fontFamily: 'DMSans_400Regular' }}
+          style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 9, paddingHorizontal: 10, fontSize: 14, color: theme.textPrimary, fontFamily: Type.ui }}
         />
       </View>
     );
@@ -847,7 +848,7 @@ export default function AIMealEstimatorScreen() {
               const active = draft.mult === m;
               return (
                 <TouchableOpacity key={m} onPress={() => applyItemMultiplier(m)} style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: active ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: active ? theme.accentBlueBorder : theme.borderInput }}>
-                  <Text style={{ fontSize: 12, color: active ? theme.accentBlue : theme.textMuted, fontFamily: active ? 'DMSans_700Bold' : 'DMSans_500Medium' }}>{m}x</Text>
+                  <Text style={{ fontSize: 12, color: active ? theme.accentBlue : theme.textMuted, fontFamily: active ? Type.uiBold : Type.uiMedium }}>{m}x</Text>
                 </TouchableOpacity>
               );
             })}
@@ -863,10 +864,10 @@ export default function AIMealEstimatorScreen() {
         </View>
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 2 }}>
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditingId(null); }} style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 8, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput }}>
-            <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold' }}>Cancel</Text>
+            <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.uiSemibold }}>Cancel</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={saveEditor} style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 8, backgroundColor: theme.accentBlue }}>
-            <Text style={{ fontSize: 13, color: '#ffffff', fontFamily: 'DMSans_600SemiBold' }}>Save</Text>
+            <Text style={{ fontSize: 13, color: '#ffffff', fontFamily: Type.uiSemibold }}>Save</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -889,7 +890,7 @@ export default function AIMealEstimatorScreen() {
     };
     return (
       <CenteredModal visible={showConfirm} onClose={() => setShowConfirm(false)} theme={theme} insets={insets}>
-        <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginBottom: 16 }}>Save This Meal</Text>
+        <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: Type.display, letterSpacing: 0.3, marginBottom: 16 }}>Save This Meal</Text>
 
         <Text style={[cardLabel, { marginBottom: 8 }]}>MEAL</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
@@ -897,7 +898,7 @@ export default function AIMealEstimatorScreen() {
             const active = s.id === targetSlot;
             return (
               <TouchableOpacity key={s.id} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setTargetSlot(s.id); }} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: active ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: active ? theme.accentBlueBorder : theme.borderInput }}>
-                <Text style={{ fontSize: 13, color: active ? theme.accentBlue : theme.textMuted, fontFamily: active ? 'DMSans_700Bold' : 'DMSans_500Medium' }}>{s.name}</Text>
+                <Text style={{ fontSize: 13, color: active ? theme.accentBlue : theme.textMuted, fontFamily: active ? Type.uiBold : Type.uiMedium }}>{s.name}</Text>
               </TouchableOpacity>
             );
           })}
@@ -908,7 +909,7 @@ export default function AIMealEstimatorScreen() {
           <TouchableOpacity onPress={() => shiftDate(-1)} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="chevron-back" size={20} color={theme.accentBlue} />
           </TouchableOpacity>
-          <Text style={{ flex: 1, textAlign: 'center', fontSize: 14, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>{dateLabelFromKey(targetDate)}</Text>
+          <Text style={{ flex: 1, textAlign: 'center', fontSize: 14, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>{dateLabelFromKey(targetDate)}</Text>
           <TouchableOpacity onPress={() => shiftDate(1)} disabled={atToday} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', opacity: atToday ? 0.3 : 1 }}>
             <Ionicons name="chevron-forward" size={20} color={theme.accentBlue} />
           </TouchableOpacity>
@@ -916,7 +917,7 @@ export default function AIMealEstimatorScreen() {
 
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowConfirm(false); }} style={{ flex: 1, alignItems: 'center', paddingVertical: 13, borderRadius: 10, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput }}>
-            <Text style={{ fontSize: 14, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold' }}>Cancel</Text>
+            <Text style={{ fontSize: 14, color: theme.textMuted, fontFamily: Type.uiSemibold }}>Cancel</Text>
           </TouchableOpacity>
           {/* The confirm side of a Cancel/Confirm pair is the primary -> molded. Cancel stays quiet.
               faceStyle matches Cancel's geometry exactly (13/10) so the pair is the same height. */}
@@ -940,7 +941,7 @@ function MacroDot({ color, value }: { color: string; value: number }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
       <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: color }} />
-      <Text style={{ fontSize: 12, color, fontFamily: 'DMSans_600SemiBold' }}>{value}g</Text>
+      <Text style={{ fontSize: 12, color, fontFamily: Type.uiSemibold }}>{value}g</Text>
     </View>
   );
 }

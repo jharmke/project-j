@@ -23,6 +23,7 @@ import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { TUTORIAL_CHICKEN_BREAST } from '../data/tutorialFood';
+import { Type } from '../typography';
 
 
 
@@ -1595,14 +1596,14 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         <View style={{ marginHorizontal: 16, marginBottom: 8 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 2 }}>
             <Ionicons name="information-circle-outline" size={13} color={theme.textMuted} style={{ marginRight: 5 }} />
-            <Text style={{ flex: 1, fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Tap SET on the correct item to confirm it for future scans</Text>
+            <Text style={{ flex: 1, fontSize: 11, color: theme.textMuted, fontFamily: Type.ui }}>Tap SET on the correct item to confirm it for future scans</Text>
           </View>
           <TouchableOpacity
             ref={isTutorialScanMode ? (createBarcodeRef as any) : undefined}
             onPress={() => { setBarcodeForCreate(lastScannedBarcode); setShowCreateFood(true); }}
             style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 }}>
             <Ionicons name="add-circle-outline" size={13} color={theme.accentBlueRaw} />
-            <Text style={{ fontSize: 11, color: theme.accentBlueRaw, fontFamily: 'DMSans_600SemiBold' }}>None match? Create & Set food</Text>
+            <Text style={{ fontSize: 11, color: theme.accentBlueRaw, fontFamily: Type.uiSemibold }}>None match? Create & Set food</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -1645,7 +1646,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openSortModal(); }}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, backgroundColor: sortOption !== 'az' ? theme.accentBlueBg : 'transparent', borderWidth: 1, borderColor: sortOption !== 'az' ? theme.accentBlueBorder : 'transparent' }}>
             <Ionicons name="swap-vertical" size={13} color={sortOption !== 'az' ? theme.accentBlue : theme.textMuted} />
-            <Text style={{ fontSize: 11, color: sortOption !== 'az' ? theme.accentBlue : theme.textMuted, fontFamily: 'DMSans_600SemiBold' }}>
+            <Text style={{ fontSize: 11, color: sortOption !== 'az' ? theme.accentBlue : theme.textMuted, fontFamily: Type.uiSemibold }}>
               {sortOption === 'az' ? 'Sort' : sortOption === 'za' ? 'Z-A' : sortOption === 'cal-hl' ? 'Cal: High-Low' : sortOption === 'cal-lh' ? 'Cal: Low-High' : 'Protein: High-Low'}
             </Text>
           </TouchableOpacity>
@@ -1656,7 +1657,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
       {((searching && query.trim()) || barcodeLookup) && results.length === 0 && (
         <View style={{ alignItems: 'center', paddingTop: 40, gap: 10 }}>
           <ActivityIndicator size="small" color={theme.accentBlueRaw} />
-          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{barcodeLookup ? 'Looking up barcode...' : 'Searching...'}</Text>
+          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui }}>{barcodeLookup ? 'Looking up barcode...' : 'Searching...'}</Text>
         </View>
       )}
 
@@ -1664,16 +1665,16 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
       {!searching && !barcodeLookup && searchError && query.trim() && results.length === 0 && (
         <View style={{ alignItems: 'center', paddingTop: 60, paddingHorizontal: 32, gap: 12 }}>
           <Ionicons name="cloud-offline-outline" size={40} color={theme.textDim} />
-          <Text style={{ fontSize: 16, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', textAlign: 'center' }}>
+          <Text style={{ fontSize: 16, color: theme.textSecondary, fontFamily: Type.uiSemibold, textAlign: 'center' }}>
             Can't reach the food database
           </Text>
-          <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular', textAlign: 'center', lineHeight: 20 }}>
+          <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.ui, textAlign: 'center', lineHeight: 20 }}>
             Check your internet connection and try again.
           </Text>
           <TouchableOpacity
             onPress={() => searchFood(query)}
             style={{ marginTop: 4, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8, paddingHorizontal: 22, paddingVertical: 10 }}>
-            <Text style={{ fontSize: 13, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>Retry</Text>
+            <Text style={{ fontSize: 13, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Retry</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -1682,10 +1683,10 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
       {!searching && !barcodeLookup && !searchError && query.trim() && results.length === 0 && (
         <View style={{ alignItems: 'center', paddingTop: 60, paddingHorizontal: 32, gap: 12 }}>
           <Ionicons name="search-outline" size={40} color={theme.textDim} />
-          <Text style={{ fontSize: 16, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', textAlign: 'center' }}>
+          <Text style={{ fontSize: 16, color: theme.textSecondary, fontFamily: Type.uiSemibold, textAlign: 'center' }}>
             No results for "{query}"
           </Text>
-          <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular', textAlign: 'center', lineHeight: 20 }}>
+          <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.ui, textAlign: 'center', lineHeight: 20 }}>
             Try a different search term or scan the barcode
           </Text>
         </View>
@@ -1695,7 +1696,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
       {searchError && query.trim() && results.length > 0 && (
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8 }}>
           <Ionicons name="cloud-offline-outline" size={14} color={theme.textMuted} />
-          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Offline. Couldn't load online results.</Text>
+          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui }}>Offline. Couldn't load online results.</Text>
         </View>
       )}
 
@@ -1795,7 +1796,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
             return (
               <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, gap: 10 }}>
                 <View style={{ flex: 1, height: 0.5, backgroundColor: theme.borderCard }} />
-                <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, color: theme.textMuted, textTransform: 'uppercase' }}>Supplements</Text>
+                <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, color: theme.textMuted, textTransform: 'uppercase' }}>Supplements</Text>
                 <View style={{ flex: 1, height: 0.5, backgroundColor: theme.borderCard }} />
               </View>
             );
@@ -1876,7 +1877,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                       );
                     }}
                     style={{ marginRight: 6, backgroundColor: 'rgba(204,51,51,0.12)', borderWidth: 1, borderColor: 'rgba(204,51,51,0.4)', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 3 }}>
-                    <Text style={{ fontSize: 10, color: '#cc3333', fontFamily: 'DMSans_600SemiBold' }}>UNSET</Text>
+                    <Text style={{ fontSize: 10, color: '#cc3333', fontFamily: Type.uiSemibold }}>UNSET</Text>
                   </TouchableOpacity>
                 ) : (item as any).isOverride ? (
                   <Ionicons name="checkmark-circle" size={16} color={theme.accentGreen} style={{ marginRight: 6 }} />
@@ -1885,7 +1886,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                     ref={index === 1 && isTutorialScanMode ? (setButtonRef as any) : undefined}
                     onPress={() => saveOverride(item)}
                     style={{ marginRight: 6, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 3 }}>
-                    <Text style={{ fontSize: 10, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>SET</Text>
+                    <Text style={{ fontSize: 10, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>SET</Text>
                   </TouchableOpacity>
                 ) : null}
                 <TouchableOpacity onPress={() => toggleFavorite(item)} style={styles.starBtn}>
@@ -1924,7 +1925,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                         if (idx >= 0) openEditModal(myFoods[idx]);
                       }}
                       style={{ marginLeft: 4, paddingHorizontal: 8, paddingVertical: 10 }}>
-                      <Text style={{ fontSize: 12, color: theme.accentBlue, fontFamily: 'DMSans_500Medium' }}>Edit</Text>
+                      <Text style={{ fontSize: 12, color: theme.accentBlue, fontFamily: Type.uiMedium }}>Edit</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); deleteMyFood(myFoods.findIndex(f => (item as any).id ? (f as any).id === (item as any).id : f.name === item.description)); }} style={styles.deleteBtn}>
                       <Text style={styles.deleteBtnText}>×</Text>
@@ -1936,7 +1937,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                     <TouchableOpacity
                       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/recipe-builder', params: { recipeId: (item as any).recipeData?.id } }); }}
                       style={{ marginLeft: 4, paddingHorizontal: 8, paddingVertical: 10 }}>
-                      <Text style={{ fontSize: 12, color: theme.accentBlue, fontFamily: 'DMSans_500Medium' }}>Edit</Text>
+                      <Text style={{ fontSize: 12, color: theme.accentBlue, fontFamily: Type.uiMedium }}>Edit</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       ref={(item as any).recipeData?.tutorialRecipe ? (tutorialRecipeDeleteRef as any) : undefined}
@@ -1985,10 +1986,10 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
           return (
             <View style={{ alignItems: 'center', paddingTop: 60, paddingHorizontal: 32, gap: 12 }}>
               <Ionicons name={config.icon as any} size={40} color={theme.textDim} />
-              <Text style={{ fontSize: 16, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', textAlign: 'center' }}>
+              <Text style={{ fontSize: 16, color: theme.textSecondary, fontFamily: Type.uiSemibold, textAlign: 'center' }}>
                 {config.title}
               </Text>
-              <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular', textAlign: 'center', lineHeight: 20 }}>
+              <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.ui, textAlign: 'center', lineHeight: 20 }}>
                 {config.subtitle}
               </Text>
             </View>
@@ -2005,7 +2006,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                   style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, paddingHorizontal: 14, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 10, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <Ionicons name="bookmark" size={14} color={theme.accentBlue} />
-                    <Text style={{ fontSize: 9, color: theme.accentBlue, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase' }}>
+                    <Text style={{ fontSize: 9, color: theme.accentBlue, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase' }}>
                       Use a Saved Food ({myFoods.length})
                     </Text>
                   </View>
@@ -2058,7 +2059,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                           openFoodDetail(foodItem);
                         }}
                         style={{ marginRight: 6, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 3 }}>
-                        <Text style={{ fontSize: 10, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>SET</Text>
+                        <Text style={{ fontSize: 10, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>SET</Text>
                       </TouchableOpacity>
                       <View style={styles.calBlock}>
                         <Text style={styles.resultCal}>{f.cal}</Text>
@@ -2075,7 +2076,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                   onPress={() => { setBarcodeForCreate(lastScannedBarcode); setShowCreateFood(true); }}
                   style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, paddingHorizontal: 14, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 10, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw }}>
                   <Ionicons name="add-circle" size={16} color={theme.accentBlueRaw} />
-                  <Text style={{ fontSize: 13, color: theme.accentBlueRaw, fontFamily: 'DMSans_600SemiBold' }}>Create Food for this Barcode</Text>
+                  <Text style={{ fontSize: 13, color: theme.accentBlueRaw, fontFamily: Type.uiSemibold }}>Create Food for this Barcode</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -2136,7 +2137,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeEditModal(); }} style={{ alignSelf: 'center', paddingTop: 12, paddingBottom: 4, paddingHorizontal: 20 }} hitSlop={{ top: 8, bottom: 8, left: 20, right: 20 }}>
                 <View style={{ height: 4, width: 40, backgroundColor: theme.borderCard, borderRadius: 2 }} />
               </TouchableOpacity>
-              <Text style={{ fontSize: 16, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, textAlign: 'center', marginTop: 8, marginBottom: 4 }}>EDIT FOOD</Text>
+              <Text style={{ fontSize: 16, color: theme.accentBlueRaw, fontFamily: Type.display, letterSpacing: 0.3, textAlign: 'center', marginTop: 8, marginBottom: 4 }}>EDIT FOOD</Text>
               <ScrollView style={{ maxHeight: 600 }} contentContainerStyle={{ padding: 16, paddingTop: 8 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets={true}>
                 {/* Type selector */}
                 <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
@@ -2145,27 +2146,27 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                     style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, backgroundColor: editFoodData?.type !== 'supplement' ? theme.accentBlueBg : theme.bgInput, borderColor: editFoodData?.type !== 'supplement' ? theme.accentBlueBorder : theme.borderInput }}
                   >
                     <Ionicons name="nutrition" size={16} color={editFoodData?.type !== 'supplement' ? theme.accentBlue : theme.textMuted} />
-                    <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', marginTop: 3, color: editFoodData?.type !== 'supplement' ? theme.accentBlue : theme.textMuted }}>Food</Text>
+                    <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, marginTop: 3, color: editFoodData?.type !== 'supplement' ? theme.accentBlue : theme.textMuted }}>Food</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditFoodData((p: any) => p ? { ...p, type: 'supplement' } : null); }}
                     style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, backgroundColor: editFoodData?.type === 'supplement' ? theme.accentBlueBg : theme.bgInput, borderColor: editFoodData?.type === 'supplement' ? theme.accentBlueBorder : theme.borderInput }}
                   >
                     <Ionicons name="medical" size={16} color={editFoodData?.type === 'supplement' ? theme.accentBlue : theme.textMuted} />
-                    <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', marginTop: 3, color: editFoodData?.type === 'supplement' ? theme.accentBlue : theme.textMuted }}>Supplement</Text>
+                    <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, marginTop: 3, color: editFoodData?.type === 'supplement' ? theme.accentBlue : theme.textMuted }}>Supplement</Text>
                   </TouchableOpacity>
                 </View>
                 {/* Basic Info */}
-                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Basic Info</Text>
+                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Basic Info</Text>
                 {([
                   { label: 'Food Name', key: 'name', keyboard: 'default' as const },
                   { label: 'Brand (optional)', key: 'brand', keyboard: 'default' as const },
                   { label: 'Calories (kcal)', key: 'cal', keyboard: 'decimal-pad' as const },
                 ] as { label: string; key: string; keyboard: 'default' | 'decimal-pad' }[]).map(f => (
                   <View key={f.key} style={{ marginBottom: 10 }}>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4 }}>{f.label}</Text>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4 }}>{f.label}</Text>
                     <TextInput
-                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 15, fontFamily: 'DMSans_400Regular' }}
+                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 15, fontFamily: Type.ui }}
                       value={editFoodData?.[f.key] || ''}
                       onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: f.keyboard === 'decimal-pad' ? filterDecimal(v) : v } : null)}
                       keyboardType={f.keyboard}
@@ -2176,7 +2177,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                 ))}
                 {/* Macronutrients -- 3 column */}
                 <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Macronutrients</Text>
+                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Macronutrients</Text>
                 <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
                   {([
                     { label: 'PROTEIN (g)', key: 'protein', dot: '#0d9268' },
@@ -2186,10 +2187,10 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                     <View key={f.key} style={{ flex: 1 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                         <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: f.dot, marginRight: 4 }} />
-                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2 }}>{f.label}</Text>
+                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2 }}>{f.label}</Text>
                       </View>
                       <TextInput
-                        style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: 'DMSans_400Regular', textAlign: 'center' }}
+                        style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: Type.ui, textAlign: 'center' }}
                         value={editFoodData?.[f.key] || ''}
                         onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: filterDecimal(v) } : null)}
                         keyboardType="decimal-pad"
@@ -2235,14 +2236,14 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                 ).map(section => (
                   <View key={section.prefix}>
                     <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-                    <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>{section.header}</Text>
+                    <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>{section.header}</Text>
                     {section.rows.map((row, ri) => (
                       <View key={`${section.prefix}${ri}`} style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
                         {row.map((f, fi) => f ? (
                           <View key={f.key} style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, marginBottom: 4 }}>{f.label}</Text>
+                            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, marginBottom: 4 }}>{f.label}</Text>
                             <TextInput
-                              style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: 'DMSans_400Regular' }}
+                              style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: Type.ui }}
                               value={editFoodData?.[f.key] || ''}
                               onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: filterDecimal(v) } : null)}
                               keyboardType="decimal-pad"
@@ -2258,12 +2259,12 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                 ))}
                 {/* Serving */}
                 <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Serving</Text>
+                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Serving</Text>
                 <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4 }}>AMOUNT</Text>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4 }}>AMOUNT</Text>
                     <TextInput
-                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: 'DMSans_400Regular' }}
+                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: Type.ui }}
                       value={editFoodData?.servingGrams || ''}
                       onChangeText={v => setEditFoodData((p: any) => p ? { ...p, servingGrams: filterDecimal(v) } : null)}
                       keyboardType="decimal-pad"
@@ -2272,9 +2273,9 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                     />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4 }}>LABEL (optional)</Text>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4 }}>LABEL (optional)</Text>
                     <TextInput
-                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: 'DMSans_400Regular' }}
+                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: Type.ui }}
                       value={editFoodData?.servingLabel || ''}
                       onChangeText={v => setEditFoodData((p: any) => p ? { ...p, servingLabel: v } : null)}
                       placeholderTextColor={theme.textDim}
@@ -2282,7 +2283,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                     />
                   </View>
                 </View>
-                <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 }}>UNIT</Text>
+                <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 }}>UNIT</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingBottom: 12, paddingRight: 4 }}>
                   {EDIT_SERVING_UNITS.map(u => (
                     <TouchableOpacity
@@ -2293,25 +2294,25 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                         backgroundColor: editFoodData?.servingUnitType === u ? theme.accentBlueBg : 'transparent',
                         borderColor: editFoodData?.servingUnitType === u ? theme.accentBlueBorder : theme.borderInput,
                       }}>
-                      <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: editFoodData?.servingUnitType === u ? theme.accentBlue : theme.textMuted }}>{u}</Text>
+                      <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: editFoodData?.servingUnitType === u ? theme.accentBlue : theme.textMuted }}>{u}</Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
                 {/* Additional Servings */}
                 <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                  <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase' }}>Additional Servings</Text>
+                  <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase' }}>Additional Servings</Text>
                   <TouchableOpacity
                     onPress={() => setEditFoodData((p: any) => p ? { ...p, additionalServings: [...(p.additionalServings || []), { id: `as_${Date.now()}`, label: '', grams: '' }] } : null)}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
                     <Ionicons name="add" size={12} color={theme.accentBlue} />
-                    <Text style={{ fontSize: 11, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>Add</Text>
+                    <Text style={{ fontSize: 11, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Add</Text>
                   </TouchableOpacity>
                 </View>
                 {(editFoodData?.additionalServings || []).map((s: any, i: number) => (
                   <View key={s.id} style={{ flexDirection: 'row', gap: 6, marginBottom: 8, alignItems: 'center' }}>
                     <TextInput
-                      style={{ flex: 1.4, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 8, paddingHorizontal: 10, fontSize: 13, fontFamily: 'DMSans_400Regular' }}
+                      style={{ flex: 1.4, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 8, paddingHorizontal: 10, fontSize: 13, fontFamily: Type.ui }}
                       placeholder="Label (e.g. 1 link)"
                       placeholderTextColor={theme.textDim}
                       value={s.label}
@@ -2323,7 +2324,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                       })}
                     />
                     <TextInput
-                      style={{ flex: 0.8, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 8, paddingHorizontal: 10, fontSize: 13, fontFamily: 'DMSans_400Regular' }}
+                      style={{ flex: 0.8, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 8, paddingHorizontal: 10, fontSize: 13, fontFamily: Type.ui }}
                       placeholder="g"
                       placeholderTextColor={theme.textDim}
                       keyboardType="decimal-pad"
@@ -2344,18 +2345,18 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                   </View>
                 ))}
                 {(editFoodData?.additionalServings || []).length === 0 && (
-                  <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}>Tap Add to define extra serving sizes (e.g. 1 link, 6 pieces)</Text>
+                  <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, marginBottom: 10 }}>Tap Add to define extra serving sizes (e.g. 1 link, 6 pieces)</Text>
                 )}
               </ScrollView>
               <View style={{ flexDirection: 'row', gap: 10, padding: 16, paddingTop: 12 }}>
                 <TouchableOpacity onPress={closeEditModal} style={{ flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, alignItems: 'center' }}>
-                  <Text style={{ color: theme.textMuted, fontFamily: 'DMSans_500Medium', fontSize: 14 }}>Cancel</Text>
+                  <Text style={{ color: theme.textMuted, fontFamily: Type.uiMedium, fontSize: 14 }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={saveEditFood}
                   disabled={!editFoodData?.name?.trim() || !editFoodData?.cal}
                   style={{ flex: 2, padding: 12, backgroundColor: theme.accentBlue, borderRadius: 8, alignItems: 'center', opacity: editFoodData?.name?.trim() && editFoodData?.cal ? 1 : 0.4 }}>
-                  <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 1 }}>SAVE</Text>
+                  <Text style={{ color: '#ffffff', fontFamily: Type.uiBold, fontSize: 16, letterSpacing: 1 }}>SAVE</Text>
                 </TouchableOpacity>
               </View>
             </Animated.View>
@@ -2403,7 +2404,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                   scanLineStyle,
                 ]} />
               </View>
-              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: 'DMSans_400Regular', marginTop: 12, letterSpacing: 1 }}>
+              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: Type.ui, marginTop: 12, letterSpacing: 1 }}>
                 Align barcode within frame
               </Text>
               {/* Torch toggle */}
@@ -2426,7 +2427,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
               </TouchableOpacity>
               {/* Cancel -- only shows when camera is ready */}
               <TouchableOpacity style={{ position: 'absolute', bottom: 40, alignSelf: 'center', backgroundColor: 'rgba(0,0,0,0.5)', borderWidth: 1, borderColor: theme.accentBlueRaw, paddingHorizontal: 28, paddingVertical: 14, borderRadius: 8 }} onPress={() => stopScanning(200)}>
-                <Text style={{ color: '#ffffff', fontSize: 16, fontFamily: 'DMSans_600SemiBold' }}>Cancel</Text>
+                <Text style={{ color: '#ffffff', fontSize: 16, fontFamily: Type.uiSemibold }}>Cancel</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -2442,10 +2443,10 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
               <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textDim }} />
             </TouchableOpacity>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-              <Text style={{ color: theme.accentBlue, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>SORT</Text>
+              <Text style={{ color: theme.accentBlue, fontSize: 18, fontFamily: Type.uiBold, letterSpacing: 1 }}>SORT</Text>
               {sortOption !== 'az' && (
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setSortOption('az'); }} style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: theme.accentRedBorder, backgroundColor: theme.accentRedBg }}>
-                  <Text style={{ color: theme.accentRed, fontSize: 11, fontFamily: 'DMSans_700Bold' }}>CLEAR</Text>
+                  <Text style={{ color: theme.accentRed, fontSize: 11, fontFamily: Type.uiBold }}>CLEAR</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -2462,7 +2463,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                     key={val}
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setSortOption(val); }}
                     style={{ backgroundColor: sortOption === val ? theme.accentBlueBg : theme.bgInset, borderWidth: 1, borderColor: sortOption === val ? theme.accentBlueBorder : theme.borderCard, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 }}>
-                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: sortOption === val ? theme.accentBlue : theme.textMuted }}>{label}</Text>
+                    <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: sortOption === val ? theme.accentBlue : theme.textMuted }}>{label}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -2492,7 +2493,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                   <TouchableOpacity
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); router.push('/ai-meal-estimator'); }}
                     style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                    <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>AI Estimate</Text>
+                    <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>AI Estimate</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); router.push('/ai-meal-estimator'); }}
@@ -2508,7 +2509,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                   <TouchableOpacity
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); router.push('/recipe-builder'); }}
                     style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                    <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Create Recipe</Text>
+                    <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Create Recipe</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); router.push('/recipe-builder'); }}
@@ -2524,7 +2525,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                   <TouchableOpacity
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); setShowCreateFood(true); }}
                     style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                    <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Create Food</Text>
+                    <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Create Food</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); setShowCreateFood(true); }}
@@ -2559,20 +2560,20 @@ const useStyles = (theme: any, themeId: string) => {
   container: { flex: 1, backgroundColor: theme.bgPrimary },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: theme.borderCard },
   backBtn: { padding: 4 },
-  backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_500Medium' },
-  headerTitle: { fontSize: 20, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
+  backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: Type.uiMedium },
+  headerTitle: { fontSize: 20, color: theme.accentBlueRaw, fontFamily: Type.display, letterSpacing: 0.3 },
   scanBtn: { padding: 4 },
   scanBtnText: { fontSize: 20 },
   searchRow: { flexDirection: 'row', alignItems: 'center', padding: 16, paddingBottom: 8 },
-  searchInput: { flex: 1, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 15, fontFamily: 'DMSans_400Regular' },
-  searching: { color: theme.textMuted, marginLeft: 8, fontFamily: 'DMSans_400Regular' },
+  searchInput: { flex: 1, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 15, fontFamily: Type.ui },
+  searching: { color: theme.textMuted, marginLeft: 8, fontFamily: Type.ui },
   addNewBtn: { marginHorizontal: 16, marginBottom: 8, paddingVertical: 6, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6 },
-  addNewBtnText: { color: theme.accentBlue, fontSize: 12, fontFamily: 'DMSans_600SemiBold' },
+  addNewBtnText: { color: theme.accentBlue, fontSize: 12, fontFamily: Type.uiSemibold },
   addNewForm: { marginHorizontal: 16, marginBottom: 8, backgroundColor: theme.bgCard, borderRadius: 8, padding: 12, borderWidth: 1, borderColor: theme.borderCard },
-  formInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: 'DMSans_400Regular', marginBottom: 8 },
+  formInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: Type.ui, marginBottom: 8 },
   formRow: { flexDirection: 'row', gap: 8 },
   saveBtn: { backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder, borderRadius: 6, paddingHorizontal: 16, justifyContent: 'center' },
-  saveBtnText: { color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold', fontSize: 14 },
+  saveBtnText: { color: theme.accentGreen, fontFamily: Type.uiSemibold, fontSize: 14 },
   resultItem: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     marginHorizontal: 12, marginVertical: 4,
@@ -2586,38 +2587,38 @@ const useStyles = (theme: any, themeId: string) => {
   },
   resultLeft: { flex: 1, marginRight: 12 },
   savedBadge: { backgroundColor: theme.accentBlueBg, borderRadius: 3, paddingHorizontal: 5, paddingVertical: 1, alignSelf: 'flex-start', marginBottom: 4 },
-  savedBadgeText: { fontSize: 8, color: theme.accentBlue, fontFamily: 'DMSans_700Bold' },
-  resultName: { fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' },
-  resultBrand: { fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 1 },
+  savedBadgeText: { fontSize: 8, color: theme.accentBlue, fontFamily: Type.uiBold },
+  resultName: { fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiSemibold },
+  resultBrand: { fontSize: 11, color: theme.textMuted, fontFamily: Type.ui, marginTop: 1 },
   macroStrip: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 5 },
   macroDot: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   dotCircle: { width: 6, height: 6, borderRadius: 3 },
-  macroVal: { fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular' },
+  macroVal: { fontSize: 11, color: theme.textMuted, fontFamily: Type.ui },
   resultRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   starBtn: { padding: 4 },
   calBlock: { alignItems: 'flex-end', minWidth: 46 },
-  resultCal: { fontSize: 20, color: theme.accentGreen, fontFamily: 'BebasNeue_400Regular', textAlign: 'right' },
-  resultCalLabel: { fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_400Regular', textAlign: 'right', marginTop: -2 },
+  resultCal: { fontSize: 20, color: theme.accentGreen, fontFamily: Type.num, textAlign: 'right' },
+  resultCalLabel: { fontSize: 9, color: theme.textMuted, fontFamily: Type.ui, textAlign: 'right', marginTop: -2 },
   deleteBtn: { marginLeft: 8, padding: 4 },
   deleteBtnText: { fontSize: 18, color: theme.textDim },
   cameraOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 },
   camera: { flex: 1 },
   cancelScan: { position: 'absolute', bottom: 40, alignSelf: 'center', backgroundColor: theme.overlayBg, padding: 16, borderRadius: 8 },
-  cancelScanText: { color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_600SemiBold' },
+  cancelScanText: { color: theme.textPrimary, fontSize: 16, fontFamily: Type.uiSemibold },
   tabRow: { flexDirection: 'row', marginHorizontal: 16, marginBottom: 8, backgroundColor: theme.bgProgressTrack, borderRadius: 8, padding: 4 },
   tab: { flex: 1, padding: 8, alignItems: 'center', borderRadius: 6 },
   tabActive: { backgroundColor: theme.bgCard, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.15, shadowRadius: 3 },
-  tabText: { fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium' },
-  tabTextActive: { color: theme.textPrimary, fontFamily: 'DMSans_700Bold' },
+  tabText: { fontSize: 11, color: theme.textMuted, fontFamily: Type.uiMedium },
+  tabTextActive: { color: theme.textPrimary, fontFamily: Type.uiBold },
   modalOverlay: { flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'flex-end' },
   modal: { backgroundColor: theme.bgCard, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, borderWidth: 1, borderColor: theme.borderCard },
-  modalTitle: { fontSize: 18, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', marginBottom: 16 },
-  modalInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: 'DMSans_400Regular', marginBottom: 10 },
+  modalTitle: { fontSize: 18, color: theme.textPrimary, fontFamily: Type.uiSemibold, marginBottom: 16 },
+  modalInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: Type.ui, marginBottom: 10 },
   modalBtns: { flexDirection: 'row', gap: 8, marginTop: 8 },
   modalCancelBtn: { flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, alignItems: 'center' },
-  modalCancelText: { color: theme.textMuted, fontFamily: 'DMSans_500Medium', fontSize: 14 },
+  modalCancelText: { color: theme.textMuted, fontFamily: Type.uiMedium, fontSize: 14 },
   modalSaveBtn: { flex: 1, padding: 12, backgroundColor: theme.accentBlue, borderRadius: 6, alignItems: 'center' },
-  modalSaveText: { color: theme.textWhite, fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 1 },
+  modalSaveText: { color: theme.textWhite, fontFamily: Type.uiBold, fontSize: 16, letterSpacing: 1 },
   resultItemSet: { borderLeftColor: '#0d9268' },
   });
 };

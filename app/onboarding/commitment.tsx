@@ -10,6 +10,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { isOnboardingPreview } from '../../utils/onboardingPreview';
 import { THEMES } from '../../theme';
+import { Type, numLine } from '../../typography';
 
 const theme = THEMES['light'];
 
@@ -223,16 +224,16 @@ const styles = StyleSheet.create({
   progressFill:         { height: '100%', borderRadius: 2 },
   backBtn:              { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   content:              { flex: 1, paddingHorizontal: 28, paddingTop: 36 },
-  screenLabel:          { fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 },
-  title:                { fontSize: 48, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, lineHeight: 50, marginBottom: 14,
+  screenLabel:          { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 },
+  title:                { fontSize: 48, fontFamily: Type.display, letterSpacing: 0.3, lineHeight: numLine(48), marginBottom: 14,
                           textShadowColor: 'rgba(0,0,0,0.12)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
-  subtitle:             { fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, lineHeight: 20, marginBottom: 8 },
+  subtitle:             { fontSize: 16, fontFamily: Type.num, letterSpacing: 2, lineHeight: numLine(16), marginBottom: 8 },
   commitmentsContainer: { marginTop: 36, gap: 14 },
   commitmentRow:        { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 14, padding: 18,
                           shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 },
-  commitmentNumber:     { fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, lineHeight: 26, minWidth: 28 },
-  commitmentText:       { flex: 1, fontSize: 17, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, lineHeight: 26 },
+  commitmentNumber:     { fontSize: 22, fontFamily: Type.num, letterSpacing: 1, lineHeight: numLine(22), minWidth: 28 },
+  commitmentText:       { flex: 1, fontSize: 17, fontFamily: Type.num, letterSpacing: 1, lineHeight: numLine(17) },
   footer:               { paddingHorizontal: 24, paddingTop: 12, borderTopWidth: 0.5 },
   commitBtn:            { borderRadius: 14, paddingVertical: 18, alignItems: 'center' },
-  commitBtnText:        { fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 4, color: '#ffffff' },
+  commitBtnText:        { fontSize: 22, fontFamily: Type.uiBold, letterSpacing: 1, color: '#ffffff' },
 });

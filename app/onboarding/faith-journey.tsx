@@ -12,6 +12,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { isOnboardingPreview } from '../../utils/onboardingPreview';
+import { Type, numLine } from '../../typography';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -396,19 +397,19 @@ const styles = StyleSheet.create({
   progressFill:    { height: '100%', borderRadius: 2 },
   backBtn:         { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   content:         { flex: 1, paddingHorizontal: 24, paddingTop: 32 },
-  screenLabel:     { fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 },
-  title:           { fontSize: 52, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, lineHeight: 54, marginBottom: 12 },
-  subtitle:        { fontSize: 13, fontFamily: 'DMSans_400Regular', lineHeight: 20 },
+  screenLabel:     { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 },
+  title:           { fontSize: 52, fontFamily: Type.display, letterSpacing: 0.3, lineHeight: numLine(52), marginBottom: 12 },
+  subtitle:        { fontSize: 13, fontFamily: Type.ui, lineHeight: 20 },
   cardsContainer:  { marginTop: 28, gap: 12 },
   card:            { borderWidth: 1, borderRadius: 16, padding: 18, minHeight: 88 },
   titleRow:        { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 7 },
-  cardTitle:       { fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, lineHeight: 22 },
-  cardCopy:        { fontSize: 13, fontFamily: 'DMSans_400Regular', lineHeight: 19, paddingLeft: 19 },
+  cardTitle:       { fontSize: 20, fontFamily: Type.num, letterSpacing: 2, lineHeight: numLine(20) },
+  cardCopy:        { fontSize: 13, fontFamily: Type.ui, lineHeight: 19, paddingLeft: 19 },
   verseBlock:      { marginTop: 24, paddingHorizontal: 4 },
-  verseText:       { fontSize: 13, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', lineHeight: 20, color: 'rgba(232,160,32,0.55)', textAlign: 'center' },
-  verseRef:        { fontSize: 10, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: 'rgba(232,160,32,0.35)', textAlign: 'center', marginTop: 6, textTransform: 'uppercase' },
-  changeNote:      { fontSize: 11, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 16 },
+  verseText:       { fontSize: 13, fontFamily: Type.ui, fontStyle: 'italic', lineHeight: 20, color: 'rgba(232,160,32,0.55)', textAlign: 'center' },
+  verseRef:        { fontSize: 10, fontFamily: Type.uiBold, letterSpacing: 2, color: 'rgba(232,160,32,0.35)', textAlign: 'center', marginTop: 6, textTransform: 'uppercase' },
+  changeNote:      { fontSize: 11, fontFamily: Type.ui, textAlign: 'center', marginTop: 16 },
   footer:          { paddingHorizontal: 24, paddingTop: 12, borderTopWidth: 0.5 },
   continueBtn:     { borderRadius: 14, paddingVertical: 18, alignItems: 'center' },
-  continueBtnText: { fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 3, color: '#0d0a1a' },
+  continueBtnText: { fontSize: 18, fontFamily: Type.uiBold, letterSpacing: 1, color: '#0d0a1a' },
 });

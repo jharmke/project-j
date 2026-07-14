@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Fragment, useState } from 'react';
 import { useTheme } from '../theme';
 import { WHATS_NEW_RELEASES } from '../data/whatsNew';
+import { Type, numLine } from '../typography';
 
 // What's New / release notes page. Mirrors the Mission page look (clean cards, big hero title).
 // Reached permanently from Settings > About, and once per release from an Otto hub notification.
@@ -110,21 +111,21 @@ export default function WhatsNewScreen() {
 const styles = StyleSheet.create({
   header:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 8 },
   backBtn:     { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  backText:    { fontSize: 15, fontFamily: 'DMSans_400Regular' },
+  backText:    { fontSize: 15, fontFamily: Type.ui },
   scrollContent: { paddingHorizontal: 16, paddingTop: 8, gap: 10 },
   hero:        { paddingHorizontal: 4, paddingBottom: 4 },
-  heroTitle:   { fontSize: 42, fontFamily: 'BebasNeue_400Regular', letterSpacing: 3, lineHeight: 46 },
+  heroTitle:   { fontSize: 42, fontFamily: Type.num, letterSpacing: 3, lineHeight: numLine(42) },
   // 'center', not 'baseline': the row now carries a chevron, which has no text baseline to sit on.
   // paddingVertical gives the whole header a proper tap target without changing how it looks.
   patchHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, marginBottom: -2, paddingHorizontal: 4, paddingVertical: 6 },
-  patchHeader: { fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, textTransform: 'uppercase' },
-  patchDate:   { fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' },
+  patchHeader: { fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, textTransform: 'uppercase' },
+  patchDate:   { fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 1, textTransform: 'uppercase' },
   cardShadow:  { borderRadius: 14, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 },
   card:        { borderRadius: 14, borderWidth: 0.5, borderTopWidth: 1.5, padding: 14, overflow: 'hidden' },
   iconRow:     { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 8 },
   iconCircle:  { width: 30, height: 30, borderRadius: 9, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  cardTitle:   { fontSize: 15, fontFamily: 'DMSans_700Bold', flex: 1 },
-  cardBody:    { fontSize: 13, fontFamily: 'DMSans_400Regular', lineHeight: 19 },
+  cardTitle:   { fontSize: 15, fontFamily: Type.uiBold, flex: 1 },
+  cardBody:    { fontSize: 13, fontFamily: Type.ui, lineHeight: 19 },
   bulletRow:   { flexDirection: 'row', gap: 8 },
   bulletDot:   { fontSize: 13, lineHeight: 19 },
 });

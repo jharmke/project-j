@@ -22,6 +22,7 @@ import {
 } from '../utils/diagnosticReport';
 import { refreshCoachTip, resolveTipBody } from '../utils/coachAI';
 import PrimaryCTA from '../components/PrimaryCTA';
+import { Type, numLine } from '../typography';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -184,12 +185,12 @@ export default function DiagnosticReportScreen() {
 
         {/* Title */}
         <View style={{ paddingHorizontal: 4, marginBottom: 16, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-          <Text style={[styles.heroTitle, { color: t.accentBlueRaw }]}>{'EFFORT VS\nRESULTS'}</Text>
+          <Text style={[styles.heroTitle, { color: t.accentBlueRaw }]}>{'Effort vs\nResults'}</Text>
           <TooltipIcon tooltipKey="effort_vs_results" size={18} />
         </View>
 
         {/* Intro line (replaces the window picker -- each pattern uses its own timeframe) */}
-        <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: t.textSecondary, lineHeight: 20, marginBottom: 14 }}>
+        <Text style={{ fontSize: 13, fontFamily: Type.ui, color: t.textSecondary, lineHeight: 20, marginBottom: 14 }}>
           A diagnostic read of your recent data. Each pattern is measured over the timeframe that fits it, so there's no window to pick.
         </Text>
 
@@ -224,14 +225,14 @@ export default function DiagnosticReportScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     {isCurrent && (
                       <View style={{ backgroundColor: t.accentBlueBg, borderWidth: 1, borderColor: t.accentBlueBorder, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 }}>
-                        <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: t.accentBlueRaw }}>CURRENT</Text>
+                        <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, color: t.accentBlueRaw }}>CURRENT</Text>
                       </View>
                     )}
-                    <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: t.textSecondary }}>
+                    <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: t.textSecondary }}>
                       Generated {fmtDateFull(localDateKey(r.generatedAt))}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: t.textMuted }}>
+                  <Text style={{ fontSize: 11, fontFamily: Type.ui, color: t.textMuted }}>
                     {r.insufficientData ? 'Insufficient data' : `${r.minLoggedDays} days logged`}
                   </Text>
                 </View>
@@ -258,7 +259,7 @@ export default function DiagnosticReportScreen() {
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowAllReports(v => !v); }}
                     style={[styles.reportRow, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.borderCard, ...shadowStyle }]}
                   >
-                    <Text style={{ flex: 1, fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: t.textSecondary }}>
+                    <Text style={{ flex: 1, fontSize: 12, fontFamily: Type.uiSemibold, color: t.textSecondary }}>
                       {showAllReports ? 'Hide older reports' : `${olderCount} older report${olderCount === 1 ? '' : 's'}`}
                     </Text>
                     <Ionicons name={showAllReports ? 'chevron-up' : 'chevron-down'} size={18} color={t.textMuted} />
@@ -317,7 +318,7 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontSize: 15,
-    fontFamily: 'DMSans_400Regular',
+    fontFamily: Type.ui,
   },
   content: {
     paddingHorizontal: 16,
@@ -326,9 +327,9 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     fontSize: 48,
-    fontFamily: 'BebasNeue_400Regular',
-    letterSpacing: 3,
-    lineHeight: 52,
+    fontFamily: Type.display,
+    letterSpacing: 0.3,
+    lineHeight: numLine(48),
   },
   windowBtn: {
     flex: 1,
@@ -346,12 +347,12 @@ const styles = StyleSheet.create({
   },
   generateBtnText: {
     fontSize: 14,
-    fontFamily: 'DMSans_600SemiBold',
+    fontFamily: Type.uiSemibold,
     color: '#fff',
   },
   sectionLabel: {
     fontSize: 9,
-    fontFamily: 'DMSans_700Bold',
+    fontFamily: Type.uiBold,
     letterSpacing: 3,
     textTransform: 'uppercase',
     marginBottom: 10,
@@ -376,20 +377,20 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    fontFamily: 'BebasNeue_400Regular',
-    letterSpacing: 1,
+    fontFamily: Type.display,
+    letterSpacing: 0.3,
     marginBottom: 8,
   },
   emptyBody: {
     fontSize: 13,
-    fontFamily: 'DMSans_400Regular',
+    fontFamily: Type.ui,
     textAlign: 'center',
     lineHeight: 20,
     paddingHorizontal: 8,
   },
   emptyHint: {
     fontSize: 11,
-    fontFamily: 'DMSans_400Regular',
+    fontFamily: Type.ui,
     textAlign: 'center',
     lineHeight: 18,
     marginTop: 12,

@@ -15,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { isOnboardingPreview } from '../../utils/onboardingPreview';
+import { Type } from '../../typography';
 
 const PACE_PILLS = [
   { key: 'lose_2',   label: '−2 lbs/wk',   name: 'Aggressive' },
@@ -492,7 +493,7 @@ export default function YourStyleScreen() {
               <Text style={[styles.sectionLabel, { color: theme.textMuted, marginBottom: 8 }]}>CURRENT WEIGHT</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <TextInput
-                  style={[{ flex: 1, borderWidth: 0.5, borderRadius: 10, padding: 14, fontSize: 16, fontFamily: 'DMSans_400Regular', backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 }]}
+                  style={[{ flex: 1, borderWidth: 0.5, borderRadius: 10, padding: 14, fontSize: 16, fontFamily: Type.ui, backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 }]}
                   placeholder="177"
                   placeholderTextColor={theme.textPlaceholder}
                   value={currentWeight}
@@ -505,7 +506,7 @@ export default function YourStyleScreen() {
                   keyboardType="decimal-pad"
                 />
                 <View style={{ borderWidth: 0.5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 14, backgroundColor: theme.bgCard, borderColor: theme.borderCard }}>
-                  <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted }}>lbs</Text>
+                  <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textMuted }}>lbs</Text>
                 </View>
               </View>
             </View>
@@ -513,7 +514,7 @@ export default function YourStyleScreen() {
               <Text style={[styles.sectionLabel, { color: theme.textMuted, marginBottom: 8 }]}>GOAL WEIGHT <Text style={{ color: theme.textDim, fontSize: 9 }}>(OPT)</Text></Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <TextInput
-                  style={[{ flex: 1, borderWidth: 0.5, borderRadius: 10, padding: 14, fontSize: 16, fontFamily: 'DMSans_400Regular', backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 }]}
+                  style={[{ flex: 1, borderWidth: 0.5, borderRadius: 10, padding: 14, fontSize: 16, fontFamily: Type.ui, backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 }]}
                   placeholder="165"
                   placeholderTextColor={theme.textPlaceholder}
                   value={goalWeight}
@@ -526,7 +527,7 @@ export default function YourStyleScreen() {
                   keyboardType="decimal-pad"
                 />
                 <View style={{ borderWidth: 0.5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 14, backgroundColor: theme.bgCard, borderColor: theme.borderCard }}>
-                  <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted }}>lbs</Text>
+                  <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textMuted }}>lbs</Text>
                 </View>
               </View>
             </View>
@@ -554,10 +555,10 @@ export default function YourStyleScreen() {
                     borderColor: isSelected ? theme.accentBlueBorder : theme.borderInput,
                   }}
                 >
-                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: isSelected ? theme.accentBlue : theme.textPrimary, marginBottom: 2 }}>
+                  <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: isSelected ? theme.accentBlue : theme.textPrimary, marginBottom: 2 }}>
                     {o.label}
                   </Text>
-                  <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 13 }}>
+                  <Text style={{ fontSize: 10, fontFamily: Type.ui, color: theme.textMuted, lineHeight: 13 }}>
                     {o.sub}
                   </Text>
                 </TouchableOpacity>
@@ -582,8 +583,8 @@ export default function YourStyleScreen() {
                       borderColor: isSelected ? theme.accentBlueBorder : theme.borderInput,
                     }}
                   >
-                    <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: isSelected ? theme.accentBlue : theme.textPrimary, marginBottom: 2 }}>{o.label}</Text>
-                    <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 13 }}>{o.sub}</Text>
+                    <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: isSelected ? theme.accentBlue : theme.textPrimary, marginBottom: 2 }}>{o.label}</Text>
+                    <Text style={{ fontSize: 10, fontFamily: Type.ui, color: theme.textMuted, lineHeight: 13 }}>{o.sub}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -612,8 +613,8 @@ export default function YourStyleScreen() {
                       borderColor: isSelected ? theme.accentBlueBorder : theme.borderInput,
                     }}
                   >
-                    <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: isSelected ? theme.accentBlue : theme.textPrimary, marginBottom: 2 }}>{o.label}</Text>
-                    <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 13 }}>{o.sub}</Text>
+                    <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: isSelected ? theme.accentBlue : theme.textPrimary, marginBottom: 2 }}>{o.label}</Text>
+                    <Text style={{ fontSize: 10, fontFamily: Type.ui, color: theme.textMuted, lineHeight: 13 }}>{o.sub}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -636,8 +637,8 @@ export default function YourStyleScreen() {
                       borderColor: isSelected ? theme.accentBlueBorder : theme.borderInput,
                     }}
                   >
-                    <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: isSelected ? theme.accentBlue : theme.textPrimary, marginBottom: 2 }}>{o.label}</Text>
-                    <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 13 }}>{o.sub}</Text>
+                    <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: isSelected ? theme.accentBlue : theme.textPrimary, marginBottom: 2 }}>{o.label}</Text>
+                    <Text style={{ fontSize: 10, fontFamily: Type.ui, color: theme.textMuted, lineHeight: 13 }}>{o.sub}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -660,8 +661,8 @@ export default function YourStyleScreen() {
                       borderColor: isSelected ? theme.accentBlueBorder : theme.borderInput,
                     }}
                   >
-                    <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: isSelected ? theme.accentBlue : theme.textPrimary, marginBottom: 2 }}>{o.label}</Text>
-                    <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 13 }}>{o.sub}</Text>
+                    <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: isSelected ? theme.accentBlue : theme.textPrimary, marginBottom: 2 }}>{o.label}</Text>
+                    <Text style={{ fontSize: 10, fontFamily: Type.ui, color: theme.textMuted, lineHeight: 13 }}>{o.sub}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -671,11 +672,11 @@ export default function YourStyleScreen() {
           {/* Live calorie estimate */}
           {suggestedCals && (
             <View style={{ marginTop: 20, borderWidth: 0.5, borderRadius: 14, padding: 16, alignItems: 'center', backgroundColor: theme.bgCard, borderColor: theme.borderCard, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 }}>
-              <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 8 }}>YOUR DAILY CALORIE TARGET</Text>
-              <Text style={{ fontSize: 48, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.accentBlueRaw }}>
+              <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 8 }}>YOUR DAILY CALORIE TARGET</Text>
+              <Text style={{ fontSize: 48, fontFamily: Type.num, letterSpacing: 1, color: theme.accentBlueRaw }}>
                 {suggestedCals} <Text style={{ fontSize: 14, color: theme.textMuted }}>kcal</Text>
               </Text>
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 4, color: theme.textDim }}>
+              <Text style={{ fontSize: 11, fontFamily: Type.ui, textAlign: 'center', marginTop: 4, color: theme.textDim }}>
                 Based on your stats using Mifflin-St Jeor BMR.
               </Text>
             </View>
@@ -727,7 +728,7 @@ export default function YourStyleScreen() {
                     >
                       <Text style={{
                         fontSize: 12,
-                        fontFamily: 'DMSans_600SemiBold',
+                        fontFamily: Type.uiSemibold,
                         color: isSelected ? theme.accentBlue : theme.textMuted,
                       }}>
                         {pill.label}
@@ -745,7 +746,7 @@ export default function YourStyleScreen() {
                     <Text style={[styles.sectionLabel, { color: theme.textMuted, marginBottom: 0 }]}>YOUR PROJECTION</Text>
                     {selected && (
                       <View style={{ marginLeft: 8, backgroundColor: theme.accentBlueBg, borderWidth: 0.5, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
-                        <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 1 }}>
+                        <Text style={{ fontSize: 9, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 1 }}>
                           {selected.name.toUpperCase()}
                         </Text>
                       </View>
@@ -764,7 +765,7 @@ export default function YourStyleScreen() {
                 <Text style={[styles.sectionLabel, { color: theme.textMuted, marginTop: 24, marginBottom: 4 }]}>YOUR PROJECTION</Text>
               )}
               {(!currentWeight || !goalWeight) && (
-                <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 8 }}>
+                <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textDim, marginTop: 8 }}>
                   Enter your current and goal weight above to see your projection.
                 </Text>
               )}
@@ -823,7 +824,7 @@ export default function YourStyleScreen() {
       {/* Continue footer */}
       <View style={[styles.footer, { paddingBottom: keyboardVisible ? 12 : insets.bottom + 16, borderTopColor: theme.borderCard, backgroundColor: theme.gradientEnd }]}>
         {!canContinue && (
-          <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textDim, textAlign: 'center', marginBottom: 10 }}>
+          <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textDim, textAlign: 'center', marginBottom: 10 }}>
             Enter your current weight to continue.
           </Text>
         )}
@@ -849,29 +850,29 @@ const styles = StyleSheet.create({
   progressFill:      { height: '100%', borderRadius: 2 },
   backBtn:           { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   content:           { padding: 24, paddingTop: 16 },
-  screenLabel:       { fontSize: 9,  fontFamily: 'DMSans_700Bold',      letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 },
-  title:             { fontSize: 36, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginBottom: 8,
+  screenLabel:       { fontSize: 9,  fontFamily: Type.uiBold,      letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 },
+  title:             { fontSize: 36, fontFamily: Type.display, letterSpacing: 0.3, marginBottom: 8,
                        textShadowColor: 'rgba(0,0,0,0.12)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
-  oneliner:          { fontSize: 13, fontFamily: 'DMSans_400Regular',    lineHeight: 20, marginBottom: 28 },
+  oneliner:          { fontSize: 13, fontFamily: Type.ui,    lineHeight: 20, marginBottom: 28 },
   modeCard:          { borderWidth: 1, borderRadius: 14, padding: 16, marginBottom: 12,
                        shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 },
   modeDot:           { width: 10, height: 10, borderRadius: 5, marginRight: 10 },
-  modeTitle:         { fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, flex: 1 },
+  modeTitle:         { fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, flex: 1 },
   recommendedBadge:  { borderWidth: 1, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
-  recommendedText:   { fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5 },
-  modeSub:           { fontSize: 12, fontFamily: 'DMSans_400Regular', lineHeight: 18 },
-  changeable:        { fontSize: 11, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 8 },
-  sectionLabel:      { fontSize: 9,  fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4 },
-  sectionSub:        { fontSize: 11, fontFamily: 'DMSans_400Regular', marginBottom: 12 },
+  recommendedText:   { fontSize: 8, fontFamily: Type.uiBold, letterSpacing: 1.5 },
+  modeSub:           { fontSize: 12, fontFamily: Type.ui, lineHeight: 18 },
+  changeable:        { fontSize: 11, fontFamily: Type.ui, textAlign: 'center', marginTop: 8 },
+  sectionLabel:      { fontSize: 9,  fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4 },
+  sectionSub:        { fontSize: 11, fontFamily: Type.ui, marginBottom: 12 },
   presetGrid:        { gap: 8 },
   presetBtn:         { borderWidth: 0.5, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
                        shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 },
-  presetLabel:       { fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
-  presetRatio:       { fontSize: 11, fontFamily: 'DMSans_400Regular' },
+  presetLabel:       { fontSize: 14, fontFamily: Type.uiSemibold },
+  presetRatio:       { fontSize: 11, fontFamily: Type.ui },
   mindfulCard:       { marginTop: 28, borderWidth: 1, borderRadius: 14, padding: 20, alignItems: 'center' },
-  mindfulText:       { fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginBottom: 6, textAlign: 'center' },
-  mindfulSub:        { fontSize: 12, fontFamily: 'DMSans_400Regular', textAlign: 'center', lineHeight: 18 },
+  mindfulText:       { fontSize: 18, fontFamily: Type.display, letterSpacing: 0.3, marginBottom: 6, textAlign: 'center' },
+  mindfulSub:        { fontSize: 12, fontFamily: Type.ui, textAlign: 'center', lineHeight: 18 },
   footer:            { paddingHorizontal: 24, paddingTop: 12, borderTopWidth: 0.5 },
   continueBtn:       { borderRadius: 14, paddingVertical: 18, alignItems: 'center' },
-  continueBtnText:   { fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 3 },
+  continueBtnText:   { fontSize: 18, fontFamily: Type.uiBold, letterSpacing: 1 },
 });

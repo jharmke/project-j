@@ -70,9 +70,14 @@ LEDGER (tried + rejected):
     (selectors' unselected states), not a 10% accent tint. `HeaderIconButton` uses the identical recipe at
     shine 0.52 and visibly shines. Justin called it ("idk why it wouldnt shine since literally every other
     icon is shining right now"). Verify against the code, don't extrapolate a lesson past its case.
-  - NEW LESSON -- SHINE SCALES WITH AREA. Justin: the pills felt "plastic-y". Same 0.52 gloss over the top
-    60% of a 32px header square reads as a GLINT; over a 190px-wide pill the same gradient becomes a big
-    sweeping white panel = Web-2.0 candy button. Wide surfaces need a different gloss than small ones.
+  - THE "PLASTIC" LESSON, and its CORRECTION the same day. Justin said the pills felt "plastic-y". I logged
+    it as SHINE SCALES WITH AREA: the 0.52 gloss that glints on a 32px square becomes a sweeping white panel
+    on a 190px pill. That rule predicted full-width buttons would need a weaker gloss -- and hours later
+    workout-library's FULL-WIDTH Load Program / Load Routine (roughly DOUBLE the pill) took the default
+    unchanged and Justin said "honestly i like it". So the area theory is contradicted. The better fit:
+    his "plastic-y" arrived in the same breath as "8-10 of these buttons yelling at you" -- the pills came
+    2-per-slot across up to 8 slots, while LOAD ROUTINE is ONE button per card with air around it. PLASTIC
+    COMES FROM REPETITION, NOT WIDTH, which makes it DON'T-OVER-GLAZE in a costume, not a new rule.
 
 EXPLAINERS (all were stale the same way -- they said the controls appear ON the empty slot): tooltipRegistry
 `repeat_a_meal` body + "Where it goes"; data/tutorials.ts Log-tab step, all 3 coaching modes; Otto KB

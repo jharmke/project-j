@@ -267,11 +267,17 @@ Three bugs that polluted early verdicts, all mine, all fixed:
 - **Card labels use ONE recipe app-wide:** `styles.cardLabel` + `theme.textMuted`, icon at size 11 in
   `textMuted`. Coach Insight was the lone accent-coloured label on Home -- invisible on the old flat white
   page, wrong the moment the page started glowing accent. Same class of bug as Stats' section headers.
-- **SHINE SCALES WITH AREA** (learned 2026-07-15, the Repeat pill). The SAME 0.52 gloss over the top 60% of
-  a 32px icon square reads as a GLINT; over a 190px-wide pill it becomes a big sweeping white panel = a
-  Web-2.0 candy button. Justin's word was "plastic-y". Small squares and wide buttons are NOT the same
-  surface -- wide ones need a lower and/or shorter gloss. Judge every new width on device, never assume the
-  header recipe carries over.
+- **"Plastic" comes from REPETITION, not width.** This started life as a rule called SHINE SCALES WITH AREA:
+  Justin called the 190px Repeat pills "plastic-y", and I concluded a wide button spreads the gloss into a
+  Web-2.0 candy panel. That rule made a prediction -- full-width buttons will go plastic -- and on 2026-07-15
+  the prediction FAILED. workout-library's LOAD PROGRAM / LOAD ROUTINE are FULL CARD WIDTH, roughly double
+  the Repeat pill, took the default 0.52 gloss unchanged, and Justin's verdict was "honestly i like it".
+  What actually differed: the pills came TWO PER SLOT across up to 8 slots, and his "plastic-y" landed in the
+  same breath as "8-10 of these buttons yelling at you". LOAD ROUTINE is ONE button per card with air around
+  it. So the variable was never size -- it was how many glossy faces the eye takes in at once. This is not a
+  new rule at all; it is DON'T OVER-GLAZE wearing a costume. A wide button alone is fine. Ten glossy
+  chiclets in a scroll column are not. Do not "fix" a plastic feeling by tuning the gloss down until you
+  have counted how many are on screen.
 - **`accentBlueBg` is NOT a button.** The tint marks selected rows, food entries, badges and containers too.
   Of 92 `accentBlueBg` + `accentBlueBorder` hits on tappable-looking elements, real shine candidates were a
   minority: the Achievements "EARNED" badge is a plain `View`, and Bible's Reflect bar is a button AND a

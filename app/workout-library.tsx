@@ -24,6 +24,7 @@ import { useHealthKit } from '../useHealthKit';
 import { groupSyncedWorkouts, loadSyncedLabels, saveSyncedLabel, summarizeSessions, sortSessions, groupSessionsByMonth, formatDurationShort, formatDurationLong, loadSyncedCache, saveSyncedCache, SyncedWorkout, SyncedSort } from '../utils/syncedWorkouts';
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import ButtonShine from '../components/ButtonShine';
 import ModalHeader from '../components/ModalHeader';
 
 interface LibraryExercise {
@@ -1555,6 +1556,7 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
                     </Text>
                     <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openFillPicker(); }}
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 9 }}>
+                      <ButtonShine radius={8} />
                       <Ionicons name="flash-outline" size={15} color={theme.accentBlue} />
                       <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: Type.uiSemibold }}>Fill from Preset</Text>
                     </TouchableOpacity>
@@ -2839,6 +2841,9 @@ export default function WorkoutLibraryScreen() {
                 <TouchableOpacity
                   onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleLoadProgram(program); }}
                   style={{ paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: activeProgramName === program.name ? theme.accentGreenBg : theme.accentBlueBg, borderWidth: 1, borderColor: activeProgramName === program.name ? theme.accentGreenBorder : theme.accentBlueBorder }}>
+                  {/* WIDEST shine in the app so far -- full card width, roughly double the 190px Repeat pill
+                      that already read plastic. If any button proves shine-scales-with-area, it is this one. */}
+                  <ButtonShine radius={8} />
                   <Text style={{ color: activeProgramName === program.name ? theme.accentGreen : theme.accentBlue, fontSize: 13, fontFamily: Type.uiBold, letterSpacing: 1 }}>
                     {activeProgramName === program.name ? 'ACTIVE' : 'LOAD PROGRAM'}
                   </Text>
@@ -2934,6 +2939,7 @@ export default function WorkoutLibraryScreen() {
                       )}
                       <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openLoadRoutinePicker(routine); }}
                         style={{ paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
+                        <ButtonShine radius={8} />
                         <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: Type.uiBold, letterSpacing: 1 }}>LOAD ROUTINE</Text>
                       </TouchableOpacity>
                     </View>
@@ -3013,6 +3019,9 @@ export default function WorkoutLibraryScreen() {
                         <View style={{ flexDirection: 'row', gap: 8 }}>
                           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openLoadRoutinePicker(routine); }}
                             style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
+                            {/* Duplicate, its neighbour, deliberately does NOT get this: it is bgInset/neutral
+                                (the quiet half of the pair) and shining it would flatten the hierarchy. */}
+                            <ButtonShine radius={8} />
                             <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: Type.uiBold, letterSpacing: 1 }}>USE</Text>
                           </TouchableOpacity>
                           <TouchableOpacity

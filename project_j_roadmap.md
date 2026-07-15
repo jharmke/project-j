@@ -304,11 +304,16 @@ are separate pre-submission checklists, NOT part of this menu.
   Mark Read pill, the Achievements EARNED badge.
   CATALOG, run 2026-07-15: 92 tappable tinted buttons across 22 files, and they are NOT one animal:
     (1) header squares -- DONE.
-    (2) BODY tinted buttons = the real remaining sweep: workout-library (13, the big one), add-food,
-        food-detail, settings (~6 each), report, ai-meal-estimator, journal, prayer. One screen at a time,
-        Justin's eyes on each. This is where SHINE-SCALES-WITH-AREA bites: these run from small chips to
-        wide full-row buttons, and the wide ones WILL go plastic on ButtonShine's default (the Repeat pill
-        already did). Judge each width on device.
+    (2) BODY tinted buttons = the remaining sweep: add-food, food-detail, settings, report,
+        ai-meal-estimator, journal, prayer. One screen at a time, Justin's eyes on each.
+        >> THE COUNTS ABOVE ARE INFLATED -- they are grep hits, not buttons. workout-library was logged as
+        "13, the big one" and collapsed to SIX real buttons on inspection (the rest: ~6 selectors, ~3
+        non-tappable badges), five of which live inside modals you must open first. Justin caught this
+        standing on the screen asking where 13 buttons were. RE-RUN THE CATALOG HONESTLY (buttons only) --
+        he has okayed it -- before planning any more sessions around these numbers.
+        >> workout-library DONE 2026-07-15: Fill from Preset, Load Program, Load Routine, USE. Duplicate +
+        the filter icon deliberately SKIPPED (both bgInset/neutral, not tinted: Duplicate is the quiet half
+        of a pair and the filter icon would change TEXTURE between states).
     (3) SELECTORS -- SKIP: bible chapter pills / book rows / sort toggles, onboarding style-survey +
         your-style. Same tint, but they are selected/unselected STATES. Design the states, don't gloss them.
     (4) BARE icons -- NOT this pass: the TooltipIcon "?" on ~12 screens, day-detail's calendar, the EvR
@@ -324,9 +329,11 @@ are separate pre-submission checklists, NOT part of this menu.
   treating the symptom. FIX = split the double duty: "Reflect" becomes a real tinted pill that shines like
   any other action button, the four icons go on a flat strip or the page itself. Needs its own screenshots.
   NOT free: the sun + star icons are TUTORIAL TARGETS.
-  >> WATCH (learned 2026-07-15 on the Repeat pills): SHINE SCALES WITH AREA. The 0.52 gloss that reads as a
-  glint on a 32px icon square reads PLASTIC on a 190px-wide pill -- same gradient, far more surface. Wide
-  buttons in the sweep may need a lower/shorter gloss than ButtonShine's default. Judge each width on device.
+  >> RULE CORRECTED 2026-07-15, same day it was written: I logged "SHINE SCALES WITH AREA" off Justin's
+  "plastic-y" on the 190px Repeat pills, and predicted full-width buttons would need a weaker gloss. WRONG --
+  workout-library's FULL-WIDTH Load Program/Load Routine took the default 0.52 unchanged and Justin liked
+  them. "Plastic" came from REPETITION (2 pills x 8 slots), not width; it was DON'T-OVER-GLAZE in disguise.
+  A wide button alone is fine. Count how many are on screen before blaming the gloss. Detail in the spec.
 - [PARKED -> molded-button rollout] The molded PrimaryCTA is on ~4 CTAs; ~13 more primary CTAs, the
   circular FAB variant, and the PrimaryCTA row-height bug remain. Full detail in SPEC_visual_refresh.md
   PARKED section. Also still open from the OPEN list: title accent-GRADIENT fill (INCLUDE the header "?"

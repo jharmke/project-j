@@ -3055,7 +3055,7 @@ export default function WorkoutLibraryScreen() {
               <View style={[styles.typeBadge, selectedEx.type === 'cardio' && styles.typeBadgeCardio, { alignSelf: 'flex-start', marginBottom: 8 }]}>
                 <Text style={[styles.typeBadgeText, selectedEx.type === 'cardio' && { color: theme.accentAmber }]}>{selectedEx.type.toUpperCase()}</Text>
               </View>
-              <Text style={{ color: selectedEx.type === 'cardio' ? theme.accentAmber : theme.accentBlue, fontSize: 22, fontFamily: Type.num, letterSpacing: 1, marginBottom: selectedEx.note ? 4 : 12 }}>{selectedEx.name}</Text>
+              <Text style={{ color: selectedEx.type === 'cardio' ? theme.accentAmber : theme.accentBlue, fontSize: 22, fontFamily: Type.display, letterSpacing: 0.3, marginBottom: selectedEx.note ? 4 : 12 }}>{selectedEx.name}</Text>
               {selectedEx.note ? <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: Type.ui, marginBottom: 12 }}>{selectedEx.note}</Text> : null}
 
               {(selectedEx.primaryMuscles?.length || selectedEx.secondaryMuscles?.length) ? (
@@ -3391,7 +3391,7 @@ export default function WorkoutLibraryScreen() {
               <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textDim }} />
             </TouchableOpacity>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-              <Text style={{ color: theme.accentBlue, fontSize: 18, fontFamily: Type.num, letterSpacing: 1 }}>{activeTab === 'programs' ? 'SORT' : 'SORT & FILTER'}</Text>
+              <Text style={{ color: theme.accentBlue, fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3 }}>{activeTab === 'programs' ? 'SORT' : 'SORT & FILTER'}</Text>
               {filterActiveCount > 0 && (
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setSortOption('az'); setFilterTags([]); setFilterType('all'); }} style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: theme.accentRedBorder, backgroundColor: theme.accentRedBg }}>
                   <Text style={{ color: theme.accentRed, fontSize: 11, fontFamily: Type.uiBold }}>CLEAR</Text>
@@ -3803,7 +3803,7 @@ export default function WorkoutLibraryScreen() {
                   <View style={[styles.typeBadge, selectedEx.type === 'cardio' && styles.typeBadgeCardio, { alignSelf: 'flex-start', marginBottom: 8 }]}>
                     <Text style={[styles.typeBadgeText, selectedEx.type === 'cardio' && { color: theme.accentAmber }]}>{selectedEx.type.toUpperCase()}</Text>
                   </View>
-                  <Text style={{ color: selectedEx.type === 'cardio' ? theme.accentAmber : theme.accentBlue, fontSize: 22, fontFamily: Type.num, letterSpacing: 1, marginBottom: 12 }}>{selectedEx.name}</Text>
+                  <Text style={{ color: selectedEx.type === 'cardio' ? theme.accentAmber : theme.accentBlue, fontSize: 22, fontFamily: Type.display, letterSpacing: 0.3, marginBottom: 12 }}>{selectedEx.name}</Text>
 
                   <View ref={libMuscleMapRef} collapsable={false}>
                     {(selectedEx.primaryMuscles?.length || selectedEx.secondaryMuscles?.length) ? (

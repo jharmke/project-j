@@ -11,7 +11,7 @@ import { DEFAULT_MEAL_SLOTS, MealSlot, findSlotForMeal, loadMealSlots, getMealDi
 import { calcSleepScore, sleepScoreColor as getSleepScoreColor } from '../utils/sleepScore';
 import { recoveryZone } from '../utils/recoveryScore';
 import { Type, PAGE_TITLE } from '../typography';
-import ScreenHeader from '../components/ScreenHeader';
+import ModalHeader from '../components/ModalHeader';
 
 type SleepStages = { core: number; deep: number; rem: number; totalMs: number };
 
@@ -340,14 +340,13 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
     <View style={styles.container}>
       {/* The date nav is exactly what subRow is for: it belongs to the header, not the content. The old
           header had NO back control at all -- just an empty flex spacer holding the title centred. */}
-      {/* topInset=false: on the full PAGE the wrapper already pays insets.top (double-inset otherwise);
-          in Home's sheet there is no status bar to clear, which was the huge empty gap above the title.
-          onBack=onClose so the chevron closes the sheet (and router.back on the page, since onClose IS
-          router.back there). */}
-      <ScreenHeader
+      {/* Day Detail is ALWAYS a modal/sheet (Home + Stats; the /day-detail page route is never navigated
+          to), so it uses ModalHeader -- 20px title matching every other modal, not the 28px page title.
+          ModalHeader brings the pill + X; the host sheets' own external handles are removed so there is
+          exactly one pill. */}
+      <ModalHeader
         title="Day Detail"
-        topInset={false}
-        onBack={onClose}
+        onClose={onClose}
         right={
           <TouchableOpacity onPress={openCalPicker} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="calendar" size={20} color={theme.accentBlueRaw} />

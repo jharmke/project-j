@@ -26,6 +26,7 @@ import { PAGE_TITLE, Type } from '../typography';
 export default function ModalHeader({
   title,
   subtitle,
+  subRow,
   onClose,
   right,
   color,
@@ -33,6 +34,7 @@ export default function ModalHeader({
 }: {
   title: string;                 // MIXED CASE. The component never uppercases.
   subtitle?: string;             // one quiet line under the title (e.g. HR Zones: "Indoor Walking · 35:47")
+  subRow?: React.ReactNode;      // a second row under the title (e.g. Day Detail's ‹ date › nav)
   onClose?: () => void;          // the X and the handle pill both call this
   right?: React.ReactNode;       // a screen's own action, sits LEFT of the X
   color?: string;                // title colour override -- faith modals go amber
@@ -64,6 +66,8 @@ export default function ModalHeader({
           </TouchableOpacity>
         ) : null}
       </View>
+
+      {subRow ? <View style={styles.subRow}>{subRow}</View> : null}
     </View>
   );
 }
@@ -79,4 +83,5 @@ const styles = StyleSheet.create({
   subtitle:{ fontSize: 12, marginTop: 1 },
   slot:    { alignItems: 'center', justifyContent: 'center', marginLeft: 12 },
   closeBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginLeft: 10 },
+  subRow:  { paddingHorizontal: 16, paddingTop: 8 },
 });

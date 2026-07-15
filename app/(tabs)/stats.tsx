@@ -2899,9 +2899,7 @@ export default function StatsScreen() {
           <Animated.View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', opacity: dayDetailAnim, justifyContent: 'center', alignItems: 'center' }}>
             <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeDayDetail} />
             <Animated.View style={{ width: '92%', height: '75%', borderRadius: 20, backgroundColor: theme.bgSheet, borderWidth: 0.5, borderColor: theme.borderSheet, overflow: 'hidden', opacity: dayDetailAnim }}>
-              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeDayDetail(); }} style={{ alignSelf: 'center', paddingVertical: 6, paddingHorizontal: 40 }}>
-                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle, marginTop: 12, marginBottom: 12 }} />
-              </TouchableOpacity>
+              {/* Handle removed -- DayDetailContent's ModalHeader now provides the pill + X. */}
               <DayDetailContent date={dayDetailDate} onClose={closeDayDetail} />
             </Animated.View>
           </Animated.View>

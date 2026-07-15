@@ -41,6 +41,7 @@ import { showToolkit } from '../../components/ToolkitSheet';
 import { useTutorial } from '../../context/TutorialContext';
 import { useTutorialTarget } from '../../hooks/useTutorialTarget';
 import { Type, numLine, DISPLAY_CAPS, DISPLAY_TRACKING, displaySize } from '../../typography';
+import ModalHeader from '../../components/ModalHeader';
 
 // ── Streak types and constants ────────────────────────────────────────────────
 
@@ -2307,15 +2308,7 @@ export default function StatsScreen() {
             overflow: 'hidden',
             flex: 1,
           }}>
-            {/* Handle */}
-            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeEditSheet(); }} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4, paddingHorizontal: 40 }}>
-              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
-            </TouchableOpacity>
-
-            {/* Title */}
-            <Text style={{ fontFamily: Type.num, fontSize: 22, letterSpacing: 3, color: theme.accentBlueRaw, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 }}>
-              EDIT STATS
-            </Text>
+            <ModalHeader title="Edit Stats" onClose={closeEditSheet} />
 
             <GestureHandlerRootView style={{ flexShrink: 1 }}>
               <DraggableFlatList
@@ -2431,8 +2424,8 @@ export default function StatsScreen() {
             <ScrollView ref={creatorScrollRef} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 16 }} showsVerticalScrollIndicator={false}>
               {/* Header */}
               <View style={{ paddingTop: 12, paddingBottom: 20 }}>
-                <Text style={{ fontFamily: Type.num, fontSize: 22, letterSpacing: 3, color: theme.accentBlueRaw }}>
-                  {creatorStep === 1 ? 'CHOOSE DATA TYPE' : creatorStep === 2 ? 'CHOOSE CHART TYPE' : 'PREVIEW'}
+                <Text style={{ fontFamily: Type.display, fontSize: 22, letterSpacing: 0.3, color: theme.accentBlueRaw }}>
+                  {creatorStep === 1 ? 'Choose Data Type' : creatorStep === 2 ? 'Choose Chart Type' : 'Preview'}
                 </Text>
               </View>
 
@@ -2630,8 +2623,8 @@ export default function StatsScreen() {
                     <Ionicons name="chevron-back" size={20} color={theme.accentBlueRaw} />
                   </TouchableOpacity>
                 )}
-                <Text style={{ fontFamily: Type.num, fontSize: 22, letterSpacing: 3, color: theme.accentBlueRaw, flex: 1 }}>
-                  {creatorStep === 1 ? 'CHOOSE DATA TYPE' : creatorStep === 2 ? 'CHOOSE CHART TYPE' : 'PREVIEW'}
+                <Text style={{ fontFamily: Type.display, fontSize: 22, letterSpacing: 0.3, color: theme.accentBlueRaw, flex: 1 }}>
+                  {creatorStep === 1 ? 'Choose Data Type' : creatorStep === 2 ? 'Choose Chart Type' : 'Preview'}
                 </Text>
               </View>
 
@@ -2980,7 +2973,7 @@ export default function StatsScreen() {
             borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderSheet, borderTopColor: theme.accentBlueRaw,
             padding: 20,
           }}>
-            <Text style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 2, color: theme.accentBlueRaw, marginBottom: 16 }}>MANAGE STREAKS</Text>
+            <Text style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentBlueRaw, marginBottom: 16 }}>Manage Streaks</Text>
             <ScrollView ref={manageStreaksScrollRef} showsVerticalScrollIndicator={false}>
               {streakConfig.length > 0 && (
                 <>
@@ -3055,7 +3048,7 @@ export default function StatsScreen() {
             transform: [{ scale: manageStreaksAnim.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) }],
           }}>
             <TouchableOpacity style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textMuted, opacity: 0.5, marginBottom: 16 }} activeOpacity={0.6} hitSlop={{ top: 16, bottom: 16, left: 40, right: 40 }} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeManageStreaks(); }} />
-            <Text style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 2, color: theme.accentBlueRaw, marginBottom: 16 }}>MANAGE STREAKS</Text>
+            <Text style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentBlueRaw, marginBottom: 16 }}>Manage Streaks</Text>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               {/* Active streaks -- drag to reorder */}
@@ -3155,7 +3148,7 @@ export default function StatsScreen() {
               transform: [{ translateY: modalKeyboardOffset }],
             }}>
                 <TouchableOpacity style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textMuted, opacity: 0.5, marginBottom: 16 }} activeOpacity={0.6} hitSlop={{ top: 16, bottom: 16, left: 40, right: 40 }} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeCreateCustom(); }} />
-                <Text style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 2, color: theme.accentBlueRaw, marginBottom: 4 }}>CREATE CUSTOM STREAK</Text>
+                <Text style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentBlueRaw, marginBottom: 4 }}>Create Custom Streak</Text>
               <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textDim, marginBottom: 20 }}>Manual check-in: tap the tile each day to log it.</Text>
 
               <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 6 }}>STREAK NAME</Text>
@@ -3181,14 +3174,14 @@ export default function StatsScreen() {
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeCreateCustom(); }}
                   style={{ backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput, borderRadius: 10, padding: 14, width: 90, alignItems: 'center' }}>
-                  <Text style={{ fontSize: 16, fontFamily: Type.num, letterSpacing: 2, color: theme.textMuted }}>CANCEL</Text>
+                  <Text style={{ fontSize: 15, fontFamily: Type.uiBold, letterSpacing: 0.3, color: theme.textMuted }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); saveCustomStreak(); }}
                   disabled={!customName.trim() || !customEmoji.trim()}
                   style={{ flex: 1, backgroundColor: customName.trim() && customEmoji.trim() ? theme.accentBlue : theme.bgInput, borderRadius: 10, padding: 14, alignItems: 'center',
                     borderWidth: customName.trim() && customEmoji.trim() ? 0 : 0.5, borderColor: theme.borderInput }}>
-                  <Text style={{ fontSize: 16, fontFamily: Type.num, letterSpacing: 2, color: customName.trim() && customEmoji.trim() ? theme.bgPrimary : theme.textDim }}>ADD STREAK</Text>
+                  <Text style={{ fontSize: 15, fontFamily: Type.uiBold, letterSpacing: 0.3, color: customName.trim() && customEmoji.trim() ? theme.bgPrimary : theme.textDim }}>Add Streak</Text>
                 </TouchableOpacity>
             </View>
             </Animated.View>

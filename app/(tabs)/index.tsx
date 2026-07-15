@@ -3711,6 +3711,9 @@ export default function HomeScreen() {
           style={StyleSheet.absoluteFill}
           pointerEvents="none"
         />
+        {/* Frosted chrome fill -- matches the tab bar (theme.chromeFill), so header and tab bar are one
+            consistent frosted-glass surface. 'transparent' on themes that keep the pure-blur look. */}
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.chromeFill }]} pointerEvents="none" />
         <View style={{ flexDirection:'row', alignItems:'center', gap:12, flex:1 }}>
           <HeaderAvatar />
           {/* paddingRight: the display faces are wider than Bebas was, so "Good afternoon" ran straight

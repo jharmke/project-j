@@ -19,9 +19,9 @@ import { useTheme } from '../theme';
 
 // The glow has a ceiling, and the tab bar is what sets it. At 0.55 the bottom of the page saturated so
 // hard that the glass bar drank it up and went dark -- the bar stopped reading as glass and started
-// reading as a coloured slab. 0.40 is the line: strong enough to see, quiet enough for the bar to stay
-// glass over it. (0.30 was the other failure: invisible on a near-white Light theme.)
-const GLOW_STRENGTH = 0.40;    // accent alpha where the glow is strongest (at the very bottom)
+// reading as a coloured slab. 0.40 held that line on the DARK themes: strong enough to see, quiet enough
+// for the bar to stay glass. But 0.40 washed out on a near-white Light page, so glow strength is now a
+// PER-THEME token (theme.glowStrength) -- Dark/Slate/Warm/Blush stay 0.40, Light runs hotter (0.50).
 const GLOW_HEIGHT = '62%';     // how far up the screen it reaches
 
 // LINE GRID. The halftone dots were too fine to survive being seen through a glass card -- they read as
@@ -71,7 +71,7 @@ export default function BackgroundLayers({ glow }: {
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       {/* LAYER 1 -- bottom glow */}
       <LinearGradient
-        colors={['transparent', withAlpha(glowColor, GLOW_STRENGTH)]}
+        colors={['transparent', withAlpha(glowColor, theme.glowStrength)]}
         style={[styles.glow, { height: GLOW_HEIGHT }]}
       />
 

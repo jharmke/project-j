@@ -2169,6 +2169,8 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
         <BackgroundLayers />
         <View onLayout={e => setHeaderH(e.nativeEvent.layout.height)} style={[styles.header, { paddingTop: insets.top + 12, borderBottomColor: theme.borderCard }]}>
           <BlurView intensity={theme.id === 'dark' ? 34 : 28} tint={theme.id === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} pointerEvents="none" />
+          {/* Frosted chrome fill -- matches the tab bar (theme.chromeFill). 'transparent' on pure-blur themes. */}
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.chromeFill }]} pointerEvents="none" />
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
             <HeaderAvatar />
             <View style={{ flex: 1 }}>

@@ -263,6 +263,12 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
         tint={theme.id === 'dark' ? 'dark' : 'light'}
         style={StyleSheet.absoluteFill}
       />
+      {/* Frosted floor OVER the blur -- the SAME chromeFill the tab headers use, so top and bottom chrome
+          read as one consistent frosted-glass surface. Translucent (not opaque) so content still ghosts
+          through. Per-theme: 'transparent' on the themes that keep the pure-blur look, so this is a no-op for
+          them. Must not eat taps -- the tab buttons render after this and sit on top, but pointerEvents:none
+          keeps it honest. */}
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.chromeFill }]} pointerEvents="none" />
       <Animated.View style={[styles.pill, { backgroundColor: theme.borderSubtle, borderColor: theme.borderCard }, pillStyle]} />
 
       {tabs.map((tab, i) => {
@@ -271,7 +277,7 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
         // Active tab = ACCENT (icon + label), matching the Faith fish (amber) and the home button
         // (white on accent). Those two already carried their identity when selected; these three were
         // still landing on textPrimary, which is near-black on the light themes.
-        const color = isFocused ? theme.accentBlueRaw : theme.textDim;
+        const color = isFocused ? theme.accentBlueRaw : theme.tabBarInactive;
         const scaleStyle = useAnimatedStyle(() => ({
           transform: [{ scale: scales[i].value }],
         }));

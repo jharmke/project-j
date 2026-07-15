@@ -109,6 +109,23 @@ export interface Theme {
   cardShadow: string;
   cardShadowOpacity: number;
 
+  // The bottom-glow strength (accent alpha at the very bottom of the page), per-theme. Was one shared
+  // global constant, which forced a compromise: Dark's glass tab bar drinks a strong glow and turns into a
+  // coloured slab, but a near-white Light page washes a weak glow out to nothing. One number could not serve
+  // both. Splitting it lets Light run hotter than Dark without either breaking.
+  glowStrength: number;
+
+  // Chrome fill (tab bar + all tab headers), per-theme. Both are plain blurs with no fill of their own, so
+  // on a light theme they read as bare glass -- fine at the top, but the tab bar sits on the strong bottom
+  // glow and turns into a COLOURED WINDOW. chromeFill paints a translucent near-white frost OVER the blur so
+  // the chrome reads as ONE consistent frosted-glass surface top and bottom. Kept see-through (not opaque)
+  // so content still ghosts through. 'transparent' keeps the pure-blur look (Dark + the others, unchanged).
+  chromeFill: string;
+  // Inactive tab icon/label colour. Was theme.textDim for every theme, too faint to read once the bar has a
+  // real surface (and the root of the Slate "hidden icons" complaint too). Per-theme so Light can carry a
+  // stronger muted tone without disturbing the others (each non-Light theme keeps its old textDim value).
+  tabBarInactive: string;
+
   // The SELECTED-state fill. OPAQUE, and computed per accent in the provider (see bgSelected there).
   bgSelected: string;
   bgCardVerse: string;      // verse card background (special)
@@ -215,6 +232,9 @@ const dark: Theme = {
   bgCardGlass:      'rgba(52,52,58,0.62)',
   cardShadow:       '#000000',
   cardShadowOpacity: 0.55,
+  glowStrength:     0.40,
+  chromeFill:       'transparent',
+  tabBarInactive:   '#74747e',
   bgSelected:       '#000000',   // placeholder: the provider computes this from the LIVE accent
   bgCardVerse:      '#22223a',
   bgCardFaith:      '#2a2a2e',  // = bgCard: no tint on dark (warm-dark cards recede and look cheap; warmth lives in the gold edge + accents)
@@ -297,22 +317,26 @@ const light: Theme = {
   id: 'light',
   name: 'Light',
 
-  // DEEPENED from #f0f0f5, which was effectively white. A white card CANNOT float on a white page -- no
-  // shadow, no opacity and no blur can fix that, because there is no value gap for an edge to define
-  // itself against. This is the single biggest lever on Light: give the cards a ground to rise off, and
-  // the glow and the grid get to read without being cranked.
-  bgPrimary:        '#e3e6ee',
-  bgCard:           'rgba(255,255,255,0.85)',
-  // Real glass, and it only works because the GROUND got deeper. Over the old near-white page, a 58% white
-  // card composited to... white: card and ground landed within a few levels of each other, so there was no
-  // value gap, no edge, no shadow, no float -- which is what made translucency look like a hole in the
-  // page. Over #e3e6ee the same card composites to roughly #f5f6f9, a real gap. So it can be see-through
-  // AND still have an edge for the shadow to define. Paper-vs-glass was a false choice created by a white
-  // page, not a genuine trade-off.
-  bgCardGlass:      'rgba(255,255,255,0.60)',
-  // Blue-tinted ink, not black: on a pale blue-grey ground a neutral black shadow reads as dirt.
+  // The Apple Health / Oura light-theme recipe: a light NEUTRAL-grey page + PURE WHITE opaque cards, with
+  // the float coming from SHADOW. Earlier passes kept the cards translucent (0.85, then 0.92) to let the
+  // page glow through them -- but a see-through white card DRINKS the grey ground behind it and can never
+  // read as truly white, which is exactly why Light kept looking grey. So on Light the cards go fully
+  // OPAQUE white: they pop because they are actually white, and they pop AGAINST the light-grey page.
+  // (The glow-through-glass idea is a DARK-theme luxury where the ground is rich; on Light it only muddies
+  // the card. It still lives on the few bgCardGlass surfaces, just not the standard slab.)
+  // Do NOT re-deepen the ground to "fix flatness" -- pure-white cards + the 0.30 shadow are the float now.
+  bgPrimary:        '#f2f3f7',
+  bgCard:           '#ffffff',
+  // The remaining glass surfaces (kept see-through on purpose), pulled way up toward white so they read as
+  // clean white cards too, with only a whisper of the page behind them.
+  bgCardGlass:      'rgba(255,255,255,0.82)',
+  // Blue-tinted ink, not black: on a pale blue-grey ground a neutral black shadow reads as dirt. At 0.30 --
+  // on a near-white page the shadow is the ONLY thing lifting the card, so it has to work harder.
   cardShadow:       '#26304f',
-  cardShadowOpacity: 0.20,
+  cardShadowOpacity: 0.30,
+  glowStrength:     0.60,
+  chromeFill:       'rgba(255,255,255,0.65)',
+  tabBarInactive:   '#6666aa',
   bgSelected:       '#000000',   // placeholder: the provider computes this from the LIVE accent
   bgCardVerse:      'rgba(255,251,240,0.72)',
   bgCardFaith:      'rgba(255,250,243,0.85)',
@@ -400,6 +424,9 @@ const slate: Theme = {
   bgCardGlass:      'rgba(233,239,248,0.62)',
   cardShadow:       '#1c2533',
   cardShadowOpacity: 0.22,
+  glowStrength:     0.40,
+  chromeFill:       'transparent',
+  tabBarInactive:   '#8a9aaa',
   bgSelected:       '#000000',   // placeholder: the provider computes this from the LIVE accent
   bgCardVerse:      'rgba(226,232,244,0.90)',
   bgCardFaith:      'rgba(228,221,209,0.92)',
@@ -487,6 +514,9 @@ const warm: Theme = {
   bgCardGlass:      'rgba(255,246,232,0.64)',
   cardShadow:       '#5a3a18',
   cardShadowOpacity: 0.18,
+  glowStrength:     0.40,
+  chromeFill:       'transparent',
+  tabBarInactive:   '#c0a080',
   bgSelected:       '#000000',   // placeholder: the provider computes this from the LIVE accent
   bgCardVerse:      '#fff8e8',
   bgCardFaith:      '#fff1dd',
@@ -574,6 +604,9 @@ const blush: Theme = {
   bgCardGlass:      'rgba(254,243,248,0.66)',
   cardShadow:       '#5a2438',
   cardShadowOpacity: 0.16,
+  glowStrength:     0.40,
+  chromeFill:       'transparent',
+  tabBarInactive:   '#b07a8a',
   bgSelected:       '#000000',   // placeholder: the provider computes this from the LIVE accent
   bgCardVerse:      'rgba(255,252,245,0.92)',
   bgCardFaith:      'rgba(253,240,241,0.95)',

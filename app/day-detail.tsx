@@ -880,7 +880,7 @@ const useStyles = (theme: any, themeId: string) => {
     headerTitle: { ...PAGE_TITLE, color: theme.accentBlueRaw },
     dateNav:          { flexDirection: 'row', alignItems: 'center', gap: 10 },
     headerDate:       { fontSize: 15, color: theme.textPrimary, fontFamily: Type.display, letterSpacing: 0.3, textAlign: 'center', flex: 1 },
-    historyBadge:     { marginTop: 6, backgroundColor: `${theme.accentBlueRaw}26`, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2 },
+    historyBadge:     { alignSelf: 'center', marginTop: 6, backgroundColor: `${theme.accentBlueRaw}26`, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
     historyBadgeText: { fontSize: 9, color: theme.accentBlueRaw, fontFamily: Type.uiBold, letterSpacing: 2 },
     content:          { padding: 14, paddingBottom: 80 },
     card: {

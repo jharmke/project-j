@@ -28,6 +28,14 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-15 LIGHT THEME REFRESH + UNIFIED FROSTED CHROME. Light stopped looking grey: brighter neutral ground
+  (#e3e6ee -> #f2f3f7), pure-white opaque cards, stronger navy card shadow (0.20 -> 0.30) so cards float on
+  SHADOW not value-contrast. New per-theme `glowStrength` token (Light 0.60, others 0.40) uncorks the shared-
+  constant compromise. New per-theme `chromeFill` token applied to the tab bar AND all 6 tab headers so top +
+  bottom chrome read as one frosted-glass surface (Light rgba(255,255,255,0.65); others 'transparent' =
+  unchanged). `tabBarInactive` token fixes faint inactive tab icons (Light #9999bb -> #6666aa) -- same root as
+  the Slate hidden-icon complaint. Day Detail HISTORY badge now a small centered pill. Light-only; other 4
+  themes untouched. OPEN: home-circle restyle + extend frosted chrome/icon-contrast to Slate.
 - 2026-07-13 MONETIZATION / "SUPPORT THE MISSION" **COMPLETE + DEVICE-VERIFIED.** The whole track: RevenueCat
   purchases (subscribe monthly/annual, monthly->annual upgrade, tips, restore), Supporter gates, the membership
   card with REAL dates (and "Ends on" not "Renews on" once cancelled), the gold system (SupporterFoil = the one
@@ -232,6 +240,11 @@ are separate pre-submission checklists, NOT part of this menu.
   Same class as the PrimaryCTA fix -> button labels go to Interface, the REST DAY heading to Clash. Also
   optional: two info-modal titles (CalorieFloor, MeasureHowTo) sit on bold INTERFACE rather than Clash --
   not a bug (no number-face, no caps, no black), Justin's call whether to unify them.
+- [QUICK WIN] [found 2026-07-15] **Otto (+ Halo?) FAB placement audit.** The floating companion FAB sits
+  bottom-left on many stack screens and OVERLAPS the last card's content when the page has no bottom padding
+  (confirmed on Sleep & Recovery > Recovery: the FAB covers the Recovery Coach text). Sweep every screen that
+  renders the FAB, confirm each scroll view has enough bottom contentInset/padding so nothing sits under the
+  FAB, and decide whether Halo needs the same pass. Systematic, low-risk padding fix.
 - [NOW] [VISUAL REFRESH -> CHIP / ICON-BUTTON TOP SHINE] The SECOND button-texture thread (distinct from
   the molded PrimaryCTA, which is the solid primary buttons). The LITTLE buttons are still flat tinted
   rectangles: the tinted-pill recipe (accentBlueBg + border -- "+ Log", sort/filter chips, secondary

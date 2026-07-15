@@ -1122,7 +1122,7 @@ const styles = StyleSheet.create({
   partialNote:         { fontSize: 10, fontFamily: Type.ui, textAlign: 'center', marginTop: 24, fontStyle: 'italic' },
   overlay:             { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   bookSheet:           { position: 'absolute', bottom: 0, left: 0, right: 0, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '85%', borderTopWidth: 0.5, padding: 20, paddingBottom: 0 },
-  centeredModal:       { width: '90%', borderRadius: 14, borderWidth: 0.5, padding: 20, maxHeight: '88%' },
+  centeredModal:       { width: '90%', borderRadius: 14, borderWidth: 0.5, paddingHorizontal: 20, paddingTop: 4, paddingBottom: 20, maxHeight: '88%' },
   sheetHandle:         { width: 36, height: 4, borderRadius: 2 },
   sheetTitle:          { fontSize: 18, fontFamily: Type.display, letterSpacing: 0.3, marginBottom: 12 },
   searchBox:           { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 12 },

@@ -340,8 +340,14 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
     <View style={styles.container}>
       {/* The date nav is exactly what subRow is for: it belongs to the header, not the content. The old
           header had NO back control at all -- just an empty flex spacer holding the title centred. */}
+      {/* topInset=false: on the full PAGE the wrapper already pays insets.top (double-inset otherwise);
+          in Home's sheet there is no status bar to clear, which was the huge empty gap above the title.
+          onBack=onClose so the chevron closes the sheet (and router.back on the page, since onClose IS
+          router.back there). */}
       <ScreenHeader
         title="Day Detail"
+        topInset={false}
+        onBack={onClose}
         right={
           <TouchableOpacity onPress={openCalPicker} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="calendar" size={20} color={theme.accentBlueRaw} />

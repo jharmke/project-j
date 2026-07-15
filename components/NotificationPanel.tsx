@@ -271,7 +271,7 @@ export default function NotificationPanel({
 
           <View style={styles.headerRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-              <Text style={[styles.title, { color: theme.accentBlue }]}>NOTIFICATIONS</Text>
+              <Text style={[styles.title, { color: theme.accentBlueRaw }]}>Notifications</Text>
               <TooltipIcon tooltipKey="notification_hub" size={15} />
             </View>
             {items.length > 0 && (
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
   handleWrap: { alignItems: 'center', paddingTop: 10, paddingBottom: 4 },
   handle: { width: 40, height: 5, borderRadius: 3, opacity: 0.5 },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingTop: 6, paddingBottom: 8 },
-  title: { fontSize: 13, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase' },
+  title: { fontSize: 18, fontFamily: Type.display, letterSpacing: 0.3 },
   clearAll: { fontSize: 12, fontFamily: Type.uiSemibold },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
   emptyTitle: { fontSize: 15, fontFamily: Type.uiSemibold, marginBottom: 4 },

@@ -24,6 +24,7 @@ import { useHealthKit } from '../useHealthKit';
 import { groupSyncedWorkouts, loadSyncedLabels, saveSyncedLabel, summarizeSessions, sortSessions, groupSessionsByMonth, formatDurationShort, formatDurationLong, loadSyncedCache, saveSyncedCache, SyncedWorkout, SyncedSort } from '../utils/syncedWorkouts';
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import ModalHeader from '../components/ModalHeader';
 
 interface LibraryExercise {
   id: string;
@@ -1186,14 +1187,8 @@ function ProgramBuilderModal({ onClose, onSave, editingProgram }: {
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }} pointerEvents="box-none">
           <Reanimated.View pointerEvents="box-none" style={[{ width: '100%', maxHeight: '70%' }, cardStyle]}>
             <View pointerEvents="auto" style={{ backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12 }}>
-              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); close(); }} style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}>
-                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
-              </TouchableOpacity>
-              <View style={{ paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-                <Text style={{ fontSize: 22, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentBlueRaw }}>
-                  {editingProgram ? 'EDIT PROGRAM' : 'CREATE PROGRAM'}
-                </Text>
-              </View>
+              <ModalHeader title={editingProgram ? 'Edit Program' : 'Create Program'} onClose={close} />
+              <View style={{ borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }} />
               <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 48 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                 <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase', marginBottom: 6 }}>
                   PROGRAM NAME <Text style={{ color: theme.accentRed }}>*</Text>
@@ -1241,7 +1236,13 @@ function ProgramBuilderModal({ onClose, onSave, editingProgram }: {
         <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
           <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setShowTagCreator(false)} />
           <View style={{ position: 'absolute', top: '28%', left: 20, right: 20, backgroundColor: theme.bgSheet, borderRadius: 16, padding: 20, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 16 }}>
-            <Text style={{ fontSize: 18, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentBlueRaw, marginBottom: 14 }}>NEW TAG</Text>
+            {/* Compact padded popup + a form -> title fixed to mixed case and an X for a safe close. */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <Text style={{ fontSize: 18, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentBlueRaw }}>New Tag</Text>
+              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowTagCreator(false); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Ionicons name="close" size={20} color={theme.textMuted} />
+              </TouchableOpacity>
+            </View>
             <TextInput
               style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 14, fontFamily: Type.ui, marginBottom: 14 }}
               placeholder="Tag name"
@@ -1459,14 +1460,8 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }} pointerEvents="box-none">
           <Reanimated.View pointerEvents="box-none" style={[{ width: '100%', maxHeight: '70%' }, cardScaleStyle]}>
             <View pointerEvents="auto" style={{ backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12 }}>
-              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); close(); }} style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}>
-                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
-              </TouchableOpacity>
-              <View style={{ paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-                <Text style={{ fontSize: 22, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentBlueRaw }}>
-                  {editingRoutine ? 'EDIT ROUTINE' : 'CREATE ROUTINE'}
-                </Text>
-              </View>
+              <ModalHeader title={editingRoutine ? 'Edit Routine' : 'Create Routine'} onClose={close} />
+              <View style={{ borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }} />
 
               <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 32 }}>
                 <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase', marginBottom: 6 }}>
@@ -3048,14 +3043,17 @@ export default function WorkoutLibraryScreen() {
           {selectedEx ? (
             <Reanimated.View style={[{ width: '90%' }, detailCardStyle]}>
             <View style={{ backgroundColor: theme.bgSheet, borderRadius: 14, width: '100%', borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, overflow: 'hidden' }}>
-              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeDetailModal(); }} style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 6 }}>
-                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
-              </TouchableOpacity>
-              <ScrollView ref={detailScrollRef} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={{ maxHeight: Dimensions.get('window').height * 0.72 }} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}>
-              <View style={[styles.typeBadge, selectedEx.type === 'cardio' && styles.typeBadgeCardio, { alignSelf: 'flex-start', marginBottom: 8 }]}>
+              {/* Exercise name was inside the scroll; it becomes the fixed header title (coloured by type),
+                  gaining the X. The LIFT/CARDIO badge stays as the first scroll item. */}
+              <ModalHeader
+                title={selectedEx.name}
+                onClose={() => closeDetailModal()}
+                color={selectedEx.type === 'cardio' ? theme.accentAmber : theme.accentBlueRaw}
+              />
+              <ScrollView ref={detailScrollRef} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={{ maxHeight: Dimensions.get('window').height * 0.72 }} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20, paddingTop: 6 }}>
+              <View style={[styles.typeBadge, selectedEx.type === 'cardio' && styles.typeBadgeCardio, { alignSelf: 'flex-start', marginBottom: 12 }]}>
                 <Text style={[styles.typeBadgeText, selectedEx.type === 'cardio' && { color: theme.accentAmber }]}>{selectedEx.type.toUpperCase()}</Text>
               </View>
-              <Text style={{ color: selectedEx.type === 'cardio' ? theme.accentAmber : theme.accentBlue, fontSize: 22, fontFamily: Type.display, letterSpacing: 0.3, marginBottom: selectedEx.note ? 4 : 12 }}>{selectedEx.name}</Text>
               {selectedEx.note ? <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: Type.ui, marginBottom: 12 }}>{selectedEx.note}</Text> : null}
 
               {(selectedEx.primaryMuscles?.length || selectedEx.secondaryMuscles?.length) ? (
@@ -3257,14 +3255,8 @@ export default function WorkoutLibraryScreen() {
           <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => closeAllPRs()} />
           <Reanimated.View style={[{ width: '90%' }, allPRsCardStyle]}>
             <View style={{ backgroundColor: theme.bgSheet, borderRadius: 14, width: '100%', borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, overflow: 'hidden' }}>
-              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeAllPRs(); }} style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 6 }}>
-                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
-              </TouchableOpacity>
-              <View style={{ paddingHorizontal: 20, paddingBottom: 12 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: prList.length ? 12 : 0 }}>
-                  <Ionicons name="trophy" size={18} color={theme.accentAmber} />
-                  <Text style={{ fontSize: 22, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentAmber }}>ALL PRs</Text>
-                </View>
+              <ModalHeader title="All PRs" onClose={closeAllPRs} color={theme.accentAmber} />
+              <View style={{ paddingHorizontal: 20, paddingBottom: 12, paddingTop: 4 }}>
                 {prList.length > 0 && (
                   <View style={{ flexDirection: 'row', gap: 8 }}>
                     {(([['recent', 'Recent'], ['az', 'A-Z'], ['za', 'Z-A']]) as [typeof prSort, string][]).map(([key, label]) => {
@@ -3334,12 +3326,8 @@ export default function WorkoutLibraryScreen() {
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16, paddingTop: insets.top + 8, paddingBottom: addKbHeight + 8 }} pointerEvents="box-none">
           <Reanimated.View pointerEvents="box-none" style={[{ width: '100%' }, addCardAnimStyle]}>
           <View pointerEvents="auto" style={{ maxHeight: Dimensions.get('window').height - insets.top - addKbHeight - 24, backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20 }}>
-            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeAddModal(); }} style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}>
-              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
-            </TouchableOpacity>
-            <View style={{ paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-              <Text style={styles.modalTitle}>{editingEx ? 'EDIT EXERCISE' : 'ADD EXERCISE'}</Text>
-            </View>
+            <ModalHeader title={editingEx ? 'Edit Exercise' : 'Add Exercise'} onClose={closeAddModal} />
+            <View style={{ borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }} />
             <ScrollView style={{ flexShrink: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
               <View style={{ padding: 20 }}>
                 <TextInput style={styles.modalInput} placeholder="Exercise name" placeholderTextColor={theme.textPlaceholder} value={form.name || ''} onChangeText={v => setForm(p => ({ ...p, name: v }))} autoCapitalize="words" autoCorrect={false} spellCheck={false} />
@@ -3387,17 +3375,16 @@ export default function WorkoutLibraryScreen() {
         <Reanimated.View style={[{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }, filterOverlayStyle]}>
           <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={closeFilterModal} />
           <Reanimated.View style={[{ backgroundColor: theme.bgSheet, borderRadius: 18, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, width: '100%', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20 }, filterCardStyle]}>
-            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFilterModal(); }} style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}>
-              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textDim }} />
-            </TouchableOpacity>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-              <Text style={{ color: theme.accentBlue, fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3 }}>{activeTab === 'programs' ? 'SORT' : 'SORT & FILTER'}</Text>
-              {filterActiveCount > 0 && (
+            <ModalHeader
+              title={activeTab === 'programs' ? 'Sort' : 'Sort & Filter'}
+              onClose={closeFilterModal}
+              right={filterActiveCount > 0 ? (
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setSortOption('az'); setFilterTags([]); setFilterType('all'); }} style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: theme.accentRedBorder, backgroundColor: theme.accentRedBg }}>
                   <Text style={{ color: theme.accentRed, fontSize: 11, fontFamily: Type.uiBold }}>CLEAR</Text>
                 </TouchableOpacity>
-              )}
-            </View>
+              ) : undefined}
+            />
+            <View style={{ borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }} />
             <View style={{ padding: 20 }}>
               <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase', marginBottom: 12 }}>SORT</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: activeTab === 'programs' ? 0 : 20 }}>
@@ -3738,15 +3725,10 @@ export default function WorkoutLibraryScreen() {
             <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeLoadRoutinePicker} />
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }} pointerEvents="box-none">
               <Reanimated.View pointerEvents="box-none" style={[{ width: '100%' }, loadRoutineCardStyle]}>
-                <View pointerEvents="auto" style={{ backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, padding: 20 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <Text style={{ fontSize: 22, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentBlueRaw }}>LOAD ROUTINE</Text>
-                    <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeLoadRoutinePicker(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                      <Ionicons name="close" size={20} color={theme.textMuted} />
-                    </TouchableOpacity>
-                  </View>
-                  <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: Type.ui, marginBottom: 20 }}>{loadRoutineTarget.name}</Text>
-
+                <View pointerEvents="auto" style={{ backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, paddingBottom: 20, overflow: 'hidden' }}>
+                  {/* Was "LOAD ROUTINE" caps with an X but no handle; routine name becomes the subtitle. */}
+                  <ModalHeader title="Load Routine" subtitle={loadRoutineTarget.name} onClose={closeLoadRoutinePicker} />
+                  <View style={{ paddingHorizontal: 20, paddingTop: 10 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                     <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>{weekLabel}</Text>
                     <View style={{ flexDirection: 'row', gap: 2 }}>
@@ -3784,6 +3766,7 @@ export default function WorkoutLibraryScreen() {
                       LOAD TO {loadRoutineSelectedDays.length} {loadRoutineSelectedDays.length === 1 ? 'DAY' : 'DAYS'}
                     </Text>
                   </TouchableOpacity>
+                  </View>
                 </View>
               </Reanimated.View>
             </View>

@@ -169,7 +169,7 @@ export default function FeedbackModal({ visible, onClose }: Props) {
                   opacity: canSend ? 1 : 0.6,
                 }}
               >
-                <Text style={{ color: canSend ? theme.bgPrimary : theme.textMuted, fontSize: 18, fontFamily: Type.num, letterSpacing: 2 }}>SEND</Text>
+                <Text style={{ color: canSend ? theme.bgPrimary : theme.textMuted, fontSize: 17, fontFamily: Type.uiBold, letterSpacing: 0.2 }}>SEND</Text>
               </TouchableOpacity>
             </ScrollView>
           </Animated.View>

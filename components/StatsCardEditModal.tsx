@@ -251,7 +251,7 @@ export function StatsCardEditModal({ card, onClose, onSave, onDelete, theme }: P
             <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, paddingHorizontal: 20, paddingVertical: 14 }}>
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); handleSave(); }} disabled={noChange}
                 style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 10, paddingVertical: 14, alignItems: 'center', opacity: noChange ? 0.4 : 1 }}>
-                <Text style={{ color: '#ffffff', fontFamily: Type.num, fontSize: 18, letterSpacing: 2 }}>SAVE</Text>
+                <Text style={{ color: '#ffffff', fontFamily: Type.uiBold, fontSize: 17, letterSpacing: 0.2 }}>SAVE</Text>
               </TouchableOpacity>
             </View>
           </Animated.View>

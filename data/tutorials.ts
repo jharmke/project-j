@@ -736,9 +736,9 @@ export const TUTORIALS: Tutorial[] = [
         targetKey: 'none',
         title: 'QUICK TIPS',
         body: {
-          discipline: 'Demo entry removed. Recents tab: your last 15 logged foods, fastest re-log. Favorites tab: star any food for instant access. And when a meal slot is empty, a "Repeat" pill copies a previous day\'s meal in with a tap.',
-          balanced: 'Done. The demo entry has been removed. The Recents tab shows your last 15 logged foods, and starring a food saves it in Favorites. Eat the same thing often? An empty meal slot shows a "Repeat" pill that re-logs a previous day\'s meal for you.',
-          mindful: 'All cleaned up. The Recents and Favorites tabs make re-logging easier over time. And if you eat the same meal a lot, the "Repeat" pill on an empty slot brings a previous day\'s meal back with one tap. Use whichever feels right.',
+          discipline: 'Demo entry removed. Recents tab: your last 15 logged foods, fastest re-log. Favorites tab: star any food for instant access. And when a meal slot is empty, it reads "Expand to repeat a meal": expand it and a "Repeat" pill copies a previous day\'s meal in with a tap.',
+          balanced: 'Done. The demo entry has been removed. The Recents tab shows your last 15 logged foods, and starring a food saves it in Favorites. Eat the same thing often? An empty meal slot reads "Expand to repeat a meal", and expanding it reveals a "Repeat" pill that re-logs a previous day\'s meal for you.',
+          mindful: 'All cleaned up. The Recents and Favorites tabs make re-logging easier over time. And if you eat the same meal a lot, an empty slot offers to repeat one: expand it and the "Repeat" pill brings a previous day\'s meal back with one tap. Use whichever feels right.',
         },
       },
     ],

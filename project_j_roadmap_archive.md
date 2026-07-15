@@ -11,6 +11,77 @@
 
 ---
 
+## 🔁 REPEAT-A-MEAL PILLS -> INTO THE TRAY (visual refresh, SHIPPED 2026-07-15)
+Follow-on to REPEAT A MEAL (shipped 2026-07-10, see that section below for the feature itself). Started as
+the NEXT UP item "Repeat/Pick-a-Day (shine + DE-NEON)" and ended somewhere else entirely.
+
+WHAT WAS ACTUALLY WRONG. The pills DID have a real de-neon problem: they used `bgSheet` fill + a
+FULL-STRENGTH accent border, where the house tinted-button recipe is a 10-15% accent tint + a 25-30% border.
+On Light `bgSheet` is PURE WHITE, so it was a white pill with a hot outline on a white card: the border
+carried the entire button at 100% alpha with no fill to soften it. Fixed by moving them onto the house
+recipe (`accentBlueBg` + `accentBlueBorder` + `ButtonShine`), i.e. the exact `HeaderIconButton` recipe.
+The original outline was DELIBERATE ("solid fill is reserved for a screen's ONE primary action") and that
+intent still holds: a 10% tint is not solid fill.
+
+BUT THE REAL PROBLEM WAS DENSITY, NOT BRIGHTNESS, and no gloss tuning could reach it. On a fresh morning
+EVERY empty slot showed TWO pills: up to 8 slots = ~10 tinted buttons yelling at the exact moment the
+screen should feel calm. Worse, the hierarchy was INVERTED: the `+` (the row's actual primary action) is a
+bare glyph, while Repeat (a mere SHORTCUT) was a bordered, filled, glossed pill. The shortcut out-shouted
+the action. Also a straight violation of the standing "don't over-glaze, restraint is premium" rule: 3
+shined squares in a header is restraint, 10 shined pills in a scroll column is what that rule exists to
+prevent.
+
+THE FIX. Pills moved into the EXPANDED slot (the tray). Justin's instinct was a per-slot FAB that expands
+to reveal the two options; the tray IS that, using a control that already existed. Rejected the literal FAB
+because it would be a THIRD affordance competing with the `+` (two things meaning "put food here"), it
+would lose the kcal number (the information scent), and it would still leave one object per empty slot.
+The chevron was already there and the tray behind it held ONE dim line ("Nothing logged yet. Tap + to
+add."). Cost: Repeat Yesterday goes 1 tap -> 2. Bought: a calm morning + correct hierarchy.
+
+THE SCENT LINE, and the copy miss worth remembering. Moving the pills created a discoverability hole:
+nobody opens a chevron that promises an empty list. Fix uses space that ALREADY existed: the subtitle slot
+under the meal name is blank on empty slots (logged slots show macro dots there) -- i.e. blank on exactly
+the slots with a repeat waiting. FIRST ATTEMPT WAS WRONG: it read "Yesterday · 349 kcal", a FACT, on the
+theory that a logged slot's subtitle says what is IN it so an empty slot's should say what is AVAILABLE for
+it. Tidy theory, failed the job -- **a fact does not invite an action**, and under an empty Dinner it scans
+as "you ate 349". A discoverability line must say what you can DO. Final: "Expand to repeat a meal".
+  - "Expand", not "Tap": the `+` is right there and owns taps; expand maps to the chevron alone. A "tap to
+    repeat" line would break its promise for anyone who taps the `+` and lands in add-food search.
+  - "Click" rejected: desktop language, nobody clicks a phone.
+  - SENTENCE case, not Title Case: it's an instruction, like its neighbour "Nothing logged yet. Tap + to
+    add." Title Case is for labels/buttons ("Pick a Day"). Title-Casing a sentence reads stiff.
+  - "A meal", NOT "yesterday's meal": the tray holds TWO options, so naming yesterday describes half of
+    what's in there. Being generic is ALSO what let the gate widen to `hasHistory`, which closed a real
+    hole: a slot whose last dinner was MONDAY previously got no hint at all. Hint and tray are now gated
+    IDENTICALLY (empty + hasHistory), so the hint can never promise what the tray lacks.
+  - Gate is `mealEntries.length === 0`, NOT `mealTotal === 0` (what the macro line uses): a slot holding
+    only zero-calorie entries has total 0 but is NOT empty, so the tray would show those entries and no
+    pills -- the hint would be lying.
+
+LEDGER (tried + rejected):
+  - CENTERING the pills in the tray: REJECTED. Left-aligning leaves a bigger right gutter (REPEAT_MAX_W
+    caps the Repeat pill), so centering was meant to even it out -- but the tray already has a left-aligned
+    text line establishing an edge, so centered pills float against nothing and read DISCONNECTED. An
+    uneven gutter beats an arbitrary one. Left-aligned wins.
+  - Dropped the invisible Pick-a-Day spacer twin: it existed to align the icon column DOWN the meal stack,
+    a column that no longer exists now the pills live in trays.
+  - MY MIS-CALL, logged so it isn't repeated: I claimed the shine wouldn't show on Light, citing the
+    "gloss is invisible on white/near-white fills" lesson. WRONG -- that lesson is about actual WHITE fills
+    (selectors' unselected states), not a 10% accent tint. `HeaderIconButton` uses the identical recipe at
+    shine 0.52 and visibly shines. Justin called it ("idk why it wouldnt shine since literally every other
+    icon is shining right now"). Verify against the code, don't extrapolate a lesson past its case.
+  - NEW LESSON -- SHINE SCALES WITH AREA. Justin: the pills felt "plastic-y". Same 0.52 gloss over the top
+    60% of a 32px header square reads as a GLINT; over a 190px-wide pill the same gradient becomes a big
+    sweeping white panel = Web-2.0 candy button. Wide surfaces need a different gloss than small ones.
+
+EXPLAINERS (all were stale the same way -- they said the controls appear ON the empty slot): tooltipRegistry
+`repeat_a_meal` body + "Where it goes"; data/tutorials.ts Log-tab step, all 3 coaching modes; Otto KB
+(functions/src/assistantAppKnowledge.ts) in TWO places -- Otto would have given directions to a button that
+no longer exists. Redeployed. What's New Patch 3 deliberately LEFT ALONE (historical patch note, Justin's
+call).
+
+---
+
 ## ⚖️ WEIGHT HISTORY + STARTING WEIGHT (home Weight card gear, SHIPPED 2026-07-10, commits b7da232 + b11fe03)
 Follow-on to the dad weight-card "Total Lost/Gained" label fix (aea7aec). The gap it closed: past weigh-ins
 weren't editable, so a wrong starting weight couldn't be corrected. Design locked in SPEC_weight_history.md.

@@ -238,8 +238,10 @@ LOG TAB (FOOD DIARY)
 - RECIPES: from the Food Library (Log tab > LIBRARY button) tap the FAB > CREATE RECIPE (opens the
   Recipe Builder). Log a saved recipe from the Recipes tab in Add Food, or the Recipe Log.
 - REPEAT A MEAL: fast way to re-log a meal you eat often (e.g. the same breakfast daily). When a meal
-  slot is EMPTY and there's matching history in the last 14 days, controls appear on that slot. THERE ARE
-  TWO SEPARATE CONTROLS, do not conflate them:
+  slot is EMPTY and there's matching history in the last 14 days, that slot reads "Expand to repeat a
+  meal" under its name. The controls are NOT on the collapsed row: the user must EXPAND the slot (tap the
+  slot's name or its chevron) and the controls are inside, above where the food list would be. Always tell
+  users to expand the meal slot FIRST. THERE ARE TWO SEPARATE CONTROLS, do not conflate them:
   (1) the "Repeat Yesterday · <kcal>" pill = a ONE-TAP button that instantly re-logs YESTERDAY's same
       meal. It does NOT open a picker or let you choose a day; it just adds yesterday's meal.
   (2) the "Pick a Day" button (a small calendar icon + the words "Pick a Day") next to it = THIS is what
@@ -575,11 +577,12 @@ COMMON "HOW DO I..." QUICK INDEX
 - Scan a barcode: Add Food screen > barcode icon.
 - Use the AI meal estimator: Add Food header AI icon, the Log-tab estimator card, or the Food
   Library FAB.
-- Repeat YESTERDAY's meal (one tap): Log tab > tap the "Repeat Yesterday" pill on an EMPTY meal slot
-  (shows only when that meal has history in the last 14 days). It instantly re-logs yesterday's same meal.
-- Repeat a meal from ANOTHER past day: Log tab > on an empty meal slot tap the "Pick a Day" button (the
-  calendar icon next to the Repeat pill), choose the day, check/uncheck items, add. (Not the Repeat
-  Yesterday pill: that one only ever adds yesterday.)
+- Repeat YESTERDAY's meal: Log tab > EXPAND the empty meal slot (it reads "Expand to repeat a meal") >
+  tap the "Repeat Yesterday" pill inside (shows only when that meal has history in the last 14 days). It
+  re-logs yesterday's same meal. The pill is INSIDE the expanded slot, never on the collapsed row.
+- Repeat a meal from ANOTHER past day: Log tab > EXPAND the empty meal slot > tap the "Pick a Day" button
+  inside (the calendar icon next to the Repeat pill), choose the day, check/uncheck items, add. (Not the
+  Repeat Yesterday pill: that one only ever adds yesterday.)
 - Clear a whole meal at once: Log tab > expand the meal > tap the "Clear all" link at the bottom of its
   item list (one confirm, removes only that meal's entries for the day).
 - Build a recipe: Log tab > Library > FAB > Create Recipe (opens the Recipe Builder).

@@ -1532,6 +1532,37 @@ export default function LogScreen() {
                   </View>
                 </View>
                 )}
+                {/* REPEAT SCENT. The subtitle slot under the meal name is blank on an empty slot -- exactly the
+                    slots that have a repeat waiting in the tray. Without this, the chevron on an empty row
+                    promises an empty list, so nobody would ever open it and the repeat pills inside would go
+                    undiscovered. Muted TEXT at the macro line's own size/weight, never a button, so 8 of these
+                    down a fresh morning stay calm where 10 tinted pills yelled. It needs no tap target of its
+                    own -- it sits inside the meal-name TouchableOpacity that toggles the tray, so tapping the
+                    hint opens the very thing it hints at.
+                    COPY, and the first attempt was WRONG: this line read "Yesterday · 349 kcal" -- a FACT, on the
+                    theory that an empty slot's subtitle should state what is AVAILABLE for it the way a logged
+                    slot's states what is IN it. Tidy theory, failed the actual job: a fact does not invite an
+                    action, and under an empty Dinner it scans as "you ate 349". A discoverability line has to say
+                    what you can DO. "Expand" (not "Tap") because the "+" is sitting right there and owns taps --
+                    expand maps to the chevron alone. SENTENCE case, not Title Case: this is an instruction, like
+                    its neighbour "Nothing logged yet. Tap + to add." -- Title Case is for labels and buttons
+                    ("Pick a Day"), and Title-Casing a sentence is what makes UI copy read stiff.
+                    "A meal", NOT "yesterday's meal": the tray holds TWO options (Repeat Yesterday AND Pick a
+                    Day), so naming yesterday would describe only half of what is in there. Being generic is also
+                    what lets the gate below be hasHistory -- a slot whose last dinner was MONDAY still has a real
+                    repeat waiting, and the older-history-only case would otherwise never be discoverable. The
+                    kcal number lives on the pill one tap away; this line's job is the invitation, not the detail.
+                    Gated on mealEntries.length (NOT mealTotal, which the macro line uses): a slot holding only
+                    zero-calorie entries has mealTotal 0 but is NOT empty, so the tray would show those entries
+                    and no repeat pills -- the hint would be lying. */}
+                {mealEntries.length === 0 && repeatSummary[slot.id]?.hasHistory && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                  <Ionicons name="repeat" size={10} color={theme.textMuted} />
+                  <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.ui }}>
+                    Expand to repeat a meal
+                  </Text>
+                </View>
+                )}
               </View>
               {mealTotal > 0 && (
                 <View style={{ alignItems: 'flex-end', marginRight: 4 }}>
@@ -1546,89 +1577,6 @@ export default function LogScreen() {
               <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={theme.textMuted} />
             </TouchableOpacity>
 
-            {/* Repeat a Meal pill -- only on an EMPTY slot that has copyable history in the window */}
-            {mealEntries.length === 0 && repeatSummary[slot.id]?.hasHistory && (
-              // The pills are CENTERED as a pair, not pinned to the card's edges. Two earlier attempts and
-              // why they failed: the original 50/16 inherited the meal name's hanging indent on the left but
-              // a plain inset on the right, so the gutters were lopsided and Pick a Day jammed the edge;
-              // 14/14 made the gutters equal but pushed the pills out past the name, so they read as
-              // breaking out of the card. Centering the pair gives equal gutters AND keeps the pills inside
-              // the card's content, and the empty Pick-a-Day spacer means the lone Repeat pill still lands
-              // in exactly the same spot as every other row's.
-              <View style={{ width: '100%', paddingHorizontal: 16, paddingBottom: 12, marginTop: -8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-                {/* The original outline pills, kept quiet on purpose -- solid fill is reserved for a screen's
-                    ONE primary action, and there are two of these per slot across up to 8 slots. What they
-                    gained: press-scale (PressableButton) and a rounder corner.
-                    flex: Repeat takes 1 so its label always has room; Pick a Day takes 0 so it sizes to its
-                    own content. PressableButton defaults BOTH to flex:1, which split the row evenly and
-                    truncated "Repeat Yesterday · 566 kcal".
-
-                    TWO fixes here, and they are separate problems (fixing one does NOT fix the other):
-                    1) ICON COLUMN. These pills used to CENTER their contents, so the repeat glyph landed at a
-                       different x on every row (a long "Repeat Yesterday · 160 kcal" pushes it way in; a short
-                       label leaves it near the edge). Contents are now LEFT-ALIGNED, so the glyph always sits
-                       exactly paddingHorizontal in from the pill's left edge and the icons form a clean column
-                       straight down the meal stack.
-                    2) WIDTH. A slot with no yesterday-meal used to throw the two-slot row away for one hugging
-                       pill, which read as an orphan. The row structure is now IDENTICAL in both branches:
-                       Repeat takes flex:1, and an invisible spacer holds the "Pick a Day" slot so every row is
-                       the same width.
-
-                    REPEAT_MAX_W: left-aligning the contents parked a pocket of dead air on the right of a
-                    full-width pill. The pill can't hug its label (that would make every row a different width
-                    and bring the orphan back), so it's CAPPED instead: 190 is the widest label this button ever
-                    has to carry ("Repeat Yesterday · 1,248 kcal"), so anything past that was pure air. maxWidth,
-                    not width, so a narrow phone simply takes what it has instead of overflowing. The row is
-                    space-between, so the reclaimed space falls BETWEEN the pills and Pick a Day stays flush
-                    right where the eye expects it. */}
-                {repeatSummary[slot.id].yesterdayItems.length > 0 ? (
-                  <>
-                    <PressableButton
-                      flex={1}
-                      wrapperStyle={{ maxWidth: REPEAT_MAX_W }}
-                      onPress={() => repeatYesterday(slot)}
-                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 5, backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.accentBlue, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 }}>
-                      <Ionicons name="repeat" size={13} color={theme.accentBlue} />
-                      <Text numberOfLines={1} style={{ flexShrink: 1, color: theme.accentBlue, fontSize: 12, fontFamily: Type.uiSemibold }}>
-                        Repeat Yesterday · {repeatSummary[slot.id].yesterdayTotal} kcal
-                      </Text>
-                    </PressableButton>
-                    <PressableButton
-                      flex={0}
-                      onPress={() => openRepeatModal(slot)}
-                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 5, backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.accentBlue, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 }}>
-                      <Ionicons name="calendar" size={13} color={theme.accentBlue} />
-                      <Text style={{ color: theme.accentBlue, fontSize: 12, fontFamily: Type.uiSemibold }}>Pick a Day</Text>
-                    </PressableButton>
-                  </>
-                ) : (
-                  <>
-                    <PressableButton
-                      flex={1}
-                      wrapperStyle={{ maxWidth: REPEAT_MAX_W }}
-                      onPress={() => openRepeatModal(slot)}
-                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 5, backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.accentBlue, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 }}>
-                      <Ionicons name="repeat" size={13} color={theme.accentBlue} />
-                      <Text numberOfLines={1} style={{ flexShrink: 1, color: theme.accentBlue, fontSize: 12, fontFamily: Type.uiSemibold }}>
-                        Repeat a Previous Meal
-                      </Text>
-                    </PressableButton>
-                    {/* Invisible twin of the Pick a Day pill: reserves the exact same slot width (same glyph,
-                        same label, same padding, same border) so this row lines up with every other row.
-                        Untouchable and unreadable -- opacity 0 + pointerEvents none + hidden from screen readers. */}
-                    <View
-                      pointerEvents="none"
-                      accessible={false}
-                      importantForAccessibility="no-hide-descendants"
-                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 5, borderWidth: 1, borderColor: 'transparent', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, opacity: 0 }}>
-                      <Ionicons name="calendar" size={13} color="transparent" />
-                      <Text style={{ color: 'transparent', fontSize: 12, fontFamily: Type.uiSemibold }}>Pick a Day</Text>
-                    </View>
-                  </>
-                )}
-              </View>
-            )}
-
             {/* Expanded food list */}
             {visibleMeals[slot.id] && (
               <Animated.View style={{
@@ -1637,7 +1585,68 @@ export default function LogScreen() {
               }}>
               <View style={[styles.mealExpanded, { borderTopColor: theme.borderCard }]}>
                 {mealEntries.length === 0 ? (
-                  <Text style={[styles.emptyMealText, { color: theme.textDim }]}>Nothing logged yet. Tap + to add.</Text>
+                  // EMPTY SLOT. The repeat pills used to live on the COLLAPSED row, which meant a morning with
+                  // nothing logged put two tinted pills on every empty slot -- up to 8 slots, so ~10 buttons
+                  // shouting at once, and the repeat SHORTCUT out-shouted the "+" that is the row's actual
+                  // primary action. They live in the tray now: a collapsed row shows nothing, and the options
+                  // appear when you open the slot. Costs Repeat Yesterday one extra tap; buys back a calm
+                  // morning and a correct hierarchy. The chevron was already here, so this adds NO new control
+                  // competing with the "+".
+                  <>
+                    <Text style={[styles.emptyMealText, { color: theme.textDim }]}>Nothing logged yet. Tap + to add.</Text>
+                    {repeatSummary[slot.id]?.hasHistory && (
+                      // LEFT-ALIGNED to the tray's content, sharing an edge with the "Nothing logged yet" line
+                      // above. CENTERING WAS TRIED AND REJECTED (2026-07-15): the pills stop short of the right
+                      // edge (REPEAT_MAX_W caps the Repeat pill) so left-aligning leaves a bigger gutter on the
+                      // right than the left, and centering was meant to even that out -- but it reads WORSE. The
+                      // tray already has a left-aligned text line establishing an edge, so centered pills float
+                      // against nothing and look disconnected. An uneven gutter beats an arbitrary one.
+                      // REPEAT_MAX_W caps the Repeat pill so it never stretches to a silly width: 212 covers the
+                      // widest label it ever carries ("Repeat Yesterday · 1,248 kcal"). maxWidth, not width, so a
+                      // narrow phone just takes what it has instead of overflowing.
+                      // Contents are LEFT-aligned inside each pill so the glyph sits a fixed inset from the pill
+                      // edge rather than wandering with the label's length.
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 10, paddingTop: 2, paddingBottom: 6 }}>
+                        {repeatSummary[slot.id].yesterdayItems.length > 0 ? (
+                          <>
+                            <PressableButton
+                              flex={1}
+                              wrapperStyle={{ maxWidth: REPEAT_MAX_W }}
+                              onPress={() => repeatYesterday(slot)}
+                              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 5, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 }}>
+                              <ButtonShine radius={10} />
+                              <Ionicons name="repeat" size={13} color={theme.accentBlue} />
+                              <Text numberOfLines={1} style={{ flexShrink: 1, color: theme.accentBlue, fontSize: 12, fontFamily: Type.uiSemibold }}>
+                                Repeat Yesterday · {repeatSummary[slot.id].yesterdayTotal} kcal
+                              </Text>
+                            </PressableButton>
+                            <PressableButton
+                              flex={0}
+                              onPress={() => openRepeatModal(slot)}
+                              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 5, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 }}>
+                              <ButtonShine radius={10} />
+                              <Ionicons name="calendar" size={13} color={theme.accentBlue} />
+                              <Text style={{ color: theme.accentBlue, fontSize: 12, fontFamily: Type.uiSemibold }}>Pick a Day</Text>
+                            </PressableButton>
+                          </>
+                        ) : (
+                          // No yesterday-meal to one-tap, so the single pill opens the picker. It keeps the
+                          // flex:1 + maxWidth of its twin above so this row reads the same width as any other.
+                          <PressableButton
+                            flex={1}
+                            wrapperStyle={{ maxWidth: REPEAT_MAX_W }}
+                            onPress={() => openRepeatModal(slot)}
+                            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 5, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 }}>
+                            <ButtonShine radius={10} />
+                            <Ionicons name="repeat" size={13} color={theme.accentBlue} />
+                            <Text numberOfLines={1} style={{ flexShrink: 1, color: theme.accentBlue, fontSize: 12, fontFamily: Type.uiSemibold }}>
+                              Repeat a Previous Meal
+                            </Text>
+                          </PressableButton>
+                        )}
+                      </View>
+                    )}
+                  </>
                 ) : (
                   mealEntries.map((entry, i) => (
                     <TouchableOpacity

@@ -28,6 +28,12 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-15 REPEAT-A-MEAL MOVED INTO THE TRAY (started as "shine + DE-NEON", became a placement fix). The
+  Repeat/Pick-a-Day pills got the house tinted recipe + ButtonShine, but the real problem was that a fresh
+  morning put 2 pills on every empty slot (~10 buttons yelling) and the repeat SHORTCUT out-shouted the `+`
+  that is the row's actual primary action. Pills now live in the EXPANDED slot; the collapsed row carries a
+  muted "Expand to repeat a meal" scent line in the blank subtitle slot. Tooltip + tutorial (3 modes) + Otto
+  KB updated & redeployed; What's New left alone (historical note, Justin's call). Full detail in archive.
 - 2026-07-15 WORKOUT-TAB SURFACES. HR Zones (x2) + Tags got ButtonShine. Day-scroller shadow REGRESSION fixed
   (those tiles borrow card shadow tokens; our Light cardShadowOpacity 0.20->0.30 bump + a 0-radius hard shadow
   made them look harshly outlined -> now cardShadowOpacity*0.5 + shadowRadius 5 + offset y2 = soft float).
@@ -42,8 +48,9 @@
   3-TIER button system: MOLDED (solid PrimaryCTA) / SHINED tinted (tier-2, ButtonShine) / FLAT (passive).
   Learned: white BEVEL top-border vanishes on light bg (reads "cut off") -> border stays accent on all 4
   sides, shine does the top-light; shine near its width limit on very wide buttons (watch for "glass strip");
-  gloss is invisible on white/near-white fills (selectors' unselected states). OPEN rollout: Repeat/Pick-a-Day
-  (shine + DE-NEON), the nuanced IF selector + tappable at-a-glance tiles (design as SELECTORS not buttons),
+  gloss is invisible on white/near-white FILLS (selectors' unselected states) -- but NOT on a 10% accent tint:
+  that mis-read cost a round on 07-15 (the header squares use the tint recipe and shine fine). OPEN rollout:
+  the nuanced IF selector + tappable at-a-glance tiles (design as SELECTORS not buttons),
   the day-scroller/effort SELECTOR-TILE state pass, and a catalog sweep for scattered tinted buttons (bible,
   food library, reports, achievements, stack headers).
 - 2026-07-15 HOME-CIRCLE REDESIGN. Tab bar home button: ACTIVE = accent circle + white house icon; INACTIVE
@@ -282,11 +289,14 @@ are separate pre-submission checklists, NOT part of this menu.
   renders the FAB, confirm each scroll view has enough bottom contentInset/padding so nothing sits under the
   FAB, and decide whether Halo needs the same pass. Systematic, low-risk padding fix.
 - [NOW] [VISUAL REFRESH -> CHIP / ICON-BUTTON TOP SHINE] The SECOND button-texture thread (distinct from
-  the molded PrimaryCTA, which is the solid primary buttons). The LITTLE buttons are still flat tinted
-  rectangles: the tinted-pill recipe (accentBlueBg + border -- "+ Log", sort/filter chips, secondary
-  actions) AND the header ICON-BUTTONS (calendar / grid / help squares). Add a subtle TOP highlight/shine
-  so they read as a surface catching light, not a flat fill -- what Justin saw in the lab. Small,
-  self-contained. Spec OPEN list + build order step 12.
+  the molded PrimaryCTA, which is the solid primary buttons). DONE so far: all 5 tab-header icon-squares,
+  Library pills, "+ Log", the 8 water buttons, HR Zones/Tags, the selected effort tile, Repeat/Pick-a-Day.
+  REMAINING: the catalog sweep for scattered tinted buttons on STACK screens (bible, food library, reports,
+  achievements, day-detail, ScreenHeader actions) -- grep the pattern, show Justin the list, decide which
+  get shine (do NOT mass-apply; "if everything shines it looks cheap"). Spec OPEN list + build order step 12.
+  >> WATCH (learned 2026-07-15 on the Repeat pills): SHINE SCALES WITH AREA. The 0.52 gloss that reads as a
+  glint on a 32px icon square reads PLASTIC on a 190px-wide pill -- same gradient, far more surface. Wide
+  buttons in the sweep may need a lower/shorter gloss than ButtonShine's default. Judge each width on device.
 - [PARKED -> molded-button rollout] The molded PrimaryCTA is on ~4 CTAs; ~13 more primary CTAs, the
   circular FAB variant, and the PrimaryCTA row-height bug remain. Full detail in SPEC_visual_refresh.md
   PARKED section. Also still open from the OPEN list: title accent-GRADIENT fill (INCLUDE the header "?"

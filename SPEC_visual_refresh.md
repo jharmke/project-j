@@ -198,19 +198,27 @@ field and the LOG button.
   card edge instead of being cropped.
 - They must never sit under interactive content.
 
-### The lunch row (Log tab, empty meal slot)
+### The lunch row (Log tab, empty meal slot) -- RESOLVED 2026-07-15, and the whole row is gone
 
-Two separate bugs, and fixing the width does NOT fix the icon column:
+Both bugs below were fixed, then OVERTAKEN: the pills no longer live on the collapsed row at all. A fresh
+morning put 2 pills on every empty slot (~10 buttons) and the repeat SHORTCUT out-shouted the `+` that is
+the row's real primary action, so the pills moved INTO the expanded slot and the collapsed row now carries
+a muted "Expand to repeat a meal" scent line in its blank subtitle slot. Full post-mortem + the copy ledger
+live in project_j_roadmap_archive.md (2026-07-15). Kept here for the history:
 
-1. **Icon column.** Every repeat pill CENTERS its contents. On a wide "Repeat Yesterday - 160 kcal" the
-   icon gets pushed way in from the left; on the narrow "Repeat a Previous Meal" it sits near the left
-   edge. Same left edge, different icon x. Fix: left-align the pill's contents so the icon is always 10px
-   in from the button's left edge.
-2. **Width.** When there is no yesterday-meal, the two-slot row is thrown away for a single hugging pill,
-   which reads as an orphan. Fix: keep the two-slot structure always -- "Repeat a Previous Meal" takes the
-   flex:1 slot, an invisible spacer holds the "Pick a Day" slot.
+1. **Icon column.** Every repeat pill CENTERED its contents, so the icon landed at a different x on every
+   row. Fixed by left-aligning the pill's contents; STILL LIVE (the pills kept this in the tray).
+2. **Width.** When there was no yesterday-meal, the two-slot row was thrown away for a single hugging pill,
+   which read as an orphan. Fixed with an invisible spacer holding the "Pick a Day" slot. NOW DROPPED: that
+   spacer aligned the icon column DOWN the meal stack, and no such column exists once the pills are in
+   trays.
 
-A full-row button was proposed and REJECTED by Justin.
+A full-row button was proposed and REJECTED by Justin (NOTE 2026-07-15: re-proposed by me from scratch when
+the pills felt "plastic-y" in the tray, not knowing it had already been killed. He passed again. Read this
+line before proposing it a third time.)
+
+CENTERING the pills was also tried and rejected on 07-15: the tray has a left-aligned text line
+establishing an edge, so a centered pair floats against nothing. Left-aligned wins.
 
 ---
 

@@ -38,6 +38,7 @@ import { showToolkit } from '../../components/ToolkitSheet';
 import { useTutorial } from '../../context/TutorialContext';
 import { useTutorialTarget } from '../../hooks/useTutorialTarget';
 import { Type, DISPLAY_CAPS, DISPLAY_TRACKING, displaySize } from '../../typography';
+import ModalHeader from '../../components/ModalHeader';
 
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -2887,7 +2888,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                 <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
               </TouchableOpacity>
               <View style={{ paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-                <Text style={[styles.modalTitle, { color: theme.accentBlue }]}>{editingExercise ? 'EDIT EXERCISE' : 'ADD EXERCISE'}</Text>
+                <Text style={[styles.modalTitle, { color: theme.accentBlue }]}>{editingExercise ? 'Edit Exercise' : 'Add Exercise'}</Text>
               </View>
               <ScrollView style={{ flexShrink: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                 <View style={{ padding: 20 }}>
@@ -2992,7 +2993,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                 <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
               </TouchableOpacity>
               <View style={{ padding: 20, paddingTop: 8 }}>
-                <Text style={{ color: theme.accentBlueRaw, fontSize: 16, fontFamily: Type.num, letterSpacing: 2, textAlign: 'center', marginBottom: 14 }}>EDIT DAY LABEL</Text>
+                <Text style={{ color: theme.accentBlueRaw, fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, marginBottom: 14 }}>Edit Day Label</Text>
                 <TextInput
                   style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, marginBottom: 16 }]}
                   value={labelInput}
@@ -3295,12 +3296,8 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
             <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeLoadRoutineModal} />
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }} pointerEvents="box-none">
               <Reanimated.View style={[{ width: '100%', maxHeight: '75%', backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, overflow: 'hidden' }, loadRoutineCardStyle]}>
-                  <TouchableOpacity onPress={closeLoadRoutineModal} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4 }} hitSlop={{ top: 8, bottom: 8, left: 80, right: 80 }}>
-                    <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: theme.textDim }} />
-                  </TouchableOpacity>
-                  <View style={{ paddingHorizontal: 20, paddingTop: 6, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-                    <Text style={{ fontSize: 22, fontFamily: Type.num, letterSpacing: 2, color: theme.accentBlueRaw }}>LOAD ROUTINE</Text>
-                  </View>
+                  <ModalHeader title="Load Routine" onClose={closeLoadRoutineModal} />
+                  <View style={{ borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }} />
 
                   <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 28 }}>
                     {(() => {
@@ -3415,7 +3412,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
               <View pointerEvents="auto" style={{ backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, overflow: 'hidden' }}>
                 <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
-                    <Text style={{ flex: 1, fontSize: 22, fontFamily: Type.num, letterSpacing: 1.5, color: theme.accentBlueRaw, paddingRight: 12 }}>{infoExercise.name}</Text>
+                    <Text style={{ flex: 1, fontSize: 22, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentBlueRaw, paddingRight: 12 }}>{infoExercise.name}</Text>
                     <TouchableOpacity onPress={closeInfoModal} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                       <Ionicons name="close" size={20} color={theme.textMuted} />
                     </TouchableOpacity>
@@ -3518,14 +3515,14 @@ const styles = StyleSheet.create({
   saveNoteBtnText:      { fontSize: 12, fontFamily: Type.uiSemibold },
   modalOverlay:         { flex: 1, justifyContent: 'flex-end' },
   modal:                { borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, borderWidth: 0.5 },
-  modalTitle:           { fontSize: 22, fontFamily: Type.num, letterSpacing: 1, marginBottom: 16 },
+  modalTitle:           { fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, marginBottom: 16 },
   modalInput:           { borderWidth: 0.5, borderRadius: 8, padding: 10, fontSize: 14, fontFamily: Type.ui, marginBottom: 10 },
   modalRow:             { flexDirection: 'row', gap: 8 },
   modalBtns:            { flexDirection: 'row', gap: 8, marginTop: 8 },
   modalCancelBtn:       { flex: 1, padding: 12, borderWidth: 0.5, borderRadius: 8, alignItems: 'center' },
   modalCancelBtnText:   { fontFamily: Type.uiSemibold, fontSize: 14 },
   modalSaveBtn:         { flex: 1, padding: 12, borderRadius: 8, alignItems: 'center' },
-  modalSaveBtnText:     { fontFamily: Type.num, fontSize: 16, letterSpacing: 1 },
+  modalSaveBtnText:     { fontFamily: Type.uiBold, fontSize: 16, letterSpacing: 0.3 },
   libraryBtn:           { borderWidth: 1, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 },
   libraryBtnText:       { fontSize: 14, fontFamily: Type.uiBold },
   cardioFieldRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 0.5 },

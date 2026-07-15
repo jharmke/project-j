@@ -2014,6 +2014,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                     activeOpacity={0.7}
                     hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                     style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', marginTop: 6, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, gap: 4 }}>
+                    <ButtonShine radius={6} />
                     <Ionicons name="pulse" size={12} color={theme.accentBlue} />
                     <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>HR Zones</Text>
                     <Ionicons name="chevron-forward" size={11} color={theme.accentBlue} />
@@ -2217,7 +2218,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
             return (
               <TouchableOpacity
                 key={key}
-                style={[styles.dayTab, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderSubtle },
+                style={[styles.dayTab, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity * 0.5, shadowRadius: 5, shadowOffset: { width: 0, height: 2 }, borderColor: theme.borderSubtle },
                   isActiveDayTab && { borderColor: c, backgroundColor: c + '18', borderWidth: 1.5 },
                   isToday && !isActiveDayTab && { borderColor: theme.textSecondary, borderWidth: 1.5 }]}
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setActiveDay(key); setCalBurnedSaved(!!cardioLogs[key]?.caloriesBurned); }}>
@@ -2302,6 +2303,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                     setTagModalInitialTags([...currentTags]);
                     setShowTagModal(true);
                   }}>
+                  <ButtonShine radius={6} />
                   <Text style={{ color: theme.accentBlue, fontSize: 12, fontFamily: Type.uiSemibold }}>Tags</Text>
                 </TouchableOpacity>
               </View>
@@ -2390,6 +2392,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                       {appleSessions.length === 1 && (
                         <TouchableOpacity onPress={() => openHRZones(appleSessions[0])} activeOpacity={0.7} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                           style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, gap: 4 }}>
+                          <ButtonShine radius={6} />
                           <Ionicons name="pulse" size={12} color={theme.accentBlue} />
                           <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>HR Zones</Text>
                           <Ionicons name="chevron-forward" size={11} color={theme.accentBlue} />
@@ -2513,6 +2516,9 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                           borderWidth: 0.5,
                           borderColor: selected ? effortColor : effortColor + '40',
                         }}>
+                        {/* gloss only on the SELECTED (solid-fill) tile -- a white gloss is invisible on the
+                            light unselected tint, and glazing all 10 would be busy */}
+                        {selected && <ButtonShine radius={10} solid />}
                         <Text style={{ fontSize: 28, fontFamily: Type.num, color: selected ? '#ffffff' : effortColor, opacity: selected ? 1 : 0.55 }}>{n}</Text>
                       </TouchableOpacity>
                     </Animated.View>

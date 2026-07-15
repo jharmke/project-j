@@ -28,15 +28,24 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-15 WORKOUT-TAB SURFACES. HR Zones (x2) + Tags got ButtonShine. Day-scroller shadow REGRESSION fixed
+  (those tiles borrow card shadow tokens; our Light cardShadowOpacity 0.20->0.30 bump + a 0-radius hard shadow
+  made them look harshly outlined -> now cardShadowOpacity*0.5 + shadowRadius 5 + offset y2 = soft float).
+  Effort tiles (1-10): subtle gloss on the SELECTED (solid-fill) tile only. Added `solid` flag to ButtonShine
+  -- solid-colour fills (same in both themes) carry a real reflection on Dark (0.40) instead of the tinted-
+  button softening (0.14) that was starving them. OPEN on workout tab: day-scroller selected/unselected STATE
+  redesign held for Justin's eyes (shadow fix may be enough).
 - 2026-07-15 BUTTON TOP-SHINE (tier-2 tinted buttons). New `ButtonShine` primitive (white crown gloss, inset
-  1px self-clipping so NO overflow:hidden -> no clipped top corners; softer on Dark) + `HeaderIconButton`
-  component. Rolled to: all 5 tab-header icon-squares, the Library pills (Log/Workout), `+ Log`, and the 8
-  water quick-add buttons (both +oz/-oz rows incl. the custom drop buttons). Established the 3-TIER button
-  system: MOLDED (solid PrimaryCTA) / SHINED tinted (tier-2, ButtonShine) / FLAT (passive). Learned: white
-  BEVEL top-border vanishes on light bg (reads "cut off") -> border stays accent on all 4 sides, shine does
-  the top-light; shine is near its width limit on very wide buttons (watch for "glass strip"). OPEN rollout:
-  HR Zones, Tags, Repeat/Pick-a-Day (shine + DE-NEON), the nuanced IF selector + tappable at-a-glance tiles,
-  and a catalog sweep for scattered tinted buttons (bible, food library, reports, achievements, stack headers).
+  1px self-clipping so NO overflow:hidden -> no clipped top corners; softer on Dark unless `solid`) +
+  `HeaderIconButton` component. Rolled to: all 5 tab-header icon-squares, Library pills (Log/Workout), `+ Log`,
+  the 8 water quick-add buttons, and (this session) HR Zones/Tags + the selected effort tile. Established the
+  3-TIER button system: MOLDED (solid PrimaryCTA) / SHINED tinted (tier-2, ButtonShine) / FLAT (passive).
+  Learned: white BEVEL top-border vanishes on light bg (reads "cut off") -> border stays accent on all 4
+  sides, shine does the top-light; shine near its width limit on very wide buttons (watch for "glass strip");
+  gloss is invisible on white/near-white fills (selectors' unselected states). OPEN rollout: Repeat/Pick-a-Day
+  (shine + DE-NEON), the nuanced IF selector + tappable at-a-glance tiles (design as SELECTORS not buttons),
+  the day-scroller/effort SELECTOR-TILE state pass, and a catalog sweep for scattered tinted buttons (bible,
+  food library, reports, achievements, stack headers).
 - 2026-07-15 HOME-CIRCLE REDESIGN. Tab bar home button: ACTIVE = accent circle + white house icon; INACTIVE
   = white (bgCard) circle + accent-coloured house icon (the colour-swap, reads clean on the frosted-white
   bar -- no dark-scrim dim). BOTH states get a GENTLE dome: one full-width crown-gloss -> soft dark-foot

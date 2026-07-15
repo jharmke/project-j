@@ -8,9 +8,15 @@ import { useTheme } from '../theme';
 // (that clips the top border corners on iOS -> "cut off" tops). Softer on Dark, where a white gloss on a
 // dark tinted button glares. pointerEvents="none" so it never eats a tap.
 // Pass `radius` = the parent button's borderRadius so the gloss corners follow the button.
-export default function ButtonShine({ radius = 6 }: { radius?: number }) {
+// `solid` = the button has a FIXED solid-colour fill (e.g. a selected effort tile), NOT a theme-tinted one.
+// The default dark value is dialled way down because a white gloss on a DARK TINT glares -- but a solid
+// bright fill reads the same in both themes and can carry a real reflection on dark without glaring, so
+// `solid` raises the dark value instead of starving it.
+export default function ButtonShine({ radius = 6, solid = false }: { radius?: number; solid?: boolean }) {
   const { theme } = useTheme();
-  const shine = theme.id === 'dark' ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.52)';
+  const isDark = theme.id === 'dark';
+  const a = solid ? (isDark ? 0.40 : 0.50) : (isDark ? 0.14 : 0.52);
+  const shine = `rgba(255,255,255,${a})`;
   return (
     <LinearGradient
       colors={[shine, 'rgba(255,255,255,0)']}

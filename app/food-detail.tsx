@@ -29,6 +29,7 @@ import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { TUTORIAL_CHICKEN_BREAST } from '../data/tutorialFood';
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import ButtonShine from '../components/ButtonShine';
 
 function buildTutorialChickenFood() {
   const fsServings = TUTORIAL_CHICKEN_BREAST.servings.serving.map(s => ({
@@ -1145,6 +1146,9 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             <TouchableOpacity
               style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 }}
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openEditFoodModal(); }}>
+              {/* Header-slot action, but a TEXT button -- so it takes the shine directly rather than becoming
+                  a HeaderIconButton (that component is the ICON square). */}
+              <ButtonShine radius={6} />
               <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: Type.uiSemibold }}>Edit</Text>
             </TouchableOpacity>
           ) : food?.fsId ? (
@@ -1254,6 +1258,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                   if (effectiveServing.grams > 0) setAmount((effectiveServing.grams * next).toString());
                 }}
                 style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8 }}>
+                <ButtonShine radius={8} />
                 <Text style={{ fontSize: 22, color: theme.accentBlue, fontFamily: Type.ui, lineHeight: 26 }}>−</Text>
               </TouchableOpacity>
               <TextInput
@@ -1288,6 +1293,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                   if (effectiveServing.grams > 0) setAmount((effectiveServing.grams * next).toString());
                 }}
                 style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8 }}>
+                <ButtonShine radius={8} />
                 <Text style={{ fontSize: 22, color: theme.accentBlue, fontFamily: Type.ui, lineHeight: 26 }}>+</Text>
               </TouchableOpacity>
             </View>
@@ -2046,6 +2052,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                   <TouchableOpacity
                     onPress={() => setEditFoodData((p: any) => p ? { ...p, additionalServings: [...(p.additionalServings || []), { id: `as_${Date.now()}`, label: '', grams: '' }] } : null)}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
+                    <ButtonShine radius={6} />
                     <Ionicons name="add" size={12} color={theme.accentBlue} />
                     <Text style={{ fontSize: 11, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Add</Text>
                   </TouchableOpacity>
@@ -2121,6 +2128,10 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             <TouchableOpacity
               onPress={handlePhotoAdd}
               style={{ paddingHorizontal: 28, paddingVertical: 12, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 10 }}>
+              {/* Its neighbour "Remove" stays flat on purpose: it is DESTRUCTIVE (red), and shine says
+                  "press me" -- the last thing a delete should say. Same primary/secondary split as
+                  USE vs Duplicate in the workout library. */}
+              <ButtonShine radius={10} />
               <Text style={{ color: theme.accentBlue, fontSize: 15, fontFamily: Type.uiSemibold }}>Replace</Text>
             </TouchableOpacity>
             <TouchableOpacity

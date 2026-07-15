@@ -28,6 +28,13 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-15 BODY-BUTTON SHINE, group 2 first pass: workout-library (Fill from Preset, Load Program, Load
+  Routine, USE) + add-food/food-detail (Retry, Use a Saved Food, Create Food for this Barcode, Add x2, Edit,
+  -/+ serving steppers, Replace). Skipped-with-reasons list + the honest re-run of the catalog (~23 real
+  candidates left, NOT the 92 I first quoted) live in the NEXT UP item. Also KILLED a rule I had written the
+  same morning: "shine scales with area" predicted full-width buttons would go plastic; workout-library's
+  full-width Load Program/Load Routine took the default gloss and Justin liked them. Plastic comes from
+  REPETITION, not width -- it was DON'T-OVER-GLAZE in disguise.
 - 2026-07-15 STACK-SCREEN HEADER SQUARES -> HeaderIconButton (catalog sweep group 1). Bible's hand-rolled
   header (star/book/gear) + Add Food's two (sparkles/barcode) now use the shared component, so stack screens
   stop disagreeing with the tabs. Bible's back chevron DE-BOXED (ScreenHeader's rule: a tinted box reads as
@@ -304,16 +311,34 @@ are separate pre-submission checklists, NOT part of this menu.
   Mark Read pill, the Achievements EARNED badge.
   CATALOG, run 2026-07-15: 92 tappable tinted buttons across 22 files, and they are NOT one animal:
     (1) header squares -- DONE.
-    (2) BODY tinted buttons = the remaining sweep: add-food, food-detail, settings, report,
-        ai-meal-estimator, journal, prayer. One screen at a time, Justin's eyes on each.
-        >> THE COUNTS ABOVE ARE INFLATED -- they are grep hits, not buttons. workout-library was logged as
-        "13, the big one" and collapsed to SIX real buttons on inspection (the rest: ~6 selectors, ~3
-        non-tappable badges), five of which live inside modals you must open first. Justin caught this
-        standing on the screen asking where 13 buttons were. RE-RUN THE CATALOG HONESTLY (buttons only) --
-        he has okayed it -- before planning any more sessions around these numbers.
-        >> workout-library DONE 2026-07-15: Fill from Preset, Load Program, Load Routine, USE. Duplicate +
-        the filter icon deliberately SKIPPED (both bgInset/neutral, not tinted: Duplicate is the quiet half
-        of a pair and the filter icon would change TEXTURE between states).
+    (2) BODY tinted buttons. HONEST CATALOG re-run 2026-07-15 (filter = UNCONDITIONAL accent tint on a
+        tappable; a `active ? tint : grey` fill is a SELECTOR, not a button): ~23 real candidates in 14
+        files, down from the 410 raw hits / 92 "tappable-looking" I first quoted -- BOTH of those numbers
+        were mine and both oversized the job. Caveat: the filter misses real buttons whose tint is
+        CONDITIONAL (Load Program was one: blue normally, green when active), so the true count is ~23 + a
+        few. Expect some of the 23 to turn out to be badges/selectors on reading -- that was today's hit rate.
+        >> DONE 2026-07-15: workout-library (Fill from Preset, Load Program, Load Routine, USE) and
+        add-food + food-detail (Retry, Use a Saved Food, Create Food for this Barcode, Add x2, Edit, the
+        -/+ serving steppers, Replace).
+        >> REMAINING: stats (3 body buttons), ai-meal-estimator, journal, prayer, day-detail, day-summary,
+        settings (1 each).
+        >> ONBOARDING (6, one each in your-style/style-survey/commitment/apple-health/notifications/
+        profile-setup) is OUT of the shine pass -- a flow you see once, and they are CTAs (the molded
+        PrimaryCTA thread) or selectors. Justin agreed 2026-07-15.
+        >> DELIBERATELY SKIPPED, with reasons (do not "fix" these later without reading why):
+           - Duplicate (workout-library) + the library filter icon: bgInset/NEUTRAL, not tinted. Duplicate
+             is the quiet half of a pair next to USE -- shining it flattens a hierarchy that is working; the
+             filter icon would change TEXTURE between states, and bgInset IS the near-white fill where gloss
+             genuinely does not show.
+           - Remove (food-detail photo) + the EvR trash: DESTRUCTIVE. Shine says "press me", the last thing
+             a delete should say. Same call both times.
+           - The two SET buttons (add-food barcode override): ~18px tall AND they repeat down a list -- the
+             exact repetition that made the Repeat pills read plastic.
+           - AI ESTIMATE badge, unit selector (food-detail): a View and a selector.
+        >> WATCH: add-food's "Use a Saved Food" + "Create Food for this Barcode" already had a hand-rolled
+        top-light (a 1.5px BRIGHT accentBlueRaw top border) and now carry TWO top treatments. If they read
+        doubled-up, drop the BORDER (the rule: shine owns the top-light, border stays even on 4 sides).
+        >> DEAD CODE found: add-food's `addNewBtn` + `addNewBtnText` styles are defined and never used.
     (3) SELECTORS -- SKIP: bible chapter pills / book rows / sort toggles, onboarding style-survey +
         your-style. Same tint, but they are selected/unselected STATES. Design the states, don't gloss them.
     (4) BARE icons -- NOT this pass: the TooltipIcon "?" on ~12 screens, day-detail's calendar, the EvR

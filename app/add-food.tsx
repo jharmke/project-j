@@ -26,6 +26,7 @@ import { TUTORIAL_CHICKEN_BREAST } from '../data/tutorialFood';
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import HeaderIconButton from '../components/HeaderIconButton';
+import ButtonShine from '../components/ButtonShine';
 
 
 
@@ -1681,6 +1682,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
           <TouchableOpacity
             onPress={() => searchFood(query)}
             style={{ marginTop: 4, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8, paddingHorizontal: 22, paddingVertical: 10 }}>
+            <ButtonShine radius={8} />
             <Text style={{ fontSize: 13, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -2011,6 +2013,11 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                 <TouchableOpacity
                   onPress={() => setShowSavedFoodsSection(v => !v)}
                   style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, paddingHorizontal: 14, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 10, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw }}>
+                  {/* NOTE: this button already had a hand-rolled top-light -- a 1.5px BRIGHT accent top border
+                      (accentBlueRaw). So it now carries TWO top treatments at once. The house rule says the
+                      shine does the top-light and the border stays even on all four sides; if this reads
+                      doubled-up, the bright border is the part to drop, not the shine. */}
+                  <ButtonShine radius={10} />
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <Ionicons name="bookmark" size={14} color={theme.accentBlue} />
                     <Text style={{ fontSize: 9, color: theme.accentBlue, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase' }}>
@@ -2082,6 +2089,9 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                 <TouchableOpacity
                   onPress={() => { setBarcodeForCreate(lastScannedBarcode); setShowCreateFood(true); }}
                   style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, paddingHorizontal: 14, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 10, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw }}>
+                  {/* Same doubled top-light as "Use a Saved Food" above: bright 1.5px accent top border AND
+                      the shine. Judge them together -- they are twins. */}
+                  <ButtonShine radius={10} />
                   <Ionicons name="add-circle" size={16} color={theme.accentBlueRaw} />
                   <Text style={{ fontSize: 13, color: theme.accentBlueRaw, fontFamily: Type.uiSemibold }}>Create Food for this Barcode</Text>
                 </TouchableOpacity>
@@ -2312,6 +2322,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                   <TouchableOpacity
                     onPress={() => setEditFoodData((p: any) => p ? { ...p, additionalServings: [...(p.additionalServings || []), { id: `as_${Date.now()}`, label: '', grams: '' }] } : null)}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
+                    <ButtonShine radius={6} />
                     <Ionicons name="add" size={12} color={theme.accentBlue} />
                     <Text style={{ fontSize: 11, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Add</Text>
                   </TouchableOpacity>

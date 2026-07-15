@@ -232,10 +232,16 @@ are separate pre-submission checklists, NOT part of this menu.
   Same class as the PrimaryCTA fix -> button labels go to Interface, the REST DAY heading to Clash. Also
   optional: two info-modal titles (CalorieFloor, MeasureHowTo) sit on bold INTERFACE rather than Clash --
   not a bug (no number-face, no caps, no black), Justin's call whether to unify them.
+- [NOW] [VISUAL REFRESH -> CHIP / ICON-BUTTON TOP SHINE] The SECOND button-texture thread (distinct from
+  the molded PrimaryCTA, which is the solid primary buttons). The LITTLE buttons are still flat tinted
+  rectangles: the tinted-pill recipe (accentBlueBg + border -- "+ Log", sort/filter chips, secondary
+  actions) AND the header ICON-BUTTONS (calendar / grid / help squares). Add a subtle TOP highlight/shine
+  so they read as a surface catching light, not a flat fill -- what Justin saw in the lab. Small,
+  self-contained. Spec OPEN list + build order step 12.
 - [PARKED -> molded-button rollout] The molded PrimaryCTA is on ~4 CTAs; ~13 more primary CTAs, the
   circular FAB variant, and the PrimaryCTA row-height bug remain. Full detail in SPEC_visual_refresh.md
-  PARKED section. Also still open from the OPEN list: title accent-GRADIENT fill, chip top-shine, card
-  stagger on mount, Warm + Blush getting the Light treatment.
+  PARKED section. Also still open from the OPEN list: title accent-GRADIENT fill, card stagger on mount,
+  Warm + Blush getting the Light treatment.
 - [TRACK, VISION LOCKED + SPECCED 2026-07-07 -> ready to build] Custom Reports (Pro). Model: report =
   date range (week/month/3mo/6mo/1yr/custom) + chapters, each a PICKER into a library of ~55 pre-designed
   blocks the user assembles freely; templates = pre-filled block sets; exportable (PDF/share); Pro-gated

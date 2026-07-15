@@ -25,6 +25,7 @@ import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { TUTORIAL_CHICKEN_BREAST } from '../data/tutorialFood';
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import HeaderIconButton from '../components/HeaderIconButton';
 
 
 
@@ -1559,22 +1560,28 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
   const styles = useStyles(theme, themeId);
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      {/* The two `right` actions were hand-built 38x38 squares with 22-24px icons -- built before
+          HeaderIconButton existed, so they had drifted BIGGER than the same square everywhere else in the app
+          (32 tall, 14px icon). Now the shared component, so Add Food's header stops disagreeing with the tabs
+          and Bible. */}
       <ScreenHeader
         title={meal === 'browse' ? 'Food Library' : `Add to ${getMealDisplayName(meal, mealSlots, slotNameCache)}`}
         topInset={false}
         right={
           <>
-            <TouchableOpacity
-              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/ai-meal-estimator', params: { meal, date } }); }}
-              style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, padding: 6, alignItems: 'center', justifyContent: 'center', width: 38, height: 38 }}>
-              <Ionicons name="sparkles" size={22} color={theme.accentBlue} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              ref={barcodeIconRef as any}
-              onPress={startScan}
-              style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, padding: 6, alignItems: 'center', justifyContent: 'center', width: 38, height: 38 }}>
-              <Ionicons name="barcode-outline" size={24} color={theme.accentBlue} />
-            </TouchableOpacity>
+            <HeaderIconButton
+              icon="sparkles"
+              onPress={() => router.push({ pathname: '/ai-meal-estimator', params: { meal, date } })}
+            />
+            {/* The one header icon that is deliberately NOT the filled variant, and NOT 14px. The filled-
+                only rule exists because outline glyphs go faint on light themes -- but a barcode IS thin
+                lines, so `barcode` (filled) just thickens the bars until they merge into a grey grate at
+                small sizes. Outline keeps the bars separate, which is the entire glyph. 18px because a
+                barcode is high-frequency detail where sparkles is not: the BOX stays 32 like every other
+                header square (that is the consistency that matters), the icon inside gets room to read. */}
+            <View ref={barcodeIconRef as any} collapsable={false}>
+              <HeaderIconButton icon="barcode-outline" size={18} onPress={startScan} />
+            </View>
           </>
         }
       />

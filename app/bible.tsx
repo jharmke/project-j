@@ -26,6 +26,8 @@ import { loadVersePool, addCustomVerse, removeCustomVerseByRef, activeVerseCount
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import TooltipIcon from '../components/TooltipIcon';
+import HeaderIconButton from '../components/HeaderIconButton';
+import ButtonShine from '../components/ButtonShine';
 import { useTheme } from '../theme';
 import CompanionFAB from '../components/CompanionFAB';
 import CompanionChat from '../components/CompanionChat';
@@ -616,28 +618,32 @@ export default function BibleScreen() {
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={[styles.container, { paddingTop: insets.top }]}>
 
-      {/* Header */}
+      {/* Header. Bible is the one screen that still hand-rolls its header row instead of using ScreenHeader
+          (it has to: the title IS a book picker, not a label). It kept its OWN copies of the header icon
+          square long after HeaderIconButton existed, so the actions now use the shared component and stay in
+          step with the tab headers -- the local headerBtn style was already the same recipe (radius 6,
+          height 32, 1px border), it had just drifted to 10px horizontal padding vs the component's 12. */}
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
-        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
-          <Ionicons name="chevron-back" size={14} color={theme.accentBlue} />
+        {/* BARE chevron, per the rule ScreenHeader documents: a tinted box reads as an ACTION, and Back is not
+            an action, it is the way out. This one was boxed because it predates that rule. */}
+        <TouchableOpacity
+          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
+          style={styles.headerBack}>
+          <Ionicons name="chevron-back" size={24} color={theme.accentBlue} />
         </TouchableOpacity>
         <TouchableOpacity ref={tutBookRef as any} onPress={openBookPicker} style={styles.headerTitle}>
           <Text style={[styles.headerBookName, { color: theme.accentBlueRaw }]}>{selectedBook.name}</Text>
           <Ionicons name="chevron-down" size={14} color={theme.accentBlueRaw} />
         </TouchableOpacity>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowFavoritesModal(true); }} style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
-            <Ionicons name="star" size={14} color={theme.accentBlue} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }} style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
-            <Ionicons name="book" size={14} color={theme.accentBlue} />
-          </TouchableOpacity>
-          <TouchableOpacity ref={tutGearRef as any} onPress={openSettingsModal} style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
-            <Ionicons name="settings-outline" size={14} color={theme.accentBlue} />
-          </TouchableOpacity>
-          <View style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
-            <TooltipIcon tooltipKey="bible_reader" size={16} color={theme.accentBlue} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <HeaderIconButton icon="star" onPress={() => setShowFavoritesModal(true)} />
+          <HeaderIconButton icon="book" onPress={() => router.push('/journal')} />
+          <View ref={tutGearRef as any} collapsable={false}>
+            <HeaderIconButton icon="settings" onPress={openSettingsModal} />
           </View>
+          {/* The "?" is a BARE icon, never boxed: a tinted square says "tappable surface", and the help icon
+              is a marker, not an action square like its neighbours. It was in a box here and nowhere else. */}
+          <TooltipIcon tooltipKey="bible_reader" size={20} color={theme.accentBlue} />
         </View>
       </View>
 
@@ -718,6 +724,9 @@ export default function BibleScreen() {
                         borderColor: reading.isRead ? theme.accentGreenBorder : theme.accentBlueBorder,
                       }}
                     >
+                      {/* Gloss is white, so it sits fine over BOTH tints this pill wears (blue "Mark Read"
+                          -> green "Read"). Nothing here is accent-specific. */}
+                      <ButtonShine radius={5} />
                       <Ionicons
                         name={reading.isRead ? 'checkmark-circle' : 'bookmark-outline'}
                         size={11}
@@ -1107,7 +1116,9 @@ export default function BibleScreen() {
 const styles = StyleSheet.create({
   container:           { flex: 1 },
   header:              { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5 },
-  headerBtn:           { borderWidth: 1, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' },
+  // Matches ScreenHeader's back control: a 44x44 target with negative margin pulling the GLYPH out to the
+  // margin, so the hit area stays legal without the icon looking indented.
+  headerBack:          { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginLeft: -12 },
   headerTitle:         { flexDirection: 'row', alignItems: 'center', gap: 4 },
   headerBookName:      { fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3 },
   chapterBar:          { height: 52, borderBottomWidth: 0.5 },

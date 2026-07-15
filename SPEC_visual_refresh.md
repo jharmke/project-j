@@ -267,6 +267,26 @@ Three bugs that polluted early verdicts, all mine, all fixed:
 - **Card labels use ONE recipe app-wide:** `styles.cardLabel` + `theme.textMuted`, icon at size 11 in
   `textMuted`. Coach Insight was the lone accent-coloured label on Home -- invisible on the old flat white
   page, wrong the moment the page started glowing accent. Same class of bug as Stats' section headers.
+- **SHINE SCALES WITH AREA** (learned 2026-07-15, the Repeat pill). The SAME 0.52 gloss over the top 60% of
+  a 32px icon square reads as a GLINT; over a 190px-wide pill it becomes a big sweeping white panel = a
+  Web-2.0 candy button. Justin's word was "plastic-y". Small squares and wide buttons are NOT the same
+  surface -- wide ones need a lower and/or shorter gloss. Judge every new width on device, never assume the
+  header recipe carries over.
+- **`accentBlueBg` is NOT a button.** The tint marks selected rows, food entries, badges and containers too.
+  Of 92 `accentBlueBg` + `accentBlueBorder` hits on tappable-looking elements, real shine candidates were a
+  minority: the Achievements "EARNED" badge is a plain `View`, and Bible's Reflect bar is a button AND a
+  toolbar sharing one skin. VERIFY TAPPABILITY IN THE CODE, and read the WHOLE element -- I called the
+  Reflect bar "not tappable" off its container line and was wrong; its left `flex:1` region is a tap target.
+- **Don't extrapolate a lesson past its case.** "Gloss is invisible on white/near-white fills" is TRUE of
+  actual white fills (selectors' unselected states) and FALSE of a 10% accent tint -- `HeaderIconButton`
+  uses the tint recipe at 0.52 and shines fine. I quoted the rule at Justin to argue the Repeat pills
+  couldn't shine on Light; he pushed back ("idk why it wouldnt shine since literally every other icon is
+  shining right now") and he was right. Check the code, not the memory of a rule.
+- **The filled-icon rule has ONE blind spot: the barcode.** Header icons are filled-only because outline
+  glyphs go faint on light themes. But a barcode IS thin lines -- `barcode` (filled) just thickens the bars
+  until they merge into a grey grate at 14px ("looks like a grate"). It stays `barcode-outline` at 18 while
+  its BOX stays the standard 32. Generalise: the rule is about FAINTNESS, so a glyph whose meaning is fine
+  line detail is outside it. Icon size may vary for legibility; the BOX is what must stay consistent.
 
 ## PARKED -- molded button rollout (started, not finished)
 
@@ -296,7 +316,18 @@ NOT molding (deliberate, do not "fix" these):
   the word from a background now moving underneath), but confirm.
 - **Title accent-GRADIENT fill.** Still flat accent in-app. The gradient machinery exists
   (`GradientNumber` + masked-view) and is already carrying the hero numbers; titles never got it.
-- **Chip / tinted-button top shine.** Justin spotted it in the lab and wants it. Not built.
+- **Chip / tinted-button top shine.** BUILT and rolling out. DONE: tab-header squares, Library pills,
+  "+ Log", water buttons, HR Zones/Tags, selected effort tile, Repeat/Pick-a-Day, and the stack-screen
+  header squares (Bible + Add Food -> `HeaderIconButton`, Bible's Mark Read, Achievements' EARNED badge).
+  REMAINING: the BODY tinted buttons per screen (workout-library is the big one at 13) -- see the roadmap's
+  catalog for the full breakdown of what is a button vs a selector vs a bare icon.
+- **Bible's Reflect bar does DOUBLE DUTY -- own design pass.** One tinted strip is BOTH a button (the left
+  `flex:1` region opens the reflection modal / the journal) AND a toolbar of four unrelated icon buttons
+  (sun / star / share / Halo). The tint claims "one thing you press" while four parts do four things and
+  only the left half does what the label says. REFUSED shine 2026-07-15: a gloss would double down on the
+  lie, and it is the widest surface in the app so it would go plastic regardless. Flat is correct for now
+  (tier-3 passive) but that is symptom-treatment. FIX = split it: "Reflect" becomes a real tinted pill that
+  shines, the four icons go on a flat strip or the page. NOT free -- sun + star are TUTORIAL TARGETS.
 - **Grain on big saturated buttons.** Justin: reads as too much on the Workout tab's large buttons.
   Deliberately deferred -- revisit once everything else has landed.
 - **Stats section subtext colour.** Deferred on purpose until the fonts are done everywhere, so the same

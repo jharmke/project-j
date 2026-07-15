@@ -28,6 +28,15 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-15 STACK-SCREEN HEADER SQUARES -> HeaderIconButton (catalog sweep group 1). Bible's hand-rolled
+  header (star/book/gear) + Add Food's two (sparkles/barcode) now use the shared component, so stack screens
+  stop disagreeing with the tabs. Bible's back chevron DE-BOXED (ScreenHeader's rule: a tinted box reads as
+  an ACTION, Back is the way out) and its "?" pulled out of its box (bare icon, not a tappable square). Add
+  Food's were hand-built 38x38 w/ 22-24px icons -> now the standard 32 box. Also shined: Bible's Mark Read
+  pill, the Achievements EARNED badge (a non-tappable badge -- "shine = tappable" knowingly bent, Justin's
+  call). Barcode is the ONE deliberate exception to filled-only + 14px: filled bars merge to a grate at 14,
+  so it stays `barcode-outline` at 18 (box still 32). Verified: Bible + Add Food tutorials still land (refs
+  moved onto wrapper Views).
 - 2026-07-15 REPEAT-A-MEAL MOVED INTO THE TRAY (started as "shine + DE-NEON", became a placement fix). The
   Repeat/Pick-a-Day pills got the house tinted recipe + ButtonShine, but the real problem was that a fresh
   morning put 2 pills on every empty slot (~10 buttons yelling) and the repeat SHORTCUT out-shouted the `+`
@@ -290,10 +299,31 @@ are separate pre-submission checklists, NOT part of this menu.
   FAB, and decide whether Halo needs the same pass. Systematic, low-risk padding fix.
 - [NOW] [VISUAL REFRESH -> CHIP / ICON-BUTTON TOP SHINE] The SECOND button-texture thread (distinct from
   the molded PrimaryCTA, which is the solid primary buttons). DONE so far: all 5 tab-header icon-squares,
-  Library pills, "+ Log", the 8 water buttons, HR Zones/Tags, the selected effort tile, Repeat/Pick-a-Day.
-  REMAINING: the catalog sweep for scattered tinted buttons on STACK screens (bible, food library, reports,
-  achievements, day-detail, ScreenHeader actions) -- grep the pattern, show Justin the list, decide which
-  get shine (do NOT mass-apply; "if everything shines it looks cheap"). Spec OPEN list + build order step 12.
+  Library pills, "+ Log", the 8 water buttons, HR Zones/Tags, the selected effort tile, Repeat/Pick-a-Day,
+  and (catalog GROUP 1) the stack-screen header squares -- Bible + Add Food -> HeaderIconButton, Bible's
+  Mark Read pill, the Achievements EARNED badge.
+  CATALOG, run 2026-07-15: 92 tappable tinted buttons across 22 files, and they are NOT one animal:
+    (1) header squares -- DONE.
+    (2) BODY tinted buttons = the real remaining sweep: workout-library (13, the big one), add-food,
+        food-detail, settings (~6 each), report, ai-meal-estimator, journal, prayer. One screen at a time,
+        Justin's eyes on each. This is where SHINE-SCALES-WITH-AREA bites: these run from small chips to
+        wide full-row buttons, and the wide ones WILL go plastic on ButtonShine's default (the Repeat pill
+        already did). Judge each width on device.
+    (3) SELECTORS -- SKIP: bible chapter pills / book rows / sort toggles, onboarding style-survey +
+        your-style. Same tint, but they are selected/unselected STATES. Design the states, don't gloss them.
+    (4) BARE icons -- NOT this pass: the TooltipIcon "?" on ~12 screens, day-detail's calendar, the EvR
+        trash. These belong to the title accent-GRADIENT fill pass.
+  Do NOT mass-apply; "if everything shines it looks cheap". Spec OPEN list + build order step 12.
+- [VISUAL REFRESH -> OWN DESIGN PASS] **Bible's Reflect bar does DOUBLE DUTY.** One tinted strip is
+  simultaneously (a) a BUTTON -- the left flex:1 region is a tap target opening the reflection modal, or the
+  journal once reflected -- and (b) a TOOLBAR holding four unrelated icon buttons (sun / star / share /
+  Halo). The tint says "I am one thing you press" while four parts of it do four different things and only
+  the left half does what the label says. That is why it reads off, and why it was REFUSED shine on 07-15:
+  a gloss across the whole strip doubles down on the lie, and it is the widest surface in the app so it
+  would go plastic anyway (see shine-scales-with-area). Flat is correct FOR NOW (tier-3 passive) but it is
+  treating the symptom. FIX = split the double duty: "Reflect" becomes a real tinted pill that shines like
+  any other action button, the four icons go on a flat strip or the page itself. Needs its own screenshots.
+  NOT free: the sun + star icons are TUTORIAL TARGETS.
   >> WATCH (learned 2026-07-15 on the Repeat pills): SHINE SCALES WITH AREA. The 0.52 gloss that reads as a
   glint on a 32px icon square reads PLASTIC on a 190px-wide pill -- same gradient, far more surface. Wide
   buttons in the sweep may need a lower/shorter gloss than ButtonShine's default. Judge each width on device.

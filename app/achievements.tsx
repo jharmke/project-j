@@ -23,6 +23,7 @@ import { loadProgressValues } from '../utils/achievementProgress';
 import { useTheme } from '../theme';
 import { Type, numLine, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import ButtonShine from '../components/ButtonShine';
 
 // ─── Tier Config ──────────────────────────────────────────────────────────────
 
@@ -715,6 +716,11 @@ export default function AchievementsScreen() {
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
 
+      {/* NOTE on the `right` badge below: it is a BADGE, not a button -- a plain View showing the earned
+          count, nothing to tap. It wears the tinted recipe and now the shine too, at Justin's call
+          (2026-07-15), so the header reads consistently with every other tinted square in the app. The
+          standing "shine = tappable surface" rule is knowingly bent here; if it ever reads as a dead button
+          that users poke at, this is the one to pull back. */}
       <ScreenHeader
         title="Achievements"
         topInset={false}
@@ -728,6 +734,7 @@ export default function AchievementsScreen() {
             paddingVertical: 6,
             alignItems: 'center',
           }}>
+            <ButtonShine radius={8} />
             <Text style={{ fontSize: 16, fontFamily: Type.num, color: theme.accentBlue, letterSpacing: 1 }}>
               {totalUnlocked}
             </Text>

@@ -120,6 +120,12 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
   // + warm-brown ink + amber-tinted entry box, light family only. Home variant is fully untouched
   // (every faith value stays gated behind `faith`).
   const inkText    = isDark ? t.textPrimary : '#4a3214';
+  // The warm ink LADDER, mirroring faith.tsx. The app's cool tokens are purple on Light (textMuted
+  // '#6666aa', textDim '#9999bb', textSecondary '#4a4a6a'), which is a foreign hue on a warm amber card.
+  // All THREE are gated on `faith`, so the Home variant keeps the cool tokens exactly as they were.
+  const inkBody    = faith && !isDark ? '#5c4632' : t.textSecondary; // verses, the entry, prose
+  const inkMuted   = faith && !isDark ? '#8a7358' : t.textMuted;     // labels, captions
+  const inkDim     = faith && !isDark ? '#a8957e' : t.textDim;       // the emptiest marks (unlogged dots)
   const tintBg     = isDark ? t.bgTileFaith : t.accentAmber + '16';
   const tintBorder = isDark ? t.borderCard : t.accentAmber + '38';
   const accent      = faith ? t.accentAmber : t.accentBlueRaw;          // hero, flame, week dots, watermark
@@ -383,8 +389,8 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
       {/* Header */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Ionicons name="heart" size={11} color={faith ? accent : t.textMuted} />
-          <Text style={[styles.cardLabel, { color: t.textMuted }]}>Gratitude Streak</Text>
+          <Ionicons name="heart" size={11} color={faith ? accent : inkMuted} />
+          <Text style={[styles.cardLabel, { color: inkMuted }]}>Gratitude Streak</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <TooltipIcon tooltipKey="gratitude_streak" color={faith ? accent : undefined} />
@@ -406,7 +412,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
             duration={600}
             style={[styles.heroNumber, { color: accent }]}
           />
-          <Text style={[styles.heroLabel, { color: t.textMuted }]}>
+          <Text style={[styles.heroLabel, { color: inkMuted }]}>
             {isMindful ? 'TOTAL DAYS' : 'DAY STREAK'}
           </Text>
         </View>
@@ -421,7 +427,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
                 <Text style={{
                   fontFamily: isToday ? Type.uiBold : Type.ui,
                   fontSize: 8,
-                  color: isToday ? accent : t.textMuted,
+                  color: isToday ? accent : inkMuted,
                   opacity: isFuture ? 0.35 : 1,
                 }}>
                   {lbl}
@@ -430,7 +436,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
                   width: 8, height: 8, borderRadius: 4,
                   backgroundColor: logged ? accent : 'transparent',
                   borderWidth: logged ? 0 : 1.5,
-                  borderColor: logged ? undefined : isToday ? accent : t.textDim,
+                  borderColor: logged ? undefined : isToday ? accent : inkDim,
                   opacity: logged ? 0.9 : isToday ? 0.65 : isFuture ? 0.2 : 0.3,
                 }} />
               </View>
@@ -454,7 +460,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
               }}
             />
           ))}
-          <Text style={{ fontFamily: graceUsedToday ? Type.uiSemibold : Type.uiMedium, fontSize: 10, color: graceUsedToday ? t.accentAmber : t.textMuted }}>
+          <Text style={{ fontFamily: graceUsedToday ? Type.uiSemibold : Type.uiMedium, fontSize: 10, color: graceUsedToday ? t.accentAmber : inkMuted }}>
             {graceUsedToday
               ? 'Grace saver covered yesterday'
               : savers.count < saverCap
@@ -469,7 +475,10 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
 
       {/* Scripture */}
       <View style={{ marginBottom: 12 }}>
-        <Text style={{ fontFamily: faith ? 'Lora_500Medium' : Type.ui, fontSize: faith ? 14 : 12, color: t.textSecondary, fontStyle: faith ? 'normal' : 'italic', lineHeight: faith ? 21 : 18, textAlign: faith ? 'center' : 'left' }}>
+        {/* inkBody, not t.textSecondary: on faith this is scripture on a warm card, and textSecondary is
+            '#4a4a6a' -- a cool navy. It also now MATCHES the prayer previews on the Faith tab, which sat on
+            the dark headline ink and read heavy. Verses and prayers are the same job: text you read. */}
+        <Text style={{ fontFamily: faith ? 'Lora_500Medium' : Type.ui, fontSize: faith ? 14 : 12, color: inkBody, fontStyle: faith ? 'normal' : 'italic', lineHeight: faith ? 21 : 18, textAlign: faith ? 'center' : 'left' }}>
           "{verse.text}"
         </Text>
         <Text style={{ fontFamily: Type.uiSemibold, fontSize: 10, color: t.accentAmber, marginTop: 4, letterSpacing: 0.5, textAlign: faith ? 'center' : 'left' }}>
@@ -481,8 +490,10 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
       {cardState === 'logged' ? (
         <>
           <View style={[styles.entryBox, { backgroundColor: entryFill, borderColor: entryBorder, borderLeftWidth: 1, borderLeftColor: entryBorder }]}>
-            <Text style={[styles.entryLabel, { color: t.textMuted }]}>Today's Entry</Text>
-            <Text style={{ fontFamily: Type.ui, fontSize: 14, color: faith ? inkText : t.textPrimary, lineHeight: 20 }}>
+            <Text style={[styles.entryLabel, { color: inkMuted }]}>Today's Entry</Text>
+            {/* inkBody: "Healthy pregnancy." is the user's own words, same job as a prayer preview, so it
+                sits on the body rung rather than the dark headline ink it used to use. */}
+            <Text style={{ fontFamily: Type.ui, fontSize: 14, color: faith ? inkBody : t.textPrimary, lineHeight: 20 }}>
               {loggedEntry}
             </Text>
           </View>
@@ -537,7 +548,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
                 style={[styles.actionBtn, { backgroundColor: t.bgInput, borderColor: t.borderInput, flex: 1 }]}
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setCardState('logged'); setInputText(''); }}
               >
-                <Text style={{ fontFamily: Type.uiSemibold, fontSize: 12, color: t.textSecondary }}>Cancel</Text>
+                <Text style={{ fontFamily: Type.uiSemibold, fontSize: 12, color: inkBody }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionBtn, {

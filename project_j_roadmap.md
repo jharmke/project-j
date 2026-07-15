@@ -28,6 +28,26 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-15 FAITH IS AMBER, END TO END. Faith tab header + Prayer + Plans + Devotional + BIBLE (all 49 of
+  its accent refs) now wear amber; faith MODALS already did. `ScreenHeader`'s `color` prop now drives the
+  BACK CHEVRON as well as the title (it was title-only, which is why amber titles sat over cyan chevrons);
+  6 screens were passing `color={accentBlueRaw}` = the DEFAULT, i.e. no-ops, and those props were removed
+  so their chevrons keep the button-safe accentBlue (on Blush+Yellow the raw value is #ffe600 -- invisible).
+  `HeaderIconButton` gained optional color/bg/border (defaults unchanged). Bible's scroll FAB now imports
+  Halo's GOLD instead of theme.accentAmber (they disagreed side by side; bible.tsx had its own hand-copied
+  '#e8a020' too). SKIPPED: Journal (has non-faith content, Justin's call) + Mission (opened from Settings/
+  Sign-in, it is the APP's mission page; amber would flag it as the religious page).
+- 2026-07-15 THE FAITH TAB WAS PURPLE. The whole tab read "so many fonts/colours" and it was ONE wrong HUE:
+  all three cool text tokens are purple on Light (textMuted #6666aa, textDim #9999bb, textSecondary
+  #4a4a6a), and every label on a warm amber card used them. Fixed with a 3-rung WARM INK LADDER in
+  faith.tsx (`faithInk` / `faithInkBody` / `faithInkMuted`), mirrored + `faith`-gated in
+  GratitudeStreakCard so HOME IS UNTOUCHED. The middle rung is the point: with only ink+muted, body text
+  had to pick a headline colour (prayers -> dark, read heavy) or a label colour (the verse -> cool navy).
+  Also: Faith CARDS now match normal cards on Light/Slate (bgCardFaithGlass was cream @0.62 while normal
+  cards went opaque 0.82 in the Light refresh -- Dark/Warm/Blush already matched, which is exactly the 3
+  themes Justin liked); Browse buttons off a near-white fill (the one case gloss truly cannot show);
+  "None yet" -> "No devotionals yet"; both verse REFS now amber (one was purple); Lora rule settled =
+  SCRIPTURE ONLY, and a Bible book name ("Proverbs 16") counts, a plan name ("The Gospels") does not.
 - 2026-07-15 BODY-BUTTON SHINE, group 2 first pass: workout-library (Fill from Preset, Load Program, Load
   Routine, USE) + add-food/food-detail (Retry, Use a Saved Food, Create Food for this Barcode, Add x2, Edit,
   -/+ serving steppers, Replace). Skipped-with-reasons list + the honest re-run of the catalog (~23 real
@@ -280,6 +300,16 @@ are separate pre-submission checklists, NOT part of this menu.
   wrapper for the flat ground + BackgroundLayers, exactly as the tabs got. Mechanical + low-risk (proven 6x
   on the tabs); do it in batches. ALSO in this pass: the Profile **Supporter card** is translucent so the
   page glow/halftone shows straight through it -- needs an opaque fill like the other cards.
+  >> FAITH SCREENS PASS AMBER (confirmed 2026-07-15): the Faith TAB already does
+  `<BackgroundLayers glow={theme.accentAmber} />`, and prayer/plans/devotional/bible/journal are ALL still
+  on the old LinearGradient -- they have no glow to be the wrong colour yet. When this pass reaches them,
+  faith screens pass accentAmber, everything else passes the accent. Justin asked about this directly; it
+  is not a separate decision, just a note for whoever runs the pass.
+  >> WATCH: cards are NOT opaque. bgCardGlass runs 0.62-0.82 (Light is the MOST opaque at 0.82; Dark/Slate/
+  Warm/Blush sit ~0.62-0.66), so a third more glow bleeds through their cards. Every tinted button shined
+  on 2026-07-15 was judged on LIGHT, the friendliest case. If they wash out on Slate/Dark, the fix is the
+  new `accentBlueBgOpaque` token (added for Stats' VIEW ALL ACHIEVEMENTS, which sits on the PAGE not a card
+  and vanished into the accent-coloured bottom glow).
 - [NOW] [VISUAL REFRESH -> VOICE PASS] Ranade (the voice face) is on ~6 lines, all on Home (Coach Insight,
   the readiness line, the Recovery/Sleep AI tips, one Weight line). The judgement calls a script can't
   make: Otto's chat bubbles (HIS = voice, YOURS = interface -- that contrast is the point), Effort vs
@@ -339,6 +369,21 @@ are separate pre-submission checklists, NOT part of this menu.
         top-light (a 1.5px BRIGHT accentBlueRaw top border) and now carry TWO top treatments. If they read
         doubled-up, drop the BORDER (the rule: shine owns the top-light, border stays even on 4 sides).
         >> DEAD CODE found: add-food's `addNewBtn` + `addNewBtnText` styles are defined and never used.
+        >> GROUP 2 IS DONE 2026-07-15. Also swept: stats (6) + BodyMeasurementsCard's Log Measurements +
+        StatsGraphCard's Select Nutrient, the 5 component MODALS (Got it / Full Breakdown x2 / Macros
+        expander / Add / CalorieFloor), the last 6 screens (journal sort, prayer's people icon -> another
+        HeaderIconButton, day-detail Cancel, ai-estimator Confirm+Edit, day-summary, settings Import), and
+        the whole FAITH tab (8 amber buttons incl. the reading tiles) + GratitudeStreakCard's 4.
+        >> THE CATALOG WAS WRONG THREE TIMES, all mine, all the same mistake -- quoting a grep instead of
+        reading code: (1) 410 raw hits -> (2) 92 "tappable-looking" -> (3) ~23 real. Then Justin found the
+        Log Measurements button, because I only ever grepped `app/` and never `components/` (+7). Then he
+        found the whole FAITH TAB, because every grep searched for the BLUE recipe and faith is AMBER.
+        LESSON: a tab file is not a screen (it renders components), and accentBlueBg is not "the tinted
+        button" (faith has a parallel amber system, half of it hardcoded).
+        >> STILL OPEN (hygiene, no visible payoff -- do not do it first): 25 hardcoded `rgba(212,134,10,..)`
+        across 10 files. That hex is DARK's amber baked in, so faith FILLS wear Dark's amber on every theme
+        while the text beside them uses each theme's own. Subtle at 10% alpha. bible.tsx's share was cleaned
+        as part of its sweep.
     (3) SELECTORS -- SKIP: bible chapter pills / book rows / sort toggles, onboarding style-survey +
         your-style. Same tint, but they are selected/unselected STATES. Design the states, don't gloss them.
     (4) BARE icons -- NOT this pass: the TooltipIcon "?" on ~12 screens, day-detail's calendar, the EvR

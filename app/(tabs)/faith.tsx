@@ -65,6 +65,22 @@ const DEFAULT_FAITH_VISIBLE = Object.fromEntries(
 // twice around midnight.
 const getDateKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
+// ─── The Faith tab's warm ink ladder (light family only; dark keeps its own tokens) ───────────────
+// The app's text tokens are COOL: textPrimary is a near-black and textMuted is '#6666aa' -- an actual
+// PURPLE. On a warm amber card that purple is a foreign colour, and it was on every label here ("BIBLE
+// AND PLANS", "CONTINUE READING", "READING PLANS", "DEVOTIONALS", "+ Browse"). That is what read as
+// "so many fonts and colours": one wrong HUE, not a type problem. The spec already warned about it
+// ("do not lighten text with textMuted on Light... it hands you a fifth colour") -- written for Stats,
+// never applied here. So: lighten on the WARM hue instead of shifting to a cool one.
+// Module scope because BibleCard, PlansColumn and TileProgress each kept their own private copy.
+// THREE rungs, and the middle one is the point. With only ink + muted, anything that is BODY text had to
+// pick a headline colour or a label colour: the prayer previews took the dark ink (#4a3214) and read heavy,
+// while the gratitude verse took the cool textSecondary (#4a4a6a) and read purple. Same job, two wrong
+// answers. faithInkBody is the warm equivalent of textSecondary -- verses and prayers both sit here.
+const faithInk      = (t: Theme) => (t.id === 'dark' ? t.textPrimary   : '#4a3214'); // headline
+const faithInkBody  = (t: Theme) => (t.id === 'dark' ? t.textSecondary : '#5c4632'); // verses, prayers, prose
+const faithInkMuted = (t: Theme) => (t.id === 'dark' ? t.textMuted     : '#8a7358'); // labels, captions
+
 // Cards that actually have a renderer today. Once every card is built this guard goes away.
 const BUILT_CARDS: FaithCardId[] = ['votd', 'bible_plans', 'gratitude', 'prayer'];
 
@@ -191,7 +207,9 @@ export default function FaithScreen() {
                 accent, so cyan chrome sat over amber content. ScreenHeader's own comment says "Faith screens
                 go amber"; nothing had ever actually done it. Faith is a PLACE, and a place has a colour. */}
             <Text style={[styles.headerTitle, { color: theme.accentAmber }]}>Faith</Text>
-            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, marginTop: 1, letterSpacing: 2, textTransform: 'uppercase' }}>
+            {/* Warm, like the rest of the tab. The other tabs' date lines are cool because their titles
+                are cool -- this one sits directly under an amber title, so a purple date fought it. */}
+            <Text style={{ fontSize: 9, color: faithInkMuted(theme), fontFamily: Type.uiBold, marginTop: 1, letterSpacing: 2, textTransform: 'uppercase' }}>
               {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </Text>
           </View>
@@ -300,8 +318,8 @@ function VotdCard({ verse, theme, onReflect }: { verse: DailyVerse | null; theme
       {theme.id !== 'dark' && <LinearGradient colors={[theme.accentAmber + '2E', theme.accentAmber + '00']} locations={[0, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 64, borderTopLeftRadius: 14, borderTopRightRadius: 14 }} pointerEvents="none" />}
       <View style={[styles.verseLabelRow, { justifyContent: 'space-between' }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Ionicons name="sunny-outline" size={11} color={theme.textMuted} />
-          <Text style={[styles.verseLabel, { color: theme.textMuted }]}>TODAY'S MESSAGE</Text>
+          <Ionicons name="sunny-outline" size={11} color={faithInkMuted(theme)} />
+          <Text style={[styles.verseLabel, { color: faithInkMuted(theme) }]}>TODAY'S MESSAGE</Text>
         </View>
         {/* (i) stays on the left, the gear takes the right corner. */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -311,8 +329,11 @@ function VotdCard({ verse, theme, onReflect }: { verse: DailyVerse | null; theme
           </TouchableOpacity>
         </View>
       </View>
-      <Text style={[styles.verseText, { color: theme.textSecondary }]}>"{v.text}"</Text>
-      <Text style={[styles.verseRef, { color: theme.textMuted }]}>{v.reference}</Text>
+      <Text style={[styles.verseText, { color: faithInkBody(theme) }]}>"{v.text}"</Text>
+      {/* AMBER, matching the Gratitude card's "Psalm 9:1". These two verse REFERENCES were different
+          colours -- this one purple (textMuted), that one amber -- for no reason. A verse ref is a verse
+          ref wherever it appears. */}
+      <Text style={[styles.verseRef, { color: theme.accentAmber }]}>{v.reference}</Text>
       {onReflect && (
         <TouchableOpacity
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); onReflect!(); }}
@@ -413,7 +434,8 @@ function BibleCard({ theme }: { theme: Theme }) {
   const isDark = theme.id === 'dark';
   // Warm brown ink instead of the cold near-black textPrimary on the light family (keeps the
   // faith warmth while staying readable); dark keeps its light textPrimary.
-  const inkText = isDark ? theme.textPrimary : '#4a3214';
+  const inkText = faithInk(theme);
+  const inkMuted = faithInkMuted(theme);
   // One unified warm-tan tint for every filled box + button on the card (kills the muddy 3-shade mix).
   const tintBg = isDark ? theme.bgTileFaith : theme.accentAmber + '16';
   const tintBorder = isDark ? theme.borderCard : theme.accentAmber + '38';
@@ -425,7 +447,7 @@ function BibleCard({ theme }: { theme: Theme }) {
         <View style={[styles.cardLabelRow, { justifyContent: 'space-between' }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Ionicons name="book" size={12} color={theme.accentAmber} />
-            <Text style={[styles.cardLabel, { color: theme.textMuted }]}>BIBLE AND PLANS</Text>
+            <Text style={[styles.cardLabel, { color: inkMuted }]}>BIBLE AND PLANS</Text>
           </View>
           <TooltipIcon tooltipKey="bible_and_plans" color={theme.accentAmber} />
         </View>
@@ -440,7 +462,7 @@ function BibleCard({ theme }: { theme: Theme }) {
             >
               <ButtonShine radius={10} />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.bibleContinueLabel, { color: theme.textMuted }]}>CONTINUE READING</Text>
+                <Text style={[styles.bibleContinueLabel, { color: inkMuted }]}>CONTINUE READING</Text>
                 <Text style={[styles.bibleContinueRef, { color: theme.accentAmber }]}>{lastRead.book} {lastRead.chapter}</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={theme.accentAmber} />
@@ -457,7 +479,7 @@ function BibleCard({ theme }: { theme: Theme }) {
         ) : (
           <>
             <Text style={[styles.bibleTitle, { color: inkText }]}>Read the Bible</Text>
-            <Text style={[styles.bibleFirstSub, { color: theme.textSecondary }]}>
+            <Text style={[styles.bibleFirstSub, { color: faithInkBody(theme) }]}>
               Not sure where to begin? Start with a guided pick, or jump straight in.
             </Text>
             <View style={styles.bibleBtnRow}>
@@ -516,7 +538,7 @@ function BibleCard({ theme }: { theme: Theme }) {
             colRef={devosColRef}
             theme={theme}
             label="DEVOTIONALS"
-            emptyText="None yet"
+            emptyText="No devotionals yet"
             items={activeDevs.map(d => {
               const nextDay = getNextDay(d, getDevotionalProgress(devStore, d.id));
               const day = d.days[nextDay - 1];
@@ -564,8 +586,8 @@ function PlansColumn({ theme, label, emptyText, items, atCap, onBrowse, colRef }
   // Same pilot surface rule as the Bible strip: lift insets off the card on the light family,
   // keep dark on its already-floating token. Local to this card until the look is approved.
   const isDark = theme.id === 'dark';
-  const inkText = isDark ? theme.textPrimary : '#4a3214';
-  const tileSurface = isDark ? theme.bgTileFaith : 'rgba(255,255,255,0.92)'; // empty-state Browse btn
+  const inkText = faithInk(theme);
+  const inkMuted = faithInkMuted(theme);
   // Tinted identity box for the plan/devotional tiles, modeled on the Sleep Last Night stat boxes:
   // soft amber tint + a defined amber border + an icon chip, so each reads as a contained warm box
   // instead of a flat row. Dark keeps its solid elevated tile fill (already floats on the dark card).
@@ -574,13 +596,16 @@ function PlansColumn({ theme, label, emptyText, items, atCap, onBrowse, colRef }
   const chipBg = theme.accentAmber + (isDark ? '2e' : '24');
   return (
     <View ref={colRef} collapsable={false} style={styles.plansCol}>
-      <Text style={[styles.colLabel, { color: theme.textMuted }]}>{label}</Text>
+      <Text style={[styles.colLabel, { color: inkMuted }]}>{label}</Text>
       {items.length === 0 ? (
         <View style={styles.emptyCol}>
-          <Text style={[styles.emptyColText, { color: theme.textSecondary }]}>{emptyText}</Text>
+          <Text style={[styles.emptyColText, { color: inkMuted }]}>{emptyText}</Text>
+          {/* Was a near-WHITE fill (rgba(255,255,255,0.92)), which is the one case where the gloss
+              genuinely cannot show -- the shine was already here doing nothing. Now the same warm tint as
+              every other button on this card, so it reads as a surface and the shine actually lands. */}
           <PressButton
             onPress={onBrowse}
-            style={[styles.emptyBrowseBtn, { backgroundColor: tileSurface, borderColor: 'rgba(212,134,10,0.4)' }]}
+            style={[styles.emptyBrowseBtn, { backgroundColor: tintBg, borderColor: tintBorder }]}
           >
             <ButtonShine radius={8} />
             <Text style={[styles.emptyBrowseText, { color: theme.accentAmber }]}>Browse</Text>
@@ -608,10 +633,13 @@ function PlansColumn({ theme, label, emptyText, items, atCap, onBrowse, colRef }
               <TileProgress progress={it.progress} refLabel={it.ref} theme={theme} />
             </PressCard>
           ))}
+          {/* textDim is '#9999bb' on Light -- the purple "+ Browse" that was the most obviously foreign
+              thing on this card. All three cool tokens are purple-family on Light (textMuted #6666aa,
+              textDim #9999bb, textSecondary #4a4a6a), so none of them belong on a warm card. */}
           {!atCap && (
             <PressButton onPress={onBrowse} style={styles.browseLink}>
-              <Ionicons name="add" size={14} color={theme.textDim} />
-              <Text style={[styles.browseLinkText, { color: theme.textDim }]}>Browse</Text>
+              <Ionicons name="add" size={14} color={inkMuted} />
+              <Text style={[styles.browseLinkText, { color: inkMuted }]}>Browse</Text>
             </PressButton>
           )}
         </>
@@ -631,10 +659,13 @@ function TileProgress({ progress, refLabel, theme }: {
   return (
     <View>
       <TileBar pct={progress.pct} theme={theme} />
+      {/* Both on the warm ink ladder -- textMuted/textSecondary are purple on Light. Same size + colour
+          now, since "0/28" and "John 17" are the same KIND of thing (a quiet caption); they used to be
+          10px vs 10px but two different colours for no reason. */}
       <View style={styles.tileCaptionRow}>
-        <Text style={[styles.tileCaption, { color: theme.textMuted }]}>{progress.completed}/{progress.total}</Text>
+        <Text style={[styles.tileCaption, { color: faithInkMuted(theme) }]}>{progress.completed}/{progress.total}</Text>
         {refLabel ? (
-          <Text numberOfLines={1} style={[styles.tileRef, { color: theme.textSecondary }]}>{refLabel}</Text>
+          <Text numberOfLines={1} style={[styles.tileRef, { color: faithInkMuted(theme) }]}>{refLabel}</Text>
         ) : null}
       </View>
     </View>
@@ -704,7 +735,7 @@ function PrayerCard({ theme }: { theme: Theme }) {
           <View style={[styles.cardLabelRow, { justifyContent: 'space-between' }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <MaterialCommunityIcons name="hand-heart" size={13} color={theme.accentAmber} />
-              <Text style={[styles.cardLabel, { color: theme.textMuted }]}>PRAYER</Text>
+              <Text style={[styles.cardLabel, { color: faithInkMuted(theme) }]}>PRAYER</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <TooltipIcon tooltipKey="prayer" color={theme.accentAmber} />
@@ -713,22 +744,22 @@ function PrayerCard({ theme }: { theme: Theme }) {
           </View>
 
           {nothing ? (
-            <Text style={[styles.prayerEmpty, { color: theme.textSecondary }]}>
+            <Text style={[styles.prayerEmpty, { color: faithInkBody(theme) }]}>
               Lift up what you're carrying. Add your first prayer.
             </Text>
           ) : preview.length > 0 ? (
             <View style={{ marginTop: 6 }}>
               {preview.map(p => (
                 <View key={p.id} style={[styles.prayerPreviewBox, { backgroundColor: tintBg, borderColor: tintBorder }]}>
-                  <Text numberOfLines={1} style={[styles.prayerPreviewText, { color: inkText }]}>{p.text}</Text>
+                  <Text numberOfLines={1} style={[styles.prayerPreviewText, { color: faithInkBody(theme) }]}>{p.text}</Text>
                 </View>
               ))}
               {active.length > preview.length && (
-                <Text style={[styles.prayerPreviewMore, { color: theme.textMuted }]}>+{active.length - preview.length} more</Text>
+                <Text style={[styles.prayerPreviewMore, { color: faithInkMuted(theme) }]}>+{active.length - preview.length} more</Text>
               )}
             </View>
           ) : (
-            <Text style={[styles.prayerEmpty, { color: theme.textSecondary }]}>
+            <Text style={[styles.prayerEmpty, { color: faithInkBody(theme) }]}>
               Nothing on your heart right now. Praise God for the prayers He has answered.
             </Text>
           )}
@@ -766,6 +797,15 @@ const styles = StyleSheet.create({
   bibleTitle:           { fontSize: 16, fontFamily: Type.uiSemibold },
   bibleFirstSub:        { fontSize: 12, fontFamily: Type.ui, lineHeight: 18, marginTop: 4, marginBottom: 14 },
   bibleContinueLabel:   { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', fontFamily: Type.uiBold, marginBottom: 3 },
+  // NOT Lora (Lora is the SCRIPTURE face -- "Proverbs 16" is a chapter REFERENCE, not God's words), and
+  // NOT the display face either: Clash here read as "too much" (Justin, 2026-07-15). It is the same
+  // Interface face as its own "CONTINUE READING" label directly above it -- SIZE carries the hierarchy,
+  // not a second typeface. A card headline does not need its own font to be the headline.
+  // LORA, the scripture face. I moved it OFF Lora on the theory that Lora is scripture-only and a chapter
+  // reference is not scripture; then tried the display face (Clash), which Justin called "too much". He put
+  // it back on Lora, and he is right: "Proverbs 16" is a book of the BIBLE. Lora is naming scripture here.
+  // The rule survives, my application of it was wrong: Lora = scripture, and a Bible book IS scripture.
+  // A reading plan called "The Gospels" is still a PRODUCT name and stays on Interface (see tileName).
   bibleContinueRef:     { fontSize: 20, fontFamily: 'Lora_500Medium', letterSpacing: 0.3 },
   bibleContinueBtn:     { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.14, shadowRadius: 5, elevation: 3 },
   bibleFindBtn:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 10, paddingVertical: 12, minHeight: 44, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.12, shadowRadius: 3, elevation: 2 },
@@ -792,7 +832,8 @@ const styles = StyleSheet.create({
   tile:            { borderRadius: 12, borderWidth: 1, padding: 12, marginBottom: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.12, shadowRadius: 3, elevation: 2 },
   tileTop:         { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 8 },
   tileChip:        { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
-  tileName:        { flex: 1, fontSize: 13, fontFamily: 'Lora_500Medium', lineHeight: 17 },
+  // NOT Lora -- see bibleContinueRef. "The Gospels" is a product name, not scripture.
+  tileName:        { flex: 1, fontSize: 13, fontFamily: Type.uiSemibold, lineHeight: 17 },
   tileBarTrack:    { height: 5, borderRadius: 3, overflow: 'hidden' },
   tileBarFill:     { height: 5, borderRadius: 3 },
   tileCaptionRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 5, gap: 6 },

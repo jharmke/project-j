@@ -34,7 +34,7 @@ const GLOW_HEIGHT = '62%';     // how far up the screen it reaches
 // Dots ARE atmosphere, so unlike the grid they get the rising-from-below fade back.
 const DOT_SPACING = 18;
 const DOT_RADIUS = 1.3;
-const DOT_OPACITY = 0.14;
+const DOT_OPACITY = 0.20;
 
 // LAYER 3 -- GRAIN. A 128px tile of deterministic noise, repeated. It is meant to be almost invisible:
 // if you can SEE it as texture it is turned up too far. What it does is stop a flat colour field reading
@@ -46,8 +46,8 @@ const DOT_OPACITY = 0.14;
 // sandpaper on a phone screen, where the pixels are far denser than a browser mock. Grain belongs below
 // conscious notice -- you should never be able to point at it, only feel that the surfaces stopped being
 // plastic.
-const GRAIN_OPACITY_LIGHT = 0.03;
-const GRAIN_OPACITY_DARK = 0.022;
+const GRAIN_OPACITY_LIGHT = 0.02;
+const GRAIN_OPACITY_DARK = 0.015;
 
 function withAlpha(hex: string, alpha: number) {
   const a = Math.round(Math.max(0, Math.min(1, alpha)) * 255).toString(16).padStart(2, '0');
@@ -63,9 +63,11 @@ export default function BackgroundLayers({ glow }: {
   const { theme } = useTheme();
   const glowColor = glow ?? theme.accentBlueRaw;
 
-  // Texture ink: the page's own ink, not the accent. Accent dots are lovely on a light theme and turn
-  // gaudy fast on a dark one, and this has to hold across five themes and every accent.
-  const ink = theme.textPrimary;
+  // Texture ink: EXPERIMENT -- accent-coloured dots (was theme.textPrimary). The concern on record: accent
+  // dots look lovely on a light theme but can turn gaudy on a dark one, and this has to hold across five
+  // themes and every accent. Justin wants to see it. If it reads gaudy on Dark or any bold accent, revert
+  // to theme.textPrimary.
+  const ink = theme.accentBlueRaw;
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">

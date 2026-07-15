@@ -28,6 +28,14 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-15 SLATE CHROME + STATS HIERARCHY + TEXTURE TUNING. Slate got the frosted chrome (chromeFill
+  rgba(233,239,248,0.45), kept low/glassy so it reads steel not white) + readable inactive tab icons
+  (tabBarInactive #5a7088, fixes the "navy icons hidden" complaint). Stats collapsible sections: subtitle
+  bumped to textSecondary + uiMedium (was faint textMuted/regular), section headers 11->13 bold-caps to
+  restore hierarchy, hairline divider 55->88 alpha. Background texture: halftone dots 0.14->0.20 and now
+  ACCENT-COLOURED (was textPrimary ink -- experiment, Justin approved; revert to textPrimary if ever gaudy
+  on Dark/bold accents), film grain eased 0.03->0.02 light / 0.022->0.015 dark. OPEN still: home-circle
+  restyle, Profile subtexts (same faint-muted pattern as Stats had), broader Slate text-contrast audit.
 - 2026-07-15 LIGHT THEME REFRESH + UNIFIED FROSTED CHROME. Light stopped looking grey: brighter neutral ground
   (#e3e6ee -> #f2f3f7), pure-white opaque cards, stronger navy card shadow (0.20 -> 0.30) so cards float on
   SHADOW not value-contrast. New per-theme `glowStrength` token (Light 0.60, others 0.40) uncorks the shared-

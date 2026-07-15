@@ -153,14 +153,14 @@ function CollapsibleSection({ label, subtitle, children, defaultOpen = true, the
               now accent-coloured (the glow) -- accent text on an accent ground is the same hue fighting
               itself, and it washed out completely. The accent's job is "this is interactive"; a section
               header is not. The rule and the chevron keep the accent, so the section still reads as ours. */}
-          <Text style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textSecondary }}>
+          <Text style={{ fontSize: 13, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textSecondary }}>
             {label}
           </Text>
-          <View style={{ flex: 1, height: 1, backgroundColor: theme.textMuted + '55' }} />
+          <View style={{ flex: 1, height: 1, backgroundColor: theme.textMuted + '88' }} />
           <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color={theme.accentBlueRaw} />
         </View>
         {!open && subtitle && (
-          <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textMuted, marginTop: 4 }}>
+          <Text style={{ fontSize: 11, fontFamily: Type.uiMedium, color: theme.textSecondary, marginTop: 4 }}>
             {subtitle}
           </Text>
         )}

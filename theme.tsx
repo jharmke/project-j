@@ -425,8 +425,8 @@ const slate: Theme = {
   cardShadow:       '#1c2533',
   cardShadowOpacity: 0.22,
   glowStrength:     0.40,
-  chromeFill:       'transparent',
-  tabBarInactive:   '#8a9aaa',
+  chromeFill:       'rgba(233,239,248,0.45)',  // light STEEL frost, kept LOW so the bar reads as glass not a bright white strip; the darker tabBarInactive carries icon legibility instead of a heavy fill
+  tabBarInactive:   '#5a7088',  // Slate textMuted -- was #8a9aaa (its faint textDim), the root of the "navy tab icons hidden" complaint
   bgSelected:       '#000000',   // placeholder: the provider computes this from the LIVE accent
   bgCardVerse:      'rgba(226,232,244,0.90)',
   bgCardFaith:      'rgba(228,221,209,0.92)',

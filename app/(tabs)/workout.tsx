@@ -25,6 +25,7 @@ import { addNotification, clearNotification } from '../../utils/notifications';
 import * as Notifications from 'expo-notifications';
 import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
+import ButtonShine from '../../components/ButtonShine';
 import { useHealthKit } from '../../useHealthKit';
 import { BLANK_DAY, DEFAULT_TAGS, DayProgram, Exercise, PRRecord, Routine, SetEntry, TAG_COLOR_PALETTE, WorkoutTag, PRESET_ROUTINES, weightUnitLabel, formatHold, parseHoldInput } from '../../workoutData';
 import MuscleMap from '../../components/MuscleMap';
@@ -2182,6 +2183,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/workout-library'); }} style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
+              <ButtonShine radius={6} />
               <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>Library</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); showToolkit('workout'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>

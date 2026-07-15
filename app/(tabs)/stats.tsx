@@ -18,6 +18,7 @@ import { DayDetailContent } from '../day-detail';
 import { useTheme } from '../../theme';
 import { useMembership } from '../../MembershipContext';
 import HeaderAvatar from '../../components/HeaderAvatar';
+import HeaderIconButton from '../../components/HeaderIconButton';
 import { CardPeriod, ChartType, DATA_KEY_CATEGORIES, DATA_KEY_META, DataKey, DEFAULT_STATS_CARDS, StatsCard, availableChartTypes, generateCardId, loadStatsCards, saveStatsCards } from '../../statsCardRegistry';
 import HRZonesStatsCard from '../../components/HRZonesStatsCard';
 import BodyMeasurementsCard from '../../components/BodyMeasurementsCard';
@@ -1822,21 +1823,9 @@ export default function StatsScreen() {
           </View>
         </View>
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-          <TouchableOpacity
-            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/achievements' as any); }}
-            style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="trophy" size={14} color={theme.accentBlue} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }}
-            style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="journal" size={14} color={theme.accentBlue} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openEditSheet(); }}
-            style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="grid" size={14} color={theme.accentBlue} />
-          </TouchableOpacity>
+          <HeaderIconButton icon="trophy" onPress={() => { router.push('/achievements' as any); }} />
+          <HeaderIconButton icon="journal" onPress={() => { router.push('/journal'); }} />
+          <HeaderIconButton icon="grid" onPress={() => { openEditSheet(); }} />
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); showToolkit('stats'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
             <Ionicons name="help-circle" size={22} color={theme.accentBlue} />
           </TouchableOpacity>

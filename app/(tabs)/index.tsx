@@ -14,6 +14,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TAB_SCROLL_PAD } from '../../components/CustomTabBar';
 import Svg, { Circle } from 'react-native-svg';
 import PressableButton from '../../components/PressableButton';
+import HeaderIconButton from '../../components/HeaderIconButton';
+import ButtonShine from '../../components/ButtonShine';
 import { useToast, ToastRenderer } from '../../components/Toast';
 import { showCelebration } from '../../components/CelebrationOverlay';
 import { showAchievementToast, showDailyGoalToast } from '../../components/AchievementToast';
@@ -2192,6 +2194,7 @@ export default function HomeScreen() {
           </View>
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/(tabs)/log'); }} activeOpacity={0.6}
             style={{ backgroundColor: theme.accentBlueBg, borderWidth:1, borderColor: theme.accentBlueBorder, borderRadius:6, paddingHorizontal:10, paddingVertical:4 }}>
+            <ButtonShine radius={6} />
             <Text style={{ color: theme.accentBlue, fontSize:12, fontFamily:Type.uiSemibold }}>+ Log</Text>
           </TouchableOpacity>
         </View>
@@ -2345,10 +2348,12 @@ export default function HomeScreen() {
       <View style={styles.waterBtns}>
         {waterPresets.map((oz,i) => (
           <PressableButton key={i} style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => doWaterUpdate(oz)}>
+            <ButtonShine radius={6} />
             <Text style={[styles.waterBtnText, { color: theme.accentBlue }]}>+{oz} oz</Text>
           </PressableButton>
         ))}
         <PressableButton style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => openWaterCustomModal('add')}>
+          <ButtonShine radius={6} />
           <View style={{ alignItems:'center', justifyContent:'center', width:20, height:20 }}>
             <Ionicons name="water-outline" size={18} color={theme.accentBlue} />
             <Text style={{ color: theme.accentBlue, fontSize:9, fontFamily:Type.uiBold, position:'absolute', bottom:-2, right:-4 }}>+</Text>
@@ -2358,10 +2363,12 @@ export default function HomeScreen() {
       <View style={[styles.waterBtns, { marginTop:8 }]}>
         {waterPresets.map((oz,i) => (
           <PressableButton key={i} style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => doWaterUpdate(-oz)}>
+            <ButtonShine radius={6} />
             <Text style={[styles.waterBtnRedText, { color: theme.accentRed }]}>-{oz} oz</Text>
           </PressableButton>
         ))}
         <PressableButton style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => openWaterCustomModal('subtract')}>
+          <ButtonShine radius={6} />
           <View style={{ alignItems:'center', justifyContent:'center', width:20, height:20 }}>
             <Ionicons name="water-outline" size={18} color={theme.accentRed} />
             <Text style={{ color: theme.accentRed, fontSize:9, fontFamily:Type.uiBold, position:'absolute', bottom:-2, right:-4 }}>-</Text>
@@ -3729,18 +3736,10 @@ export default function HomeScreen() {
         </View>
 
         <View style={{ flexDirection:'row', gap:8, alignItems:'center' }}>
-            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); fetchTodayData(); setRefreshKey(k=>k+1); showToast('Health data refreshed', undefined, 'info'); }}
-              style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
-              <Ionicons name="refresh" size={14} color={theme.accentBlue} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); dayDetailAnim.setValue(0); setDayDetailDate(todayKey); }}
-              style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
-              <Ionicons name="calendar" size={14} color={theme.accentBlue} />
-            </TouchableOpacity>
+            <HeaderIconButton icon="refresh" onPress={() => { fetchTodayData(); setRefreshKey(k=>k+1); showToast('Health data refreshed', undefined, 'info'); }} />
+            <HeaderIconButton icon="calendar" onPress={() => { dayDetailAnim.setValue(0); setDayDetailDate(todayKey); }} />
             <View ref={editLayoutBtnRef} collapsable={false}>
-              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); enterEditMode(); }} style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
-                <Ionicons name="grid" size={14} color={theme.accentBlue} />
-              </TouchableOpacity>
+              <HeaderIconButton icon="grid" onPress={() => { enterEditMode(); }} />
             </View>
             <View ref={toolkitRef} collapsable={false}>
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); showToolkit('home'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>

@@ -31,6 +31,8 @@ import NutritionGearModal, { NUTRITION_PRESETS, NutritionGoals, NutritionPreset 
 import NutrientDrilldownModal, { DrilldownItem, computeNetCarbsForEntry } from '../../components/NutrientDrilldownModal';
 import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
+import HeaderIconButton from '../../components/HeaderIconButton';
+import ButtonShine from '../../components/ButtonShine';
 import { useToast } from '../../components/Toast';
 import { useTutorial } from '../../context/TutorialContext';
 import { useTutorialTarget } from '../../hooks/useTutorialTarget';
@@ -1189,14 +1191,11 @@ export default function LogScreen() {
           <TouchableOpacity
               style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); returningFromChild.current = true; router.push({ pathname: '/add-food', params: { meal: 'browse', date: activeDate } }); }}>
+              <ButtonShine radius={6} />
               <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>Library</Text>
           </TouchableOpacity>
           <View ref={logEditLayoutBtnRef as any} collapsable={false}>
-            <TouchableOpacity
-              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); openEditMeals(); }}
-              style={{ borderWidth:1, borderRadius:6, paddingHorizontal:12, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }}>
-              <Ionicons name="grid" size={14} color={theme.accentBlue} />
-            </TouchableOpacity>
+            <HeaderIconButton icon="grid" haptic={Haptics.ImpactFeedbackStyle.Medium} onPress={() => { openEditMeals(); }} />
           </View>
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); showToolkit('log'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
             <Ionicons name="help-circle" size={22} color={theme.accentBlue} />

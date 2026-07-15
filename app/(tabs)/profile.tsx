@@ -21,6 +21,7 @@ import { setFloatingBarHeight } from '../../utils/floatingBar';
 import { useTheme } from '../../theme';
 import { useMembership } from '../../MembershipContext';
 import HeaderAvatar from '../../components/HeaderAvatar';
+import HeaderIconButton from '../../components/HeaderIconButton';
 import SproutIcon from '../../components/SproutIcon';
 import MembershipCard from '../../components/MembershipCard';
 import { Type, DISPLAY_CAPS, DISPLAY_TRACKING, displaySize } from '../../typography';
@@ -411,16 +412,8 @@ export default function ProfileScreen() {
           </View>
         </View>
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-          <TouchableOpacity
-            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/achievements' as any); }}
-            style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="trophy" size={14} color={theme.accentBlue} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/settings'); }}
-            style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="settings" size={14} color={theme.accentBlue} />
-          </TouchableOpacity>
+          <HeaderIconButton icon="trophy" onPress={() => { router.push('/achievements' as any); }} />
+          <HeaderIconButton icon="settings" onPress={() => { router.push('/settings'); }} />
         </View>
       </View>
 

@@ -10,6 +10,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import HeaderAvatar from '../../components/HeaderAvatar';
+import HeaderIconButton from '../../components/HeaderIconButton';
 import CompanionFAB from '../../components/CompanionFAB';
 import { TAB_BAR_HEIGHT, TAB_SCROLL_PAD } from '../../components/CustomTabBar';
 import BackgroundLayers from '../../components/BackgroundLayers';
@@ -191,12 +192,7 @@ export default function FaithScreen() {
           </View>
         </View>
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-          <TouchableOpacity
-            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }}
-            style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}
-          >
-            <Ionicons name="journal" size={14} color={theme.accentBlue} />
-          </TouchableOpacity>
+          <HeaderIconButton icon="journal" onPress={() => { router.push('/journal'); }} />
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); showToolkit('faith'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
             <Ionicons name="help-circle" size={22} color={theme.accentBlue} />
           </TouchableOpacity>

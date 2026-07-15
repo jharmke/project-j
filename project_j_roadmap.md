@@ -28,6 +28,15 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-15 BUTTON TOP-SHINE (tier-2 tinted buttons). New `ButtonShine` primitive (white crown gloss, inset
+  1px self-clipping so NO overflow:hidden -> no clipped top corners; softer on Dark) + `HeaderIconButton`
+  component. Rolled to: all 5 tab-header icon-squares, the Library pills (Log/Workout), `+ Log`, and the 8
+  water quick-add buttons (both +oz/-oz rows incl. the custom drop buttons). Established the 3-TIER button
+  system: MOLDED (solid PrimaryCTA) / SHINED tinted (tier-2, ButtonShine) / FLAT (passive). Learned: white
+  BEVEL top-border vanishes on light bg (reads "cut off") -> border stays accent on all 4 sides, shine does
+  the top-light; shine is near its width limit on very wide buttons (watch for "glass strip"). OPEN rollout:
+  HR Zones, Tags, Repeat/Pick-a-Day (shine + DE-NEON), the nuanced IF selector + tappable at-a-glance tiles,
+  and a catalog sweep for scattered tinted buttons (bible, food library, reports, achievements, stack headers).
 - 2026-07-15 HOME-CIRCLE REDESIGN. Tab bar home button: ACTIVE = accent circle + white house icon; INACTIVE
   = white (bgCard) circle + accent-coloured house icon (the colour-swap, reads clean on the frosted-white
   bar -- no dark-scrim dim). BOTH states get a GENTLE dome: one full-width crown-gloss -> soft dark-foot
@@ -254,6 +263,10 @@ are separate pre-submission checklists, NOT part of this menu.
   Same class as the PrimaryCTA fix -> button labels go to Interface, the REST DAY heading to Clash. Also
   optional: two info-modal titles (CalorieFloor, MeasureHowTo) sit on bold INTERFACE rather than Clash --
   not a bug (no number-face, no caps, no black), Justin's call whether to unify them.
+- [QUICK WIN] [found 2026-07-15] **Progress-bar treatment pass.** The bars (calories, water, steps, macros,
+  etc.) are flat solid-fill on a flat track -- plain. Give the fill a subtle gradient and/or a soft top sheen
+  (Whoop/Oura style), maybe a faint glow at the leading edge. Own mini-treatment, part of the visual refresh
+  button/surface family. Every bar animates already, so just the fill styling. Justin flagged 2026-07-15.
 - [QUICK WIN] [found 2026-07-15] **Otto (+ Halo?) FAB placement audit.** The floating companion FAB sits
   bottom-left on many stack screens and OVERLAPS the last card's content when the page has no bottom padding
   (confirmed on Sleep & Recovery > Recovery: the FAB covers the Recovery Coach text). Sweep every screen that
@@ -267,8 +280,10 @@ are separate pre-submission checklists, NOT part of this menu.
   self-contained. Spec OPEN list + build order step 12.
 - [PARKED -> molded-button rollout] The molded PrimaryCTA is on ~4 CTAs; ~13 more primary CTAs, the
   circular FAB variant, and the PrimaryCTA row-height bug remain. Full detail in SPEC_visual_refresh.md
-  PARKED section. Also still open from the OPEN list: title accent-GRADIENT fill, card stagger on mount,
-  Warm + Blush getting the Light treatment.
+  PARKED section. Also still open from the OPEN list: title accent-GRADIENT fill (INCLUDE the header "?"
+  help icon in this pass -- it's a bare icon, so it gets the SAME masked accent-gradient FILL as the titles,
+  not the square-shine the other header icon-buttons got), card stagger on mount, Warm + Blush getting the
+  Light treatment.
 - [TRACK, VISION LOCKED + SPECCED 2026-07-07 -> ready to build] Custom Reports (Pro). Model: report =
   date range (week/month/3mo/6mo/1yr/custom) + chapters, each a PICKER into a library of ~55 pre-designed
   blocks the user assembles freely; templates = pre-filled block sets; exportable (PDF/share); Pro-gated

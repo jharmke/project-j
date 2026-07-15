@@ -48,6 +48,7 @@ import {
   requestNotificationPermission,
 } from '../../services/notifications';
 import { Type, numLine, DISPLAY_CAPS, DISPLAY_TRACKING, displaySize } from '../../typography';
+import ModalHeader from '../../components/ModalHeader';
 
 const WATER_TARGET = 128;
 
@@ -2142,24 +2143,22 @@ export default function LogScreen() {
       };
       const content = (
         <>
-          {/* Handle -- marginTop/Bottom 12 on pill matches editSheetHandle from home tab */}
-          <TouchableOpacity
-            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeEditMeals(); }}
-            style={{ alignSelf:'center', paddingVertical:10, paddingHorizontal:40 }}>
-            <View style={{ width:36, height:4, borderRadius:2, backgroundColor: theme.sheetHandle, marginTop:12, marginBottom:12 }} />
-          </TouchableOpacity>
-          {/* Header -- matches editSheetHeader from home tab */}
-          <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingBottom:16, borderBottomWidth:0.5, borderBottomColor: theme.borderSubtle }}>
-            <View>
-              <Text style={{ fontSize:13, color: theme.accentBlueRaw, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase' }}>Edit Meal Slots</Text>
-              <Text style={{ fontSize:10, color: theme.textDim, fontFamily:Type.ui, marginTop:2 }}>{mealSlots.length} of 8 slots</Text>
-            </View>
-            <TouchableOpacity
-              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeEditMeals(); }}
-              style={{ backgroundColor: theme.accentGreenBg, borderWidth:1, borderColor: theme.accentGreenBorder, borderRadius:6, paddingHorizontal:14, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center' }}>
-              <Text style={{ color: theme.accentGreen, fontSize:12, fontFamily:Type.uiBold, letterSpacing:1 }}>DONE</Text>
-            </TouchableOpacity>
-          </View>
+          {/* Title was a 13px uppercase LABEL; DONE is the explicit close, so ModalHeader's own X is
+              suppressed to avoid two close controls. */}
+          <ModalHeader
+            title="Edit Meal Slots"
+            subtitle={`${mealSlots.length} of 8 slots`}
+            onClose={closeEditMeals}
+            showClose={false}
+            right={
+              <TouchableOpacity
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeEditMeals(); }}
+                style={{ backgroundColor: theme.accentGreenBg, borderWidth:1, borderColor: theme.accentGreenBorder, borderRadius:6, paddingHorizontal:14, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center' }}>
+                <Text style={{ color: theme.accentGreen, fontSize:12, fontFamily:Type.uiBold, letterSpacing:1 }}>DONE</Text>
+              </TouchableOpacity>
+            }
+          />
+          <View style={{ borderBottomWidth:0.5, borderBottomColor: theme.borderSubtle }} />
           {/* Slot list -- flex:1 wrapper constrains FlatList to remaining card height, enabling scroll */}
           <View style={{ flex:1 }}>
           <DraggableFlatList

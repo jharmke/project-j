@@ -127,6 +127,7 @@ export interface Theme {
   tabBarInactive: string;
 
   // The SELECTED-state fill. OPAQUE, and computed per accent in the provider (see bgSelected there).
+  // Same value as accentBlueBgOpaque today, deliberately a separate name -- see the provider's note.
   bgSelected: string;
   bgCardVerse: string;      // verse card background (special)
   bgCardFaith: string;      // faith tab card background (faint warm tint, faith tab only)
@@ -163,7 +164,8 @@ export interface Theme {
   // ── Accent / Interactive ────────────────────────────────────────────────────
   accentBlue:               string;               // primary interactive color (button-safe, may differ from raw for light accents)
   accentBlueRaw:            string;               // raw accent color, always the true accent - use for home button, gradients
-  accentBlueBg:             string;             // button background (low opacity blue)
+  accentBlueBg:             string;             // button background (low opacity blue) -- TRANSLUCENT, assumes an opaque card behind it
+  accentBlueBgOpaque:       string;       // same fill PRE-COMPOSITED opaque: for a tinted button sitting on the PAGE, not on a card
   accentBlueBorder:         string;         // button border
   accentGreen: string;              // success / goal hit
   accentGreenBg: string;
@@ -235,7 +237,8 @@ const dark: Theme = {
   glowStrength:     0.40,
   chromeFill:       'transparent',
   tabBarInactive:   '#74747e',
-  bgSelected:       '#000000',   // placeholder: the provider computes this from the LIVE accent
+  bgSelected:         '#000000', // placeholder: the provider computes this from the LIVE accent
+  accentBlueBgOpaque: '#000000', // placeholder: the provider computes this from the LIVE accent
   bgCardVerse:      '#22223a',
   bgCardFaith:      '#2a2a2e',  // = bgCard: no tint on dark (warm-dark cards recede and look cheap; warmth lives in the gold edge + accents)
   bgCardFaithHero:  '#262634',
@@ -337,7 +340,8 @@ const light: Theme = {
   glowStrength:     0.60,
   chromeFill:       'rgba(255,255,255,0.65)',
   tabBarInactive:   '#6666aa',
-  bgSelected:       '#000000',   // placeholder: the provider computes this from the LIVE accent
+  bgSelected:         '#000000', // placeholder: the provider computes this from the LIVE accent
+  accentBlueBgOpaque: '#000000', // placeholder: the provider computes this from the LIVE accent
   bgCardVerse:      'rgba(255,251,240,0.72)',
   bgCardFaith:      'rgba(255,250,243,0.85)',
   bgCardFaithHero:  'rgba(255,248,236,0.82)',
@@ -427,7 +431,8 @@ const slate: Theme = {
   glowStrength:     0.40,
   chromeFill:       'rgba(233,239,248,0.45)',  // light STEEL frost, kept LOW so the bar reads as glass not a bright white strip; the darker tabBarInactive carries icon legibility instead of a heavy fill
   tabBarInactive:   '#5a7088',  // Slate textMuted -- was #8a9aaa (its faint textDim), the root of the "navy tab icons hidden" complaint
-  bgSelected:       '#000000',   // placeholder: the provider computes this from the LIVE accent
+  bgSelected:         '#000000', // placeholder: the provider computes this from the LIVE accent
+  accentBlueBgOpaque: '#000000', // placeholder: the provider computes this from the LIVE accent
   bgCardVerse:      'rgba(226,232,244,0.90)',
   bgCardFaith:      'rgba(228,221,209,0.92)',
   bgCardFaithHero:  'rgba(226,219,206,0.92)',
@@ -517,7 +522,8 @@ const warm: Theme = {
   glowStrength:     0.40,
   chromeFill:       'transparent',
   tabBarInactive:   '#c0a080',
-  bgSelected:       '#000000',   // placeholder: the provider computes this from the LIVE accent
+  bgSelected:         '#000000', // placeholder: the provider computes this from the LIVE accent
+  accentBlueBgOpaque: '#000000', // placeholder: the provider computes this from the LIVE accent
   bgCardVerse:      '#fff8e8',
   bgCardFaith:      '#fff1dd',
   bgCardFaithHero:  '#ffeed6',
@@ -607,7 +613,8 @@ const blush: Theme = {
   glowStrength:     0.40,
   chromeFill:       'transparent',
   tabBarInactive:   '#b07a8a',
-  bgSelected:       '#000000',   // placeholder: the provider computes this from the LIVE accent
+  bgSelected:         '#000000', // placeholder: the provider computes this from the LIVE accent
+  accentBlueBgOpaque: '#000000', // placeholder: the provider computes this from the LIVE accent
   bgCardVerse:      'rgba(255,252,245,0.92)',
   bgCardFaith:      'rgba(253,240,241,0.95)',
   bgCardFaithHero:  'rgba(253,242,238,0.94)',
@@ -775,19 +782,33 @@ export function ThemeProvider({ children }: { children: React.ReactNode }): Reac
   const baseTheme = THEMES[themeId];
   const accentOptions = ACCENT_PALETTES[themeId];
   const activeAccent = accentOptions.find(a => a.id === accentId) ?? accentOptions[0];
+  const accentOpaque = mix(activeAccent.accentBlue, baseTheme.bgInput, themeId === 'dark' ? 0.22 : 0.16);
+
   const composedTheme: Theme = {
     ...baseTheme,
     accentBlue:       activeAccent.buttonColor ?? activeAccent.accentBlue,
     accentBlueRaw:    activeAccent.accentBlue,
     accentBlueBg:     activeAccent.buttonBg ?? activeAccent.accentBlueBg,
     accentBlueBorder: activeAccent.buttonBorder ?? activeAccent.accentBlueBorder,
-    // The SELECTED fill, pre-composited to an OPAQUE colour.
-    // accentBlueBg is a TRANSLUCENT accent (~10%), and a selected row does not layer it over the white --
-    // it REPLACES the white with it. That was invisible while the page behind was an opaque near-white
-    // slab. Now the page is translucent and glowing, so a selected row was showing the glow, the halftone
-    // and the cards behind it straight through, and its label became unreadable while every UNSELECTED row
-    // stayed crisply opaque. Selection has to be more solid than its neighbours, not less.
-    bgSelected:       mix(activeAccent.accentBlue, baseTheme.bgInput, themeId === 'dark' ? 0.22 : 0.16),
+    // The accent fill, pre-composited to an OPAQUE colour. TWO tokens, ONE value, because the same fix
+    // solves two different bugs with the same root cause: accentBlueBg is a TRANSLUCENT accent (~10%), so
+    // it only works when something OPAQUE and near-white sits behind it. When it does not, the fill stops
+    // being a tint and simply shows you whatever is underneath.
+    //   bgSelected -- a selected ROW does not layer the tint over the white, it REPLACES the white with it.
+    //     Invisible back when the page behind was an opaque near-white slab; once the page went translucent
+    //     and glowing, a selected row showed the glow, the halftone and the cards straight through, and its
+    //     label went unreadable while every UNSELECTED row stayed crisply opaque. Selection has to be MORE
+    //     solid than its neighbours, not less.
+    //   accentBlueBgOpaque -- the same failure for a tinted BUTTON that sits on the PAGE instead of on a
+    //     card (Stats' VIEW ALL ACHIEVEMENTS, found 2026-07-15). Every other tinted button in the app is
+    //     card-backed, so the tint composites over white and reads as a pale accent. That one is a section
+    //     footer sitting straight on the background -- and the background down there is the accent-coloured
+    //     bottom glow, so it was a 10% cyan wash over a cyan glow and vanished. The tinted-button recipe
+    //     SILENTLY ASSUMES A WHITE CARD BEHIND IT. When there is none, use this.
+    // Kept as separate names on purpose: bgSelected's ~20 call sites are genuinely about SELECTION, and a
+    // button on a page is not selected. Same value today; they are free to diverge.
+    accentBlueBgOpaque: accentOpaque,
+    bgSelected:         accentOpaque,
     ...(activeAccent.gradientStart ? { gradientStart: activeAccent.gradientStart } : {}),
   };
 

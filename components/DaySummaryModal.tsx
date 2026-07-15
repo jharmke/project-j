@@ -23,6 +23,7 @@ import { DayScore, scoreLabel } from '../utils/dayScore';
 import { excludeDayFromAverages } from '../utils/dayScoreStore';
 import { winAndCoachLines, contextLine as computeContextLine, hadFaithEntryOn, underLoggedNutritionLine } from '../utils/daySummaryCopy';
 import { Type, numLine } from '../typography';
+import ButtonShine from './ButtonShine';
 
 const AnimCircle = Reanimated.createAnimatedComponent(Circle);
 
@@ -274,6 +275,7 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
             {/* FULL BREAKDOWN (morning pop-up only; hidden when already in the archive) */}
             {onViewSummary && (
               <TouchableOpacity onPress={handleViewSummary} style={{ paddingVertical: 13, borderRadius: 10, alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
+                <ButtonShine radius={10} />
                 <Text style={{ color: theme.accentBlue, fontSize: 13, letterSpacing: 1, fontFamily: Type.uiSemibold }}>FULL BREAKDOWN</Text>
               </TouchableOpacity>
             )}

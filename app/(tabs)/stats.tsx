@@ -19,6 +19,7 @@ import { useTheme } from '../../theme';
 import { useMembership } from '../../MembershipContext';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import HeaderIconButton from '../../components/HeaderIconButton';
+import ButtonShine from '../../components/ButtonShine';
 import { CardPeriod, ChartType, DATA_KEY_CATEGORIES, DATA_KEY_META, DataKey, DEFAULT_STATS_CARDS, StatsCard, availableChartTypes, generateCardId, loadStatsCards, saveStatsCards } from '../../statsCardRegistry';
 import HRZonesStatsCard from '../../components/HRZonesStatsCard';
 import BodyMeasurementsCard from '../../components/BodyMeasurementsCard';
@@ -1979,10 +1980,15 @@ export default function StatsScreen() {
               color={theme.sleepRem} date={records.sleepHoursDate}
               fmt={(v) => `${Math.floor(v)}h ${Math.round((v % 1) * 60)}m`} />
           </View>
+          {/* OPAQUE fill, not the usual translucent accentBlueBg: this button is a section footer sitting
+              straight on the PAGE, not on a card like every other tinted button in the app. The page down
+              here is the accent-coloured bottom glow, so the 10% tint was a cyan wash over a cyan glow and
+              the button disappeared into the background. See the accentBlueBgOpaque note in theme.tsx. */}
           <TouchableOpacity
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/achievements' as any); }}
             activeOpacity={0.85}
-            style={{ paddingVertical: 14, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: theme.accentBlueBorder, backgroundColor: theme.accentBlueBg, flexDirection: 'row', justifyContent: 'center', gap: 8 }}>
+            style={{ paddingVertical: 14, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: theme.accentBlueBorder, backgroundColor: theme.accentBlueBgOpaque, flexDirection: 'row', justifyContent: 'center', gap: 8 }}>
+            <ButtonShine radius={8} />
             <Ionicons name="trophy" size={16} color={theme.accentBlue} />
             <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 1 }}>VIEW ALL ACHIEVEMENTS</Text>
           </TouchableOpacity>
@@ -2097,6 +2103,7 @@ export default function StatsScreen() {
                           backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
                           borderRadius: 8, paddingVertical: 12,
                         }}>
+                        <ButtonShine radius={8} />
                         <Ionicons name="flag" size={14} color={theme.accentBlue} />
                         <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>New Challenge</Text>
                       </TouchableOpacity>
@@ -2220,6 +2227,7 @@ export default function StatsScreen() {
                           borderRadius: 8, paddingVertical: 12,
                         }}
                       >
+                        <ButtonShine radius={8} />
                         <Ionicons name="analytics" size={14} color={theme.accentBlue} />
                         <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>Open Analysis</Text>
                       </TouchableOpacity>
@@ -2260,6 +2268,7 @@ export default function StatsScreen() {
                           borderRadius: 8, paddingVertical: 12,
                         }}
                       >
+                        <ButtonShine radius={8} />
                         <Ionicons name={isPro ? 'swap-horizontal' : 'lock-open'} size={14} color={theme.accentBlue} />
                         <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>{isPro ? 'New Comparison' : 'Become a Supporter'}</Text>
                       </TouchableOpacity>
@@ -3012,12 +3021,17 @@ export default function StatsScreen() {
                   </>
                 );
               })()}
+              {/* The TUTORIAL-MODE twin of the real Create Custom Streak button below (this whole panel is
+                  gated on streaksManageTutorialMode). It has NO onPress ON PURPOSE -- it is a spotlight
+                  target in a demo, not a live control. It gets the shine anyway: it must stay pixel-identical
+                  to the real button, or the tutorial teaches a button that does not match the app. */}
               <TouchableOpacity
                 ref={streakCreateCustomBtnRef}
                 collapsable={false}
                 style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
                   backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
                   borderRadius: 10, paddingVertical: 12, marginTop: 4, marginBottom: 8 }}>
+                <ButtonShine radius={10} />
                 <Ionicons name="add" size={18} color={theme.accentBlue} />
                 <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>Create Custom Streak</Text>
               </TouchableOpacity>
@@ -3113,10 +3127,13 @@ export default function StatsScreen() {
               })()}
 
               {/* Create custom */}
+              {/* The REAL one. Keep it and its tutorial twin above in lockstep -- if one gets a treatment,
+                  so does the other. */}
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeManageStreaks(); setTimeout(openCreateCustom, 220); }}
                 style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
                   backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
                   borderRadius: 10, paddingVertical: 12, marginTop: 4, marginBottom: 8 }}>
+                <ButtonShine radius={10} />
                 <Ionicons name="add" size={18} color={theme.accentBlue} />
                 <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>Create Custom Streak</Text>
               </TouchableOpacity>

@@ -26,6 +26,7 @@ import { useToast } from './Toast';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { Type } from '../typography';
+import ButtonShine from './ButtonShine';
 import ModalHeader from './ModalHeader';
 
 interface CustomFoodCreatorProps {
@@ -581,6 +582,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setAdditionalServings(prev => [...prev, { id: `as_${Date.now()}`, label: '', grams: '' }]); }}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}
               >
+                <ButtonShine radius={6} />
                 <Ionicons name="add" size={12} color={theme.accentBlue} />
                 <Text style={{ fontSize: 11, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Add</Text>
               </TouchableOpacity>
@@ -631,6 +633,9 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
             style={s.optionalToggle}
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); toggleOptional(); }}
           >
+            {/* An EXPANDER, not a selector: it has one look and reveals the optional fields, so it is a real
+                tinted button and takes the shine. Selectors (a fill that marks which of N is chosen) do not. */}
+            <ButtonShine radius={8} />
             <Text style={s.optionalToggleText}>Macros &amp; Extended Nutrition</Text>
             <Ionicons name={showOptional ? 'chevron-up' : 'chevron-down'} size={14} color={theme.accentBlue} />
           </TouchableOpacity>

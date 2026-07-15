@@ -6,6 +6,7 @@ import { Animated, Dimensions, Easing, Modal, ScrollView, StyleSheet, Text, Touc
 import Svg, { Circle, Defs, Line, LinearGradient as SvgLinearGradient, Path, Polyline, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import { ADVANCED_NUTRIENTS, CardPeriod, DATA_KEY_META, NUTRIENT_CATEGORIES, StatsCard } from '../statsCardRegistry';
 import { TrendData } from '../utils/statsData';
+import ButtonShine from './ButtonShine';
 import { Type } from '../typography';
 
 const CHART_WIDTH = Dimensions.get('window').width - 64;
@@ -1458,6 +1459,7 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
           style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 4,
             backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
             borderRadius: 6, paddingHorizontal: 10, paddingVertical: 5, marginBottom: 10 }}>
+          <ButtonShine radius={6} />
           <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>
             {card.nutrientKey ? (ADVANCED_NUTRIENTS.find(n => n.key === card.nutrientKey)?.label ?? 'Select Nutrient') : 'Select Nutrient'}
           </Text>

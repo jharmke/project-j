@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { Type } from '../typography';
+import ButtonShine from './ButtonShine';
 
 export type FloorModalCase = 1 | 2 | 3 | 4;
 
@@ -69,6 +70,7 @@ export default function CalorieFloorModal({ theme, modalCase, target, onSlowerPa
     <TouchableOpacity
       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); onPress(); }}
       style={{ marginTop: 10, paddingVertical: 13, borderRadius: 10, alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
+      <ButtonShine radius={10} />
       <Text style={{ color: theme.accentBlue, fontSize: 13, letterSpacing: 0.5, fontFamily: Type.uiSemibold }}>{label}</Text>
     </TouchableOpacity>
   );

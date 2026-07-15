@@ -7,6 +7,7 @@ import { TOOLTIP_REGISTRY, TooltipDefinition } from '../tooltipRegistry';
 import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 import { Type } from '../typography';
+import ButtonShine from './ButtonShine';
 
 interface Props {
   tooltipKey: string;
@@ -256,6 +257,7 @@ export default function TooltipModal({ tooltipKey, visible, onClose, hideTour }:
                 style={[styles.button, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
                 activeOpacity={0.8}
               >
+                <ButtonShine radius={10} />
                 <Text style={[styles.buttonText, { color: theme.accentBlue }]}>Got it</Text>
               </TouchableOpacity>
             </Animated.View>

@@ -20,6 +20,7 @@ import { scoreLabel } from '../utils/dayScore';
 import { periodSummaryLines } from '../utils/daySummaryCopy';
 import { ScoreRing } from './DaySummaryModal';
 import { Type, numLine } from '../typography';
+import ButtonShine from './ButtonShine';
 
 type StyleMode = 'discipline' | 'balanced' | 'mindful';
 type Tier = 'week' | 'month';
@@ -197,6 +198,7 @@ export default function SummaryReadyModal({
 
             {/* FULL BREAKDOWN -> dedicated full-summary screen */}
             <TouchableOpacity onPress={handleViewBreakdown} style={{ paddingVertical: 13, borderRadius: 10, alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
+              <ButtonShine radius={10} />
               <Text style={{ color: theme.accentBlue, fontSize: 13, letterSpacing: 1, fontFamily: Type.uiSemibold }}>FULL BREAKDOWN</Text>
             </TouchableOpacity>
 

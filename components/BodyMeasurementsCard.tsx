@@ -13,6 +13,7 @@ import { useFocusEffect } from 'expo-router';
 import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '../theme';
+import ButtonShine from './ButtonShine';
 import { useToast, ToastRenderer } from './Toast';
 import {
   BodyMeasurementEntry, MEASURE_FIELDS, MeasureFieldKey,
@@ -172,6 +173,7 @@ export default function BodyMeasurementsCard() {
           backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
           borderRadius: 8, paddingVertical: 11, marginTop: 12,
         }}>
+        <ButtonShine radius={8} />
         <Ionicons name="add" size={17} color={theme.accentBlue} />
         <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.accentBlue }}>Log Measurements</Text>
       </TouchableOpacity>

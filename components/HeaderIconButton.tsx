@@ -13,7 +13,9 @@ import ButtonShine from './ButtonShine';
 //   - a brighter top BEVEL edge (borderTopColor) so the top lip catches light too
 // Tuned per theme: a white gloss on a dark tinted button glares, so it is much softer on Dark.
 // One shared source so every header stays consistent -- and the same recipe seeds the tinted-pill pass.
-export default function HeaderIconButton({ icon, onPress, size = 14, haptic = Haptics.ImpactFeedbackStyle.Light }: { icon: any; onPress: () => void; size?: number; haptic?: Haptics.ImpactFeedbackStyle }) {
+// color/bg/border: optional overrides for a screen whose chrome is NOT the app accent -- the Faith tab is
+// amber, page glow included. Default to the accent tokens so every other tab is untouched.
+export default function HeaderIconButton({ icon, onPress, size = 14, haptic = Haptics.ImpactFeedbackStyle.Light, color, bg, border }: { icon: any; onPress: () => void; size?: number; haptic?: Haptics.ImpactFeedbackStyle; color?: string; bg?: string; border?: string }) {
   const { theme } = useTheme();
   return (
     <TouchableOpacity
@@ -21,15 +23,15 @@ export default function HeaderIconButton({ icon, onPress, size = 14, haptic = Ha
       style={{
         borderWidth: 1, borderRadius: 6, height: 32, paddingHorizontal: 12,
         alignItems: 'center', justifyContent: 'center',
-        backgroundColor: theme.accentBlueBg,
+        backgroundColor: bg ?? theme.accentBlueBg,
         // Border is the SAME accent tint on all four sides -- do NOT whiten the top edge: a white top border
         // vanishes into a light header background and makes the top read as "cut off". ButtonShine lights
         // the top, not the border.
-        borderColor: theme.accentBlueBorder,
+        borderColor: border ?? theme.accentBlueBorder,
       }}
     >
       <ButtonShine radius={6} />
-      <Ionicons name={icon} size={size} color={theme.accentBlue} />
+      <Ionicons name={icon} size={size} color={color ?? theme.accentBlue} />
     </TouchableOpacity>
   );
 }

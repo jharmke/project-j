@@ -11,6 +11,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import HeaderIconButton from '../../components/HeaderIconButton';
+import ButtonShine from '../../components/ButtonShine';
 import CompanionFAB from '../../components/CompanionFAB';
 import { TAB_BAR_HEIGHT, TAB_SCROLL_PAD } from '../../components/CustomTabBar';
 import BackgroundLayers from '../../components/BackgroundLayers';
@@ -185,16 +186,29 @@ export default function FaithScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
           <HeaderAvatar />
           <View style={{ flex: 1 }}>
-            <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Faith</Text>
+            {/* AMBER, not the app accent. The page already glows amber (BackgroundLayers above) and the tab
+                bar already ambers the active Faith icon -- the top chrome was the last piece still on the
+                accent, so cyan chrome sat over amber content. ScreenHeader's own comment says "Faith screens
+                go amber"; nothing had ever actually done it. Faith is a PLACE, and a place has a colour. */}
+            <Text style={[styles.headerTitle, { color: theme.accentAmber }]}>Faith</Text>
             <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, marginTop: 1, letterSpacing: 2, textTransform: 'uppercase' }}>
               {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </Text>
           </View>
         </View>
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-          <HeaderIconButton icon="journal" onPress={() => { router.push('/journal'); }} />
+          {/* Amber overrides at the SAME alphas as the accent recipe (bg 0.10 / border 0.30 -> hex 1A / 4D),
+              and derived from theme.accentAmber so each theme keeps its own amber, rather than the hardcoded
+              rgba(212,134,10,...) the rest of this file still uses. */}
+          <HeaderIconButton
+            icon="journal"
+            onPress={() => { router.push('/journal'); }}
+            color={theme.accentAmber}
+            bg={theme.accentAmber + '1A'}
+            border={theme.accentAmber + '4D'}
+          />
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); showToolkit('faith'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
-            <Ionicons name="help-circle" size={22} color={theme.accentBlue} />
+            <Ionicons name="help-circle" size={22} color={theme.accentAmber} />
           </TouchableOpacity>
         </View>
       </View>
@@ -304,6 +318,9 @@ function VotdCard({ verse, theme, onReflect }: { verse: DailyVerse | null; theme
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); onReflect!(); }}
           style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: 'rgba(212,134,10,0.10)', borderColor: 'rgba(212,134,10,0.30)', borderWidth: 1, borderRadius: 6, paddingVertical: 9, paddingHorizontal: 12, minHeight: 44, marginTop: 10 }}
         >
+          {/* The gloss is white, so it reads the same over amber as over the accent tint everywhere else --
+              nothing in ButtonShine is accent-specific. */}
+          <ButtonShine radius={6} />
           <Ionicons name="sparkles" size={12} color={theme.accentAmber} />
           <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: theme.accentAmber }}>Reflect with Halo</Text>
         </TouchableOpacity>
@@ -421,6 +438,7 @@ function BibleCard({ theme }: { theme: Theme }) {
               onPress={() => openReader({ openBook: lastRead.book, openChapter: String(lastRead.chapter) })}
               style={[styles.bibleContinueBtn, { backgroundColor: tintBg, borderColor: tintBorder }]}
             >
+              <ButtonShine radius={10} />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.bibleContinueLabel, { color: theme.textMuted }]}>CONTINUE READING</Text>
                 <Text style={[styles.bibleContinueRef, { color: theme.accentAmber }]}>{lastRead.book} {lastRead.chapter}</Text>
@@ -431,6 +449,7 @@ function BibleCard({ theme }: { theme: Theme }) {
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setGuideOpen(true); }}
               style={[styles.bibleFindBtn, { backgroundColor: tintBg, borderColor: tintBorder }]}
             >
+              <ButtonShine radius={10} />
               <Ionicons name="compass-outline" size={15} color={theme.accentAmber} />
               <Text style={[styles.bibleFindBtnText, { color: theme.accentAmber }]}>Find something to read</Text>
             </PressButton>
@@ -447,6 +466,7 @@ function BibleCard({ theme }: { theme: Theme }) {
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setGuideOpen(true); }}
                 style={[styles.bibleBtnPrimary, { backgroundColor: tintBg, borderColor: tintBorder }]}
               >
+                <ButtonShine radius={8} />
                 <Ionicons name="compass-outline" size={15} color={theme.accentAmber} />
                 <Text style={[styles.bibleBtnPrimaryText, { color: theme.accentAmber }]}>Where do I start?</Text>
               </PressButton>
@@ -455,6 +475,7 @@ function BibleCard({ theme }: { theme: Theme }) {
                 onPress={() => openReader({ openBook: 'John', openChapter: '1' })}
                 style={[styles.bibleBtnSecondary, { backgroundColor: tintBg, borderColor: tintBorder }]}
               >
+                <ButtonShine radius={8} />
                 <Text style={[styles.bibleBtnSecondaryText, { color: theme.accentAmber }]}>Open the Bible</Text>
               </PressButton>
             </View>
@@ -561,6 +582,7 @@ function PlansColumn({ theme, label, emptyText, items, atCap, onBrowse, colRef }
             onPress={onBrowse}
             style={[styles.emptyBrowseBtn, { backgroundColor: tileSurface, borderColor: 'rgba(212,134,10,0.4)' }]}
           >
+            <ButtonShine radius={8} />
             <Text style={[styles.emptyBrowseText, { color: theme.accentAmber }]}>Browse</Text>
           </PressButton>
         </View>
@@ -572,6 +594,11 @@ function PlansColumn({ theme, label, emptyText, items, atCap, onBrowse, colRef }
               onPress={it.onPress}
               style={[styles.tile, { backgroundColor: tintBg, borderColor: tintBorder }]}
             >
+              {/* TRYING the shine on these at Justin's call (2026-07-15). They are the borderline case: real
+                  tap targets, but they are CARDS in a list (progress bar, name, chip) rather than action
+                  buttons, and several stack up -- which is the repetition that made the Repeat pills read
+                  plastic. If they look glossy or cheap in a stack, this is the first one to pull. */}
+              <ButtonShine radius={12} />
               <View style={styles.tileTop}>
                 <View style={[styles.tileChip, { backgroundColor: chipBg }]}>
                   <Ionicons name={it.icon as any} size={14} color={theme.accentAmber} />
@@ -711,6 +738,7 @@ function PrayerCard({ theme }: { theme: Theme }) {
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/prayer', params: { autoOpenRequest: '1' } }); }}
             style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: tintBg, borderColor: tintBorder, borderWidth: 1, borderRadius: 6, paddingVertical: 9, paddingHorizontal: 12, minHeight: 44, marginTop: 8 }}
           >
+            <ButtonShine radius={6} />
             <Ionicons name="people" size={12} color={theme.accentAmber} />
             <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: theme.accentAmber }}>Ask for prayer</Text>
           </TouchableOpacity>

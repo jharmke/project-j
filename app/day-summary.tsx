@@ -34,6 +34,7 @@ import { refreshDayCoachTip, resolveTipBody } from '../utils/coachAI';
 import { effectiveExerciseMinutes } from '../utils/exerciseMinutes';
 import { Type, numLine } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import ButtonShine from '../components/ButtonShine';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -205,7 +206,7 @@ export default function DaySummaryScreen() {
 
   // ── Header (shared across loading / empty / content) ──
   const Header = (
-    <ScreenHeader title="Day Summary" color={accent} right={<TooltipIcon tooltipKey="day_score" size={18} />} />
+    <ScreenHeader title="Day Summary" right={<TooltipIcon tooltipKey="day_score" size={18} />} />
   );
 
   if (loading) {
@@ -478,6 +479,7 @@ export default function DaySummaryScreen() {
                   onPress={handleMarkComplete}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   style={{ alignSelf: 'flex-start', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 }}>
+                  <ButtonShine radius={6} />
                   <Text style={{ fontSize: 12, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>This was my full day</Text>
                 </TouchableOpacity>
               </View>

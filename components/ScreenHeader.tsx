@@ -47,7 +47,12 @@ export default function ScreenHeader({
   subRow?: React.ReactNode;          // a second row under the title (date nav, segmented control)
   onBack?: () => void;               // defaults to router.back()
   onTitlePress?: () => void;         // Settings' 7-tap dev unlock lives on the title itself
-  color?: string;                    // override the title colour (Faith screens go amber)
+  // This screen's CHROME colour -- the title AND the back chevron. Faith screens pass amber: the page, the
+  // content and the tab-bar icon all go amber there, so a cyan chevron was the last thing still arguing.
+  // It used to colour the TITLE ONLY, which is why Justin kept seeing amber titles over accent chevrons.
+  // Pass a BUTTON-SAFE colour (theme.accentBlue / theme.accentAmber), never accentBlueRaw: on light accents
+  // (Blush yellow, Light pink) raw is the bright unreadable value that accentBlue exists to replace.
+  color?: string;
   topInset?: boolean;                // false when a parent already paid the safe-area top
   numberOfLines?: number;
 }) {
@@ -68,7 +73,7 @@ export default function ScreenHeader({
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); (onBack ?? router.back)(); }}
           style={styles.back}
         >
-          <Ionicons name="chevron-back" size={24} color={theme.accentBlue} />
+          <Ionicons name="chevron-back" size={24} color={color ?? theme.accentBlue} />
         </TouchableOpacity>
 
         <TouchableOpacity

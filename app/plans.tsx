@@ -209,7 +209,8 @@ export default function PlansScreen() {
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
 
-      <ScreenHeader title="Plans" topInset={false} />
+      {/* AMBER -- body is already 100% amber (zero accent refs). See the Faith tab header note. */}
+      <ScreenHeader title="Plans" color={theme.accentAmber} topInset={false} />
 
       {/* Segmented toggle: this is where the reading-plan vs devotional distinction is taught. */}
       <View ref={segmentRef} collapsable={false} style={styles.segmentRow}>

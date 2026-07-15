@@ -17,7 +17,11 @@ import { useTheme } from '../theme';
 // bottom already sits at the top of the tab bar (the Tabs navigator insets the content),
 // so a small offset hugs the bar. Non tab screens pass a larger bottom.
 
-const GOLD    = '#e8a020'; // flat disc
+// EXPORTED: Halo's gold is the one source of truth for any faith FAB. Bible's auto-scroll FAB sits on the
+// same screen as Halo, so it imports this rather than using theme.accentAmber -- accentAmber varies per
+// theme (#b45309 on Light) and the two discs visibly disagreed sitting side by side. Fixed, not a token, on
+// purpose: Halo is a character with a look, not a themed surface.
+export const GOLD = '#e8a020'; // flat disc
 const GOLD_HI = '#f6cf6a'; // glow + rim highlight
 const CROSS   = '#fff4dd'; // warm, light cross
 

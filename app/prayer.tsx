@@ -22,6 +22,7 @@ import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { Type, numLine, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import HeaderIconButton from '../components/HeaderIconButton';
 
 // Static demo prayers for the faith_prayer tutorial (?tutorial=1). Rendered without ever touching
 // pj_prayers, so a brand-new user with zero prayers still sees a full screen to learn on, and no
@@ -169,8 +170,11 @@ export default function PrayerScreen() {
 
       {/* The answered count only appears once a prayer IS answered, so a list of all-ongoing prayers
           never reads as "0". */}
+      {/* AMBER: this screen's body is already 100% amber (zero accent refs) -- the title was the only cyan
+          thing on it. Matches the Faith tab header and ScreenHeader's own "Faith screens go amber" note. */}
       <ScreenHeader
         title="Prayer"
+        color={theme.accentAmber}
         topInset={false}
         right={
           <>
@@ -182,12 +186,16 @@ export default function PrayerScreen() {
                 </Animated.View>
               </View>
             )}
-            <TouchableOpacity
-              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setRequestOpen(true); }}
-              style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
-            >
-              <Ionicons name="people" size={14} color={theme.accentBlue} />
-            </TouchableOpacity>
+            {/* Another local headerBtn copy that predates HeaderIconButton -- same recipe exactly (radius 6,
+                height 32, 1px border, 12px padding), so it is a straight swap onto the shared component.
+                AMBER, same as the Faith tab's journal square: a faith page's chrome is amber. */}
+            <HeaderIconButton
+              icon="people"
+              onPress={() => setRequestOpen(true)}
+              color={theme.accentAmber}
+              bg={theme.accentAmber + '1A'}
+              border={theme.accentAmber + '4D'}
+            />
           </>
         }
       />

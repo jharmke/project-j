@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useToast } from './Toast';
 import TooltipIcon from './TooltipIcon';
+import ButtonShine from './ButtonShine';
 import AnimatedNumber from './AnimatedNumber';
 import { CardWash } from './GradientCard';
 import { Type, numLine } from '../typography';
@@ -491,6 +492,9 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
               onPress={handleEdit}
               hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
             >
+              {/* This card renders in BOTH variants -- amber on the Faith tab, accent on Home -- and btnBg
+                  resolves per variant. The gloss is white, so one ButtonShine covers both. */}
+              <ButtonShine radius={6} />
               <Text style={{ fontFamily: Type.uiSemibold, fontSize: 12, color: btnText }}>Edit</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -498,6 +502,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }}
               hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
             >
+              <ButtonShine radius={6} />
               <Ionicons name={faith ? 'journal-outline' : 'book-outline'} size={12} color={btnText} style={{ marginRight: 4 }} />
               <Text style={{ fontFamily: Type.uiSemibold, fontSize: 12, color: btnText }}>View in Journal</Text>
             </TouchableOpacity>
@@ -544,6 +549,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
                 disabled={!canSave}
                 onPress={handleSave}
               >
+                <ButtonShine radius={6} />
                 <Text style={{ fontFamily: Type.uiSemibold, fontSize: 12, color: btnText }}>Save Changes</Text>
               </TouchableOpacity>
             </View>
@@ -557,6 +563,9 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
               disabled={!canSave}
               onPress={handleSave}
             >
+              {/* opacity 0.4 when there is nothing to save dims the shine along with the button, which is
+                  correct: a dim/inactive button should not look like a lit surface. */}
+              <ButtonShine radius={6} />
               <Text style={[styles.saveBtnText, { color: btnText }]}>Log Gratitude</Text>
             </TouchableOpacity>
           )}

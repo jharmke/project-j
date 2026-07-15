@@ -291,7 +291,7 @@ export default function ComparisonReportScreen() {
   if (!isPro) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
-        <ScreenHeader title="Comparison" color={accent} />
+        <ScreenHeader title="Comparison" />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
           <View style={{ backgroundColor: theme.bgCard, borderWidth: 1, borderColor: `${accent}40`, borderRadius: 14, padding: 20, alignItems: 'center' }}>
             {/* Lock only -- the headline right below already names the tier. */}
@@ -313,7 +313,7 @@ export default function ComparisonReportScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
-      <ScreenHeader title="Comparison" color={accent} right={<TooltipIcon tooltipKey="comparison_report" size={18} />} />
+      <ScreenHeader title="Comparison" right={<TooltipIcon tooltipKey="comparison_report" size={18} />} />
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 40 }}>
 

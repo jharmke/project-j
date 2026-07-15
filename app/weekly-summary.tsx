@@ -211,7 +211,7 @@ export default function WeeklySummaryScreen() {
   if (!data) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
-        <ScreenHeader title="Weekly Summary" color={accent} right={<TooltipIcon tooltipKey="day_score" size={18} />} />
+        <ScreenHeader title="Weekly Summary" right={<TooltipIcon tooltipKey="day_score" size={18} />} />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 }}>
           <Text style={{ fontSize: 14, color: theme.textMuted, fontFamily: Type.ui, textAlign: 'center' }}>
             No summary found for this week.
@@ -251,7 +251,6 @@ export default function WeeklySummaryScreen() {
       <ScreenHeader
         title="Weekly Summary"
         subtitle={formatDateRange(data.weekStart, data.weekEnd)}
-        color={accent}
         right={<TooltipIcon tooltipKey="day_score" size={18} />}
       />
       <ScrollView

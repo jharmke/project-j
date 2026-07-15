@@ -282,7 +282,7 @@ export default function MonthlySummaryScreen() {
   if (!data) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
-        <ScreenHeader title="Monthly Summary" color={accent} right={<TooltipIcon tooltipKey="day_score" size={18} />} />
+        <ScreenHeader title="Monthly Summary" right={<TooltipIcon tooltipKey="day_score" size={18} />} />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 }}>
           <Text style={{ fontSize: 14, color: theme.textMuted, fontFamily: Type.ui, textAlign: 'center' }}>
             No summary found for this month.
@@ -343,7 +343,6 @@ export default function MonthlySummaryScreen() {
       <ScreenHeader
         title="Monthly Summary"
         subtitle={monthYearLabel}
-        color={accent}
         right={<TooltipIcon tooltipKey="day_score" size={18} />}
       />
       <ScrollView contentContainerStyle={{ paddingTop: 16, paddingBottom: insets.bottom + 24 }} showsVerticalScrollIndicator={false}>

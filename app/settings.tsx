@@ -80,6 +80,7 @@ import { generateWeeklySummary } from '../utils/weeklySummary';
 import { generateMonthlySummary } from '../utils/monthlySummary';
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import ButtonShine from '../components/ButtonShine';
 
 type FaithJourney = 'rooted' | 'exploring' | 'notrightnow';
 
@@ -1803,6 +1804,7 @@ export default function SettingsScreen() {
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); importWorkoutHistory(); }}
               disabled={importing}
               style={{ paddingVertical: 12, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: theme.accentBlueBorder, backgroundColor: theme.accentBlueBg, opacity: importing ? 0.6 : 1, flexDirection: 'row', justifyContent: 'center', gap: 8 }}>
+              <ButtonShine radius={8} />
               {importing
                 ? <ActivityIndicator size="small" color={theme.accentBlue} />
                 : <Ionicons name="download-outline" size={16} color={theme.accentBlue} />}

@@ -22,6 +22,7 @@ import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import ButtonShine from '../components/ButtonShine';
 
 type Category = 'verse' | 'prayer' | 'study' | 'personal' | 'gratitude' | 'fitness';
 
@@ -617,6 +618,10 @@ export default function JournalScreen() {
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setSortOrder(p => p === 'desc' ? 'asc' : 'desc'); }}
             style={[styles.headerBtn, { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
           >
+            {/* A local headerBtn copy like Prayer's, but this one carries a LABEL, so it cannot become a
+                HeaderIconButton (that component is the icon-only square). It takes the shine directly.
+                It is a real button, not a selector: it FLIPS newest/oldest and has one look either way. */}
+            <ButtonShine radius={6} />
             <Ionicons name={sortOrder === 'desc' ? 'arrow-down' : 'arrow-up'} size={14} color={theme.accentBlue} />
             <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>{sortOrder === 'desc' ? 'Newest' : 'Oldest'}</Text>
           </TouchableOpacity>

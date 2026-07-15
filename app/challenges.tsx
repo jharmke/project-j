@@ -87,7 +87,7 @@ export default function ChallengesScreen() {
   };
 
   const Header = (
-    <ScreenHeader title="Challenges" color={accent} right={<TooltipIcon tooltipKey="challenge_system" size={18} />} />
+    <ScreenHeader title="Challenges" right={<TooltipIcon tooltipKey="challenge_system" size={18} />} />
   );
 
   if (loading) {

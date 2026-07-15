@@ -20,6 +20,7 @@ import { ToastRenderer, useToast } from '../components/Toast';
 import { saveToFirebase } from '../firebaseConfig';
 import { useTheme } from '../theme';
 import PrimaryCTA from '../components/PrimaryCTA';
+import ButtonShine from '../components/ButtonShine';
 import { useMembership } from '../MembershipContext';
 import { triggerHaptic } from '../utils/haptics';
 import { DEFAULT_MEAL_SLOTS, MealSlot, getMealDisplayName, loadMealSlots } from '../utils/mealSlots';
@@ -635,10 +636,16 @@ export default function AIMealEstimatorScreen() {
                           Best guess: {r.baseCal} kcal · {r.baseP}p · {r.baseC}c · {r.baseF}f
                         </Text>
                         <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+                          {/* Confirm + Edit shine; REMOVE below deliberately does not -- it is destructive, and
+                              shine says "press me". Same call as Duplicate/USE and Replace/Remove. Confirm is
+                              green rather than accent but it is still a constructive tinted button, and the
+                              gloss is white so it sits fine over either tint (Load Program does the same). */}
                           <TouchableOpacity onPress={() => setRowStatus(r.id, 'kept')} style={{ flex: 1, alignItems: 'center', paddingVertical: 9, borderRadius: 8, backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder }}>
+                            <ButtonShine radius={8} />
                             <Text style={{ fontSize: 12, color: theme.accentGreen, fontFamily: Type.uiSemibold }}>Confirm</Text>
                           </TouchableOpacity>
                           <TouchableOpacity onPress={() => openEditor(r)} style={{ flex: 1, alignItems: 'center', paddingVertical: 9, borderRadius: 8, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
+                            <ButtonShine radius={8} />
                             <Text style={{ fontSize: 12, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Edit</Text>
                           </TouchableOpacity>
                           <TouchableOpacity onPress={() => setRowStatus(r.id, 'removed')} style={{ flex: 1, alignItems: 'center', paddingVertical: 9, borderRadius: 8, backgroundColor: theme.accentRedBg, borderWidth: 1, borderColor: theme.accentRedBorder }}>

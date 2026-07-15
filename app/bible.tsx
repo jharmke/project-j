@@ -29,7 +29,7 @@ import TooltipIcon from '../components/TooltipIcon';
 import HeaderIconButton from '../components/HeaderIconButton';
 import ButtonShine from '../components/ButtonShine';
 import { useTheme } from '../theme';
-import CompanionFAB from '../components/CompanionFAB';
+import CompanionFAB, { GOLD as HALO_GOLD } from '../components/CompanionFAB';
 import CompanionChat from '../components/CompanionChat';
 import { checkFaithAchievements, getCelebTier } from '../achievementData';
 import { showAchievementToast } from '../components/AchievementToast';
@@ -72,7 +72,8 @@ const SPEED_PX_PER_MS: Record<ScrollSpeed, number> = { slow: 0.015, medium: 0.04
 const PREVIEW_TEXT = '"For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life."';
 const PREVIEW_REF = 'John 3:16';
 
-const HALO_GOLD = '#e8a020'; // Halo's identity gold (matches the companion FAB)
+// HALO_GOLD now comes from CompanionFAB (imported above). It used to be a hand-copied '#e8a020' right here,
+// with a comment saying it "matches the companion FAB" -- two copies of one colour, free to drift.
 
 // A small Latin cross in Halo's gold, used on the verse banner to mean "bring this to Halo."
 function HaloCross({ size = 16, color = HALO_GOLD }: { size?: number; color?: string }) {
@@ -629,21 +630,23 @@ export default function BibleScreen() {
         <TouchableOpacity
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
           style={styles.headerBack}>
-          <Ionicons name="chevron-back" size={24} color={theme.accentBlue} />
+          <Ionicons name="chevron-back" size={24} color={theme.accentAmber} />
         </TouchableOpacity>
         <TouchableOpacity ref={tutBookRef as any} onPress={openBookPicker} style={styles.headerTitle}>
-          <Text style={[styles.headerBookName, { color: theme.accentBlueRaw }]}>{selectedBook.name}</Text>
-          <Ionicons name="chevron-down" size={14} color={theme.accentBlueRaw} />
+          <Text style={[styles.headerBookName, { color: theme.accentAmber }]}>{selectedBook.name}</Text>
+          <Ionicons name="chevron-down" size={14} color={theme.accentAmber} />
         </TouchableOpacity>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <HeaderIconButton icon="star" onPress={() => setShowFavoritesModal(true)} />
-          <HeaderIconButton icon="book" onPress={() => router.push('/journal')} />
+          {/* Amber, same as the Faith tab + Prayer. HeaderIconButton defaults to the app accent, so these
+              need it passed -- a find-and-replace over this file cannot reach inside the component. */}
+          <HeaderIconButton icon="star" onPress={() => setShowFavoritesModal(true)} color={theme.accentAmber} bg={theme.accentAmber + '1A'} border={theme.accentAmber + '4D'} />
+          <HeaderIconButton icon="book" onPress={() => router.push('/journal')} color={theme.accentAmber} bg={theme.accentAmber + '1A'} border={theme.accentAmber + '4D'} />
           <View ref={tutGearRef as any} collapsable={false}>
-            <HeaderIconButton icon="settings" onPress={openSettingsModal} />
+            <HeaderIconButton icon="settings" onPress={openSettingsModal} color={theme.accentAmber} bg={theme.accentAmber + '1A'} border={theme.accentAmber + '4D'} />
           </View>
           {/* The "?" is a BARE icon, never boxed: a tinted square says "tappable surface", and the help icon
               is a marker, not an action square like its neighbours. It was in a box here and nowhere else. */}
-          <TooltipIcon tooltipKey="bible_reader" size={20} color={theme.accentBlue} />
+          <TooltipIcon tooltipKey="bible_reader" size={20} color={theme.accentAmber} />
         </View>
       </View>
 
@@ -658,11 +661,11 @@ export default function BibleScreen() {
             <TouchableOpacity
               onPress={() => selectChapter(ch)}
               style={[styles.chapterPill, {
-                backgroundColor: selectedChapter.chapter === ch.chapter ? theme.accentBlueBg : 'transparent',
-                borderColor: selectedChapter.chapter === ch.chapter ? theme.accentBlueBorder : theme.borderCard,
+                backgroundColor: selectedChapter.chapter === ch.chapter ? theme.accentAmber + '1A' : 'transparent',
+                borderColor: selectedChapter.chapter === ch.chapter ? theme.accentAmber + '4D' : theme.borderCard,
               }]}
             >
-              <Text style={[styles.chapterPillText, { color: selectedChapter.chapter === ch.chapter ? theme.accentBlue : theme.textMuted }]}>
+              <Text style={[styles.chapterPillText, { color: selectedChapter.chapter === ch.chapter ? theme.accentAmber : theme.textMuted }]}>
                 {ch.chapter}
               </Text>
             </TouchableOpacity>
@@ -703,7 +706,7 @@ export default function BibleScreen() {
                       style={{ flex: 1 }}
                       onPress={() => navigateToPlanPassage(reading.day.passages[0].book, reading.day.passages[0].startChapter)}
                     >
-                      <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: theme.accentBlueRaw }} numberOfLines={1}>
+                      <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: theme.accentAmber }} numberOfLines={1}>
                         {formatDayReading(reading.day)}
                       </Text>
                       <Text style={{ fontSize: 9, fontFamily: Type.ui, color: theme.textDim }}>
@@ -720,8 +723,8 @@ export default function BibleScreen() {
                         flexDirection: 'row', alignItems: 'center', gap: 4,
                         borderWidth: 1, borderRadius: 5,
                         paddingHorizontal: 8, paddingVertical: 4,
-                        backgroundColor: reading.isRead ? theme.accentGreenBg : theme.accentBlueBg,
-                        borderColor: reading.isRead ? theme.accentGreenBorder : theme.accentBlueBorder,
+                        backgroundColor: reading.isRead ? theme.accentGreenBg : theme.accentAmber + '1A',
+                        borderColor: reading.isRead ? theme.accentGreenBorder : theme.accentAmber + '4D',
                       }}
                     >
                       {/* Gloss is white, so it sits fine over BOTH tints this pill wears (blue "Mark Read"
@@ -730,9 +733,9 @@ export default function BibleScreen() {
                       <Ionicons
                         name={reading.isRead ? 'checkmark-circle' : 'bookmark-outline'}
                         size={11}
-                        color={reading.isRead ? theme.accentGreen : theme.accentBlue}
+                        color={reading.isRead ? theme.accentGreen : theme.accentAmber}
                       />
-                      <Text style={{ fontSize: 10, fontFamily: Type.uiSemibold, color: reading.isRead ? theme.accentGreen : theme.accentBlue }}>
+                      <Text style={{ fontSize: 10, fontFamily: Type.uiSemibold, color: reading.isRead ? theme.accentGreen : theme.accentAmber }}>
                         {reading.isRead ? 'Read' : 'Mark Read'}
                       </Text>
                     </TouchableOpacity>
@@ -747,8 +750,8 @@ export default function BibleScreen() {
       {/* Reflect banner + favorite star */}
       {highlightedVerse !== null && highlightedVerseRef && (
         <View style={[styles.acknowledgeBanner, {
-          backgroundColor: highlightedVerseAcknowledged ? theme.accentGreenBg : theme.accentBlueBg,
-          borderColor: highlightedVerseAcknowledged ? theme.accentGreenBorder : theme.accentBlueBorder,
+          backgroundColor: highlightedVerseAcknowledged ? theme.accentGreenBg : theme.accentAmber + '1A',
+          borderColor: highlightedVerseAcknowledged ? theme.accentGreenBorder : theme.accentAmber + '4D',
         }]}>
           <TouchableOpacity
             style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}
@@ -757,9 +760,9 @@ export default function BibleScreen() {
             <Ionicons
               name={highlightedVerseAcknowledged ? 'checkmark-circle-outline' : 'book-outline'}
               size={14}
-              color={highlightedVerseAcknowledged ? theme.accentGreen : theme.accentBlue}
+              color={highlightedVerseAcknowledged ? theme.accentGreen : theme.accentAmber}
             />
-            <Text style={[styles.acknowledgeText, { color: highlightedVerseAcknowledged ? theme.accentGreen : theme.accentBlue }]}>
+            <Text style={[styles.acknowledgeText, { color: highlightedVerseAcknowledged ? theme.accentGreen : theme.accentAmber }]}>
               {highlightedVerseAcknowledged ? `Reflected · ${highlightedVerseRef}` : `Reflect · ${highlightedVerseRef}`}
             </Text>
           </TouchableOpacity>
@@ -826,7 +829,11 @@ export default function BibleScreen() {
               onLayout={e => { verseYPositions.current[v.verse] = e.nativeEvent.layout.y; }}
               style={[styles.verseRow, isHighlighted && { backgroundColor: 'rgba(212,134,10,0.5)', borderRadius: 8, marginHorizontal: -8, paddingHorizontal: 8 }]}
             >
-              <Text style={[styles.verseNum, { color: isHighlighted ? theme.accentAmber : theme.accentBlue }]}>{v.verse}</Text>
+              {/* Verse numbers: the HIGHLIGHTED one is amber, the rest are muted. They used to be amber vs
+                  ACCENT -- once the screen went amber, both sides of that ternary would have been the same
+                  colour and the highlight would have vanished. Muted is also just better here: a verse
+                  number is a reference mark, not something to shout. */}
+              <Text style={[styles.verseNum, { color: isHighlighted ? theme.accentAmber : theme.textMuted }]}>{v.verse}</Text>
               <Text style={[styles.verseText, { color: theme.textPrimary, fontSize: bibleTextSize, lineHeight: verseLineHeight, fontFamily: bibleFontFamily }]}>{v.text}</Text>
             </TouchableOpacity>
           );
@@ -845,10 +852,10 @@ export default function BibleScreen() {
           {/* Fast -- top, animates last */}
           <Animated.View style={{ opacity: fabItem3Anim, transform: [{ translateY: fabItem3Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <TouchableOpacity onPress={() => startAutoScroll('fast')} style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+              <TouchableOpacity onPress={() => startAutoScroll('fast')} style={{ backgroundColor: HALO_GOLD, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: HALO_GOLD, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Fast</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => startAutoScroll('fast')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+              <TouchableOpacity onPress={() => startAutoScroll('fast')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: HALO_GOLD, alignItems: 'center', justifyContent: 'center', shadowColor: HALO_GOLD, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Ionicons name="flash-outline" size={20} color="#ffffff" />
               </TouchableOpacity>
             </View>
@@ -857,10 +864,10 @@ export default function BibleScreen() {
           {/* Medium */}
           <Animated.View style={{ opacity: fabItem2Anim, transform: [{ translateY: fabItem2Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <TouchableOpacity onPress={() => startAutoScroll('medium')} style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+              <TouchableOpacity onPress={() => startAutoScroll('medium')} style={{ backgroundColor: HALO_GOLD, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: HALO_GOLD, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Medium</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => startAutoScroll('medium')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+              <TouchableOpacity onPress={() => startAutoScroll('medium')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: HALO_GOLD, alignItems: 'center', justifyContent: 'center', shadowColor: HALO_GOLD, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Ionicons name="play-outline" size={20} color="#ffffff" />
               </TouchableOpacity>
             </View>
@@ -869,10 +876,10 @@ export default function BibleScreen() {
           {/* Slow -- bottom, animates first */}
           <Animated.View style={{ opacity: fabItem1Anim, transform: [{ translateY: fabItem1Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <TouchableOpacity onPress={() => startAutoScroll('slow')} style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+              <TouchableOpacity onPress={() => startAutoScroll('slow')} style={{ backgroundColor: HALO_GOLD, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: HALO_GOLD, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Slow</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => startAutoScroll('slow')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+              <TouchableOpacity onPress={() => startAutoScroll('slow')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: HALO_GOLD, alignItems: 'center', justifyContent: 'center', shadowColor: HALO_GOLD, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Ionicons name="leaf-outline" size={20} color="#ffffff" />
               </TouchableOpacity>
             </View>
@@ -887,7 +894,7 @@ export default function BibleScreen() {
           onPressIn={() => Animated.timing(fabScale, { toValue: 0.9, duration: 80, useNativeDriver: true }).start()}
           onPressOut={() => Animated.timing(fabScale, { toValue: 1, duration: 80, useNativeDriver: true }).start()}
           activeOpacity={1}
-          style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 }}
+          style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: HALO_GOLD, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 }}
         >
           <Ionicons name={isAutoScrolling ? 'square' : showSpeedPicker ? 'close' : 'play'} size={isAutoScrolling ? 22 : showSpeedPicker ? 26 : 22} color="#ffffff" />
         </TouchableOpacity>
@@ -924,8 +931,8 @@ export default function BibleScreen() {
                 if (item.type === 'header') return <Text style={[styles.testamentHeader, { color: theme.textMuted }]}>{item.label}</Text>;
                 const isSelected = selectedBook.name === item.book.name;
                 return (
-                  <TouchableOpacity onPress={() => selectBook(item.book)} style={[styles.bookRow, { borderBottomColor: theme.borderSubtle, backgroundColor: isSelected ? theme.accentBlueBg : 'transparent' }]}>
-                    <Text style={[styles.bookRowText, { color: isSelected ? theme.accentBlue : theme.textPrimary, fontFamily: isSelected ? Type.uiBold : Type.ui }]}>{item.book.name}</Text>
+                  <TouchableOpacity onPress={() => selectBook(item.book)} style={[styles.bookRow, { borderBottomColor: theme.borderSubtle, backgroundColor: isSelected ? theme.accentAmber + '1A' : 'transparent' }]}>
+                    <Text style={[styles.bookRowText, { color: isSelected ? theme.accentAmber : theme.textPrimary, fontFamily: isSelected ? Type.uiBold : Type.ui }]}>{item.book.name}</Text>
                     <Text style={[styles.bookRowChapters, { color: theme.textDim }]}>{item.book.chapters.length} ch</Text>
                   </TouchableOpacity>
                 );
@@ -986,11 +993,11 @@ export default function BibleScreen() {
                 <View style={[styles.sheetHandle, { backgroundColor: theme.sheetHandle }]} />
               </TouchableOpacity>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                <Text style={[styles.sheetTitle, { color: theme.accentBlue, marginBottom: 0 }]}>Saved Verses</Text>
+                <Text style={[styles.sheetTitle, { color: theme.accentAmber, marginBottom: 0 }]}>Saved Verses</Text>
                 <View style={{ flexDirection: 'row', backgroundColor: theme.bgInput, borderRadius: 8, borderWidth: 1, borderColor: theme.borderInput, overflow: 'hidden' }}>
                   {(['book', 'recent'] as const).map(s => (
-                    <TouchableOpacity key={s} onPress={() => toggleFavoritesSort(s)} style={{ paddingHorizontal: 10, paddingVertical: 6, backgroundColor: favoritesSort === s ? theme.accentBlueBg : 'transparent' }}>
-                      <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: favoritesSort === s ? theme.accentBlue : theme.textMuted }}>
+                    <TouchableOpacity key={s} onPress={() => toggleFavoritesSort(s)} style={{ paddingHorizontal: 10, paddingVertical: 6, backgroundColor: favoritesSort === s ? theme.accentAmber + '1A' : 'transparent' }}>
+                      <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: favoritesSort === s ? theme.accentAmber : theme.textMuted }}>
                         {s === 'book' ? 'Book Order' : 'Recent'}
                       </Text>
                     </TouchableOpacity>
@@ -1008,7 +1015,7 @@ export default function BibleScreen() {
                   {sortedFavorites.map(fav => (
                     <TouchableOpacity key={fav.ref} onPress={() => navigateToFavorite(fav)} style={[styles.favRow, { borderBottomColor: theme.borderSubtle }]}>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: theme.accentBlue, marginBottom: 2 }}>{fav.ref}</Text>
+                        <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: theme.accentAmber, marginBottom: 2 }}>{fav.ref}</Text>
                         <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textSecondary }} numberOfLines={2}>{fav.text}</Text>
                       </View>
                       <TouchableOpacity onPress={() => removeFavorite(fav.ref)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -1033,7 +1040,7 @@ export default function BibleScreen() {
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowSettingsModal(false); }} style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 24, marginBottom: 4 }}>
                 <View style={[styles.sheetHandle, { backgroundColor: theme.sheetHandle }]} />
               </TouchableOpacity>
-              <Text style={[styles.sheetTitle, { color: theme.accentBlue }]}>Bible Settings</Text>
+              <Text style={[styles.sheetTitle, { color: theme.accentAmber }]}>Bible Settings</Text>
 
               <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                 {/* Live preview -- fixed height so modal doesn't resize */}
@@ -1049,9 +1056,9 @@ export default function BibleScreen() {
                 <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
                   {TEXT_SIZES.map(opt => (
                     <TouchableOpacity key={opt.label} onPress={() => setDraftTextSize(opt.size)}
-                      style={[styles.settingPill, { flex: 1, backgroundColor: draftTextSize === opt.size ? theme.accentBlueBg : theme.bgInput, borderColor: draftTextSize === opt.size ? theme.accentBlueBorder : theme.borderInput }]}
+                      style={[styles.settingPill, { flex: 1, backgroundColor: draftTextSize === opt.size ? theme.accentAmber + '1A' : theme.bgInput, borderColor: draftTextSize === opt.size ? theme.accentAmber + '4D' : theme.borderInput }]}
                     >
-                      <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: draftTextSize === opt.size ? theme.accentBlue : theme.textMuted }}>{opt.label}</Text>
+                      <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: draftTextSize === opt.size ? theme.accentAmber : theme.textMuted }}>{opt.label}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -1061,10 +1068,10 @@ export default function BibleScreen() {
                 <View style={{ gap: 8, marginBottom: 20 }}>
                   {FONT_OPTIONS.map(opt => (
                     <TouchableOpacity key={opt.family} onPress={() => setDraftFontFamily(opt.family)}
-                      style={[styles.settingPill, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: draftFontFamily === opt.family ? theme.accentBlueBg : theme.bgInput, borderColor: draftFontFamily === opt.family ? theme.accentBlueBorder : theme.borderInput }]}
+                      style={[styles.settingPill, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: draftFontFamily === opt.family ? theme.accentAmber + '1A' : theme.bgInput, borderColor: draftFontFamily === opt.family ? theme.accentAmber + '4D' : theme.borderInput }]}
                     >
-                      <Text style={{ fontFamily: opt.family, fontSize: 15, color: draftFontFamily === opt.family ? theme.accentBlue : theme.textPrimary }}>{opt.label}</Text>
-                      {draftFontFamily === opt.family && <Ionicons name="checkmark" size={14} color={theme.accentBlue} />}
+                      <Text style={{ fontFamily: opt.family, fontSize: 15, color: draftFontFamily === opt.family ? theme.accentAmber : theme.textPrimary }}>{opt.label}</Text>
+                      {draftFontFamily === opt.family && <Ionicons name="checkmark" size={14} color={theme.accentAmber} />}
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -1075,7 +1082,7 @@ export default function BibleScreen() {
                   style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle, marginBottom: 16 }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Ionicons name="calendar-outline" size={16} color={theme.accentBlue} />
+                    <Ionicons name="calendar-outline" size={16} color={theme.accentAmber} />
                     <View>
                       <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.textPrimary }}>Plans</Text>
                       {Object.keys(planProgress).length > 0 && (
@@ -1093,9 +1100,9 @@ export default function BibleScreen() {
                   <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowSettingsModal(false); }} style={[styles.modalBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]}>
                     <Text style={[styles.modalBtnText, { color: theme.textMuted }]}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={saveSettings} style={[styles.modalBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder, flex: 2 }]}>
-                    <Ionicons name="checkmark" size={14} color={theme.accentBlue} />
-                    <Text style={[styles.modalBtnText, { color: theme.accentBlue }]}>Save</Text>
+                  <TouchableOpacity onPress={saveSettings} style={[styles.modalBtn, { backgroundColor: theme.accentAmber + '1A', borderColor: theme.accentAmber + '4D', flex: 2 }]}>
+                    <Ionicons name="checkmark" size={14} color={theme.accentAmber} />
+                    <Text style={[styles.modalBtnText, { color: theme.accentAmber }]}>Save</Text>
                   </TouchableOpacity>
                 </View>
               </ScrollView>

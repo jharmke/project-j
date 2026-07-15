@@ -228,8 +228,10 @@ export default function DevotionalScreen() {
 
       {/* The title is the devotional's own name -- it used to be .toUpperCase()'d, which is the app
           shouting a proper noun back at you. */}
+      {/* AMBER -- body is already amber apart from the two strays fixed below. See the Faith tab header. */}
       <ScreenHeader
         title={dev.shortName}
+        color={theme.accentAmber}
         topInset={false}
         right={<Text style={[styles.dayCount, { color: theme.textMuted }]}>{day}/{dev.totalDays}</Text>}
       />
@@ -274,9 +276,10 @@ export default function DevotionalScreen() {
                 </Text>
               ))
             )}
+            {/* The only two accent refs on this page -- an accent link on an otherwise amber faith screen. */}
             <TouchableOpacity onPress={openInReader} style={styles.readerLink} activeOpacity={0.7}>
-              <Ionicons name="book-outline" size={13} color={theme.accentBlue} />
-              <Text style={[styles.readerLinkText, { color: theme.accentBlue }]}>Read the full chapter</Text>
+              <Ionicons name="book-outline" size={13} color={theme.accentAmber} />
+              <Text style={[styles.readerLinkText, { color: theme.accentAmber }]}>Read the full chapter</Text>
             </TouchableOpacity>
           </View>
 

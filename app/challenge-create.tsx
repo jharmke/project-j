@@ -254,7 +254,7 @@ export default function ChallengeCreateScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
       {/* Header */}
-      <ScreenHeader title="New Challenge" color={accent} />
+      <ScreenHeader title="New Challenge" />
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 160 }} keyboardShouldPersistTaps="handled">
 

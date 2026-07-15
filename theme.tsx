@@ -345,7 +345,17 @@ const light: Theme = {
   bgCardVerse:      'rgba(255,251,240,0.72)',
   bgCardFaith:      'rgba(255,250,243,0.85)',
   bgCardFaithHero:  'rgba(255,248,236,0.82)',
-  bgCardFaithGlass: 'rgba(255,250,243,0.62)',
+  // MATCHES bgCardGlass exactly (2026-07-15). It used to be a warm cream at 0.62 and the Faith tab read as
+  // "so brown, not screaming warm faith". TWO bugs in one value: (1) amber is a GLOW -- it needs something
+  // NEUTRAL to glow against, and amber-on-cream is tone-on-tone mud, which is why Dark sings (its faith card
+  // is IDENTICAL to its normal card, so the amber has a dark neutral to push off); (2) it stayed at 0.62
+  // while normal Light cards went to 0.82 in the Light refresh, so faith cards alone kept drinking the glow
+  // and halftone -- the grey UNDER the brown. Justin's read of all 5 themes tracked this value exactly: the
+  // themes where faith cards already equalled normal cards (Dark/Warm/Blush) were the ones he liked; the two
+  // that diverged (Light/Slate) were the two that bothered him. The WARMTH now comes from the accents and
+  // from Today's Message, which layers its own amber wash + amber glow ON TOP -- so it stays the one hero
+  // card instead of every card being brown and nothing leading.
+  bgCardFaithGlass: 'rgba(255,255,255,0.82)',
   bgTileFaith:      'rgba(212,134,10,0.06)',
   bgTileFaithStrong: 'rgba(212,134,10,0.11)',
   bgInput:          '#f5f5fa',
@@ -436,7 +446,10 @@ const slate: Theme = {
   bgCardVerse:      'rgba(226,232,244,0.90)',
   bgCardFaith:      'rgba(228,221,209,0.92)',
   bgCardFaithHero:  'rgba(226,219,206,0.92)',
-  bgCardFaithGlass: 'rgba(233,227,216,0.64)',
+  // MATCHES bgCardGlass exactly -- see the Light note above. Slate's was a warm TAN sitting on a cool
+  // blue-grey page, so the faith cards fought the theme instead of belonging to it. Amber now lands on
+  // Slate's own neutral card and reads as an accent rather than a brown wash.
+  bgCardFaithGlass: 'rgba(233,239,248,0.62)',
   bgTileFaith:      'rgba(212,134,10,0.06)',
   bgTileFaithStrong: 'rgba(212,134,10,0.11)',
   bgInput:          '#d0d8e4',

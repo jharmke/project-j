@@ -12,6 +12,7 @@ import { calcSleepScore, sleepScoreColor as getSleepScoreColor } from '../utils/
 import { recoveryZone } from '../utils/recoveryScore';
 import { Type, PAGE_TITLE } from '../typography';
 import ModalHeader from '../components/ModalHeader';
+import ButtonShine from '../components/ButtonShine';
 
 type SleepStages = { core: number; deep: number; rem: number; totalMs: number };
 
@@ -385,6 +386,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
               <TouchableOpacity
                 onPress={closeCalPicker}
                 style={{ marginTop: 16, alignItems: 'center', paddingVertical: 8, paddingHorizontal: 16, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8 }}>
+                <ButtonShine radius={8} />
                 <Text style={{ fontSize: 14, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Cancel</Text>
               </TouchableOpacity>
             </View>

@@ -99,9 +99,11 @@ export default function PrayerRequestModal({ visible, onClose, variant }: Props)
             <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
           </TouchableOpacity>
 
+          {/* Padded compact card (not a full-bleed sheet) so it keeps its own header row; title face
+              fixed from Type.num (the number face) to Clash. */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
             <Ionicons name="heart" size={15} color={faith ? theme.accentAmber : theme.accentBlue} />
-            <Text style={{ fontSize: 18, fontFamily: Type.num, letterSpacing: 2, color: faith ? theme.accentAmber : theme.accentBlue }}>
+            <Text style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, color: faith ? theme.accentAmber : theme.accentBlueRaw }}>
               Send a Prayer Request
             </Text>
           </View>

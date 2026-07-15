@@ -124,9 +124,10 @@ export default function AddPrayerModal({ visible, onClose, onAdded, editPrayer }
             shadowRadius: 12,
           }}
         >
+          {/* Padded compact card; title face fixed from Type.num (the number face) to Clash. */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
             <Ionicons name="hand-left" size={15} color={theme.accentAmber} />
-            <Text style={{ fontSize: 18, fontFamily: Type.num, letterSpacing: 2, color: theme.accentAmber }}>
+            <Text style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentAmber }}>
               {isEdit ? 'Edit a Prayer' : 'Add a Prayer'}
             </Text>
           </View>

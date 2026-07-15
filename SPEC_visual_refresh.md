@@ -4,12 +4,49 @@ Status: IN PROGRESS. Decided AND largely built 2026-07-14. This file is the sour
 refresh. Roadmap points here. Nothing in here ships without Justin seeing it on device first.
 
 SHIPPED so far: the surface (flat ground + bottom glow + halftone + grain, glass cards, absolute glass
-tab bar and header, per-theme shadows, bgSelected), the four-role type system, and the type sweep across
-all 6 tabs + 42 components. Plus the font-packaging patch below.
+tab bar and header, per-theme shadows, bgSelected), the four-role type system, the type sweep across all 6
+tabs + 43 stack screens + 42 components, the font-packaging patch, and BOTH HEADER COMPONENTS (see below).
 
-STILL OPEN: the ~30 stack screens (still on Bebas/DM Sans -- there is a visible seam the moment you leave
-a tab), the voice pass, the molded-button rollout, chip shine, title gradient, card stagger, and Warm +
-Blush getting the Light treatment.
+STILL OPEN: the SURFACE pass (22 stack screens still top-lit), the VOICE pass, the Journal slide-up sheet,
+the molded-button rollout, chip shine, title gradient, card stagger, Warm + Blush getting the Light
+treatment, and a few non-modal number-face stragglers. (Roadmap NEXT UP has the ranked list.)
+
+---
+
+## HEADERS -- two components own every header (DONE 2026-07-14)
+
+A style guide is what the app HAD, and it drifted anyway (seven page-title sizes, three treatments). So
+headers are now actual COMPONENTS. Two of them, because a page and a modal are different objects.
+
+**`components/ScreenHeader.tsx` -- every pushed SCREEN.** Bare chevron (never boxed -- a tinted box reads
+as an action; never the text "<- Back"), then the title. `PAGE_TITLE` token: **28px Clash, accent, mixed
+case, LEFT-aligned** (a page's content is left-aligned, so the title shares that edge). No eyebrow above a
+title, ever. Optional right slot, subtitle, subRow (date nav / filter pills), onTitlePress (Settings'
+7-tap dev unlock), colour override, topInset. On all 34 pushed screens. Bible keeps its own header (title
+is a book-picker dropdown); Report keeps its toolbar (title is an editable field in the printable doc).
+
+**`components/ModalHeader.tsx` -- every titled MODAL.** Same face/colour as a page title but **20px** (a
+modal is a smaller surface), still LEFT-aligned (a modal's content is left-aligned too, and the page you
+opened FROM has a left title -- centring makes it jump on open). Centred handle pill (drags/taps to close).
+An explicit **X top-right is the DEFAULT** -- the one unambiguous close (the pill's native meaning is
+"drag", tap-outside is invisible and risks losing a half-typed form). Optional subtitle, subRow, right
+slot (sits LEFT of the X), colour override (faith modals go amber), showClose.
+
+RULES for which treatment a modal gets:
+- **Full-bleed sheet** (content edge to edge) -> ModalHeader (pill + left title + X).
+- **Padded compact card** (its own paddingHorizontal, smaller) -> title-FACE fix only (ModalHeader would
+  double the padding). Day Summary, the prayer cards, New Tag went this way.
+- **A FORM card with unsaved input** is the case that earns an explicit X even when padded (data-loss guard
+  -- tap-outside must not silently discard typed input).
+- **Compact dialog** whose heading is a small uiBold caps LABEL (Workout Duration, Finish summary, the
+  date pickers) -> left as-is. Not the number-face bug; a 20px Clash title would read top-heavy there.
+- **No-title picker / dropdown** (colour picker, fill-from-preset) -> nothing to do.
+- Day Detail is ALWAYS a sheet (its /day-detail page route is never navigated to) -> ModalHeader at 20px,
+  NOT the 28px page title. Host sheets' external handle pills were removed so there is exactly one pill.
+
+THE RECURRING TRAP, logged so it is not repeated: DO NOT declare the modal sweep "done" from memory. A
+grep-backed scan (`Type.num` at title size + title tracking, per file) found modals that a memory-based
+claim missed (RepeatMeal, BibleStartGuide, DayScoreDisclaimer, Otto Notifications). Scan, don't assert.
 
 ---
 

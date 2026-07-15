@@ -202,25 +202,40 @@ are separate pre-submission checklists, NOT part of this menu.
   untouched); an on-device 4-cut specimen with an Onest 400/700 CONTROL proved the ladder. Any future
   Fontshare weight must be patched the same way. Google-Fonts-packaged faces (Onest, Rajdhani) were never
   affected -- prefer them.
-  >> STACK SCREENS: type sweep DONE (43 files, 1408 refs). SURFACE still to do -- 22 stack screens still
-  paint the OLD top-down gradient while the 6 tabs are lit from BELOW, so the app changes its lighting
-  every time you leave a tab. That is the last structural piece.
-  >> HEADER TITLES: unresolved, see below. Then the VOICE PASS (Ranade is on 6 lines, all on Home;
-  Otto's bubbles + EvR + verses are where it earns its keep).
-- [NOW] [BUG, found 2026-07-14] **Header titles have no plan and the app is inconsistent.** The stack
-  screens had SEVEN title sizes (10, 15, 18, 20, 22, 28, 32) and three treatments (caps+ink, caps+accent,
-  mixed+accent). None of it was ever designed -- the screens were built weeks apart with no token, and
-  Bebas hid the drift (a condensed caps face reads much the same at 20 as at 28). Clash does not.
-  A single PAGE_TITLE token (28 / Clash / accent / mixed case / left-aligned) was applied to all 14 -- and
-  it is WRONG for some of them: Day Detail and Food Detail look bad left-aligned and oversized, because
-  they are not pages. My first theory (pages have a back chevron, sheets have a handle pill) was asserted
-  WITHOUT CHECKING and is false -- Food Detail has no handle pill. DO NOT theorise again: go READ all 14
-  screens, classify by what they ACTUALLY are (route push vs modal presentation, chevron vs pill, centred
-  vs left), and bring Justin a table of facts before proposing a second token.
-- [NOW] [BUG, found 2026-07-14] **Journal FAB.** Three problems: (1) it opens a SLIDE-UP BOTTOM SHEET,
-  which violates the standing centered-modals-only rule (Justin hates bottom sheets); (2) the handle pill
-  is decorative and does nothing; (3) the "New Entry" label is near-black, violating no-black-for-titles.
-  Not a font issue -- a real bug cluster, deliberately parked so it did not get swept up in the type work.
+  >> STACK SCREENS: type sweep DONE (43 files, 1408 refs).
+  >> HEADERS DONE 2026-07-14: two components now own EVERY header. **ScreenHeader** (pages: 28px Clash
+  accent mixed-case, LEFT, bare chevron, no eyebrow) on all 34 pushed screens. **ModalHeader** (modals:
+  20px Clash accent mixed-case, LEFT, centred handle pill + top-right X, optional subtitle/subRow/faith
+  amber) on every titled modal -- ~15 standalone components + the inline modals across workout-library and
+  all four tabs, plus the tag modals, drilldowns, prayer/faith modals, Otto Notifications, and Day Detail
+  (which is always a sheet, so it uses ModalHeader at 20px not the 28px page title). Rules in the spec.
+  >> STILL OPEN, see the dedicated items below: the SURFACE pass, the JOURNAL slide-up sheet, the VOICE
+  pass, the molded-button rollout, and a short list of non-modal number-face stragglers.
+- [NOW] [VISUAL REFRESH -> SURFACE PASS] The last structural piece of the refresh. **22 stack screens
+  still paint the OLD top-down gradient** while the 6 tabs are lit from BELOW (flat ground + bottom glow +
+  halftone), so the app changes its lighting every time you leave a tab. Swap each screen's LinearGradient
+  wrapper for the flat ground + BackgroundLayers, exactly as the tabs got. Mechanical + low-risk (proven 6x
+  on the tabs); do it in batches. ALSO in this pass: the Profile **Supporter card** is translucent so the
+  page glow/halftone shows straight through it -- needs an opaque fill like the other cards.
+- [NOW] [VISUAL REFRESH -> VOICE PASS] Ranade (the voice face) is on ~6 lines, all on Home (Coach Insight,
+  the readiness line, the Recovery/Sleep AI tips, one Weight line). The judgement calls a script can't
+  make: Otto's chat bubbles (HIS = voice, YOURS = interface -- that contrast is the point), Effort vs
+  Results insight copy, verses, devotionals. Weight ladder is locked (Regular body / Medium / Bold title).
+- [NOW] [BUG, found 2026-07-14] **Journal "New Entry" sheet.** Three problems: (1) it opens a SLIDE-UP
+  BOTTOM SHEET (translateY + handle), violating the standing centered-modals-only rule; (2) the handle pill
+  is decorative; (3) "New Entry" is fine now but the sheet itself needs converting to a centered card. This
+  is a STRUCTURAL conversion (bottom sheet -> centered card), not a header swap -- that is why it was parked
+  through the whole modal-header sweep.
+- [QUICK WIN] [found 2026-07-14] **Non-modal number-face stragglers.** The modal + page header sweeps are
+  done, but a scan still finds Type.num (the NUMBER face) on a few NON-modal things: Profile's save-bar
+  buttons (CANCEL / SAVE PROFILE), a "REST DAY" workout-tab heading, and some IFCard / cardio button labels.
+  Same class as the PrimaryCTA fix -> button labels go to Interface, the REST DAY heading to Clash. Also
+  optional: two info-modal titles (CalorieFloor, MeasureHowTo) sit on bold INTERFACE rather than Clash --
+  not a bug (no number-face, no caps, no black), Justin's call whether to unify them.
+- [PARKED -> molded-button rollout] The molded PrimaryCTA is on ~4 CTAs; ~13 more primary CTAs, the
+  circular FAB variant, and the PrimaryCTA row-height bug remain. Full detail in SPEC_visual_refresh.md
+  PARKED section. Also still open from the OPEN list: title accent-GRADIENT fill, chip top-shine, card
+  stagger on mount, Warm + Blush getting the Light treatment.
 - [TRACK, VISION LOCKED + SPECCED 2026-07-07 -> ready to build] Custom Reports (Pro). Model: report =
   date range (week/month/3mo/6mo/1yr/custom) + chapters, each a PICKER into a library of ~55 pre-designed
   blocks the user assembles freely; templates = pre-filled block sets; exportable (PDF/share); Pro-gated

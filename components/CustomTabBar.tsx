@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useEffect, useState } from 'react';
@@ -44,25 +45,46 @@ const BASE_TABS = [
 const PROFILE_TAB = { name: 'profile', label: 'Profile', icon: 'person-outline', iconActive: 'person' };
 const FAITH_TAB = { name: 'faith', label: 'Faith', isFaith: true };
 
-function HomeButton({ isFocused, scale, homePulse, onPress, bgCard, textSecondary, macroProtein }: { isFocused: boolean, scale: any, homePulse: any, onPress: () => void, bgCard: string, textSecondary: string, macroProtein: string }) {
-  const animStyle = useAnimatedStyle(() => ({
+// The home button. ACTIVE (on Home) = a clean accent circle with a white house icon and a subtle mould +
+// accent glow. INACTIVE = a WHITE (bgCard) circle with the house icon in the ACCENT colour -- the original
+// colour-swap, which reads clean on the frosted-white bar. No glossy orb, no lift, no dimming.
+function HomeButton({ isFocused, scale, homePulse, onPress, accentBlue, accentGlow, bgCard, isDark }: { isFocused: boolean, scale: any, homePulse: any, onPress: () => void, accentBlue: string, accentGlow: string, bgCard: string, isDark: boolean }) {
+  const SIZE = 56;
+  const R = SIZE / 2;
+  // GENTLE dome, on BOTH states, as ONE full-width gradient (NOT a clipped oval -- a small oval read as a
+  // discrete "pill" sitting on top). A real dome highlight is a broad crown gloss that fades down and whose
+  // sides melt into the circle's own edge, so it has no visible shape. Bright crown -> neutral middle ->
+  // soft dark foot. On the accent fill the crown reads as gloss; on the white circle the crown is invisible
+  // (white on near-white) and only the foot shadow shapes the dome. Deliberately mild -- the garish orb was
+  // a strong mould + a 0.60 specular + a lift all at once.
+  const domeColors: [string, string, string, string] = isDark
+    ? ['rgba(255,255,255,0.12)', 'rgba(255,255,255,0.02)', 'rgba(0,0,0,0.05)', 'rgba(0,0,0,0.26)']
+    : ['rgba(255,255,255,0.42)', 'rgba(255,255,255,0.06)', 'rgba(0,0,0,0.02)', 'rgba(0,0,0,0.16)'];
+  // Accent glow when active (pulsing) lives on the WRAPPER (no overflow, so the shadow escapes).
+  const wrapStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
-    shadowOpacity: isFocused ? homePulse.value : 0,
+    shadowOpacity: isFocused ? 0.4 + homePulse.value * 0.5 : 0,
   }));
   return (
-    <TouchableOpacity style={{ flex: 1, alignItems: 'center', justifyContent: 'center', height: 64 }} onPress={onPress} activeOpacity={0.8}>
+    <TouchableOpacity style={{ flex: 1, alignItems: 'center', justifyContent: 'center', height: 64 }} onPress={onPress} activeOpacity={0.85}>
       <Animated.View style={[{
-        width: 52, height: 52, borderRadius: 26,
-        backgroundColor: isFocused ? macroProtein : bgCard,
-        alignItems: 'center', justifyContent: 'center',
-        borderWidth: 1.5,
-        borderColor: isFocused ? macroProtein : `${macroProtein}66`,
-        shadowColor: macroProtein,
+        width: SIZE, height: SIZE, borderRadius: R,
+        shadowColor: accentGlow,
         shadowOffset: { width: 0, height: 0 },
         shadowRadius: 14,
-        elevation: 8,
-      }, animStyle]}>
-        <Ionicons name="home" size={22} color={isFocused ? '#ffffff' : textSecondary} />
+        elevation: isFocused ? 8 : 0,
+      }, wrapStyle]}>
+        <View style={{
+          width: SIZE, height: SIZE, borderRadius: R, overflow: 'hidden',
+          backgroundColor: isFocused ? accentBlue : bgCard,
+          borderWidth: 1.5,
+          borderColor: isFocused ? accentBlue : `${accentGlow}66`,
+          alignItems: 'center', justifyContent: 'center',
+        }}>
+          {/* dome -- BOTH states: full-width crown gloss fading to a soft dark foot (no clipped oval) */}
+          <LinearGradient colors={domeColors} locations={[0, 0.3, 0.6, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={StyleSheet.absoluteFill} />
+          <Ionicons name="home" size={23} color={isFocused ? '#ffffff' : accentGlow} />
+        </View>
       </Animated.View>
     </TouchableOpacity>
   );
@@ -290,9 +312,10 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
               scale={scales[i]}
               homePulse={homePulse}
               onPress={() => handlePress(tab.name, i)}
+              accentBlue={theme.accentBlue}
+              accentGlow={theme.accentBlueRaw}
               bgCard={theme.bgCard}
-              textSecondary={theme.textSecondary}
-              macroProtein={theme.accentBlueRaw}
+              isDark={theme.id === 'dark'}
             />
           );
         }

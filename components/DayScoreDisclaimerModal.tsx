@@ -57,7 +57,7 @@ export default function DayScoreDisclaimerModal({ theme, onAcknowledge }: { them
               </View>
             </View>
 
-            <Text style={{ fontSize: 22, letterSpacing: 1, fontFamily: Type.num, color: theme.textPrimary, textAlign: 'center', marginBottom: 10 }}>YOUR DAY SCORE</Text>
+            <Text style={{ fontSize: 22, letterSpacing: 0.3, fontFamily: Type.display, color: theme.accentBlueRaw, textAlign: 'center', marginBottom: 10 }}>Your Day Score</Text>
 
             <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.ui, textAlign: 'center', lineHeight: 20 }}>
               Each morning you'll see a score out of 100 for the day before, built from the nutrition, activity, and recovery data you logged. It's a snapshot to help you spot patterns and reflect.

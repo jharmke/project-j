@@ -16,6 +16,7 @@ import { useToast, ToastRenderer } from './Toast';
 import { MealSlot } from '../utils/mealSlots';
 import { getRepeatDays, logRepeatedItems, tidyFoodName, RepeatDay } from '../utils/repeatMeal';
 import { Type, numLine } from '../typography';
+import ModalHeader from './ModalHeader';
 
 // Macro dot colors, matched to the Log-tab mealtime cards (Protein / Carbs / Fat).
 const MACRO = { protein: '#0d9268', carbs: '#c47d1a', fat: '#a83232' };
@@ -200,21 +201,11 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
             opacity: opacityAnim,
           }}
         >
-          {/* Handle */}
-          <TouchableOpacity
-            onPress={closeWithHaptic}
-            style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}
-            hitSlop={{ top: 12, bottom: 12, left: 60, right: 60 }}
-          >
-            <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
-          </TouchableOpacity>
-
-          {/* Header */}
-          <View style={{ paddingHorizontal: 20, paddingBottom: 12, paddingTop: 4 }}>
-            <Text style={{ fontSize: 18, color: theme.accentBlue, fontFamily: Type.num, letterSpacing: 2 }}>
-              REPEAT A MEAL
-            </Text>
-            <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, marginTop: 2 }}>
+          {/* Was 'REPEAT A MEAL' in Type.num (number face). The 'Adds to <slot>' line keeps its inline
+              bold, so it stays below the header rather than becoming ModalHeader's plain subtitle. */}
+          <ModalHeader title="Repeat a Meal" onClose={closeWithHaptic} />
+          <View style={{ paddingHorizontal: 20, paddingBottom: 12 }}>
+            <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui }}>
               Adds to <Text style={{ color: theme.textMuted, fontFamily: Type.uiSemibold }}>{launchSlot.name}</Text>
             </Text>
           </View>

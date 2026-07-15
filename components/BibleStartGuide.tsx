@@ -97,7 +97,7 @@ export default function BibleStartGuide({ visible, onClose }: Props) {
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
             <Ionicons name="book" size={15} color={theme.accentAmber} />
-            <Text style={{ fontSize: 18, fontFamily: Type.num, letterSpacing: 2, color: theme.accentAmber }}>
+            <Text style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentAmber }}>
               Where do I start?
             </Text>
           </View>

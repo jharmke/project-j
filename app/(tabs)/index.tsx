@@ -4262,17 +4262,19 @@ export default function HomeScreen() {
               borderTopColor: theme.accentBlueRaw,
               opacity: editSheetAnim,
             }]}>
-            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); exitEditMode(); }} style={{ alignSelf:'center', paddingVertical:6, paddingHorizontal:40 }}>
-              <View style={[styles.editSheetHandle, { backgroundColor: theme.sheetHandle }]} />
-            </TouchableOpacity>
-            {/* Header row */}
-            <View style={[styles.editSheetHeader, { borderBottomColor: theme.borderSubtle }]}>
-              <Text style={{ fontSize:10, color: theme.accentBlueRaw, fontFamily:Type.uiBold, letterSpacing:3, textTransform:'uppercase' }}>Edit Layout</Text>
-              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); exitEditMode(); }}
-                style={{ backgroundColor: theme.accentGreenBg, borderWidth:1, borderColor: theme.accentGreenBorder, borderRadius:6, paddingHorizontal:14, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center' }}>
-                <Text style={{ color: theme.accentGreen, fontSize:12, fontFamily:Type.uiBold, letterSpacing:1 }}>DONE</Text>
-              </TouchableOpacity>
-            </View>
+            {/* Title was a 10px uppercase LABEL; DONE is the explicit close, so the X is suppressed. */}
+            <ModalHeader
+              title="Edit Layout"
+              onClose={exitEditMode}
+              showClose={false}
+              right={
+                <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); exitEditMode(); }}
+                  style={{ backgroundColor: theme.accentGreenBg, borderWidth:1, borderColor: theme.accentGreenBorder, borderRadius:6, paddingHorizontal:14, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center' }}>
+                  <Text style={{ color: theme.accentGreen, fontSize:12, fontFamily:Type.uiBold, letterSpacing:1 }}>DONE</Text>
+                </TouchableOpacity>
+              }
+            />
+            <View style={{ borderBottomWidth:0.5, borderBottomColor: theme.borderSubtle }} />
 
             {/* Segmented control tabs */}
             <View style={{ flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10 }}>

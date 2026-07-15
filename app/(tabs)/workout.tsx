@@ -3033,7 +3033,13 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
           <TouchableOpacity style={{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }} activeOpacity={1} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowTagModal(false); }}>
             <TouchableOpacity activeOpacity={1} onPress={e => e.stopPropagation()}>
               <View style={{ backgroundColor: theme.bgSheet, borderRadius: 16, padding: 20, width: 320, borderWidth: 1, borderColor: theme.borderCard }}>
-                <Text style={{ color: theme.textPrimary, fontSize: 18, fontFamily: Type.num, letterSpacing: 2, marginBottom: 4 }}>ASSIGN TAGS</Text>
+                {/* Was 'ASSIGN TAGS' in Type.num (number face) AND textPrimary (near-black). */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <Text style={{ color: theme.accentBlueRaw, fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3 }}>Assign Tags</Text>
+                  <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowTagModal(false); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                    <Ionicons name="close" size={22} color={theme.textMuted} />
+                  </TouchableOpacity>
+                </View>
                 <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: Type.ui, marginBottom: 16 }}>{activeDateObj?.dayName} {activeDateObj?.label} · tap to toggle</Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
                   {tags.map(t => {
@@ -3103,7 +3109,14 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
               </TouchableOpacity>
               <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
               <View style={{ paddingHorizontal: 20 }}>
-                <Text style={{ color: theme.textPrimary, fontSize: 18, fontFamily: Type.num, letterSpacing: 2, marginBottom: 16 }}>MANAGE TAGS</Text>
+                {/* Was 'MANAGE TAGS' in Type.num (number face) AND textPrimary (near-black -- breaks the
+                    no-black-titles rule). Draggable handle kept; X added for a clear close. */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                  <Text style={{ color: theme.accentBlueRaw, fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3 }}>Manage Tags</Text>
+                  <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeManageTags(); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                    <Ionicons name="close" size={22} color={theme.textMuted} />
+                  </TouchableOpacity>
+                </View>
 
                 {/* Existing tags list */}
                 <View style={{ maxHeight: 280 }}>

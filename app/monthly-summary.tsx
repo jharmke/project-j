@@ -397,7 +397,8 @@ export default function MonthlySummaryScreen() {
                 <Text style={{ fontSize: 9, letterSpacing: 3, color: accent, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>Coach Insight</Text>
               </View>
               <View style={{ width: '100%', height: 0.5, backgroundColor: `${accent}40`, marginBottom: 10 }} />
-              <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiSemibold, lineHeight: 22, fontStyle: 'italic', textAlign: 'center' }}>
+              {/* VOICE, upright -- matched to Home's Coach Insight. See the same note in weekly-summary. */}
+              <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.voice, lineHeight: 22, textAlign: 'center' }}>
                 {coachBody}
               </Text>
               <TouchableOpacity

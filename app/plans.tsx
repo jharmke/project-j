@@ -28,6 +28,7 @@ import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import BackgroundLayers from '../components/BackgroundLayers';
 
 /**
  * Plans hub. One Stack screen (so the faith-tab keyboard bug never applies) with two tabs:
@@ -210,7 +211,8 @@ export default function PlansScreen() {
   const browseDevs = sortBrowse(availableDevs);
 
   return (
-    <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
+    <LinearGradient colors={[theme.gradientEnd, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
+      <BackgroundLayers glow={theme.accentAmber} />
 
       {/* AMBER -- body is already 100% amber (zero accent refs). See the Faith tab header note. */}
       <ScreenHeader title="Plans" color={theme.accentAmber} topInset={false} />
@@ -392,9 +394,13 @@ function SortControl({ theme, mode, onChange }: { theme: Theme; mode: SortMode; 
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); onChange(o.key); }}
             activeOpacity={0.8}
             hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+            /* Both states are OPAQUE. These chips sit straight on the page, and the page here is the amber
+               glow: the selected chip was a 14% amber wash over amber (mud) and the unselected ones were
+               literally 'transparent' (the glow, wearing a border). A control has to read as a solid thing
+               you can press. */
             style={[styles.sortChip, {
               borderColor: on ? `rgba(${GOLD_RGB},0.5)` : theme.borderCard,
-              backgroundColor: on ? `rgba(${GOLD_RGB},0.14)` : 'transparent',
+              backgroundColor: on ? theme.accentAmberBgOpaque : theme.bgCard,
             }]}
           >
             <Text style={[styles.sortChipText, { color: on ? theme.accentAmber : theme.textMuted }]}>{o.label}</Text>

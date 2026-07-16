@@ -19,6 +19,7 @@
 // borderTopWidth top border. Never put overflow:'hidden' on the card (kills the
 // shadow) -- the matched corner radii on the gradient handle the clipping.
 
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { View, ViewProps, ViewStyle } from 'react-native';
 import { useTheme } from '../theme';
@@ -63,6 +64,36 @@ export function CardWash({
       }}
       pointerEvents="none"
     />
+  );
+}
+
+// ─── CardWatermark ────────────────────────────────────────────────────────────
+// The big faint icon in a card's bottom-right corner. It is deliberately hung OUTSIDE the card
+// (right:-24, bottom:-28 at size 130) so only a slice of it shows -- which means something has to clip it.
+//
+// That "something" used to be overflow:'hidden' ON THE CARD, and that is exactly what this file's header
+// rule forbids, because it silently deletes the card's shadow (iOS masksToBounds clips the layer's own
+// shadow). Every Home card carried it, so NO Home card has had a shadow since the refresh -- while the
+// whole design leans on "cards float on shadow, not value contrast".
+//
+// So the watermark clips ITSELF: its own absolutely-filled, rounded, overflow-hidden box. This box has no
+// shadow of its own, so masksToBounds costs nothing here. The card keeps its shadow. Same self-clipping
+// trick as ButtonShine and FabDome.
+export function CardWatermark({
+  name,
+  color,
+  opacity = 0.10,
+  radius = DEFAULT_RADIUS,
+}: {
+  name: any;
+  color: string;
+  opacity?: number;
+  radius?: number;
+}) {
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: radius, overflow: 'hidden' }}>
+      <Ionicons name={name} size={130} color={color} style={{ position: 'absolute', right: -24, bottom: -28, opacity }} />
+    </View>
   );
 }
 

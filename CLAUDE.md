@@ -24,7 +24,12 @@ Branding: NOT marketed as a "Christian app." Positioned as intentional, encourag
 Read project_j_roadmap.md at the start of every session before touching anything. Parked/future items live in project_j_backlog.md -- read only when planning future sessions.
 
 ## Process
-- Read project_j_roadmap.md at session start, every session, no exceptions. It is the SLIM active roadmap. project_j_roadmap_archive.md is the frozen shipped/fixed history -- read only when you need the story behind a shipped feature. project_j_backlog.md is parked/future items -- read only when planning future sessions
+- Read project_j_roadmap.md at session start, every session, no exceptions -- but read it TARGETED, not
+  whole. The file is ~43KB (~25k tokens) and reading it end to end burns a chunk of the session's usage
+  before any work happens. Grep the "⏭️ NEXT UP" and "RECENTLY SHIPPED" headings and read those sections;
+  go deeper only when the actual task needs it. Those two sections ARE the session-start read. (Set
+  2026-07-16 -- the intent was always "know what's active," never "ingest the whole file.")
+  It is the SLIM active roadmap. project_j_roadmap_archive.md is the frozen shipped/fixed history -- read only when you need the story behind a shipped feature. project_j_backlog.md is parked/future items -- read only when planning future sessions
 - After Justin states the task, restate it and wait for explicit go-ahead
 - "WHAT'S NEXT" = read the "⏭️ NEXT UP" section of project_j_roadmap.md and answer TOP-DOWN from it ([NOW] items first). ALWAYS also offer at least one QUICK WIN from that list, and pull a stale item up from the backlog-by-area / project_j_backlog.md now and then so nothing rots. NEXT UP is the single ranked queue; new small ideas land THERE (ranked), never buried straight into the backlog. When something ships, remove it from NEXT UP and refill from the backlog. (Justin flagged 2026-07-05 that the backlog was where ideas went to die because "what's next" never surfaced them.)
 - Update the roadmap in real time the moment anything ships, a bug is found, or a decision is made. Never batch at end of session
@@ -44,6 +49,19 @@ Read project_j_roadmap.md at the start of every session before touching anything
 
 ## Terminal
 Justin uses PowerShell only. One command at a time, never chained. Always send git commands explicitly one at a time (git add, git commit, git push).
+
+## DON'T BURN JUSTIN'S USAGE -- NON NEGOTIABLE
+Every command and file read costs Justin real money. He is on a usage plan and a wasteful session is a
+failure, same as a bug. Flagged hard 2026-07-16 after a FAB styling task burned 23% of a session's usage.
+- NO full-project `tsc` to check a visual/JSX/styling change. It takes ~40s, costs thousands of tokens, and
+  finds nothing Metro doesn't surface the instant Justin reloads. THE RELOAD IS THE CHECK. (A syntax error
+  shipped that session anyway; tsc had been run three times and Justin's reload is what caught it.)
+- NEVER run tsc twice to "prove" an error was pre-existing. If an error is in code you didn't touch, say so
+  and move on. Stash-and-rerun to compare error lists is the single most expensive thing done that session.
+- tsc is fine for: real logic/type changes, new utils, anything with actual type surface. Not for styling.
+- Grep with a tight window. `-A 14` / `-C 10` on a multi-hit search dumps hundreds of lines into context.
+  Default to no context, then read the ONE hit that matters.
+- Read the part of a big file you need (offset/limit or Grep), not the whole thing.
 
 ## EAS Build
 Command: eas build --profile development --platform ios

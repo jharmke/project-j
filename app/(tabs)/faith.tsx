@@ -277,6 +277,12 @@ function PressButton({ onPress, style, wrapperStyle, children }: { onPress: () =
   );
 }
 
+// Matched to the Home faith card (components/FaithTodayCard): the amber glow here was 0.85 with offset 0,0
+// -- a halo radiating evenly on all four sides, which dissolved the card's edge into fog. Worst on Dark,
+// where this card skips the warm wash and had ONLY the halo to define it. The halo was doing two jobs (say
+// "faith", draw the edge) and was bad at the second; the amber BORDER now draws the edge and the glow, at
+// 0.32, just carries the identity.
+//
 // Today's Message. Shows the SAME daily verse as the Home tab (shared rotation in
 // data/verses.ts) so they always match. Tapping opens the Bible reader at the passage.
 // The home-only extras (the reflection-prompt subtext Justin flagged, and the journal
@@ -295,13 +301,14 @@ function VotdCard({ verse, theme, onReflect }: { verse: DailyVerse | null; theme
       }}
       style={[styles.card, {
         backgroundColor: theme.bgCardFaithGlass,
-        shadowColor: '#d4860a', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.85, shadowRadius: 8, elevation: 8,
-        borderTopWidth: theme.id === 'warm' ? 1.5 : 0.5,
-        borderTopColor: theme.id === 'warm' ? 'rgba(212,134,10,0.5)' : 'rgba(212,134,10,0.22)',
+        shadowColor: '#d4860a', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.32, shadowRadius: 8, elevation: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(212,134,10,0.45)',
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(212,134,10,0.45)',
       }]}
     >
-      {/* Inner warm wash on the light family only; on dark it reads muddy, so the card leans on
-          its amber glow (the card shadow) instead. */}
+      {/* Inner warm wash on the light family only; on dark it reads muddy. */}
       {theme.id !== 'dark' && <LinearGradient colors={[theme.accentAmber + '2E', theme.accentAmber + '00']} locations={[0, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 64, borderTopLeftRadius: 14, borderTopRightRadius: 14 }} pointerEvents="none" />}
       <View style={[styles.verseLabelRow, { justifyContent: 'space-between' }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>

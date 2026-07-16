@@ -25,6 +25,7 @@ import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { Type, numLine, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import FabDome from '../components/FabDome';
+import BackgroundLayers from '../components/BackgroundLayers';
 import HeaderIconButton from '../components/HeaderIconButton';
 
 // Static demo prayers for the faith_prayer tutorial (?tutorial=1). Rendered without ever touching
@@ -170,7 +171,8 @@ export default function PrayerScreen() {
   };
 
   return (
-    <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
+    <LinearGradient colors={[theme.gradientEnd, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
+      <BackgroundLayers glow={theme.accentAmber} />
 
       {/* The answered count only appears once a prayer IS answered, so a list of all-ongoing prayers
           never reads as "0". */}

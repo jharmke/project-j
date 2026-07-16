@@ -17,6 +17,7 @@ import {
   MAX_ACTIVE_PLANS,
 } from '../data/readingPlans';
 import { storageSet } from '../utils/storage';
+import { CardWatermark } from './GradientCard';
 import { Type } from '../typography';
 
 interface Props {
@@ -82,18 +83,16 @@ export default function ReadingPlansCard({ theme: t }: Props) {
       backgroundColor: t.bgCardFaithGlass,
       borderColor: t.borderCard,
       borderTopColor: t.accentBlueRaw,
-      shadowColor: '#000',
+      // The per-theme card shadow, not a hardcoded black. Black is invisible on Dark's near-black page and
+      // wrong-hued on Light (whose shadow is navy) -- the same drift Settings had.
+      shadowColor: t.cardShadow,
+      shadowOpacity: t.cardShadowOpacity,
     }]}>
 
-      {/* Hero watermark */}
-      <View style={StyleSheet.absoluteFill} pointerEvents="none">
-        <Ionicons
-          name="book"
-          size={130}
-          color={t.accentBlueRaw}
-          style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }}
-        />
-      </View>
+      {/* Hero watermark. Was a bare absoluteFill box with NO overflow and NO radius, so the 130px book was
+          not clipped at ALL -- it spilled straight out past the card's rounded corner. CardWatermark is the
+          self-clipping version (and does not touch the card's shadow). */}
+      <CardWatermark name="book" color={t.accentBlueRaw} />
 
       {/* Card header */}
       <View style={styles.cardHeader}>

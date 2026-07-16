@@ -82,6 +82,7 @@ import { generateMonthlySummary } from '../utils/monthlySummary';
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import ButtonShine from '../components/ButtonShine';
+import BackgroundLayers from '../components/BackgroundLayers';
 
 type FaithJourney = 'rooted' | 'exploring' | 'notrightnow';
 
@@ -327,6 +328,11 @@ function CollapsibleSection({
   };
 
   return (
+    // The shadow MUST live on a wrapper. styles.section carries overflow:'hidden' (it clips the collapse
+    // animation), and on iOS that sets masksToBounds, which clips the view's OWN shadow away -- so the
+    // shadow on this card never rendered AT ALL, at any opacity. Same rule as PrimaryCTA's glow wrapper
+    // and FabDome. If you ever see a shadow "not responding" to opacity, look for overflow:'hidden' first.
+    <View style={[styles.sectionShadow, { shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity }]}>
     <View ref={rootRef} style={[styles.section, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
       {/* Ghost: renders children off-screen to measure natural height for first open */}
       {measuring && (
@@ -368,6 +374,7 @@ function CollapsibleSection({
           {visible && children}
         </Animated.View>
       )}
+    </View>
     </View>
   );
 }
@@ -1186,7 +1193,8 @@ export default function SettingsScreen() {
 
 
   return (
-    <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
+    <LinearGradient colors={[theme.gradientEnd, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
+      <BackgroundLayers />
       {/* The title is still the 7-tap dev unlock. */}
       <ScreenHeader
         title="Settings"
@@ -2242,6 +2250,8 @@ export default function SettingsScreen() {
 
         {/* ── Dev Tools (7-tap hidden, all items consolidated) ── */}
         {devUnlocked && (
+          // Same wrapper split as CollapsibleSection: shadow outside, overflow:'hidden' face inside.
+          <View style={[styles.sectionShadow, { shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity }]}>
           <View style={[styles.section, { borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, backgroundColor: theme.bgCard }]}>
             <Text style={[styles.sectionLabel, { color: theme.accentRed, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 }]}>Dev Tools</Text>
 
@@ -3799,6 +3809,7 @@ export default function SettingsScreen() {
               />
             </View>
           </View>
+          </View>
         )}
 
       </ScrollView>
@@ -3970,7 +3981,17 @@ const styles = StyleSheet.create({
   headerLabel: { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: Type.uiBold },
   headerTitle: { ...PAGE_TITLE },
   content:     { padding: 16, paddingBottom: 80 },
-  section:     { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, marginBottom: 12, overflow: 'hidden', shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 6 },
+  // shadowColor/shadowOpacity are NOT here: they are per-THEME (theme.cardShadow is tinted -- navy on
+  // Light, brown on Warm -- and cardShadowOpacity varies 0.16-0.55). This style hardcoded black @ 0.18,
+  // which opted Settings out of the app's card-shadow system entirely: on Light that was black at 0.18
+  // instead of navy at 0.30, so the sections blended into the page while every other card floated.
+  // Both render sites pass the tokens inline.
+  // The card FACE. overflow:'hidden' clips the collapse animation -- and it is exactly why the shadow
+  // cannot live here (see sectionShadow).
+  section:     { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, overflow: 'hidden' },
+  // The card SHADOW, on its own wrapper so overflow:'hidden' above cannot mask it away. borderRadius
+  // matches the face so the shadow is cast in the card's shape, not a rectangle.
+  sectionShadow: { borderRadius: 14, marginBottom: 12, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
   sectionLabel:{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold },
   row:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 0.5 },
   rowTitle:    { fontSize: 14, fontFamily: Type.uiMedium, marginBottom: 2 },

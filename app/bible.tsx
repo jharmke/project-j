@@ -29,6 +29,7 @@ import TooltipIcon from '../components/TooltipIcon';
 import HeaderIconButton from '../components/HeaderIconButton';
 import ButtonShine from '../components/ButtonShine';
 import FabDome from '../components/FabDome';
+import BackgroundLayers from '../components/BackgroundLayers';
 import { useTheme } from '../theme';
 import CompanionFAB, { GOLD as HALO_GOLD } from '../components/CompanionFAB';
 import CompanionChat from '../components/CompanionChat';
@@ -618,7 +619,8 @@ export default function BibleScreen() {
   const draftLineHeight = TEXT_SIZES.find(s => s.size === draftTextSize)?.lineHeight ?? 26;
 
   return (
-    <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={[styles.container, { paddingTop: insets.top }]}>
+    <LinearGradient colors={[theme.gradientEnd, theme.gradientEnd]} style={[styles.container, { paddingTop: insets.top }]}>
+      <BackgroundLayers glow={theme.accentAmber} />
 
       {/* Header. Bible is the one screen that still hand-rolls its header row instead of using ScreenHeader
           (it has to: the title IS a book picker, not a label). It kept its OWN copies of the header icon

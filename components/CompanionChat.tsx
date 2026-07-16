@@ -722,8 +722,11 @@ export default function CompanionChat({
                     />
                   );
                 }
+                // HER words wear the VOICE face; YOURS stay on interface. That contrast IS the point -- a
+                // companion who speaks in the same face as the app's chrome reads as the app talking to
+                // itself. Same rule as the coach surfaces (Home, Sleep, the summaries, EvR).
                 const body = (
-                  <Text style={[styles.bubbleText, { color: theme.textPrimary }]}>
+                  <Text style={[styles.bubbleText, m.role !== 'user' && { fontFamily: Type.voice }, { color: theme.textPrimary }]}>
                     {m.segments
                       ? m.segments.map((s, j) =>
                           s.type === 'ref' ? (

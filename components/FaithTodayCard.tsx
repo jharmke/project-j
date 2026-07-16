@@ -226,7 +226,9 @@ export default function FaithTodayCard({ verse, theme }: Props) {
   return (
     <>
     <View style={styles.glow}>
-      <View style={[styles.clip, { borderColor: theme.borderCard }]}>
+      {/* AMBER border, not the neutral card border: this is the edge the halo used to (badly) draw, and it
+          carries the faith identity crisply. Uses Halo's gold, the source of truth for faith gold. */}
+      <View style={[styles.clip, { borderColor: 'rgba(212,134,10,0.45)' }]}>
         <ScrollView
           ref={scrollRef}
           horizontal
@@ -345,8 +347,14 @@ export default function FaithTodayCard({ verse, theme }: Props) {
 }
 
 const styles = StyleSheet.create({
-  glow: { borderRadius: 14, marginBottom: 12, shadowColor: '#d4860a', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.85, shadowRadius: 8, elevation: 8 },
-  clip: { borderRadius: 14, borderWidth: 0.5, overflow: 'hidden' },
+  // The gold halo. Was shadowOpacity 0.85 -- a FOG, not a glow: offset 0,0 means it radiates evenly on all
+  // four sides, so at 0.85 the card's edge dissolved into haze instead of ending. Invisible-ish on the pale
+  // themes, but on DARK an 85% amber cloud around a dark translucent card is why this card read "fuzzy"
+  // while the Calories card under it looked crisp. 0.32 is in line with the real card shadows (0.30).
+  // The halo was doing TWO jobs -- say "faith", and draw the edge -- and it was bad at the second. The
+  // border below now draws the edge; the glow only has to carry the identity.
+  glow: { borderRadius: 14, marginBottom: 12, shadowColor: '#d4860a', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.32, shadowRadius: 8, elevation: 8 },
+  clip: { borderRadius: 14, borderWidth: 1, overflow: 'hidden' },
   page: { width: '100%', overflow: 'hidden' },
   watermark: { position: 'absolute', right: -24, bottom: -28, opacity: 0.10 },
   pageContent: { padding: 16 },

@@ -382,23 +382,26 @@ function DiagnosticFeedCard({ card, theme, shadowStyle, isMindful }: { card: Dia
           </View>
         )}
       </View>
-      <Text style={{ fontSize: 15, fontFamily: Type.uiSemibold, color: t.textSecondary, lineHeight: 21, marginBottom: 12 }}>{card.claim}</Text>
+      {/* VOICE from here down, EXCEPT the proof: on this card the claim, the insight and the lever are all
+          the coach SPEAKING (and the AI rewrites claim + lever), while the proof is a NUMBER and stays on
+          the data face. That split is the point -- voice for what he says, not for what he measured. */}
+      <Text style={{ fontSize: 15, fontFamily: Type.voiceSemibold, color: t.textSecondary, lineHeight: 21, marginBottom: 12 }}>{card.claim}</Text>
       {card.metric ? (
         <StatBar metric={card.metric} accent={accent} theme={t} positive={card.positive} />
       ) : (
         <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: accent, marginBottom: card.insight ? 8 : 10 }}>{card.proof}</Text>
       )}
       {card.insight ? (
-        <Text style={{ fontSize: 13, fontFamily: Type.ui, color: t.textSecondary, lineHeight: 20, marginBottom: 10 }}>{card.insight}</Text>
+        <Text style={{ fontSize: 13, fontFamily: Type.voice, color: t.textSecondary, lineHeight: 20, marginBottom: 10 }}>{card.insight}</Text>
       ) : null}
       {softenLever ? (
         // Mindful corrective: no arrow, no bold directive color -- a quiet italic note to notice,
         // not an instruction to follow.
-        <Text style={{ fontSize: 13, fontFamily: Type.ui, fontStyle: 'italic', color: t.textSecondary, lineHeight: 20 }}>{card.lever}</Text>
+        <Text style={{ fontSize: 13, fontFamily: Type.voice, fontStyle: 'italic', color: t.textSecondary, lineHeight: 20 }}>{card.lever}</Text>
       ) : (
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 7 }}>
           <Text style={{ fontSize: 14, color: accent, marginTop: 1, fontFamily: Type.uiBold }}>→</Text>
-          <Text style={{ flex: 1, fontSize: 13, fontFamily: Type.uiSemibold, color: accent, lineHeight: 20 }}>{card.lever}</Text>
+          <Text style={{ flex: 1, fontSize: 13, fontFamily: Type.voiceSemibold, color: accent, lineHeight: 20 }}>{card.lever}</Text>
         </View>
       )}
     </View>
@@ -858,7 +861,8 @@ export default function DiagnosticReportViewScreen() {
                 const body = coachBody;
                 if (!body) return null;
                 // Blue Coach Insight box -- mirrors the day/weekly/monthly summary treatment
-                // exactly: translucent blue fill, centered header + divider, centered italic body.
+                // exactly: translucent blue fill, centered header + divider, centered VOICE body
+                // (all four dropped the italic together when they moved onto the voice face).
                 return (
                   <View style={{ marginBottom: 12 }}>
                     <View style={[shadowStyle, {
@@ -870,7 +874,8 @@ export default function DiagnosticReportViewScreen() {
                         <Text style={{ fontSize: 9, letterSpacing: 3, color: t.accentBlueRaw, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>Coach Insight</Text>
                       </View>
                       <View style={{ width: '100%', height: 0.5, backgroundColor: t.accentBlueRaw + '40', marginBottom: 10 }} />
-                      <Text style={{ fontSize: 14, color: t.textSecondary, fontFamily: Type.uiSemibold, lineHeight: 22, fontStyle: 'italic', textAlign: 'center' }}>
+                      {/* VOICE, upright -- matched to Home's Coach Insight. See the note in weekly-summary. */}
+                      <Text style={{ fontSize: 14, color: t.textSecondary, fontFamily: Type.voice, lineHeight: 22, textAlign: 'center' }}>
                         {body}
                       </Text>
                     </View>

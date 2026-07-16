@@ -1398,7 +1398,9 @@ export default function SleepHub() {
           </View>
           <View style={{ flexDirection: 'row', gap: 10, padding: 12, borderRadius: 10, backgroundColor: theme.accentBlueBg }}>
             <Ionicons name="bulb" size={16} color={theme.accentBlueRaw} style={{ marginTop: 1 }} />
-            <Text style={{ flex: 1, fontSize: 13, color: theme.textPrimary, fontFamily: Type.uiMedium, lineHeight: 20 }}>{body}</Text>
+            {/* VOICE, not interface: this is the coach TALKING to you, same as Home's Sleep/Recovery tips,
+              which already wear it. The two surfaces disagreed -- same coach, two faces. */}
+          <Text style={{ flex: 1, fontSize: 13, color: theme.textPrimary, fontFamily: Type.voice, lineHeight: 20 }}>{body}</Text>
           </View>
         </View>
       );
@@ -1594,7 +1596,9 @@ export default function SleepHub() {
         </View>
         <View style={{ flexDirection: 'row', gap: 10, padding: 12, borderRadius: 10, backgroundColor: theme.accentBlueBg }}>
           <Ionicons name="bulb" size={16} color={theme.accentBlueRaw} style={{ marginTop: 1 }} />
-          <Text style={{ flex: 1, fontSize: 13, color: theme.textPrimary, fontFamily: Type.uiMedium, lineHeight: 20 }}>{body}</Text>
+          {/* VOICE, not interface: this is the coach TALKING to you, same as Home's Sleep/Recovery tips,
+              which already wear it. The two surfaces disagreed -- same coach, two faces. */}
+          <Text style={{ flex: 1, fontSize: 13, color: theme.textPrimary, fontFamily: Type.voice, lineHeight: 20 }}>{body}</Text>
         </View>
       </View>
     );

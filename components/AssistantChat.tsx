@@ -649,7 +649,10 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
                     />
                   );
                 }
-                const body = <Text style={[styles.bubbleText, { color: theme.textPrimary }]}>{m.text}</Text>;
+                // HIS words wear the VOICE face; YOURS stay on interface. That contrast IS the point -- an
+                // assistant who speaks in the same face as the app's chrome reads as the app talking to
+                // itself. Same rule as Halo and the coach surfaces.
+                const body = <Text style={[styles.bubbleText, m.role !== 'user' && { fontFamily: Type.voice }, { color: theme.textPrimary }]}>{m.text}</Text>;
                 const isReply = m.role === 'assistant' && i > 0; // opening greeting gets no action row
                 if (!isReply) {
                   if (m.role === 'user') {

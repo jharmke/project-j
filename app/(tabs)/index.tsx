@@ -16,6 +16,7 @@ import Svg, { Circle } from 'react-native-svg';
 import PressableButton from '../../components/PressableButton';
 import HeaderIconButton from '../../components/HeaderIconButton';
 import ButtonShine from '../../components/ButtonShine';
+import PrimaryCTA from '../../components/PrimaryCTA';
 import { useToast, ToastRenderer } from '../../components/Toast';
 import { showCelebration } from '../../components/CelebrationOverlay';
 import { showAchievementToast, showDailyGoalToast } from '../../components/AchievementToast';
@@ -66,7 +67,7 @@ import NutrientDrilldownModal, { DrilldownItem, computeNetCarbsForEntry } from '
 import AnimatedNumber from '../../components/AnimatedNumber';
 import SleepDonut from '../../components/SleepDonut';
 import { recoveryZone, calcRecoveryScore } from '../../utils/recoveryScore';
-import GradientCard, { CardWash } from '../../components/GradientCard';
+import GradientCard, { CardWash, CardWatermark } from '../../components/GradientCard';
 import {
   loadActiveChallenge, saveActiveChallenge, clearActiveChallenge, appendChallengeHistory,
   computeChallengeProgress, challengeStatus, challengeTitle,
@@ -2184,8 +2185,8 @@ export default function HomeScreen() {
     const nudgeText = MINDFUL_NUDGES[new Date().getDate() % MINDFUL_NUDGES.length];
 
     return (
-      <View ref={calCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden' }]}>
-        <Ionicons name="flame" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
+      <View ref={calCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5 }]}>
+        <CardWatermark name="flame" color={theme.accentBlueRaw} />
         <View style={{ flexDirection:'row', alignItems:'flex-start', justifyContent:'space-between', marginBottom:4 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
             <Ionicons name="flame-outline" size={11} color={theme.textMuted} />
@@ -2282,8 +2283,8 @@ export default function HomeScreen() {
       setShowMacroDrilldown(true);
     };
     return (
-      <View ref={macrosCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
-        <Ionicons name="nutrition" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
+      <View ref={macrosCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
+        <CardWatermark name="nutrition" color={theme.accentBlueRaw} />
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
             <Ionicons name="pie-chart-outline" size={11} color={theme.textMuted} />
@@ -2329,8 +2330,8 @@ export default function HomeScreen() {
   };
 
   const renderWaterCard = () => (
-    <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
-        <Ionicons name="water" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
+    <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
+        <CardWatermark name="water" color={theme.accentBlueRaw} />
       <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
         <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
           <Ionicons name="water-outline" size={11} color={theme.textMuted} />
@@ -2379,8 +2380,8 @@ export default function HomeScreen() {
   );
 
   const renderWeightCard = () => (
-    <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden' }]}>
-        <Ionicons name="body" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
+    <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5 }]}>
+        <CardWatermark name="body" color={theme.accentBlueRaw} />
       <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
         <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
           <Ionicons name="trending-down-outline" size={11} color={theme.textMuted} />
@@ -2508,8 +2509,8 @@ export default function HomeScreen() {
         onPressIn={onPressIn}
         onPressOut={onPressOut}
         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/(tabs)/workout'); }}
-        style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, padding: 16, overflow: 'hidden' }]}>
-        <Ionicons name="barbell" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
+        style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, padding: 16 }]}>
+        <CardWatermark name="barbell" color={theme.accentBlueRaw} />
         <View style={{ marginBottom: 12 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:8 }}>
             <Ionicons name="barbell-outline" size={11} color={theme.textMuted} />
@@ -2635,14 +2636,9 @@ export default function HomeScreen() {
     const pct = stepGoal > 0 ? steps / stepGoal : 0;
     const stepColor = pct >= 1 ? theme.statusGood : theme.accentBlue;
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
         {/* Background accent icon */}
-        <Ionicons
-          name="footsteps"
-          size={130}
-          color={theme.accentBlueRaw}
-          style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }}
-        />
+        <CardWatermark name="footsteps" color={theme.accentBlueRaw} />
         <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:8 }}>
           <Ionicons name="footsteps-outline" size={11} color={theme.textMuted} />
           <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Steps Today</Text>
@@ -2685,7 +2681,8 @@ export default function HomeScreen() {
       </View>
     );
     return (
-      <Animated.View ref={sleepCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: activeSleepFace === 0 ? RECOVERY_PURPLE : theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden', padding: 0, transform: [{ scale: sleepCardScale }] }]}>
+      <Animated.View style={{ borderRadius: 14, marginBottom: 12, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6, transform: [{ scale: sleepCardScale }] }}>
+      <Animated.View ref={sleepCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: activeSleepFace === 0 ? RECOVERY_PURPLE : theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden', padding: 0, marginBottom: 0 }]}>
         <ScrollView
           ref={carouselRef}
           horizontal
@@ -3128,6 +3125,7 @@ export default function HomeScreen() {
           <View style={{ width: activeSleepFace === 1 ? 16 : 6, height: 5, borderRadius: 3, backgroundColor: activeSleepFace === 1 ? theme.accentBlueRaw : theme.textDim, opacity: activeSleepFace === 1 ? 1 : 0.35 }} />
         </View>
       </Animated.View>
+      </Animated.View>
     );
   };
 
@@ -3200,8 +3198,8 @@ export default function HomeScreen() {
     if (bloodOxygen !== null)     metricBoxes.push({ key: 'bloodO2',   label: 'Blood O2',   value: `${Math.round(bloodOxygen * 10) / 10}`,   unit: '% SpO2',    icon: 'water',       color: fitnessColor('bloodO2', bloodOxygen) });
 
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
-        <Ionicons name="fitness" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
+      <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
+        <CardWatermark name="fitness" color={theme.accentBlueRaw} />
         <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:10 }}>
           <Ionicons name="heart-outline" size={11} color={theme.textMuted} />
           <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Fitness Metrics</Text>
@@ -3246,8 +3244,8 @@ export default function HomeScreen() {
     const noteIsDirty = noteCurrentText !== noteLastSaved;
     const isClearing = noteIsDirty && !noteCurrentText && !!noteLastSaved;
     return (
-      <View ref={dailyNoteCardRef} style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
-        <Ionicons name="create" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
+      <View ref={dailyNoteCardRef} style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
+        <CardWatermark name="create" color={theme.accentBlueRaw} />
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
             <Ionicons name="journal-outline" size={11} color={theme.textMuted} />
@@ -3324,8 +3322,8 @@ export default function HomeScreen() {
     // ── Empty: no active challenge ──
     if (!ch || !prog) {
       return (
-        <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: accentRaw, overflow: 'hidden' }]}>
-          <Ionicons name="trophy" size={130} color={accentRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
+        <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: accentRaw }]}>
+          <CardWatermark name="trophy" color={accentRaw} />
           <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:14 }}>
             <Ionicons name="trophy" size={11} color={theme.textMuted} />
             <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Challenge</Text>
@@ -3379,9 +3377,9 @@ export default function HomeScreen() {
           ? (prog.weightChangeSoFar == null ? 'Not enough weigh-ins to call it.' : `${prog.weightChangeSoFar < 0 ? 'Down' : 'Up'} ${Math.abs(prog.weightChangeSoFar).toFixed(1)} of ${Math.abs(ch.target ?? 0).toFixed(1)} lbs.`)
           : `You hit it ${prog.daysHit ?? 0} of ${prog.totalDays} days.`;
       return (
-        <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: washColor, overflow: 'hidden' }]}>
+        <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: washColor }]}>
           <CardWash color={washColor} scored />
-          <Ionicons name={won ? 'trophy' : 'ribbon'} size={130} color={washColor} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.12 }} />
+          <CardWatermark name={won ? 'trophy' : 'ribbon'} color={washColor} opacity={0.12} />
           <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:10 }}>
             <Ionicons name={won ? 'trophy' : 'ribbon'} size={12} color={washColor} />
             <Text style={[styles.cardLabel, { marginBottom:0, color: washColor }]}>{perfect && won ? 'Perfect' : 'Complete'}</Text>
@@ -3407,8 +3405,8 @@ export default function HomeScreen() {
         ? (prog.rows ?? []).map(r => r.label).join(', ')
         : title;
       return (
-        <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: accentRaw, overflow: 'hidden' }]}>
-          <Ionicons name="trophy" size={130} color={accentRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
+        <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: accentRaw }]}>
+          <CardWatermark name="trophy" color={accentRaw} />
           <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
             <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
               <Ionicons name="trophy" size={11} color={theme.textMuted} />
@@ -3432,8 +3430,8 @@ export default function HomeScreen() {
 
     // ── Active ──
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: accentRaw, overflow: 'hidden' }]}>
-        <Ionicons name="trophy" size={130} color={accentRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
+      <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: accentRaw }]}>
+        <CardWatermark name="trophy" color={accentRaw} />
         {/* Header */}
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
@@ -3560,10 +3558,14 @@ export default function HomeScreen() {
         const page0Positive = coachCache ? coachCache.packet.tone === 'positive' : (page0Tip?.positive ?? false);
         const page0Tier = coachCache ? (coachCache.packet.tone === 'care' ? 'urgent' : 'pattern') : (page0Tip?.tier ?? 'insight');
         const page0BorderColor = page0Positive ? theme.statusGood : page0Tier === 'urgent' ? theme.statusBad : theme.statusWarn;
-        const tipShadow = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 };
+        // Was a hardcoded black @0.12 ON the card -- doubly wrong: the card's overflow:'hidden' (it clips the
+        // carousel pages) masked it away entirely, AND it ignored the per-theme card shadow every other card
+        // uses. Now the THEME shadow rides a wrapper that never clips, and the card clips inside it.
+        const tipShadow = { shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 };
         return (
+          <View style={{ borderRadius: 14, marginBottom: 12, ...tipShadow }}>
           <Animated.View
-            style={[styles.card, { padding: 0, overflow: 'hidden', backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopWidth:1.5, borderTopColor: page0BorderColor, ...tipShadow, ...(tipHeightReady ? { height: cardHeightAnim } : {}) }]}
+            style={[styles.card, { padding: 0, marginBottom: 0, overflow: 'hidden', backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopWidth:1.5, borderTopColor: page0BorderColor, ...(tipHeightReady ? { height: cardHeightAnim } : {}) }]}
             onLayout={e => { const w = e.nativeEvent.layout.width; tipCardWidthRef.current = w; setTipCardWidth(w); }}
           >
             <ScrollView
@@ -3643,6 +3645,7 @@ export default function HomeScreen() {
               </View>
             )}
           </Animated.View>
+          </View>
         );
       }
       case 'calories':        return renderCaloriesCard();
@@ -3755,7 +3758,9 @@ export default function HomeScreen() {
           <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeWaterCustomModal} activeOpacity={1} />
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={{ backgroundColor: theme.bgSheet, borderRadius:14, padding:24, width:'80%', borderWidth:0.5, borderColor: theme.borderCard }}>
-            <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase', marginBottom:12 }}>
+            {/* A modal TITLE, not a card label. This was the 9px muted uppercase card-label recipe, which is
+                what every titled modal moved OFF of: 20px Clash, accent, mixed case (the ModalHeader rule). */}
+            <Text style={{ fontSize:20, color: theme.accentBlue, fontFamily:Type.display, marginBottom:12 }}>
               {waterCustomSign==='add' ? 'Add Custom Amount' : 'Remove Custom Amount'}
             </Text>
             <TextInput ref={waterCustomInputRef} style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textPrimary, padding:12, fontSize:24, fontFamily:Type.num, textAlign:'center', marginBottom:16 }}
@@ -3765,17 +3770,22 @@ export default function HomeScreen() {
               <TouchableOpacity style={{ flex:1, padding:12, borderRadius:8, backgroundColor: theme.bgInput, alignItems:'center' }} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeWaterCustomModal(); }}>
                 <Text style={{ color: theme.textMuted, fontFamily:Type.uiSemibold, fontSize:14 }}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={{ flex:1, padding:12, borderRadius:8, backgroundColor: waterCustomSign==='add' ? theme.accentBlueBg : theme.accentRedBg, alignItems:'center' }}
+              {/* Molded, like every other primary button. `fill` carries the RED on Remove because the
+                  colour is meaning here (destructive), not decoration -- and PrimaryCTA's glow follows the
+                  fill, so it stays red-on-red rather than an accent glow under a red button.
+                  disabled: nothing valid to submit = dim, per the input+submit rule. It had no dim state. */}
+              <PrimaryCTA
+                label={waterCustomSign==='add' ? 'Add' : 'Remove'}
+                disabled={!(parseInt(waterCustomInput) > 0)}
+                fill={waterCustomSign==='add' ? undefined : theme.accentRed}
+                wrapperStyle={{ flex:1 }}
+                faceStyle={{ paddingVertical:12, borderRadius:8 }}
                 onPress={async () => {
-                  triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
                   const amt = parseInt(waterCustomInput);
                   if (amt > 0) { await doWaterUpdate(waterCustomSign === 'add' ? amt : -amt); }
                   closeWaterCustomModal();
-                }}>
-                <Text style={{ color: waterCustomSign==='add' ? theme.accentBlue : theme.accentRed, fontFamily:Type.uiSemibold, fontSize:14 }}>
-                  {waterCustomSign==='add'?'Add':'Remove'}
-                </Text>
-              </TouchableOpacity>
+                }}
+              />
             </View>
           </View>
           </TouchableWithoutFeedback>

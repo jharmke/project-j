@@ -166,6 +166,7 @@ export interface Theme {
   accentBlueRaw:            string;               // raw accent color, always the true accent - use for home button, gradients
   accentBlueBg:             string;             // button background (low opacity blue) -- TRANSLUCENT, assumes an opaque card behind it
   accentBlueBgOpaque:       string;       // same fill PRE-COMPOSITED opaque: for a tinted button sitting on the PAGE, not on a card
+  accentAmberBgOpaque:      string;       // the AMBER equivalent, for the faith surfaces (their pages glow amber, not accent)
   accentBlueBorder:         string;         // button border
   accentGreen: string;              // success / goal hit
   accentGreenBg: string;
@@ -239,6 +240,7 @@ const dark: Theme = {
   tabBarInactive:   '#74747e',
   bgSelected:         '#000000', // placeholder: the provider computes this from the LIVE accent
   accentBlueBgOpaque: '#000000', // placeholder: the provider computes this from the LIVE accent
+  accentAmberBgOpaque: '#000000', // placeholder: the provider computes this from the theme's amber
   bgCardVerse:      '#22223a',
   bgCardFaith:      '#2a2a2e',  // = bgCard: no tint on dark (warm-dark cards recede and look cheap; warmth lives in the gold edge + accents)
   bgCardFaithHero:  '#262634',
@@ -337,11 +339,15 @@ const light: Theme = {
   // on a near-white page the shadow is the ONLY thing lifting the card, so it has to work harder.
   cardShadow:       '#26304f',
   cardShadowOpacity: 0.30,
-  glowStrength:     0.60,
+  // 0.60 -> 0.45. The 0.60 was tuned against the OLD grey ground (#e3e6ee); on the brighter #f2f3f7 it runs
+  // hot and drowns anything sitting on the page instead of on a card (the Devotional buttons, the Plans sort
+  // pills). Still above the other themes' 0.40 -- Light needs more glow than a dark ground to read at all.
+  glowStrength:     0.45,
   chromeFill:       'rgba(255,255,255,0.65)',
   tabBarInactive:   '#6666aa',
   bgSelected:         '#000000', // placeholder: the provider computes this from the LIVE accent
   accentBlueBgOpaque: '#000000', // placeholder: the provider computes this from the LIVE accent
+  accentAmberBgOpaque: '#000000', // placeholder: the provider computes this from the theme's amber
   bgCardVerse:      'rgba(255,251,240,0.72)',
   bgCardFaith:      'rgba(255,250,243,0.85)',
   bgCardFaithHero:  'rgba(255,248,236,0.82)',
@@ -439,7 +445,11 @@ const light: Theme = {
   overlayBg:        'rgba(0,0,0,0.40)',
 
   gradientStart:    '#d4d4e8',
-  gradientEnd:      '#e3e6ee',
+  // Was '#e3e6ee' -- the PRE-refresh grey. The Light refresh brightened bgPrimary to #f2f3f7 but left this
+  // behind, and this is the token the flat ground actually paints, so every Light screen was still painting
+  // the old grey. Card-dense screens hid it; the sparse faith pages exposed it. These two are meant to
+  // match (see the type comment: "usually bgPrimary").
+  gradientEnd:      '#f2f3f7',
 };
 
 // ─── Slate Theme (cool silver, steel blue accent) ─────────────────────────────
@@ -457,6 +467,7 @@ const slate: Theme = {
   tabBarInactive:   '#5a7088',  // Slate textMuted -- was #8a9aaa (its faint textDim), the root of the "navy tab icons hidden" complaint
   bgSelected:         '#000000', // placeholder: the provider computes this from the LIVE accent
   accentBlueBgOpaque: '#000000', // placeholder: the provider computes this from the LIVE accent
+  accentAmberBgOpaque: '#000000', // placeholder: the provider computes this from the theme's amber
   bgCardVerse:      'rgba(226,232,244,0.90)',
   bgCardFaith:      'rgba(228,221,209,0.92)',
   bgCardFaithHero:  'rgba(226,219,206,0.92)',
@@ -545,12 +556,18 @@ const warm: Theme = {
   bgCard:           '#fff4e4',
   bgCardGlass:      'rgba(255,246,232,0.64)',
   cardShadow:       '#5a3a18',
-  cardShadowOpacity: 0.18,
+  // 0.18 -> 0.30 (matches Light). Warm's card (#fff4e4) and ground (#f3ece0) are nearly the same
+  // LIGHTNESS -- cream on cream -- so there is no edge from value contrast and the shadow is the only
+  // thing that can separate them. At 0.18 it could not.
+  cardShadowOpacity: 0.30,
   glowStrength:     0.40,
   chromeFill:       'transparent',
-  tabBarInactive:   '#c0a080',
+  // #c0a080 -> Warm's textMuted. The old value was a LIGHT tan sitting on a cream bar: barely visible.
+  // Exactly the Slate "navy tab icons hidden" root, one hue over -- an inactive icon still has to be READ.
+  tabBarInactive:   '#9a7050',
   bgSelected:         '#000000', // placeholder: the provider computes this from the LIVE accent
   accentBlueBgOpaque: '#000000', // placeholder: the provider computes this from the LIVE accent
+  accentAmberBgOpaque: '#000000', // placeholder: the provider computes this from the theme's amber
   bgCardVerse:      '#fff8e8',
   bgCardFaith:      '#fff1dd',
   bgCardFaithHero:  '#ffeed6',
@@ -636,12 +653,15 @@ const blush: Theme = {
   bgCard:           'rgba(253,238,245,0.95)',
   bgCardGlass:      'rgba(254,243,248,0.66)',
   cardShadow:       '#5a2438',
-  cardShadowOpacity: 0.16,
+  // 0.16 -> 0.30 (matches Light). Same cream-on-cream problem as Warm, one hue over.
+  cardShadowOpacity: 0.30,
   glowStrength:     0.40,
   chromeFill:       'transparent',
-  tabBarInactive:   '#b07a8a',
+  // #b07a8a -> Blush's textMuted. Same fix as Warm: a pale rose on a pink bar could not be read.
+  tabBarInactive:   '#834a5a',
   bgSelected:         '#000000', // placeholder: the provider computes this from the LIVE accent
   accentBlueBgOpaque: '#000000', // placeholder: the provider computes this from the LIVE accent
+  accentAmberBgOpaque: '#000000', // placeholder: the provider computes this from the theme's amber
   bgCardVerse:      'rgba(255,252,245,0.92)',
   bgCardFaith:      'rgba(253,240,241,0.95)',
   bgCardFaithHero:  'rgba(253,242,238,0.94)',
@@ -810,6 +830,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }): Reac
   const accentOptions = ACCENT_PALETTES[themeId];
   const activeAccent = accentOptions.find(a => a.id === accentId) ?? accentOptions[0];
   const accentOpaque = mix(activeAccent.accentBlue, baseTheme.bgInput, themeId === 'dark' ? 0.22 : 0.16);
+  // The amber counterpart. Faith pages glow AMBER, so an amber-tinted control sitting on one of those pages
+  // hits the exact failure accentBlueBgOpaque was created for -- a 14% amber wash over an amber glow. Mixed
+  // from the theme's OWN amber (not the accent) at the same ratios.
+  const amberOpaque = mix(baseTheme.accentAmber, baseTheme.bgInput, themeId === 'dark' ? 0.22 : 0.16);
 
   const composedTheme: Theme = {
     ...baseTheme,
@@ -834,8 +858,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }): Reac
     //     SILENTLY ASSUMES A WHITE CARD BEHIND IT. When there is none, use this.
     // Kept as separate names on purpose: bgSelected's ~20 call sites are genuinely about SELECTION, and a
     // button on a page is not selected. Same value today; they are free to diverge.
-    accentBlueBgOpaque: accentOpaque,
-    bgSelected:         accentOpaque,
+    accentBlueBgOpaque:  accentOpaque,
+    accentAmberBgOpaque: amberOpaque,
+    bgSelected:          accentOpaque,
     ...(activeAccent.gradientStart ? { gradientStart: activeAccent.gradientStart } : {}),
   };
 

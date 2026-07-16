@@ -25,6 +25,9 @@ import type { DevotionalsStorage, DevotionalHaloTurn } from '../data/devotionals
 import { cancelFaithReadingNotification } from '../services/notifications';
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import BackgroundLayers from '../components/BackgroundLayers';
+import PrimaryCTA from '../components/PrimaryCTA';
+import ButtonShine from '../components/ButtonShine';
 
 /**
  * Devotional day screen. The interactive half of Bucket C (distinct from a pure reading plan).
@@ -38,7 +41,9 @@ import ScreenHeader from '../components/ScreenHeader';
 const GOLD = '#d4860a';
 const GOLD_RGB = '212,134,10';
 const HALO_GOLD = '#e8a020';  // Halo's own identity color (matches the FAB + chat)
-const CROSS_DARK = '#2e1c03';
+// Halo's cross is a warm CREAM everywhere she appears (her FAB, her chat badge). This page had it on a
+// near-black brown, so the badge did not read as Halo at all -- it read as a dark smudge on a gold dot.
+const CROSS_LIGHT = '#fff4dd';
 
 // Fetch the passage text inline. Handles a verse range within a chapter and a span across
 // chapters; trims the first/last chapter to the verse bounds, keeps whole chapters between.
@@ -212,7 +217,8 @@ export default function DevotionalScreen() {
   // Devotional or day not found: a clean error rather than a blank screen.
   if (!dev || !dayData) {
     return (
-      <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
+      <LinearGradient colors={[theme.gradientEnd, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
+      <BackgroundLayers glow={theme.accentAmber} />
         <ScreenHeader title="Devotional" topInset={false} />
         <View style={styles.loading}>
           <Ionicons name="leaf-outline" size={40} color={theme.iconMuted} />
@@ -225,7 +231,8 @@ export default function DevotionalScreen() {
   const reflectionParagraphs = dayData.reflection.split('\n\n');
 
   return (
-    <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
+    <LinearGradient colors={[theme.gradientEnd, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
+      <BackgroundLayers glow={theme.accentAmber} />
 
       {/* The title is the devotional's own name -- it used to be .toUpperCase()'d, which is the app
           shouting a proper noun back at you. */}
@@ -239,7 +246,9 @@ export default function DevotionalScreen() {
 
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 48 }}
+        /* +48 -> +72: Halo's disc was crowding the Previous/Next row. Not the full +96 the Otto-FAB
+           clearance fix uses -- the nav row is short and only needs a little air under it. */
+        contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 72 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
@@ -310,23 +319,17 @@ export default function DevotionalScreen() {
                 borderColor: theme.borderCard,
               }]}
             />
-            <TouchableOpacity
+            {/* Molded, like every other primary button in the app -- this was the last flat painted gold
+                slab. Wears the PAGE gold (#d4860a), matching the molded prayer buttons, not Halo's own
+                gold (she is a character, not this page's chrome). */}
+            <PrimaryCTA
+              label="Save reflection"
               onPress={handleSave}
               disabled={!canSave}
-              activeOpacity={0.85}
-              style={[styles.saveBtn, {
-                backgroundColor: canSave ? GOLD : `rgba(${GOLD_RGB},0.16)`,
-                borderColor: canSave ? GOLD : `rgba(${GOLD_RGB},0.22)`,
-              }]}
-            >
-              {saving ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text style={[styles.saveBtnText, { color: canSave ? '#fff' : theme.textDim }]}>
-                  Save reflection
-                </Text>
-              )}
-            </TouchableOpacity>
+              busy={saving}
+              fill={GOLD}
+              wrapperStyle={{ marginTop: 10 }}
+            />
 
             {/* Reflect with Halo: opens the companion seeded with this passage + question, saving
                 the conversation to this day so it can be reopened and continued. */}
@@ -340,7 +343,7 @@ export default function DevotionalScreen() {
                 }]}
               >
                 <View style={[styles.haloBadge, { backgroundColor: HALO_GOLD }]}>
-                  <MiniCross size={15} color={CROSS_DARK} />
+                  <MiniCross size={15} color={CROSS_LIGHT} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.haloRowTitle, { color: theme.accentAmber }]}>Your reflection with Halo</Text>
@@ -349,12 +352,16 @@ export default function DevotionalScreen() {
                 <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
               </PressScale>
             ) : (
+              /* OPAQUE amber, not a 14% wash: this button sits on the PAGE, and the page down here IS the
+                 amber glow, so a translucent amber tint over it turned to mud. Plus the top-shine every
+                 other tinted button carries. */
               <PressScale
                 onPress={openHalo}
-                style={[styles.haloBtn, { backgroundColor: 'rgba(232,160,32,0.14)', borderColor: 'rgba(232,160,32,0.5)' }]}
+                style={[styles.haloBtn, { backgroundColor: theme.accentAmberBgOpaque, borderColor: 'rgba(232,160,32,0.5)' }]}
               >
+                <ButtonShine radius={12} />
                 <View style={[styles.haloBadge, { backgroundColor: HALO_GOLD }]}>
-                  <MiniCross size={15} color={CROSS_DARK} />
+                  <MiniCross size={15} color={CROSS_LIGHT} />
                 </View>
                 <Text style={[styles.haloBtnText, { color: theme.textPrimary }]}>Reflect on this with Halo</Text>
               </PressScale>

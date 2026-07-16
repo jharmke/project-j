@@ -18,6 +18,7 @@ import { ActivityIndicator, Animated, Modal, ScrollView, Text, TouchableOpacity,
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
+import PrimaryCTA from '../components/PrimaryCTA';
 import { useTheme } from '../theme';
 import { useMembership } from '../MembershipContext';
 import { useToast } from '../components/Toast';
@@ -446,9 +447,12 @@ export default function ComparisonReportScreen() {
               {pickerOpen === 'a' ? 'Day A' : 'Day B'}
             </Text>
             {renderCalGrid()}
-            <TouchableOpacity onPress={closePicker} style={{ backgroundColor: accent, borderRadius: 8, paddingVertical: 11, alignItems: 'center', marginTop: 12 }}>
-              <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: '#fff' }}>Done</Text>
-            </TouchableOpacity>
+            <PrimaryCTA
+              wrapperStyle={{ marginTop: 12 }}
+              faceStyle={{ paddingVertical: 11, borderRadius: 8 }}
+              label="Done"
+              onPress={closePicker}
+            />
           </Animated.View>
         </View>
       </Modal>

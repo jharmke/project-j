@@ -12,6 +12,8 @@ import Svg, { Path, Defs, LinearGradient as SvgGradient, Stop, Line as SvgLine, 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
+import ButtonShine from '../components/ButtonShine';
+import PrimaryCTA from '../components/PrimaryCTA';
 import { useTheme } from '../theme';
 import { useToast } from '../components/Toast';
 import { fetchTrendData, TrendData, EMPTY_TREND_DATA } from '../utils/statsData';
@@ -267,7 +269,10 @@ export default function ReportScreen() {
             covers that), shown once the report has blocks or the picker is already open. */}
         {!loading && (activeBlocks.length > 0 || libraryOpen) && (
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); setLibraryOpen(o => !o); }}
-            style={{ marginTop: 16, borderRadius: 12, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: libraryOpen ? theme.bgCard : theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
+            style={{ marginTop: 16, borderRadius: 12, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: libraryOpen ? theme.bgCard : theme.accentBlueBgOpaque, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
+            {/* OPAQUE tint + shine: this sits on the PAGE, not a card, so the translucent accentBlueBg showed
+                the bottom glow through it. Same fix as Stats' VIEW ALL ACHIEVEMENTS. */}
+            <ButtonShine radius={12} />
             <Ionicons name={libraryOpen ? 'checkmark' : 'add'} size={18} color={theme.accentBlue} />
             <Text style={{ fontSize: 14, fontFamily: Type.uiBold, color: theme.accentBlue }}>{libraryOpen ? 'Done Adding Blocks' : 'Add Blocks'}</Text>
           </TouchableOpacity>

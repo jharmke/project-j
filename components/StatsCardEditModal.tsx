@@ -8,6 +8,7 @@ import { ToastRenderer, useToast } from './Toast';
 import { GRAPH_SWATCHES, MACRO_CARBS, MACRO_FAT, MACRO_PROTEIN } from './StatsGraphCard';
 import { Type } from '../typography';
 import ModalHeader from './ModalHeader';
+import PrimaryCTA from './PrimaryCTA';
 
 interface Props {
   card: StatsCard | null;
@@ -249,10 +250,12 @@ export function StatsCardEditModal({ card, onClose, onSave, onDelete, theme }: P
 
             {/* Save bar */}
             <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, paddingHorizontal: 20, paddingVertical: 14 }}>
-              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); handleSave(); }} disabled={noChange}
-                style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 10, paddingVertical: 14, alignItems: 'center', opacity: noChange ? 0.4 : 1 }}>
-                <Text style={{ color: '#ffffff', fontFamily: Type.uiBold, fontSize: 17, letterSpacing: 0.2 }}>SAVE</Text>
-              </TouchableOpacity>
+              <PrimaryCTA
+                faceStyle={{ paddingVertical: 14, borderRadius: 10 }}
+                label="Save"
+                onPress={handleSave}
+                disabled={noChange}
+              />
             </View>
           </Animated.View>
         </Animated.View>

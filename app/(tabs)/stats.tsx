@@ -19,6 +19,7 @@ import { useTheme } from '../../theme';
 import { useMembership } from '../../MembershipContext';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import HeaderIconButton from '../../components/HeaderIconButton';
+import PrimaryCTA from '../../components/PrimaryCTA';
 import ButtonShine from '../../components/ButtonShine';
 import { CardPeriod, ChartType, DATA_KEY_CATEGORIES, DATA_KEY_META, DataKey, DEFAULT_STATS_CARDS, StatsCard, availableChartTypes, generateCardId, loadStatsCards, saveStatsCards } from '../../statsCardRegistry';
 import HRZonesStatsCard from '../../components/HRZonesStatsCard';
@@ -3182,13 +3183,13 @@ export default function StatsScreen() {
                   style={{ backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput, borderRadius: 10, padding: 14, width: 90, alignItems: 'center' }}>
                   <Text style={{ fontSize: 15, fontFamily: Type.uiBold, letterSpacing: 0.3, color: theme.textMuted }}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); saveCustomStreak(); }}
+                <PrimaryCTA
+                  onPress={saveCustomStreak}
                   disabled={!customName.trim() || !customEmoji.trim()}
-                  style={{ flex: 1, backgroundColor: customName.trim() && customEmoji.trim() ? theme.accentBlue : theme.bgInput, borderRadius: 10, padding: 14, alignItems: 'center',
-                    borderWidth: customName.trim() && customEmoji.trim() ? 0 : 0.5, borderColor: theme.borderInput }}>
-                  <Text style={{ fontSize: 15, fontFamily: Type.uiBold, letterSpacing: 0.3, color: customName.trim() && customEmoji.trim() ? theme.bgPrimary : theme.textDim }}>Add Streak</Text>
-                </TouchableOpacity>
+                  faceStyle={{ paddingVertical: 14, borderRadius: 10 }}
+                  wrapperStyle={{ flex: 1 }}
+                  label="Add Streak"
+                />
             </View>
             </Animated.View>
           </TouchableWithoutFeedback>

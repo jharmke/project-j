@@ -16,6 +16,7 @@ import { showCelebration } from '../components/CelebrationOverlay';
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import PrimaryCTA from '../components/PrimaryCTA';
+import ModalHeader from '../components/ModalHeader';
 
 export default function RecipeLogScreen() {
   const insets = useSafeAreaInsets();
@@ -386,20 +387,20 @@ export default function RecipeLogScreen() {
         onRequestClose={closeMealPicker}>
         <Animated.View style={[styles.modalOverlay, { opacity: fadeAnim }]}>
           <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeMealPicker} />
-          <View style={styles.modal} pointerEvents="box-none">
-            <View style={styles.handlePill} />
-            <Text style={styles.modalTitle}>Add to which meal?</Text>
-            {mealSlots.map(slot => (
-              <TouchableOpacity
-                key={slot.id}
-                style={styles.mealOption}
-                onPress={() => logRecipe(slot.id)}>
-                <Text style={styles.mealOptionText}>{slot.name}</Text>
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity style={styles.cancelBtn} onPress={closeMealPicker}>
-              <Text style={styles.cancelBtnText}>Cancel</Text>
-            </TouchableOpacity>
+          {/* ModalHeader owns the pill, the title and the X -- which makes the Cancel at the bottom a second
+              close control on one modal, so it goes. Body padding moves inside so the header owns the top. */}
+          <View style={[styles.modal, { padding: 0, overflow: 'hidden' }]} pointerEvents="box-none">
+            <ModalHeader title="Add to Which Meal?" onClose={closeMealPicker} />
+            <View style={{ paddingHorizontal: 24, paddingBottom: 24, paddingTop: 4 }}>
+              {mealSlots.map(slot => (
+                <TouchableOpacity
+                  key={slot.id}
+                  style={styles.mealOption}
+                  onPress={() => logRecipe(slot.id)}>
+                  <Text style={styles.mealOptionText}>{slot.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         </Animated.View>
       </Modal>

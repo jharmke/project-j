@@ -20,6 +20,7 @@ import { ToastRenderer, useToast } from '../components/Toast';
 import { saveToFirebase } from '../firebaseConfig';
 import { useTheme } from '../theme';
 import PrimaryCTA from '../components/PrimaryCTA';
+import ModalHeader from '../components/ModalHeader';
 import ButtonShine from '../components/ButtonShine';
 import { useMembership } from '../MembershipContext';
 import { triggerHaptic } from '../utils/haptics';
@@ -796,8 +797,7 @@ export default function AIMealEstimatorScreen() {
 
   function renderRecentModal() {
     return (
-      <CenteredModal visible={showRecent} onClose={() => setShowRecent(false)} theme={theme} insets={insets}>
-        <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: Type.display, letterSpacing: 0.3, marginBottom: 6 }}>Recent Estimates Today</Text>
+      <CenteredModal visible={showRecent} onClose={() => setShowRecent(false)} theme={theme} insets={insets} title="Recent Estimates Today">
         <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.ui, lineHeight: 20, marginBottom: 14 }}>
           Reopen one you generated earlier today. This does not use a new estimate. Cleared tomorrow.
         </Text>
@@ -864,9 +864,14 @@ export default function AIMealEstimatorScreen() {
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditingId(null); }} style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 8, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput }}>
             <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.uiSemibold }}>Cancel</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={saveEditor} style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 8, backgroundColor: theme.accentBlue }}>
-            <Text style={{ fontSize: 13, color: '#ffffff', fontFamily: Type.uiSemibold }}>Save</Text>
-          </TouchableOpacity>
+          {/* The per-INGREDIENT save, inside a result row's edit panel. faceStyle matches the Cancel beside
+              it (paddingVertical 10 / radius 8). */}
+          <PrimaryCTA
+            wrapperStyle={{ flex: 1 }}
+            faceStyle={{ paddingVertical: 10, borderRadius: 8 }}
+            label="Save"
+            onPress={saveEditor}
+          />
         </View>
       </View>
     );
@@ -887,8 +892,7 @@ export default function AIMealEstimatorScreen() {
       setTargetDate(key);
     };
     return (
-      <CenteredModal visible={showConfirm} onClose={() => setShowConfirm(false)} theme={theme} insets={insets}>
-        <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: Type.display, letterSpacing: 0.3, marginBottom: 16 }}>Save This Meal</Text>
+      <CenteredModal visible={showConfirm} onClose={() => setShowConfirm(false)} theme={theme} insets={insets} title="Save This Meal">
 
         <Text style={[cardLabel, { marginBottom: 8 }]}>MEAL</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
@@ -946,7 +950,10 @@ function MacroDot({ color, value }: { color: string; value: number }) {
 
 // Centered floating modal: scale + opacity in on show, handle pill, full-screen
 // tap-to-dismiss backdrop. Matches the app modal standard.
-function CenteredModal({ visible, onClose, theme, children }: any) {
+// `title` added 2026-07-15: this shell rendered a bare handle pill and then dumped children, so each caller
+// hand-rolled its own 22px title and NEITHER had an X. ModalHeader owns the pill + title + X; the callers
+// just pass the string now.
+function CenteredModal({ visible, onClose, theme, title, children }: any) {
   const scale = useRef(new Animated.Value(0.9)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const animateIn = () => {
@@ -963,11 +970,11 @@ function CenteredModal({ visible, onClose, theme, children }: any) {
       <ToastRenderer />
       <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: theme.overlayBg }} activeOpacity={1} onPress={close} />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }} pointerEvents="box-none">
-        <Animated.View style={{ width: '100%', maxWidth: 420, backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 2.5, borderTopColor: theme.accentBlueRaw, paddingHorizontal: 20, paddingTop: 10, paddingBottom: 20, transform: [{ scale }], opacity, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 14 }}>
-          <TouchableOpacity onPress={close} hitSlop={{ top: 12, bottom: 12, left: 30, right: 30 }} style={{ alignSelf: 'center', paddingVertical: 4, marginBottom: 6 }}>
-            <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
-          </TouchableOpacity>
-          {children}
+        <Animated.View style={{ width: '100%', maxWidth: 420, backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 2.5, borderTopColor: theme.accentBlueRaw, overflow: 'hidden', paddingBottom: 20, transform: [{ scale }], opacity, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 14 }}>
+          <ModalHeader title={title} onClose={close} />
+          <View style={{ paddingHorizontal: 20, paddingTop: 4 }}>
+            {children}
+          </View>
         </Animated.View>
       </KeyboardAvoidingView>
     </Modal>

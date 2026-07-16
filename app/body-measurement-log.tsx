@@ -9,9 +9,11 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { triggerHaptic } from '@/utils/haptics';
+import { BlurView } from 'expo-blur';
+import PrimaryCTA from '../components/PrimaryCTA';
 import { useTheme } from '../theme';
 import { useToast } from '../components/Toast';
 import MeasureHowToModal from '../components/MeasureHowToModal';
@@ -38,6 +40,15 @@ export default function BodyMeasurementLogScreen() {
   const [placeholders, setPlaceholders] = useState<Record<string, string>>({});
   const [howToOpen, setHowToOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  // The save bar pads itself by insets.bottom for the home indicator. But KeyboardAvoidingView ALREADY
+  // lifts the whole container by the keyboard height, and the keyboard covers the home indicator -- so with
+  // the keyboard up that padding was ~46px of dead space between the button and the keys (Justin, 2026-07-15).
+  const [keyboardUp, setKeyboardUp] = useState(false);
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardWillShow', () => setKeyboardUp(true));
+    const hide = Keyboard.addListener('keyboardWillHide', () => setKeyboardUp(false));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -129,7 +140,9 @@ export default function BodyMeasurementLogScreen() {
             onBack={() => { if (router.canGoBack()) router.back(); }}
           />
 
-          <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          {/* paddingBottom clears the now-ABSOLUTE save bar so the last field is reachable, not trapped
+              behind it. ~96 = the bar's height plus air. */}
+          <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 96 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             {/* How to measure entry point */}
             <TouchableOpacity
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setHowToOpen(true); }}
@@ -165,17 +178,28 @@ export default function BodyMeasurementLogScreen() {
             </View>
           </ScrollView>
 
-          {/* Save bar */}
-          <View style={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: insets.bottom + 12, borderTopWidth: 0.5, borderTopColor: theme.borderCard, backgroundColor: theme.bgSheet }}>
-            <TouchableOpacity
-              disabled={!canSave}
+          {/* Save bar. Two fixes, 2026-07-15:
+              1. ABSOLUTE, not a flex sibling. As a sibling the ScrollView ENDED at the bar's top edge, so
+                 nothing ever passed underneath -- the last card was being CLIPPED, not sliding under. Blur
+                 with nothing behind it is just a pale rectangle, which is why it read as "not see-through at
+                 all". Profile's bar is absolute; that is why its glass works. Content passes under now.
+              2. insets.bottom ONLY when the keyboard is DOWN. KeyboardAvoidingView already lifts this whole
+                 container by the keyboard height, and the keyboard covers the home indicator, so adding the
+                 inset on top left a dead gap between the button and the keys. */}
+          <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingTop: 10, paddingBottom: keyboardUp ? 12 : insets.bottom + 12, borderTopWidth: 0.5, borderTopColor: theme.borderCard, overflow: 'hidden' }}>
+            <BlurView
+              intensity={theme.id === 'dark' ? 40 : 34}
+              tint={theme.id === 'dark' ? 'dark' : 'light'}
+              style={StyleSheet.absoluteFill}
+              pointerEvents="none"
+            />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.chromeFill }]} pointerEvents="none" />
+            <PrimaryCTA
+              faceStyle={{ paddingVertical: 15, borderRadius: 12 }}
+              label={isEdit ? 'Save Changes' : 'Save Measurements'}
               onPress={onSave}
-              activeOpacity={0.85}
-              style={{ backgroundColor: canSave ? accent : theme.bgInput, borderWidth: canSave ? 0 : 1, borderColor: theme.borderInput, borderRadius: 12, paddingVertical: 15, alignItems: 'center' }}>
-              <Text style={{ fontSize: 15, fontFamily: Type.uiBold, color: canSave ? '#fff' : theme.textDim }}>
-                {isEdit ? 'Save Changes' : 'Save Measurements'}
-              </Text>
-            </TouchableOpacity>
+              disabled={!canSave}
+            />
           </View>
         </View>
       </KeyboardAvoidingView>

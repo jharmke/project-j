@@ -15,6 +15,7 @@ import { ActivityIndicator, Animated, Modal, ScrollView, Text, TouchableOpacity,
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
+import PrimaryCTA from '../components/PrimaryCTA';
 import { useTheme } from '../theme';
 import { useToast } from '../components/Toast';
 import { loadComparisonGoals, METRIC_META } from '../utils/comparisonEngine';
@@ -429,10 +430,15 @@ export default function ChallengeCreateScreen() {
       {type && (
         <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingTop: 12, paddingBottom: insets.bottom + 12, backgroundColor: theme.bgPrimary, borderTopWidth: 0.5, borderTopColor: theme.borderCard }}>
           {!!summary && <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.ui, textAlign: 'center', marginBottom: 10, lineHeight: 17 }}>{summary}</Text>}
-          <TouchableOpacity activeOpacity={0.85} disabled={!canConfirm || saving} onPress={confirm}
-            style={{ backgroundColor: accent, borderRadius: 10, paddingVertical: 15, alignItems: 'center', opacity: canConfirm && !saving ? 1 : 0.4 }}>
-            {saving ? <ActivityIndicator color="#fff" /> : <Text style={{ fontSize: 15, fontFamily: Type.uiBold, color: '#fff' }}>Start Challenge</Text>}
-          </TouchableOpacity>
+          {/* PrimaryCTA owns the busy spinner and the disabled dim, so the hand-rolled ActivityIndicator and
+              opacity go with it. */}
+          <PrimaryCTA
+            faceStyle={{ paddingVertical: 15, borderRadius: 10 }}
+            label="Start Challenge"
+            onPress={confirm}
+            busy={saving}
+            disabled={!canConfirm}
+          />
         </View>
       )}
 

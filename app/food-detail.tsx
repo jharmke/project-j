@@ -31,6 +31,7 @@ import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import ButtonShine from '../components/ButtonShine';
 import PrimaryCTA from '../components/PrimaryCTA';
+import ModalHeader from '../components/ModalHeader';
 
 function buildTutorialChickenFood() {
   const fsServings = TUTORIAL_CHICKEN_BREAST.servings.serving.map(s => ({
@@ -406,6 +407,26 @@ const isTutorialMode = tutorialMode === 'true';
         if (match?.servingSize > 0) setResolvedServingGrams(match.servingSize);
       }).catch(() => {});
     }
+  }, []);
+
+  // BUG FIX 2026-07-15 -- Edit Food opened EMPTY from the Edit Entry route.
+  // The Edit button shows when food.isMyFood, but the modal fills from food.myFoodData, and those two can
+  // DISAGREE: only add-food.tsx attaches myFoodData (it does this same myFoods.find lookup). Arriving from
+  // Log > a logged entry > Edit Entry, the entry carries isMyFood/myFoodId but NOT myFoodData -- so the
+  // button appeared, the modal opened, and all 26 extended fields came back blank. Calories and the 3
+  // macros survived only because they alone have an `|| src.existingCal` fallback; nothing else does.
+  // So: resolve the My Food here too, and let openEditFoodModal fall back to it. Read-only -- no writes.
+  const [resolvedMyFood, setResolvedMyFood] = useState<any>(null);
+  useEffect(() => {
+    if (food?.myFoodData) return;                       // already attached (the add-food route)
+    const myFoodId = (food as any)?.myFoodId;
+    if (!myFoodId && !food?.description) return;
+    AsyncStorage.getItem('pj_my_foods').then(saved => {
+      if (!saved) return;
+      const myFoods = JSON.parse(saved);
+      const match = myFoods.find((f: any) => myFoodId ? f.id === myFoodId : f.name === food.description);
+      if (match) setResolvedMyFood(match);
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -924,7 +945,10 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
 
   const openEditFoodModal = () => {
     const src = food;
-    const mf = src.myFoodData;
+    // `?? resolvedMyFood` is the fix: on the Edit Entry route myFoodData is never attached (only add-food
+    // does that), so every extended field below -- all of which read ONLY from `mf` with no fallback --
+    // came back empty. See the resolvedMyFood note above.
+    const mf = src.myFoodData ?? resolvedMyFood;
     setEditFoodData({
       _source: src,
       name: src.description || src.name || '',
@@ -1002,7 +1026,13 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
     try {
       const saved = await AsyncStorage.getItem('pj_my_foods');
       const foods = saved ? JSON.parse(saved) : [];
-      const src = editFoodData._source?.myFoodData || editFoodData._source;
+      // DATA-LOSS FIX 2026-07-15. `_source.myFoodData || _source` fell through to the ENTRY on the Edit
+      // Entry route (only add-food attaches myFoodData), so the row match below ran against the entry's id
+      // instead of the My Food's. Combined with the load bug -- every extended field arrived '' -- a Save
+      // from that route wrote `parseFloat('') || 0` into all 26 nutrients: fiber, sodium, cholesterol,
+      // vitamins, minerals, ALL silently zeroed on a real saved food. resolvedMyFood is the same lookup
+      // add-food does, so both the load and this match now resolve the actual My Food.
+      const src = editFoodData._source?.myFoodData ?? resolvedMyFood ?? editFoodData._source;
       const calNum = parseInt(editFoodData.cal) || 0;
       const servingGrams = parseFloat(editFoodData.servingGrams) || src?.servingSize || 100;
       const servingUnitType = editFoodData.servingUnitType || 'g';
@@ -1590,9 +1620,8 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           onRequestClose={closeTimePicker}>
           <Animated.View style={[styles.modalOverlay, { opacity: timePickerAnim }]}>
             <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeTimePicker} />
-            <View style={styles.modal} pointerEvents="box-none">
-              <View style={{ width: 36, height: 4, backgroundColor: theme.borderCard, borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
-              <Text style={styles.modalTitle}>Time logged</Text>
+            <View style={[styles.modal, { paddingTop: 0, overflow: 'hidden' }]} pointerEvents="box-none">
+              <ModalHeader title="Time Logged" onClose={closeTimePicker} />
               <View style={{ alignItems: 'center' }}>
                 <DateTimePicker
                   mode="time"
@@ -1636,9 +1665,8 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
   onRequestClose={closeMealPicker}>
   <Animated.View style={[styles.modalOverlay, { opacity: mealDropdownAnim }]}>
     <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeMealPicker} />
-    <View style={styles.modal} pointerEvents="box-none">
-      <View style={{ width: 36, height: 4, backgroundColor: theme.borderCard, borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
-      <Text style={styles.modalTitle}>Adding to</Text>
+    <View style={[styles.modal, { paddingTop: 0, overflow: 'hidden' }]} pointerEvents="box-none">
+      <ModalHeader title="Adding To" onClose={closeMealPicker} />
       {mealSlots.map((slot) => (
         <TouchableOpacity
           key={slot.id}
@@ -1824,10 +1852,14 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
               shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16,
               transform: [{ scale: editCardAnim.interpolate({ inputRange: [0, 1], outputRange: [0.88, 1] }) }],
             }}>
-              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeEditFoodModal(); }} style={{ alignSelf: 'center', paddingTop: 12, paddingBottom: 4, paddingHorizontal: 20 }} hitSlop={{ top: 8, bottom: 8, left: 20, right: 20 }}>
-                <View style={{ height: 4, width: 40, backgroundColor: theme.borderCard, borderRadius: 2 }} />
-              </TouchableOpacity>
-              <Text style={{ fontSize: 16, color: theme.accentBlueRaw, fontFamily: Type.display, letterSpacing: 0.3, textAlign: 'center', marginTop: 8, marginBottom: 4 }}>EDIT FOOD</Text>
+              {/* NOTE: there are TWO "Edit Food" modals -- this one (reached from Edit Entry > Edit) and
+                  another in add-food.tsx (Food Library > My Foods > Edit). They are near-identical. If you
+                  change one, change the other. Same trap as the two Add Exercise modals.
+                  The subtitle names the scroll: this form has 26 extended fields inside a maxHeight 580
+                  ScrollView with the buttons pinned BELOW it, so it cut off mid-list at Sugar Alcohols and
+                  read as if that was the whole form (Justin, 2026-07-15 -- he reported it as missing data).
+                  It was never missing; it just never said it was scrollable. */}
+              <ModalHeader title="Edit Food" subtitle="Scroll for all nutrients" onClose={closeEditFoodModal} />
               <ScrollView style={{ maxHeight: 580 }} contentContainerStyle={{ padding: 16, paddingTop: 8 }} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets={true}>
                 {/* Type selector */}
                 <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
@@ -2103,12 +2135,14 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeEditFoodModal(); }} style={{ flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, alignItems: 'center' }}>
                   <Text style={{ color: theme.textMuted, fontFamily: Type.uiMedium, fontSize: 14 }}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
+                {/* faceStyle matches the Cancel beside it (padding 12 / radius 8). */}
+                <PrimaryCTA
+                  wrapperStyle={{ flex: 2 }}
+                  faceStyle={{ paddingVertical: 12, borderRadius: 8 }}
+                  label="Save"
                   onPress={saveEditFoodFromDetail}
                   disabled={!editFoodData?.name?.trim() || !editFoodData?.cal}
-                  style={{ flex: 2, padding: 12, backgroundColor: theme.accentBlue, borderRadius: 8, alignItems: 'center', opacity: editFoodData?.name?.trim() && editFoodData?.cal ? 1 : 0.4 }}>
-                  <Text style={{ color: '#ffffff', fontFamily: Type.uiBold, fontSize: 16, letterSpacing: 1 }}>SAVE</Text>
-                </TouchableOpacity>
+                />
               </View>
             </Animated.View>
           </Animated.View>
@@ -2130,17 +2164,25 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           <View style={{ flexDirection: 'row', gap: 12, marginTop: 24 }}>
             <TouchableOpacity
               onPress={handlePhotoAdd}
-              style={{ paddingHorizontal: 28, paddingVertical: 12, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 10 }}>
-              {/* Its neighbour "Remove" stays flat on purpose: it is DESTRUCTIVE (red), and shine says
-                  "press me" -- the last thing a delete should say. Same primary/secondary split as
-                  USE vs Duplicate in the workout library. */}
-              <ButtonShine radius={10} />
-              <Text style={{ color: theme.accentBlue, fontSize: 15, fontFamily: Type.uiSemibold }}>Replace</Text>
+              style={{ paddingHorizontal: 28, paddingVertical: 12, backgroundColor: theme.accentBlueRaw, borderRadius: 10 }}>
+              {/* SOLID accent, not the 10% tint. This button lives on a 96%-BLACK fullscreen overlay, so a
+                  translucent tint just showed the black through and the button read as a dark hole -- the
+                  same "translucent fill with nothing opaque behind it" bug as Stats' VIEW ALL ACHIEVEMENTS,
+                  except accentBlueBgOpaque cannot help: that token is pre-composited against a LIGHT surface.
+                  On black, the fill has to be opaque itself. `solid` on the shine because this is now a fixed
+                  bright fill, which carries a real reflection instead of the softened tinted-button value.
+                  Its neighbour "Remove" stays flat and outlined on purpose: DESTRUCTIVE. */}
+              <ButtonShine radius={10} solid />
+              <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: Type.uiSemibold }}>Replace</Text>
             </TouchableOpacity>
+            {/* FULL red, not the 15% tint. Same reason as Replace beside it: on a 96%-black overlay a
+                translucent fill just shows the black, so the button was nearly invisible. NO shine -- it is
+                destructive, and shine says "press me". Solid red carries it here; the gloss is not needed to
+                make it visible, only opacity was. */}
             <TouchableOpacity
               onPress={handlePhotoRemove}
-              style={{ paddingHorizontal: 28, paddingVertical: 12, backgroundColor: 'rgba(204,51,51,0.15)', borderWidth: 1, borderColor: 'rgba(204,51,51,0.4)', borderRadius: 10 }}>
-              <Text style={{ color: '#cc3333', fontSize: 15, fontFamily: Type.uiSemibold }}>Remove</Text>
+              style={{ paddingHorizontal: 28, paddingVertical: 12, backgroundColor: '#cc3333', borderRadius: 10 }}>
+              <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: Type.uiSemibold }}>Remove</Text>
             </TouchableOpacity>
           </View>
           <TouchableOpacity onPress={() => setShowPhotoFullscreen(false)} style={{ marginTop: 20, padding: 8 }}>

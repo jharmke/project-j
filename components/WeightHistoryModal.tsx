@@ -20,6 +20,7 @@ import { ToastRenderer, useToast } from './Toast';
 import { deleteWeightForDate, gatherWeightHistory, saveWeightForDate, startingWeighIn, WeighIn } from '../utils/weightHistory';
 import { Type } from '../typography';
 import ModalHeader from './ModalHeader';
+import ButtonShine from './ButtonShine';
 
 interface Props {
   visible: boolean;
@@ -332,6 +333,7 @@ export default function WeightHistoryModal({ visible, onClose, styleMode, goalWe
                       disabled={!addValue.trim()}
                       style={{ paddingHorizontal: 18, paddingVertical: 12, borderRadius: 8, backgroundColor: addValue.trim() ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: addValue.trim() ? theme.accentBlueBorder : theme.borderInput, opacity: addValue.trim() ? 1 : 0.5 }}
                     >
+                      {!!addValue.trim() && <ButtonShine radius={8} />}
                       <Text style={{ fontSize: 13, color: addValue.trim() ? theme.accentBlue : theme.textDim, fontFamily: Type.uiBold }}>Add</Text>
                     </TouchableOpacity>
                   </View>
@@ -358,17 +360,17 @@ export default function WeightHistoryModal({ visible, onClose, styleMode, goalWe
           <Animated.View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center', opacity: editAnim }}>
             <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeEdit} />
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%', alignItems: 'center' }} pointerEvents="box-none">
-              <Animated.View style={{ width: '80%', backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, paddingHorizontal: 18, paddingTop: 10, paddingBottom: 18, transform: [{ scale: editAnim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }] }}>
-                <View style={{ alignItems: 'center', marginBottom: 10 }}>
-                  <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
-                </View>
-                <Text style={{ fontSize: 9, color: theme.accentBlueRaw, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4, textAlign: 'center' }}>
-                  {editIsStarting ? 'Edit Starting Weight' : 'Edit Weigh-in'}
-                </Text>
-                <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui, marginBottom: 16, textAlign: 'center' }}>
-                  {formatDate(editingDate)}
-                </Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
+              {/* Was a hand-rolled pill + a 9px CENTRED ALL-CAPS label as the title + a separate date line,
+                  and no X. ModalHeader does the title, the subtitle, the pill and the X. Body padding moves
+                  in so the header can own the top edge. */}
+              <Animated.View style={{ width: '80%', backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, overflow: 'hidden', paddingBottom: 18, transform: [{ scale: editAnim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }] }}>
+                <ModalHeader
+                  title={editIsStarting ? 'Edit Starting Weight' : 'Edit Weigh-in'}
+                  subtitle={formatDate(editingDate)}
+                  onClose={closeEdit}
+                />
+                <View style={{ paddingHorizontal: 18 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 18, marginTop: 14 }}>
                   <TextInput
                     style={{ backgroundColor: theme.bgInput, borderWidth: 1.5, borderColor: theme.accentBlueBorder, borderRadius: 10, color: theme.textSecondary, paddingVertical: 12, paddingHorizontal: 16, fontSize: 26, fontFamily: Type.num, textAlign: 'center', minWidth: 160 }}
                     value={editValue}
@@ -383,9 +385,12 @@ export default function WeightHistoryModal({ visible, onClose, styleMode, goalWe
                   <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeEdit(); }} style={{ flex: 1, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, padding: 12, alignItems: 'center' }}>
                     <Text style={{ color: theme.textMuted, fontSize: 14, fontFamily: Type.uiSemibold }}>Cancel</Text>
                   </TouchableOpacity>
+                  {/* Shine only when ENABLED -- a dim button must not read as a lit surface. */}
                   <TouchableOpacity onPress={commitEdit} disabled={!editValue.trim()} style={{ flex: 1, backgroundColor: editValue.trim() ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: editValue.trim() ? theme.accentBlueBorder : theme.borderInput, borderRadius: 8, padding: 12, alignItems: 'center', opacity: editValue.trim() ? 1 : 0.5 }}>
+                    {!!editValue.trim() && <ButtonShine radius={8} />}
                     <Text style={{ color: editValue.trim() ? theme.accentBlue : theme.textDim, fontSize: 14, fontFamily: Type.uiBold }}>Save</Text>
                   </TouchableOpacity>
+                </View>
                 </View>
               </Animated.View>
             </KeyboardAvoidingView>

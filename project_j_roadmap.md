@@ -28,6 +28,23 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-15 [DATA-LOSS BUG, FIXED] **Edit Food from the Edit Entry route zeroed 26 nutrients.** Log > a
+  logged entry > Edit Entry > Edit opened the Edit Food modal with every extended field BLANK, and Save
+  wrote `parseFloat('') || 0` into all of them -- fiber, sodium, cholesterol, vitamins, minerals, silently
+  wiped on a real saved food. CAUSE: the Edit button shows on `food.isMyFood`, but the modal fills from
+  `food.myFoodData`, and those DISAGREE -- only add-food.tsx attaches myFoodData (via a myFoods.find
+  lookup). Cals + the 3 macros survived because they alone have an `|| src.existingCal` fallback; the 26
+  extended fields have none. The SAVE had the same fault (`_source.myFoodData || _source` fell through to
+  the entry, so the row match ran against the wrong id). FIX: food-detail resolves the My Food itself
+  (`resolvedMyFood`, same lookup add-food does) and both the load and the save use it. Read-only, no writes
+  added. Justin found it with two screenshots after I told him it was "not a bug, just a scroll" -- I had
+  read the field list in code and never checked whether it gets FILLED.
+  >> ROOT PATTERN: DUPLICATED MODALS. There are TWO Edit Food modals (add-food + food-detail), TWO Add
+  Exercise (workout tab + workout-library), TWO Jump to Date (log + day-detail), TWO Create Custom Streak
+  (real + tutorial replica). Every one cost a round tonight, and this one cost real data: one copy got
+  myFoodData wired, the other did not. Cross-reference comments are now on each pair. The REAL fix is to
+  de-duplicate -- Justin asked "cant we just delete the broken one and point to the correct one?" and that
+  is the right question; it needs a proper diff of the two, not a guess.
 - 2026-07-15 FAITH IS AMBER, END TO END. Faith tab header + Prayer + Plans + Devotional + BIBLE (all 49 of
   its accent refs) now wear amber; faith MODALS already did. `ScreenHeader`'s `color` prop now drives the
   BACK CHEVRON as well as the title (it was title-only, which is why amber titles sat over cyan chevrons);

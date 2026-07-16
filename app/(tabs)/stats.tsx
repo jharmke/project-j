@@ -2568,13 +2568,14 @@ export default function StatsScreen() {
                       onNutrientChange={(_, key) => setCreatorNutrientKey(key)}
                     />
                   </View>
-                  <TouchableOpacity
-                    ref={graphCreatorSaveBtnRef}
-                    collapsable={false}
-                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); handleAddCard(); }}
-                    style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 4 }}>
-                    <Text style={{ fontSize: 15, fontFamily: Type.uiBold, color: '#fff', letterSpacing: 1.5 }}>ADD TO STATS</Text>
-                  </TouchableOpacity>
+                  <View ref={graphCreatorSaveBtnRef} collapsable={false}>
+                    <PrimaryCTA
+                      label="Add to Stats"
+                      onPress={handleAddCard}
+                      wrapperStyle={{ marginTop: 4 }}
+                      faceStyle={{ paddingVertical: 14, borderRadius: 10 }}
+                    />
+                  </View>
                 </>
               )}
             </ScrollView>
@@ -2767,10 +2768,12 @@ export default function StatsScreen() {
                     onEditPress={() => {}}
                     onNutrientChange={(_, key) => setCreatorNutrientKey(key)}
                   />
-                  <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); handleAddCard(); }}
-                    style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 4 }}>
-                    <Text style={{ fontSize: 15, fontFamily: Type.uiBold, color: '#fff', letterSpacing: 1.5 }}>ADD TO STATS</Text>
-                  </TouchableOpacity>
+                  <PrimaryCTA
+                    label="Add to Stats"
+                    onPress={handleAddCard}
+                    wrapperStyle={{ marginTop: 4 }}
+                    faceStyle={{ paddingVertical: 14, borderRadius: 10 }}
+                  />
                 </>
               )}
             </ScrollView>

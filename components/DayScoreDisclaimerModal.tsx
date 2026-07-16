@@ -10,6 +10,7 @@ import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, r
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
+import PrimaryCTA from './PrimaryCTA';
 import { Type } from '../typography';
 
 export default function DayScoreDisclaimerModal({ theme, onAcknowledge }: { theme: any; onAcknowledge: () => void }) {
@@ -67,9 +68,7 @@ export default function DayScoreDisclaimerModal({ theme, onAcknowledge }: { them
               For informational purposes only. It is not medical advice, and it is not a measure of your health or your worth.
             </Text>
 
-            <TouchableOpacity onPress={accept} style={{ marginTop: 20, paddingVertical: 14, borderRadius: 10, alignItems: 'center', backgroundColor: theme.accentBlue }}>
-              <Text style={{ color: '#ffffff', fontSize: 14, letterSpacing: 1, fontFamily: Type.uiSemibold }}>I UNDERSTAND</Text>
-            </TouchableOpacity>
+            <PrimaryCTA label="I Understand" onPress={accept} wrapperStyle={{ marginTop: 20 }} faceStyle={{ paddingVertical: 14, borderRadius: 10 }} />
           </View>
         </Reanimated.View>
       </View>

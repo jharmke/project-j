@@ -3435,13 +3435,12 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                             })}
                           </View>
 
-                          <TouchableOpacity onPress={handleLoadRoutine}
+                          <PrimaryCTA
+                            label={`Load to ${selectedLoadDays.length} ${selectedLoadDays.length === 1 ? 'Day' : 'Days'}`}
+                            onPress={handleLoadRoutine}
                             disabled={!selectedRoutine || selectedLoadDays.length === 0}
-                            style={{ paddingVertical: 14, borderRadius: 10, alignItems: 'center', backgroundColor: theme.accentBlue, opacity: selectedRoutine && selectedLoadDays.length > 0 ? 1 : 0.4 }}>
-                            <Text style={{ color: '#ffffff', fontFamily: Type.num, fontSize: 18, letterSpacing: 2 }}>
-                              LOAD TO {selectedLoadDays.length} {selectedLoadDays.length === 1 ? 'DAY' : 'DAYS'}
-                            </Text>
-                          </TouchableOpacity>
+                            faceStyle={{ paddingVertical: 14, borderRadius: 10 }}
+                          />
                         </>
                       );
                     })()}

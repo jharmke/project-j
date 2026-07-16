@@ -33,6 +33,7 @@ import {
 import { refreshCoachTip, resolveTipBody, resolveTipTitle, voiceDiagnosticCards } from '../utils/coachAI';
 import { Type, numLine } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import BackgroundLayers from '../components/BackgroundLayers';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -511,6 +512,11 @@ const lockedTopic = (id: string) => LOCKED_TOPICS[id] ?? 'Pattern';
 // Whole card taps to /support. No gray-skeleton shell. tint follows the theme (dark only on 'dark').
 function LockedInsightCard({ topic, accent, title, body, theme, shadowStyle, isDarkTheme }: { topic: string; accent: string; title: string; body: string; theme: any; shadowStyle: any; isDarkTheme: boolean }) {
   return (
+    // The shadow rides a WRAPPER. overflow:'hidden' below is load-bearing (it clips the full-bleed frost to
+    // the card's corners) -- and a view that clips cannot cast a shadow: iOS masksToBounds deletes it. So
+    // this card had shadowStyle on the same view as the overflow and has never had a shadow. Not visible to
+    // Justin (he is entitled, so the locked state never renders for him) -- found by reading.
+    <View style={[shadowStyle, { borderRadius: 14, marginBottom: 12 }]}>
     <TouchableOpacity
       activeOpacity={0.85}
       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/support'); }}
@@ -520,7 +526,7 @@ function LockedInsightCard({ topic, accent, title, body, theme, shadowStyle, isD
         borderTopColor: theme.borderCardTop,
         borderTopWidth: 0.5,
         overflow: 'hidden',   // clips the full-bleed frost to the card's rounded corners
-        ...shadowStyle, marginBottom: 12,
+        marginBottom: 0,
       }]}
     >
       {/* Wash + tone accent, same as the unlocked card (DiagnosticFeedCard), so a locked card is the
@@ -555,6 +561,7 @@ function LockedInsightCard({ topic, accent, title, body, theme, shadowStyle, isD
         </View>
       </View>
     </TouchableOpacity>
+    </View>
   );
 }
 
@@ -663,7 +670,9 @@ export default function DiagnosticReportViewScreen() {
   }, []);
 
   const isMindful = styleMode === 'Mindful';
-  const shadowStyle = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 };
+  // Was '#000' @0.12 on a tight 2/8 blur -- about a third of a normal card, the wrong hue on Light (whose
+  // shadow is navy) and invisible on Dark. Nothing clips these, so it always rendered; just weak.
+  const shadowStyle = { shadowColor: t.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: t.cardShadowOpacity, shadowRadius: 12, elevation: 6 };
 
   useEffect(() => {
     registerScrollView('effort_vs_results_view', scrollRef);
@@ -761,6 +770,7 @@ export default function DiagnosticReportViewScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bgPrimary }}>
+      <BackgroundLayers />
       <ToastRenderer />
 
       <ScreenHeader
@@ -860,24 +870,27 @@ export default function DiagnosticReportViewScreen() {
                 if (!coachBody) return null;
                 const body = coachBody;
                 if (!body) return null;
-                // Blue Coach Insight box -- mirrors the day/weekly/monthly summary treatment
-                // exactly: translucent blue fill, centered header + divider, centered VOICE body
-                // (all four dropped the italic together when they moved onto the voice face).
+                // Coach Insight -- mirrors day/weekly/monthly exactly, which now means TWO layers: an opaque
+                // card with the tint as a BOX inside, matching Sleep & Recovery's coach. It used to be ONE
+                // layer (the card WAS a ~7% accent wash), which reads fine on a flat page but goes strainy
+                // once the page glows accent underneath it. Full note in day-summary.tsx.
                 return (
                   <View style={{ marginBottom: 12 }}>
                     <View style={[shadowStyle, {
-                      backgroundColor: t.accentBlueRaw + '12', borderRadius: 12, borderWidth: 1,
-                      borderColor: t.accentBlueRaw + '50', padding: 14, alignItems: 'center',
+                      backgroundColor: t.bgCard, borderRadius: 12, borderWidth: 0.5,
+                      borderColor: t.borderCard, borderTopWidth: 1.5, borderTopColor: t.accentBlueRaw,
+                      padding: 14,
                     }]}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 10 }}>
                         <Ionicons name="sparkles" size={12} color={t.accentBlueRaw} />
                         <Text style={{ fontSize: 9, letterSpacing: 3, color: t.accentBlueRaw, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>Coach Insight</Text>
                       </View>
-                      <View style={{ width: '100%', height: 0.5, backgroundColor: t.accentBlueRaw + '40', marginBottom: 10 }} />
+                      <View style={{ backgroundColor: t.accentBlueRaw + '12', borderRadius: 10, padding: 12 }}>
                       {/* VOICE, upright -- matched to Home's Coach Insight. See the note in weekly-summary. */}
                       <Text style={{ fontSize: 14, color: t.textSecondary, fontFamily: Type.voice, lineHeight: 22, textAlign: 'center' }}>
                         {body}
                       </Text>
+                      </View>
                     </View>
                   </View>
                 );

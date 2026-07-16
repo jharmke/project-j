@@ -21,6 +21,7 @@ import { useToast } from '../components/Toast';
 import { loadReports, deleteReport, newReportId, RANGE_LABELS, Report } from '../utils/reports';
 import { Type } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import BackgroundLayers from '../components/BackgroundLayers';
 import PrimaryCTA from '../components/PrimaryCTA';
 
 // 🚧 BETA HACK (revert before App Store launch): Reports is a Pro feature, but every TestFlight user gets
@@ -68,7 +69,7 @@ export default function ReportsHub() {
       <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
         <ScreenHeader title="Reports" />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <View style={{ backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 14, padding: 20, alignItems: 'center' }}>
+          <View style={{ backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 14, padding: 20, alignItems: 'center', shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
             {/* Lock only -- the headline right below already names the tier. */}
             <View style={{ marginBottom: 12 }}>
               <Ionicons name="lock-closed" size={20} color={theme.textMuted} />
@@ -88,6 +89,7 @@ export default function ReportsHub() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
+      <BackgroundLayers />
       {/* Header */}
       <ScreenHeader title="Reports" subtitle="Build your own, from any period." />
 
@@ -106,7 +108,7 @@ export default function ReportsHub() {
           <View style={{ gap: 11, marginTop: 4 }}>
             {reports.map(r => (
               <TouchableOpacity key={r.id} activeOpacity={0.75} onPress={() => openReport(r.id)}
-                style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, borderRadius: 14, padding: 15, flexDirection: 'row', alignItems: 'center', gap: 13 }}>
+                style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, borderRadius: 14, padding: 15, flexDirection: 'row', alignItems: 'center', gap: 13, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
                 <View style={{ width: 40, height: 40, borderRadius: 11, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, alignItems: 'center', justifyContent: 'center' }}>
                   <Ionicons name="document-text" size={20} color={theme.accentBlue} />
                 </View>
@@ -117,23 +119,25 @@ export default function ReportsHub() {
                   </Text>
                 </View>
                 <TouchableOpacity onPress={() => confirmDelete(r)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} style={{ padding: 4 }}>
-                  <Ionicons name="trash-outline" size={18} color={theme.textDim} />
+                  <Ionicons name="trash-outline" size={18} color={theme.accentRed} />
                 </TouchableOpacity>
               </TouchableOpacity>
             ))}
           </View>
         )}
-      </ScrollView>
 
-      {/* New Report button (full accent) */}
-      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 18, paddingTop: 12, paddingBottom: insets.bottom + 14, backgroundColor: theme.bgPrimary, borderTopWidth: 0.5, borderTopColor: theme.borderCard }}>
+        {/* New Report lives IN the scroll, under the list. It was a pinned bottom bar wearing the floating
+            SAVE-bar chrome (opaque block + top border) -- that pattern is for a contextual save that
+            animates in when there are unsaved changes, and this is a create action with nothing pending.
+            It sat there permanently, and Otto (bottom-left) landed on top of it. */}
         <PrimaryCTA
+          wrapperStyle={{ marginTop: 16 }}
           faceStyle={{ paddingVertical: 15, borderRadius: 12 }}
           label="New Report"
           icon={<Ionicons name="add" size={20} color="#ffffff" />}
           onPress={startNew}
         />
-      </View>
+      </ScrollView>
     </View>
   );
 }

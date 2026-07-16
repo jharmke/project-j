@@ -21,6 +21,8 @@ import {
 } from '../utils/challenges';
 import { Type } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import BackgroundLayers from '../components/BackgroundLayers';
+import { CardWatermark } from '../components/GradientCard';
 
 function fmtMetricValue(id: MetricId, v: number | null): string {
   if (v === null) return '—';
@@ -96,13 +98,14 @@ export default function ChallengesScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
+      <BackgroundLayers />
       {Header}
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 40 }}>
 
         {/* ── Active challenge ── */}
         {active && progress ? (
-          <View style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: accent, borderRadius: 14, padding: 16, overflow: 'hidden' }}>
-            <Ionicons name="trophy" size={130} color={accent} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.08 }} />
+          <View style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: accent, borderRadius: 14, padding: 16, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
+            <CardWatermark name="trophy" color={accent} opacity={0.08} />
             {/* Header row */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -208,7 +211,7 @@ export default function ChallengesScreen() {
           </View>
         ) : (
           // Empty state: no active challenge
-          <View style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: accent, borderRadius: 14, paddingVertical: 40, paddingHorizontal: 24, alignItems: 'center' }}>
+          <View style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: accent, borderRadius: 14, paddingVertical: 40, paddingHorizontal: 24, alignItems: 'center', shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
             <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: `${accent}1A`, alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
               <Ionicons name="trophy-outline" size={26} color={accent} />
             </View>
@@ -230,7 +233,7 @@ export default function ChallengesScreen() {
           <>
             <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, textTransform: 'uppercase', fontFamily: Type.uiBold, marginTop: 28, marginBottom: 10 }}>Past Challenges</Text>
             {history.map(past => (
-              <View key={past.id} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderRadius: 12, padding: 14, marginBottom: 8 }}>
+              <View key={past.id} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderRadius: 12, padding: 14, marginBottom: 8, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.textPrimary }}>{challengeTitle(past, isMindful)}</Text>
                   <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, marginTop: 2 }}>{past.startKey} → {past.endKey}</Text>

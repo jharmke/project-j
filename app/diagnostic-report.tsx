@@ -24,6 +24,7 @@ import { refreshCoachTip, resolveTipBody } from '../utils/coachAI';
 import PrimaryCTA from '../components/PrimaryCTA';
 import { Type, numLine } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import BackgroundLayers from '../components/BackgroundLayers';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -103,7 +104,9 @@ export default function DiagnosticReportScreen() {
   const [initialized, setInitialized]   = useState(false);
   const [totalLogged, setTotalLogged]   = useState(0);
 
-  const shadowStyle = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 };
+  // Was '#000' @0.12 on a tight 2/8 blur -- about a third of a normal card, the wrong hue on Light (whose
+  // shadow is navy) and invisible on Dark. Nothing clips these, so it always rendered; just weak.
+  const shadowStyle = { shadowColor: t.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: t.cardShadowOpacity, shadowRadius: 12, elevation: 6 };
 
   useEffect(() => {
     registerScrollView('effort_vs_results', scrollRef);
@@ -172,6 +175,7 @@ export default function DiagnosticReportScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bgPrimary }}>
+      <BackgroundLayers />
       <ToastRenderer />
 
       {/* The 48px two-line hero is GONE. It was the biggest title in the app by a factor of two, and it

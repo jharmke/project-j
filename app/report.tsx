@@ -13,6 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import ButtonShine from '../components/ButtonShine';
+import BackgroundLayers from '../components/BackgroundLayers';
 import PrimaryCTA from '../components/PrimaryCTA';
 import { useTheme } from '../theme';
 import { useToast } from '../components/Toast';
@@ -199,6 +200,7 @@ export default function ReportScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
+      <BackgroundLayers />
       {/* Header */}
       <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 10, flexDirection: 'row', alignItems: 'center', gap: 10, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
         <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
@@ -215,7 +217,7 @@ export default function ReportScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 40 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 110 }} showsVerticalScrollIndicator={false}>
         {/* Range chips */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 14, marginBottom: 4 }}>
           {PRESETS.map(p => {
@@ -240,16 +242,16 @@ export default function ReportScreen() {
         {loading ? (
           <View style={{ paddingVertical: 50, alignItems: 'center' }}><ActivityIndicator color={theme.accentBlue} /></View>
         ) : activeBlocks.length > 0 ? (
-          <View ref={shotRef} collapsable={false} style={{ backgroundColor: theme.bgPrimary, marginTop: 14 }}>
+          <View ref={shotRef} collapsable={false} style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, borderRadius: 14, padding: 16, marginTop: 14, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
             {/* Document header -- captured into the export image */}
-            <View style={{ marginBottom: 14 }}>
+            <View style={{ marginBottom: 4 }}>
               <TextInput ref={nameRef} value={report.name} onChangeText={rename} onBlur={commitName} placeholder="Report name" placeholderTextColor={theme.textDim}
                 style={{ fontSize: 26, fontFamily: Type.display, letterSpacing: 0.3, color: theme.textSecondary, padding: 0 }} />
               <Text style={{ fontSize: 11.5, fontFamily: Type.uiSemibold, color: theme.textMuted, marginTop: 3 }}>
                 {RANGE_LABELS[report.range.preset]} · Generated {genDate} · Project J
               </Text>
             </View>
-            <View style={{ gap: 12 }}>
+            <View>
               {activeBlocks.map((b, i) => (
                 <BlockCard key={b.id} block={b} data={data} prior={prior} foodDays={foodDays} workoutState={workoutState}
                   mealSlots={mealCtx.slots} slotCache={mealCtx.cache} bodyEntries={bodyCtx.entries} bodyUnit={bodyCtx.unit}
@@ -259,7 +261,7 @@ export default function ReportScreen() {
                   onUp={() => moveBlock(b.id, -1)} onDown={() => moveBlock(b.id, 1)} onRemove={() => toggleBlock(b.id)} />
               ))}
             </View>
-            <Text style={{ fontSize: 11, color: theme.textDim, textAlign: 'center', marginTop: 18, fontFamily: Type.ui }}>For informational purposes only. Not medical advice.</Text>
+            <Text style={{ fontSize: 11, color: theme.textMuted, textAlign: 'center', marginTop: 16, paddingTop: 14, borderTopWidth: 0.5, borderTopColor: theme.borderCard, fontFamily: Type.ui }}>For informational purposes only. Not medical advice.</Text>
           </View>
         ) : !libraryOpen ? (
           <TemplateChooser onPick={applyTemplate} onCustom={() => setLibraryOpen(true)} theme={theme} />
@@ -269,7 +271,7 @@ export default function ReportScreen() {
             covers that), shown once the report has blocks or the picker is already open. */}
         {!loading && (activeBlocks.length > 0 || libraryOpen) && (
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); setLibraryOpen(o => !o); }}
-            style={{ marginTop: 16, borderRadius: 12, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: libraryOpen ? theme.bgCard : theme.accentBlueBgOpaque, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
+            style={{ marginTop: 16, borderRadius: 12, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: theme.accentBlueBgOpaque, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
             {/* OPAQUE tint + shine: this sits on the PAGE, not a card, so the translucent accentBlueBg showed
                 the bottom glow through it. Same fix as Stats' VIEW ALL ACHIEVEMENTS. */}
             <ButtonShine radius={12} />
@@ -362,7 +364,7 @@ function BlockCard({ block, data, prior, foodDays, workoutState, mealSlots, slot
   // For a trend block, surface its latest value in the header (clean) instead of floating it in the chart.
   const trendLatest = block.form === 'lineTrend' ? latestOf(seriesFor(block.dataKey, data)) : null;
   return (
-    <View style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, borderRadius: 14, padding: 16 }}>
+    <View style={{ paddingTop: 16, paddingBottom: isLast ? 0 : 16, borderBottomWidth: isLast ? 0 : 0.5, borderBottomColor: theme.borderCard }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: collapsed ? 0 : 12 }}>
         <TouchableOpacity onPress={onToggle} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
           <Ionicons name={collapsed ? 'chevron-forward' : 'chevron-down'} size={15} color={theme.textMuted} />
@@ -418,7 +420,7 @@ function TemplateChooser({ onPick, onCustom, theme }: { onPick: (t: ReportTempla
       <View style={{ gap: 10 }}>
         {REPORT_TEMPLATES.map(t => (
           <TouchableOpacity key={t.id} activeOpacity={0.8} onPress={() => onPick(t)}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 13, backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, borderRadius: 14, padding: 15 }}>
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 13, backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, borderRadius: 14, padding: 15, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
             <View style={{ width: 42, height: 42, borderRadius: 11, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, alignItems: 'center', justifyContent: 'center' }}>
               <Ionicons name={t.icon as any} size={21} color={theme.accentBlue} />
             </View>

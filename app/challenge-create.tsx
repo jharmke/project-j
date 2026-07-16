@@ -25,6 +25,7 @@ import {
 } from '../utils/challenges';
 import { Type } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import BackgroundLayers from '../components/BackgroundLayers';
 
 const METRIC_ICON: Record<ChallengeMetric, string> = {
   net: 'flame', protein: 'restaurant', steps: 'footsteps', water: 'water', sleepScore: 'moon', weight: 'barbell',
@@ -254,10 +255,11 @@ export default function ChallengeCreateScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
+      <BackgroundLayers />
       {/* Header */}
       <ScreenHeader title="New Challenge" />
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 160 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 110 }} keyboardShouldPersistTaps="handled">
 
         {/* ── Type ── */}
         <SectionLabel>Challenge Type</SectionLabel>
@@ -270,7 +272,7 @@ export default function ChallengeCreateScreen() {
             return (
               <TouchableOpacity key={opt.id} activeOpacity={0.8}
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setType(opt.id); }}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: sel ? `${accent}14` : theme.bgCard, borderWidth: 1, borderColor: sel ? `${accent}80` : theme.borderCard, borderRadius: 12, padding: 14 }}>
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: sel ? theme.accentBlueBgOpaque : theme.bgCard, borderWidth: 1, borderColor: sel ? `${accent}80` : theme.borderCard, borderRadius: 12, padding: 14 }}>
                 <Ionicons name={opt.icon as any} size={22} color={sel ? accent : theme.textSecondary} />
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 15, fontFamily: Type.uiBold, color: sel ? accent : theme.textSecondary }}>{opt.title}</Text>
@@ -290,7 +292,7 @@ export default function ChallengeCreateScreen() {
                 const sel = selectedMetrics.includes(m);
                 return (
                   <TouchableOpacity key={m} activeOpacity={0.7} onPress={() => toggleMetric(m)}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: sel ? `${accent}1F` : theme.bgCard, borderWidth: 1, borderColor: sel ? `${accent}80` : theme.borderCard, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 12 }}>
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: sel ? theme.accentBlueBgOpaque : theme.bgCard, borderWidth: 1, borderColor: sel ? `${accent}80` : theme.borderCard, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 12 }}>
                     <Ionicons name={METRIC_ICON[m] as any} size={14} color={sel ? accent : theme.textSecondary} />
                     <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: sel ? accent : theme.textSecondary }}>{METRIC_META[m].label}</Text>
                   </TouchableOpacity>
@@ -305,7 +307,7 @@ export default function ChallengeCreateScreen() {
                 const sel = benchmarkMode === o.id;
                 return (
                   <TouchableOpacity key={o.id} activeOpacity={0.7} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setBenchmarkMode(o.id); }}
-                    style={{ flex: 1, alignItems: 'center', backgroundColor: sel ? `${accent}1F` : theme.bgCard, borderWidth: 1, borderColor: sel ? `${accent}80` : theme.borderCard, borderRadius: 10, paddingVertical: 11 }}>
+                    style={{ flex: 1, alignItems: 'center', backgroundColor: sel ? theme.accentBlueBgOpaque : theme.bgCard, borderWidth: 1, borderColor: sel ? `${accent}80` : theme.borderCard, borderRadius: 10, paddingVertical: 11 }}>
                     <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: sel ? accent : theme.textSecondary }}>{o.label}</Text>
                   </TouchableOpacity>
                 );
@@ -330,7 +332,7 @@ export default function ChallengeCreateScreen() {
                 const sel = customMetric === m;
                 return (
                   <TouchableOpacity key={m} activeOpacity={0.7} onPress={() => pickCustomMetric(m)}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: sel ? `${accent}1F` : theme.bgCard, borderWidth: 1, borderColor: sel ? `${accent}80` : theme.borderCard, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 12 }}>
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: sel ? theme.accentBlueBgOpaque : theme.bgCard, borderWidth: 1, borderColor: sel ? `${accent}80` : theme.borderCard, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 12 }}>
                     <Ionicons name={METRIC_ICON[m] as any} size={14} color={sel ? accent : theme.textSecondary} />
                     <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: sel ? accent : theme.textSecondary }}>{METRIC_META[m].label}</Text>
                   </TouchableOpacity>
@@ -388,13 +390,13 @@ export default function ChallengeCreateScreen() {
                 const sel = durationId === d.id;
                 return (
                   <TouchableOpacity key={d.id} activeOpacity={0.7} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setDurationId(d.id); }}
-                    style={{ backgroundColor: sel ? `${accent}1F` : theme.bgCard, borderWidth: 1, borderColor: sel ? `${accent}80` : theme.borderCard, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16 }}>
+                    style={{ backgroundColor: sel ? theme.accentBlueBgOpaque : theme.bgCard, borderWidth: 1, borderColor: sel ? `${accent}80` : theme.borderCard, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16 }}>
                     <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: sel ? accent : theme.textSecondary }}>{d.label}</Text>
                   </TouchableOpacity>
                 );
               })}
               <TouchableOpacity activeOpacity={0.7} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setDurationId('custom'); }}
-                style={{ backgroundColor: durationId === 'custom' ? `${accent}1F` : theme.bgCard, borderWidth: 1, borderColor: durationId === 'custom' ? `${accent}80` : theme.borderCard, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16 }}>
+                style={{ backgroundColor: durationId === 'custom' ? theme.accentBlueBgOpaque : theme.bgCard, borderWidth: 1, borderColor: durationId === 'custom' ? `${accent}80` : theme.borderCard, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16 }}>
                 <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: durationId === 'custom' ? accent : theme.textSecondary }}>Custom</Text>
               </TouchableOpacity>
             </View>
@@ -416,7 +418,7 @@ export default function ChallengeCreateScreen() {
                 const sel = startMode === o.id;
                 return (
                   <TouchableOpacity key={o.id} activeOpacity={0.7} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setStartMode(o.id); }}
-                    style={{ flex: 1, alignItems: 'center', backgroundColor: sel ? `${accent}1F` : theme.bgCard, borderWidth: 1, borderColor: sel ? `${accent}80` : theme.borderCard, borderRadius: 10, paddingVertical: 11 }}>
+                    style={{ flex: 1, alignItems: 'center', backgroundColor: sel ? theme.accentBlueBgOpaque : theme.bgCard, borderWidth: 1, borderColor: sel ? `${accent}80` : theme.borderCard, borderRadius: 10, paddingVertical: 11 }}>
                     <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: sel ? accent : theme.textSecondary }}>{o.label}</Text>
                   </TouchableOpacity>
                 );
@@ -424,23 +426,28 @@ export default function ChallengeCreateScreen() {
             </View>
           </>
         )}
-      </ScrollView>
 
-      {/* ── Confirm bar ── */}
-      {type && (
-        <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingTop: 12, paddingBottom: insets.bottom + 12, backgroundColor: theme.bgPrimary, borderTopWidth: 0.5, borderTopColor: theme.borderCard }}>
-          {!!summary && <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.ui, textAlign: 'center', marginBottom: 10, lineHeight: 17 }}>{summary}</Text>}
-          {/* PrimaryCTA owns the busy spinner and the disabled dim, so the hand-rolled ActivityIndicator and
-              opacity go with it. */}
-          <PrimaryCTA
-            faceStyle={{ paddingVertical: 15, borderRadius: 10 }}
-            label="Start Challenge"
-            onPress={confirm}
-            busy={saving}
-            disabled={!canConfirm}
-          />
-        </View>
-      )}
+        {/* Confirm -- IN the scroll, at the end of the form. It was a pinned bottom bar wearing the floating
+            SAVE-bar chrome (opaque block + top border), and that pattern is for a contextual save that
+            animates in over content when there are unsaved changes. This is the primary action of a form:
+            you fill it in, you hit Start at the bottom. Nothing needs pinning, and pinned meant a permanent
+            glued block that Otto (bottom-left) sat on top of. The summary line rides with it, still directly
+            above the button -- they were always one unit inside the same bar. */}
+        {type && (
+          <View style={{ marginTop: 24 }}>
+            {!!summary && <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.ui, textAlign: 'center', marginBottom: 10, lineHeight: 17 }}>{summary}</Text>}
+            {/* PrimaryCTA owns the busy spinner and the disabled dim, so the hand-rolled ActivityIndicator and
+                opacity go with it. */}
+            <PrimaryCTA
+              faceStyle={{ paddingVertical: 15, borderRadius: 10 }}
+              label="Start Challenge"
+              onPress={confirm}
+              busy={saving}
+              disabled={!canConfirm}
+            />
+          </View>
+        )}
+      </ScrollView>
 
       {/* ── Benchmark date picker ── */}
       <Modal transparent visible={calPickerOpen} animationType="none" statusBarTranslucent onRequestClose={closeCalPicker}

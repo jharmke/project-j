@@ -29,6 +29,7 @@ import {
 } from '../utils/comparisonEngine';
 import { Type, numLine } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import BackgroundLayers from '../components/BackgroundLayers';
 
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
@@ -294,7 +295,7 @@ export default function ComparisonReportScreen() {
       <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
         <ScreenHeader title="Comparison" />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <View style={{ backgroundColor: theme.bgCard, borderWidth: 1, borderColor: `${accent}40`, borderRadius: 14, padding: 20, alignItems: 'center' }}>
+          <View style={{ backgroundColor: theme.bgCard, borderWidth: 1, borderColor: `${accent}40`, borderRadius: 14, padding: 20, alignItems: 'center', shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
             {/* Lock only -- the headline right below already names the tier. */}
             <View style={{ marginBottom: 12 }}>
               <Ionicons name="lock-closed" size={20} color={theme.textMuted} />
@@ -314,9 +315,10 @@ export default function ComparisonReportScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
+      <BackgroundLayers />
       <ScreenHeader title="Comparison" right={<TooltipIcon tooltipKey="comparison_report" size={18} />} />
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 40 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 110 }}>
 
         {/* ── Preset chips ── */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
@@ -336,7 +338,7 @@ export default function ComparisonReportScreen() {
                   borderRadius: 12, paddingVertical: 13, paddingHorizontal: 14,
                   opacity: disabled ? 0.4 : 1,
                   flexDirection: 'row', alignItems: 'center', gap: 10,
-                  shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4,
+                  shadowColor: theme.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: theme.cardShadowOpacity, shadowRadius: 12, elevation: 6,
                 }}
               >
                 <Ionicons name={p.icon as any} size={20} color={isSel ? accent : theme.textSecondary} />
@@ -359,7 +361,7 @@ export default function ComparisonReportScreen() {
             backgroundColor: mode === 'dayvsday' ? `${accent}1F` : theme.bgCard,
             borderWidth: 1, borderColor: mode === 'dayvsday' ? `${accent}80` : theme.borderCard,
             borderRadius: 12, paddingVertical: 13, marginBottom: 16,
-            shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4,
+            shadowColor: theme.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: theme.cardShadowOpacity, shadowRadius: 12, elevation: 6,
           }}
         >
           <Ionicons name={isPro ? 'calendar-outline' : 'lock-closed'} size={16} color={mode === 'dayvsday' ? accent : theme.textSecondary} />
@@ -380,7 +382,7 @@ export default function ComparisonReportScreen() {
                 style={{
                   flex: 1, backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard,
                   borderRadius: 12, paddingVertical: 13, alignItems: 'center',
-                  shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4,
+                  shadowColor: theme.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: theme.cardShadowOpacity, shadowRadius: 12, elevation: 6,
                 }}
               >
                 <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', color: theme.textDim, marginBottom: 5 }}>{which === 'a' ? 'Day A' : 'Day B'}</Text>
@@ -417,7 +419,7 @@ export default function ComparisonReportScreen() {
                 ? 'Each column is a single day. Metrics with no log that day show no data. Today is not selectable.'
                 : 'Values are daily averages using only logged days. Today is not included.'}
             </Text>
-            <Text style={{ fontSize: 10, fontFamily: Type.ui, color: theme.textDim, marginTop: 6, fontStyle: 'italic', textAlign: 'center' }}>For informational purposes only. Not medical advice.</Text>
+            <Text style={{ fontSize: 10, fontFamily: Type.ui, color: theme.textMuted, marginTop: 6, fontStyle: 'italic', textAlign: 'center' }}>For informational purposes only. Not medical advice.</Text>
           </View>
         )}
 
@@ -477,11 +479,14 @@ function MetricCard({ row, theme, accent, labelA, labelB, dayMode }: {
   const delta = rawDelta !== null ? formatDelta(row.id, rawDelta) : null;
 
   return (
+    // Shadow on a WRAPPER: the card below must clip (the accent side-bars run corner to corner and would
+    // square off its rounded ends), and a view that clips cannot cast a shadow -- iOS masksToBounds eats it.
+    // So this card's shadow never rendered. It was also '#000' @0.1: wrong hue on Light, gone on Dark.
+    <View style={{ borderRadius: 14, marginBottom: 10, shadowColor: theme.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: theme.cardShadowOpacity, shadowRadius: 12, elevation: 6 }}>
     <View style={{
       backgroundColor: theme.bgCard, borderRadius: 14,
       borderWidth: 0.5, borderColor: theme.borderCard,
-      marginBottom: 10, overflow: 'hidden',
-      shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 6,
+      overflow: 'hidden',
     }}>
       {/* Accent bar on winning side */}
       {aWins && <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: accent }} />}
@@ -532,6 +537,7 @@ function MetricCard({ row, theme, accent, labelA, labelB, dayMode }: {
           {!dayMode && <Text style={{ fontSize: 10, fontFamily: Type.ui, color: theme.textDim, marginTop: 4, textAlign: 'right' }}>{subCount(row.b)}</Text>}
         </View>
       </View>
+    </View>
     </View>
   );
 }

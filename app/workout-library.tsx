@@ -3781,14 +3781,11 @@ export default function WorkoutLibraryScreen() {
                     })}
                   </View>
 
-                  <TouchableOpacity
-                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); handleLoadRoutineOntoDays(); }}
+                  <PrimaryCTA
+                    label={`Load to ${loadRoutineSelectedDays.length} ${loadRoutineSelectedDays.length === 1 ? 'Day' : 'Days'}`}
+                    onPress={handleLoadRoutineOntoDays}
                     disabled={loadRoutineSelectedDays.length === 0}
-                    style={{ paddingVertical: 14, borderRadius: 10, alignItems: 'center', backgroundColor: theme.accentBlue, opacity: loadRoutineSelectedDays.length > 0 ? 1 : 0.4 }}>
-                    <Text style={{ color: '#ffffff', fontFamily: Type.uiBold, fontSize: 18, letterSpacing: 2 }}>
-                      LOAD TO {loadRoutineSelectedDays.length} {loadRoutineSelectedDays.length === 1 ? 'DAY' : 'DAYS'}
-                    </Text>
-                  </TouchableOpacity>
+                  />
                   </View>
                 </View>
               </Reanimated.View>

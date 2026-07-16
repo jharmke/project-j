@@ -21,6 +21,8 @@ import {
   loadDevotionalProgress, enrollDevotional, unenrollDevotional, getDevotionalProgress, getNextDay,
 } from '../utils/devotionals';
 import { useToast } from '../components/Toast';
+import CompanionFAB from '../components/CompanionFAB';
+import CompanionChat from '../components/CompanionChat';
 import { useTheme, type Theme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
@@ -51,6 +53,7 @@ export default function PlansScreen() {
   const [devStore, setDevStore] = useState<DevotionalsStorage>({});
   const [loading, setLoading] = useState(true);
   const [sortMode, setSortMode] = useState<SortMode>('featured'); // sorts the browse lists only
+  const [companionOpen, setCompanionOpen] = useState(false); // Halo faith companion
   const scrollRef = useRef<ScrollView>(null);
   const cardOffsets = useRef<Record<string, number>>({}); // plan/devotional id -> y offset, for deep-link scroll-to
   const { registerScrollView, unregisterScrollView } = useTutorial();
@@ -363,6 +366,9 @@ export default function PlansScreen() {
           )}
         </ScrollView>
       )}
+
+      <CompanionFAB onPress={() => setCompanionOpen(true)} bottom={32} />
+      <CompanionChat visible={companionOpen} onClose={() => setCompanionOpen(false)} />
     </LinearGradient>
   );
 }

@@ -28,6 +28,26 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-16 FAITH "BIBLE AND PLANS" CARD -- Browse buttons unified. The two columns showed different
+  affordances side by side (empty column = boxed shined amber button; under-cap column = flat "+ Browse" text
+  link), which read sloppy. Now BOTH render the same boxed + shined amber pill with a "+" icon (PlansColumn in
+  faith.tsx), matching the "Find something to read" button above. Dead browseLink/browseLinkText styles removed.
+  DECISION (same review): Coach Insight "INSIGHT" pill stays FLAT -- it's a status label (tone-colored:
+  INSIGHT/POSITIVE/URGENT/PATTERN), not independently tappable (the whole card opens EvR), so shining it would
+  break "shine = tappable" and compete with the card's real CTA. Justin agreed.
+- 2026-07-16 GYM AUDIT, button touchups (2 items). (5) Assign Tags modal (workout.tsx) CONFIRM was still a
+  GREEN tinted button -> molded PrimaryCTA "Confirm" (green now means success/goal only). (6) Load Routine
+  day-picker (workout-library.tsx) "LOAD TO N DAYS" was a flat painted solid-accent slab -> molded PrimaryCTA
+  "Load to N Day(s)", mixed case like every other button. Both keep their disabled/conditional logic + toast.
+  NOTE flagged, not touched: the Assign Tags modal is still a hand-rolled centered card w/ fade animation (not
+  the ModalHeader + spring standard) -- belongs to the separate ModalHeader sweep.
+- 2026-07-16 GYM AUDIT, FAB batch (4 items). (1+2) Otto FAB padding: sleep.tsx + achievements.tsx scroll
+  paddingBottom -> `insets.bottom + 96` so the bottom-left disc stops covering the last card (achievements was
+  a flat 40 with no inset). (3+4) Halo FAB added to the faith pages that lacked it: plans.tsx + prayer.tsx get
+  the standard CompanionFAB + CompanionChat (general Halo; on prayer it sits bottom-left, bottom-aligned with
+  the gold Add FAB on the right); devotional.tsx already had a MANAGED per-day Halo thread but no floating FAB,
+  so a CompanionFAB now reopens that same thread (option A, Justin's call). Otto is already hidden on all three
+  via AssistantOverlay's HIDE_SEGMENTS, so no double-FAB. Halo's tier gate still hides it for Not Right Now.
 - 2026-07-15 [DATA-LOSS BUG, FIXED] **Edit Food from the Edit Entry route zeroed 26 nutrients.** Log > a
   logged entry > Edit Entry > Edit opened the Edit Food modal with every extended field BLANK, and Save
   wrote `parseFloat('') || 0` into all of them -- fiber, sodium, cholesterol, vitamins, minerals, silently
@@ -351,6 +371,10 @@ are separate pre-submission checklists, NOT part of this menu.
   (confirmed on Sleep & Recovery > Recovery: the FAB covers the Recovery Coach text). Sweep every screen that
   renders the FAB, confirm each scroll view has enough bottom contentInset/padding so nothing sits under the
   FAB, and decide whether Halo needs the same pass. Systematic, low-risk padding fix.
+  >> PARTIAL 2026-07-16: the two Justin flagged from the gym are FIXED -- sleep.tsx + achievements.tsx scroll
+  paddingBottom bumped to `insets.bottom + 96` (clears the 56px disc sitting at bottom+20..bottom+76).
+  achievements was worse: a flat `40` that never even added the safe-area inset. STILL OPEN: the FULL sweep of
+  every other Otto-FAB screen (day-detail, day-summary, settings, add-food, etc.) for the same clearance.
 - [NOW] [VISUAL REFRESH -> CHIP / ICON-BUTTON TOP SHINE] The SECOND button-texture thread (distinct from
   the molded PrimaryCTA, which is the solid primary buttons). DONE so far: all 5 tab-header icon-squares,
   Library pills, "+ Log", the 8 water buttons, HR Zones/Tags, the selected effort tile, Repeat/Pick-a-Day,

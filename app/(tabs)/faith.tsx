@@ -595,6 +595,7 @@ function PlansColumn({ theme, label, emptyText, items, atCap, onBrowse, colRef }
             style={[styles.emptyBrowseBtn, { backgroundColor: tintBg, borderColor: tintBorder }]}
           >
             <ButtonShine radius={8} />
+            <Ionicons name="add" size={14} color={theme.accentAmber} />
             <Text style={[styles.emptyBrowseText, { color: theme.accentAmber }]}>Browse</Text>
           </PressButton>
         </View>
@@ -620,13 +621,17 @@ function PlansColumn({ theme, label, emptyText, items, atCap, onBrowse, colRef }
               <TileProgress progress={it.progress} refLabel={it.ref} theme={theme} />
             </PressCard>
           ))}
-          {/* textDim is '#9999bb' on Light -- the purple "+ Browse" that was the most obviously foreign
-              thing on this card. All three cool tokens are purple-family on Light (textMuted #6666aa,
-              textDim #9999bb, textSecondary #4a4a6a), so none of them belong on a warm card. */}
+          {/* Same boxed + shined amber Browse button as the empty-state column, so the two columns read
+              as one thing side by side (was a flat "+ Browse" text link, which looked sloppy next to the
+              empty column's button). alignSelf keeps it content-width + centered like the empty one. */}
           {!atCap && (
-            <PressButton onPress={onBrowse} style={styles.browseLink}>
-              <Ionicons name="add" size={14} color={inkMuted} />
-              <Text style={[styles.browseLinkText, { color: inkMuted }]}>Browse</Text>
+            <PressButton
+              onPress={onBrowse}
+              style={[styles.emptyBrowseBtn, { alignSelf: 'center', backgroundColor: tintBg, borderColor: tintBorder }]}
+            >
+              <ButtonShine radius={8} />
+              <Ionicons name="add" size={14} color={theme.accentAmber} />
+              <Text style={[styles.emptyBrowseText, { color: theme.accentAmber }]}>Browse</Text>
             </PressButton>
           )}
         </>
@@ -826,10 +831,8 @@ const styles = StyleSheet.create({
   tileCaptionRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 5, gap: 6 },
   tileCaption:     { fontSize: 10, fontFamily: Type.uiBold },
   tileRef:         { flexShrink: 1, fontSize: 10, fontFamily: Type.uiSemibold },
-  browseLink:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 8, minHeight: 44 },
-  browseLinkText:  { fontSize: 12, fontFamily: Type.uiSemibold },
   emptyCol:        { alignItems: 'center', gap: 10, paddingVertical: 6 },
   emptyColText:    { fontSize: 12, fontFamily: Type.ui, fontStyle: 'italic', textAlign: 'center' },
-  emptyBrowseBtn:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 8, paddingHorizontal: 16, minHeight: 44 },
+  emptyBrowseBtn:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 8, paddingHorizontal: 16, minHeight: 44 },
   emptyBrowseText: { fontSize: 12, fontFamily: Type.uiSemibold },
 });

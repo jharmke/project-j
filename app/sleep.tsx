@@ -1812,7 +1812,7 @@ export default function SleepHub() {
         </View>
       )}
 
-      <ScrollView contentContainerStyle={{ paddingTop: 8, paddingBottom: insets.bottom + 32 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingTop: 8, paddingBottom: insets.bottom + 96 }} showsVerticalScrollIndicator={false}>
         {activeTab === 'sleep' ? (
           <>
             {renderHero()}

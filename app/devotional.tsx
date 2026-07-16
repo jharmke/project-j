@@ -19,6 +19,7 @@ import {
 } from '../utils/devotionals';
 import { useToast } from '../components/Toast';
 import CompanionChat, { MiniCross } from '../components/CompanionChat';
+import CompanionFAB from '../components/CompanionFAB';
 import { useTheme } from '../theme';
 import type { DevotionalsStorage, DevotionalHaloTurn } from '../data/devotionals';
 import { cancelFaithReadingNotification } from '../services/notifications';
@@ -401,6 +402,10 @@ export default function DevotionalScreen() {
             </TouchableOpacity>
           </View>
       </ScrollView>
+
+      {/* Floating Halo: reopens THIS devotional day's managed reflection thread (same thread the
+          inline "Reflect with Halo" buttons open), so there's an always-visible way back in. */}
+      <CompanionFAB onPress={openHalo} bottom={32} />
 
       <CompanionChat
         visible={haloOpen}

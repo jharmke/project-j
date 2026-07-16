@@ -12,6 +12,8 @@ import { triggerHaptic, triggerHapticNotification } from '@/utils/haptics';
 import AddPrayerModal from '../components/AddPrayerModal';
 import PrayerActionModal from '../components/PrayerActionModal';
 import PrayerRequestModal from '../components/PrayerRequestModal';
+import CompanionFAB from '../components/CompanionFAB';
+import CompanionChat from '../components/CompanionChat';
 import { useToast } from '../components/Toast';
 import {
   loadPrayers, markAnswered, unanswerPrayer, deletePrayer,
@@ -81,6 +83,7 @@ export default function PrayerScreen() {
   const [actionFor, setActionFor] = useState<Prayer | null>(null);
   const [editPrayer, setEditPrayer] = useState<Prayer | null>(null);
   const [celebratingId, setCelebratingId] = useState<string | null>(null);
+  const [companionOpen, setCompanionOpen] = useState(false); // Halo faith companion
   const heroPop = useRef(new Animated.Value(1)).current;
 
   // Auto-open the prayer request modal when navigated here with autoOpenRequest=1
@@ -317,6 +320,10 @@ export default function PrayerScreen() {
         onDelete={handleDelete}
       />
       <PrayerRequestModal visible={requestOpen} onClose={() => setRequestOpen(false)} variant="faith" />
+
+      {/* Halo, bottom-left (the gold Add FAB owns bottom-right), bottom-aligned with it. */}
+      <CompanionFAB onPress={() => setCompanionOpen(true)} bottom={insets.bottom + 24} />
+      <CompanionChat visible={companionOpen} onClose={() => setCompanionOpen(false)} />
     </LinearGradient>
   );
 }

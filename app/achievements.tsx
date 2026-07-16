@@ -750,7 +750,7 @@ export default function AchievementsScreen() {
           <Text style={{ color: theme.textMuted, fontFamily: Type.ui, fontSize: 13 }}>Loading...</Text>
         </View>
       ) : (
-        <ScrollView ref={scrollRef} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+        <ScrollView ref={scrollRef} contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 96 }}>
 
           {/* Categories -- collapsible sections */}
           {Object.entries(grouped).map(([cat, defs]) => {

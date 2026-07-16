@@ -3101,15 +3101,14 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                   const currentTags = programs[activeDay]?.tags || weeklyTemplate[activeDayName]?.tags || [];
                   const hasChanged = JSON.stringify(currentTags.slice().sort()) !== JSON.stringify(tagModalInitialTags.slice().sort());
                   return hasChanged ? (
-                    <TouchableOpacity
+                    <PrimaryCTA
+                      label="Confirm"
                       onPress={() => {
-                        triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
                         setShowTagModal(false);
                         showToast('Tags saved', undefined, 'success');
                       }}
-                      style={{ marginBottom: 8, paddingVertical: 12, alignItems: 'center', borderRadius: 8, backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder }}>
-                      <Text style={{ color: theme.accentGreen, fontSize: 13, fontFamily: Type.uiBold, letterSpacing: 1 }}>CONFIRM</Text>
-                    </TouchableOpacity>
+                      wrapperStyle={{ marginBottom: 8 }}
+                    />
                   ) : null;
                 })()}
                 <TouchableOpacity onPress={() => {

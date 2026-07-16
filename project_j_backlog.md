@@ -91,6 +91,14 @@
 
 ## LOW PRIORITY / FUTURE
 
+- Modal header consistency cleanup (cosmetic only, NOT visually broken). A handful of popups are still
+  hand-built instead of using the shared ModalHeader, but their titles already use the correct header font,
+  so they look fine -- this is pure "make them all use the one component" tidiness. The ones confirmed by
+  reading (2026-07-16): the "Your Day Score" first-time popup (Home, centered title vs the app's left), the
+  weekly/monthly "summary ready" popups (Home), the "Where do I start?" Bible guide (Faith tab), and the Add
+  Prayer / Send Prayer Request titles (Prayer screen, buttons already fixed). Also the two already-flagged
+  info popups: Calorie Floor (Profile) and How to Measure (Body Measurements) -- neither is wrong, just not
+  the shared header. The genuinely-wrong one (TooltipModal title on the number font) was FIXED 2026-07-16.
 - Weight trend sparkline -- small inline trend line next to weight number showing recent direction over ~7-14 days. No axes, just shape.
 - Language / internationalization.
 - Apple Watch companion app -- V2 or later.

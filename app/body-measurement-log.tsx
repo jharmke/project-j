@@ -14,6 +14,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { triggerHaptic } from '@/utils/haptics';
 import { BlurView } from 'expo-blur';
 import PrimaryCTA from '../components/PrimaryCTA';
+import ButtonShine from '../components/ButtonShine';
+import { setFloatingBarHeight } from '../utils/floatingBar';
 import { useTheme } from '../theme';
 import { useToast } from '../components/Toast';
 import MeasureHowToModal from '../components/MeasureHowToModal';
@@ -26,6 +28,10 @@ import {
 } from '../utils/bodyMeasurements';
 import { Type } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+
+// Roughly the always-on save bar's content height (button + its padding, no safe-area inset). Registered
+// with the floating-bar signal so Otto's FAB glides up and stops covering "Save Measurements".
+const SAVE_BAR_H = 74;
 
 export default function BodyMeasurementLogScreen() {
   const { theme } = useTheme();
@@ -48,6 +54,12 @@ export default function BodyMeasurementLogScreen() {
     const show = Keyboard.addListener('keyboardWillShow', () => setKeyboardUp(true));
     const hide = Keyboard.addListener('keyboardWillHide', () => setKeyboardUp(false));
     return () => { show.remove(); hide.remove(); };
+  }, []);
+
+  // The save bar is always on this screen, so tell Otto's FAB to sit above it (else it covers Save).
+  useEffect(() => {
+    setFloatingBarHeight(SAVE_BAR_H);
+    return () => setFloatingBarHeight(0);
   }, []);
 
   useEffect(() => {
@@ -142,13 +154,14 @@ export default function BodyMeasurementLogScreen() {
 
           {/* paddingBottom clears the now-ABSOLUTE save bar so the last field is reachable, not trapped
               behind it. ~96 = the bar's height plus air. */}
-          <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 96 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-            {/* How to measure entry point */}
+          <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: insets.bottom + 160 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+            {/* How to measure entry point -- matches the Stats "View All Achievements" tinted button. */}
             <TouchableOpacity
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setHowToOpen(true); }}
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: theme.bgCard, borderColor: theme.accentBlueBorder, borderWidth: 1, borderRadius: 10, paddingVertical: 12, marginBottom: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 3 }}>
-              <Ionicons name="help-circle-outline" size={17} color={theme.accentBlue} />
-              <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>How to measure</Text>
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: theme.accentBlueBgOpaque, borderColor: theme.accentBlueBorder, borderWidth: 1, borderRadius: 8, paddingVertical: 14, marginBottom: 14 }}>
+              <ButtonShine radius={8} />
+              <Ionicons name="help-circle" size={16} color={theme.accentBlue} />
+              <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 1 }}>HOW TO MEASURE</Text>
             </TouchableOpacity>
 
             {MEASURE_REGIONS.map(region => (

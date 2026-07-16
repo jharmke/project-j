@@ -21,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '../theme';
+import PrimaryCTA from './PrimaryCTA';
 import TooltipIcon from './TooltipIcon';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import {
@@ -309,9 +310,7 @@ export default function NotificationPanel({
           </View>
 
           <View style={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 14 }}>
-            <Pressable onPress={dismiss} style={({ pressed }) => [styles.doneBtn, { backgroundColor: theme.accentBlue, opacity: pressed ? 0.85 : 1 }]}>
-              <Text style={styles.doneText}>Done</Text>
-            </Pressable>
+            <PrimaryCTA label="Done" onPress={dismiss} faceStyle={{ paddingVertical: 14, borderRadius: 12 }} />
           </View>
         </Animated.View>
       </View>
@@ -349,6 +348,4 @@ const styles = StyleSheet.create({
   peekBack: { opacity: 0.9 },
   countPill: { minWidth: 22, height: 20, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   countText: { fontSize: 11, fontFamily: Type.uiBold },
-  doneBtn: { borderRadius: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center' },
-  doneText: { fontSize: 14, fontFamily: Type.uiBold, letterSpacing: 0.5, color: '#ffffff' },
 });

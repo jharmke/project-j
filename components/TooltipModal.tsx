@@ -306,9 +306,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontFamily: Type.num,
-    fontSize: 28,
-    letterSpacing: 2,
+    fontFamily: Type.display,
+    fontSize: 24,
+    letterSpacing: 0.3,
     marginBottom: 12,
     textAlign: 'center',
   },

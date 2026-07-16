@@ -1572,17 +1572,17 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
 
         {foodStats && foodStats.count > 0 && (
           <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16, marginTop: -4 }}>
-            <View style={{ flex: 1, backgroundColor: theme.bgCard, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, padding: 10 }}>
+            <View style={{ flex: 1, backgroundColor: theme.bgCard, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, padding: 10, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
               <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>LOGGED</Text>
               <Text style={{ fontSize: 18, color: theme.textSecondary, fontFamily: Type.num }}>{foodStats.count}x</Text>
             </View>
-            <View style={{ flex: 1.8, backgroundColor: theme.bgCard, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, padding: 10 }}>
+            <View style={{ flex: 1.8, backgroundColor: theme.bgCard, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, padding: 10, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
               <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>LAST LOGGED</Text>
               <Text style={{ fontSize: 18, color: theme.textSecondary, fontFamily: Type.num }}>
                 {foodStats.lastDate ? new Date(foodStats.lastDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '--'}
               </Text>
             </View>
-            <View style={{ flex: 1.8, backgroundColor: theme.bgCard, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, padding: 10 }}>
+            <View style={{ flex: 1.8, backgroundColor: theme.bgCard, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, padding: 10, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
               <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>AVG SERVING</Text>
               <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
                 <Text style={{ fontSize: 18, color: theme.textSecondary, fontFamily: Type.num }}>

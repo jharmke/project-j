@@ -15,6 +15,8 @@ import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import BackgroundLayers from '../components/BackgroundLayers';
+import ButtonShine from '../components/ButtonShine';
 import PrimaryCTA from '../components/PrimaryCTA';
 import ModalHeader from '../components/ModalHeader';
 
@@ -188,6 +190,7 @@ export default function RecipeLogScreen() {
   const styles = useStyles(theme);
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <BackgroundLayers />
       <ScreenHeader
         title={recipe.name}
         topInset={false}
@@ -278,7 +281,8 @@ export default function RecipeLogScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>Ingredients</Text>
             {recipe.ingredients.map((ing: any, i: number) => (
-              <View key={i} style={styles.ingredientRow}>
+              // Last row drops its divider: inside a card a trailing rule reads as a broken edge.
+              <View key={i} style={[styles.ingredientRow, i === recipe.ingredients.length - 1 && { borderBottomWidth: 0, paddingBottom: 0 }]}>
                 <View style={{ flex: 1, marginRight: 12 }}>
                   <Text style={styles.ingredientName}>{ing.name} ({ing.amount}{ing.unit})</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3 }}>
@@ -311,6 +315,7 @@ export default function RecipeLogScreen() {
             <TouchableOpacity
               style={[styles.toggleBtn, logMode === 'serving' && styles.toggleBtnActive]}
               onPress={() => setLogMode('serving')}>
+              {logMode === 'serving' ? <ButtonShine radius={6} /> : null}
               <Text style={[styles.toggleBtnText, logMode === 'serving' && { color: theme.accentBlue }]}>
                 By {recipe.servingName}
               </Text>
@@ -319,6 +324,7 @@ export default function RecipeLogScreen() {
               <TouchableOpacity
                 style={[styles.toggleBtn, logMode === 'weight' && styles.toggleBtnActive]}
                 onPress={() => setLogMode('weight')}>
+                {logMode === 'weight' ? <ButtonShine radius={6} /> : null}
                 <Text style={[styles.toggleBtnText, logMode === 'weight' && { color: theme.accentBlue }]}>
                   By weight ({recipe.totalWeightUnit})
                 </Text>
@@ -327,22 +333,25 @@ export default function RecipeLogScreen() {
           </View>
         )}
 
-        {/* Amount Input */}
-        <View style={styles.amountRow}>
-          <Text style={styles.amountLabel}>
-            {logMode === 'serving' ? `How many ${recipe.servingName}?` : `How many ${weightUnitWord[recipe.totalWeightUnit] || recipe.totalWeightUnit}?`}
-          </Text>
-          <TextInput
-            style={styles.amountInput}
-            value={logMode === 'serving' ? servingAmount : weightAmount}
-            onChangeText={logMode === 'serving' ? setServingAmount : setWeightAmount}
-            keyboardType="decimal-pad"
-            selectTextOnFocus
-          />
-        </View>
-
-        {/* Nutrition Preview */}
+        {/* Amount + Nutrition -- ONE card. They were two surfaces doing one job: you type an amount, and the
+            thing below tells you what that amount IS. The question floated naked on the page while the
+            answer had a card, and the answer's own title just echoes the question's value back
+            ("Nutrition for 0 grams"). Together they read as one unit: how much -> here is what that is.
+            It also fixes the input, which read as a mystery white box floating in the page; on a card a
+            near-white field is a proper recess. */}
         <View style={styles.nutritionCard}>
+          <View style={styles.amountRow}>
+            <Text style={styles.amountLabel}>
+              {logMode === 'serving' ? `How many ${recipe.servingName}?` : `How many ${weightUnitWord[recipe.totalWeightUnit] || recipe.totalWeightUnit}?`}
+            </Text>
+            <TextInput
+              style={styles.amountInput}
+              value={logMode === 'serving' ? servingAmount : weightAmount}
+              onChangeText={logMode === 'serving' ? setServingAmount : setWeightAmount}
+              keyboardType="decimal-pad"
+              selectTextOnFocus
+            />
+          </View>
           <Text style={styles.nutritionTitle}>
             {logMode === 'serving'
               ? `Nutrition for ${servingAmount} ${recipe.servingName}`
@@ -417,31 +426,49 @@ const useStyles = (theme: any) => StyleSheet.create({
   headerTitle: { ...PAGE_TITLE, color: theme.accentBlueRaw, flex: 1 },
   editBtn: { backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 },
   editBtnText: { color: theme.accentBlue, fontSize: 13, fontFamily: Type.uiSemibold },
-  content: { padding: 16, paddingBottom: 80 },
-  infoCard: { backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, padding: 16, marginBottom: 16 },
+  // paddingBottom 80 -> 120: Otto's disc sits bottom-left (bottom+20..bottom+76) and was covering the left
+  // end of Add to Diary. The CONTENT clears the FAB, never the other way round -- Otto is bottom-left on
+  // every screen in the app, so moving him here would just make him inconsistent everywhere else.
+  content: { padding: 16, paddingBottom: 120 },
+  // Had NO shadow -- never written, not broken. Read fine while Light's ground was the old grey #e3e6ee
+  // (a white card had value contrast to lean on); the brightened #f2f3f7 took that away.
+  infoCard: { backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, padding: 16, marginBottom: 16, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
   infoText: { fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginBottom: 12 },
-  macroRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  // alignItems 'flex-end': the stats TOP-aligned before, and Calories is 32px while the macros are 22px --
+  // so the three small numbers floated high and Calories hung below them. Bottom-aligning the columns fixes
+  // both: the labels line up, and since the labels are identical heights the numbers land on a shared
+  // baseline. (No effect on the infoCard row above, where every value is the same size.)
+  macroRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
   macroStat: { alignItems: 'center', flex: 1 },
   macroVal: { fontSize: 22, fontFamily: Type.num, letterSpacing: 1 },
   macroUnit: { fontSize: 13, fontFamily: Type.ui, letterSpacing: 0 },
   macroLabel: { fontSize: 10, color: theme.textMuted, fontFamily: Type.ui, marginTop: 2, textAlign: 'center' },
-  section: { marginBottom: 16 },
+  // Ingredients is a CARD now. It was naked content sitting between two cards, so the page read
+  // card / nothing / card -- it looked like something had failed to load, and once the page gained a glow
+  // the list was floating in it. It is also the thing you actually scan on this screen.
+  section: { backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, borderRadius: 10, padding: 16, marginBottom: 16, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
   sectionLabel: { fontSize: 9, letterSpacing: 3, color: theme.textMuted, textTransform: 'uppercase', fontFamily: Type.uiMedium, marginBottom: 8 },
   ingredientRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle },
   ingredientName: { fontSize: 13, color: theme.textPrimary, fontFamily: Type.uiMedium },
   ingredientMacro: { fontSize: 11, color: theme.textMuted, fontFamily: Type.ui },
   toggleRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   toggleBtn: { flex: 1, padding: 10, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, alignItems: 'center' },
-  toggleBtnActive: { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder },
+  // The SELECTED half wears the View-All-Achievements recipe: an OPAQUE accent fill, not the translucent
+  // accentBlueBg. This row sits on the PAGE, not on a card, so a ~10% tint just shows you the accent bottom
+  // glow through it. Same reason Stats' VIEW ALL ACHIEVEMENTS and the Plans sort chips needed the opaque
+  // token. (+ ButtonShine at the render site, so it reads as a surface catching light.)
+  toggleBtnActive: { backgroundColor: theme.accentBlueBgOpaque, borderColor: theme.accentBlueBorder },
   toggleBtnText: { color: theme.textMuted, fontSize: 13, fontFamily: Type.uiMedium },
-  amountRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  // Lives INSIDE nutritionCard now (see the note at its render site). The rule under it separates the
+  // question from the answer without needing a second card.
+  amountRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle },
   amountLabel: { fontSize: 14, color: theme.textMuted, fontFamily: Type.ui },
   amountInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 24, fontFamily: Type.num, width: 120, textAlign: 'center' },
   servingBtns: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   servingBtn: { flex: 1, padding: 10, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, alignItems: 'center' },
   servingBtnActive: { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder },
   servingBtnText: { color: theme.textMuted, fontSize: 14, fontFamily: Type.uiMedium },
-  nutritionCard: { backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, padding: 16, marginBottom: 20 },
+  nutritionCard: { backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, padding: 16, marginBottom: 20, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
   nutritionTitle: { fontSize: 11, color: theme.textMuted, fontFamily: Type.uiMedium, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 },
   // logBtn / logBtnText removed 2026-07-15: Add to Diary is PrimaryCTA now.
   modalOverlay: { flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },

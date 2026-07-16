@@ -28,6 +28,7 @@ import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import TooltipIcon from '../components/TooltipIcon';
 import HeaderIconButton from '../components/HeaderIconButton';
 import ButtonShine from '../components/ButtonShine';
+import FabDome from '../components/FabDome';
 import { useTheme } from '../theme';
 import CompanionFAB, { GOLD as HALO_GOLD } from '../components/CompanionFAB';
 import CompanionChat from '../components/CompanionChat';
@@ -896,6 +897,7 @@ export default function BibleScreen() {
           activeOpacity={1}
           style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: HALO_GOLD, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 }}
         >
+          <FabDome size={56} />
           <Ionicons name={isAutoScrolling ? 'square' : showSpeedPicker ? 'close' : 'play'} size={isAutoScrolling ? 22 : showSpeedPicker ? 26 : 22} color="#ffffff" />
         </TouchableOpacity>
       </Animated.View>

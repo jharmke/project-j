@@ -6,6 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '../theme';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
+import FabDome from './FabDome';
 
 // The GENERAL Companion assistant's floating button. Distinct from Halo (the gold cross): this one
 // wears the app's THEME ACCENT and a spark icon, signalling a general AI helper rather than the
@@ -98,6 +99,7 @@ export default function AssistantFAB({ onPress, bottom = 18, lift = 0, suppresse
           {/* borderColor = page background: an invisible "moat" over the page, but a visible ring the
               moment the FAB sits over a same-accent button behind it, so the two never merge. */}
           <View style={[styles.disc, { backgroundColor: accent, shadowColor: glowColor, borderWidth: 3, borderColor: theme.bgPrimary }]}>
+            <FabDome size={DISC} />
             <Ionicons name="sparkles" size={24} color="#ffffff" />
           </View>
         </Pressable>

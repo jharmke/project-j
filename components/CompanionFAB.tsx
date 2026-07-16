@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
-import Svg, { Circle, Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -31,6 +31,7 @@ const GLOW = 84; // tight, faint glow
 
 export default function CompanionFAB({ onPress, bottom = 18, tutorialKey }: { onPress?: () => void; bottom?: number; tutorialKey?: string }) {
   const { theme } = useTheme();
+  const isDark = theme.id === 'dark';
   const [visible, setVisible] = useState(false);
   const breath = useRef(new Animated.Value(0)).current;
   const press  = useRef(new Animated.Value(1)).current;
@@ -104,7 +105,22 @@ export default function CompanionFAB({ onPress, bottom = 18, tutorialKey }: { on
           accessibilityLabel="Open Halo, the faith companion"
         >
           <Svg width={DISC} height={DISC}>
+            <Defs>
+              {/* Halo's dome. Same recipe + same 4 stops as components/FabDome (the home tab-bar button's
+                  crown gloss -> neutral middle -> soft dark foot), hand-built in SVG because Halo is drawn
+                  as SVG, not Views, so she cannot use the shared component. Keep the two IN SYNC by eye:
+                  if FabDome's values change, change these. Painted INSIDE the moat ring (r = DISC/2 - 3) so
+                  the page-coloured moat stays un-glossed, exactly like the View FABs' dome sits inside
+                  their 3px border. */}
+              <LinearGradient id="companionDome" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0"   stopColor="#ffffff" stopOpacity={isDark ? 0.12 : 0.42} />
+                <Stop offset="0.3" stopColor="#ffffff" stopOpacity={isDark ? 0.02 : 0.06} />
+                <Stop offset="0.6" stopColor="#000000" stopOpacity={isDark ? 0.05 : 0.02} />
+                <Stop offset="1"   stopColor="#000000" stopOpacity={isDark ? 0.26 : 0.16} />
+              </LinearGradient>
+            </Defs>
             <Circle cx={CX} cy={CX} r={DISC / 2} fill={GOLD} />
+            <Circle cx={CX} cy={CX} r={DISC / 2 - 3} fill="url(#companionDome)" />
             {/* Page-colored "moat" ring: the SVG equivalent of the other FABs' borderWidth:3 borderColor:
                 bgPrimary. Invisible over the page, but a visible separating ring the instant Halo overlaps a
                 same-gold/amber button behind it, so the two never merge. */}

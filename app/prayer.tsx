@@ -12,7 +12,7 @@ import { triggerHaptic, triggerHapticNotification } from '@/utils/haptics';
 import AddPrayerModal from '../components/AddPrayerModal';
 import PrayerActionModal from '../components/PrayerActionModal';
 import PrayerRequestModal from '../components/PrayerRequestModal';
-import CompanionFAB from '../components/CompanionFAB';
+import CompanionFAB, { GOLD as HALO_GOLD } from '../components/CompanionFAB';
 import CompanionChat from '../components/CompanionChat';
 import { useToast } from '../components/Toast';
 import {
@@ -24,6 +24,7 @@ import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { Type, numLine, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import FabDome from '../components/FabDome';
 import HeaderIconButton from '../components/HeaderIconButton';
 
 // Static demo prayers for the faith_prayer tutorial (?tutorial=1). Rendered without ever touching
@@ -290,7 +291,9 @@ export default function PrayerScreen() {
         </ScrollView>
       )}
 
-      {/* Add FAB (bottom-right; the faith Halo FAB lives bottom-left on the faith tab, no clash). */}
+      {/* Add FAB (bottom-right; the faith Halo FAB lives bottom-left on the faith tab, no clash).
+          Wears HALO_GOLD, not this page's GOLD: the two discs sit side by side, so the FAB matches Halo.
+          Same rule bible.tsx follows -- Halo's gold is the one source of truth for a faith FAB. */}
       <View ref={addRef} collapsable={false} style={[styles.fab, { bottom: insets.bottom + 24 }]}>
         <Animated.View style={{ transform: [{ scale: fabScale }] }}>
           <TouchableOpacity
@@ -298,8 +301,9 @@ export default function PrayerScreen() {
             onPressIn={() => Animated.timing(fabScale, { toValue: 0.9, duration: 100, useNativeDriver: true }).start()}
             onPressOut={() => Animated.timing(fabScale, { toValue: 1, duration: 150, useNativeDriver: true }).start()}
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); setAddOpen(true); }}
-            style={[styles.fabBtn, { backgroundColor: GOLD, borderWidth: 3, borderColor: theme.bgPrimary }]}
+            style={[styles.fabBtn, { backgroundColor: HALO_GOLD, borderWidth: 3, borderColor: theme.bgPrimary }]}
           >
+            <FabDome size={56} />
             <Ionicons name="add" size={28} color="#fff" />
           </TouchableOpacity>
         </Animated.View>

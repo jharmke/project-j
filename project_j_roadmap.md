@@ -28,6 +28,21 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-16 ROUND FAB DOME PASS -- all 10 circle FABs. New `components/FabDome.tsx` carries the home tab-bar
+  button's recipe (crown gloss -> neutral middle -> soft dark foot) to the 8 "+" discs (Workout, Stats, Add
+  Food, Workout Library, Bible auto-scroll, Prayer add, Journal new-entry, Body Measurements) + Otto. Halo is
+  drawn in SVG so her dome is hand-built from the SAME 4 stops (keep in sync BY EYE -- noted in both files).
+  SELF-CLIPPING, not overflow:'hidden': these FABs wear their shadow on the disc itself and masksToBounds
+  would kill it (the home button can only clip because its glow sits on a wrapper). Fixed on the way: the "+"
+  FAB accent DISAGREED across the app -- stats/journal/body-measurements were on accentBlueRaw (near-
+  fluorescent on Blush+Yellow, swallowing the white "+") while workout/add-food/library/Otto were on the
+  button-safe accentBlue; all now accentBlue. Body Measurements' disc was 58px, the lone odd size -> 56.
+  Deliberately untouched: the FAB expand-menu pills (stay flat) + empty-state tinted icon circles (not
+  buttons). Also: Prayer's "+" wore the PAGE gold (#d4860a) next to Halo's #e8a020 and the two never matched
+  side by side -> now imports HALO_GOLD like bible.tsx (Halo's gold = the one source of truth for a faith
+  FAB). Prayer's black drop shadow LEFT ALONE (Halo has a breath-glow instead, so they still differ there --
+  Justin's call, revisit if it reads heavy). Device-verified on Light/cyan: all 10 domes look right.
+  STILL PENDING: the other 4 themes x accents.
 - 2026-07-16 FLAT-BUTTON MOLD SWEEP (round 1) + fixes. Molded the flat solid-accent buttons found by reading
   (not grep-guessing): Stats "Add to Stats" (both spots), Workout tab "Load to N Days" (the TWIN of the
   library one), Day Score "I Understand". "Add Food modal Save" turned out a DEAD unused style (no live
@@ -395,11 +410,6 @@ are separate pre-submission checklists, NOT part of this menu.
   then READ each hit -- skip progress bars, dots, check circles, round FABs, and the labeled pills in the "+"
   expand menus (those are FAB affordances, leave them). Only mold real primary buttons. Left on purpose:
   the IF card "Last Meal" red button (Justin's call, leave), workout rest-timer Skip/Done pills.
-- [NOW] [found 2026-07-16] **Round FAB gradient/mould pass.** Justin: the round "+" FABs (Log, Workout, Stats
-  add-buttons, plus the companion FABs) should get the same gradient/shine treatment we gave the HOME tab-bar
-  button (the dome/top-shine recipe). That is why we deliberately did NOT flatten/mold the FAB expand-menu
-  pills in the button sweep -- the whole FAB family gets this pass together. Template = the home-circle dome
-  recipe (crown gloss -> soft dark foot), see the HOME-CIRCLE REDESIGN shipped note.
 - [QUICK WIN] [found 2026-07-15] **Otto (+ Halo?) FAB placement audit.** The floating companion FAB sits
   bottom-left on many stack screens and OVERLAPS the last card's content when the page has no bottom padding
   (confirmed on Sleep & Recovery > Recovery: the FAB covers the Recovery Coach text). Sweep every screen that

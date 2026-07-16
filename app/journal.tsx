@@ -23,6 +23,7 @@ import { showCelebration } from '../components/CelebrationOverlay';
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import ButtonShine from '../components/ButtonShine';
+import FabDome from '../components/FabDome';
 import ModalHeader from '../components/ModalHeader';
 import { BlurView } from 'expo-blur';
 
@@ -730,8 +731,9 @@ export default function JournalScreen() {
           onPressOut={fabPressOut}
           onPress={openCategorySheet}
           activeOpacity={0.99}
-          style={[styles.fabBtn, { backgroundColor: theme.accentBlueRaw, borderWidth: 3, borderColor: theme.bgPrimary }]}
+          style={[styles.fabBtn, { backgroundColor: theme.accentBlue, borderWidth: 3, borderColor: theme.bgPrimary }]}
         >
+          <FabDome size={56} />
           <Ionicons name="add" size={28} color="#ffffff" />
         </TouchableOpacity>
       </Animated.View>

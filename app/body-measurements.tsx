@@ -27,6 +27,7 @@ import {
 } from '../utils/bodyMeasurements';
 import { Type } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import FabDome from '../components/FabDome';
 
 const DISCLAIMER_KEY = 'pj_navy_bf_disclaimer_seen';
 
@@ -243,7 +244,11 @@ export default function BodyMeasurementsScreen() {
         </ScrollView>
 
         {/* FAB */}
-        <Animated.View style={[styles.fab, { backgroundColor: accent, bottom: insets.bottom + 24, shadowColor: accent, borderWidth: 3, borderColor: theme.bgPrimary, transform: [{ scale: fabScale }] }]}>
+        {/* FAB colour is theme.accentBlue (the button-safe accent), NOT this page's `accent` (= accentBlueRaw,
+            used for the card top edges + empty-state icon). The raw accent is near-fluorescent on Blush and
+            Yellow, which swallowed the white "+". Every other "+" FAB in the app is on accentBlue. */}
+        <Animated.View style={[styles.fab, { backgroundColor: theme.accentBlue, bottom: insets.bottom + 24, shadowColor: accent, borderWidth: 3, borderColor: theme.bgPrimary, transform: [{ scale: fabScale }] }]}>
+          <FabDome size={56} />
           <TouchableOpacity
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); router.push('/body-measurement-log'); }}
             onPressIn={() => Animated.timing(fabScale, { toValue: 0.9, duration: 90, useNativeDriver: true }).start()}
@@ -323,5 +328,5 @@ const styles = StyleSheet.create({
   headerBtn: { width: 38, height: 38, borderRadius: 19, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   card: { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, padding: 16, marginBottom: 12 },
   cardLabel: { fontSize: 9, letterSpacing: 3, fontFamily: Type.uiBold, textTransform: 'uppercase', marginBottom: 12 },
-  fab: { position: 'absolute', right: 22, width: 58, height: 58, borderRadius: 29, alignItems: 'center', justifyContent: 'center', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 10 },
+  fab: { position: 'absolute', right: 22, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 10 },
 });

@@ -26,6 +26,7 @@ import * as Notifications from 'expo-notifications';
 import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import ButtonShine from '../../components/ButtonShine';
+import FabDome from '../../components/FabDome';
 import PrimaryCTA from '../../components/PrimaryCTA';
 import { useHealthKit } from '../../useHealthKit';
 import { BLANK_DAY, DEFAULT_TAGS, DayProgram, Exercise, PRRecord, Routine, SetEntry, TAG_COLOR_PALETTE, WorkoutTag, PRESET_ROUTINES, weightUnitLabel, formatHold, parseHoldInput } from '../../workoutData';
@@ -3327,6 +3328,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
             onPressOut={() => Animated.timing(fabScale, { toValue: 1, duration: 80, useNativeDriver: true }).start()}
             activeOpacity={1}
             style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 }}>
+            <FabDome size={56} />
             <Ionicons name={showFabMenu ? 'close' : 'add'} size={28} color={theme.bgPrimary} />
           </TouchableOpacity>
         </Animated.View>

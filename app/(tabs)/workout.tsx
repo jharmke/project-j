@@ -2120,11 +2120,13 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
           }
         });
         out.push(
-          <View key={`g_${unit.groupId}`} style={[styles.exerciseItem, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.accentBlue + '55', borderLeftColor: theme.accentBlue, padding: 0, overflow: 'hidden' }]}>
+          <View key={`g_${unit.groupId}`} style={{ borderRadius: 10, marginBottom: 8, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
+          <View style={[styles.exerciseItem, { backgroundColor: theme.bgCardGlass, borderColor: theme.accentBlue + '55', borderLeftColor: theme.accentBlue, padding: 0, marginBottom: 0, overflow: 'hidden' }]}>
             <View style={{ paddingHorizontal: 14, paddingTop: 10, paddingBottom: 0 }}>
               <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.accentBlue, fontFamily: Type.uiBold }}>SUPERSET</Text>
             </View>
             {memberRows}
+          </View>
           </View>
         );
       }
@@ -2314,7 +2316,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
         </View>
 
         {isRest ? (
-          <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, alignItems: 'center', paddingVertical: 32, overflow: 'hidden' }]}>
+          <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, alignItems: 'center', paddingVertical: 32 }]}>
             <Ionicons name="moon" size={36} color={theme.textMuted} />
             <Text style={{ color: theme.textPrimary, fontSize: 20, fontFamily: Type.num, letterSpacing: 1, marginTop: 12 }}>REST DAY</Text>
             <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: Type.ui, marginTop: 8, textAlign: 'center' }}>Recovery is part of the program. Rest well.</Text>
@@ -2477,10 +2479,18 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                 OPAQUE fill (accentBlueBgOpaque), not the usual translucent accentBlueBg: this row sits on
                 the PAGE, not on a card, so a 10% tint just shows you the accent bottom glow and the button
                 reads as transparent (Justin, 2026-07-15). Exactly the same reason Stats' VIEW ALL
-                ACHIEVEMENTS needed the opaque token -- both are tinted buttons with no card behind them. */}
+                ACHIEVEMENTS needed the opaque token -- both are tinted buttons with no card behind them.
+                SHADOW (2026-07-16): tier-2 tinted buttons carry NO shadow app-wide -- this row is the
+                deliberate exception. Tier hierarchy reads fine when the two buttons live in different
+                places, but shoulder-to-shoulder at equal height "one floats, one is glued to the page"
+                read as inconsistency, not importance (Justin spotted it). So this gets a NEUTRAL card
+                shadow, softer and tighter than a card's (0.7x opacity, 2px offset, 6px blur) -- it becomes
+                an object on the page, while View Summary keeps the mould AND an ACCENT glow. The ranking
+                now comes from solid+accent-glow vs tinted+quiet-shadow, not from one having depth and the
+                other having none. If tier-2 buttons ever get shadows generally, start here. */}
             <TouchableOpacity
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/workout-library', params: { selectMode: 'true', day: activeDay } }); }}
-              style={{ flex: 1.3, backgroundColor: theme.accentBlueBgOpaque, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 12, paddingVertical: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 5 }}>
+              style={{ flex: 1.3, backgroundColor: theme.accentBlueBgOpaque, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 12, paddingVertical: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 5, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity * 0.7, shadowOffset: { width: 0, height: 2 }, shadowRadius: 6, elevation: 3 }}>
               <ButtonShine radius={12} />
               <Ionicons name="add" size={19} color={theme.accentBlue} />
               <Text style={{ fontSize: 14, fontFamily: Type.uiBold, letterSpacing: 0.3, color: theme.accentBlue }}>Add Exercise</Text>

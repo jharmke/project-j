@@ -2479,8 +2479,9 @@ export default function HomeScreen() {
               if (before.length <= 3) setWeightInput(before + '.' + after);
             }
           }} />
-        <PressableButton style={[styles.logBtn, { backgroundColor: weightInput.trim() ? theme.bgSelected : theme.bgInput, borderColor: weightInput.trim() ? theme.accentBlueBorder : theme.borderInput, opacity: weightInput.trim() ? 1 : 0.5 }]} onPress={logWeight}>
-          <Text style={[styles.logBtnText, { color: weightInput.trim() ? theme.accentBlue : theme.textDim }]}>LOG</Text>
+        <PressableButton style={[styles.logBtn, { backgroundColor: weightInput.trim() ? theme.accentBlueBg : theme.bgInput, borderColor: weightInput.trim() ? theme.accentBlueBorder : theme.borderInput, opacity: weightInput.trim() ? 1 : 0.5 }]} onPress={logWeight}>
+          {weightInput.trim() ? <ButtonShine radius={6} /> : null}
+          <Text style={[styles.logBtnText, { color: weightInput.trim() ? theme.accentBlue : theme.textDim }]}>Log</Text>
         </PressableButton>
       </View>
     </View>
@@ -4648,7 +4649,12 @@ const styles = StyleSheet.create({
   weightAdd:        { flexDirection:'row', gap:8 },
   weightInput:      { flex:1, borderWidth:1, borderRadius:6, padding:10, fontSize:14, fontFamily:Type.ui },
   logBtn:           { borderWidth:1, borderRadius:6, paddingHorizontal:16, justifyContent:'center' },
-  logBtnText:       { fontFamily:Type.num, fontSize:16, letterSpacing:1 },
+  // Was Type.num at 16 with letterSpacing 1, labelled "LOG": the NUMBER face (built for data values) doing
+  // button-label duty in shouty caps -- the same straggler class as Profile's save bar. A button label is
+  // interface copy, mixed case. The fill also moved off theme.bgSelected (the SELECTION token; theme.tsx's
+  // own note says a button is not selected) onto the house tinted recipe + shine, like every other tinted
+  // button. Dim/disabled state kept.
+  logBtnText:       { fontFamily:Type.uiBold, fontSize:14, letterSpacing:0.3 },
   workoutRow:       { flexDirection:'row', alignItems:'center', justifyContent:'space-between' },
   workoutDay:       { fontSize:22, letterSpacing:1, fontFamily:Type.num },
   workoutMuscles:   { fontSize:12, marginTop:2, fontFamily:Type.ui },

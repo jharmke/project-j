@@ -33,6 +33,7 @@ import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import HeaderIconButton from '../../components/HeaderIconButton';
 import ButtonShine from '../../components/ButtonShine';
+import { CardWatermark } from '../../components/GradientCard';
 import { useToast } from '../../components/Toast';
 import { useTutorial } from '../../context/TutorialContext';
 import { useTutorialTarget } from '../../hooks/useTutorialTarget';
@@ -1803,7 +1804,7 @@ export default function LogScreen() {
 
       {/* AI Meal Estimator -- persistent entry point, always shown below the meals */}
       <TouchableOpacity
-        style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 10 }}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 10 }}
         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); returningFromChild.current = true; router.push({ pathname: '/ai-meal-estimator', params: { date: activeDate } }); }}>
         <Ionicons name="sparkles" size={20} color={theme.accentBlueRaw} />
         <View style={{ flex: 1 }}>
@@ -1814,8 +1815,8 @@ export default function LogScreen() {
       </TouchableOpacity>
 
       {/* Water Card */}
-      <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
-        <Ionicons name="water" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
+      <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
+        <CardWatermark name="water" color={theme.accentBlueRaw} />
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Ionicons name="water-outline" size={11} color={theme.textMuted} />

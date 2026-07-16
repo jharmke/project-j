@@ -11,7 +11,7 @@ import { useToast } from './Toast';
 import TooltipIcon from './TooltipIcon';
 import ButtonShine from './ButtonShine';
 import AnimatedNumber from './AnimatedNumber';
-import { CardWash } from './GradientCard';
+import { CardWash, CardWatermark } from './GradientCard';
 import { Type, numLine } from '../typography';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -380,11 +380,11 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
   const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
   return (
-    <View ref={cardRef} style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder, borderTopColor: cardTop, borderTopWidth: faith ? 2 : 1.5, overflow: 'hidden' }]}>
+    <View ref={cardRef} style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder, borderTopColor: cardTop, borderTopWidth: faith ? 2 : 1.5, shadowColor: t.cardShadow, shadowOpacity: t.cardShadowOpacity }]}>
       {faith
         ? null
         : <CardWash color={t.accentBlueRaw} radius={14} />}
-      <Ionicons name="heart" size={130} color={accent} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
+      <CardWatermark name="heart" color={accent} />
 
       {/* Header */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -593,9 +593,11 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     borderTopWidth: 1.5,
-    shadowColor: '#000000',
+    // shadowColor/shadowOpacity come from the THEME inline at the render site: hardcoded '#000000' @ 0.25
+    // was invisible on Dark and the wrong hue on Light (whose shadow is navy). The card also carried
+    // overflow:'hidden' to clip its corner heart, which deleted the shadow entirely (iOS masksToBounds);
+    // CardWatermark clips itself now, so the overflow is gone and the shadow renders.
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
     shadowRadius: 12,
     elevation: 6,
   },

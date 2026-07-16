@@ -12,6 +12,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import HeaderIconButton from '../../components/HeaderIconButton';
 import ButtonShine from '../../components/ButtonShine';
+import { CardWatermark } from '../../components/GradientCard';
 import CompanionFAB from '../../components/CompanionFAB';
 import { TAB_BAR_HEIGHT, TAB_SCROLL_PAD } from '../../components/CustomTabBar';
 import BackgroundLayers from '../../components/BackgroundLayers';
@@ -301,7 +302,7 @@ function VotdCard({ verse, theme, onReflect }: { verse: DailyVerse | null; theme
       }}
       style={[styles.card, {
         backgroundColor: theme.bgCardFaithGlass,
-        shadowColor: '#d4860a', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.32, shadowRadius: 8, elevation: 8,
+        shadowColor: '#d4860a', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 8,
         borderWidth: 1,
         borderColor: 'rgba(212,134,10,0.45)',
         borderTopWidth: 1,
@@ -436,8 +437,8 @@ function BibleCard({ theme }: { theme: Theme }) {
 
   return (
     <>
-      <View ref={cardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.id === 'warm' ? 'rgba(255,253,248,0.72)' : theme.bgCardFaithGlass, overflow: 'hidden', borderTopWidth: 2, borderTopColor: 'rgba(212,134,10,0.55)' }]}>
-        <Ionicons name="book" size={130} color={theme.accentAmber} style={styles.cardWatermark} pointerEvents="none" />
+      <View ref={cardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.id === 'warm' ? 'rgba(255,253,248,0.72)' : theme.bgCardFaithGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderTopWidth: 2, borderTopColor: 'rgba(212,134,10,0.55)' }]}>
+        <CardWatermark name="book" color={theme.accentAmber} />
         <View style={[styles.cardLabelRow, { justifyContent: 'space-between' }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Ionicons name="book" size={12} color={theme.accentAmber} />
@@ -723,8 +724,8 @@ function PrayerCard({ theme }: { theme: Theme }) {
   // answered count is NOT shown on the card; it lives as a hero on the prayer screen instead.
   return (
     <Animated.View style={{ transform: [{ scale }] }}>
-      <View ref={cardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.id === 'warm' ? 'rgba(255,253,248,0.72)' : theme.bgCardFaithGlass, overflow: 'hidden', borderTopWidth: 2, borderTopColor: 'rgba(212,134,10,0.55)' }]}>
-        <MaterialCommunityIcons name="hand-heart" size={130} color={theme.accentAmber} style={styles.cardWatermark} pointerEvents="none" />
+      <View ref={cardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.id === 'warm' ? 'rgba(255,253,248,0.72)' : theme.bgCardFaithGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderTopWidth: 2, borderTopColor: 'rgba(212,134,10,0.55)' }]}>
+        <CardWatermark icon={<MaterialCommunityIcons name="hand-heart" size={130} color={theme.accentAmber} />} />
         <TouchableOpacity
           activeOpacity={0.9}
           onPress={openScreen}
@@ -789,8 +790,12 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: displaySize(27), fontFamily: Type.display, letterSpacing: DISPLAY_TRACKING, ...(DISPLAY_CAPS ? { textTransform: 'uppercase' as const } : {}) },
   // Faith cards carry a faint warm gold edge (a softer cousin of the verse card) instead of
   // the standard cool top border; this is now the faith identity, since the screen wash is gone.
-  card:          { borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 0.5, borderColor: 'rgba(212,134,10,0.22)', shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.18, shadowRadius: 8, elevation: 4 },
-  cardWatermark: { position: 'absolute', right: -24, bottom: -28, opacity: 0.10 },
+  // shadowColor/shadowOpacity are passed INLINE from the theme at each render site (theme.cardShadow is
+  // tinted per theme -- navy on Light, brown on Warm -- and hardcoding '#000' @ 0.18 here was the same
+  // drift Settings and the Home tips card had). Both cards also carried overflow:'hidden' to clip their
+  // corner watermark, which deleted this shadow outright (iOS masksToBounds); CardWatermark now clips
+  // itself, so the cards keep their shadow and the overflow is gone.
+  card:          { borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 0.5, borderColor: 'rgba(212,134,10,0.22)', shadowOffset: { width: 0, height: 3 }, shadowRadius: 8, elevation: 4 },
   cardLabelRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
   cardLabel:     { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold },
   bibleTitle:           { fontSize: 16, fontFamily: Type.uiSemibold },

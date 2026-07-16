@@ -19,6 +19,7 @@
 // borderTopWidth top border. Never put overflow:'hidden' on the card (kills the
 // shadow) -- the matched corner radii on the gradient handle the clipping.
 
+import React from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { View, ViewProps, ViewStyle } from 'react-native';
@@ -79,20 +80,29 @@ export function CardWash({
 // So the watermark clips ITSELF: its own absolutely-filled, rounded, overflow-hidden box. This box has no
 // shadow of its own, so masksToBounds costs nothing here. The card keeps its shadow. Same self-clipping
 // trick as ButtonShine and FabDome.
+// `icon` renders any OTHER icon set (Faith's cards use MaterialCommunityIcons) inside the same clip box:
+// pass the element, already sized/coloured, and it gets the standard corner placement + clipping. When
+// omitted, `name` draws an Ionicon -- the common case.
 export function CardWatermark({
   name,
   color,
+  icon,
   opacity = 0.10,
+  size = 130,
   radius = DEFAULT_RADIUS,
 }: {
-  name: any;
-  color: string;
+  name?: any;
+  color?: string;
+  icon?: React.ReactNode;
   opacity?: number;
+  size?: number;
   radius?: number;
 }) {
   return (
     <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: radius, overflow: 'hidden' }}>
-      <Ionicons name={name} size={130} color={color} style={{ position: 'absolute', right: -24, bottom: -28, opacity }} />
+      <View style={{ position: 'absolute', right: -24, bottom: -28, opacity }}>
+        {icon ?? <Ionicons name={name} size={size} color={color} />}
+      </View>
     </View>
   );
 }

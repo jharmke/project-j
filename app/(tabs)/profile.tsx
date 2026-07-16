@@ -549,17 +549,17 @@ export default function ProfileScreen() {
             <Text style={[styles.estimateNote, { color: theme.textSecondary }]}>Based on Mifflin-St Jeor formula - estimates only, not exact values.</Text>
             <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, fontStyle: 'italic', marginBottom: 10 }}>For informational purposes only. Not medical advice.</Text>
             <View style={styles.statsRow}>
-              <View style={[styles.statBox, { backgroundColor: theme.bgInset }]}>
+              <View style={[styles.statBox, { backgroundColor: theme.bgInset, borderWidth: 0.5, borderColor: theme.borderInput }]}>
                 <Text style={[styles.statVal, { color: theme.textPrimary }]}>{bmr}</Text>
                 <Text style={[styles.statLabel, { color: theme.textMuted }]}>BMR</Text>
                 <Text style={[styles.statSub, { color: theme.textMuted }]}>calories at rest</Text>
               </View>
-              <View style={[styles.statBox, { backgroundColor: theme.bgInset }]}>
+              <View style={[styles.statBox, { backgroundColor: theme.bgInset, borderWidth: 0.5, borderColor: theme.borderInput }]}>
                 <Text style={[styles.statVal, { color: theme.textPrimary }]}>{tdee}</Text>
                 <Text style={[styles.statLabel, { color: theme.textMuted }]}>TDEE</Text>
                 <Text style={[styles.statSub, { color: theme.textMuted }]}>maintenance</Text>
               </View>
-              <View style={[styles.statBox, { backgroundColor: theme.bgInset }]}>
+              <View style={[styles.statBox, { backgroundColor: theme.bgInset, borderWidth: 0.5, borderColor: theme.borderInput }]}>
                 <Text style={[styles.statVal, { color: theme.macroProtein }]}>{suggested}</Text>
                 <Text style={[styles.statLabel, { color: theme.textMuted }]}>Target</Text>
                 <Text style={[styles.statSub, { color: theme.textMuted }]}>{GOAL_LABELS[profile.weightGoal] || 'Goal based'}</Text>
@@ -674,7 +674,7 @@ export default function ProfileScreen() {
             const lbsToGo = Math.abs(currentWeight - gw);
             return (
               <View style={{ marginTop: 14 }}>
-                <View style={{ padding: 12, backgroundColor: theme.bgInset, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ padding: 12, backgroundColor: theme.bgInset, borderWidth: 0.5, borderColor: theme.borderInput, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <View>
                     <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 3 }}>Projected</Text>
                     <Text style={{ fontSize: 22, fontFamily: Type.num, letterSpacing: 1, color: theme.accentBlue }}>{projected}</Text>

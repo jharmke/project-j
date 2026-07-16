@@ -28,6 +28,92 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-16 **THE CARD SHADOWS WERE NEVER RENDERING. APP-WIDE. HALF-FIXED -- SEE NEXT UP.** Root cause:
+  a shadow and `overflow:'hidden'` on the SAME view. iOS masksToBounds clips the view's own shadow, so the
+  shadow silently does not exist at any opacity. `components/GradientCard.tsx` ALREADY carried the rule in
+  its header ("Never put overflow:'hidden' on the card (kills the shadow)") and it had been violated
+  everywhere. Consequence: since the visual refresh, NO Home/Log/Workout/Stats card has had a shadow, while
+  the whole design leans on "cards float on SHADOW not value-contrast" -- Justin spent weeks tuning ground,
+  glow, halftone and grain to buy depth that was being deleted. Also means every cardShadow/cardShadowOpacity
+  token was NEVER visually validated. FIXED: Settings (shadow -> a `sectionShadow` wrapper; the face keeps
+  overflow for the collapse clip) + all 13 HOME cards. 11 of those needed no wrapper at all -- their only
+  reason for overflow was the 130px corner watermark, so a new self-clipping `CardWatermark` (in
+  GradientCard, same trick as ButtonShine/FabDome) clips the icon and the card keeps its shadow. The 2
+  carousels (Sleep, Coach Insight tips) got the wrapper -- Justin's call, and correct: the shadow rides the
+  static parent, the carousel clips inside it. Coach tips card was ALSO on a hardcoded black @0.12 -> theme
+  token. Device-verified 5 themes: Light/Slate/Warm/Blush all read right. DARK CANNOT: its shadow is black
+  on a near-black page -- unfixable by any number, and unnecessary (its cards have real value contrast). If
+  Dark ever wants depth the tool is a light TOP rim, not a shadow. Warm/Blush cardShadowOpacity 0.18/0.16 ->
+  0.30 (cream-on-cream had no value edge). ALSO FIXED, same session: Log's water card, Stats' 4 cards,
+  Workout's REST DAY + SUPERSET group, Faith's Bible-and-Plans + Prayer cards, GratitudeStreakCard,
+  MembershipCard (Profile + Settings). NOT DONE: the modals + the stack screens, see NEXT UP.
+  >> TWO MORE WAYS A SHADOW GOES INVISIBLE, both found the same session: (a) Log's AI-estimator card set
+  shadowColor + shadowOpacity but NO shadowOffset/shadowRadius/elevation -- iOS then draws a zero-radius
+  shadow at zero offset, i.e. hidden exactly behind the card. It was styled fully inline and never inherited
+  those from styles.card. (b) A shadow with offset 0,0 (Faith's cards) is a HALO, not a lift -- it rings the
+  card and elevates nothing, which is why Today's Message still read flat after the fog was dialled out.
+  >> ROOT PATTERN -- and the reason this will happen again: EVERY card hand-rolls its own shadow (5 props,
+  copied per card, dozens of times). That is why we found FOUR different failure modes in one session:
+  hardcoded black, wrong opacity, missing offset/radius, clipped away. `components/GradientCard.tsx` is
+  the canonical card and even STATES the no-overflow rule in its header -- but of the 12 files that touch
+  it, nearly all import only `CardWash` and hand-roll the body. GradientCard's OWN shadow is hardcoded
+  '#000' @0.12, so migrating to it today would make cards WORSE. `components/IFCard.tsx` had already
+  diagnosed and correctly fixed this bug on its own (its comment: "rounded corners or cast a shadow, never
+  both"). The knowledge existed in the codebase twice and cards kept getting built broken anyway. Backlog
+  item filed: centralize the card shadow.
+- 2026-07-16 LIGHT: THE BRIGHT-GROUND FALLOUT. Brightening Light's ground (#e3e6ee -> #f2f3f7, see the
+  SURFACE PASS entry) fixed the pages and quietly erased everything sitting ON them, because the app leaned
+  on value contrast it no longer had. Two fixes: (1) `bgInput`/`bgInset` #f5f5fa -> **#e9ecf3**. Those are
+  ONE shared paint behind every text field, option row, stat tile and pace pill -- and #f5f5fa vs the
+  #f2f3f7 ground is the same colour to the eye, so all of them dissolved (worst at the TOP of a page, where
+  the bottom glow has faded and the ground is brightest). It was also BACKWARDS: an input is a WELL and must
+  read as carved INTO the page (darker); #f5f5fa was LIGHTER, which is what a raised object does. Every
+  other theme already had its inset darker than its ground -- Light was the outlier. (2) `borderInput`
+  0.12 -> **0.20**: with almost no fill difference left, the outline was carrying these boxes alone and at
+  12% black it could not. Profile's 3 estimate tiles + the Projected box had NO border at all (fill only) ->
+  given the standard 0.5 outline. Light only; the other 4 themes untouched.
+- 2026-07-16 Home weight card "LOG" button touched up (Justin gym-find): the NUMBER face (Type.num, built
+  for data values) was doing button-label duty in shouty caps with letterSpacing -- same straggler class as
+  Profile's save bar -> Interface bold, mixed-case "Log". Fill moved off `theme.bgSelected` (the SELECTION
+  token -- theme.tsx's own note says a button is not selected) onto the house tinted recipe + ButtonShine.
+  Dim/disabled state kept. Workout's inline "Add Exercise" got a NEUTRAL card shadow (0.7x opacity, tight
+  2/6 blur): tier-2 tinted buttons carry no shadow app-wide, but beside the molded View Summary at equal
+  height "one floats, one is glued down" read as inconsistency, not hierarchy (Justin). Deliberate exception
+  -- the ranking now comes from solid+accent-glow vs tinted+quiet-shadow, not depth vs none.
+- 2026-07-16 FAITH CARD FOG (Dark). Both faith cards (Home's FaithTodayCard + the Faith tab's Today's
+  Message) wore an amber halo at shadowOpacity **0.85** with offset 0,0 -- radiating evenly on all four
+  sides, so the card's edge dissolved instead of ending. Invisible-ish on the pale themes; on Dark a fog.
+  Worst on the Faith tab's card, which SKIPS the warm wash on Dark and so had only the halo to define it.
+  Diagnosis: the halo was doing two jobs (say "faith", draw the edge) and was bad at the second. Now 0.32
+  (in line with real card shadows) + a 1px amber border (rgba(212,134,10,0.45)) draws the edge on both.
+  Also fixed: ReadingPlansCard's 130px book watermark sat in a bare absoluteFill box with NO overflow and
+  NO radius -- it spilled straight past the rounded corner -> CardWatermark; its hardcoded black shadow ->
+  theme token.
+- 2026-07-16 SURFACE PASS (partial) + LIGHT GROUND BUG. Prayer/Bible/Plans/Devotional (amber glow) +
+  Settings (accent) converted off the old top-down gradient to the flat ground + BackgroundLayers. FOUND ON
+  THE WAY: **Light's `gradientEnd` was still the PRE-refresh grey #e3e6ee** while bgPrimary had been
+  brightened to #f2f3f7 -- and gradientEnd is the token the flat ground actually paints, so every Light
+  screen (all 6 tabs included) was painting the old grey. The two are meant to match. Card-dense screens hid
+  it; the sparse faith pages exposed it. Light `glowStrength` 0.60 -> 0.45 (tuned against the old grey; on
+  the brighter ground it drowned anything sitting on the page, not on a card). New `accentAmberBgOpaque`
+  token (the amber twin of accentBlueBgOpaque) for faith controls that sit ON the page inside the amber
+  glow: the Plans sort chips (selected was a 14% amber wash over amber = mud; unselected were literally
+  'transparent') and Devotional's "Reflect with Halo".
+- 2026-07-16 COACH VOICE PASS. The voice face was on HOME ONLY (6 lines). Now every surface where the coach
+  SPEAKS wears it: Sleep + Recovery coaches, Day/Weekly/Monthly Coach Insight, the EvR report (insight box +
+  each card's claim/insight/lever -- but NOT the proof, which is a number and stays on the data face), and
+  Otto + Halo's reply bubbles (the USER's bubbles stay interface -- that contrast is the point). All four
+  Coach Insight boxes dropped their italic to match Home's (and a fake italic on a face with no italic cut is
+  how the Fontshare bug bites).
+- 2026-07-16 ROUND FAB DOMES + fixes. All 10 circle FABs got the home-button dome (crown gloss -> soft dark
+  foot) via a new self-clipping `components/FabDome.tsx`; Halo's is hand-built in SVG from the same 4 stops
+  (keep in sync BY EYE). The "+" FAB accent DISAGREED app-wide: stats/journal/body-measurements were on
+  accentBlueRaw (near-fluorescent on Blush+Yellow, swallowing the white "+") vs accentBlue elsewhere -> all
+  accentBlue; body-measurements' 58px disc -> 56. Prayer's "+" wore the PAGE gold (#d4860a) next to Halo's
+  #e8a020 -> now imports HALO_GOLD like bible.tsx. Warm + Blush `tabBarInactive` were a light tan / pale rose
+  on their own pale bars (unreadable) -> each theme's textMuted, same root as the Slate hidden-icons fix.
+  Water custom-amount modal: 9px muted caps label -> a real 20px Clash accent title; flat tinted Add -> molded
+  PrimaryCTA with a dim/disabled state (it had none).
 - 2026-07-16 ROUND FAB DOME PASS -- all 10 circle FABs. New `components/FabDome.tsx` carries the home tab-bar
   button's recipe (crown gloss -> neutral middle -> soft dark foot) to the 8 "+" discs (Workout, Stats, Add
   Food, Workout Library, Bible auto-scroll, Prayer add, Journal new-entry, Body Measurements) + Otto. Halo is
@@ -366,12 +452,50 @@ are separate pre-submission checklists, NOT part of this menu.
   (which is always a sheet, so it uses ModalHeader at 20px not the 28px page title). Rules in the spec.
   >> STILL OPEN, see the dedicated items below: the SURFACE pass, the JOURNAL slide-up sheet, the VOICE
   pass, the molded-button rollout, and a short list of non-modal number-face stragglers.
+- [BUG, app-wide, CARDS DONE 2026-07-16 / MODALS + STACK SCREENS OPEN] **Card shadows clipped away by
+  overflow:'hidden'.** Full root cause + the other 2 failure modes are in the RECENTLY SHIPPED entry.
+  **DONE: every CARD on all 6 tabs**, plus Settings, GratitudeStreakCard and MembershipCard.
+  **STILL OPEN, in priority order:**
+    1. MODALS with a shadow + overflow on the same view (all HARDCODED black, none on theme tokens):
+       log.tsx jump-to-date (2293); workout.tsx Add/Edit Exercise + tag + Load Routine (2923 / 3034 / 3349 /
+       3462); workout-library.tsx x5 (3054 / 3273 / 3579 / 3753 / 3806); day-detail.tsx (385);
+       ai-meal-estimator.tsx (973); components/BodyMeasurementsCard.tsx picker (186).
+       LOWEST VALUE ON PURPOSE: a modal floats over a dim overlay, where a shadow does almost nothing.
+    2. STACK SCREENS -- NEVER CHECKED AT ALL. Only the 6 tabs + settings were swept. Unchecked files with
+       an `overflow: 'hidden'` somewhere in them: achievements, bible, body-measurement-log, challenges,
+       comparison-report, definitions, diagnostic-report-view, journal, mission, food-detail, plans,
+       recipe-log, report, sleep, support, whats-new, onboarding (x7). MOST of these will be innocent
+       (progress tracks, avatars, pills) -- the bug only exists where a SHADOW sits on the same view.
+    3. COMPONENT-FILE cards/modals not yet checked: AchievementToast, CustomFoodCreator, DaySummaryModal,
+       FeedbackModal, HRZoneModal, MeasureHowToModal, MetricDrilldownModal, NotificationPanel,
+       NutritionGearModal, NutrientDrilldownModal, RepeatMealModal, SummaryReadyModal, ToolkitSheet,
+       TooltipModal, VersePoolModal, WeightHistoryModal, SupporterFoil.
+  CHECKED AND INNOCENT (do not re-litigate): profile.tsx (its only overflow is the save bar's blur clip, no
+  shadow); HRZonesStatsCard (progress track); IFCard (already correctly wrappered); log.tsx mealRow (has no
+  shadow at all -- a separate design question, not this bug).
+  METHOD (proven): for each hit ask WHY the overflow is there. Only clipping a corner watermark -> use
+  `CardWatermark` and DELETE the overflow (no wrapper, no closing-tag surgery -- this covered 11 of Home's
+  13). Clipping something structural (carousel, collapse animation, a tint layer, a 2.5px edge strip that
+  cannot self-clip) -> move the shadow to a plain wrapper (`styles.sectionShadow` in settings.tsx, or
+  IFCard's `s.cardShadow`) and leave overflow on the face.
+  >> SEARCH PROPERLY. A single-line regex (shadow + overflow on the same line) MISSES the StyleSheet cases
+  and multi-line style objects -- it missed GratitudeStreakCard and Faith entirely, and Justin caught both.
+  Also: grepping a SCREEN is not enough; cards live in component files that the screen only renders
+  (Gratitude was the miss). List every `overflow: 'hidden'` (137 hits / 66 files) and check each for a shadow.
+  >> DARK IS NOT FIXABLE and does not need to be -- black shadow on a near-black page. Do not "fix" it by
+  raising cardShadowOpacity; nothing will happen. If Dark ever wants depth the tool is a light TOP rim.
 - [NOW] [VISUAL REFRESH -> SURFACE PASS] The last structural piece of the refresh. **22 stack screens
   still paint the OLD top-down gradient** while the 6 tabs are lit from BELOW (flat ground + bottom glow +
   halftone), so the app changes its lighting every time you leave a tab. Swap each screen's LinearGradient
   wrapper for the flat ground + BackgroundLayers, exactly as the tabs got. Mechanical + low-risk (proven 6x
   on the tabs); do it in batches. ALSO in this pass: the Profile **Supporter card** is translucent so the
   page glow/halftone shows straight through it -- needs an opaque fill like the other cards.
+  >> PROGRESS 2026-07-16: DONE = prayer, bible, plans, devotional (amber) + settings (accent). The real
+  count of stack screens still on the old `gradientStart -> gradientEnd` top-down gradient is **6**, not 22:
+  body-measurements, body-measurement-log, journal, achievements, sleep, synced-workouts. (Onboarding's 7
+  screens also use it and were left alone deliberately -- it is a separate flow; decide before touching.)
+  The conversion is 2 lines: `gradientStart` -> `gradientEnd` (same colour twice = the flat ground) + a
+  `<BackgroundLayers />` line + the import.
   >> FAITH SCREENS PASS AMBER (confirmed 2026-07-15): the Faith TAB already does
   `<BackgroundLayers glow={theme.accentAmber} />`, and prayer/plans/devotional/bible/journal are ALL still
   on the old LinearGradient -- they have no glow to be the wrong colour yet. When this pass reaches them,
@@ -397,6 +521,18 @@ are separate pre-submission checklists, NOT part of this menu.
   Same class as the PrimaryCTA fix -> button labels go to Interface, the REST DAY heading to Clash. Also
   optional: two info-modal titles (CalorieFloor, MeasureHowTo) sit on bold INTERFACE rather than Clash --
   not a bug (no number-face, no caps, no black), Justin's call whether to unify them.
+- [found 2026-07-16] **Centralize the card shadow (stop the drift at its source).** Purely preventive --
+  ZERO visual change -- so it is ranked below anything a user can see. But it is the thing that ends the
+  bug class: every card hand-rolls 5 shadow props, and that produced FOUR different failures in one day
+  (hardcoded black x3, wrong opacity, missing offset/radius, clipped by overflow). Smallest useful version:
+  export ONE `cardShadow(theme)` from GradientCard and have every hand-rolled card spread it -- then "make
+  cards deeper" is one number, not a 40-site hunt. The FULL fix is migrating cards to `<GradientCard>`, but
+  that needs GradientCard's OWN hardcoded '#000' @0.12 shadow fixed first or every card gets worse, and
+  each card passes different props, so it is a real refactor. NOTE: this does NOT prevent someone re-adding
+  overflow:'hidden'; what helps there is that `CardWatermark` now removes the reason anyone did.
+- [QUICK WIN] [found 2026-07-16] **`bgInset` tiles with no border.** Profile's estimate tiles + Projected
+  box were fill-only (no outline) and vanished once Light's ground brightened; both fixed. The same
+  "bgInset fill, no border" pattern almost certainly exists on other screens -- sweep for it.
 - [QUICK WIN] [found 2026-07-15] **Progress-bar treatment pass.** The bars (calories, water, steps, macros,
   etc.) are flat solid-fill on a flat track -- plain. Give the fill a subtle gradient and/or a soft top sheen
   (Whoop/Oura style), maybe a faint glow at the leading edge. Own mini-treatment, part of the visual refresh

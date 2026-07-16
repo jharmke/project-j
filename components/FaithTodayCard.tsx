@@ -347,13 +347,16 @@ export default function FaithTodayCard({ verse, theme }: Props) {
 }
 
 const styles = StyleSheet.create({
-  // The gold halo. Was shadowOpacity 0.85 -- a FOG, not a glow: offset 0,0 means it radiates evenly on all
-  // four sides, so at 0.85 the card's edge dissolved into haze instead of ending. Invisible-ish on the pale
-  // themes, but on DARK an 85% amber cloud around a dark translucent card is why this card read "fuzzy"
-  // while the Calories card under it looked crisp. 0.32 is in line with the real card shadows (0.30).
-  // The halo was doing TWO jobs -- say "faith", and draw the edge -- and it was bad at the second. The
-  // border below now draws the edge; the glow only has to carry the identity.
-  glow: { borderRadius: 14, marginBottom: 12, shadowColor: '#d4860a', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.32, shadowRadius: 8, elevation: 8 },
+  // The gold shadow. THREE jobs were tangled here, and it only does one now:
+  //  - say "faith"      -> still this shadow's job (it stays amber, not the theme's neutral cardShadow).
+  //  - draw the EDGE    -> now the amber border below. Was the halo, which was bad at it: at opacity 0.85
+  //                        with offset 0,0 it radiated evenly on all four sides and the card's edge
+  //                        dissolved into haze rather than ending (a fog on Dark, where this card is a
+  //                        dark translucent fill; that is the "fuzzy" Justin caught).
+  //  - LIFT the card    -> needs a DOWNWARD offset. 0,0 was a ring, and a ring lifts nothing, which is why
+  //                        the card still read flat even after the fog was dialled out. Now 0,4.
+  // Opacity 0.35 is in line with the real card shadows (0.30); it reads as lift, not weather.
+  glow: { borderRadius: 14, marginBottom: 12, shadowColor: '#d4860a', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 8 },
   clip: { borderRadius: 14, borderWidth: 1, overflow: 'hidden' },
   page: { width: '100%', overflow: 'hidden' },
   watermark: { position: 'absolute', right: -24, bottom: -28, opacity: 0.10 },

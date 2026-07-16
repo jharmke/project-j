@@ -33,6 +33,12 @@ export default function MembershipCard() {
   const dateLine = periodEnd ? `${details?.willRenew ? 'Renews' : 'Ends'} ${periodEnd}` : null;
 
   return (
+    // The shadow rides a WRAPPER. The card must clip (the tint layer and the 2.5px top edge strip both run
+    // to the corners and would square them off), and a view that clips cannot cast a shadow -- iOS
+    // masksToBounds deletes it. So this card had a shadow that never rendered. Same rule as IFCard, which
+    // already solved it, and PrimaryCTA's glow wrapper. Theme tokens too: the old '#000' @0.10 was
+    // invisible on Dark and the wrong hue on Light (whose shadow is navy).
+    <View style={{ borderRadius: 14, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 2 }, shadowRadius: 8, elevation: 3 }}>
     <TouchableOpacity
       activeOpacity={0.85}
       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/support' as any); }}
@@ -53,7 +59,6 @@ export default function MembershipCard() {
         borderWidth: 1, borderColor: isSupporter ? GOLD_EDGE : theme.accentBlueRaw + '55',
         borderRadius: 14, paddingVertical: 14, paddingHorizontal: 14,
         overflow: 'hidden',
-        shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 3,
       }}
     >
       {/* The tint, now layered over the opaque bgCard base above rather than BEING the fill. First child so
@@ -120,6 +125,7 @@ export default function MembershipCard() {
 
       <Ionicons name="chevron-forward" size={16} color={isSupporter ? theme.textMuted : theme.accentBlue} />
     </TouchableOpacity>
+    </View>
   );
 }
 

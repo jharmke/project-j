@@ -22,6 +22,7 @@ import HeaderIconButton from '../../components/HeaderIconButton';
 import PrimaryCTA from '../../components/PrimaryCTA';
 import ButtonShine from '../../components/ButtonShine';
 import FabDome from '../../components/FabDome';
+import { CardWatermark } from '../../components/GradientCard';
 import { CardPeriod, ChartType, DATA_KEY_CATEGORIES, DATA_KEY_META, DataKey, DEFAULT_STATS_CARDS, StatsCard, availableChartTypes, generateCardId, loadStatsCards, saveStatsCards } from '../../statsCardRegistry';
 import HRZonesStatsCard from '../../components/HRZonesStatsCard';
 import BodyMeasurementsCard from '../../components/BodyMeasurementsCard';
@@ -2067,7 +2068,9 @@ export default function StatsScreen() {
             );
             if (section.systemKey === 'challenges') return (
               <CollapsibleSection key={section.id} label={section.label} subtitle="Beat a period or set a goal" defaultOpen={isFirst} theme={theme} first={isFirst}>
-                <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden' }]}>
+                {/* No overflow:'hidden' here -- nothing on this card bleeds, so it was doing nothing except
+                    clipping the card's own shadow away (iOS masksToBounds). */}
+                <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: challengeActive && challengeProg ? 4 : 8 }}>
                     <Text style={[styles.cardLabel, { color: theme.textMuted }]}>
                       {challengeActive && challengeProg
@@ -2185,8 +2188,8 @@ export default function StatsScreen() {
               <CollapsibleSection label={section.label} subtitle="Custom Reports, Summaries, Comparison and Effort vs. Results" defaultOpen={isFirst} theme={theme} first={isFirst} forceOpen={reportsSectionForceOpen}>
                 {/* Custom Reports (Pro; beta-open to all testers) -- build-your-own report */}
                 <TouchableOpacity activeOpacity={0.8} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push(reportsLocked ? '/support' : '/reports'); }}
-                  style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden', marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 13 }]}>
-                  <Ionicons name="documents" size={120} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -22, bottom: -26, opacity: 0.10 }} />
+                  style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 13 }]}>
+                  <CardWatermark name="documents" color={theme.accentBlueRaw} size={120} />
                   <View style={{ width: 42, height: 42, borderRadius: 11, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, alignItems: 'center', justifyContent: 'center' }}>
                     <Ionicons name="document-text" size={22} color={theme.accentBlue} />
                   </View>
@@ -2202,8 +2205,8 @@ export default function StatsScreen() {
                   </View>
                   <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
                 </TouchableOpacity>
-                <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden', marginTop: 12 }]}>
-                  {evrCardOpen && <Ionicons name="analytics" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />}
+                <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginTop: 12 }]}>
+                  {evrCardOpen && <CardWatermark name="analytics" color={theme.accentBlueRaw} />}
                   <TouchableOpacity
                     activeOpacity={0.7}
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEvrCardOpen(o => !o); }}
@@ -2237,8 +2240,8 @@ export default function StatsScreen() {
                   )}
                 </View>
                 {/* ── Comparison Report (launch card) ── */}
-                <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden', marginTop: 12 }]}>
-                  {comparisonCardOpen && <Ionicons name="swap-horizontal" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />}
+                <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginTop: 12 }]}>
+                  {comparisonCardOpen && <CardWatermark name="swap-horizontal" color={theme.accentBlueRaw} />}
                   <TouchableOpacity
                     activeOpacity={0.7}
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setComparisonCardOpen(o => !o); }}

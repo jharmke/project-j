@@ -364,16 +364,27 @@ const light: Theme = {
   bgCardFaithGlass: 'rgba(255,255,255,0.82)',
   bgTileFaith:      'rgba(212,134,10,0.06)',
   bgTileFaithStrong: 'rgba(212,134,10,0.11)',
-  bgInput:          '#f5f5fa',
+  // #f5f5fa -> #e9ecf3. Two problems, one cause. (1) INVISIBLE: the ground (gradientEnd) was brightened to
+  // #f2f3f7 in the Light refresh and #f5f5fa is the same colour to the eye -- three shades apart -- so every
+  // field, option row, stat tile and pace pill dissolved into the page (worst at the TOP, where the bottom
+  // glow has faded out and the ground is at its brightest). It only worked back when the ground was the old
+  // grey #e3e6ee. (2) BACKWARDS: an input is a WELL -- it should read as carved INTO the page, i.e. DARKER
+  // than it. #f5f5fa was LIGHTER than the ground, which is what a RAISED object does. Every other theme
+  // already has its inset darker than its ground; Light was the outlier.
+  bgInput:          '#e9ecf3',
   bgProgressTrack:  '#ccd2e2',
   bgSheet:          '#ffffff',
-  bgInset:          '#f5f5fa',
+  // Same change + same reason as bgInput above (they were the same value and are the same idea: a recess).
+  bgInset:          '#e9ecf3',
   bgEditCard:       '#ffffff',
 
   borderCard:       'rgba(0,0,0,0.10)',
   borderCardTop:    'rgba(0,0,0,0.16)',
   borderCardVerse:  'rgba(212,134,10,0.65)',
-  borderInput:      'rgba(0,0,0,0.12)',
+  // 0.12 -> 0.20. With the ground brightened to #f2f3f7, these boxes had almost no fill difference to lean
+  // on, so the outline was carrying them alone -- and at 12% black it could not. Deepening the fill
+  // (bgInput/bgInset above) made them visible; this makes them CRISP rather than faint suggestions.
+  borderInput:      'rgba(0,0,0,0.20)',
   borderSubtle:     'rgba(0,0,0,0.07)',
   borderSheet:      'rgba(0,0,0,0.10)',
   borderInset:      'rgba(0,0,0,0.08)',

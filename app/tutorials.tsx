@@ -11,6 +11,7 @@ import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 import { Type } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import BackgroundLayers from '../components/BackgroundLayers';
 
 const TAB_FILTERS = ['All', 'Home', 'Nutrition', 'Workout', 'Stats', 'Faith', 'Profile'] as const;
 type TabFilter = typeof TAB_FILTERS[number];
@@ -42,6 +43,11 @@ function TutorialCard({ tutorial, theme, onStart }: { tutorial: Tutorial; theme:
         padding: 16,
         flexDirection: 'row',
         alignItems: 'center',
+        shadowColor: theme.cardShadow,
+        shadowOpacity: theme.cardShadowOpacity,
+        shadowOffset: { width: 0, height: 4 },
+        shadowRadius: 12,
+        elevation: 6,
       }}
     >
       <View style={{
@@ -109,6 +115,7 @@ export default function TutorialsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
+      <BackgroundLayers />
       <ScreenHeader title="Guided Tutorials" subRow={
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
           <View style={{ flexDirection: 'row', gap: 8 }}>

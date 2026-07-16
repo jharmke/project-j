@@ -9,6 +9,7 @@ import { TOOLTIP_REGISTRY, TooltipDefinition } from '../tooltipRegistry';
 import { useTheme } from '../theme';
 import { Type } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import BackgroundLayers from '../components/BackgroundLayers';
 
 const CATEGORIES = ['All', 'Nutrition', 'Fitness', 'Sleep & Recovery', 'Faith', 'Reports', 'Habits'] as const;
 
@@ -16,6 +17,9 @@ function DefinitionCard({ def, theme }: { def: TooltipDefinition; theme: any }) 
   const [expanded, setExpanded] = useState(false);
 
   return (
+    // Shadow on a wrapper: the card clips (overflow keeps the expanded body inside its rounded corners) and
+    // a view that clips cannot cast a shadow -- iOS masksToBounds eats it.
+    <View style={{ borderRadius: 14, marginBottom: 10, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
     <TouchableOpacity
       onPress={() => setExpanded(e => !e)}
       activeOpacity={0.8}
@@ -25,7 +29,6 @@ function DefinitionCard({ def, theme }: { def: TooltipDefinition; theme: any }) 
         borderColor: theme.borderCard,
         borderTopColor: theme.borderCardTop,
         borderRadius: 14,
-        marginBottom: 10,
         overflow: 'hidden',
       }}
     >
@@ -83,6 +86,7 @@ function DefinitionCard({ def, theme }: { def: TooltipDefinition; theme: any }) 
         </View>
       )}
     </TouchableOpacity>
+    </View>
   );
 }
 
@@ -101,6 +105,7 @@ export default function DefinitionsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
+      <BackgroundLayers />
       {/* Header */}
       {/* The category pills ride in the header's subRow -- they belong to the header, not the list. */}
       <ScreenHeader title="Definitions" subRow={

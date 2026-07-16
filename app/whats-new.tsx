@@ -10,6 +10,7 @@ import { useTheme } from '../theme';
 import { WHATS_NEW_RELEASES } from '../data/whatsNew';
 import { Type, numLine } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import BackgroundLayers from '../components/BackgroundLayers';
 
 // What's New / release notes page. Mirrors the Mission page look (clean cards, big hero title).
 // Reached permanently from Settings > About, and once per release from an Otto hub notification.
@@ -24,6 +25,7 @@ export default function WhatsNewScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bgPrimary }}>
+      <BackgroundLayers />
       <ScreenHeader title={"What's New"} />
       
       <ScrollView

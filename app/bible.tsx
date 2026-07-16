@@ -841,7 +841,7 @@ export default function BibleScreen() {
             </TouchableOpacity>
           );
         })}
-        <Text style={[styles.partialNote, { color: theme.textDim }]}>King James Version (KJV)</Text>
+        <Text style={[styles.partialNote, { color: theme.textMuted }]}>King James Version (KJV)</Text>
       </Reanimated.ScrollView>
 
       {/* FAB backdrop */}

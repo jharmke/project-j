@@ -21,6 +21,8 @@ import { computeAdaptiveTdee, applyAdaptiveTarget, type AdaptiveTdeeResult } fro
 import { clearNotification } from '../utils/notifications';
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import BackgroundLayers from '../components/BackgroundLayers';
+import PrimaryCTA from '../components/PrimaryCTA';
 
 const DISCLAIMER_KEY = 'pj_adaptive_tdee_disclaimer_seen';
 
@@ -79,6 +81,7 @@ export default function AdaptiveTargetScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bgPrimary }} edges={['top']}>
+      <BackgroundLayers />
       {/* SafeAreaView edges={['top']} already paid the inset. */}
       <ScreenHeader title="Your Target" topInset={false} right={<TooltipIcon tooltipKey="adaptive_tdee" size={20} />} />
 
@@ -99,7 +102,7 @@ export default function AdaptiveTargetScreen() {
               To keep matching your goal pace, your target should shift a bit {dir}.
             </Text>
 
-            <View style={[styles.compareCard, { backgroundColor: theme.bgCard, borderColor: theme.borderCard }]}>
+            <View style={[styles.compareCard, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }]}>
               <View style={styles.compareCol}>
                 <Text style={[styles.compareLabel, { color: theme.textMuted }]}>NOW</Text>
                 <Text style={[styles.compareValMuted, { color: theme.textSecondary }]}>{result!.currentTarget}</Text>
@@ -124,7 +127,7 @@ export default function AdaptiveTargetScreen() {
               </Text>
             </View>
 
-            <Text style={[styles.micro, { color: theme.textDim }]}>For informational purposes only. Not medical advice.</Text>
+            <Text style={[styles.micro, { color: theme.textMuted }]}>For informational purposes only. Not medical advice.</Text>
 
             <Pressable onPress={accept} style={({ pressed }) => [styles.primaryBtn, { backgroundColor: theme.accentBlue, opacity: pressed ? 0.85 : 1 }]}>
               <Text style={styles.primaryText}>Update target to {result!.suggestedTarget}</Text>
@@ -148,10 +151,8 @@ export default function AdaptiveTargetScreen() {
                 ? 'We need a few more weigh-ins and logged days before we can fine-tune your target from your real trend. Keep logging and weighing in.'
                 : 'Your current target still matches your real burn and goal pace. Nothing to change right now.'}
             </Text>
-            <Text style={[styles.micro, { color: theme.textDim }]}>For informational purposes only. Not medical advice.</Text>
-            <Pressable onPress={notNow} style={({ pressed }) => [styles.primaryBtn, { backgroundColor: theme.accentBlue, opacity: pressed ? 0.85 : 1 }]}>
-              <Text style={styles.primaryText}>Got it</Text>
-            </Pressable>
+            <Text style={[styles.micro, { color: theme.textMuted }]}>For informational purposes only. Not medical advice.</Text>
+            <PrimaryCTA label="Got it" onPress={notNow} faceStyle={{ borderRadius: 12, paddingVertical: 16 }} />
           </>
         )}
       </ScrollView>
@@ -167,9 +168,7 @@ export default function AdaptiveTargetScreen() {
               and it's an estimate, not a prescription. It only ever changes your target if you tap Accept.
               For informational purposes only. Not medical advice.
             </Text>
-            <Pressable onPress={dismissDisclaimer} style={({ pressed }) => [styles.primaryBtn, { backgroundColor: theme.accentBlue, marginTop: 4, opacity: pressed ? 0.85 : 1 }]}>
-              <Text style={styles.primaryText}>Got it</Text>
-            </Pressable>
+            <PrimaryCTA label="Got it" onPress={dismissDisclaimer} wrapperStyle={{ marginTop: 4 }} faceStyle={{ borderRadius: 12, paddingVertical: 16 }} />
           </View>
         </View>
       </Modal>

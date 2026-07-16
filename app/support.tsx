@@ -15,6 +15,7 @@ import { FoilChip, FoilEdge, GOLD_BASE, GOLD_DEEP, GOLD_EDGE, GOLD_ENGRAVE, GOLD
 import { useMembership } from '../MembershipContext';
 import { Type, numLine } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import BackgroundLayers from '../components/BackgroundLayers';
 
 // ─── Support the Mission (the reframed paywall) ──────────────────────────────
 // Copy locked in SPEC_monetization.md (DECISIONS #4). This renders the FREE-user
@@ -168,6 +169,7 @@ export default function SupportScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bgPrimary }}>
+      <BackgroundLayers />
       <ScreenHeader title={"Support the Mission"} />
       
       <ScrollView
@@ -179,6 +181,7 @@ export default function SupportScreen() {
             the two "mission" surfaces read as a family. Was amber-washed with amber text: amber is the
             app's WARNING color, so the page's most heartfelt card was painted in caution paint, and it
             fought both the accent and the gold. Foil edge + clean card + accent emphasis instead. */}
+        <View style={[styles.cardShadow, { shadowColor: t.cardShadow, shadowOpacity: t.cardShadowOpacity }]}>
         <View style={[styles.missionCard, { backgroundColor: t.bgCard, borderColor: GOLD_EDGE }]}>
           <LinearGradient
             colors={[GOLD_DEEP, GOLD_HI, GOLD_BASE]}
@@ -201,6 +204,7 @@ export default function SupportScreen() {
             <Text style={emph}>a little support</Text> keeps it alive and moving forward.
           </Text>
           <Text style={[styles.missionClose, { color: t.accentBlue, textAlign: 'left' }]}>Either way, thank you for being part of this.</Text>
+        </View>
         </View>
 
         {/* SUPPORTER STATE: the membership card. Replaces the whole pitch -- no price boxes, no perks
@@ -421,9 +425,9 @@ export default function SupportScreen() {
         >
           {busy === 'restore'
             ? <ActivityIndicator size="small" color={t.accentBlue} />
-            : <Text style={[styles.restore, { color: t.accentBlue }]}>Restore Purchases</Text>}
+            : <Text style={[styles.restore, { color: t.textSecondary }]}>Restore Purchases</Text>}
         </TouchableOpacity>
-        <Text style={[styles.legal, { color: t.textDim }]}>Payments are handled by the App Store. Cancel anytime in Settings.</Text>
+        <Text style={[styles.legal, { color: t.textMuted }]}>Payments are handled by the App Store. Cancel anytime in Settings.</Text>
       </ScrollView>
     </View>
   );

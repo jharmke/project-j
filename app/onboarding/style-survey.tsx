@@ -6,14 +6,21 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { THEMES } from '../../theme';
+import { THEMES, mix } from '../../theme';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { isOnboardingPreview } from '../../utils/onboardingPreview';
 import { Type } from '../../typography';
+import BackgroundLayers from '../../components/BackgroundLayers';
+import PrimaryCTA from '../../components/PrimaryCTA';
+import ButtonShine from '../../components/ButtonShine';
+import { BlurView } from 'expo-blur';
 
 const theme = THEMES['light'];
+// Opaque accent tint for a SELECTED row. theme.accentBlueBgOpaque is still its '#000000' placeholder in a
+// STATIC theme -- only the provider composes it -- so it cannot be used on the onboarding screens.
+const ACCENT_SELECTED = mix(theme.accentBlueRaw, theme.bgInput, 0.16);
 
 const QUESTIONS = [
   {
@@ -63,6 +70,21 @@ const QUESTIONS = [
   },
 ];
 
+// The answers are SHUFFLED per question, once per mount. They used to render in points order every time --
+// grace/feel first, numbers/attack last -- so the third option was always the discipline answer and the
+// survey telegraphed its own scoring. By question three you stop answering honestly and start picking a
+// column, and an instrument that reveals its key measures nothing. Shuffled per question (not globally) so
+// each question's order is independent, and once per mount so the options never move under your thumb.
+// Seeded off nothing but Math.random: this runs at mount, never during a render pass.
+function shuffle<T>(arr: T[]): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
 function scoreToMode(score: number): 'mindful' | 'balanced' | 'discipline' {
   if (score <= 8)  return 'mindful';
   if (score <= 12) return 'balanced';
@@ -72,6 +94,9 @@ function scoreToMode(score: number): 'mindful' | 'balanced' | 'discipline' {
 export default function StyleSurveyScreen() {
   const insets = useSafeAreaInsets();
   const [answers, setAnswers] = useState<Record<string, number>>({});
+  // Shuffled ONCE per mount. In a ref, not in render: reshuffling on every keystroke/state change would
+  // move the options under the user's thumb mid-tap.
+  const questions = useRef(QUESTIONS.map(q => ({ ...q, answers: shuffle(q.answers) }))).current;
   const scaleAnims = useRef(
     QUESTIONS.map(() => [
       new Animated.Value(1),
@@ -82,7 +107,7 @@ export default function StyleSurveyScreen() {
 
   const handleSelect = (qIdx: number, aIdx: number, points: number) => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-    setAnswers(prev => ({ ...prev, [QUESTIONS[qIdx].id]: points }));
+    setAnswers(prev => ({ ...prev, [questions[qIdx].id]: points }));
     // spring the selected answer
     const anim = scaleAnims[qIdx][aIdx];
     Animated.sequence([
@@ -91,7 +116,7 @@ export default function StyleSurveyScreen() {
     ]).start();
   };
 
-  const allAnswered = isOnboardingPreview() || QUESTIONS.every(q => answers[q.id] !== undefined);
+  const allAnswered = isOnboardingPreview() || questions.every(q => answers[q.id] !== undefined);
   const totalScore  = Object.values(answers).reduce((a, b) => a + b, 0);
 
   const handleContinue = () => {
@@ -103,7 +128,8 @@ export default function StyleSurveyScreen() {
   };
 
   return (
-    <LinearGradient colors={['#c4c8e8', '#dadcef', '#f0f0f5']} style={{ flex: 1 }}>
+    <LinearGradient colors={[theme.gradientEnd, theme.gradientEnd]} style={{ flex: 1 }}>
+      <BackgroundLayers glow={theme.accentBlueRaw} />
 
       {/* Progress bar */}
       <View style={[styles.progressBar, { paddingTop: insets.top + 12 }]}>
@@ -123,13 +149,14 @@ export default function StyleSurveyScreen() {
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.screenLabel, { color: theme.textMuted }]}>STEP 3 OF 8</Text>
+        <Text style={[styles.screenLabel, { color: theme.textMuted }]}>STEP 2 OF 7</Text>
         <Text style={[styles.title, { color: theme.accentBlueRaw }]}>Let's find your style</Text>
-        <Text style={[styles.subtitle, { color: theme.textMuted }]}>
-          Four questions. No wrong answers.
+        {/* "Five", not "Four" -- there are five questions, and this was the first thing the screen told you. */}
+        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+          Five questions. No wrong answers.
         </Text>
 
-        {QUESTIONS.map((q, qIdx) => {
+        {questions.map((q, qIdx) => {
           const selected = answers[q.id];
           return (
             <View key={q.id} style={styles.questionBlock}>
@@ -147,11 +174,16 @@ export default function StyleSurveyScreen() {
                         style={[
                           styles.answerBtn,
                           {
-                            backgroundColor: isSelected ? theme.accentBlueBg  : theme.bgInput,
+                            // OPAQUE when selected. accentBlueBg is a ~10% tint, and this page now glows
+                            // accent -- accent over accent is the mud we hit everywhere today, which is why
+                            // the selected answer "blended in". The radio dot itself is fine and already
+                            // established (Profile's Activity Level + Training Frequency rows use it).
+                            backgroundColor: isSelected ? ACCENT_SELECTED : theme.bgInput,
                             borderColor:     isSelected ? theme.accentBlueBorder : theme.borderInput,
                           },
                         ]}
                       >
+                        {isSelected ? <ButtonShine radius={10} /> : null}
                         <View style={[
                           styles.answerDot,
                           {
@@ -175,8 +207,11 @@ export default function StyleSurveyScreen() {
         })}
       </ScrollView>
 
-      {/* Continue footer */}
-      <View style={[styles.footer, { paddingBottom: insets.bottom + 16, borderTopColor: theme.borderCard }]}>
+      {/* Continue footer. Frosted chrome (blur + chromeFill), like the tab bar -- it painted an opaque slab
+          of gradientEnd, which was invisible only while the page was that same flat colour. */}
+      <View style={[styles.footer, { paddingBottom: insets.bottom + 16, borderTopColor: theme.borderCard, overflow: 'hidden' }]}>
+        <BlurView intensity={28} tint="light" style={StyleSheet.absoluteFill} pointerEvents="none" />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.chromeFill }]} pointerEvents="none" />
         {allAnswered && (
           <Text style={[styles.footerHint, { color: theme.textMuted }]}>
             {scoreToMode(totalScore) === 'mindful'    ? 'You lead with grace. That\'s a strength.' :
@@ -184,22 +219,13 @@ export default function StyleSurveyScreen() {
                                                         'You\'re built for results. Let\'s go.'}
           </Text>
         )}
-        <TouchableOpacity
-          style={[
-            styles.continueBtn,
-            {
-              backgroundColor: allAnswered ? theme.accentBlueRaw : theme.bgInput,
-              borderWidth:     allAnswered ? 0 : 0.5,
-              borderColor:     theme.borderInput,
-            }
-          ]}
-          onPress={handleContinue}
+        <PrimaryCTA
+          label="See My Style"
+          fill={theme.accentBlueRaw}
           disabled={!allAnswered}
-        >
-          <Text style={[styles.continueBtnText, { color: allAnswered ? '#ffffff' : theme.textDim }]}>
-            SEE MY STYLE
-          </Text>
-        </TouchableOpacity>
+          faceStyle={{ borderRadius: 14, paddingVertical: 18 }}
+          onPress={handleContinue}
+        />
       </View>
 
     </LinearGradient>
@@ -213,18 +239,17 @@ const styles = StyleSheet.create({
   backBtn:        { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   content:        { padding: 24, paddingTop: 16 },
   screenLabel:    { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 },
-  title:          { fontSize: 36, fontFamily: Type.display, letterSpacing: 0.3, marginBottom: 6,
-                    textShadowColor: 'rgba(0,0,0,0.12)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
-  subtitle:       { fontSize: 13, fontFamily: Type.ui, lineHeight: 20, marginBottom: 28 },
+  // No textShadow -- a drop shadow on a display title is a trick nothing else in the app uses.
+  title:          { fontSize: 36, fontFamily: Type.display, letterSpacing: 0.3, marginBottom: 6 },
+  // VOICE: this is the app talking, not a label. See the fuller note in profile-setup.
+  subtitle:       { fontSize: 15, fontFamily: Type.voice, lineHeight: 22, marginBottom: 28 },
   questionBlock:  { marginBottom: 28 },
   questionText:   { fontSize: 15, fontFamily: Type.uiSemibold, lineHeight: 22, marginBottom: 12 },
   answersCol:     { gap: 8 },
-  answerBtn:      { flexDirection: 'row', alignItems: 'center', borderWidth: 0.5, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 13, gap: 12,
-                    shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 },
+  // No shadow: these are selectable rows, not floating cards. Every one of them hovered.
+  answerBtn:      { flexDirection: 'row', alignItems: 'center', borderWidth: 0.5, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 13, gap: 12 },
   answerDot:      { width: 16, height: 16, borderRadius: 8, borderWidth: 1.5 },
   answerText:     { fontSize: 14, fontFamily: Type.uiMedium, flex: 1 },
-  footer:         { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 24, paddingTop: 12, borderTopWidth: 0.5, backgroundColor: theme.gradientEnd },
-  footerHint:     { fontSize: 12, fontFamily: Type.ui, textAlign: 'center', marginBottom: 10, fontStyle: 'italic' },
-  continueBtn:    { borderRadius: 14, paddingVertical: 18, alignItems: 'center' },
-  continueBtnText:{ fontSize: 18, fontFamily: Type.uiBold, letterSpacing: 1 },
+  footer:         { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 24, paddingTop: 12, borderTopWidth: 0.5 },
+  footerHint:     { fontSize: 12, fontFamily: Type.voice, textAlign: 'center', marginBottom: 10 },
 });

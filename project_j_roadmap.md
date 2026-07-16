@@ -28,6 +28,25 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-16 **Onboarding screen 3 (Your Style) + the frosted top bar on steps 1-3.** Ground + glow, frosted
+  footer, PrimaryCTA mixed case, opaque+shine selected states (the 3 mode cards keep their OWN colours),
+  9 lifestyle/training boxes bumped 12/10 -> 13/11, macro ratios colour-coded P/C/F, pace pills out of a
+  hidden horizontal scroller into a 3x3 grid, step relabeled 4-of-8 -> 3-of-7, every dim label off textDim,
+  section names 9px/ls3 -> 11px/ls2 (they dissolved into the page when scrolled).
+  >> **THE PROJECTION GRAPH WAS LYING.** The engine is a flat deficit -- a STRAIGHT line -- and the chart
+  drew an ease-out bezier: a plunge flattening into a plateau the math never predicted. Rebuilt as THE FAN:
+  every pace drawn from the same origin to the same goal weight, alternatives as hairlines, yours solid, so
+  slope = pace and the x-axis is pinned to the gentlest pace's clock. Dead space became the trade-off itself.
+  Weight gridlines + dated x labels; NO vertical rules (you read a VALUE off a weight rule, only a POSITION
+  off a time one -- the label already gives it, the rules were furniture). Goal date is now the card's
+  HEADER with a rule under it: as loose SVG text it read as floating because it WAS floating, and every
+  in-plot position collided with either a gridline, "Today", or a tick.
+  >> Also: Done bar over the decimal-pad (the one iOS keyboard with no return key -- both weight fields were
+  dead ends). Footer stays DOWN when the keyboard opens; riding it put Continue over the field being typed.
+  >> GOTCHAS BANKED: an InputAccessoryView binds to ONE input -- two fields sharing a nativeID means the
+  second silently gets nothing, so one ID per field. `{value} LBS BY` inside SvgText is TWO text runs and
+  textAnchor="end" anchors each independently -> glyphs stack into mush; interpolate before it reaches
+  SvgText. letterSpacing was NOT the cause (a wasted fix).
 - 2026-07-16 **THE PAGE SWEEP -- EVERY PAGE IN THE APP.** Tab by tab, Justin's order, pages only (modals
   excluded by his call). Each screen got the glow + real per-theme card shadows. LOG: add-food, food-detail
   (incl. Edit Entry), recipe-builder, recipe-log, ai-meal-estimator. WORKOUT: workout-library (which IS
@@ -538,6 +557,9 @@ are separate pre-submission checklists, NOT part of this menu.
        NutritionGearModal, NutrientDrilldownModal, RepeatMealModal, SummaryReadyModal, ToolkitSheet,
        TooltipModal, VersePoolModal, WeightHistoryModal.
     2. ONBOARDING (7 screens) -- see the surface-pass item; needs a plan first, not a sweep.
+       Steps 1 (profile-setup), 2 (style-survey) and 3 (your-style) DONE 2026-07-16. Remaining: commitment
+       (=4, needs a step label added), faith-journey (=5), apple-health (=6), notifications (=7), all-set
+       (full bar, no label). Each still needs the frosted top bar + the per-screen recipe.
   >> **THERE IS NO SEARCH THAT PROVES THIS IS FINISHED.** Failure mode #5 (the shadow was never written) is
   invisible to every grep -- nothing is broken, so nothing matches. Justin caught Gratitude, the earned
   badges, the log-measurements cards and Support's Promise card AFTER I called it done each time. Expect

@@ -137,8 +137,12 @@ export default function ProfileSetupScreen() {
     <LinearGradient colors={[theme.gradientEnd, theme.gradientEnd]} style={{ flex: 1 }}>
       <BackgroundLayers glow={theme.accentBlueRaw} />
 
-      {/* Progress bar */}
-      <View style={[styles.progressBar, { paddingTop: insets.top + 12 }]}>
+      {/* Progress bar. Frosted chrome, absolute, glued to the top -- content scrolls under it. It answers
+          "how much more of this is there", the one thing worth permanent screen space here; the title and
+          subtitle are read once and are free to scroll away. */}
+      <View style={[styles.progressBar, { paddingTop: insets.top + 12, borderBottomColor: theme.borderCard }]}>
+          <BlurView intensity={28} tint="light" style={StyleSheet.absoluteFill} pointerEvents="none" />
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.chromeFill }]} pointerEvents="none" />
           <TouchableOpacity
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); if (isOnboardingPreview()) setOnboardingPreview(false); router.back(); }}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -158,7 +162,7 @@ export default function ProfileSetupScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           ref={scrollViewRef}
-          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 100 }]}
+          contentContainerStyle={[styles.content, { paddingTop: insets.top + 72, paddingBottom: insets.bottom + 100 }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -343,7 +347,7 @@ export default function ProfileSetupScreen() {
 }
 
 const styles = StyleSheet.create({
-  progressBar:      { paddingHorizontal: 24, paddingBottom: 8, flexDirection: 'row', alignItems: 'center' },
+  progressBar:      { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, paddingHorizontal: 24, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 0.5, overflow: 'hidden' },
   progressTrack:    { flex: 1, height: 3, borderRadius: 2, overflow: 'hidden' },
   progressFill:     { height: '100%', borderRadius: 2 },
   backBtn:          { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginRight: 12 },

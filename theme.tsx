@@ -368,14 +368,19 @@ const light: Theme = {
   // #f2f3f7 in the Light refresh and #f5f5fa is the same colour to the eye -- three shades apart -- so every
   // field, option row, stat tile and pace pill dissolved into the page (worst at the TOP, where the bottom
   // glow has faded out and the ground is at its brightest). It only worked back when the ground was the old
-  // grey #e3e6ee. (2) BACKWARDS: an input is a WELL -- it should read as carved INTO the page, i.e. DARKER
-  // than it. #f5f5fa was LIGHTER than the ground, which is what a RAISED object does. Every other theme
-  // already has its inset darker than its ground; Light was the outlier.
-  bgInput:          '#e9ecf3',
+  // grey #e3e6ee.
+  // REVERTED to #f5f5fa the same day, and the round-trip is the lesson: the deepening was compensating for
+  // a BORDER too weak to be seen (borderInput was 12% black). Once that was fixed to 20%, the darker fill
+  // was redundant AND actively wrong -- on a page made of white cards, "slightly darker than the ground"
+  // also means "obviously darker than every card around it", so an input read as a grey HOLE punched in the
+  // page (Justin, on the AI estimator's Meal Name field). Near-white: inside a white card it is a subtle
+  // recess; on the page the BORDER draws the edge instead of the fill. If these ever go faint again, reach
+  // for the border, not the fill.
+  bgInput:          '#f5f5fa',
   bgProgressTrack:  '#ccd2e2',
   bgSheet:          '#ffffff',
-  // Same change + same reason as bgInput above (they were the same value and are the same idea: a recess).
-  bgInset:          '#e9ecf3',
+  // Same value + same reason as bgInput above (they are the same idea: a recess).
+  bgInset:          '#f5f5fa',
   bgEditCard:       '#ffffff',
 
   borderCard:       'rgba(0,0,0,0.10)',

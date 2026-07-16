@@ -32,6 +32,7 @@ import {
 } from '../services/aiMealEstimator';
 import { Type } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import BackgroundLayers from '../components/BackgroundLayers';
 
 // Fixed brand macro colors (design system). Same values used across the app.
 const MACRO = { protein: '#0d9268', carbs: '#c47d1a', fat: '#a83232' };
@@ -492,6 +493,7 @@ export default function AIMealEstimatorScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
+      <BackgroundLayers />
       <ToastRenderer />
       <ScreenHeader title="AI Estimate" />
 
@@ -516,7 +518,7 @@ export default function AIMealEstimatorScreen() {
               <>
                 {/* Failsafe: reopen an estimate generated earlier today */}
                 {todayEstimates.length > 0 && (
-                  <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowRecent(true); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, borderRadius: 12, padding: 14, marginBottom: 16 }}>
+                  <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowRecent(true); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, borderRadius: 12, padding: 14, marginBottom: 16, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
                     <Ionicons name="time-outline" size={20} color={theme.accentBlue} />
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiSemibold }}>Recent Estimates Today</Text>
@@ -630,7 +632,7 @@ export default function AIMealEstimatorScreen() {
                       These were harder to estimate. Confirm, adjust, or remove each one before logging.
                     </Text>
                     {pendingRows.map((r) => (
-                      <View key={r.id} style={{ backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.accentAmber, borderRadius: 12, padding: 14, marginBottom: 10 }}>
+                      <View key={r.id} style={{ backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.accentAmber, borderRadius: 12, padding: 14, marginBottom: 10, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
                         <Text style={{ fontSize: 14, color: theme.textPrimary, fontFamily: Type.uiSemibold }}>{r.name}</Text>
                         {!!r.portion && <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginTop: 1 }}>{r.portion}</Text>}
                         <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginTop: 6 }}>
@@ -681,7 +683,11 @@ export default function AIMealEstimatorScreen() {
                   {MULTIPLIERS.map((m) => {
                     const active = m === multiplier;
                     return (
-                      <TouchableOpacity key={m} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setMultiplier(m); }} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: active ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: active ? theme.accentBlueBorder : theme.borderInput }}>
+                      /* OPAQUE both states. These chips sit on the PAGE, not on a card, and the page down
+                         here is the accent glow: the selected chip was a ~10% accent wash OVER an accent
+                         glow (mud) and the unselected ones leaned on bgInput, which is near-invisible
+                         against the ground. Same fix as the Plans sort chips. */
+                      <TouchableOpacity key={m} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setMultiplier(m); }} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: active ? theme.accentBlueBgOpaque : theme.bgCard, borderWidth: 1, borderColor: active ? theme.accentBlueBorder : theme.borderInput }}>
                         <Text style={{ fontSize: 13, color: active ? theme.accentBlue : theme.textMuted, fontFamily: active ? Type.uiBold : Type.uiMedium }}>{m}x</Text>
                       </TouchableOpacity>
                     );
@@ -690,7 +696,7 @@ export default function AIMealEstimatorScreen() {
 
                 {/* Editable line items */}
                 {keptRows.map((r) => (
-                  <View key={r.id} style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: 'rgba(255,255,255,0.1)', borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, borderRadius: 12, padding: 14, marginBottom: 10 }}>
+                  <View key={r.id} style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: 'rgba(255,255,255,0.1)', borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, borderRadius: 12, padding: 14, marginBottom: 10, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
                     <TouchableOpacity activeOpacity={0.7} onPress={() => { if (editingId === r.id) { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditingId(null); } else openEditor(r); }} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                       <View style={{ flex: 1, marginRight: 12 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
@@ -721,21 +727,25 @@ export default function AIMealEstimatorScreen() {
                   </View>
                 ))}
 
-                {/* Section 2: Possibly not included */}
+                {/* Section 2: Possibly not included. ON A CARD now. It was the only naked content on a page
+                    made of cards -- fine when the page was flat, but once the page glowed it was muted text
+                    sitting in the strongest part of it and became unreadable. Darkening the text would have
+                    treated the symptom: this is the AI telling you what it may have MISSED, which is the
+                    thing you most need to read before logging the estimate. It earns a card. */}
                 {result.hidden_items.length > 0 && (
-                  <View style={{ marginTop: 8, marginBottom: 18 }}>
-                    <Text style={[cardLabel, { marginBottom: 8 }]}>POSSIBLY NOT INCLUDED</Text>
+                  <View style={{ backgroundColor: theme.bgCard, borderRadius: 12, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 2.5, borderTopColor: theme.accentAmber, padding: 16, marginTop: 8, marginBottom: 18, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
+                    <Text style={[cardLabel, { marginBottom: 10 }]}>POSSIBLY NOT INCLUDED</Text>
                     {result.hidden_items.map((h, i) => (
-                      <View key={i} style={{ flexDirection: 'row', gap: 8, marginBottom: 5 }}>
+                      <View key={i} style={{ flexDirection: 'row', gap: 8, marginBottom: i === result.hidden_items.length - 1 ? 0 : 6 }}>
                         <Text style={{ color: theme.textMuted, fontSize: 13 }}>•</Text>
-                        <Text style={{ flex: 1, fontSize: 13, color: theme.textMuted, fontFamily: Type.ui, lineHeight: 19 }}>{h}</Text>
+                        <Text style={{ flex: 1, fontSize: 13, color: theme.textSecondary, fontFamily: Type.ui, lineHeight: 19 }}>{h}</Text>
                       </View>
                     ))}
                   </View>
                 )}
 
                 {/* Running totals */}
-                <View style={{ backgroundColor: theme.bgCard, borderRadius: 12, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 2.5, borderTopColor: theme.accentBlueRaw, padding: 16, marginTop: 8, marginBottom: 18 }}>
+                <View style={{ backgroundColor: theme.bgCard, borderRadius: 12, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 2.5, borderTopColor: theme.accentBlueRaw, padding: 16, marginTop: 8, marginBottom: 18, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
                   <Text style={cardLabel}>TOTAL</Text>
                   <View style={{ alignItems: 'center', marginTop: -2, marginBottom: 0 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>

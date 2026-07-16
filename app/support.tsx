@@ -210,7 +210,7 @@ export default function SupportScreen() {
             inside the receipt tips into sappy). Rows only render on REAL entitlement data -- the __DEV__
             toggle has no dates, and a placeholder date would be a lie. */}
         {isSupporter ? (
-          <View style={[styles.cardShadow, { shadowColor: '#000' }]}>
+          <View style={[styles.cardShadow, { shadowColor: t.cardShadow, shadowOpacity: t.cardShadowOpacity }]}>
             {/* A NORMAL themed card wearing gold FOIL: the leaf chip + the top edge, both gradients.
                 No flat gold anywhere, so nothing can read as mustard. The type stays in theme ink. */}
             <View style={[styles.memberCard, { backgroundColor: t.bgCard, borderColor: GOLD_EDGE }]}>
@@ -293,7 +293,7 @@ export default function SupportScreen() {
           </View>
         ) : (
         /* FREE STATE: the pitch. */
-        <View style={[styles.cardShadow, { shadowColor: '#000' }]}>
+        <View style={[styles.cardShadow, { shadowColor: t.cardShadow, shadowOpacity: t.cardShadowOpacity }]}>
           <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw }]}>
             <Text style={[styles.heading, { color: t.textSecondary }]}>Become a Supporter</Text>
             <Text style={[styles.sub, { color: t.textMuted }]}>As a thank you, Supporters get:</Text>
@@ -370,7 +370,7 @@ export default function SupportScreen() {
         )}
 
         {/* Tip jar */}
-        <View style={[styles.cardShadow, { shadowColor: '#000' }]}>
+        <View style={[styles.cardShadow, { shadowColor: t.cardShadow, shadowOpacity: t.cardShadowOpacity }]}>
           <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw }]}>
             <Text style={[styles.heading, { color: t.textSecondary }]}>A one-time chip in</Text>
             <Text style={[styles.sub, { color: t.textMuted }]}>No subscription, no commitment. Every bit helps.</Text>
@@ -445,7 +445,11 @@ const styles = StyleSheet.create({
   missionTitle: { fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2.5, textTransform: 'uppercase', textAlign: 'center', marginBottom: 10 },
   missionClose: { fontSize: 14, fontFamily: Type.uiSemibold, lineHeight: 20, textAlign: 'center', marginTop: 12 },
 
-  cardShadow: { borderRadius: 14, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 },
+  // The wrapper pattern is already right here (the card below clips, so it cannot cast). Only the VALUES
+  // were off: opacity 0.12 with a tight 2/8 blur is about a third of a normal card, and the render sites
+  // passed a hardcoded '#000' -- wrong hue on Light (navy), invisible on Dark. shadowColor/shadowOpacity
+  // now come from the theme at each render site.
+  cardShadow: { borderRadius: 14, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
   card: { borderRadius: 14, borderWidth: 0.5, borderTopWidth: 1.5, padding: 16, overflow: 'hidden' },
 
   eyebrow: { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 },

@@ -90,7 +90,7 @@ export default function SyncedWorkoutsScreen() {
           {groups.map(g => {
             const isOpen = !!expanded[g.key];
             return (
-              <View key={g.key} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
+              <View key={g.key} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity }]}>
                 <TouchableOpacity
                   onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setExpanded(p => ({ ...p, [g.key]: !p[g.key] })); }}
                   style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -142,5 +142,8 @@ const styles = StyleSheet.create({
   headerBtn: { width: 40, height: 32, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { ...PAGE_TITLE },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
-  card: { borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14, padding: 16, marginBottom: 12 },
+  // Had NO shadow at all -- not clipped, not hardcoded, simply never given one. It read fine while Light's
+  // ground was the old grey #e3e6ee (a white card had value contrast to lean on); on the brightened
+  // #f2f3f7 there is nothing separating it. shadowColor/shadowOpacity come from the theme at the render site.
+  card: { borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14, padding: 16, marginBottom: 12, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
 });

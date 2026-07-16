@@ -30,6 +30,7 @@ import { TUTORIAL_CHICKEN_BREAST } from '../data/tutorialFood';
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import ButtonShine from '../components/ButtonShine';
+import BackgroundLayers from '../components/BackgroundLayers';
 import PrimaryCTA from '../components/PrimaryCTA';
 import ModalHeader from '../components/ModalHeader';
 
@@ -1168,6 +1169,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
   const styles = useStyles(theme);
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <BackgroundLayers />
       <ScreenHeader
         title={isEditing ? 'Edit Entry' : 'Food Detail'}
         topInset={false}
@@ -2213,7 +2215,10 @@ const useStyles = (theme: any) => StyleSheet.create({
   amountRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
   amountLabel: { fontSize: 14, color: theme.textMuted, fontFamily: Type.ui },
   amountInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textSecondary, padding: 12, fontSize: 24, fontFamily: Type.num, width: 120, textAlign: 'center' },
-  nutritionCard: { backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, padding: 16, marginBottom: 20 },
+  // Had NO shadow at all -- not clipped, not hardcoded, just never given one. It got away with it while
+  // Light's ground was the old grey #e3e6ee (a white card had value contrast to lean on); on the
+  // brightened #f2f3f7 there is nothing left to separate it from the page.
+  nutritionCard: { backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, padding: 16, marginBottom: 20, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
   nutritionTitle: { fontSize: 11, color: theme.textMuted, fontFamily: Type.uiMedium, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 },
   nutritionRow: { flexDirection: 'row', justifyContent: 'space-between' },
   nutritionStat: { alignItems: 'center', flex: 1 },

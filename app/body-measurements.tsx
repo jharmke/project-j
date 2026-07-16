@@ -108,7 +108,7 @@ export default function BodyMeasurementsScreen() {
         {/* The title was the single word "BODY", centred, in caps. */}
         <ScreenHeader title="Body Measurements" topInset={false} right={<TooltipIcon tooltipKey="body_measurements" size={18} />} />
 
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 120 }} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: insets.bottom + 120 }} showsVerticalScrollIndicator={false}>
           {!loaded ? null : !hasData ? (
             <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: accent, ...shadowStyle, alignItems: 'center', paddingVertical: 36 }]}>
               <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: accent + '1A', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>

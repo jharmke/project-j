@@ -167,14 +167,14 @@ export default function BodyMeasurementLogScreen() {
             </TouchableOpacity>
 
             {MEASURE_REGIONS.map(region => (
-              <View key={region} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: accent }]}>
+              <View key={region} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: accent, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity }]}>
                 <Text style={[styles.cardLabel, { color: theme.textMuted }]}>{region.toUpperCase()}</Text>
                 {fieldsForRegion(region).map(f => renderField(f.key, f.label))}
               </View>
             ))}
 
             {/* Calculated: Navy BF% (read-only) */}
-            <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: accent }]}>
+            <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: accent, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity }]}>
               <Text style={[styles.cardLabel, { color: theme.textMuted }]}>CALCULATED</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <View style={{ flex: 1 }}>
@@ -227,6 +227,10 @@ export default function BodyMeasurementLogScreen() {
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 },
   headerBtn: { width: 38, height: 38, borderRadius: 19, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  card: { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, padding: 16, marginBottom: 12 },
+  // shadowColor/shadowOpacity come from the theme inline at the render sites. This style had NO shadow at
+  // all -- a third failure mode: not clipped, not hardcoded, just never given one. It got away with it
+  // while the Light ground was the old grey #e3e6ee (white cards had value contrast to lean on); on the
+  // brightened #f2f3f7 ground there is nothing left to separate them.
+  card: { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, padding: 16, marginBottom: 12, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
   cardLabel: { fontSize: 9, letterSpacing: 3, fontFamily: Type.uiBold, textTransform: 'uppercase', marginBottom: 8 },
 });

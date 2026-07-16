@@ -17,6 +17,7 @@ import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import PrimaryCTA from '../components/PrimaryCTA';
 import ButtonShine from '../components/ButtonShine';
+import BackgroundLayers from '../components/BackgroundLayers';
 
 interface Ingredient {
   id: string;
@@ -461,6 +462,7 @@ export default function RecipeBuilderScreen() {
   const styles = useStyles(theme);
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <BackgroundLayers />
       {/* Header. The `right` Save is molded + ACCENT (was a flat accentGreen pill): green is success/goal-
           hit, and this saves. It lives in the HEADER, so `compact` keeps the mould at pill scale, and
           faceStyle holds its original padding so the header row height does not move. */}
@@ -732,11 +734,14 @@ const useStyles = (theme: any) => StyleSheet.create({
     borderTopColor: theme.accentBlueRaw,
     borderRadius: 14,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 3,
+    // Was '#000' @0.12 with a tight 2/6 blur -- about a third of a normal card, the wrong hue on Light
+    // (whose shadow is navy) and invisible on Dark. Nothing clips these, so it always rendered; it was
+    // just quietly weaker than every other card in the app.
+    shadowColor: theme.cardShadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: theme.cardShadowOpacity,
+    shadowRadius: 12,
+    elevation: 6,
   },
   cardLabel: {
     fontSize: 9, letterSpacing: 3, color: theme.textMuted,

@@ -28,6 +28,7 @@ import ScreenHeader from '../components/ScreenHeader';
 import HeaderIconButton from '../components/HeaderIconButton';
 import ButtonShine from '../components/ButtonShine';
 import FabDome from '../components/FabDome';
+import BackgroundLayers from '../components/BackgroundLayers';
 import PrimaryCTA from '../components/PrimaryCTA';
 import ModalHeader from '../components/ModalHeader';
 
@@ -1564,6 +1565,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
   const styles = useStyles(theme, themeId);
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <BackgroundLayers />
       {/* The two `right` actions were hand-built 38x38 squares with 22-24px icons -- built before
           HeaderIconButton existed, so they had drifted BIGGER than the same square everywhere else in the app
           (32 tall, 14px icon). Now the shared component, so Add Food's header stops disagreeing with the tabs
@@ -2580,7 +2582,10 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
 }
 
 const useStyles = (theme: any, themeId: string) => {
-  const shadowOpacity = ({ light: 0.35, dark: 0.14, slate: 0.28, warm: 0.30, blush: 0.30 } as Record<string, number>)[themeId] ?? 0.18;
+  // Was a PRIVATE per-theme opacity map living here -- a hand-rolled duplicate of theme.cardShadowOpacity,
+  // used in exactly one place (resultCard below) and sitting next to a hardcoded '#000'. The token already
+  // does this, per theme, and is tinted (navy on Light, brown on Warm) rather than black.
+  const shadowOpacity = theme.cardShadowOpacity;
   return StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.bgPrimary },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: theme.borderCard },
@@ -2608,7 +2613,7 @@ const useStyles = (theme: any, themeId: string) => {
     borderTopColor: 'rgba(255,255,255,0.1)',
     borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw,
     borderRadius: 10, padding: 14,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity, shadowRadius: 6,
+    shadowColor: theme.cardShadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity, shadowRadius: 6,
   },
   resultLeft: { flex: 1, marginRight: 12 },
   savedBadge: { backgroundColor: theme.accentBlueBg, borderRadius: 3, paddingHorizontal: 5, paddingVertical: 1, alignSelf: 'flex-start', marginBottom: 4 },

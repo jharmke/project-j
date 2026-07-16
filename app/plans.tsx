@@ -436,6 +436,8 @@ function PlanRow({
       backgroundColor: theme.id === 'warm' ? 'rgba(255,253,248,0.96)' : theme.bgCard,
       borderColor: `rgba(${GOLD_RGB},0.22)`,
       borderTopColor: `rgba(${GOLD_RGB},0.6)`,
+      shadowColor: theme.cardShadow,
+      shadowOpacity: theme.cardShadowOpacity,
     }]}>
       <View style={styles.cardTop}>
         <View style={[styles.iconBadge, { backgroundColor: `rgba(${GOLD_RGB},0.12)` }]}>
@@ -540,7 +542,9 @@ const styles = StyleSheet.create({
   sortRow:      { flexDirection: 'row', gap: 6, marginBottom: 12, marginTop: 2 },
   sortChip:     { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 14, borderWidth: 1, minHeight: 32, justifyContent: 'center' },
   sortChipText: { fontSize: 12, fontFamily: Type.uiSemibold, letterSpacing: 0.3 },
-  card:         { borderRadius: 14, borderWidth: 0.5, borderTopWidth: 2.5, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.24, shadowRadius: 11, elevation: 5 },
+  // shadowColor/shadowOpacity come from the theme inline at the render site (was hardcoded '#000' @0.24 --
+  // the wrong hue on Light, whose shadow is navy, and invisible on Dark's near-black page).
+  card:         { borderRadius: 14, borderWidth: 0.5, borderTopWidth: 2.5, padding: 16, marginBottom: 12, shadowOffset: { width: 0, height: 4 }, shadowRadius: 11, elevation: 5 },
   cardTop:      { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
   iconBadge:    { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   cardTitle:    { fontSize: 16, fontFamily: Type.uiSemibold },

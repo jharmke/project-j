@@ -57,7 +57,7 @@ export default function WhatsNewScreen() {
             </TouchableOpacity>
 
             {isOpen(release.releaseId, releaseIdx) && release.highlights.map((h, i) => (
-              <View key={i} style={[styles.cardShadow, { shadowColor: '#000' }]}>
+              <View key={i} style={[styles.cardShadow, { shadowColor: t.cardShadow, shadowOpacity: t.cardShadowOpacity }]}>
                 <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw }]}>
                   <View style={styles.iconRow}>
                     {/* A highlight can carry the REAL Supporter hallmark instead of an Ionicon, so the
@@ -109,7 +109,9 @@ const styles = StyleSheet.create({
   patchHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, marginBottom: -2, paddingHorizontal: 4, paddingVertical: 6 },
   patchHeader: { fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, textTransform: 'uppercase' },
   patchDate:   { fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 1, textTransform: 'uppercase' },
-  cardShadow:  { borderRadius: 14, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 },
+  // Same as support.tsx: the wrapper pattern was already right, only the values were off (0.12 with a tight
+  // 2/8 blur is a third of a normal card, and the render site passed a hardcoded '#000').
+  cardShadow:  { borderRadius: 14, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
   card:        { borderRadius: 14, borderWidth: 0.5, borderTopWidth: 1.5, padding: 14, overflow: 'hidden' },
   iconRow:     { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 8 },
   iconCircle:  { width: 30, height: 30, borderRadius: 9, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },

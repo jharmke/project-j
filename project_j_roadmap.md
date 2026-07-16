@@ -47,6 +47,18 @@
   0.30 (cream-on-cream had no value edge). ALSO FIXED, same session: Log's water card, Stats' 4 cards,
   Workout's REST DAY + SUPERSET group, Faith's Bible-and-Plans + Prayer cards, GratitudeStreakCard,
   MembershipCard (Profile + Settings). NOT DONE: the modals + the stack screens, see NEXT UP.
+  >> **FIVE WAYS A SHADOW GOES INVISIBLE. All five found on 2026-07-16.** (1) overflow:'hidden' on the same
+  view. (2) overflow:'hidden' on a PARENT (journal) -- a clip eats its children's shadows too. (3) shadowColor
+  + shadowOpacity set but NO shadowOffset/shadowRadius (log's AI-estimator card) -- iOS then draws a
+  zero-radius shadow at zero offset, hidden exactly behind the card. (4) offset 0,0 (the faith cards) -- a
+  HALO, not a lift; it rings the card and elevates nothing. (5) **the shadow was simply never written**
+  (synced-workouts, body-measurement-log, food-detail's nutritionCard, ai-meal-estimator's 4 cards). #5 is
+  the one that matters most: nothing is broken, so NOTHING finds it -- not a grep for overflow, not a grep
+  for '#000'. Those cards read fine for months because Light's OLD grey ground (#e3e6ee) gave a white card
+  enough value contrast to survive without one; brightening the ground to #f2f3f7 took that away.
+  >> SO: **there is no search that proves this work is done.** The only reliable check is opening a screen
+  and asking "does every card here have a theme shadow?". Justin has caught several after I called it
+  complete (Gratitude, the earned badges, the log-measurements cards, the Promise card). Expect more.
   >> TWO MORE WAYS A SHADOW GOES INVISIBLE, both found the same session: (a) Log's AI-estimator card set
   shadowColor + shadowOpacity but NO shadowOffset/shadowRadius/elevation -- iOS then draws a zero-radius
   shadow at zero offset, i.e. hidden exactly behind the card. It was styled fully inline and never inherited
@@ -72,6 +84,24 @@
   0.12 -> **0.20**: with almost no fill difference left, the outline was carrying these boxes alone and at
   12% black it could not. Profile's 3 estimate tiles + the Projected box had NO border at all (fill only) ->
   given the standard 0.5 outline. Light only; the other 4 themes untouched.
+  >> THE FILL WAS REVERTED the same day (#e9ecf3 -> back to #f5f5fa) and the round-trip IS the lesson: the
+  deepening was only ever compensating for a border too weak to be seen. Once the border was fixed, the dark
+  fill was redundant AND wrong -- on a page made of white cards, "slightly darker than the ground" also reads
+  as "obviously darker than every card around it", so an input became a grey HOLE punched in the page
+  (Justin, on the AI estimator's Meal Name field). **If these ever go faint again, reach for the BORDER, not
+  the fill.** The borderInput 0.20 bump stayed.
+- 2026-07-16 **THE RULE THAT MAKES THE GLOW SAFE** (earned the hard way, ~6 separate failures). Every single
+  "the glow broke this" report today -- the faith sort chips, Profile's fields, the achievements disclaimer,
+  the estimator's portion pills + its "Possibly not included" list -- was NOT a glow problem. Each was
+  CONTENT SITTING NAKED ON THE PAGE, or a control that was see-through. The glow only exposed what was
+  already the weakest thing on the screen. Two rules, and no screen needs a glow exception:
+    1. **Text content goes on a CARD.** The page is atmosphere, not a reading surface.
+    2. **Controls get an OPAQUE fill** (accentBlueBgOpaque / accentAmberBgOpaque / bgCard). A control has to
+       be a solid object you can press, not a tint over a glow.
+  Corollary Justin tested directly: the glow looked FINE on add-food / food-detail / recipe-builder, which
+  are forms too -- because they are covered in cards, so the glow only shows in the gutters. It failed on the
+  AI estimator, which had naked content low on the page. It is not "forms vs not"; it is naked vs carded.
+  When a screen fights the glow, the screen is telling you something is naked that should not be.
 - 2026-07-16 Home weight card "LOG" button touched up (Justin gym-find): the NUMBER face (Type.num, built
   for data values) was doing button-label duty in shouty caps with letterSpacing -- same straggler class as
   Profile's save bar -> Interface bold, mixed-case "Log". Fill moved off `theme.bgSelected` (the SELECTION
@@ -470,9 +500,22 @@ are separate pre-submission checklists, NOT part of this menu.
        FeedbackModal, HRZoneModal, MeasureHowToModal, MetricDrilldownModal, NotificationPanel,
        NutritionGearModal, NutrientDrilldownModal, RepeatMealModal, SummaryReadyModal, ToolkitSheet,
        TooltipModal, VersePoolModal, WeightHistoryModal, SupporterFoil.
+  ALSO FIXED 2026-07-16 (2nd sweep): plans (hardcoded black), synced-workouts (NO shadow), support +
+  whats-new (right wrapper pattern, but 0.12 black = a third of a card), add-food's result rows (a PRIVATE
+  per-theme opacity map duplicating cardShadowOpacity, next to a hardcoded '#000'), recipe-builder (0.12),
+  food-detail's nutritionCard (NO shadow), ai-meal-estimator (4 inline cards, NO shadow), achievements
+  (locked badges on black; EARNED badges could not lift because their shadow is their TIER colour and a
+  light colour darkens nothing -- the lift moved to the pulse wrapper they already had), body-measurement-log
+  (NO shadow), journal (see below), sleep (0.12 = a third strength).
+  STILL BROKEN, KNOWN: support.tsx's `missionCard` (The Promise) -- overflow:'hidden' + NO shadow, needs the
+  wrapper like its neighbours. Named `missionCard`, so the `card:` search never saw it.
   CHECKED AND INNOCENT (do not re-litigate): profile.tsx (its only overflow is the save bar's blur clip, no
   shadow); HRZonesStatsCard (progress track); IFCard (already correctly wrappered); log.tsx mealRow (has no
   shadow at all -- a separate design question, not this bug).
+  >> ⚠️ THAT "INNOCENT" LIST IS WEAKER THAN IT LOOKS. It was built by checking whether the overflow view had
+  a shadow ON IT. Journal proved that is not enough: its card's shadow was one level BELOW the clip (the
+  clip hides the swipe-to-delete button), and **a parent that clips also clips its children's shadows**. No
+  "shadow + overflow on the same line" search can find that. Re-check the innocent list for the child case.
   METHOD (proven): for each hit ask WHY the overflow is there. Only clipping a corner watermark -> use
   `CardWatermark` and DELETE the overflow (no wrapper, no closing-tag surgery -- this covered 11 of Home's
   13). Clipping something structural (carousel, collapse animation, a tint layer, a 2.5px edge strip that
@@ -490,12 +533,22 @@ are separate pre-submission checklists, NOT part of this menu.
   wrapper for the flat ground + BackgroundLayers, exactly as the tabs got. Mechanical + low-risk (proven 6x
   on the tabs); do it in batches. ALSO in this pass: the Profile **Supporter card** is translucent so the
   page glow/halftone shows straight through it -- needs an opaque fill like the other cards.
-  >> PROGRESS 2026-07-16: DONE = prayer, bible, plans, devotional (amber) + settings (accent). The real
-  count of stack screens still on the old `gradientStart -> gradientEnd` top-down gradient is **6**, not 22:
-  body-measurements, body-measurement-log, journal, achievements, sleep, synced-workouts. (Onboarding's 7
-  screens also use it and were left alone deliberately -- it is a separate flow; decide before touching.)
-  The conversion is 2 lines: `gradientStart` -> `gradientEnd` (same colour twice = the flat ground) + a
-  `<BackgroundLayers />` line + the import.
+  >> PROGRESS 2026-07-16. **The old top-down gradient is GONE from the app** -- zero screens use
+  `gradientStart` now (it survives ONLY as the wash behind Otto's + Halo's chat panels; it no longer means
+  "the top of a page"). Converted: prayer, bible, plans, devotional (amber) + settings, sleep, achievements,
+  journal, body-measurements, body-measurement-log, synced-workouts (accent).
+  >> BUT THE PASS IS **NOT** DONE, and "gradientStart = 0" was the wrong finish line. A screen that never
+  had a gradient does not show up in a search for gradients. **17 screens paint a flat `bgPrimary` and stop**
+  -- correct ground colour, NO glow, NO halftone. They were never on the old gradient, so they were invisible
+  to the search AND to the eye until Justin asked. DONE of those 4: add-food, food-detail, recipe-builder,
+  ai-meal-estimator. **REMAINING 13**: recipe-log, workout-library, day-summary, weekly-summary,
+  monthly-summary, report, reports, comparison-report, challenges, challenge-create, adaptive-target,
+  tutorials, definitions. Find them with `flex: 1, backgroundColor: theme.bgPrimary`. Several have 2-3
+  wrappers (loading / empty / main) -- the MAIN one is the one that matters.
+  >> Onboarding (7 screens) left alone deliberately -- separate flow, decide before touching.
+  >> The conversion is 2 lines: a `<BackgroundLayers />` under the container + the import. (On a screen that
+  still had the old gradient it was also `gradientStart` -> `gradientEnd`, i.e. the same colour twice = the
+  flat ground.)
   >> FAITH SCREENS PASS AMBER (confirmed 2026-07-15): the Faith TAB already does
   `<BackgroundLayers glow={theme.accentAmber} />`, and prayer/plans/devotional/bible/journal are ALL still
   on the old LinearGradient -- they have no glow to be the wrong colour yet. When this pass reaches them,

@@ -27,6 +27,7 @@ import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { Type } from '../typography';
 import ButtonShine from './ButtonShine';
+import PrimaryCTA from './PrimaryCTA';
 import ModalHeader from './ModalHeader';
 
 interface CustomFoodCreatorProps {
@@ -814,15 +815,18 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
           </Animated.View>
         </View>
 
-        {/* Save button -- spotlit by tutorial */}
-        <TouchableOpacity
-          ref={saveBtnRef as any}
-          style={[s.saveBtn, !canSave && s.saveBtnDim]}
-          onPress={handleSave}
-          disabled={!canSave || saving}
-        >
-          <Text style={s.saveBtnText}>{saving ? 'SAVING...' : 'SAVE FOOD'}</Text>
-        </TouchableOpacity>
+        {/* Save button -- spotlit by tutorial. MOLDED + ACCENT (was a flat accentGreen slab): green means
+            SUCCESS/goal-hit in this app, and saving a food is an action, not an outcome. PrimaryCTA also
+            owns the busy state, so the hand-rolled "SAVING..." label is now a real spinner, and it owns the
+            disabled dim, so s.saveBtnDim goes. The ref is a TUTORIAL target -> wrapper View. */}
+        <View ref={saveBtnRef as any} collapsable={false} style={{ marginTop: 16 }}>
+          <PrimaryCTA
+            label="Save Food"
+            onPress={handleSave}
+            busy={saving}
+            disabled={!canSave}
+          />
+        </View>
       </ScrollView>
     </Animated.View>
   );
@@ -894,7 +898,6 @@ const styles = (theme: any) => StyleSheet.create({
   twoCol: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   optionalToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 4 },
   optionalToggleText: { fontSize: 13, color: theme.accentBlue, fontFamily: Type.uiSemibold },
-  saveBtn: { backgroundColor: theme.accentGreen, borderRadius: 10, padding: 15, alignItems: 'center', marginTop: 16 },
-  saveBtnDim: { opacity: 0.35 },
-  saveBtnText: { color: theme.bgPrimary, fontSize: 16, fontFamily: Type.uiBold, letterSpacing: 0.2 },
+  // saveBtn / saveBtnDim / saveBtnText removed 2026-07-15: Save Food is PrimaryCTA now, which owns the
+  // fill, mould, label face, disabled dim and busy spinner.
 });

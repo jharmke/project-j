@@ -22,6 +22,7 @@ import { useTheme } from '../../theme';
 import { useMembership } from '../../MembershipContext';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import HeaderIconButton from '../../components/HeaderIconButton';
+import PrimaryCTA from '../../components/PrimaryCTA';
 import SproutIcon from '../../components/SproutIcon';
 import MembershipCard from '../../components/MembershipCard';
 import { Type, DISPLAY_CAPS, DISPLAY_TRACKING, displaySize } from '../../typography';
@@ -736,6 +737,12 @@ export default function ProfileScreen() {
           style={StyleSheet.absoluteFill}
           pointerEvents="none"
         />
+        {/* The frost, matching the tab bar + all 6 tab headers. This bar had the BLUR but not the FILL, and
+            theme.tsx's own note on chromeFill describes the result exactly: a blur alone over the page's
+            accent glow "turns into a COLOURED WINDOW". Down here the glow is at its strongest, so the bar
+            came out teal while every other piece of chrome in the app is near-white frost. chromeFill is
+            'transparent' on Dark/Warm/Blush by design, so this only changes Light + Slate. */}
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.chromeFill }]} pointerEvents="none" />
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <TouchableOpacity
             onPress={() => {
@@ -750,22 +757,33 @@ export default function ProfileScreen() {
               backgroundColor: theme.bgInput,
               borderWidth: 0.5,
               borderColor: theme.borderInput,
-              borderRadius: 10,
-              padding: 16,
+              // 13 = PrimaryCTA's radius, not the 10 that was hand-typed here. Two buttons sharing a row
+              // must share their corners. Fixed on THIS side rather than via PrimaryCTA's faceStyle: the
+              // shared component carries the house value, so the local one-off is what should move.
+              borderRadius: 13,
+              paddingVertical: 16,
+              // Was a FIXED width: 90 with padding: 16 -- i.e. 58px of usable space, which "CANCEL" at 18px
+              // + letterSpacing 2 does not fit into, so it wrapped to "CANC / EL". Hugging its own label
+              // cannot wrap at any font size; the fixed width was the bug, not the label.
+              paddingHorizontal: 20,
               alignItems: 'center',
-              width: 90,
             }}>
-            <Text style={{ fontSize: 18, fontFamily: Type.num, letterSpacing: 2, color: theme.textMuted }}>
-              CANCEL
+            {/* Type.num was the NUMBER face (Rajdhani -- condensed, TABULAR, built for values) on a button
+                LABEL. A button label is INTERFACE copy. This is the roadmap's "non-modal number-face
+                stragglers" quick win; Cancel keeps its neutral fill (it is the passive half of the pair). */}
+            <Text numberOfLines={1} style={{ fontSize: 17, fontFamily: Type.uiBold, letterSpacing: 0.2, color: theme.textMuted }}>
+              Cancel
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); saveProfile(); }}
-            style={{ flex: 1, backgroundColor: theme.accentBlue, borderRadius: 10, padding: 16, alignItems: 'center' }}>
-            <Text style={{ fontSize: 18, fontFamily: Type.num, letterSpacing: 2, color: theme.bgPrimary }}>
-              {saved ? 'SAVED' : 'SAVE PROFILE'}
-            </Text>
-          </TouchableOpacity>
+          {/* MOLDED, the same button as "Estimate My Meal": a real vertical gradient + an accent glow, so it
+              reads as a physical object instead of a flat painted rectangle. It was hand-built here and got
+              neither. PrimaryCTA also owns the label face + the disabled state, which is why the Rajdhani
+              bug above cannot come back on this one. Mixed case to match the CTA it now matches. */}
+          <PrimaryCTA
+            wrapperStyle={{ flex: 1 }}
+            label={saved ? 'Saved' : 'Save Profile'}
+            onPress={saveProfile}
+          />
         </View>
       </Animated.View>
       </KeyboardAvoidingView>

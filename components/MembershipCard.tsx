@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
@@ -42,13 +42,27 @@ export default function MembershipCard() {
         // bgCard fill made the free card the SAME color as its container on Settings (a settings section
         // is itself a card), so on Slate/Warm/Blush it vanished into the section. A tint always separates
         // from whatever it sits on, whichever theme is active.
-        backgroundColor: isSupporter ? GOLD_TINT : theme.accentBlueBg,
+        // ...EXCEPT the tint was the ONLY fill, and both tints are translucent (GOLD_TINT is 13%,
+        // accentBlueBg ~10%). GOLD_TINT's own note says it is "a tint of the card, never a fill" -- and on
+        // Profile there WAS no card under it, just the page, so the champagne wash sat on the accent bottom
+        // glow and the card dissolved into the background (Justin, 2026-07-15). Same bug as Stats' VIEW ALL
+        // ACHIEVEMENTS. Fix: give the tint the CARD it was written for -- an opaque bgCard base, with the
+        // tint layered ON TOP (see the wash below). The tint keeps doing its separating job, it just has
+        // something solid to do it against now.
+        backgroundColor: theme.bgCard,
         borderWidth: 1, borderColor: isSupporter ? GOLD_EDGE : theme.accentBlueRaw + '55',
         borderRadius: 14, paddingVertical: 14, paddingHorizontal: 14,
         overflow: 'hidden',
         shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 3,
       }}
     >
+      {/* The tint, now layered over the opaque bgCard base above rather than BEING the fill. First child so
+          everything else (the foil edge, the chip, the text) sits on top of it. */}
+      <View
+        style={[StyleSheet.absoluteFill, { backgroundColor: isSupporter ? GOLD_TINT : theme.accentBlueBg }]}
+        pointerEvents="none"
+      />
+
       {/* Struck edge along the top: foil for a Supporter, the user's accent for a free user. */}
       {isSupporter
         ? <FoilEdge />

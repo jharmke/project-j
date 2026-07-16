@@ -30,6 +30,7 @@ import { TUTORIAL_CHICKEN_BREAST } from '../data/tutorialFood';
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import ButtonShine from '../components/ButtonShine';
+import PrimaryCTA from '../components/PrimaryCTA';
 
 function buildTutorialChickenFood() {
   const fsServings = TUTORIAL_CHICKEN_BREAST.servings.serving.map(s => ({
@@ -1659,15 +1660,17 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
   </Animated.View>
 </Modal>
 
-<TouchableOpacity
-  ref={saveButtonRef as any}
-  style={[styles.logBtn, isEditing && !hasChanges && { opacity: 0.4 }]}
-  onPress={saveEntry}
-  disabled={isEditing && !hasChanges}>
-  <Text style={styles.logBtnText}>
-    {isRecipeMode ? 'ADD TO RECIPE' : isEditing ? `UPDATE ENTRY` : `ADD TO DIARY`}
-  </Text>
-</TouchableOpacity>
+{/* MOLDED, and ACCENT rather than accentGreen. Green means SUCCESS / goal-hit in this app -- "you did it"
+    -- so spending it on a button that STARTS an action diluted the one job it is good at. This is an
+    action, not an outcome. PrimaryCTA also owns the disabled state, so the hand-rolled opacity: 0.4 goes.
+    The ref is a TUTORIAL target and PrimaryCTA takes no ref, so it moves to a wrapper View. */}
+<View ref={saveButtonRef as any} collapsable={false} style={{ marginBottom: 12 }}>
+  <PrimaryCTA
+    label={isRecipeMode ? 'Add to Recipe' : isEditing ? 'Update Entry' : 'Add to Diary'}
+    onPress={saveEntry}
+    disabled={isEditing && !hasChanges}
+  />
+</View>
 
 {isEditing && (
           <TouchableOpacity
@@ -2156,7 +2159,9 @@ const useStyles = (theme: any) => StyleSheet.create({
   backBtn: { padding: 4, width: 60 },
   backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: Type.uiMedium },
   headerTitle: { ...PAGE_TITLE, color: theme.accentBlueRaw, flex: 1 },
-  content: { padding: 16 },
+  // paddingBottom clears the global Otto FAB (AssistantOverlay in _layout.tsx: 56px disc at bottom: 18),
+  // which was sitting on the corner of ADD TO DIARY. Scrolled to the end, the button now lands above it.
+  content: { padding: 16, paddingBottom: 96 },
   foodName: { fontSize: 18, color: theme.textSecondary, fontFamily: Type.uiSemibold, marginBottom: 20, lineHeight: 24 },
   unitRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   unitBtn: { flex: 1, padding: 10, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, alignItems: 'center' },
@@ -2173,8 +2178,8 @@ const useStyles = (theme: any) => StyleSheet.create({
   nutritionVal: { fontSize: 28, fontFamily: Type.num, letterSpacing: 1 },
   nutritionLabel: { fontSize: 10, color: theme.textMuted, fontFamily: Type.ui, marginTop: 2 },
   noDataText: { fontSize: 12, color: theme.textMuted, fontStyle: 'italic', fontFamily: Type.ui, marginBottom: 16, textAlign: 'center' },
-  logBtn: { backgroundColor: theme.accentGreen, borderRadius: 10, padding: 16, alignItems: 'center', marginBottom: 12 },
-  logBtnText: { color: theme.bgPrimary, fontSize: 18, fontFamily: Type.uiBold, letterSpacing: 2 },
+  // logBtn / logBtnText removed 2026-07-15: the Add to Diary button is PrimaryCTA now, which owns its own
+  // fill, mould, label face and disabled state.
   deleteBtn: { backgroundColor: '#cc3333', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 16, alignItems: 'center', marginTop: 8, alignSelf: 'center', minWidth: 220 },
   deleteBtnText: { color: theme.bgPrimary, fontSize: 16, fontFamily: Type.uiBold, letterSpacing: 2 },
   mealSelector: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, padding: 12, marginBottom: 10 },

@@ -28,6 +28,46 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-16 **THE PAGE SWEEP -- EVERY PAGE IN THE APP.** Tab by tab, Justin's order, pages only (modals
+  excluded by his call). Each screen got the glow + real per-theme card shadows. LOG: add-food, food-detail
+  (incl. Edit Entry), recipe-builder, recipe-log, ai-meal-estimator. WORKOUT: workout-library (which IS
+  "Add to Today" -- same file, different title in select mode; the tab pushes nowhere else). STATS: day/
+  weekly/monthly summary, the EvR pair, the reports pair, challenges, challenge-create, comparison-report.
+  FAITH: prayer, devotional (bible + plans already had the amber glow). SETTINGS: support, whats-new,
+  adaptive-target, mission, tutorials, definitions.
+  >> STRUCTURAL FIXES FOUND ON THE WAY (not paint):
+  - **The REPORT is now a document.** Its blocks were cards floating on a mystery slab; the slab was an
+    EXPORT ARTIFACT (a `bgPrimary` wrapper painted so the share-image had a solid background) that was
+    invisible only because the page used to be the same colour. Justin: "why are achievements earned and
+    challenge history their own separate cards? this is disgusting." Now ONE white document card, blocks are
+    SECTIONS with hairline rules, disclaimer inside. The export gets a real document instead of a screenshot
+    of boxes.
+  - **Two pinned "save bars" that were not save bars.** Reports' New Report and Challenge Create's Start
+    Challenge both wore the floating-save-bar chrome (opaque block + top border) permanently -- that pattern
+    is for a contextual save that animates in when there are unsaved changes. Both are create actions with
+    nothing pending. Moved INTO the scroll; the glued block and the Otto collision died together. (Justin
+    on the FAB alternative: "stupid to have a fab for literally one thing. 2 clicks for no reason.")
+  - **AI estimator: "Possibly not included" onto a card.** It was the only naked content on a page made of
+    cards -- and it is the AI telling you what it MISSED, i.e. the thing you most need to read before
+    logging. Darkening the text would have treated the symptom.
+  - **Recipe Log:** ingredients onto a card; the amount input MERGED into the nutrition card (they were one
+    interaction split across two surfaces -- you type an amount, the thing below tells you what it IS, and
+    the answer's own title just echoes the question back). Macro row was top-aligned with Calories at 32px
+    and the macros at 22, so the small numbers floated high -> bottom-aligned, shared baseline.
+  - **Sleep gear Save** was a flat green slab with NO dim state -- and its handler's first line is
+    `if(!bed||!wake) return`, so with a time missing it looked live, took the tap, fired a haptic and did
+    nothing. Molded + disabled.
+  - **"End challenge" was unfindable** (Justin: "took me forever how to see how to cancel a challenge") --
+    the only way to cancel, rendered in textDim, the dimmest token in the app, unstyled. Now red + semibold.
+  - **Otto clearance** on recipe-log, weekly, monthly, comparison, report (content clears the FAB, never the
+    reverse -- Otto is bottom-left on EVERY screen, so moving him on one page breaks the other thirty).
+  >> Also: opaque selected states wherever a control sits on the page (challenge-create's 9 pills, the
+  estimator's portion chips, recipe-log's toggle, report's Done Adding Blocks); red trash cans; molded
+  Got it buttons; Recovery purple + the recovery coach sparkle off the GREEN status colour (green means
+  "good" -- a neutral AI marker wearing it implied your recovery was fine regardless of what the coach said).
+  >> SYNCED-WORKOUTS DID NOT NEED ANY OF THIS -- it is a dev tool behind the 7-tap Dev Tools section, and I
+  polished it because it showed up in a grep and I never asked what it was. Anything under Dev Tools is out
+  of scope; Settings' whole dev section got the same wasted treatment.
 - 2026-07-16 **THE CARD SHADOWS WERE NEVER RENDERING. APP-WIDE. HALF-FIXED -- SEE NEXT UP.** Root cause:
   a shadow and `overflow:'hidden'` on the SAME view. iOS masksToBounds clips the view's own shadow, so the
   shadow silently does not exist at any opacity. `components/GradientCard.tsx` ALREADY carried the rule in
@@ -482,24 +522,26 @@ are separate pre-submission checklists, NOT part of this menu.
   (which is always a sheet, so it uses ModalHeader at 20px not the 28px page title). Rules in the spec.
   >> STILL OPEN, see the dedicated items below: the SURFACE pass, the JOURNAL slide-up sheet, the VOICE
   pass, the molded-button rollout, and a short list of non-modal number-face stragglers.
-- [BUG, app-wide, CARDS DONE 2026-07-16 / MODALS + STACK SCREENS OPEN] **Card shadows clipped away by
-  overflow:'hidden'.** Full root cause + the other 2 failure modes are in the RECENTLY SHIPPED entry.
-  **DONE: every CARD on all 6 tabs**, plus Settings, GratitudeStreakCard and MembershipCard.
-  **STILL OPEN, in priority order:**
-    1. MODALS with a shadow + overflow on the same view (all HARDCODED black, none on theme tokens):
+- [BUG, app-wide. **ALL PAGES DONE 2026-07-16.** MODALS + ONBOARDING OPEN] **Card shadows.** Full root
+  cause + all five failure modes are in the RECENTLY SHIPPED entry.
+  **DONE: every card on every PAGE in the app** -- 6 tabs + ~30 stack screens, plus the component-file
+  cards they render (GratitudeStreakCard, MembershipCard, ReadingPlansCard, FaithTodayCard).
+  **STILL OPEN:**
+    1. MODALS -- excluded by Justin's call ("day detail is a modal, no? we arent touching modals right now.
+       way too messy. just full pages"). A modal floats over a dim overlay where a shadow does almost
+       nothing, so this is the lowest-value corner. Known sites with a shadow + overflow on the same view:
        log.tsx jump-to-date (2293); workout.tsx Add/Edit Exercise + tag + Load Routine (2923 / 3034 / 3349 /
        3462); workout-library.tsx x5 (3054 / 3273 / 3579 / 3753 / 3806); day-detail.tsx (385);
        ai-meal-estimator.tsx (973); components/BodyMeasurementsCard.tsx picker (186).
-       LOWEST VALUE ON PURPOSE: a modal floats over a dim overlay, where a shadow does almost nothing.
-    2. STACK SCREENS -- NEVER CHECKED AT ALL. Only the 6 tabs + settings were swept. Unchecked files with
-       an `overflow: 'hidden'` somewhere in them: achievements, bible, body-measurement-log, challenges,
-       comparison-report, definitions, diagnostic-report-view, journal, mission, food-detail, plans,
-       recipe-log, report, sleep, support, whats-new, onboarding (x7). MOST of these will be innocent
-       (progress tracks, avatars, pills) -- the bug only exists where a SHADOW sits on the same view.
-    3. COMPONENT-FILE cards/modals not yet checked: AchievementToast, CustomFoodCreator, DaySummaryModal,
+       Component-file modals never checked: AchievementToast, CustomFoodCreator, DaySummaryModal,
        FeedbackModal, HRZoneModal, MeasureHowToModal, MetricDrilldownModal, NotificationPanel,
        NutritionGearModal, NutrientDrilldownModal, RepeatMealModal, SummaryReadyModal, ToolkitSheet,
-       TooltipModal, VersePoolModal, WeightHistoryModal, SupporterFoil.
+       TooltipModal, VersePoolModal, WeightHistoryModal.
+    2. ONBOARDING (7 screens) -- see the surface-pass item; needs a plan first, not a sweep.
+  >> **THERE IS NO SEARCH THAT PROVES THIS IS FINISHED.** Failure mode #5 (the shadow was never written) is
+  invisible to every grep -- nothing is broken, so nothing matches. Justin caught Gratitude, the earned
+  badges, the log-measurements cards and Support's Promise card AFTER I called it done each time. Expect
+  more. The only check that works is opening a screen and asking "does every card here have a theme shadow?"
   ALSO FIXED 2026-07-16 (2nd sweep): plans (hardcoded black), synced-workouts (NO shadow), support +
   whats-new (right wrapper pattern, but 0.12 black = a third of a card), add-food's result rows (a PRIVATE
   per-theme opacity map duplicating cardShadowOpacity, next to a hardcoded '#000'), recipe-builder (0.12),
@@ -533,19 +575,19 @@ are separate pre-submission checklists, NOT part of this menu.
   wrapper for the flat ground + BackgroundLayers, exactly as the tabs got. Mechanical + low-risk (proven 6x
   on the tabs); do it in batches. ALSO in this pass: the Profile **Supporter card** is translucent so the
   page glow/halftone shows straight through it -- needs an opaque fill like the other cards.
-  >> PROGRESS 2026-07-16. **The old top-down gradient is GONE from the app** -- zero screens use
-  `gradientStart` now (it survives ONLY as the wash behind Otto's + Halo's chat panels; it no longer means
-  "the top of a page"). Converted: prayer, bible, plans, devotional (amber) + settings, sleep, achievements,
-  journal, body-measurements, body-measurement-log, synced-workouts (accent).
-  >> BUT THE PASS IS **NOT** DONE, and "gradientStart = 0" was the wrong finish line. A screen that never
-  had a gradient does not show up in a search for gradients. **17 screens paint a flat `bgPrimary` and stop**
-  -- correct ground colour, NO glow, NO halftone. They were never on the old gradient, so they were invisible
-  to the search AND to the eye until Justin asked. DONE of those 4: add-food, food-detail, recipe-builder,
-  ai-meal-estimator. **REMAINING 13**: recipe-log, workout-library, day-summary, weekly-summary,
-  monthly-summary, report, reports, comparison-report, challenges, challenge-create, adaptive-target,
-  tutorials, definitions. Find them with `flex: 1, backgroundColor: theme.bgPrimary`. Several have 2-3
-  wrappers (loading / empty / main) -- the MAIN one is the one that matters.
-  >> Onboarding (7 screens) left alone deliberately -- separate flow, decide before touching.
+  >> ✅ **DONE 2026-07-16. Every page in the app is lit from below** -- all 6 tabs + ~30 stack screens. The
+  app no longer changes its lighting when you leave a tab. Verified: zero screens use `gradientStart` (it
+  survives ONLY as the wash behind Otto's + Halo's chat panels -- it no longer means "the top of a page"),
+  and every `flex: 1, backgroundColor: bgPrimary` screen now has a `<BackgroundLayers />`.
+  >> ⚠️ THE FINISH LINE WAS WRONG THE FIRST TIME, and the lesson generalises: I converted the 11 screens
+  using the OLD gradient, found `gradientStart = 0`, and called the pass complete. But **17 more screens
+  painted a flat `bgPrimary` and stopped** -- right ground colour, NO glow, NO halftone. A screen that never
+  had a gradient does not show up in a search for gradients. Justin caught it by asking "are you not adding
+  the gradient to any of these?". SEARCHING FOR THE BROKEN VERSION OF A THING NEVER FINDS THE MISSING
+  VERSION OF IT. (Two of them -- diagnostic-report + diagnostic-report-view -- also aliased the theme as
+  `t.bgPrimary`, so even the corrected search missed them.)
+  >> ONBOARDING (7 screens) is the ONLY thing left, deliberately: it is a separate flow and Justin wants a
+  plan before it is touched -- it may be a chance to change more than the surface.
   >> The conversion is 2 lines: a `<BackgroundLayers />` under the container + the import. (On a screen that
   still had the old gradient it was also `gradientStart` -> `gradientEnd`, i.e. the same colour twice = the
   flat ground.)

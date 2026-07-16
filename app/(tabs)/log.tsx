@@ -364,7 +364,10 @@ export default function LogScreen() {
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); calPickerPrev(); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="chevron-back" size={20} color={theme.accentBlueRaw} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: Type.num, letterSpacing: 1 }}>
+          {/* textSecondary, not textPrimary: textPrimary is the harsh near-black on Light and this is a
+              header, not data. And INTERFACE, not Type.num -- "July 2026" is a month NAME with a year on it,
+              not a value; the number face is condensed + tabular and made it read like a readout. */}
+          <Text style={{ fontSize: 15, color: theme.textSecondary, fontFamily: Type.uiBold }}>
             {CAL_MONTHS[pickerMonth]} {pickerYear}
           </Text>
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); calPickerNext(); }} disabled={!calPickerCanGoNext()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
@@ -2005,13 +2008,10 @@ export default function LogScreen() {
             style={{ flex:1, justifyContent:'center', alignItems:'center' }}
             pointerEvents="box-none">
             <Animated.View style={{ width:'92%', maxHeight:'86%', backgroundColor: theme.bgSheet, borderRadius:16, borderWidth:0.5, borderColor: theme.borderCard, borderTopWidth:1.5, borderTopColor: theme.accentBlueRaw, overflow:'hidden', transform:[{scale: cardScale}] }}>
-              {/* Handle + header always visible above scroll */}
-              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeWaterDetailModal(); }} style={{ alignItems:'center', paddingTop:12, paddingBottom:8 }}>
-                <View style={{ width:36, height:4, borderRadius:2, backgroundColor: theme.sheetHandle }} />
-              </TouchableOpacity>
-              <View style={{ paddingHorizontal:16, paddingBottom:12 }}>
-                <Text style={{ fontSize:9, color: theme.accentBlueRaw, fontFamily:Type.uiBold, letterSpacing:3, textTransform:'uppercase' }}>Water Log</Text>
-              </View>
+              {/* ModalHeader. Was a hand-rolled handle pill + a 9px ALL-CAPS LABEL as the title, with no X --
+                  a card label doing a title's job. ModalHeader gives the 20px mixed-case title, the pill and
+                  the X in one component. */}
+              <ModalHeader title="Water Log" onClose={closeWaterDetailModal} />
               <View style={{ height:0.5, backgroundColor: theme.borderCard, marginHorizontal:16 }} />
               {/* Everything below the header is scrollable so Daily Goal is reachable when keyboard is open */}
               <ScrollView
@@ -2044,9 +2044,13 @@ export default function LogScreen() {
                         <Text style={{ fontSize:10, color: theme.textDim, fontFamily:Type.ui }}>by this time of day</Text>
                       </View>
                     ) : (
+                      // ONE line, ONE size, INTERFACE face. It was "Goal" at 28px above "Complete" at 20px,
+                      // both on Type.num -- two sizes of the NUMBER face on a phrase with no number in it.
+                      // Green is right here: this genuinely IS a success state.
                       <View style={{ flex:1, borderLeftWidth:0.5, borderLeftColor: theme.borderCard, paddingLeft:14, justifyContent:'center' }}>
-                        <Text style={{ fontSize:28, color: theme.statusGood, fontFamily:Type.num, letterSpacing:1 }}>{goalMet ? 'Goal' : ''}</Text>
-                        <Text style={{ fontSize:20, color: theme.statusGood, fontFamily:Type.num, letterSpacing:1 }}>{goalMet ? 'Complete' : ''}</Text>
+                        {goalMet && (
+                          <Text style={{ fontSize:18, color: theme.statusGood, fontFamily:Type.uiBold }}>Goal Complete</Text>
+                        )}
                       </View>
                     )}
                   </View>
@@ -2099,10 +2103,12 @@ export default function LogScreen() {
                       </View>
                     ))}
                   </View>
+                  {/* Shine only when ENABLED: a dim/inactive button must not read as a lit surface. */}
                   <TouchableOpacity
                     style={{ backgroundColor: presetsSaveable ? theme.bgSelected : theme.bgInput, borderWidth:1, borderColor: presetsSaveable ? theme.accentBlueBorder : theme.borderInput, borderRadius:8, padding:12, alignItems:'center', opacity: presetsSaveable ? 1 : 0.5 }}
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); saveWaterPresets(); }}
                     disabled={!presetsSaveable}>
+                    {presetsSaveable && <ButtonShine radius={8} />}
                     <Text style={{ color: presetsSaveable ? theme.accentBlue : theme.textDim, fontFamily:Type.uiSemibold, fontSize:14 }}>Save Presets</Text>
                   </TouchableOpacity>
                 </View>
@@ -2126,6 +2132,7 @@ export default function LogScreen() {
                       style={{ flex:2, backgroundColor: goalSaveable ? theme.bgSelected : theme.bgInput, borderWidth:1, borderColor: goalSaveable ? theme.accentBlueBorder : theme.borderInput, borderRadius:8, padding:12, alignItems:'center', opacity: goalSaveable ? 1 : 0.5, marginTop:1 }}
                       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); saveWaterGoal(); }}
                       disabled={!goalSaveable}>
+                      {goalSaveable && <ButtonShine radius={8} />}
                       <Text style={{ color: goalSaveable ? theme.accentBlue : theme.textDim, fontFamily:Type.uiSemibold, fontSize:14 }}>Save Goal</Text>
                     </TouchableOpacity>
                   </View>
@@ -2161,10 +2168,12 @@ export default function LogScreen() {
             onClose={closeEditMeals}
             showClose={false}
             right={
+              /* ACCENT, not green: green is success/goal-hit, and Done is an action. Mixed case + shine. */
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeEditMeals(); }}
-                style={{ backgroundColor: theme.accentGreenBg, borderWidth:1, borderColor: theme.accentGreenBorder, borderRadius:6, paddingHorizontal:14, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center' }}>
-                <Text style={{ color: theme.accentGreen, fontSize:12, fontFamily:Type.uiBold, letterSpacing:1 }}>DONE</Text>
+                style={{ backgroundColor: theme.accentBlueBg, borderWidth:1, borderColor: theme.accentBlueBorder, borderRadius:6, paddingHorizontal:14, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center' }}>
+                <ButtonShine radius={6} />
+                <Text style={{ color: theme.accentBlue, fontSize:12, fontFamily:Type.uiBold }}>Done</Text>
               </TouchableOpacity>
             }
           />
@@ -2185,6 +2194,7 @@ export default function LogScreen() {
                     style={{ flexDirection:'row', alignItems:'center', justifyContent:'center', gap:8, paddingVertical:13, borderRadius:8, backgroundColor: mealSlots.length >= 8 ? theme.bgInput : theme.bgSelected, borderWidth:1, borderColor: mealSlots.length >= 8 ? theme.borderInput : theme.accentBlueBorder, opacity: mealSlots.length >= 8 ? 0.5 : 1 }}
                     onPress={addMealSlot}
                     disabled={mealSlots.length >= 8}>
+                    {mealSlots.length < 8 && <ButtonShine radius={8} />}
                     <Ionicons name="add" size={16} color={mealSlots.length >= 8 ? theme.textDim : theme.accentBlue} />
                     <Text style={{ fontSize:14, color: mealSlots.length >= 8 ? theme.textDim : theme.accentBlue, fontFamily:Type.uiSemibold }}>
                       {mealSlots.length >= 8 ? 'Maximum 8 slots reached' : 'Add Meal Slot'}
@@ -2275,17 +2285,16 @@ export default function LogScreen() {
         <Animated.View style={{ flex: 1, opacity: calFadeAnim }}>
           <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' }} onPress={closeCalPicker} activeOpacity={1} />
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', pointerEvents: 'box-none' }}>
-            <View style={{ backgroundColor: theme.bgSheet, borderRadius: 16, paddingHorizontal: 20, paddingBottom: 20, width: 310, borderWidth: 0.5, borderColor: theme.borderCard, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 }}>
-              <TouchableOpacity onPress={closeCalPicker} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 16 }}>
-                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
-              </TouchableOpacity>
-              <Text style={{ fontSize: 10, color: theme.accentBlueRaw, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', textAlign: 'center', marginBottom: 16 }}>Jump to Date</Text>
-              {calPickerVisible && renderCalGrid()}
-              <TouchableOpacity
-                onPress={closeCalPicker}
-                style={{ marginTop: 16, alignItems: 'center', paddingVertical: 8, paddingHorizontal: 16, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8 }}>
-                <Text style={{ fontSize: 14, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Cancel</Text>
-              </TouchableOpacity>
+            {/* Was: a hand-rolled handle pill, a 10px CENTRED ALL-CAPS LABEL doing a title's job, and a
+                Cancel button at the bottom. ModalHeader gives the mixed-case left title, the pill AND the X
+                -- which makes Cancel redundant, so it goes: two close controls on one modal is the exact
+                thing Edit Meal Slots' comment warns about. Body padding moves off the card so the header can
+                own the top edge. */}
+            <View style={{ backgroundColor: theme.bgSheet, borderRadius: 16, paddingBottom: 20, width: 310, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 }}>
+              <ModalHeader title="Jump to Date" onClose={closeCalPicker} />
+              <View style={{ paddingHorizontal: 20, paddingTop: 4 }}>
+                {calPickerVisible && renderCalGrid()}
+              </View>
             </View>
           </View>
         </Animated.View>
@@ -2334,7 +2343,8 @@ const styles = StyleSheet.create({
   emptyMealText:      { fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic', paddingVertical: 8 },
   waterBtns:          { flexDirection: 'row', gap: 8 },
   waterBtn:           { flex: 1, padding: 10, borderWidth: 0.5, borderRadius: 8, alignItems: 'center' },
-  waterBtnText:       { fontFamily: Type.num, fontSize: 15, letterSpacing: 1 },
+  // INTERFACE, not the number face: "+12 oz" is a button LABEL. Type.num is Rajdhani (condensed, tabular).
+  waterBtnText:       { fontFamily: Type.uiBold, fontSize: 15 },
   waterBtnRed:        { flex: 1, padding: 10, borderWidth: 0.5, borderRadius: 8, alignItems: 'center' },
-  waterBtnRedText:    { fontFamily: Type.num, fontSize: 15, letterSpacing: 1 },
+  waterBtnRedText:    { fontFamily: Type.uiBold, fontSize: 15 },
 });

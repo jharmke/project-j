@@ -7,6 +7,7 @@ import { Animated, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpac
 import { storageSet } from '../utils/storage';
 import { useTheme } from '../theme';
 import { useToast, ToastRenderer } from './Toast';
+import PrimaryCTA from './PrimaryCTA';
 import { Type } from '../typography';
 import ModalHeader from './ModalHeader';
 
@@ -413,15 +414,15 @@ export default function NutritionGearModal({ visible, onClose, preset, goals, on
               </Text>
             </View>
 
-            {/* Save button */}
-            <TouchableOpacity
+            {/* Save button. Molded + ACCENT (was flat accentGreen -- green is success/goal-hit, this is an
+                action). Also drops Type.num: that is the NUMBER face (Rajdhani, condensed + tabular, built
+                for values) on a button LABEL -- the same straggler as Profile's save bar. PrimaryCTA owns
+                the label face, so it cannot come back here. */}
+            <PrimaryCTA
+              faceStyle={{ paddingVertical: 15, borderRadius: 10 }}
+              label="Save Goals"
               onPress={handleSave}
-              style={{ backgroundColor: theme.accentGreen, borderRadius: 10, padding: 15, alignItems: 'center' }}
-            >
-              <Text style={{ color: theme.bgPrimary, fontSize: 18, fontFamily: Type.num, letterSpacing: 2 }}>
-                SAVE GOALS
-              </Text>
-            </TouchableOpacity>
+            />
           </ScrollView>
         </Animated.View>
       </View>

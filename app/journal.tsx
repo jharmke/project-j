@@ -23,6 +23,8 @@ import { showCelebration } from '../components/CelebrationOverlay';
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import ButtonShine from '../components/ButtonShine';
+import ModalHeader from '../components/ModalHeader';
+import { BlurView } from 'expo-blur';
 
 type Category = 'verse' | 'prayer' | 'study' | 'personal' | 'gratitude' | 'fitness';
 
@@ -787,24 +789,36 @@ export default function JournalScreen() {
       )}
 
       {/* Floating edit save bar -- sits just above keyboard */}
+      {/* The floating edit bar. Was a SOLID bgSheet panel dropped in front of a translucent glowing page --
+          the exact thing Profile's save-bar comment warns about ("a solid bgSheet panel... reads as a
+          foreign object"). Now blur + chromeFill, the same material as the tab bar and every header. */}
       {editingId && keyboardHeight > 0 && (
         <View style={[styles.floatingEditBar, {
           bottom: keyboardHeight,
-          backgroundColor: theme.bgSheet,
           borderColor: theme.borderCard,
+          overflow: 'hidden',
         }]}>
+          <BlurView
+            intensity={theme.id === 'dark' ? 40 : 34}
+            tint={theme.id === 'dark' ? 'dark' : 'light'}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          />
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.chromeFill }]} pointerEvents="none" />
           <TouchableOpacity
             onPress={() => { setEditingId(null); setEditTitle(''); setEditNotes(''); Keyboard.dismiss(); }}
             style={[styles.floatingEditBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]}
           >
             <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.uiSemibold }}>Cancel</Text>
           </TouchableOpacity>
+          {/* ACCENT, not green: green is success/goal-hit, saving is an action. */}
           <TouchableOpacity
             onPress={() => { saveEdit(); Keyboard.dismiss(); }}
-            style={[styles.floatingEditBtn, { flex: 2, backgroundColor: theme.accentGreenBg, borderColor: theme.accentGreenBorder }]}
+            style={[styles.floatingEditBtn, { flex: 2, backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
           >
-            <Ionicons name="checkmark" size={14} color={theme.accentGreen} />
-            <Text style={{ fontSize: 13, color: theme.accentGreen, fontFamily: Type.uiSemibold }}>Save</Text>
+            <ButtonShine radius={8} />
+            <Ionicons name="checkmark" size={14} color={theme.accentBlue} />
+            <Text style={{ fontSize: 13, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Save</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -816,16 +830,18 @@ export default function JournalScreen() {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={[styles.overlay, { backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }]}
           >
-            <View style={[styles.createModal, { backgroundColor: theme.bgSheet, borderColor: theme.borderCard }]}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                <View style={[styles.categoryIcon, { backgroundColor: CATEGORY_META[createCategory].color + '22' }]}>
-                  <Ionicons name={CATEGORY_META[createCategory].icon as any} size={18} color={CATEGORY_META[createCategory].color} />
-                </View>
-                <Text style={[styles.createModalTitle, { color: theme.textPrimary }]}>
-                  New {CATEGORY_META[createCategory].label}
-                </Text>
-              </View>
+            {/* This is the modal you reach for Gratitude / Study / Prayer / Fitness, and it had NONE of the
+                house chrome: a hand-rolled title row, no handle pill, no X, no accent top edge.
+                The category ICON is deliberately NOT in ModalHeader's `right` slot -- a 40px coloured disc
+                sitting next to the X read as a second button. The title already says "New Study"; the icon
+                was decoration competing with the one control up there. */}
+            <View style={[styles.createModal, { backgroundColor: theme.bgSheet, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
+              <ModalHeader
+                title={`New ${CATEGORY_META[createCategory].label}`}
+                onClose={() => setShowCreateModal(false)}
+              />
 
+              <View style={styles.createModalBody}>
               <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>TITLE</Text>
               <TextInput
                 style={[styles.fieldInput, {
@@ -883,20 +899,25 @@ export default function JournalScreen() {
                 onChangeText={setCreateNotes}
               />
 
+              {/* Both got HAPTICS -- Cancel had none at all. Light for the way out, Medium for the save, per
+                  the house rule (Light = minor, Medium = confirms/saves). */}
               <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
                 <TouchableOpacity
-                  onPress={() => setShowCreateModal(false)}
+                  onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowCreateModal(false); }}
                   style={[styles.modalBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]}
                 >
                   <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.uiSemibold }}>Cancel</Text>
                 </TouchableOpacity>
+                {/* ACCENT, not green: green is success/goal-hit, saving is an action. */}
                 <TouchableOpacity
-                  onPress={createEntry}
-                  style={[styles.modalBtn, { flex: 2, backgroundColor: theme.accentGreenBg, borderColor: theme.accentGreenBorder }]}
+                  onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); createEntry(); }}
+                  style={[styles.modalBtn, { flex: 2, backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
                 >
-                  <Ionicons name="checkmark" size={14} color={theme.accentGreen} />
-                  <Text style={{ fontSize: 13, color: theme.accentGreen, fontFamily: Type.uiSemibold }}>Save Entry</Text>
+                  <ButtonShine radius={8} />
+                  <Ionicons name="checkmark" size={14} color={theme.accentBlue} />
+                  <Text style={{ fontSize: 13, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Save Entry</Text>
                 </TouchableOpacity>
+              </View>
               </View>
             </View>
           </KeyboardAvoidingView>
@@ -941,7 +962,10 @@ const styles = StyleSheet.create({
   categoryIcon:      { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   categoryRowLabel:  { fontSize: 14, fontFamily: Type.uiSemibold, marginBottom: 2 },
   categoryRowDesc:   { fontSize: 11, fontFamily: Type.ui },
-  createModal:       { width: '92%', borderRadius: 14, borderWidth: 0.5, padding: 20 },
+  // NO top padding: ModalHeader owns the top of the card and carries its own spacing + the handle pill, so
+  // a padding:20 on all sides pushed the pill down off the edge. The body padding moves to createModalBody.
+  createModal:       { width: '92%', borderRadius: 14, borderWidth: 0.5 },
+  createModalBody:   { paddingHorizontal: 20, paddingBottom: 20, paddingTop: 4 },
   createModalTitle:  { fontSize: 16, fontFamily: Type.uiBold },
   fieldLabel:        { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 },
   fieldInput:        { borderWidth: 1, borderRadius: 8, padding: 10, fontSize: 14, fontFamily: Type.ui },

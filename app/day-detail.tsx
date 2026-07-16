@@ -293,7 +293,9 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
           <TouchableOpacity onPress={calPickerPrev} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="chevron-back" size={20} color={theme.accentBlueRaw} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: Type.num, letterSpacing: 1 }}>
+          {/* Same fix as the Log tab's twin: textSecondary (textPrimary is the harsh near-black on Light,
+              and this is a header, not data) and INTERFACE, not the condensed tabular number face. */}
+          <Text style={{ fontSize: 15, color: theme.textSecondary, fontFamily: Type.uiBold }}>
             {CAL_MONTHS[pickerMonth]} {pickerYear}
           </Text>
           <TouchableOpacity onPress={calPickerNext} disabled={!calPickerCanGoNext()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
@@ -377,18 +379,14 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
         <Animated.View style={{ flex: 1, opacity: calFadeAnim }}>
           <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' }} onPress={closeCalPicker} activeOpacity={1} />
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="box-none">
-            <View style={{ backgroundColor: theme.bgSheet, borderRadius: 16, paddingHorizontal: 20, paddingBottom: 20, width: 310, borderWidth: 0.5, borderColor: theme.borderCard, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 }}>
-              <TouchableOpacity onPress={closeCalPicker} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 16 }}>
-                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
-              </TouchableOpacity>
-              <Text style={{ fontSize: 10, color: theme.accentBlueRaw, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', textAlign: 'center', marginBottom: 16 }}>Jump to Date</Text>
-              {calPickerVisible && renderCalGrid()}
-              <TouchableOpacity
-                onPress={closeCalPicker}
-                style={{ marginTop: 16, alignItems: 'center', paddingVertical: 8, paddingHorizontal: 16, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8 }}>
-                <ButtonShine radius={8} />
-                <Text style={{ fontSize: 14, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Cancel</Text>
-              </TouchableOpacity>
+            {/* The TWIN of the Log tab's Jump to Date picker -- identical hand-rolled pill + centred caps
+                label + redundant Cancel. Fixed the same way: ModalHeader owns the pill, the title and the X,
+                so Cancel goes. If you change one of these two pickers, change the other. */}
+            <View style={{ backgroundColor: theme.bgSheet, borderRadius: 16, paddingBottom: 20, width: 310, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 }}>
+              <ModalHeader title="Jump to Date" onClose={closeCalPicker} />
+              <View style={{ paddingHorizontal: 20, paddingTop: 4 }}>
+                {calPickerVisible && renderCalGrid()}
+              </View>
             </View>
           </View>
         </Animated.View>

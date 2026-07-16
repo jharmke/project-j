@@ -4135,17 +4135,18 @@ export default function HomeScreen() {
       {editTutorialMode && cardOrder.length > 0 && (
         <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' }]}>
           <View style={[styles.editSheet, { backgroundColor: theme.bgSheet, borderColor: theme.borderSheet, borderWidth: 0.5, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw }]}>
-            {/* Handle bar */}
-            <View style={{ alignSelf: 'center', paddingVertical: 6, paddingHorizontal: 40 }}>
-              <View style={[styles.editSheetHandle, { backgroundColor: theme.sheetHandle }]} />
-            </View>
-            {/* Header */}
-            <View style={[styles.editSheetHeader, { borderBottomColor: theme.borderSubtle }]}>
-              <Text style={{ fontSize: 10, color: theme.accentBlueRaw, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase' }}>Edit Layout</Text>
-              <View style={{ backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder, borderRadius: 6, paddingHorizontal: 14, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: Type.uiBold, letterSpacing: 1 }}>DONE</Text>
-              </View>
-            </View>
+            {/* The TUTORIAL replica of the real Edit Layout sheet below. It must stay pixel-identical to it,
+                so it uses the same ModalHeader + the same accent Done -- it just has no onPress, because the
+                tutorial drives it. If you restyle the real one, restyle this. */}
+            <ModalHeader title="Edit Layout" showClose={false}
+              right={
+                <View style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 14, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
+                  <ButtonShine radius={6} />
+                  <Text style={{ color: theme.accentBlue, fontSize: 12, fontFamily: Type.uiBold }}>Done</Text>
+                </View>
+              }
+            />
+            <View style={{ borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle, marginBottom: 4 }} />
             {/* Segmented tabs -- dynamic, reflects editTab state */}
             <View ref={editLayoutTabsRef} collapsable={false} style={{ flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10 }}>
               <View style={{ flex: 1, flexDirection: 'row', backgroundColor: theme.bgInput, borderRadius: 10, padding: 3 }}>
@@ -4268,9 +4269,13 @@ export default function HomeScreen() {
               onClose={exitEditMode}
               showClose={false}
               right={
+                /* ACCENT, not green: green is success/goal-hit, Done is an action. Matches Log's Edit Meal
+                   Slots Done exactly -- same control, same modal shape. Keep this and the TUTORIAL replica
+                   above (editTutorialMode) in lockstep; they must look identical. */
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); exitEditMode(); }}
-                  style={{ backgroundColor: theme.accentGreenBg, borderWidth:1, borderColor: theme.accentGreenBorder, borderRadius:6, paddingHorizontal:14, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center' }}>
-                  <Text style={{ color: theme.accentGreen, fontSize:12, fontFamily:Type.uiBold, letterSpacing:1 }}>DONE</Text>
+                  style={{ backgroundColor: theme.accentBlueBg, borderWidth:1, borderColor: theme.accentBlueBorder, borderRadius:6, paddingHorizontal:14, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center' }}>
+                  <ButtonShine radius={6} />
+                  <Text style={{ color: theme.accentBlue, fontSize:12, fontFamily:Type.uiBold }}>Done</Text>
                 </TouchableOpacity>
               }
             />

@@ -13,7 +13,8 @@ import { READING_PLANS, getPlanCompletion, getTodayReading, type ReadingPlansSto
 import { DEVOTIONALS, getDevotionalCompletion, type DevotionalsStorage } from '../data/devotionals';
 import { loadReadingPlanProgress } from '../utils/readingPlansProgress';
 import { loadDevotionalProgress, getDevotionalProgress, getNextDay } from '../utils/devotionals';
-import { useTheme, type Theme } from '../theme';
+import { useTheme, faithInk, faithInkBody, faithInkMuted, faithTintBg, faithTintBorder, type Theme } from '../theme';
+import ButtonShine from './ButtonShine';
 import { LinearGradient } from 'expo-linear-gradient';
 import VersePoolModal from './VersePoolModal';
 import { Type } from '../typography';
@@ -50,7 +51,7 @@ function PageHeader({ title, icon, theme, withJournal, onJournal, withGear, onGe
     <View style={styles.header}>
       <View style={styles.titleRow}>
         {icon}
-        <Text style={[styles.title, { color: theme.textSecondary }]}>{title}</Text>
+        <Text style={[styles.title, { color: faithInkMuted(theme) }]}>{title}</Text>
       </View>
       {(withJournal || withGear) && (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
@@ -79,7 +80,7 @@ function Tile({ item, theme }: { item: RowItem; theme: Theme }) {
         <Ionicons name={item.icon as any} size={12} color={theme.accentAmber} />
         <Text numberOfLines={1} style={[styles.tileName, { color: theme.accentAmber }]}>{item.name}</Text>
       </View>
-      {item.nextRef ? <Text numberOfLines={1} style={[styles.tileRef, { color: theme.textMuted }]}>{item.nextRef}</Text> : null}
+      {item.nextRef ? <Text numberOfLines={1} style={[styles.tileRef, { color: faithInkMuted(theme) }]}>{item.nextRef}</Text> : null}
     </View>
   );
 }
@@ -88,10 +89,10 @@ function Tile({ item, theme }: { item: RowItem; theme: Theme }) {
 function Column({ label, items, emptyText, theme }: { label: string; items: RowItem[]; emptyText: string; theme: Theme }) {
   return (
     <View style={styles.col}>
-      <Text style={[styles.colLabel, { color: theme.textMuted }]}>{label}</Text>
+      <Text style={[styles.colLabel, { color: faithInkMuted(theme) }]}>{label}</Text>
       {items.length
         ? items.map(it => <Tile key={it.id} item={it} theme={theme} />)
-        : <Text style={[styles.colEmpty, { color: theme.textMuted }]}>{emptyText}</Text>}
+        : <Text style={[styles.colEmpty, { color: faithInkMuted(theme) }]}>{emptyText}</Text>}
     </View>
   );
 }
@@ -247,12 +248,16 @@ export default function FaithTodayCard({ verse, theme }: Props) {
               withGear
               onGear={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setManageOpen(true); }}
             />
-            <Text style={[styles.verseText, { color: theme.textSecondary }]}>"{sv?.text}"</Text>
-            <Text style={[styles.verseRef, { color: theme.textMuted }]}>{sv?.reference}</Text>
+            <Text style={[styles.verseText, { color: faithInkBody(theme) }]}>"{sv?.text}"</Text>
+            <Text style={[styles.verseRef, { color: theme.accentAmber }]}>{sv?.reference}</Text>
+            {/* The tint was hardcoded rgba(212,134,10,...) = DARK's amber baked in, so this button wore the
+                wrong amber on the other four themes while the text beside it used each theme's own.
+                faithTintBg/Border derive from theme.accentAmber at the house alphas. Plus the shine. */}
             <TouchableOpacity
               onPress={goReflectWithHalo}
-              style={[styles.haloBtn, { backgroundColor: 'rgba(212,134,10,0.10)', borderColor: 'rgba(212,134,10,0.30)' }]}
+              style={[styles.haloBtn, { backgroundColor: faithTintBg(theme), borderColor: faithTintBorder(theme) }]}
             >
+              <ButtonShine radius={6} />
               <Ionicons name="sparkles" size={12} color={theme.accentAmber} />
               <Text style={[styles.haloBtnText, { color: theme.accentAmber }]}>Reflect with Halo</Text>
             </TouchableOpacity>
@@ -268,15 +273,17 @@ export default function FaithTodayCard({ verse, theme }: Props) {
             />
             {noPlans ? (
               <View style={styles.empty}>
-                <Ionicons name="calendar-outline" size={22} color={theme.textMuted} />
-                <Text style={[styles.emptyText, { color: theme.textSecondary }]}>Start a reading plan or devotional</Text>
-                <Text style={[styles.emptyHint, { color: theme.textMuted }]}>Tap to browse on the Faith tab</Text>
+                <Ionicons name="calendar-outline" size={22} color={faithInkMuted(theme)} />
+                <Text style={[styles.emptyText, { color: faithInkBody(theme) }]}>Start a reading plan or devotional</Text>
+                <Text style={[styles.emptyHint, { color: faithInkMuted(theme) }]}>Tap to browse on the Faith tab</Text>
               </View>
             ) : (
               <View style={styles.cols}>
-                <Column label="READING PLANS" items={planItems} emptyText="None yet" theme={theme} />
+                {/* Named empty states, matching the Faith tab: "None yet" twice told you nothing about
+                    WHICH column was empty when they sit side by side. */}
+                <Column label="READING PLANS" items={planItems} emptyText="No plans yet" theme={theme} />
                 <View style={[styles.vDivider, { backgroundColor: 'rgba(212,134,10,0.18)' }]} />
-                <Column label="DEVOTIONALS" items={devItems} emptyText="None yet" theme={theme} />
+                <Column label="DEVOTIONALS" items={devItems} emptyText="No devotionals yet" theme={theme} />
               </View>
             )}
           </Slide>
@@ -297,20 +304,21 @@ export default function FaithTodayCard({ verse, theme }: Props) {
                   </View>
                 ))}
                 {activePrayers.length > prayerPreview.length && (
-                  <Text style={[styles.moreText, { color: theme.textMuted }]}>+{activePrayers.length - prayerPreview.length} more</Text>
+                  <Text style={[styles.moreText, { color: faithInkMuted(theme) }]}>+{activePrayers.length - prayerPreview.length} more</Text>
                 )}
               </>
             ) : (
               <View style={styles.empty}>
-                <MaterialCommunityIcons name="hand-heart" size={22} color={theme.textMuted} />
-                <Text style={[styles.emptyText, { color: theme.textSecondary }]}>Lift up what you're carrying</Text>
-                <Text style={[styles.emptyHint, { color: theme.textMuted }]}>Tap to add a prayer on the Faith tab</Text>
+                <MaterialCommunityIcons name="hand-heart" size={22} color={faithInkMuted(theme)} />
+                <Text style={[styles.emptyText, { color: faithInkBody(theme) }]}>Lift up what you're carrying</Text>
+                <Text style={[styles.emptyHint, { color: faithInkMuted(theme) }]}>Tap to add a prayer on the Faith tab</Text>
               </View>
             )}
             <TouchableOpacity
               onPress={goAskForPrayer}
-              style={[styles.haloBtn, { backgroundColor: 'rgba(212,134,10,0.10)', borderColor: 'rgba(212,134,10,0.30)' }]}
+              style={[styles.haloBtn, { backgroundColor: faithTintBg(theme), borderColor: faithTintBorder(theme) }]}
             >
+              <ButtonShine radius={6} />
               <Ionicons name="people" size={12} color={theme.accentAmber} />
               <Text style={[styles.haloBtnText, { color: theme.accentAmber }]}>Ask for prayer</Text>
             </TouchableOpacity>
@@ -345,7 +353,11 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   eyebrow: { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold, marginBottom: 2 },
   titleRow: { flexDirection: 'row', alignItems: 'center' },
-  title: { fontSize: 14, fontFamily: Type.uiBold },
+  // The SAME recipe as the Faith tab's cardLabel/verseLabel (9 / tracking 3 / caps / uiBold). "TODAY'S
+  // MESSAGE" is a card LABEL, not a title -- it names the card, it is not the content. It was 14px bold
+  // with no tracking, which is why the two surfaces disagreed. Colour is faithInkMuted for the same reason:
+  // I first put it on faithInk (the dark HEADLINE rung) and it read "super dark". Labels are muted.
+  title: { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold },
   verseText: { fontSize: 17, lineHeight: 27, marginBottom: 12, fontFamily: 'Lora_500Medium', textAlign: 'center' },
   verseRef: { fontSize: 9, fontFamily: Type.uiBold, textAlign: 'center', letterSpacing: 2, textTransform: 'uppercase' },
   haloBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 6, paddingVertical: 9, paddingHorizontal: 12, minHeight: 44, marginTop: 10, marginBottom: 8 },

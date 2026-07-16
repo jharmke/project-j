@@ -373,9 +373,23 @@ const light: Theme = {
   borderInset:      'rgba(0,0,0,0.08)',
 
   textPrimary:      '#1a1a2e',
-  textSecondary:    '#4a4a6a',
-  textMuted:        '#6666aa',
-  textDim:          '#9999bb',
+  // NEUTRALISED 2026-07-15. Every theme tints its text ramp toward its own identity -- Slate steel-blue
+  // (#5a7088) on a blue-grey page, Warm brown (#9a7050) on cream, Blush rose (#834a5a) on pink. Those are
+  // earned. LIGHT's page is #f2f3f7, essentially neutral, and its ramp was the most SATURATED of the four:
+  // textMuted '#6666aa' ran +68 blue over red, where Slate -- a page that is genuinely blue -- only runs
+  // +46. So Light was tinting hard toward a hue it does not have, and every label in the app read PURPLE on
+  // it (Justin flagged it on Stats, on Faith, and then on Profile, which alone uses these three tokens ~40
+  // times). It was never a per-screen problem; it was these three values.
+  // Perceived lightness is MATCHED on each, so contrast is unchanged and the ramp keeps its shape -- the
+  // violet just leaves. A slight cool cast is kept so they do not read dead-grey against white cards.
+  // This is the spec's own rule finally applied: "it lightens by changing HUE... carry hierarchy on the
+  // WEIGHT axis and leave the ink alone."
+  // VERDICT (Justin, on device): "little dead grey but much better than the purple. leave it." So it is
+  // KNOWN to sit a touch flat. If it is ever revisited, the move is nudging the blue channel back up a few
+  // points -- NOT reverting to the violet, and not touching the lightness.
+  textSecondary:    '#4a4c58',
+  textMuted:        '#6b6d7a',
+  textDim:          '#9a9ca8',
   textPlaceholder:  '#aaaacc',
   textWhite:        '#1a1a2e',
 
@@ -835,3 +849,24 @@ export function ThemeProvider({ children }: { children: React.ReactNode }): Reac
 export function useTheme(): ThemeContextValue {
   return useContext(ThemeContext);
 }
+
+// ─── The FAITH warm ink ladder ────────────────────────────────────────────────────────────────────
+// Faith surfaces are warm amber. The app's text tokens are COOL, and on Light they are all PURPLE-family:
+// textMuted '#6666aa', textDim '#9999bb', textSecondary '#4a4a6a'. Put any of them on a warm card and the
+// hue fights the card -- that is what read as "so many different fonts and colours" on the Faith tab; it
+// was never a type problem, it was one wrong HUE. So: lighten along the WARM axis instead of shifting to a
+// cool one. Dark keeps its own tokens (a dark card has no warmth to fight).
+// Lives here, not in faith.tsx, because THREE places need it: the Faith tab, GratitudeStreakCard and
+// FaithTodayCard (the Home faith hub). It was copy-pasted twice before it earned a home.
+// THREE rungs, and the middle one is the point: with only ink+muted, BODY text had to borrow a headline
+// colour (prayers went dark and read heavy) or a label colour (verses went cool navy). Same job, two wrong
+// answers. faithInkBody is the warm equivalent of textSecondary.
+export const faithInk      = (t: Theme) => (t.id === 'dark' ? t.textPrimary   : '#4a3214'); // titles, headlines
+export const faithInkBody  = (t: Theme) => (t.id === 'dark' ? t.textSecondary : '#5c4632'); // verses, prayers, prose
+export const faithInkMuted = (t: Theme) => (t.id === 'dark' ? t.textMuted     : '#8a7358'); // labels, captions
+
+// The faith TINT recipe, at the same alphas as the accent one (bg 10% / border 30%), derived from each
+// theme's own accentAmber. Replaces the hardcoded rgba(212,134,10,...) scattered through the faith files,
+// which is DARK's amber baked in and therefore wrong on the other four themes.
+export const faithTintBg     = (t: Theme) => t.accentAmber + '1A';
+export const faithTintBorder = (t: Theme) => t.accentAmber + '4D';

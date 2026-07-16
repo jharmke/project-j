@@ -26,6 +26,7 @@ import * as Notifications from 'expo-notifications';
 import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import ButtonShine from '../../components/ButtonShine';
+import PrimaryCTA from '../../components/PrimaryCTA';
 import { useHealthKit } from '../../useHealthKit';
 import { BLANK_DAY, DEFAULT_TAGS, DayProgram, Exercise, PRRecord, Routine, SetEntry, TAG_COLOR_PALETTE, WorkoutTag, PRESET_ROUTINES, weightUnitLabel, formatHold, parseHoldInput } from '../../workoutData';
 import MuscleMap from '../../components/MuscleMap';
@@ -2466,22 +2467,37 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
           // stands off the page background; View Summary stays the wider filled primary CTA. View
           // Summary is a viewer, not a save gate -- sets already persist on every circle-check.
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 4, marginBottom: 4 }}>
+            {/* Was the LAST white button in the app, and the exact recipe the Repeat/Pick-a-Day pills had
+                before 2026-07-15: a near-white bgCardGlass fill with a FULL-STRENGTH 1.5px accent border --
+                the border carrying the entire button at 100% alpha with no tint to soften it, and a fill
+                that gloss physically cannot show on. Now the house tinted recipe + shine, same as
+                Repeat/Pick a Day. It stays TIER-2 on purpose: it is the quiet half of this row, and View
+                Summary beside it is the molded primary.
+                OPAQUE fill (accentBlueBgOpaque), not the usual translucent accentBlueBg: this row sits on
+                the PAGE, not on a card, so a 10% tint just shows you the accent bottom glow and the button
+                reads as transparent (Justin, 2026-07-15). Exactly the same reason Stats' VIEW ALL
+                ACHIEVEMENTS needed the opaque token -- both are tinted buttons with no card behind them. */}
             <TouchableOpacity
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/workout-library', params: { selectMode: 'true', day: activeDay } }); }}
-              style={{ flex: 1.3, backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderWidth: 1.5, borderColor: theme.accentBlue, borderRadius: 12, paddingVertical: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 5 }}>
+              style={{ flex: 1.3, backgroundColor: theme.accentBlueBgOpaque, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 12, paddingVertical: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 5 }}>
+              <ButtonShine radius={12} />
               <Ionicons name="add" size={19} color={theme.accentBlue} />
               <Text style={{ fontSize: 14, fontFamily: Type.uiBold, letterSpacing: 0.3, color: theme.accentBlue }}>Add Exercise</Text>
             </TouchableOpacity>
-            <TouchableOpacity
+            {/* faceStyle matches Add Exercise beside it (paddingVertical 15 / radius 12) instead of taking
+                PrimaryCTA's 16/13 -- two buttons in one row must be the same height and corner. That is
+                exactly what faceStyle is for. The hand-rolled accent shadow is gone: PrimaryCTA carries its
+                own accent glow, so keeping both would double it. */}
+            <PrimaryCTA
+              wrapperStyle={{ flex: 1.7 }}
+              faceStyle={{ paddingVertical: 15, borderRadius: 12 }}
+              label="View Summary"
+              icon={<Ionicons name="checkmark-circle" size={18} color="#ffffff" />}
               onPress={() => {
-                if (finishedSummaries[activeDay]) { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openFinishSummary(finishedSummaries[activeDay]); }
+                if (finishedSummaries[activeDay]) openFinishSummary(finishedSummaries[activeDay]);
                 else finishWorkout();
               }}
-              style={{ flex: 1.7, backgroundColor: theme.accentBlue, borderRadius: 12, paddingVertical: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8,
-                shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}>
-              <Ionicons name="checkmark-circle" size={18} color={theme.bgPrimary} />
-              <Text style={{ fontSize: 15, fontFamily: Type.uiBold, letterSpacing: 0.5, color: theme.bgPrimary }}>View Summary</Text>
-            </TouchableOpacity>
+            />
           </View>
         )}
 
@@ -2572,6 +2588,11 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
             onPress={saveNote}
             disabled={!noteIsDirty}
           >
+            {/* TIER-2 (tinted), so shine rather than the mould -- this is a secondary action inside the note
+                card, not the screen's primary. The gloss is white, so it works over BOTH tints this button
+                wears (accent for Save Note / red for Clear Note). It sits on a CARD, so the translucent
+                tint is fine here -- no need for the opaque token that Add Exercise required. */}
+            <ButtonShine radius={6} />
             <Text style={[styles.saveNoteBtnText, { color: noteIsDirty && !noteCurrentText ? theme.accentRed : theme.accentBlue }]}>
               {!noteIsDirty && noteCurrentText ? 'Saved ✓' : noteIsDirty && !noteCurrentText ? 'Clear Note' : 'Save Note'}
             </Text>
@@ -2824,10 +2845,12 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                     );
                   })()}
 
-                  <TouchableOpacity onPress={closeFinishSummary}
-                    style={{ backgroundColor: theme.accentBlue, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 10 }}>
-                    <Text style={{ fontSize: 15, fontFamily: Type.uiBold, color: theme.bgPrimary }}>Done</Text>
-                  </TouchableOpacity>
+                  <PrimaryCTA
+                    wrapperStyle={{ marginTop: 10 }}
+                    faceStyle={{ paddingVertical: 14, borderRadius: 12 }}
+                    label="Done"
+                    onPress={closeFinishSummary}
+                  />
                   </ScrollView>
                 </View>
               );
@@ -2870,10 +2893,13 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                 style={{ flex: 1, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 12, paddingVertical: 13, alignItems: 'center' }}>
                 <Text style={{ fontSize: 14, fontFamily: Type.uiBold, color: theme.textMuted }}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => { durationOverlay.value = 0; durationCardScale.value = 0.85; durationCardOpacity.value = 0; saveDurationEdit(); }}
-                style={{ flex: 1, backgroundColor: theme.accentBlue, borderRadius: 12, paddingVertical: 13, alignItems: 'center' }}>
-                <Text style={{ fontSize: 14, fontFamily: Type.uiBold, color: theme.bgPrimary }}>Save</Text>
-              </TouchableOpacity>
+              {/* faceStyle matches the Cancel beside it (paddingVertical 13 / radius 12). */}
+              <PrimaryCTA
+                wrapperStyle={{ flex: 1 }}
+                faceStyle={{ paddingVertical: 13, borderRadius: 12 }}
+                label="Save"
+                onPress={() => { durationOverlay.value = 0; durationCardScale.value = 0.85; durationCardOpacity.value = 0; saveDurationEdit(); }}
+              />
             </View>
           </Reanimated.View>
         </KeyboardAvoidingView>
@@ -2982,9 +3008,15 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                     <TouchableOpacity style={[styles.modalCancelBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeAddExerciseModal(); }}>
                       <Text style={[styles.modalCancelBtnText, { color: theme.textMuted }]}>Cancel</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.modalSaveBtn, { backgroundColor: theme.accentBlue, opacity: modalCanSave ? 1 : 0.35 }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); saveExercise(); }} disabled={!modalCanSave}>
-                      <Text style={[styles.modalSaveBtnText, { color: '#ffffff' }]}>{editingExercise ? 'Save' : 'Add'}</Text>
-                    </TouchableOpacity>
+                    {/* NOTE: there are TWO "Add Exercise" modals -- this one (the Workout TAB) and another in
+                        workout-library.tsx. They look near-identical. If you change one, check the other. */}
+                    <PrimaryCTA
+                      wrapperStyle={{ flex: 1 }}
+                      faceStyle={{ paddingVertical: 12, borderRadius: 8 }}
+                      label={editingExercise ? 'Save' : 'Add'}
+                      onPress={saveExercise}
+                      disabled={!modalCanSave}
+                    />
                   </View>
                 </View>
               </ScrollView>
@@ -3016,21 +3048,23 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                   <TouchableOpacity style={[styles.modalCancelBtn, { flex: 1, backgroundColor: theme.bgInput, borderColor: theme.borderInput }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowLabelModal(false); }}>
                     <Text style={[styles.modalCancelBtnText, { color: theme.textMuted }]}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.modalSaveBtn, { flex: 1, backgroundColor: theme.accentBlue }]} onPress={() => {
-                    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
-                    const parts = labelInput.split('·').map(s => s.trim());
-                    const baseProgram = programs[activeDay] || weeklyTemplate[activeDayName];
-                    const newPrograms = {
-                      ...programs,
-                      [activeDay]: { ...baseProgram, customLabel: parts[0] || '', muscles: parts[1] || '' }
-                    };
-                    setPrograms({...newPrograms});
-                    setDayLabel(newPrograms[activeDay]?.customLabel || '');
-                    saveState(checks, cardioComplete, {...newPrograms}, workoutNotes, cardioLogs, weeklyTemplate);
-                    setShowLabelModal(false);
-                  }}>
-                    <Text style={[styles.modalSaveBtnText, { color: theme.bgPrimary }]}>Save</Text>
-                  </TouchableOpacity>
+                  <PrimaryCTA
+                    wrapperStyle={{ flex: 1 }}
+                    faceStyle={{ paddingVertical: 12, borderRadius: 8 }}
+                    label="Save"
+                    onPress={() => {
+                      const parts = labelInput.split('·').map(s => s.trim());
+                      const baseProgram = programs[activeDay] || weeklyTemplate[activeDayName];
+                      const newPrograms = {
+                        ...programs,
+                        [activeDay]: { ...baseProgram, customLabel: parts[0] || '', muscles: parts[1] || '' }
+                      };
+                      setPrograms({...newPrograms});
+                      setDayLabel(newPrograms[activeDay]?.customLabel || '');
+                      saveState(checks, cardioComplete, {...newPrograms}, workoutNotes, cardioLogs, weeklyTemplate);
+                      setShowLabelModal(false);
+                    }}
+                  />
                 </View>
               </View>
             </View>
@@ -3203,10 +3237,18 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                         <Text style={{ color: theme.textMuted, fontFamily: Type.uiSemibold, fontSize: 14 }}>Cancel</Text>
                       </TouchableOpacity>
                     )}
-                    <TouchableOpacity
+                    {/* KEEPS the live tag colour -- the fill IS the preview of what you are picking, which is
+                        the one case where a CTA's colour is DATA rather than chrome (see PrimaryCTA's `fill`
+                        note). It gains the mould, the press-scale and the Interface label; the glow follows
+                        the tag colour too, so a red tag does not sit in an accent-blue glow. */}
+                    <PrimaryCTA
+                      wrapperStyle={{ flex: 1 }}
+                      faceStyle={{ paddingVertical: 12, borderRadius: 8 }}
+                      fill={tagColorInput}
+                      label={editingTag ? 'Save Changes' : 'Create Tag'}
+                      disabled={!tagLabelInput.trim()}
                       onPress={() => {
                         if (!tagLabelInput.trim()) return;
-                        triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
                         if (editingTag) {
                           saveTags(tags.map(t => t.id === editingTag.id ? { ...t, label: tagLabelInput.trim(), color: tagColorInput } : t));
                           setEditingTag(null);
@@ -3223,9 +3265,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                         setTagColorInput(TAG_COLOR_PALETTE[0]);
                         setTimeout(() => showToast(msg, sub, 'success'), 400);
                       }}
-                      style={{ flex: 1, padding: 12, borderRadius: 8, backgroundColor: tagColorInput, alignItems: 'center' }}>
-                      <Text style={{ color: '#ffffff', fontFamily: Type.uiBold, fontSize: 14 }}>{editingTag ? 'Save Changes' : 'Create Tag'}</Text>
-                    </TouchableOpacity>
+                    />
                   </View>
                 </View>
               </View>
@@ -3531,8 +3571,7 @@ const styles = StyleSheet.create({
   modalBtns:            { flexDirection: 'row', gap: 8, marginTop: 8 },
   modalCancelBtn:       { flex: 1, padding: 12, borderWidth: 0.5, borderRadius: 8, alignItems: 'center' },
   modalCancelBtnText:   { fontFamily: Type.uiSemibold, fontSize: 14 },
-  modalSaveBtn:         { flex: 1, padding: 12, borderRadius: 8, alignItems: 'center' },
-  modalSaveBtnText:     { fontFamily: Type.uiBold, fontSize: 16, letterSpacing: 0.3 },
+  // modalSaveBtn / modalSaveBtnText removed 2026-07-15: both modal saves on this tab are PrimaryCTA now.
   libraryBtn:           { borderWidth: 1, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 },
   libraryBtnText:       { fontSize: 14, fontFamily: Type.uiBold },
   cardioFieldRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 0.5 },

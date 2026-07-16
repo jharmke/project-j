@@ -15,6 +15,7 @@ import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import PrimaryCTA from '../components/PrimaryCTA';
 
 export default function RecipeLogScreen() {
   const insets = useSafeAreaInsets();
@@ -366,13 +367,13 @@ export default function RecipeLogScreen() {
           </View>
         </View>
 
-        {/* Add to Diary */}
-        <TouchableOpacity
-          style={[styles.logBtn, !calories && { opacity: 0.35 }]}
+        {/* Add to Diary. Molded + ACCENT (was flat accentGreen): green means success/goal-hit, and this
+            starts an action rather than reporting an outcome. Same call as Food Detail's twin of this. */}
+        <PrimaryCTA
+          label={date === 'recipe' ? 'Add to Recipe' : 'Add to Diary'}
           onPress={date === 'recipe' ? () => logRecipe('recipe') : openMealPicker}
-          disabled={!calories}>
-          <Text style={styles.logBtnText}>{date === 'recipe' ? 'ADD TO RECIPE' : 'ADD TO DIARY'}</Text>
-        </TouchableOpacity>
+          disabled={!calories}
+        />
 
       </ScrollView>
 
@@ -441,8 +442,7 @@ const useStyles = (theme: any) => StyleSheet.create({
   servingBtnText: { color: theme.textMuted, fontSize: 14, fontFamily: Type.uiMedium },
   nutritionCard: { backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, padding: 16, marginBottom: 20 },
   nutritionTitle: { fontSize: 11, color: theme.textMuted, fontFamily: Type.uiMedium, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 },
-  logBtn: { backgroundColor: theme.accentGreen, borderRadius: 10, padding: 16, alignItems: 'center' },
-  logBtnText: { color: theme.bgPrimary, fontSize: 18, fontFamily: Type.uiBold, letterSpacing: 2 },
+  // logBtn / logBtnText removed 2026-07-15: Add to Diary is PrimaryCTA now.
   modalOverlay: { flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
   modal: {
     backgroundColor: theme.bgSheet,

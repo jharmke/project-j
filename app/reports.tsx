@@ -21,6 +21,7 @@ import { useToast } from '../components/Toast';
 import { loadReports, deleteReport, newReportId, RANGE_LABELS, Report } from '../utils/reports';
 import { Type } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import PrimaryCTA from '../components/PrimaryCTA';
 
 // 🚧 BETA HACK (revert before App Store launch): Reports is a Pro feature, but every TestFlight user gets
 // full access during beta. Flip to false (or gate on the real subscription) before public release.
@@ -126,11 +127,12 @@ export default function ReportsHub() {
 
       {/* New Report button (full accent) */}
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 18, paddingTop: 12, paddingBottom: insets.bottom + 14, backgroundColor: theme.bgPrimary, borderTopWidth: 0.5, borderTopColor: theme.borderCard }}>
-        <TouchableOpacity onPress={startNew} activeOpacity={0.85}
-          style={{ backgroundColor: theme.accentBlue, borderRadius: 12, paddingVertical: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-          <Ionicons name="add" size={20} color="#fff" />
-          <Text style={{ fontSize: 15, fontFamily: Type.uiBold, color: '#fff' }}>New Report</Text>
-        </TouchableOpacity>
+        <PrimaryCTA
+          faceStyle={{ paddingVertical: 15, borderRadius: 12 }}
+          label="New Report"
+          icon={<Ionicons name="add" size={20} color="#ffffff" />}
+          onPress={startNew}
+        />
       </View>
     </View>
   );

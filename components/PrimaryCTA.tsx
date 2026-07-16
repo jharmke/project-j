@@ -31,6 +31,7 @@ export default function PrimaryCTA({
   compact = false,
   wrapperStyle,
   faceStyle,
+  fill,
   haptic = Haptics.ImpactFeedbackStyle.Medium,
 }: {
   label: string;
@@ -48,6 +49,12 @@ export default function PrimaryCTA({
   // match -- e.g. a Cancel/Confirm pair, where compact's own padding made the two buttons different
   // heights. Do not use it to restyle the fill; the mould is the whole point.
   faceStyle?: any;
+  // FILL override. Defaults to theme.accentBlue -- pass it ONLY when the button's colour is genuinely DATA
+  // rather than chrome: Manage Tags' Create Tag is filled with the tag colour you are picking, so the
+  // button IS the preview. Not an escape hatch for "a different colour here"; a screen's one primary
+  // action wears the accent. The mould is unaffected, and the GLOW follows the fill -- an accent glow
+  // under a red button would read as a bug.
+  fill?: string;
   haptic?: Haptics.ImpactFeedbackStyle;
 }) {
   const { theme, themeId } = useTheme();
@@ -69,7 +76,7 @@ export default function PrimaryCTA({
   return (
     <View style={[
       styles.glow,
-      { shadowColor: theme.accentBlueRaw, shadowOpacity: isDark ? 0.18 : (compact ? 0.22 : 0.35) },
+      { shadowColor: fill ?? theme.accentBlueRaw, shadowOpacity: isDark ? 0.18 : (compact ? 0.22 : 0.35) },
       compact && { shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
       wrapperStyle,
     ]}>
@@ -83,7 +90,7 @@ export default function PrimaryCTA({
           style={[
             styles.btn,
             compact && { borderRadius: 9, paddingVertical: 9, paddingHorizontal: 10 },
-            { backgroundColor: theme.accentBlue, opacity: disabled ? 0.5 : 1 },
+            { backgroundColor: fill ?? theme.accentBlue, opacity: disabled ? 0.5 : 1 },
             faceStyle,
           ]}
         >

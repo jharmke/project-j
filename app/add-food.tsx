@@ -27,6 +27,8 @@ import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import HeaderIconButton from '../components/HeaderIconButton';
 import ButtonShine from '../components/ButtonShine';
+import PrimaryCTA from '../components/PrimaryCTA';
+import ModalHeader from '../components/ModalHeader';
 
 
 
@@ -2151,10 +2153,11 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
               shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16,
               transform: [{ scale: editCardAnim.interpolate({ inputRange: [0, 1], outputRange: [0.88, 1] }) }],
             }}>
-              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeEditModal(); }} style={{ alignSelf: 'center', paddingTop: 12, paddingBottom: 4, paddingHorizontal: 20 }} hitSlop={{ top: 8, bottom: 8, left: 20, right: 20 }}>
-                <View style={{ height: 4, width: 40, backgroundColor: theme.borderCard, borderRadius: 2 }} />
-              </TouchableOpacity>
-              <Text style={{ fontSize: 16, color: theme.accentBlueRaw, fontFamily: Type.display, letterSpacing: 0.3, textAlign: 'center', marginTop: 8, marginBottom: 4 }}>EDIT FOOD</Text>
+              {/* ModalHeader. This modal missed the header sweep entirely -- add-food.tsx had ZERO
+                  ModalHeader usages -- so it kept a hand-rolled handle pill and a CENTRED, ALL-CAPS title
+                  with no X. ModalHeader is the house standard: LEFT-aligned mixed-case title, centred handle
+                  pill AND a top-right X, all in one component. */}
+              <ModalHeader title="Edit Food" onClose={closeEditModal} />
               <ScrollView style={{ maxHeight: 600 }} contentContainerStyle={{ padding: 16, paddingTop: 8 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets={true}>
                 {/* Type selector */}
                 <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
@@ -2370,12 +2373,14 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                 <TouchableOpacity onPress={closeEditModal} style={{ flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, alignItems: 'center' }}>
                   <Text style={{ color: theme.textMuted, fontFamily: Type.uiMedium, fontSize: 14 }}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
+                {/* faceStyle matches the Cancel beside it (padding 12 / radius 8). */}
+                <PrimaryCTA
+                  wrapperStyle={{ flex: 2 }}
+                  faceStyle={{ paddingVertical: 12, borderRadius: 8 }}
+                  label="Save"
                   onPress={saveEditFood}
                   disabled={!editFoodData?.name?.trim() || !editFoodData?.cal}
-                  style={{ flex: 2, padding: 12, backgroundColor: theme.accentBlue, borderRadius: 8, alignItems: 'center', opacity: editFoodData?.name?.trim() && editFoodData?.cal ? 1 : 0.4 }}>
-                  <Text style={{ color: '#ffffff', fontFamily: Type.uiBold, fontSize: 16, letterSpacing: 1 }}>SAVE</Text>
-                </TouchableOpacity>
+                />
               </View>
             </Animated.View>
         </View>

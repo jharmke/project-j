@@ -33,7 +33,9 @@ import {
 } from '../../data/devotionals';
 import { loadReadingPlanProgress } from '../../utils/readingPlansProgress';
 import { loadDevotionalProgress, getDevotionalProgress, getNextDay } from '../../utils/devotionals';
-import { useTheme, type Theme } from '../../theme';
+// The warm ink ladder moved to theme.tsx: FaithTodayCard (the Home faith hub) and GratitudeStreakCard need
+// the same rungs, and it had already been copy-pasted twice before it earned a shared home.
+import { useTheme, faithInk, faithInkBody, faithInkMuted, type Theme } from '../../theme';
 import { Type, DISPLAY_CAPS, DISPLAY_TRACKING, displaySize } from '../../typography';
 
 /**
@@ -65,21 +67,6 @@ const DEFAULT_FAITH_VISIBLE = Object.fromEntries(
 // twice around midnight.
 const getDateKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-// ─── The Faith tab's warm ink ladder (light family only; dark keeps its own tokens) ───────────────
-// The app's text tokens are COOL: textPrimary is a near-black and textMuted is '#6666aa' -- an actual
-// PURPLE. On a warm amber card that purple is a foreign colour, and it was on every label here ("BIBLE
-// AND PLANS", "CONTINUE READING", "READING PLANS", "DEVOTIONALS", "+ Browse"). That is what read as
-// "so many fonts and colours": one wrong HUE, not a type problem. The spec already warned about it
-// ("do not lighten text with textMuted on Light... it hands you a fifth colour") -- written for Stats,
-// never applied here. So: lighten on the WARM hue instead of shifting to a cool one.
-// Module scope because BibleCard, PlansColumn and TileProgress each kept their own private copy.
-// THREE rungs, and the middle one is the point. With only ink + muted, anything that is BODY text had to
-// pick a headline colour or a label colour: the prayer previews took the dark ink (#4a3214) and read heavy,
-// while the gratitude verse took the cool textSecondary (#4a4a6a) and read purple. Same job, two wrong
-// answers. faithInkBody is the warm equivalent of textSecondary -- verses and prayers both sit here.
-const faithInk      = (t: Theme) => (t.id === 'dark' ? t.textPrimary   : '#4a3214'); // headline
-const faithInkBody  = (t: Theme) => (t.id === 'dark' ? t.textSecondary : '#5c4632'); // verses, prayers, prose
-const faithInkMuted = (t: Theme) => (t.id === 'dark' ? t.textMuted     : '#8a7358'); // labels, captions
 
 // Cards that actually have a renderer today. Once every card is built this guard goes away.
 const BUILT_CARDS: FaithCardId[] = ['votd', 'bible_plans', 'gratitude', 'prayer'];

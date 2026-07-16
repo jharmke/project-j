@@ -5,6 +5,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import PressableButton from './PressableButton';
+import ButtonShine from './ButtonShine';
 import TooltipIcon from './TooltipIcon';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { Type, numLine } from '../typography';
@@ -176,12 +177,17 @@ export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen,
 
       {!readOnly && !effIfStart && (
         <Animated.View style={{ transform: [{ scale: ifPulse }] }}>
+          {/* Was every bug at once: a GREEN tint (green is success/goal-hit -- this is an action you take,
+              not an outcome), Type.num (the condensed TABULAR number face) on a SENTENCE with no number in
+              it, ALL CAPS at letterSpacing 2, and no shine. Now the house tinted recipe: accent, Interface,
+              sentence case, glossed. */}
           <PressableButton
-            style={{ backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder, borderRadius: 8, paddingVertical: 9, paddingHorizontal: 14, alignItems: 'center' }}
+            style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8, paddingVertical: 9, paddingHorizontal: 14, alignItems: 'center' }}
             onPress={onStartFast}
             flex={0}
           >
-            <Text style={{ fontFamily: Type.num, letterSpacing: 2, fontSize: 16, color: theme.accentGreen }}>TAP WHEN YOU EAT YOUR FIRST MEAL</Text>
+            <ButtonShine radius={8} />
+            <Text style={{ fontFamily: Type.uiSemibold, fontSize: 13, color: theme.accentBlue }}>Tap when you eat your first meal</Text>
           </PressableButton>
         </Animated.View>
       )}

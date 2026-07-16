@@ -121,8 +121,11 @@ function ProfileSection({ label, subtitle, defaultOpen = false, children, theme,
           <View style={{ flex: 1, height: 1, backgroundColor: theme.textMuted + '55' }} />
           <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color={theme.accentBlueRaw} />
         </View>
+        {/* The SAME recipe as Stats' CollapsibleSection subtitle: 11 / uiMedium / textSecondary. It was
+            Type.ui (a lighter cut) on textMuted -- and textMuted is '#6666aa' on Light, a thin PURPLE, so
+            these lines were both under-weight AND the wrong hue. Stats got this fix; Profile never did. */}
         {!open && subtitle && (
-          <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textMuted, marginTop: 4 }}>
+          <Text style={{ fontSize: 11, fontFamily: Type.uiMedium, color: theme.textSecondary, marginTop: 4 }}>
             {subtitle}
           </Text>
         )}
@@ -503,7 +506,7 @@ export default function ProfileScreen() {
         <View onLayout={e => { activityLevelY.current = e.nativeEvent.layout.y; }} />
         <ProfileSection label="Activity Level" subtitle="Lifestyle & training frequency" theme={theme}>
           <Text style={[styles.fieldLabel, { color: theme.textMuted, marginTop: 0 }]}>LIFESTYLE</Text>
-          <Text style={{ fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic', color: theme.textMuted, marginBottom: 8 }}>Your day-to-day movement, not counting workouts.</Text>
+          <Text style={{ fontSize: 11, fontFamily: Type.uiMedium, color: theme.textSecondary, marginBottom: 8 }}>Your day-to-day movement, not counting workouts.</Text>
           {LIFESTYLE_OPTIONS.map(o => (
             <TouchableOpacity
               key={o.key}
@@ -523,7 +526,7 @@ export default function ProfileScreen() {
           <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, marginTop: 12, marginBottom: 12 }} />
 
           <Text style={[styles.fieldLabel, { color: theme.textMuted, marginTop: 0 }]}>TRAINING FREQUENCY</Text>
-          <Text style={{ fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic', color: theme.textMuted, marginBottom: 8 }}>How often you do structured workouts.</Text>
+          <Text style={{ fontSize: 11, fontFamily: Type.uiMedium, color: theme.textSecondary, marginBottom: 8 }}>How often you do structured workouts.</Text>
           {TRAINING_OPTIONS.map(o => (
             <TouchableOpacity
               key={o.key}
@@ -543,7 +546,7 @@ export default function ProfileScreen() {
 
         {bmr > 0 && (
           <ProfileSection label="Your Estimates" subtitle="BMR, TDEE, and calorie target" theme={theme}>
-            <Text style={[styles.estimateNote, { color: theme.textMuted }]}>Based on Mifflin-St Jeor formula - estimates only, not exact values.</Text>
+            <Text style={[styles.estimateNote, { color: theme.textSecondary }]}>Based on Mifflin-St Jeor formula - estimates only, not exact values.</Text>
             <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, fontStyle: 'italic', marginBottom: 10 }}>For informational purposes only. Not medical advice.</Text>
             <View style={styles.statsRow}>
               <View style={[styles.statBox, { backgroundColor: theme.bgInset }]}>
@@ -573,7 +576,7 @@ export default function ProfileScreen() {
         <ProfileSection label="Weight Goal" subtitle="Goal weight & weekly pace" theme={theme}>
           {/* Goal weight input -- lives above pace so the story reads top to bottom */}
           <Text style={[styles.fieldLabel, { color: theme.textMuted, marginTop: 0 }]}>Goal Weight (optional)</Text>
-          <Text style={{ fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic', color: theme.textMuted, marginBottom: 10 }}>
+          <Text style={{ fontSize: 11, fontFamily: Type.uiMedium, color: theme.textSecondary, marginBottom: 10 }}>
             Skip this if you're focused on general health rather than a specific number.
           </Text>
           <View
@@ -620,9 +623,15 @@ export default function ProfileScreen() {
                   key={key}
                   hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
                   onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateField('weightGoal', key); maybeShowFloorModal(key); }}
+                  // SELECTED uses the OPAQUE fill. accentBlueBg is a ~10% TRANSLUCENT tint that assumes an
+                  // opaque card behind it -- these pills sit straight on the PAGE, so the selected one was
+                  // showing the accent bottom glow through itself and got HARDER to see the further you
+                  // scrolled, while every UNSELECTED pill stayed crisply opaque on bgInset. Selection has to
+                  // be MORE solid than its neighbours, not less. Same bug as Stats' VIEW ALL ACHIEVEMENTS
+                  // and the Supporter card; see the accentBlueBgOpaque note in theme.tsx.
                   style={{
                     paddingHorizontal: 14, paddingVertical: 11, borderRadius: 20, borderWidth: 1,
-                    backgroundColor: selected ? theme.accentBlueBg : theme.bgInset,
+                    backgroundColor: selected ? theme.accentBlueBgOpaque : theme.bgInset,
                     borderColor: selected ? theme.accentBlue : theme.borderCard,
                   }}>
                   <Text style={{
@@ -683,7 +692,7 @@ export default function ProfileScreen() {
           </ProfileSection>
 
         <ProfileSection label="Water Presets" subtitle="Quick-add water amounts" theme={theme}>
-          <Text style={[styles.estimateNote, { color: theme.textMuted }]}>Customize your quick-add water amounts (oz).</Text>
+          <Text style={[styles.estimateNote, { color: theme.textSecondary }]}>Customize your quick-add water amounts (oz).</Text>
           <View style={{ flexDirection: 'row', gap: 12 }}>
             {([0, 1, 2] as const).map(i => (
               <View key={i} style={{ flex: 1 }}>
@@ -831,7 +840,8 @@ const styles = StyleSheet.create({
   activityDotActive:  { },
   activityLabel:      { fontSize: 13, fontFamily: Type.ui, flex: 1 },
   activityLabelActive:{ },
-  estimateNote:       { fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic', marginBottom: 12 },
+  // Matches Stats' section subtitle (11 / uiMedium / textSecondary). Was Type.ui + italic on textMuted.
+  estimateNote:       { fontSize: 11, fontFamily: Type.uiMedium, marginBottom: 12 },
   statsRow:           { flexDirection: 'row', gap: 8 },
   statBox:            { flex: 1, borderRadius: 8, padding: 12, alignItems: 'center' },
   statVal:            { fontSize: 24, fontFamily: Type.num, letterSpacing: 1 },

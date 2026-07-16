@@ -25,6 +25,7 @@ import { groupSyncedWorkouts, loadSyncedLabels, saveSyncedLabel, summarizeSessio
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import ButtonShine from '../components/ButtonShine';
+import PrimaryCTA from '../components/PrimaryCTA';
 import ModalHeader from '../components/ModalHeader';
 
 interface LibraryExercise {
@@ -1219,14 +1220,12 @@ function ProgramBuilderModal({ onClose, onSave, editingProgram }: {
                 {PROGRAM_DAYS.map(d => (
                   <DayRow key={d} day={d} state={days[d]} allTags={allTags} onAddTag={openTagCreator} onChange={updated => setDays(prev => ({ ...prev, [d]: updated }))} theme={theme} />
                 ))}
-                <TouchableOpacity
-                  onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); handleSave(); }}
+                <PrimaryCTA
+                  wrapperStyle={{ marginTop: 8 }}
+                  label={editingProgram ? 'Save Program' : 'Create Program'}
+                  onPress={handleSave}
                   disabled={!canSave}
-                  style={{ marginTop: 8, backgroundColor: theme.accentBlue, borderRadius: 10, paddingVertical: 14, alignItems: 'center', opacity: canSave ? 1 : 0.4 }}>
-                  <Text style={{ color: '#ffffff', fontFamily: Type.uiBold, fontSize: 18, letterSpacing: 2 }}>
-                    {editingProgram ? 'SAVE PROGRAM' : 'CREATE PROGRAM'}
-                  </Text>
-                </TouchableOpacity>
+                />
               </ScrollView>
             </View>
           </Reanimated.View>
@@ -1681,12 +1680,12 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
                   </View>
                 )}
 
-                <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); handleSave(); }} disabled={!canSave}
-                  style={{ marginTop: 20, backgroundColor: theme.accentBlue, borderRadius: 10, paddingVertical: 14, alignItems: 'center', opacity: canSave ? 1 : 0.4 }}>
-                  <Text style={{ color: '#ffffff', fontFamily: Type.uiBold, fontSize: 18, letterSpacing: 2 }}>
-                    {editingRoutine ? 'SAVE ROUTINE' : 'CREATE ROUTINE'}
-                  </Text>
-                </TouchableOpacity>
+                <PrimaryCTA
+                  wrapperStyle={{ marginTop: 20 }}
+                  label={editingRoutine ? 'Save Routine' : 'Create Routine'}
+                  onPress={handleSave}
+                  disabled={!canSave}
+                />
               </ScrollView>
             </View>
           </Reanimated.View>
@@ -3166,11 +3165,15 @@ export default function WorkoutLibraryScreen() {
                 );
               })()}
 
-              <TouchableOpacity
-                style={{ backgroundColor: theme.accentBlue, borderRadius: 8, padding: 12, alignItems: 'center', marginBottom: 8 }}
-                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); setShowDayPicker(true); }}>
-                <Text style={{ color: '#ffffff', fontFamily: Type.uiBold, fontSize: 16, letterSpacing: 1 }}>+ ADD TO DAY</Text>
-              </TouchableOpacity>
+              {/* This modal is the 3-tier system in one view: MOLDED primary (here) -> SHINED tinted
+                  secondary (Edit, below) -> FLAT destructive (Remove from Library). */}
+              <PrimaryCTA
+                wrapperStyle={{ marginBottom: 8 }}
+                faceStyle={{ paddingVertical: 12, borderRadius: 8 }}
+                label="Add to Day"
+                icon={<Ionicons name="add" size={18} color="#ffffff" />}
+                onPress={() => setShowDayPicker(true)}
+              />
 
               {showDayPicker && (
                 <View style={{ marginBottom: 8, backgroundColor: theme.bgInset, borderRadius: 8, padding: 12 }}>
@@ -3234,9 +3237,12 @@ export default function WorkoutLibraryScreen() {
                 </View>
               )}
 
+              {/* Already the correct tinted recipe -- it just never got the gloss, because it lives inside a
+                  modal in a file the group-2 sweep had already walked. Right recipe, missing shine. */}
               <TouchableOpacity
                 style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8, padding: 12, alignItems: 'center', marginBottom: 8 }}
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeDetailModal(() => openEdit(selectedEx!)); }}>
+                <ButtonShine radius={8} />
                 <Text style={{ color: theme.accentBlue, fontFamily: Type.uiSemibold, fontSize: 14 }}>Edit</Text>
               </TouchableOpacity>
 
@@ -3335,7 +3341,10 @@ export default function WorkoutLibraryScreen() {
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16, paddingTop: insets.top + 8, paddingBottom: addKbHeight + 8 }} pointerEvents="box-none">
           <Reanimated.View pointerEvents="box-none" style={[{ width: '100%' }, addCardAnimStyle]}>
           <View pointerEvents="auto" style={{ maxHeight: Dimensions.get('window').height - insets.top - addKbHeight - 24, backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20 }}>
-            <ModalHeader title={editingEx ? 'Edit Exercise' : 'Add Exercise'} onClose={closeAddModal} />
+            {/* CREATE, not "Add". This modal makes a NEW exercise in your library. The Workout tab has its
+                own modal, also titled "Add Exercise", which adds an existing exercise TO A DAY -- two
+                different jobs wearing one title. Create vs Add is the distinction. */}
+            <ModalHeader title={editingEx ? 'Edit Exercise' : 'Create Exercise'} onClose={closeAddModal} />
             <View style={{ borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }} />
             <ScrollView style={{ flexShrink: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
               <View style={{ padding: 20 }}>
@@ -3368,9 +3377,14 @@ export default function WorkoutLibraryScreen() {
                   <TouchableOpacity style={styles.modalCancelBtn} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeAddModal(); }}>
                     <Text style={styles.modalCancelText}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.modalSaveBtn, (!form.name?.trim() || !form.tags?.length) && { opacity: 0.4 }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); saveExercise(); }} disabled={!form.name?.trim() || !form.tags?.length}>
-                    <Text style={styles.modalSaveText}>{editingEx ? 'SAVE' : 'ADD'}</Text>
-                  </TouchableOpacity>
+                  {/* faceStyle matches the Cancel beside it (padding 12 / radius 6). */}
+                  <PrimaryCTA
+                    wrapperStyle={{ flex: 1 }}
+                    faceStyle={{ paddingVertical: 12, borderRadius: 6 }}
+                    label={editingEx ? 'Save' : 'Create'}
+                    onPress={saveExercise}
+                    disabled={!form.name?.trim() || !form.tags?.length}
+                  />
                 </View>
               </View>
             </ScrollView>
@@ -3878,6 +3892,5 @@ const useStyles = (theme: any) => StyleSheet.create({
   modalBtns: { flexDirection: 'row', gap: 8, marginTop: 8 },
   modalCancelBtn: { flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, alignItems: 'center' },
   modalCancelText: { color: theme.textMuted, fontFamily: Type.uiMedium, fontSize: 14 },
-  modalSaveBtn: { flex: 1, padding: 12, backgroundColor: theme.accentBlue, borderRadius: 6, alignItems: 'center' },
-  modalSaveText: { color: '#ffffff', fontFamily: Type.uiBold, fontSize: 16, letterSpacing: 1 },
+  // modalSaveBtn / modalSaveText removed 2026-07-15: the Add Exercise modal's Save/Add is PrimaryCTA now.
 });

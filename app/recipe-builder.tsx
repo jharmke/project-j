@@ -15,6 +15,8 @@ import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import PrimaryCTA from '../components/PrimaryCTA';
+import ButtonShine from '../components/ButtonShine';
 
 interface Ingredient {
   id: string;
@@ -459,18 +461,21 @@ export default function RecipeBuilderScreen() {
   const styles = useStyles(theme);
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header */}
+      {/* Header. The `right` Save is molded + ACCENT (was a flat accentGreen pill): green is success/goal-
+          hit, and this saves. It lives in the HEADER, so `compact` keeps the mould at pill scale, and
+          faceStyle holds its original padding so the header row height does not move. */}
       <ScreenHeader
         title={recipeId ? 'Edit Recipe' : 'New Recipe'}
         topInset={false}
         right={
           <View ref={saveBtnRef} collapsable={false}>
-            <TouchableOpacity
+            <PrimaryCTA
+              compact
+              faceStyle={{ paddingHorizontal: 18, paddingVertical: 8, borderRadius: 8 }}
+              label="Save"
               onPress={saveRecipe}
               disabled={!canSave}
-              style={[styles.saveBtn, !canSave && { opacity: 0.35 }]}>
-              <Text style={styles.saveBtnText}>Save</Text>
-            </TouchableOpacity>
+            />
           </View>
         }
       />
@@ -498,13 +503,18 @@ export default function RecipeBuilderScreen() {
 
         {/* Add Ingredient buttons */}
         <View ref={addRowRef} style={styles.addRow}>
+          {/* Both were already the correct tinted recipe -- they just never got the gloss. They sit on the
+              PAGE, not a card, so the fill is left as-is only because these are inside a padded scroll over
+              a light ground; if they ever read transparent over the glow, accentBlueBgOpaque is the fix. */}
           <TouchableOpacity
             style={styles.addIngredientBtn}
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/add-food', params: { meal: 'recipe', date: 'recipe', recipeMode: 'true' } }); }}>
+            <ButtonShine radius={10} />
             <Ionicons name="search" size={16} color={theme.accentBlue} />
             <Text style={styles.addIngredientText}>Search Food</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.addCustomBtn} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowCustomFoodModal(true); }}>
+            <ButtonShine radius={10} />
             <Ionicons name="add" size={16} color={theme.accentBlue} />
             <Text style={styles.addCustomText}>Create</Text>
           </TouchableOpacity>
@@ -710,9 +720,10 @@ const useStyles = (theme: any) => StyleSheet.create({
   backBtn: { width: 60, paddingVertical: 4 },
   backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: Type.uiMedium },
   headerTitle: { ...PAGE_TITLE, color: theme.accentBlueRaw },
-  saveBtn: { backgroundColor: theme.accentGreen, borderRadius: 8, paddingHorizontal: 18, paddingVertical: 8 },
-  saveBtnText: { color: theme.bgPrimary, fontSize: 14, fontFamily: Type.uiBold },
-  content: { padding: 12, paddingBottom: 40, gap: 12 },
+  // saveBtn / saveBtnText removed 2026-07-15: the header Save is PrimaryCTA (compact) now.
+  // paddingBottom clears the global Otto FAB (56px disc at bottom: 18) -- 40 left it sitting on the last
+  // card. Same fix as Food Detail.
+  content: { padding: 12, paddingBottom: 120, gap: 12 },
   card: {
     backgroundColor: theme.bgCard,
     borderWidth: 0.5,

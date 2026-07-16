@@ -206,7 +206,11 @@ export default function ChallengesScreen() {
 
             {/* End / replace */}
             <TouchableOpacity onPress={endChallenge} style={{ marginTop: 12, alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 16 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.uiMedium }}>{progress.status === 'ended' ? 'Clear and start new' : 'End challenge'}</Text>
+              {/* RED, and no longer textDim. This is the only way to cancel a challenge and it was the
+                  dimmest text token in the app, unstyled, centred at the bottom -- Justin could not find it.
+                  Red because it destroys the active challenge; every other destructive control in the app
+                  is red (Clear, Exclude this day, the journal swipe-delete, the report trash). */}
+              <Text style={{ fontSize: 13, color: theme.accentRed, fontFamily: Type.uiSemibold }}>{progress.status === 'ended' ? 'Clear and start new' : 'End challenge'}</Text>
             </TouchableOpacity>
           </View>
         ) : (

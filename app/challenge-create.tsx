@@ -435,7 +435,9 @@ export default function ChallengeCreateScreen() {
             above the button -- they were always one unit inside the same bar. */}
         {type && (
           <View style={{ marginTop: 24 }}>
-            {!!summary && <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.ui, textAlign: 'center', marginBottom: 10, lineHeight: 17 }}>{summary}</Text>}
+            {/* Bigger + semibold: it is naked text on the page, and the page here is the accent glow. It is
+                the caption for the button under it -- what you are about to create -- so it has to be read. */}
+            {!!summary && <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.uiSemibold, textAlign: 'center', marginBottom: 10, lineHeight: 19 }}>{summary}</Text>}
             {/* PrimaryCTA owns the busy spinner and the disabled dim, so the hand-rolled ActivityIndicator and
                 opacity go with it. */}
             <PrimaryCTA

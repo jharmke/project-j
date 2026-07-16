@@ -266,6 +266,8 @@ export default function DevotionalScreen() {
               backgroundColor: theme.bgCard,
               borderColor: `rgba(${GOLD_RGB},0.28)`,
               borderTopColor: `rgba(${GOLD_RGB},0.45)`,
+              shadowColor: theme.cardShadow,
+              shadowOpacity: theme.cardShadowOpacity,
             }]}
           >
             {verseLoading ? (
@@ -340,6 +342,8 @@ export default function DevotionalScreen() {
                   backgroundColor: theme.bgCard,
                   borderColor: `rgba(${GOLD_RGB},0.30)`,
                   borderTopColor: `rgba(${GOLD_RGB},0.45)`,
+                  shadowColor: theme.cardShadow,
+                  shadowOpacity: theme.cardShadowOpacity,
                 }]}
               >
                 <View style={[styles.haloBadge, { backgroundColor: HALO_GOLD }]}>
@@ -436,7 +440,10 @@ const styles = StyleSheet.create({
   dayLabel:        { fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold, marginBottom: 4 },
   dayTitle:        { fontSize: 24, fontFamily: 'Lora_500Medium', marginBottom: 4, lineHeight: 30 },
   passageRef:      { fontSize: 13, fontFamily: Type.uiSemibold, marginBottom: 14 },
-  passageCard:     { borderRadius: 14, borderWidth: 1, padding: 16, marginBottom: 22, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.14, shadowRadius: 7, elevation: 3 },
+  // shadowColor/shadowOpacity come from the THEME inline at the render site (this StyleSheet is static and
+  // cannot read it). Was '#000' @0.14 on a tight 2/7 blur -- half a normal card, wrong hue on Light, gone
+  // on Dark.
+  passageCard:     { borderRadius: 14, borderWidth: 1, padding: 16, marginBottom: 22, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
   passageText:     { fontSize: 16, fontFamily: 'Lora_400Regular', lineHeight: 27 },
   verseNum:        { fontSize: 11, fontFamily: Type.uiBold },
   passageFallback: { fontSize: 14, fontFamily: Type.ui, lineHeight: 21, fontStyle: 'italic' },
@@ -452,7 +459,7 @@ const styles = StyleSheet.create({
   haloBtn:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 12, height: 52, borderRadius: 12, borderWidth: 1 },
   haloBtnText:     { fontSize: 14, fontFamily: Type.uiSemibold },
   haloBadge:       { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  haloRow:         { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12, borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, minHeight: 56, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 3 },
+  haloRow:         { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12, borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, minHeight: 56, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
   haloRowTitle:    { fontSize: 14, fontFamily: Type.uiSemibold },
   haloRowPreview:  { fontSize: 12, fontFamily: Type.ui, marginTop: 2 },
   completeBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 22, height: 52, borderRadius: 14, borderWidth: 1 },

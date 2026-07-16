@@ -277,6 +277,8 @@ export default function PrayerScreen() {
               borderColor: `rgba(${GOLD_RGB},0.22)`,
               borderTopColor: `rgba(${GOLD_RGB},0.38)`,
               marginTop: nothing ? 24 : 8,
+              shadowColor: theme.cardShadow,
+              shadowOpacity: theme.cardShadowOpacity,
             }]}
           >
             <View style={[styles.askIcon, { backgroundColor: `rgba(${GOLD_RGB},0.12)` }]}>
@@ -380,7 +382,7 @@ function PrayerRow({
         onPress={onPress}
         onPressIn={() => Animated.timing(scale, { toValue: 0.98, duration: 100, useNativeDriver: true }).start()}
         onPressOut={() => Animated.timing(scale, { toValue: 1, duration: 150, useNativeDriver: true }).start()}
-        style={[styles.pageBox, { backgroundColor: theme.bgCardFaith, borderColor: `rgba(${GOLD_RGB},0.28)`, borderTopColor: `rgba(${GOLD_RGB},0.45)` }]}
+        style={[styles.pageBox, { backgroundColor: theme.bgCardFaith, borderColor: `rgba(${GOLD_RGB},0.28)`, borderTopColor: `rgba(${GOLD_RGB},0.45)`, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity }]}
       >
         <View style={{ flex: 1 }}>
           <Animated.Text style={[styles.pageText, { color: answered ? theme.textMuted : theme.accentAmber, opacity: textOpacity }]}>
@@ -419,11 +421,14 @@ const styles = StyleSheet.create({
   sectionLabel:  { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold, marginBottom: 8, marginLeft: 4 },
   sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: 4, paddingVertical: 6, marginTop: 4 },
   ebenezer:      { fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic', marginLeft: 4, marginBottom: 8 },
-  pageBox:       { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, minHeight: 44, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 3 },
+  // shadowColor/shadowOpacity come from the THEME inline at the render site (this StyleSheet is static and
+  // cannot read it). Was '#000' @0.12 on a tight 2/6 blur -- a third of a normal card, the wrong hue on
+  // Light (navy) and invisible on Dark.
+  pageBox:       { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, minHeight: 44, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
   pageText:      { fontSize: 15, fontFamily: 'Lora_500Medium', lineHeight: 22 },
   answeredDate:  { fontSize: 10, fontFamily: Type.uiBold, letterSpacing: 1, textTransform: 'uppercase', marginTop: 4 },
   praiseInline:  { position: 'absolute', left: 0, top: 0, fontSize: 16, fontFamily: 'Lora_500Medium', letterSpacing: 0.3 },
-  askRow:        { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 14, borderWidth: 0.5, padding: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.18, shadowRadius: 8, elevation: 4 },
+  askRow:        { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 14, borderWidth: 0.5, padding: 14, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
   askIcon:       { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   askTitle:      { fontSize: 15, fontFamily: Type.uiSemibold },
   askSub:        { fontSize: 12, fontFamily: Type.ui, marginTop: 2, lineHeight: 17 },

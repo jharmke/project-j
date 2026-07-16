@@ -23,6 +23,7 @@ import { loadProgressValues } from '../utils/achievementProgress';
 import { useTheme } from '../theme';
 import { Type, numLine, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import BackgroundLayers from '../components/BackgroundLayers';
 import ButtonShine from '../components/ButtonShine';
 
 // ─── Tier Config ──────────────────────────────────────────────────────────────
@@ -320,7 +321,22 @@ function AchievementCard({ def, unlocked, progressValue = 0, highlight = false }
   }, [highlight]);
 
   return (
-    <Animated.View style={{ flex: 1, transform: [{ scale: pulseAnim }] }}>
+    <Animated.View style={{
+      flex: 1,
+      transform: [{ scale: pulseAnim }],
+      // The LIFT lives here, on the wrapper, and every badge gets it. A view casts ONE shadow, so the card
+      // below had to choose between identity (its tier colour) and lift -- and it chose identity, which
+      // meant EARNED badges did not lift: bronze/gold/silver are LIGHT colours, and a light shadow on a
+      // near-white page darkens nothing (the same physics that makes Dark's black-on-black shadow
+      // pointless). Locked badges, on a neutral shadow, ended up looking MORE raised than earned ones.
+      // Now: wrapper = neutral lift for all, card = the tier glow on top for earned only.
+      borderRadius: 14,
+      shadowColor: theme.cardShadow,
+      shadowOpacity: theme.cardShadowOpacity,
+      shadowOffset: { width: 0, height: 4 },
+      shadowRadius: 12,
+      elevation: 6,
+    }}>
     <View style={[
       styles.card,
       {
@@ -330,9 +346,13 @@ function AchievementCard({ def, unlocked, progressValue = 0, highlight = false }
           : theme.bgCard,
         borderColor: isUnlocked ? config.borderColor : theme.borderCard,
         borderTopColor: isUnlocked ? config.borderColor : theme.borderCardTop,
-        shadowColor: isUnlocked ? config.glowColor : '#000',
-        shadowOpacity: isUnlocked ? (isPlat ? 0.5 : 0.3) : 0.15,
-        shadowRadius: isUnlocked ? (isPlat ? 16 : 10) : 6,
+        // The tier GLOW, earned only -- pure identity now that the wrapper above carries the lift. Offset
+        // 0,0 on purpose: this one IS meant to be a halo (it rings the badge), not a drop shadow. A locked
+        // badge has no glow at all; its lift comes from the wrapper like everything else.
+        shadowColor: isUnlocked ? config.glowColor : 'transparent',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: isUnlocked ? (isPlat ? 0.5 : 0.3) : 0,
+        shadowRadius: isUnlocked ? (isPlat ? 16 : 10) : 0,
         opacity: isUnlocked ? 1 : 0.75,
       }
     ]}>
@@ -714,7 +734,8 @@ export default function AchievementsScreen() {
   const totalUnlocked = ACHIEVEMENTS.filter(a => !!store[a.id]).length;
 
   return (
-    <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
+    <LinearGradient colors={[theme.gradientEnd, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
+      <BackgroundLayers />
 
       {/* NOTE on the `right` badge below: it is a BADGE, not a button -- a plain View showing the earned
           count, nothing to tap. It wears the tinted recipe and now the shine too, at Justin's call
@@ -825,14 +846,16 @@ export default function AchievementsScreen() {
             </View>
           </View>
 
-          {/* Disclaimer */}
+          {/* Disclaimer. textDim (the DIMMEST token) at 9px, sitting on the PAGE at the very bottom -- i.e.
+              exactly where the accent glow is strongest. It was unreadable, and a health disclaimer is the
+              one line that is not allowed to be. textMuted + 10px; the house minimum for muted text. */}
           <Text style={{
-            fontSize: 9,
+            fontSize: 10,
             fontFamily: Type.ui,
-            color: theme.textDim,
+            color: theme.textMuted,
             textAlign: 'center',
             marginTop: 8,
-            lineHeight: 14,
+            lineHeight: 15,
           }}>
             For informational purposes only. Not medical advice.
           </Text>

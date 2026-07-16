@@ -28,6 +28,7 @@ import {
 } from '../utils/bodyMeasurements';
 import { Type } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import BackgroundLayers from '../components/BackgroundLayers';
 
 // Roughly the always-on save bar's content height (button + its padding, no safe-area inset). Registered
 // with the floating-bar signal so Otto's FAB glides up and stops covering "Save Measurements".
@@ -141,7 +142,8 @@ export default function BodyMeasurementLogScreen() {
   );
 
   return (
-    <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1 }}>
+    <LinearGradient colors={[theme.gradientEnd, theme.gradientEnd]} style={{ flex: 1 }}>
+      <BackgroundLayers />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <View style={{ flex: 1, paddingTop: insets.top }}>
           {/* Header */}

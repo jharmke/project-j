@@ -29,11 +29,12 @@ import { ScoreRing } from '../components/DaySummaryModal';
 import { CardWash } from '../components/GradientCard';
 import { METRIC_DRILLDOWNS } from '../data/metricDrilldowns';
 import { useHealthKit } from '../useHealthKit';
-import { useTheme } from '../theme';
+import { useTheme, RECOVERY_PURPLE } from '../theme';
 import { refreshCoachTipSleep, refreshCoachTipRecovery, resolveTipBody } from '../utils/coachAI';
 import { loadCoachTipCacheSleep, loadCoachTipCacheRecovery, CoachTipCache } from '../utils/smartTipsEngine';
 import { Type, numLine } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import BackgroundLayers from '../components/BackgroundLayers';
 
 type SleepTab = 'sleep' | 'recovery';
 
@@ -1070,11 +1071,15 @@ export default function SleepHub() {
     padding: 16,
     marginHorizontal: 12,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 3,
+    // Was hardcoded '#000' @0.12 with a tight 2/6 blur -- roughly a THIRD of a normal card's shadow, the
+    // wrong hue on Light (whose shadow is navy) and invisible on Dark. These cards were never clipped, so
+    // the shadow always rendered; it was just quietly weaker than every other card in the app. Now the
+    // per-theme tokens + the standard 4/12 drop.
+    shadowColor: theme.cardShadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: theme.cardShadowOpacity,
+    shadowRadius: 12,
+    elevation: 6,
   } as const;
 
   // No donut (the hypnogram below is the stage visual). Duration on the left, the
@@ -1393,7 +1398,7 @@ export default function SleepHub() {
       return (
         <View style={[cardStyle, { borderLeftWidth: 0.5, borderLeftColor: theme.borderCard }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-            <Ionicons name="sparkles" size={11} color={theme.statusGood} />
+            <Ionicons name="sparkles" size={11} color={RECOVERY_PURPLE} />
             <Text style={cardLabel}>Recovery Coach</Text>
           </View>
           <View style={{ flexDirection: 'row', gap: 10, padding: 12, borderRadius: 10, backgroundColor: theme.accentBlueBg }}>
@@ -1623,7 +1628,7 @@ export default function SleepHub() {
           shadowRadius: 3,
         }}
       >
-        <Text style={{ fontSize: 12, color: active ? theme.accentBlueRaw : theme.textMuted, fontFamily: active ? Type.uiBold : Type.uiMedium }}>{label}</Text>
+        <Text style={{ fontSize: 12, color: active ? (id === 'recovery' ? RECOVERY_PURPLE : theme.accentBlueRaw) : theme.textMuted, fontFamily: active ? Type.uiBold : Type.uiMedium }}>{label}</Text>
       </TouchableOpacity>
     );
   };
@@ -1793,7 +1798,8 @@ export default function SleepHub() {
   })();
 
   return (
-    <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
+    <LinearGradient colors={[theme.gradientEnd, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
+      <BackgroundLayers />
       <ScreenHeader title="Sleep & Recovery" topInset={false} right={<TooltipIcon tooltipKey="sleep_hub" size={20} />} />
 
       {/* Tab pill selector */}

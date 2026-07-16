@@ -771,6 +771,13 @@ export const THEMES: Record<ThemeId, Theme> = { dark, light, slate, warm, blush 
 
 export const THEME_ORDER: ThemeId[] = ['light', 'dark', 'slate', 'warm', 'blush'];
 
+// RECOVERY's identity colour. FIXED, not a per-theme token, and deliberately so -- same reasoning as Halo's
+// GOLD: recovery is a DOMAIN with a look (it owns the HRV tile, the deep-sleep block, Home's Recovery card
+// top edge), not a themed surface. Lived as a private const inside app/(tabs)/index.tsx, which meant the
+// Sleep screen could not reach it without copying the hex -- and duplicated colour constants are exactly
+// what drifted on us elsewhere (Halo's gold vs the prayer page's gold; the "+" FAB accent). One source.
+export const RECOVERY_PURPLE = '#9b7adb';
+
 // ─── Context ──────────────────────────────────────────────────────────────────
 // Drop ThemeProvider in app/_layout.tsx wrapping everything.
 // Any component calls useTheme() to get the active theme object.

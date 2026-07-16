@@ -11,6 +11,7 @@ import { useHealthKit } from '../useHealthKit';
 import { groupSyncedWorkouts, applySyncedLabels, loadSyncedLabels, saveSyncedLabel, formatDurationShort, SyncedWorkout } from '../utils/syncedWorkouts';
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import BackgroundLayers from '../components/BackgroundLayers';
 
 // Phase 1 verification screen (temporary): pulls the user's real Apple workouts, reads the indoor flag,
 // and shows them grouped by { type + indoor } so we can confirm the bucketing is correct on real data
@@ -62,7 +63,8 @@ export default function SyncedWorkoutsScreen() {
   };
 
   return (
-    <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={[styles.container, { paddingTop: insets.top }]}>
+    <LinearGradient colors={[theme.gradientEnd, theme.gradientEnd]} style={[styles.container, { paddingTop: insets.top }]}>
+      <BackgroundLayers />
       <Stack.Screen options={{ headerShown: false }} />
       <ScreenHeader title="Synced Workouts" topInset={false} />
 

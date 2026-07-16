@@ -28,6 +28,7 @@ import {
 import { Type } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import FabDome from '../components/FabDome';
+import BackgroundLayers from '../components/BackgroundLayers';
 
 const DISCLAIMER_KEY = 'pj_navy_bf_disclaimer_seen';
 
@@ -93,12 +94,16 @@ export default function BodyMeasurementsScreen() {
   const accent = theme.accentBlueRaw;
   const fabScale = useRef(new Animated.Value(1)).current;
 
+  // Per-theme, not a hardcoded '#000' @0.18: black is invisible on Dark's near-black page and the wrong hue
+  // on Light (whose shadow is navy). Nothing clips these cards, so the shadow always rendered -- it was
+  // just weaker and the wrong colour than every other card.
   const shadowStyle = {
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 6,
+    shadowColor: theme.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: theme.cardShadowOpacity, shadowRadius: 12, elevation: 6,
   };
 
   return (
-    <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1 }}>
+    <LinearGradient colors={[theme.gradientEnd, theme.gradientEnd]} style={{ flex: 1 }}>
+      <BackgroundLayers />
       <View style={{ flex: 1, paddingTop: insets.top }}>
         {/* The title was the single word "BODY", centred, in caps. */}
         <ScreenHeader title="Body Measurements" topInset={false} right={<TooltipIcon tooltipKey="body_measurements" size={18} />} />

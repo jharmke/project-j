@@ -33,7 +33,7 @@ import { WHATS_NEW } from '../../data/whatsNew';
 import { addNotification } from '../../utils/notifications';
 import FaithTodayCard from '../../components/FaithTodayCard';
 import { loadCalorieTargets } from '../../utils/calorieTarget';
-import { useTheme } from '../../theme';
+import { useTheme, RECOVERY_PURPLE } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import { useHealthKit } from '../../useHealthKit';
 import { DayDetailContent } from '../day-detail';
@@ -82,7 +82,6 @@ import BackgroundLayers from '../../components/BackgroundLayers';
 import { Type, DISPLAY_CAPS, DISPLAY_TRACKING, displaySize, numLine } from '../../typography';
 import ModalHeader from '../../components/ModalHeader';
 
-const RECOVERY_PURPLE = '#9b7adb';
 const CAROUSEL_PAGE_W = Dimensions.get('window').width - 32;
 
 // ─── Card Registry ────────────────────────────────────────────────────────────

@@ -24,6 +24,7 @@ import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import ButtonShine from '../components/ButtonShine';
 import FabDome from '../components/FabDome';
+import BackgroundLayers from '../components/BackgroundLayers';
 import ModalHeader from '../components/ModalHeader';
 import { BlurView } from 'expo-blur';
 
@@ -190,7 +191,14 @@ function SwipeableEntry({
   };
 
   return (
-    <View style={{ marginBottom: 12, borderRadius: 14, overflow: 'hidden' }}>
+    // THREE levels, and the middle one is why. The clip below is load-bearing: it hides the red delete
+    // button parked behind the card until you swipe. But a view that clips also clips its CHILDREN's
+    // shadows -- and the card's shadow lives one level down, so it was being deleted from up here. Every
+    // other instance of this bug had the shadow and the overflow on the SAME view; this one does not,
+    // which is why a "shadow + overflow on one line" search will never find it. The shadow moves OUT to
+    // this wrapper, which clips nothing.
+    <View style={{ marginBottom: 12, borderRadius: 14, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
+    <View style={{ borderRadius: 14, overflow: 'hidden' }}>
       {/* Delete button -- sits behind the card */}
       <View style={[styles.deleteBtn, { backgroundColor: '#cc3333' }]}>
         <TouchableOpacity
@@ -338,6 +346,7 @@ function SwipeableEntry({
           </Animated.View>
         </View>
       </Animated.View>
+    </View>
     </View>
   );
 }
@@ -610,9 +619,10 @@ export default function JournalScreen() {
 
   return (
     <LinearGradient
-      colors={[theme.gradientStart, theme.gradientEnd]}
+      colors={[theme.gradientEnd, theme.gradientEnd]}
       style={[styles.container, { paddingTop: insets.top }]}
     >
+      <BackgroundLayers />
       <ScreenHeader
         title="Journal"
         topInset={false}
@@ -937,7 +947,10 @@ const styles = StyleSheet.create({
   emptyState:        { alignItems: 'center', paddingTop: 80, gap: 12 },
   emptyTitle:        { fontSize: 16, fontFamily: Type.uiSemibold },
   emptySubtitle:     { fontSize: 13, fontFamily: Type.ui, textAlign: 'center', lineHeight: 20, paddingHorizontal: 24 },
-  card:              { borderWidth: 0.5, borderRadius: 14, padding: 16, borderTopWidth: 0.5, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
+  // No shadow here: it lives on the OUTER wrapper (see the note at the card's render site -- the swipe
+  // clip in between would eat it). This was also hardcoded '#000' @0.25 -- wrong hue on Light, invisible
+  // on Dark -- and it now comes from the theme up there.
+  card:              { borderWidth: 0.5, borderRadius: 14, padding: 16, borderTopWidth: 0.5 },
   dateText:          { fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 1, textTransform: 'uppercase' },
   entryTitle:        { fontSize: 15, fontFamily: Type.uiSemibold, marginBottom: 2 },
   categoryPill:      { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 3 },

@@ -758,7 +758,12 @@ const blush: Theme = {
 // Blend two hex colours into an OPAQUE hex. React Native has no color-mix(), and a TRANSLUCENT fill is
 // precisely what broke selection states once the page behind them stopped being an opaque slab -- so the
 // blend happens here, once, and what the UI gets is a solid colour.
-function mix(fg: string, bg: string, amount: number): string {
+// Exported for the ONBOARDING screens. They use the STATIC base theme (THEMES['light']) rather than the
+// provider, because a brand-new user has not picked a theme or an accent yet -- which means the composed
+// tokens are not available to them. `accentBlueBgOpaque` in a static theme is still its '#000000'
+// PLACEHOLDER, so reaching for it there paints a BLACK button (found the hard way on the sex selector).
+// Onboarding composes its own opaque tint with this instead of hardcoding a hex.
+export function mix(fg: string, bg: string, amount: number): string {
   const parse = (h: string) => {
     const m = /^#?([0-9a-f]{6})$/i.exec(h.trim());
     if (!m) return null;

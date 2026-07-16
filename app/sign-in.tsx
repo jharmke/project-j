@@ -27,6 +27,7 @@ import { runRestoreGate } from '../services/syncService';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { Type } from '../typography';
+import PrimaryCTA from '../components/PrimaryCTA';
 
 const IOS_CLIENT_ID = '841973180275-obscsfo4ad9ibir9dtpcago5fuptojlg.apps.googleusercontent.com';
 
@@ -265,13 +266,17 @@ export default function SignInScreen() {
           style={[StyleSheet.absoluteFill, { opacity: onboardingOpacity }]}
           pointerEvents={stage === 'onboarding' ? 'auto' : 'none'}
         >
-          <TouchableOpacity
-            style={styles.getStartedButton}
-            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); router.push('/onboarding/profile-setup'); }}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.getStartedText}>GET STARTED</Text>
-          </TouchableOpacity>
+          {/* MOLDED. This is the first button anyone ever taps, and it was the flat painted accent slab the
+              refresh spec calls the #1 machine-designed tell -- in shouty caps with letterSpacing 3.
+              `fill` keeps the exact hardcoded #3b82f6: this screen is pre-theme (no accent picked yet, and
+              the default light accent is Burgundy) so letting PrimaryCTA use theme.accentBlue would repaint
+              the splash. */}
+          <PrimaryCTA
+            label="Get Started"
+            fill="#3b82f6"
+            faceStyle={{ height: 54, borderRadius: 14, paddingVertical: 0 }}
+            onPress={() => router.push('/onboarding/profile-setup')}
+          />
           {__DEV__ && (
             <TouchableOpacity
               style={{ marginTop: 12, alignItems: 'center', padding: 8 }}

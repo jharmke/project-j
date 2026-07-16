@@ -7,6 +7,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { auth, db } from '../firebaseConfig';
 import { useTheme } from '../theme';
 import { ToastRenderer, useToast } from './Toast';
+import PrimaryCTA from './PrimaryCTA';
 import { Type } from '../typography';
 
 interface Props {
@@ -141,25 +142,17 @@ export default function PrayerRequestModal({ visible, onClose, variant }: Props)
             >
               <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textMuted }}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleSend}
+            <PrimaryCTA
+              label="Send"
+              busyLabel="Sending..."
+              busy={sending}
               disabled={!canSend}
-              style={{
-                flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-                borderWidth: 1, borderRadius: 8, paddingVertical: 12,
-                backgroundColor: canSend ? (faith ? 'rgba(212,134,10,0.10)' : theme.accentBlueBg) : theme.bgInput,
-                borderColor: canSend ? (faith ? 'rgba(212,134,10,0.30)' : theme.accentBlueBorder) : theme.borderInput,
-                opacity: canSend ? 1 : 0.4,
-              }}
-            >
-              {sending
-                ? <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: faith ? theme.accentAmber : theme.accentBlue }}>Sending...</Text>
-                : <>
-                    <Ionicons name="send" size={14} color={faith ? theme.accentAmber : theme.accentBlue} />
-                    <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: faith ? theme.accentAmber : theme.accentBlue }}>Send</Text>
-                  </>
-              }
-            </TouchableOpacity>
+              onPress={handleSend}
+              icon={<Ionicons name="send" size={14} color="#ffffff" />}
+              fill={faith ? theme.accentAmber : undefined}
+              wrapperStyle={{ flex: 2 }}
+              faceStyle={{ paddingVertical: 12, borderRadius: 8 }}
+            />
           </View>
         </Animated.View>
       </KeyboardAvoidingView>

@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { type Prayer } from '../utils/prayers';
 import { useTheme } from '../theme';
+import PrimaryCTA from './PrimaryCTA';
 import { Type } from '../typography';
 
 /**
@@ -79,9 +80,18 @@ export default function PrayerActionModal({ prayer, onClose, onAnswer, onUnanswe
             shadowRadius: 12,
           }}
         >
-          <Text style={{ fontSize: 16, fontFamily: Type.ui, fontStyle: 'italic', color: theme.textPrimary, lineHeight: 24, marginBottom: 18 }}>
-            "{display?.text}"
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <Ionicons name={answered ? 'checkmark-circle' : 'hand-left'} size={16} color={theme.accentAmber} />
+            <Text style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentAmber }}>
+              {answered ? 'Answered Prayer' : 'Prayer'}
+            </Text>
+          </View>
+
+          <View style={{ backgroundColor: `rgba(${GOLD_RGB},0.10)`, borderWidth: 1, borderColor: `rgba(${GOLD_RGB},0.22)`, borderRadius: 12, padding: 14, marginBottom: 18 }}>
+            <Text style={{ fontSize: 16, fontFamily: Type.ui, fontStyle: 'italic', color: theme.textPrimary, lineHeight: 24 }}>
+              "{display?.text}"
+            </Text>
+          </View>
 
           {answered ? (
             <TouchableOpacity
@@ -92,13 +102,14 @@ export default function PrayerActionModal({ prayer, onClose, onAnswer, onUnanswe
               <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.textSecondary }}>Move back to active</Text>
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity
+            <PrimaryCTA
+              label="God answered this"
               onPress={() => display && onAnswer(display)}
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderRadius: 10, paddingVertical: 14, marginBottom: 10, backgroundColor: `rgba(${GOLD_RGB},0.16)`, borderColor: `rgba(${GOLD_RGB},0.4)` }}
-            >
-              <Ionicons name="sparkles" size={16} color={theme.accentAmber} />
-              <Text style={{ fontSize: 15, fontFamily: Type.uiSemibold, color: theme.accentAmber }}>God answered this</Text>
-            </TouchableOpacity>
+              icon={<Ionicons name="sparkles" size={15} color="#ffffff" />}
+              fill={`rgb(${GOLD_RGB})`}
+              wrapperStyle={{ marginBottom: 10 }}
+              faceStyle={{ paddingVertical: 12, borderRadius: 10 }}
+            />
           )}
 
           <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>

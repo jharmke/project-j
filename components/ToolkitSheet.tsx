@@ -14,6 +14,7 @@ import { getTutorialsForTab } from '../data/tutorials';
 import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 import { ToastRenderer } from './Toast';
+import ModalHeader from './ModalHeader';
 import { Type } from '../typography';
 
 // ─── Emitter ─────────────────────────────────────────────────────────────────
@@ -43,16 +44,6 @@ export function ToolkitRenderer() {
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
 
-const TAB_LABELS: Record<string, string> = {
-  home:    'HOME',
-  log:     'NUTRITION LOG',
-  workout: 'WORKOUT',
-  stats:   'STATS',
-  profile: 'PROFILE',
-  settings: 'SETTINGS',
-  faith:   'FAITH',
-};
-
 const TAB_ROUTES: Record<string, string> = {
   home:    '/(tabs)/',
   log:     '/(tabs)/log',
@@ -72,6 +63,11 @@ function ToolkitSheetInner({ tab, onClose }: { tab: string; onClose: () => void 
   const cardTranslateY = useRef(new Animated.Value(16)).current;
 
   const tutorials = getTutorialsForTab(tab as any);
+
+  // Faith tab wears amber end-to-end, so its toolkit does too (title, play icons, top edge).
+  const faith = tab === 'faith';
+  const accentRaw = faith ? theme.accentAmber : theme.accentBlueRaw;
+  const accentTintBg = faith ? theme.accentAmber + '16' : theme.accentBlueBg;
 
   const animateIn = () => {
     overlayOpacity.setValue(0);
@@ -133,28 +129,21 @@ function ToolkitSheetInner({ tab, onClose }: { tab: string; onClose: () => void 
           {
             backgroundColor: theme.bgSheet,
             borderColor: theme.borderCard,
-            borderTopColor: theme.accentBlueRaw + '55',
+            borderTopColor: accentRaw + '55',
             opacity: cardOpacity,
             transform: [{ translateY: cardTranslateY }],
           },
         ]}>
-          {/* Handle pill */}
-          <View style={[styles.handle, { backgroundColor: 'rgba(255,255,255,0.15)' }]} />
-
-          {/* Header row */}
-          <View style={styles.header}>
-            <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>
-              {TAB_LABELS[tab] ?? tab.toUpperCase()} TOOLKIT
-            </Text>
-            <TouchableOpacity onPress={handleClose} hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}>
-              <Ionicons name="close" size={20} color={theme.textMuted} />
-            </TouchableOpacity>
+          {/* Standard modal header (handle pill + Clash title + X). The -16 pulls its own 16px padding
+              back so the title left-aligns with the tour rows below; the card keeps its 16px sides. */}
+          <View style={{ marginHorizontal: -16 }}>
+            <ModalHeader
+              title="Guided Tours"
+              subtitle="Walk through each feature step by step."
+              onClose={handleClose}
+              color={faith ? theme.accentAmber : undefined}
+            />
           </View>
-
-          <Text style={[styles.sectionTitle, { color: theme.accentBlueRaw }]}>Guided Tours</Text>
-          <Text style={[styles.sectionSub, { color: theme.textSecondary }]}>
-            Walk through each feature step by step.
-          </Text>
 
           <ScrollView
             showsVerticalScrollIndicator={false}
@@ -174,8 +163,8 @@ function ToolkitSheetInner({ tab, onClose }: { tab: string; onClose: () => void 
                 ]}
                 activeOpacity={0.65}
               >
-                <View style={[styles.playIconWrap, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueRaw + '33' }]}>
-                  <Ionicons name="play" size={12} color={theme.accentBlueRaw} />
+                <View style={[styles.playIconWrap, { backgroundColor: accentTintBg, borderColor: accentRaw + '33' }]}>
+                  <Ionicons name="play" size={12} color={accentRaw} />
                 </View>
                 <View style={styles.rowText}>
                   <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>{t.name}</Text>
@@ -223,41 +212,12 @@ const styles = StyleSheet.create({
     borderTopWidth: 2,
     overflow: 'hidden',
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: 0,
     paddingBottom: 16,
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  sectionLabel: {
-    fontSize: 9,
-    fontFamily: Type.uiBold,
-    letterSpacing: 3,
-    textTransform: 'uppercase',
-  },
-  sectionTitle: {
-    fontSize: 22,
-    fontFamily: Type.num,
-    letterSpacing: 1,
-    marginBottom: 2,
-  },
-  sectionSub: {
-    fontSize: 12,
-    fontFamily: Type.ui,
-    marginBottom: 14,
   },
   list: {
     flexGrow: 0,
+    marginTop: 8,
   },
   row: {
     flexDirection: 'row',

@@ -8,6 +8,7 @@ import { addPrayer, updatePrayer, type Prayer } from '../utils/prayers';
 import { cancelPrayerNotification } from '../services/notifications';
 import { useTheme } from '../theme';
 import { ToastRenderer, useToast } from './Toast';
+import PrimaryCTA from './PrimaryCTA';
 import { Type } from '../typography';
 
 /**
@@ -167,25 +168,17 @@ export default function AddPrayerModal({ visible, onClose, onAdded, editPrayer }
             >
               <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textMuted }}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleSave}
+            <PrimaryCTA
+              label={isEdit ? 'Save' : 'Add'}
+              busyLabel="Saving..."
+              busy={saving}
               disabled={!canSave}
-              style={{
-                flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-                borderWidth: 1, borderRadius: 8, paddingVertical: 12,
-                backgroundColor: canSave ? `rgba(${GOLD},0.15)` : theme.bgInput,
-                borderColor: canSave ? `rgba(${GOLD},0.35)` : theme.borderInput,
-                opacity: canSave ? 1 : 0.4,
-              }}
-            >
-              {saving
-                ? <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.accentAmber }}>Saving...</Text>
-                : <>
-                    <Ionicons name={isEdit ? 'checkmark' : 'add'} size={16} color={theme.accentAmber} />
-                    <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.accentAmber }}>{isEdit ? 'Save' : 'Add'}</Text>
-                  </>
-              }
-            </TouchableOpacity>
+              onPress={handleSave}
+              icon={<Ionicons name={isEdit ? 'checkmark' : 'add'} size={16} color="#ffffff" />}
+              fill={theme.accentAmber}
+              wrapperStyle={{ flex: 2 }}
+              faceStyle={{ paddingVertical: 12, borderRadius: 8 }}
+            />
           </View>
         </Animated.View>
       </KeyboardAvoidingView>

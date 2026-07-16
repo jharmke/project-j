@@ -28,6 +28,18 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-16 GUIDED TOURS (Toolkit) popup converted to the standard ModalHeader: dropped the redundant
+  "___ TOOLKIT" eyebrow, killed the top dead space, title now on Clash (was the number face), gained the
+  standard handle + X. Faith tab's copy now wears AMBER (title, play icons, top edge) like the rest of Faith;
+  other tabs stay accent. Removed dead TAB_LABELS + old header styles. (ToolkitSheet.tsx.) This closes one of
+  the hand-rolled modals from the modal-header scan.
+- 2026-07-16 STYLE/SETTINGS/PRAYER button + font sweep (Justin gym-pass findings). Coaching-mode switch popup:
+  title moved off the number face to Clash + "I'm In"/"Switch" is now molded PrimaryCTA. Settings Goals save
+  bar: background now the frosted chrome (Light; other themes unchanged, no blur yet -- flag), "Save Goals" ->
+  molded PrimaryCTA, "Cancel" off the shouty caps to mixed-case interface. Vacation "Start Vacation" -> molded.
+  Prayer Request "Send" + Add Prayer "Add/Save" -> molded amber. Prayer Action popup: added a Prayer/Answered
+  Prayer header, boxed the floating prayer quote, "God answered this" -> molded (warmer/lighter gold #d4860a not
+  the dark brown accentAmber, slightly shorter -- Justin's pushback).
 - 2026-07-16 FAITH "BIBLE AND PLANS" CARD -- Browse buttons unified. The two columns showed different
   affordances side by side (empty column = boxed shined amber button; under-cap column = flat "+ Browse" text
   link), which read sloppy. Now BOTH render the same boxed + shined amber pill with a "+" icon (PlansColumn in

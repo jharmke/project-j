@@ -26,6 +26,7 @@ import { storageSet } from '../utils/storage';
 import { saveWeightForDate, deleteWeightForDate, gatherWeightHistory, startingWeighIn, validateWeight } from '../utils/weightHistory';
 import { setOnboardingPreview } from '../utils/onboardingPreview';
 import { setFloatingBarHeight } from '../utils/floatingBar';
+import PrimaryCTA from '../components/PrimaryCTA';
 import { DEFAULT_ORDER, DEFAULT_VISIBLE, DISCIPLINE_ORDER, MINDFUL_ORDER, MINDFUL_VISIBLE, type CardId } from './(tabs)/index';
 import { resolveMaxHR, zoneBounds, timeInZones, fmtZoneTime, ageFromBirthday, tanakaMaxHR } from '../utils/hrZones';
 import { generateDiagnosticReport, ReportWindow, dumpWindowComparison } from '../utils/diagnosticReport';
@@ -1869,10 +1870,12 @@ export default function SettingsScreen() {
                     {vacDays} {vacDays === 1 ? 'Day Off' : 'Days Off'} · Resumes {vacFmtNice(addDaysKey(vacStartKey, vacDays))}
                   </Text>
                 </View>
-                <TouchableOpacity disabled={vacBusy} activeOpacity={0.85} onPress={handleStartVacation}
-                  style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingVertical: 13, alignItems: 'center', opacity: vacBusy ? 0.5 : 1 }}>
-                  <Text style={{ fontSize: 14, fontFamily: Type.uiBold, color: '#fff', letterSpacing: 1 }}>START VACATION</Text>
-                </TouchableOpacity>
+                <PrimaryCTA
+                  label="Start Vacation"
+                  onPress={handleStartVacation}
+                  disabled={vacBusy}
+                  faceStyle={{ borderRadius: 8 }}
+                />
               </View>
             )}
           </View>
@@ -3805,7 +3808,7 @@ export default function SettingsScreen() {
         <Animated.View
           style={{
             paddingHorizontal: 16, paddingTop: 12, paddingBottom: (goalKeyboardHeight > 0 ? 12 : 16) + (goalKeyboardHeight > 0 ? 0 : insets.bottom),
-            backgroundColor: theme.bgSheet, borderTopWidth: 0.5, borderTopColor: theme.borderCard,
+            backgroundColor: theme.chromeFill && theme.chromeFill !== 'transparent' ? theme.chromeFill : theme.bgSheet, borderTopWidth: 0.5, borderTopColor: theme.borderCard,
             transform: [{ translateY: goalFloatAnim.interpolate({ inputRange: [0, 1], outputRange: [200, 0] }) }],
           }}>
           <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -3818,20 +3821,16 @@ export default function SettingsScreen() {
                 setHasGoalChanges(false);
                 Animated.timing(goalFloatAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start();
               }}
-              // The old hardcoded width:90 was sized around BEBAS, which is extremely condensed. Onest at
-              // the same point size is much wider, so "CANCEL" wrapped to two lines. Let the button size
-              // to its label instead of pinning it to a width the new face cannot honour.
-              style={{ backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput, borderRadius: 10, paddingVertical: 16, paddingHorizontal: 18, alignItems: 'center' }}>
-              <Text numberOfLines={1} style={{ fontSize: 18, fontFamily: Type.uiBold, letterSpacing: 1, color: theme.textMuted }}>CANCEL</Text>
+              style={{ backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput, borderRadius: 10, paddingVertical: 16, paddingHorizontal: 20, alignItems: 'center' }}>
+              <Text numberOfLines={1} style={{ fontSize: 15, fontFamily: Type.uiSemibold, letterSpacing: 0.2, color: theme.textMuted }}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); saveGoals(); }}
+            <PrimaryCTA
+              label={goalSaved ? 'Saved' : !isMacroValid() ? 'Fix Macros to Save' : 'Save Goals'}
+              onPress={saveGoals}
               disabled={!isMacroValid()}
-              style={{ flex: 1, backgroundColor: isMacroValid() ? theme.accentBlue : theme.bgInput, borderWidth: isMacroValid() ? 0 : 0.5, borderColor: theme.borderInput, borderRadius: 10, padding: 16, alignItems: 'center' }}>
-              <Text style={{ fontSize: 18, fontFamily: Type.uiBold, letterSpacing: 2, color: isMacroValid() ? theme.bgPrimary : theme.textMuted }}>
-                {goalSaved ? 'SAVED' : !isMacroValid() ? 'FIX MACROS TO SAVE' : 'SAVE GOALS'}
-              </Text>
-            </TouchableOpacity>
+              wrapperStyle={{ flex: 1 }}
+              faceStyle={{ borderRadius: 10 }}
+            />
           </View>
         </Animated.View>
       </KeyboardAvoidingView>
@@ -3865,7 +3864,7 @@ export default function SettingsScreen() {
             </TouchableOpacity>
             {modeSwitchTarget && (
               <View style={{ paddingHorizontal: 20, paddingBottom: 18, paddingTop: 4 }}>
-                <Text style={{ fontSize: 24, fontFamily: Type.num, letterSpacing: 1, color: theme.accentBlue, textAlign: 'center', marginBottom: 8 }}>
+                <Text style={{ fontSize: 24, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentBlue, textAlign: 'center', marginBottom: 8 }}>
                   Switch to {MODE_LABEL[modeSwitchTarget]}?
                 </Text>
 
@@ -3884,10 +3883,12 @@ export default function SettingsScreen() {
                     style={{ flex: 1, paddingVertical: 13, borderRadius: 10, borderWidth: 1, borderColor: theme.borderCard, alignItems: 'center' }}>
                     <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.textSecondary }}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={confirmModeSwitch} activeOpacity={0.85}
-                    style={{ flex: 1, paddingVertical: 13, borderRadius: 10, backgroundColor: theme.accentBlueRaw, alignItems: 'center' }}>
-                    <Text style={{ fontSize: 14, fontFamily: Type.uiBold, color: '#ffffff' }}>{modeSwitchTarget === 'discipline' ? "I'm In" : 'Switch'}</Text>
-                  </TouchableOpacity>
+                  <PrimaryCTA
+                    label={modeSwitchTarget === 'discipline' ? "I'm In" : 'Switch'}
+                    onPress={confirmModeSwitch}
+                    wrapperStyle={{ flex: 1 }}
+                    faceStyle={{ paddingVertical: 13, borderRadius: 10 }}
+                  />
                 </View>
               </View>
             )}

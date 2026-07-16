@@ -35,6 +35,7 @@ import { effectiveExerciseMinutes } from '../utils/exerciseMinutes';
 import { Type, numLine } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import ButtonShine from '../components/ButtonShine';
+import BackgroundLayers from '../components/BackgroundLayers';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -348,6 +349,7 @@ export default function DaySummaryScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
+      <BackgroundLayers />
       {Header}
       <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 120 }} showsVerticalScrollIndicator={false}>
 
@@ -369,30 +371,41 @@ export default function DaySummaryScreen() {
           )}
         </View>
 
-        {/* Coach insight card: accent-tinted, centered, italic — the standard for all AI coaching surfaces */}
+        {/* Coach insight -- TWO layers now, matching Sleep & Recovery's coach (the one that survived the
+            glow). It used to be ONE layer: the card WAS the tint, a ~7% accent wash with an accent border
+            sitting straight on the page. That worked on a flat grey page; on an accent GLOW you are reading
+            a faint accent tint on top of accent light, and it goes strainy (Justin, 2026-07-16).
+            Now: an opaque CARD (which the tint recipe silently assumes behind it -- same lesson as
+            accentBlueBgOpaque and MembershipCard), with the tint as a BOX inside holding the coach's words.
+            The same fix belongs on weekly, monthly and the EvR report -- all four were the same one-layer
+            shape, and this makes every coach surface in the app structurally identical. */}
         {!!dayCoachBody && (
           <View style={{
-            backgroundColor: `${accent}12`,
+            backgroundColor: theme.bgCard,
             borderRadius: 12,
-            borderWidth: 1,
-            borderColor: `${accent}50`,
+            borderWidth: 0.5,
+            borderColor: theme.borderCard,
+            borderTopWidth: 1.5,
+            borderTopColor: accent,
             padding: 14,
             marginBottom: 12,
-            alignItems: 'center',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.08,
-            shadowRadius: 4,
+            shadowColor: theme.cardShadow,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: theme.cardShadowOpacity,
+            shadowRadius: 12,
+            elevation: 6,
           }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 10 }}>
               <Ionicons name="sparkles" size={12} color={accent} />
               <Text style={{ fontSize: 9, letterSpacing: 3, color: accent, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>Coach Insight</Text>
             </View>
-            <View style={{ width: '100%', height: 0.5, backgroundColor: `${accent}40`, marginBottom: 10 }} />
-            {/* VOICE, upright -- matched to Home's Coach Insight. See the same note in weekly-summary. */}
-            <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.voice, lineHeight: 22, textAlign: 'center' }}>
-              {dayCoachBody}
-            </Text>
+            {/* The tint, now composited over an opaque card instead of over the page. */}
+            <View style={{ backgroundColor: `${accent}12`, borderRadius: 10, padding: 12 }}>
+              {/* VOICE, upright -- matched to Home's Coach Insight. See the same note in weekly-summary. */}
+              <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.voice, lineHeight: 22, textAlign: 'center' }}>
+                {dayCoachBody}
+              </Text>
+            </View>
           </View>
         )}
 
@@ -626,8 +639,9 @@ export default function DaySummaryScreen() {
           </SectionCard>
         )}
 
-        {/* Disclaimer */}
-        <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, textAlign: 'center', marginTop: 10 }}>
+        {/* Disclaimer. textDim (the DIMMEST token) sitting on the PAGE at the bottom = the strongest part of
+            the glow. A health disclaimer is the one line not allowed to be unreadable. */}
+        <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.ui, textAlign: 'center', marginTop: 10 }}>
           For informational purposes only. Not medical advice.
         </Text>
 
@@ -647,7 +661,9 @@ export default function DaySummaryScreen() {
             </View>
           ) : (
             <TouchableOpacity onPress={() => setConfirmingExclude(true)} hitSlop={{ top: 10, bottom: 10, left: 20, right: 20 }} style={{ alignItems: 'center' }}>
-              <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui, textDecorationLine: 'underline' }}>Exclude this day</Text>
+              {/* textMuted, not textDim: this is a real ACTION (it changes your averages) sitting naked on
+                  the page in the glow -- it was the dimmest text in the app on the brightest part of it. */}
+              <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, textDecorationLine: 'underline' }}>Exclude this day</Text>
             </TouchableOpacity>
           )}
         </View>

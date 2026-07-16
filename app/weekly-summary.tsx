@@ -23,6 +23,7 @@ import { TIPS_GATED, CoachTipCache, loadCoachTipCache } from '../utils/smartTips
 import { refreshCoachTipWeekly, resolveTipBody } from '../utils/coachAI';
 import { Type, numLine } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import BackgroundLayers from '../components/BackgroundLayers';
 
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -63,7 +64,9 @@ function SectionCard({ label, icon, score, pct, borderColor, children }: {
   borderColor: string; children?: React.ReactNode;
 }) {
   const { theme } = useTheme();
-  const shadowStyle = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6 };
+  // Was '#000' @0.12 on a tight 2/6 blur -- about a third of a normal card, the wrong hue on Light (whose
+  // shadow is navy) and invisible on Dark. Nothing clips these, so it always rendered; just weak.
+  const shadowStyle = { shadowColor: theme.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: theme.cardShadowOpacity, shadowRadius: 12, elevation: 6 };
   const barC = score !== null ? borderColor : theme.textDim;
   return (
     <View style={[{
@@ -143,7 +146,9 @@ export default function WeeklySummaryScreen() {
   const [faithJourney, setFaithJourney] = useState<'rooted' | 'exploring' | 'notrightnow'>('rooted');
   const [activeCalGoal, setActiveCalGoal] = useState<number>(500);
 
-  const shadowStyle = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6 };
+  // Was '#000' @0.12 on a tight 2/6 blur -- about a third of a normal card, the wrong hue on Light (whose
+  // shadow is navy) and invisible on Dark. Nothing clips these, so it always rendered; just weak.
+  const shadowStyle = { shadowColor: theme.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: theme.cardShadowOpacity, shadowRadius: 12, elevation: 6 };
 
   // Cancel the "Weekly Summary Ready" notification when the user views this screen
   useEffect(() => {
@@ -248,13 +253,14 @@ export default function WeeklySummaryScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
+      <BackgroundLayers />
       <ScreenHeader
         title="Weekly Summary"
         subtitle={formatDateRange(data.weekStart, data.weekEnd)}
         right={<TooltipIcon tooltipKey="day_score" size={18} />}
       />
       <ScrollView
-        contentContainerStyle={{ paddingTop: 16, paddingBottom: insets.bottom + 24 }}
+        contentContainerStyle={{ paddingTop: 16, paddingBottom: insets.bottom + 96 }}
         showsVerticalScrollIndicator={false}
       >
         <View style={{ paddingHorizontal: 20 }}>
@@ -298,15 +304,20 @@ export default function WeeklySummaryScreen() {
               </View>
             </View>
           ) : coachBody ? (
+            /* TWO layers, matching Sleep & Recovery's coach and day-summary's. This was ONE layer -- the
+               card WAS the tint, a ~7% accent wash sitting straight on the page -- which is fine on a flat
+               page but goes strainy once the page glows accent underneath it. Opaque card + the tint as a
+               box inside. See the fuller note in day-summary.tsx. */
             <View style={[shadowStyle, {
-              backgroundColor: `${accent}12`, borderRadius: 12, borderWidth: 1,
-              borderColor: `${accent}50`, padding: 14, marginBottom: 12, alignItems: 'center',
+              backgroundColor: theme.bgCard, borderRadius: 12, borderWidth: 0.5,
+              borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: accent,
+              padding: 14, marginBottom: 12,
             }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 10 }}>
                 <Ionicons name="sparkles" size={12} color={accent} />
                 <Text style={{ fontSize: 9, letterSpacing: 3, color: accent, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>Coach Insight</Text>
               </View>
-              <View style={{ width: '100%', height: 0.5, backgroundColor: `${accent}40`, marginBottom: 10 }} />
+              <View style={{ backgroundColor: `${accent}12`, borderRadius: 10, padding: 12 }}>
               {/* VOICE, upright -- matched to Home's Coach Insight, which is the reference for this exact
                   card. Was uiSemibold + italic; the italic went with the font swap because Home's does not
                   wear one, and faking an italic on a face that ships no italic cut is how the Fontshare
@@ -314,6 +325,7 @@ export default function WeeklySummaryScreen() {
               <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.voice, lineHeight: 22, textAlign: 'center' }}>
                 {coachBody}
               </Text>
+              </View>
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/diagnostic-report'); }}
                 style={{ marginTop: 12, alignSelf: 'center' }}
@@ -526,8 +538,9 @@ export default function WeeklySummaryScreen() {
             </SectionCard>
           )}
 
-          {/* Disclaimer */}
-          <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, textAlign: 'center', marginTop: 4 }}>
+          {/* Disclaimer. textMuted, not textDim: it sits on the PAGE at the bottom, which is the strongest
+              part of the glow, and a health disclaimer is the one line not allowed to be unreadable. */}
+          <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.ui, textAlign: 'center', marginTop: 4 }}>
             For informational purposes only. Not medical advice.
           </Text>
 

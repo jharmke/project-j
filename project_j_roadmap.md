@@ -563,11 +563,16 @@ are separate pre-submission checklists, NOT part of this menu.
   the readiness line, the Recovery/Sleep AI tips, one Weight line). The judgement calls a script can't
   make: Otto's chat bubbles (HIS = voice, YOURS = interface -- that contrast is the point), Effort vs
   Results insight copy, verses, devotionals. Weight ladder is locked (Regular body / Medium / Bold title).
-- [NOW] [BUG, found 2026-07-14] **Journal "New Entry" sheet.** Three problems: (1) it opens a SLIDE-UP
-  BOTTOM SHEET (translateY + handle), violating the standing centered-modals-only rule; (2) the handle pill
-  is decorative; (3) "New Entry" is fine now but the sheet itself needs converting to a centered card. This
-  is a STRUCTURAL conversion (bottom sheet -> centered card), not a header swap -- that is why it was parked
-  through the whole modal-header sweep.
+- [NOW] [BUG, found 2026-07-14] **THE SLIDE-UP BOTTOM SHEETS.** Both violate the standing centered-modals-
+  only rule and both are STRUCTURAL conversions (bottom sheet -> centered card), not header swaps -- which
+  is why they were parked through the whole modal-header sweep. Grouped because they are the same job:
+    1. **Journal "New Entry"** (journal.tsx). Slide-up sheet (translateY + handle); the handle pill is
+       decorative. "New Entry" copy is fine; the SHEET is the problem.
+    2. **Stats graph creator, the "Choose data type" step** (found 2026-07-16). Same slide-up sheet, and
+       Justin's note on top of the conversion: that step is "all white and needs some oooomph somehow" --
+       i.e. it needs a real design pass, not just a container swap. Do the structure first, then the look.
+  >> Both are MODALS, so they sit outside the 2026-07-16 glow/shadow sweep (which is pages only, by
+  Justin's call -- modals float over a dim overlay where a shadow does almost nothing).
 - [QUICK WIN] [found 2026-07-14] **Non-modal number-face stragglers.** The modal + page header sweeps are
   done, but a scan still finds Type.num (the NUMBER face) on a few NON-modal things: Profile's save-bar
   buttons (CANCEL / SAVE PROFILE), a "REST DAY" workout-tab heading, and some IFCard / cardio button labels.

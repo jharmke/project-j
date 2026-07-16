@@ -18,6 +18,7 @@ import { TIPS_GATED, CoachTipCache, loadCoachTipCache } from '../utils/smartTips
 import { refreshCoachTipMonthly, resolveTipBody } from '../utils/coachAI';
 import { Type, numLine } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import BackgroundLayers from '../components/BackgroundLayers';
 
 const MONTHS_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -62,7 +63,9 @@ function SectionCard({ label, icon, score, pct, borderColor, children }: {
   borderColor: string; children?: React.ReactNode;
 }) {
   const { theme } = useTheme();
-  const shadowStyle = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6 };
+  // Was '#000' @0.12 on a tight 2/6 blur -- about a third of a normal card, the wrong hue on Light (whose
+  // shadow is navy) and invisible on Dark. Nothing clips these, so it always rendered; just weak.
+  const shadowStyle = { shadowColor: theme.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: theme.cardShadowOpacity, shadowRadius: 12, elevation: 6 };
   const barC = score !== null ? borderColor : theme.textDim;
   return (
     <View style={[{
@@ -217,7 +220,9 @@ export default function MonthlySummaryScreen() {
   const [faithJourney, setFaithJourney] = useState<'rooted' | 'exploring' | 'notrightnow'>('rooted');
   const [prevData, setPrevData] = useState<MonthlySummaryData | null>(null);
 
-  const shadowStyle = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6 };
+  // Was '#000' @0.12 on a tight 2/6 blur -- about a third of a normal card, the wrong hue on Light (whose
+  // shadow is navy) and invisible on Dark. Nothing clips these, so it always rendered; just weak.
+  const shadowStyle = { shadowColor: theme.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: theme.cardShadowOpacity, shadowRadius: 12, elevation: 6 };
 
   // Cancel the "Monthly Summary Ready" notification when the user views this screen
   useEffect(() => {
@@ -340,12 +345,13 @@ export default function MonthlySummaryScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
+      <BackgroundLayers />
       <ScreenHeader
         title="Monthly Summary"
         subtitle={monthYearLabel}
         right={<TooltipIcon tooltipKey="day_score" size={18} />}
       />
-      <ScrollView contentContainerStyle={{ paddingTop: 16, paddingBottom: insets.bottom + 24 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingTop: 16, paddingBottom: insets.bottom + 96 }} showsVerticalScrollIndicator={false}>
 
         <View style={{ paddingHorizontal: 20 }}>
 
@@ -388,19 +394,23 @@ export default function MonthlySummaryScreen() {
               </View>
             </View>
           ) : coachBody ? (
+            /* TWO layers, matching Sleep & Recovery's coach and day-summary's. See the fuller note in
+               day-summary.tsx: the card USED to be the tint, which goes strainy over the page glow. */
             <View style={[shadowStyle, {
-              backgroundColor: `${accent}12`, borderRadius: 12, borderWidth: 1,
-              borderColor: `${accent}50`, padding: 14, marginBottom: 12, alignItems: 'center',
+              backgroundColor: theme.bgCard, borderRadius: 12, borderWidth: 0.5,
+              borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: accent,
+              padding: 14, marginBottom: 12,
             }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 10 }}>
                 <Ionicons name="sparkles" size={12} color={accent} />
                 <Text style={{ fontSize: 9, letterSpacing: 3, color: accent, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>Coach Insight</Text>
               </View>
-              <View style={{ width: '100%', height: 0.5, backgroundColor: `${accent}40`, marginBottom: 10 }} />
-              {/* VOICE, upright -- matched to Home's Coach Insight. See the same note in weekly-summary. */}
-              <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.voice, lineHeight: 22, textAlign: 'center' }}>
-                {coachBody}
-              </Text>
+              <View style={{ backgroundColor: `${accent}12`, borderRadius: 10, padding: 12 }}>
+                {/* VOICE, upright -- matched to Home's Coach Insight. See the same note in weekly-summary. */}
+                <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.voice, lineHeight: 22, textAlign: 'center' }}>
+                  {coachBody}
+                </Text>
+              </View>
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/diagnostic-report'); }}
                 style={{ marginTop: 12, alignSelf: 'center' }}
@@ -613,8 +623,9 @@ export default function MonthlySummaryScreen() {
             </SectionCard>
           )}
 
-          {/* Disclaimer */}
-          <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, textAlign: 'center', marginTop: 4 }}>
+          {/* Disclaimer. textMuted, not textDim: it sits on the PAGE at the bottom, which is the strongest
+              part of the glow, and a health disclaimer is the one line not allowed to be unreadable. */}
+          <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.ui, textAlign: 'center', marginTop: 4 }}>
             For informational purposes only. Not medical advice.
           </Text>
 

@@ -2860,13 +2860,31 @@ export default function HomeScreen() {
                 />
               </View>
             )}
+            {/* Each half is its OWN flex:1 box and the buttons fill it. Both buttons WERE flex:1 in this row
+                directly, which should have been equal halves and was not -- Cancel came out visibly wider
+                than Save and neither lined up with the Bed/Wake boxes above (Justin, screenshot). PrimaryCTA
+                nests wrapper > Animated.View > face, so its layout does not behave like a plain button's.
+                Putting the flex on plain sibling Views takes that out of the equation entirely. */}
             <View style={{ flexDirection:'row', gap:8 }}>
+              <View style={{ flex: 1 }}>
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditingSleep(false); setActiveSleepPicker(null); }}
-                style={{ flex:1, backgroundColor: theme.bgInput, borderWidth:1, borderColor: theme.borderInput, borderRadius:6, padding:10, alignItems:'center' }}>
+                style={{ backgroundColor: theme.bgInput, borderWidth:1, borderColor: theme.borderInput, borderRadius:6, padding:10, alignItems:'center' }}>
                 <Text style={{ color: theme.textMuted, fontSize:13, fontFamily:Type.uiSemibold }}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={async () => {
-                triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+              </View>
+              <View style={{ flex: 1 }}>
+              {/* Molded + ACCENT. Was a flat solid accentGreen slab -- green means success/goal-hit in this
+                  app, and this button PERFORMS an action rather than reporting an outcome. Same call as Add
+                  to Diary and Recipe Builder's Save. PrimaryCTA fires the Medium haptic itself. */}
+              <PrimaryCTA
+                label="Save"
+                compact
+                // Nothing valid to submit = dim, per the input+submit rule. It had NO dim state, and the
+                // handler's own first line is `if(!bed||!wake) return` -- so with a time missing the button
+                // looked fully live, took your tap, fired a haptic and silently did nothing.
+                disabled={!sleepBedTime || !sleepWakeTime}
+                faceStyle={{ borderRadius: 6, paddingVertical: 11, paddingHorizontal: 10 }}
+                onPress={async () => {
                 if(!sleepBedTime||!sleepWakeTime) return;
                 let diff=sleepWakeTime.getTime()-sleepBedTime.getTime();
                 if(diff<0) diff+=24*3600000;
@@ -2891,9 +2909,9 @@ export default function HomeScreen() {
                   });
                 });
                 setSleepStoredBed(bedStr); setSleepStoredWake(wakeStr); setEditingSleep(false); setActiveSleepPicker(null);
-              }} style={{ flex:1, backgroundColor: theme.accentGreen, borderRadius:6, padding:10, alignItems:'center' }}>
-                <Text style={{ color: theme.bgPrimary, fontSize:13, fontFamily:Type.uiSemibold }}>Save</Text>
-              </TouchableOpacity>
+                }}
+              />
+              </View>
               {sleepOverride && (
                 <TouchableOpacity onPress={async () => {
                   triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);

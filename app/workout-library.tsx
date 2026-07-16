@@ -26,6 +26,7 @@ import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import ButtonShine from '../components/ButtonShine';
 import FabDome from '../components/FabDome';
+import BackgroundLayers from '../components/BackgroundLayers';
 import PrimaryCTA from '../components/PrimaryCTA';
 import ModalHeader from '../components/ModalHeader';
 
@@ -2646,6 +2647,7 @@ export default function WorkoutLibraryScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <BackgroundLayers />
       <ScreenHeader
         title={isSelectMode ? `Add to ${fmtLibraryDay(day)}` : 'Exercise Library'}
         topInset={false}
@@ -2800,7 +2802,7 @@ export default function WorkoutLibraryScreen() {
           }
           renderItem={({ item: program, getIndex, drag, isActive }: RenderItemParams<CustomProgram>) => (
             <ScaleDecorator>
-              <View ref={getIndex() === 0 ? libProgramCardRef : undefined} collapsable={false} style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 12, opacity: isActive ? 0.95 : 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6 }}>
+              <View ref={getIndex() === 0 ? libProgramCardRef : undefined} collapsable={false} style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 12, opacity: isActive ? 0.95 : 1, shadowColor: theme.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: theme.cardShadowOpacity, shadowRadius: 12, elevation: 6 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
                   <Text style={{ color: theme.textSecondary, fontSize: 16, fontFamily: Type.uiBold, flex: 1, marginRight: 8 }}>{program.name}</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -2892,7 +2894,7 @@ export default function WorkoutLibraryScreen() {
               ) : (
                 <View>
                   {getFilteredRoutines(myRoutines).map((routine) => (
-                    <View key={routine.id} style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6 }}>
+                    <View key={routine.id} style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 12, shadowColor: theme.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: theme.cardShadowOpacity, shadowRadius: 12, elevation: 6 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
                         <Text style={{ color: theme.textSecondary, fontSize: 16, fontFamily: Type.uiBold, flex: 1, marginRight: 8 }}>{routine.name}</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -2978,7 +2980,7 @@ export default function WorkoutLibraryScreen() {
                       }
                     }}>
                     {filtered.map((routine, idx) => (
-                      <View key={routine.id} ref={idx === 0 ? libRoutinePresetRef : undefined} collapsable={false} style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 5 }}>
+                      <View key={routine.id} ref={idx === 0 ? libRoutinePresetRef : undefined} collapsable={false} style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 10, shadowColor: theme.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: theme.cardShadowOpacity, shadowRadius: 12, elevation: 6 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
                           <Text style={{ color: theme.textSecondary, fontSize: 15, fontFamily: Type.uiBold, flex: 1, marginRight: 8 }}>{routine.name}</Text>
                           <View style={{ backgroundColor: theme.bgInset, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
@@ -3872,7 +3874,9 @@ const useStyles = (theme: any) => StyleSheet.create({
   tabText: { fontSize: 12, color: theme.textMuted, fontFamily: Type.uiMedium },
   tabTextActive: { color: theme.textPrimary, fontFamily: Type.uiBold },
   sectionLabel: { fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase', marginHorizontal: 16, marginBottom: 10 },
-  exItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, marginHorizontal: 12, marginVertical: 4, borderRadius: 10, borderWidth: 0.5, borderLeftWidth: 3, borderColor: theme.borderCard, borderTopColor: 'rgba(255,255,255,0.1)', borderLeftColor: theme.accentBlueRaw, backgroundColor: theme.bgCard, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 3 },
+  // Was '#000' @0.12 on a tight 2/6 blur -- a third of a normal card, the wrong hue on Light (navy) and
+  // invisible on Dark. Nothing clips these rows, so the shadow always rendered; it was just weak.
+  exItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, marginHorizontal: 12, marginVertical: 4, borderRadius: 10, borderWidth: 0.5, borderLeftWidth: 3, borderColor: theme.borderCard, borderTopColor: 'rgba(255,255,255,0.1)', borderLeftColor: theme.accentBlueRaw, backgroundColor: theme.bgCard, shadowColor: theme.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: theme.cardShadowOpacity, shadowRadius: 12, elevation: 6 },
   exLeft: { flex: 1, marginRight: 12 },
   exTopRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   typeBadge: { backgroundColor: theme.accentBlueBg, borderRadius: 3, paddingHorizontal: 5, paddingVertical: 1 },

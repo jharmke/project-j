@@ -28,6 +28,14 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-16 FLAT-BUTTON MOLD SWEEP (round 1) + fixes. Molded the flat solid-accent buttons found by reading
+  (not grep-guessing): Stats "Add to Stats" (both spots), Workout tab "Load to N Days" (the TWIN of the
+  library one), Day Score "I Understand". "Add Food modal Save" turned out a DEAD unused style (no live
+  button). Also this session: the (i) TooltipModal title moved off the number font to Clash; Otto Notifications
+  "Done" -> molded; Log Measurements page: "How to measure" restyled to the tinted View-All-Achievements button
+  + added top padding + registered the save bar so Otto lifts above it, then bumped bottom padding so Otto
+  clears the Body Fat card. HONEST GAP (see NEXT UP): the flat-button sweep only covered the main tabs +
+  Add Food + Day Score; the deeper stack screens were NOT exhaustively scanned yet.
 - 2026-07-16 GUIDED TOURS (Toolkit) popup converted to the standard ModalHeader: dropped the redundant
   "___ TOOLKIT" eyebrow, killed the top dead space, title now on Clash (was the number face), gained the
   standard handle + X. Faith tab's copy now wears AMBER (title, play icons, top edge) like the rest of Faith;
@@ -378,6 +386,20 @@ are separate pre-submission checklists, NOT part of this menu.
   etc.) are flat solid-fill on a flat track -- plain. Give the fill a subtle gradient and/or a soft top sheen
   (Whoop/Oura style), maybe a faint glow at the leading edge. Own mini-treatment, part of the visual refresh
   button/surface family. Every bar animates already, so just the fill styling. Justin flagged 2026-07-15.
+- [QUICK WIN] [found 2026-07-16] **Flat-button mold sweep, ROUND 2 (finish the honest gap).** Round 1
+  (2026-07-16) molded the flat solid-accent buttons on the main tabs + Add Food + Day Score. NOT yet scanned
+  for the same flat-button pattern: the deeper stack screens -- recipe-builder, recipe-log, day-detail,
+  challenge-create, comparison-report, adaptive-target, ai-meal-estimator, food-detail, index (home), faith,
+  sleep, achievements, bible, journal, settings, reports, diagnostic-report(-view), body-measurements,
+  support, mission, onboarding. Method that works: grep `backgroundColor: theme.accentBlue(Raw)?/accentAmber`
+  then READ each hit -- skip progress bars, dots, check circles, round FABs, and the labeled pills in the "+"
+  expand menus (those are FAB affordances, leave them). Only mold real primary buttons. Left on purpose:
+  the IF card "Last Meal" red button (Justin's call, leave), workout rest-timer Skip/Done pills.
+- [NOW] [found 2026-07-16] **Round FAB gradient/mould pass.** Justin: the round "+" FABs (Log, Workout, Stats
+  add-buttons, plus the companion FABs) should get the same gradient/shine treatment we gave the HOME tab-bar
+  button (the dome/top-shine recipe). That is why we deliberately did NOT flatten/mold the FAB expand-menu
+  pills in the button sweep -- the whole FAB family gets this pass together. Template = the home-circle dome
+  recipe (crown gloss -> soft dark foot), see the HOME-CIRCLE REDESIGN shipped note.
 - [QUICK WIN] [found 2026-07-15] **Otto (+ Halo?) FAB placement audit.** The floating companion FAB sits
   bottom-left on many stack screens and OVERLAPS the last card's content when the page has no bottom padding
   (confirmed on Sleep & Recovery > Recovery: the FAB covers the Recovery Coach text). Sweep every screen that

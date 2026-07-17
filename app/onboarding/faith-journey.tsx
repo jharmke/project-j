@@ -13,6 +13,9 @@ import { triggerHaptic } from '@/utils/haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { isOnboardingPreview } from '../../utils/onboardingPreview';
 import { Type, numLine } from '../../typography';
+import { mix } from '../../theme';
+import PrimaryCTA from '../../components/PrimaryCTA';
+import { BlurView } from 'expo-blur';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -183,23 +186,29 @@ function FaithCard({
       : ['rgba(232,160,32,0.18)', 'rgba(232,160,32,0.18)'],
   });
 
+  // Selected was amber at SEVEN PERCENT -- next to nothing. The border did all the work of saying "chosen".
   const bgColor = borderAnim.interpolate({
     inputRange:  [0, 1],
-    outputRange: [CARD_BG, 'rgba(232,160,32,0.07)'],
+    outputRange: [CARD_BG, mix(AMBER, CARD_BG, 0.16)],
   });
 
   return (
     <Animated.View style={{ opacity: entranceAnim.fade, transform: [{ translateY: entranceAnim.slide }] }}>
       <TouchableOpacity onPress={handlePress} activeOpacity={1}>
         <Animated.View style={[styles.card, { backgroundColor: bgColor, borderColor }]}>
+          {/* NO SHINE. Tried it at Justin's push and he called it: too much. These are SELECTORS, and the
+              shine system's own rule is that selectors get selected/unselected STATES, not gloss -- the
+              gloss read as a plastic strip laid over a card that already breathes. The opaque amber fill
+              plus the pulsing border is the whole treatment. Do not re-add. */}
           <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
             <View style={styles.titleRow}>
               <Diamond filled={selected} />
-              <Text style={[styles.cardTitle, { color: selected ? AMBER_LIGHT : 'rgba(240,184,48,0.5)' }]}>
+              <Text style={[styles.cardTitle, { color: selected ? AMBER_LIGHT : 'rgba(240,184,48,0.7)' }]}>
                 {option.title}
               </Text>
             </View>
-            <Text style={[styles.cardCopy, { color: selected ? 'rgba(255,255,255,0.72)' : 'rgba(255,255,255,0.28)' }]}>
+            {/* Unselected copy was 28% white -- under the floor even on black. */}
+            <Text style={[styles.cardCopy, { color: selected ? 'rgba(255,255,255,0.86)' : 'rgba(255,255,255,0.5)' }]}>
               {option.copy}
             </Text>
           </Animated.View>
@@ -240,7 +249,7 @@ function VerseBlock({ selected }: { selected: string | null }) {
     <Animated.View style={[styles.verseBlock, { opacity, transform: [{ translateY: slideAnim }] }]}>
       <Text style={styles.verseText}>{verse.text}</Text>
       <Text style={styles.verseRef}>{verse.ref}</Text>
-      <Text style={[styles.changeNote, { color: 'rgba(255,255,255,0.2)' }]}>
+      <Text style={[styles.changeNote, { color: 'rgba(255,255,255,0.45)' }]}>
         You can change this anytime in Settings.
       </Text>
     </Animated.View>
@@ -269,8 +278,6 @@ export default function FaithJourneyScreen() {
     slide: useRef(new Animated.Value(16)).current,
   }));
 
-  const btnOpacity = useRef(new Animated.Value(0.3)).current;
-  const btnScale   = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -286,38 +293,35 @@ export default function FaithJourneyScreen() {
     });
   }, []);
 
-  useEffect(() => {
-    Animated.timing(btnOpacity, {
-      toValue: selected ? 1 : 0.3,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  }, [selected]);
-
   const handleContinue = async () => {
     if (isOnboardingPreview()) { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); router.push('/onboarding/apple-health'); return; }
     if (!selected) return;
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
-    Animated.sequence([
-      Animated.timing(btnScale, { toValue: 0.97, duration: 80, useNativeDriver: true }),
-      Animated.timing(btnScale, { toValue: 1.0,  duration: 80, useNativeDriver: true }),
-    ]).start(async () => {
-      try {
-        const existing = await AsyncStorage.getItem('pj_settings');
-        const current  = existing ? JSON.parse(existing) : {};
-        await storageSet('pj_settings', JSON.stringify({
-          ...current,
-          faithJourney: selected,
-        }));
-      } catch (e) {
-        console.log('Faith journey save error', e);
-      }
-      router.push('/onboarding/apple-health');
-    });
+    try {
+      const existing = await AsyncStorage.getItem('pj_settings');
+      const current  = existing ? JSON.parse(existing) : {};
+      await storageSet('pj_settings', JSON.stringify({
+        ...current,
+        faithJourney: selected,
+      }));
+    } catch (e) {
+      console.log('Faith journey save error', e);
+    }
+    router.push('/onboarding/apple-health');
   };
 
   return (
     <LinearGradient colors={[BG_TOP, BG_BOTTOM]} style={{ flex: 1 }}>
+
+      {/* The fire the embers come off. The screen was DARKEST at the bottom and the embers rose out of pure
+          black -- they had no source. This also un-inverts the app's own idea (light rising from below),
+          which this screen was the only one to run upside down. */}
+      <LinearGradient
+        colors={['rgba(232,160,32,0)', 'rgba(232,160,32,0.10)', 'rgba(240,112,32,0.30)']}
+        locations={[0, 0.5, 1]}
+        style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: SCREEN_HEIGHT * 0.55 }}
+        pointerEvents="none"
+      />
 
       {/* Embers */}
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -326,8 +330,12 @@ export default function FaithJourneyScreen() {
         ))}
       </View>
 
-      {/* Progress bar */}
+      {/* Progress bar. Frosted + glued, like the rest of the flow -- but hand-built DARK. theme.chromeFill
+          and tint="light" are light-theme values; used here they would lay two milky white bars across the
+          dark room. */}
       <View style={[styles.progressBar, { paddingTop: insets.top + 12 }]}>
+        <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFill} pointerEvents="none" />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(13,10,26,0.66)' }]} pointerEvents="none" />
         <TouchableOpacity
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -340,8 +348,10 @@ export default function FaithJourneyScreen() {
         </View>
       </View>
 
-      {/* Content */}
-      <View style={[styles.content, { paddingBottom: insets.bottom + 100 }]}>
+      {/* Fixed frame, NO scroll -- there is not enough here to earn one. It has to fit, so the budget below
+          is tight on purpose: the longest verse (2 Corinthians, on Not Right Now) is what everything has to
+          clear. If a verse gets longer than that one, this breaks again. */}
+      <View style={[styles.content, { paddingTop: insets.top + 66, paddingBottom: insets.bottom + 104 }]}>
 
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
           <Text style={[styles.screenLabel, { color: 'rgba(232,160,32,0.45)' }]}>STEP 4 OF 6</Text>
@@ -353,7 +363,7 @@ export default function FaithJourneyScreen() {
           }]}>
             Your Faith{'\n'}Journey.
           </Text>
-          <Text style={[styles.subtitle, { color: 'rgba(255,255,255,0.38)' }]}>
+          <Text style={[styles.subtitle, { color: 'rgba(255,255,255,0.66)' }]}>
             No wrong answer. This shapes how Project J walks with you.
           </Text>
         </Animated.View>
@@ -374,17 +384,17 @@ export default function FaithJourneyScreen() {
 
       </View>
 
-      {/* Footer */}
-      <View style={[styles.footer, { paddingBottom: insets.bottom + 16, borderTopColor: 'rgba(232,160,32,0.1)', backgroundColor: BG_BOTTOM }]}>
-        <Animated.View style={{ transform: [{ scale: btnScale }], opacity: btnOpacity }}>
-          <TouchableOpacity
-            style={[styles.continueBtn, { backgroundColor: AMBER }]}
-            onPress={handleContinue}
-            activeOpacity={1}
-          >
-            <Text style={styles.continueBtnText}>CONTINUE</Text>
-          </TouchableOpacity>
-        </Animated.View>
+      {/* Footer. Frosted dark, absolute -- content passes under it instead of stopping at an opaque slab. */}
+      <View style={[styles.footer, { paddingBottom: insets.bottom + 16, borderTopColor: 'rgba(232,160,32,0.14)' }]}>
+        <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFill} pointerEvents="none" />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(6,4,16,0.66)' }]} pointerEvents="none" />
+        <PrimaryCTA
+          label="Continue"
+          fill={AMBER}
+          disabled={!selected}
+          faceStyle={{ borderRadius: 14, paddingVertical: 18 }}
+          onPress={handleContinue}
+        />
       </View>
 
     </LinearGradient>
@@ -392,24 +402,26 @@ export default function FaithJourneyScreen() {
 }
 
 const styles = StyleSheet.create({
-  progressBar:     { paddingHorizontal: 24, paddingBottom: 8, flexDirection: 'row', alignItems: 'center' },
+  progressBar:     { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, paddingHorizontal: 24, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 0.5, borderBottomColor: 'rgba(232,160,32,0.14)', overflow: 'hidden' },
   progressTrack:   { flex: 1, height: 3, borderRadius: 2, overflow: 'hidden' },
   progressFill:    { height: '100%', borderRadius: 2 },
   backBtn:         { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  content:         { flex: 1, paddingHorizontal: 24, paddingTop: 32 },
-  screenLabel:     { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 },
-  title:           { fontSize: 52, fontFamily: Type.display, letterSpacing: 0.3, lineHeight: numLine(52), marginBottom: 12 },
-  subtitle:        { fontSize: 13, fontFamily: Type.ui, lineHeight: 20 },
-  cardsContainer:  { marginTop: 28, gap: 12 },
-  card:            { borderWidth: 1, borderRadius: 16, padding: 18, minHeight: 88 },
-  titleRow:        { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 7 },
-  cardTitle:       { fontSize: 20, fontFamily: Type.num, letterSpacing: 2, lineHeight: numLine(20) },
-  cardCopy:        { fontSize: 13, fontFamily: Type.ui, lineHeight: 19, paddingLeft: 19 },
-  verseBlock:      { marginTop: 24, paddingHorizontal: 4 },
-  verseText:       { fontSize: 13, fontFamily: Type.ui, fontStyle: 'italic', lineHeight: 20, color: 'rgba(232,160,32,0.55)', textAlign: 'center' },
-  verseRef:        { fontSize: 10, fontFamily: Type.uiBold, letterSpacing: 2, color: 'rgba(232,160,32,0.35)', textAlign: 'center', marginTop: 6, textTransform: 'uppercase' },
-  changeNote:      { fontSize: 11, fontFamily: Type.ui, textAlign: 'center', marginTop: 16 },
-  footer:          { paddingHorizontal: 24, paddingTop: 12, borderTopWidth: 0.5 },
-  continueBtn:     { borderRadius: 14, paddingVertical: 18, alignItems: 'center' },
-  continueBtnText: { fontSize: 18, fontFamily: Type.uiBold, letterSpacing: 1, color: '#0d0a1a' },
+  content:         { flex: 1, paddingHorizontal: 24 },
+  screenLabel:     { fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 },
+  // 44, not 52. Two lines of display type was the single biggest block on the screen and the verse had to
+  // live somewhere. Still the loudest thing here by a mile.
+  title:           { fontSize: 44, fontFamily: Type.display, letterSpacing: 0.3, lineHeight: numLine(44), marginBottom: 10 },
+  // VOICE, and readable. This is the app speaking at the most personal question in the flow; it was 13px
+  // Onest at 38% white -- the interface face, whispering.
+  subtitle:        { fontSize: 15, fontFamily: Type.voice, lineHeight: 21 },
+  cardsContainer:  { marginTop: 20, gap: 10 },
+  card:            { borderWidth: 1, borderRadius: 16, padding: 14, minHeight: 78 },
+  titleRow:        { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 5 },
+  cardTitle:       { fontSize: 19, fontFamily: Type.num, letterSpacing: 2, lineHeight: numLine(19) },
+  cardCopy:        { fontSize: 13, fontFamily: Type.ui, lineHeight: 18, paddingLeft: 19 },
+  verseBlock:      { marginTop: 18, paddingHorizontal: 4 },
+  verseText:       { fontSize: 13, fontFamily: Type.voice, fontStyle: 'italic', lineHeight: 19, color: 'rgba(232,160,32,0.78)', textAlign: 'center' },
+  verseRef:        { fontSize: 10, fontFamily: Type.uiBold, letterSpacing: 2, color: 'rgba(232,160,32,0.5)', textAlign: 'center', marginTop: 5, textTransform: 'uppercase' },
+  changeNote:      { fontSize: 11, fontFamily: Type.ui, textAlign: 'center', marginTop: 12 },
+  footer:          { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 24, paddingTop: 12, borderTopWidth: 0.5, overflow: 'hidden' },
 });

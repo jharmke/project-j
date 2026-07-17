@@ -28,6 +28,28 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-16 **Onboarding step 4 (Faith Journey) polished INSIDE its own dark world.** It is the only dark
+  screen in an all-light flow (and does not match the app's own light+amber faith pages either) -- KEPT
+  dark deliberately: it is the one moment of gravity, and embers rising read as incense. Frosted top + footer
+  hand-built DARK (theme.chromeFill/tint="light" would lay two milky bars across the dark room), molded amber
+  PrimaryCTA with a real disabled state (was a hand-dimmed 0.3 slab), subtitle to Type.voice 15/66% (was 13px
+  Onest at 38% -- the interface face, whispering), and every dim value raised: unselected card copy 28% -> 50%,
+  the "change this anytime" note 20% -> 45% (invisible).
+  >> **THE EMBERS HAD NO FIRE.** The screen was DARKEST at the bottom and 26 embers rose out of pure black --
+  the only screen in the app running "light rising from below" upside down. Added an amber glow along the
+  bottom edge: now they come off something.
+  >> SHINE ON THE SELECTED CARD: Justin pushed, I built it, he called it -- too much. The shine system's own
+  rule already said so ("SELECTORS get selected/unselected STATES, not gloss") and the card already BREATHES
+  (2s pulsing amber border). Selected is now an OPAQUE amber fill (was amber at SEVEN PERCENT -- the border
+  was doing all the work) + that pulse. Note left in the file: do not re-add.
+  >> The disclaimer line fell under the footer / off-screen depending on the pick -- a FIXED frame holding
+  content that changes size (the verse only appears once you choose, and the three verses differ in length).
+  Scrolling was rejected ("not enough to justify it"), so it now fits on a tight budget: title 52 -> 44, card
+  padding 18 -> 14, tighter gaps + verse block. **Worst case is Not Right Now (2 Corinthians, the longest
+  verse); a longer verse than that breaks it again.**
+  >> LEFT ALONE: dead `verse`/`verse2`/`ref` fields on FAITH_OPTIONS that nothing renders (a separate VERSES
+  map does the work) and that contradict each other -- Rooted pairs the Jeremiah text with the Colossians
+  ref. A trap for whoever edits verses next.
 - 2026-07-16 **THE COACHING MODE NOW COLOURS THE FLOW, LIVE + Commitment CUT + the step count made honest.**
   Tap Discipline on Your Style and the page repaints orange on the spot (glow, title, bar, pills, graph,
   calorie number, disclaimer modal, CTA); Mindful -> green; and Apple Health, Notifications and All Set

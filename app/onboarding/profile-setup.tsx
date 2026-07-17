@@ -151,11 +151,13 @@ export default function ProfileSetupScreen() {
             <Ionicons name="chevron-back" size={20} color={theme.accentBlue} />
           </TouchableOpacity>
           <View style={[styles.progressTrack, { backgroundColor: theme.bgProgressTrack }]}>
-            <View style={[styles.progressFill, { backgroundColor: theme.accentBlueRaw, width: '14%' }]} />
-            {/* 14% = 1/7. The bar was ALREADY drawn on a 7-step scale while every label said "of 8" -- the
-                8 counted the sign-in screen, which has no bar and no label, so the flow opened 14% full
-                before you had done anything. And Commitment was never numbered at all. Now: 7 real steps,
-                and All Set is the payoff (full bar, no step label) rather than a step. */}
+            <View style={[styles.progressFill, { backgroundColor: theme.accentBlueRaw, width: '17%' }]} />
+            {/* 17% = 1/6. Two counting bugs died here. (1) The bar was drawn on a 7-step scale while every
+                label said "of 8" -- the 8 counted the sign-in screen, which has no bar and no label, so the
+                flow opened 14% full before you had done anything. (2) Commitment was Discipline-ONLY, so
+                Balanced and Mindful users jumped 3 -> 5 and never saw a step 4; it was cut 2026-07-16.
+                Now: 6 real steps every user actually walks, and All Set is the payoff (full bar, no step
+                label) rather than a step. */}
           </View>
         </View>
 
@@ -168,7 +170,7 @@ export default function ProfileSetupScreen() {
         >
           <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
 
-            <Text style={[styles.screenLabel, { color: theme.textMuted }]}>STEP 1 OF 7</Text>
+            <Text style={[styles.screenLabel, { color: theme.textMuted }]}>STEP 1 OF 6</Text>
             <Text style={[styles.title,       { color: theme.accentBlueRaw }]}>Let's get to know you</Text>
             <Text style={[styles.subtitle,    { color: theme.textSecondary }]}>
               Just the basics, so every number in the app is built around you.

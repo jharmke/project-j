@@ -113,13 +113,15 @@ app/plans.tsx -- Reading plans hub
 app/devotional.tsx -- Devotional screen
 app/mission.tsx -- Mission screen
 app/tutorials.tsx -- Tutorials screen
-app/onboarding/profile-setup.tsx -- Onboarding screen 2: profile basics
-app/onboarding/style-survey.tsx -- Onboarding screen 3: style survey
-app/onboarding/your-style.tsx -- Onboarding screen 4: coaching mode selection
-app/onboarding/faith-journey.tsx -- Onboarding screen 5: faith journey tier
-app/onboarding/apple-health.tsx -- Onboarding screen 6: HealthKit opt-in
-app/onboarding/commitment.tsx -- Onboarding screen 7: commitment
-app/onboarding/all-set.tsx -- Onboarding final screen
+app/onboarding/profile-setup.tsx -- Onboarding step 1 of 6: profile basics
+app/onboarding/style-survey.tsx -- Onboarding step 2 of 6: style survey
+app/onboarding/your-style.tsx -- Onboarding step 3 of 6: coaching mode + weight/activity/pace/macros
+app/onboarding/faith-journey.tsx -- Onboarding step 4 of 6: faith journey tier
+app/onboarding/apple-health.tsx -- Onboarding step 5 of 6: HealthKit opt-in
+app/onboarding/notifications.tsx -- Onboarding step 6 of 6: notification opt-in
+app/onboarding/all-set.tsx -- Onboarding final screen (the payoff: full bar, no step label)
+(commitment.tsx CUT 2026-07-16 -- corny, and being Discipline-only it broke the step count for the
+ other two modes. Do not resurrect without a real reason; the mode proves itself by app behavior.)
 components/AchievementToast.tsx -- Video game style achievement notification, global emitter pattern
 components/CustomTabBar.tsx -- Full custom animated tab bar (TAB_BAR_HEIGHT = 64)
 components/PressableButton.tsx -- Animated spring button with haptics

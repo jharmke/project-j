@@ -28,6 +28,30 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-16 **THE COACHING MODE NOW COLOURS THE FLOW, LIVE + Commitment CUT + the step count made honest.**
+  Tap Discipline on Your Style and the page repaints orange on the spot (glow, title, bar, pills, graph,
+  calorie number, disclaimer modal, CTA); Mindful -> green; and Apple Health, Notifications and All Set
+  carry it. FAITH JOURNEY IS EXEMPT BY JUSTIN'S CALL -- it keeps its amber; faith identity outranks mode.
+  >> I PUSHED BACK ON THIS AND WAS WRONG. I argued a mode-coloured flow "teaches a lie the app doesn't
+  keep" -- from memory of CLAUDE.md, without opening the code. all-set.tsx ALREADY ends the flow with
+  setAccent() derived from styleMode, so the mode colour IS the accent the user walks away with. The
+  recolour is a live preview of their app, not a costume. **Justin's instinct beat my reasoning-from-memory
+  twice in one hour** (see the 'green' trap below). Read the code first.
+  >> THE 'green' TRAP, DO NOT "FIX" IT: in the light theme the accent whose ID is `'green'` is LABELLED
+  "Blue" (#1a44c2). all-set granting Balanced accentId 'green' is CORRECT. I called it a bug off the ID.
+  Colours now live in `utils/modeAccent.ts` with this documented. Fixed on the way: the mode cards and
+  all-set were painting hand-picked LOOKALIKES (balanced #2563eb vs the real #1a44c2, mindful #059669 vs
+  #0d9268) -- the colour you tapped was a near-miss of the colour you got.
+  >> PREVIEW COULD NOT SHOW IT: Your Style's preview branch returns before the pj_settings write, so
+  downstream screens read the OLD stored mode and stayed blue. Fixed with an in-memory sessionStyleMode set
+  on Continue in both modes and preferred over storage downstream (preview still writes NOTHING). Also
+  fixed the Mindful COPY on Notifications, wrong in preview for the same reason.
+  >> **COMMITMENT SCREEN CUT.** Corny (three vows all opening "I will" -- a wedding-vow cadence) and, being
+  Discipline-ONLY, it broke the counter: Balanced/Mindful went step 3 -> 5 and never saw a 4. Flow is now a
+  uniform 6 steps. Faith Journey and Apple Health were ALSO still saying "of 8" with bars on a different
+  scale (faith: "5 of 8" at 70%) -- neither number was true. All six now honest: 17/33/50/67/83/100%.
+  >> Your Style also got: the targets disclaimer (inline line + first-use modal on a 700ms delay so it
+  stops landing mid-transition), bottom padding over the CTA, and "I'm Ready" killed for plain "Continue".
 - 2026-07-16 **Onboarding screen 3 (Your Style) + the frosted top bar on steps 1-3.** Ground + glow, frosted
   footer, PrimaryCTA mixed case, opaque+shine selected states (the 3 mode cards keep their OWN colours),
   9 lifestyle/training boxes bumped 12/10 -> 13/11, macro ratios colour-coded P/C/F, pace pills out of a
@@ -557,9 +581,17 @@ are separate pre-submission checklists, NOT part of this menu.
        NutritionGearModal, NutrientDrilldownModal, RepeatMealModal, SummaryReadyModal, ToolkitSheet,
        TooltipModal, VersePoolModal, WeightHistoryModal.
     2. ONBOARDING (7 screens) -- see the surface-pass item; needs a plan first, not a sweep.
-       Steps 1 (profile-setup), 2 (style-survey) and 3 (your-style) DONE 2026-07-16. Remaining: commitment
-       (=4, needs a step label added), faith-journey (=5), apple-health (=6), notifications (=7), all-set
-       (full bar, no label). Each still needs the frosted top bar + the per-screen recipe.
+       Steps 1 (profile-setup), 2 (style-survey) and 3 (your-style) DONE 2026-07-16, incl. the frosted top
+       bar. Remaining: faith-journey (=4), apple-health (=5), notifications (=6), all-set (full bar, no
+       label). Each still needs the frosted top bar + the per-screen recipe.
+       >> **COMMITMENT WAS CUT 2026-07-16.** Justin: "really corny" -- three vows all opening "I will",
+       which is the cadence of a wedding vow. It was also Discipline-ONLY, so Balanced and Mindful users
+       went step 3 -> 5 and never saw a step 4; the counter had been lying for two of three modes and
+       nobody caught it because the screen it belonged to was the weak one. Cutting it bought a uniform
+       6-step flow. The pre-commitment lever is real behavioural science and a one-line version was on the
+       table (a checkbox under the Discipline card) -- REJECTED: same theatre, less room to earn it, and
+       Discipline already means something via strict colour coding, full metrics and direct language. If
+       Discipline users drop off, revisit WITH DATA.
   >> **THERE IS NO SEARCH THAT PROVES THIS IS FINISHED.** Failure mode #5 (the shadow was never written) is
   invisible to every grep -- nothing is broken, so nothing matches. Justin caught Gratitude, the earned
   badges, the log-measurements cards and Support's Promise card AFTER I called it done each time. Expect

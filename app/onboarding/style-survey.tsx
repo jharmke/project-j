@@ -145,7 +145,7 @@ export default function StyleSurveyScreen() {
           <Ionicons name="chevron-back" size={20} color={theme.accentBlue} />
         </TouchableOpacity>
         <View style={[styles.progressTrack, { backgroundColor: theme.bgProgressTrack }]}>
-          <View style={[styles.progressFill, { backgroundColor: theme.accentBlueRaw, width: '28%' }]} />
+          <View style={[styles.progressFill, { backgroundColor: theme.accentBlueRaw, width: '33%' }]} />
         </View>
       </View>
 
@@ -153,7 +153,7 @@ export default function StyleSurveyScreen() {
         contentContainerStyle={[styles.content, { paddingTop: insets.top + 72, paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.screenLabel, { color: theme.textMuted }]}>STEP 2 OF 7</Text>
+        <Text style={[styles.screenLabel, { color: theme.textMuted }]}>STEP 2 OF 6</Text>
         <Text style={[styles.title, { color: theme.accentBlueRaw }]}>Let's find your style</Text>
         {/* "Five", not "Four" -- there are five questions, and this was the first thing the screen told you. */}
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>

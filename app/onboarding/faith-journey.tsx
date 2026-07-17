@@ -336,7 +336,7 @@ export default function FaithJourneyScreen() {
           <Ionicons name="chevron-back" size={20} color={AMBER} />
         </TouchableOpacity>
         <View style={[styles.progressTrack, { backgroundColor: 'rgba(255,255,255,0.08)' }]}>
-          <View style={[styles.progressFill, { backgroundColor: AMBER, width: '70%' }]} />
+          <View style={[styles.progressFill, { backgroundColor: AMBER, width: '67%' }]} />
         </View>
       </View>
 
@@ -344,7 +344,7 @@ export default function FaithJourneyScreen() {
       <View style={[styles.content, { paddingBottom: insets.bottom + 100 }]}>
 
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-          <Text style={[styles.screenLabel, { color: 'rgba(232,160,32,0.45)' }]}>STEP 5 OF 8</Text>
+          <Text style={[styles.screenLabel, { color: 'rgba(232,160,32,0.45)' }]}>STEP 4 OF 6</Text>
           <Text style={[styles.title, {
             color: AMBER,
             textShadowColor:  'rgba(232,160,32,0.2)',

@@ -15,10 +15,12 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { isOnboardingPreview } from '../../utils/onboardingPreview';
+import { MODE_ACCENT, getModeAccentTints, setSessionStyleMode } from '../../utils/modeAccent';
 import { Type } from '../../typography';
 import BackgroundLayers from '../../components/BackgroundLayers';
 import PrimaryCTA from '../../components/PrimaryCTA';
 import ButtonShine from '../../components/ButtonShine';
+import TargetsDisclaimerModal from '../../components/TargetsDisclaimerModal';
 import { BlurView } from 'expo-blur';
 
 // Nine paces on ONE ladder, aggressive -> gradual -> maintain -> build. They used to live in a horizontal
@@ -65,10 +67,11 @@ function monthLabel(weeksFromNow: number): string {
   return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 }
 
-function ProjectionGraph({ currentWeight, goalWeight, weightGoal }: {
+function ProjectionGraph({ currentWeight, goalWeight, weightGoal, accent }: {
   currentWeight: string;
   goalWeight: string;
   weightGoal: string;
+  accent: string;
 }) {
   const cw = parseFloat(currentWeight);
   const gw = parseFloat(goalWeight);
@@ -166,14 +169,14 @@ function ProjectionGraph({ currentWeight, goalWeight, weightGoal }: {
           <Text style={[styles.projHeaderLabel, { color: theme.textMuted }]}>
             {`${Math.round(gw)} LBS BY`}
           </Text>
-          <Text style={[styles.projHeaderDate, { color: theme.accentBlueRaw }]}>{goalLabel}</Text>
+          <Text style={[styles.projHeaderDate, { color: accent }]}>{goalLabel}</Text>
         </View>
         <View style={{ height: 0.5, backgroundColor: theme.borderCard }} />
         <Svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`}>
           <Defs>
             <SvgGradient id="graphFill" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor={theme.accentBlueRaw} stopOpacity="0.22" />
-              <Stop offset="1" stopColor={theme.accentBlueRaw} stopOpacity="0.02" />
+              <Stop offset="0" stopColor={accent} stopOpacity="0.22" />
+              <Stop offset="1" stopColor={accent} stopOpacity="0.02" />
             </SvgGradient>
           </Defs>
 
@@ -200,18 +203,18 @@ function ProjectionGraph({ currentWeight, goalWeight, weightGoal }: {
 
           {ghosts.map(g => (
             <Line key={g.key} x1={startX} y1={startY} x2={g.x} y2={goalY}
-              stroke={theme.accentBlueRaw} strokeWidth="1" strokeOpacity="0.18" />
+              stroke={accent} strokeWidth="1" strokeOpacity="0.18" />
           ))}
           {ghosts.map(g => (
             <Circle key={`d${g.key}`} cx={g.x} cy={goalY} r="2"
-              fill={theme.accentBlueRaw} fillOpacity="0.25" />
+              fill={accent} fillOpacity="0.25" />
           ))}
 
           <AnimatedPath d={fillD} fill="url(#graphFill)" fillOpacity={fillOpacity} />
 
           <AnimatedPath
             d={d}
-            stroke={theme.accentBlueRaw}
+            stroke={accent}
             strokeWidth="2.5"
             fill="none"
             strokeLinecap="round"
@@ -220,8 +223,8 @@ function ProjectionGraph({ currentWeight, goalWeight, weightGoal }: {
             strokeDashoffset={strokeDashoffset}
           />
 
-          <Circle cx={startX} cy={startY} r="5" fill={theme.accentBlueRaw} />
-          <Circle cx={goalX}  cy={goalY}  r="5" fill={theme.accentBlueRaw} />
+          <Circle cx={startX} cy={startY} r="5" fill={accent} />
+          <Circle cx={goalX}  cy={goalY}  r="5" fill={accent} />
 
           {/* No floating "180 lbs" / "160 lbs" callouts: the y-axis already labels both, and at a slow pace
               the shallow line ran straight through the goal one and sliced it in half. */}
@@ -246,10 +249,6 @@ function ProjectionGraph({ currentWeight, goalWeight, weightGoal }: {
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 const theme = THEMES['light'];
-// Opaque accent tint for a SELECTED control. theme.accentBlueBgOpaque is still its '#000000' placeholder in
-// a STATIC theme -- only the provider composes it -- so it cannot be used on the onboarding screens. A ~10%
-// translucent tint (accentBlueBg) turns to mud over the accent glow this page now sits on.
-const ACCENT_SELECTED = mix(theme.accentBlueRaw, theme.bgInput, 0.16);
 
 // decimal-pad is the one iOS keyboard with NO return key, so both weight fields were dead ends -- the only
 // way out was tapping some random empty pixel. This is the native accessory bar; iOS animates it with the
@@ -298,21 +297,24 @@ const MACRO_PRESETS = {
   performance:  { label: 'Performance',  p: 25, c: 50, f: 25 },
 };
 
+// Colours come from MODE_ACCENT -- the REAL accent each mode grants at the end of the flow. These were
+// hand-picked lookalikes (balanced #2563eb vs the actual #1a44c2, mindful #059669 vs #0d9268), so the card
+// you tapped was a near-miss of the colour the page and the app then turned.
 const MODE_COPY = {
   discipline: {
     title: 'Discipline',
     sub:   'You want results. Full visibility, tight targets, no excuses.',
-    color: '#c2621a',
+    color: MODE_ACCENT.discipline,
   },
   balanced: {
     title: 'Balanced',
     sub:   'Structure with flexibility. Progress without perfection.',
-    color: '#2563eb',
+    color: MODE_ACCENT.balanced,
   },
   mindful: {
     title: 'Mindful',
     sub:   'Show up, log honestly, and give yourself grace.',
-    color: '#059669',
+    color: MODE_ACCENT.mindful,
   },
 };
 
@@ -340,6 +342,9 @@ export default function YourStyleScreen() {
   const [weightGoal,    setWeightGoal]    = useState('lose_1');
   const [suggestedCals, setSuggestedCals] = useState<number | null>(null);
   const [profileData,   setProfileData]   = useState<any>(null);
+  // null = still reading the key; true/false = decided. Rendering the modal before the read lands would
+  // flash it at someone who already acknowledged.
+  const [showDisclaimer, setShowDisclaimer] = useState<boolean | null>(null);
   // The footer STAYS DOWN when the keyboard opens. Riding on top of the keyboard put Continue right over
   // the weight field you were typing into -- and the Done bar is already the way out of that keyboard, so
   // the footer has no job while you type.
@@ -363,6 +368,28 @@ export default function YourStyleScreen() {
     };
     load();
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const load = async () => {
+      // Preview always shows it -- it is a screen Justin needs to be able to look at, and preview exists to
+      // look at screens. A real user sees it once, ever.
+      const show = isOnboardingPreview() || (await AsyncStorage.getItem('pj_targets_disclaimer_seen')) !== 'true';
+      if (cancelled) return;
+      if (!show) { setShowDisclaimer(false); return; }
+      // Let the screen ARRIVE first. Firing on mount threw the modal up while the push transition and the
+      // 500ms entrance were still running, so it landed on a screen that had not finished existing.
+      timer = setTimeout(() => { if (!cancelled) setShowDisclaimer(true); }, 700);
+    };
+    load();
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, []);
+
+  const acknowledgeDisclaimer = async () => {
+    setShowDisclaimer(false);
+    if (!isOnboardingPreview()) await storageSet('pj_targets_disclaimer_seen', 'true');
+  };
 
   // Live calorie calc -- fires whenever any relevant field changes
   useEffect(() => {
@@ -394,7 +421,10 @@ export default function YourStyleScreen() {
   };
 
   const handleContinue = async () => {
-    if (isOnboardingPreview()) { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); router.push('/onboarding/commitment'); return; }
+    // Carry the choice forward in memory before anything else. Preview returns below without ever writing
+    // pj_settings, so this is the only way the rest of the flow can know what was picked.
+    setSessionStyleMode(selectedMode);
+    if (isOnboardingPreview()) { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); router.push('/onboarding/faith-journey'); return; }
     if (!canContinue) return;
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     try {
@@ -442,18 +472,24 @@ export default function YourStyleScreen() {
         }));
       }
 
-      // Discipline gets commitment screen before continuing
-      if (selectedMode === 'discipline') {
-        router.push('/onboarding/commitment');
-      } else {
-        router.push('/onboarding/faith-journey');
-      }
+      // Every mode goes the same way now. The Discipline-only Commitment screen was CUT 2026-07-16: it was
+      // corny (three vows opening "I will", the cadence of a wedding vow), and being mode-conditional it
+      // broke the step counter for the other two modes -- Balanced and Mindful went 3 -> 5 and never saw a
+      // step 4. Discipline earns its name by what the app DOES the next morning, not by a pledge at signup.
+      router.push('/onboarding/faith-journey');
     } catch (e) {
       console.log('Your style save error', e);
     }
   };
 
   const oneliner = getOneliner(selectedMode, score);
+
+  // THE PAGE RECOLOURS THE MOMENT A MODE IS PICKED. This is not decoration: all-set.tsx ends the flow with
+  // setAccent() derived from the same mode, so this colour IS the accent the user keeps. Showing it here
+  // makes the choice a live preview of their app rather than a form field. (Faith Journey is exempt -- it
+  // keeps its amber; faith identity outranks the mode colour.)
+  const { accent, selected: ACCENT_SELECTED, bg: accentBg, border: accentBorder } =
+    getModeAccentTints(selectedMode, theme);
 
   // Current weight is required for net-based modes (Balanced/Discipline): BMR, and
   // therefore the calorie net shown on the home card, needs it. Mindful never shows
@@ -462,7 +498,7 @@ export default function YourStyleScreen() {
 
   return (
     <LinearGradient colors={[theme.gradientEnd, theme.gradientEnd]} style={{ flex: 1 }}>
-      <BackgroundLayers glow={theme.accentBlueRaw} />
+      <BackgroundLayers glow={accent} />
 
       {/* Progress bar. Frosted chrome, absolute, glued to the top: it answers "how much more of this is
           there", which is the one thing worth costing permanent screen space on the longest screen in
@@ -473,25 +509,25 @@ export default function YourStyleScreen() {
         <TouchableOpacity
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          style={[styles.backBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+          style={[styles.backBtn, { backgroundColor: accentBg, borderColor: accentBorder }]}
         >
-          <Ionicons name="chevron-back" size={20} color={theme.accentBlue} />
+          <Ionicons name="chevron-back" size={20} color={accent} />
         </TouchableOpacity>
         <View style={[styles.progressTrack, { backgroundColor: theme.bgProgressTrack }]}>
-          <View style={[styles.progressFill, { backgroundColor: theme.accentBlueRaw, width: '43%' }]} />
+          <View style={[styles.progressFill, { backgroundColor: accent, width: '50%' }]} />
         </View>
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + 72, paddingBottom: insets.bottom + 100 }]}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + 72, paddingBottom: insets.bottom + 148 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
 
-          <Text style={[styles.screenLabel, { color: theme.textMuted }]}>STEP 3 OF 7</Text>
-          <Text style={[styles.title, { color: theme.accentBlueRaw }]}>Your Style</Text>
+          <Text style={[styles.screenLabel, { color: theme.textMuted }]}>STEP 3 OF 6</Text>
+          <Text style={[styles.title, { color: accent }]}>Your Style</Text>
           <Text style={[styles.oneliner, { color: theme.textSecondary }]}>{oneliner}</Text>
 
           {/* Three style cards */}
@@ -598,11 +634,11 @@ export default function YourStyleScreen() {
                     paddingHorizontal: 12,
                     paddingVertical: 10,
                     backgroundColor: isSelected ? ACCENT_SELECTED : theme.bgInput,
-                    borderColor: isSelected ? theme.accentBlueBorder : theme.borderInput,
+                    borderColor: isSelected ? accentBorder : theme.borderInput,
                   }}
                 >
                   {isSelected ? <ButtonShine radius={10} /> : null}
-                  <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: isSelected ? theme.accentBlue : theme.textPrimary, marginBottom: 2 }}>
+                  <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: isSelected ? accent : theme.textPrimary, marginBottom: 2 }}>
                     {o.label}
                   </Text>
                   <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textMuted, lineHeight: 15 }}>
@@ -627,11 +663,11 @@ export default function YourStyleScreen() {
                       paddingHorizontal: 12,
                       paddingVertical: 10,
                       backgroundColor: isSelected ? ACCENT_SELECTED : theme.bgInput,
-                      borderColor: isSelected ? theme.accentBlueBorder : theme.borderInput,
+                      borderColor: isSelected ? accentBorder : theme.borderInput,
                     }}
                   >
                     {isSelected ? <ButtonShine radius={10} /> : null}
-                    <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: isSelected ? theme.accentBlue : theme.textPrimary, marginBottom: 2 }}>{o.label}</Text>
+                    <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: isSelected ? accent : theme.textPrimary, marginBottom: 2 }}>{o.label}</Text>
                     <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textMuted, lineHeight: 15 }}>{o.sub}</Text>
                   </TouchableOpacity>
                 );
@@ -658,11 +694,11 @@ export default function YourStyleScreen() {
                       paddingHorizontal: 12,
                       paddingVertical: 10,
                       backgroundColor: isSelected ? ACCENT_SELECTED : theme.bgInput,
-                      borderColor: isSelected ? theme.accentBlueBorder : theme.borderInput,
+                      borderColor: isSelected ? accentBorder : theme.borderInput,
                     }}
                   >
                     {isSelected ? <ButtonShine radius={10} /> : null}
-                    <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: isSelected ? theme.accentBlue : theme.textPrimary, marginBottom: 2 }}>{o.label}</Text>
+                    <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: isSelected ? accent : theme.textPrimary, marginBottom: 2 }}>{o.label}</Text>
                     <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textMuted, lineHeight: 15 }}>{o.sub}</Text>
                   </TouchableOpacity>
                 );
@@ -683,11 +719,11 @@ export default function YourStyleScreen() {
                       paddingHorizontal: 12,
                       paddingVertical: 10,
                       backgroundColor: isSelected ? ACCENT_SELECTED : theme.bgInput,
-                      borderColor: isSelected ? theme.accentBlueBorder : theme.borderInput,
+                      borderColor: isSelected ? accentBorder : theme.borderInput,
                     }}
                   >
                     {isSelected ? <ButtonShine radius={10} /> : null}
-                    <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: isSelected ? theme.accentBlue : theme.textPrimary, marginBottom: 2 }}>{o.label}</Text>
+                    <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: isSelected ? accent : theme.textPrimary, marginBottom: 2 }}>{o.label}</Text>
                     <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textMuted, lineHeight: 15 }}>{o.sub}</Text>
                   </TouchableOpacity>
                 );
@@ -708,11 +744,11 @@ export default function YourStyleScreen() {
                       paddingHorizontal: 12,
                       paddingVertical: 10,
                       backgroundColor: isSelected ? ACCENT_SELECTED : theme.bgInput,
-                      borderColor: isSelected ? theme.accentBlueBorder : theme.borderInput,
+                      borderColor: isSelected ? accentBorder : theme.borderInput,
                     }}
                   >
                     {isSelected ? <ButtonShine radius={10} /> : null}
-                    <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: isSelected ? theme.accentBlue : theme.textPrimary, marginBottom: 2 }}>{o.label}</Text>
+                    <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: isSelected ? accent : theme.textPrimary, marginBottom: 2 }}>{o.label}</Text>
                     <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textMuted, lineHeight: 15 }}>{o.sub}</Text>
                   </TouchableOpacity>
                 );
@@ -724,11 +760,17 @@ export default function YourStyleScreen() {
           {suggestedCals && (
             <View style={{ marginTop: 20, borderWidth: 0.5, borderRadius: 14, padding: 16, alignItems: 'center', backgroundColor: theme.bgCard, borderColor: theme.borderCard, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 }}>
               <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 8 }}>YOUR DAILY CALORIE TARGET</Text>
-              <Text style={{ fontSize: 48, fontFamily: Type.num, letterSpacing: 1, color: theme.accentBlueRaw }}>
+              <Text style={{ fontSize: 48, fontFamily: Type.num, letterSpacing: 1, color: accent }}>
                 {suggestedCals} <Text style={{ fontSize: 14, color: theme.textMuted }}>kcal</Text>
               </Text>
               <Text style={{ fontSize: 12, fontFamily: Type.ui, textAlign: 'center', marginTop: 4, color: theme.textSecondary }}>
                 Based on your stats using Mifflin-St Jeor BMR.
+              </Text>
+              {/* The Mifflin line above is a METHOD note, not a disclaimer -- this screen was showing a
+                  calorie target, a BMR and a weight projection with neither the inline line nor the
+                  first-use modal the Disclaimer Standard names for all three. */}
+              <Text style={{ fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic', textAlign: 'center', marginTop: 8, color: theme.textSecondary }}>
+                For informational purposes only. Not medical advice.
               </Text>
             </View>
           )}
@@ -767,7 +809,7 @@ export default function YourStyleScreen() {
                         styles.pacePill,
                         {
                           backgroundColor: isSelected ? ACCENT_SELECTED : theme.bgInput,
-                          borderColor: isSelected ? theme.accentBlueBorder : theme.borderInput,
+                          borderColor: isSelected ? accentBorder : theme.borderInput,
                           opacity: isDimmed ? 0.3 : 1,
                         },
                       ]}
@@ -775,7 +817,7 @@ export default function YourStyleScreen() {
                       {isSelected ? <ButtonShine radius={20} /> : null}
                       <Text style={[
                         styles.pacePillText,
-                        { color: isSelected ? theme.accentBlue : theme.textSecondary },
+                        { color: isSelected ? accent : theme.textSecondary },
                       ]}>
                         {pill.label}
                       </Text>
@@ -791,8 +833,8 @@ export default function YourStyleScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 24, marginBottom: 4 }}>
                     <Text style={[styles.sectionLabel, { color: theme.textSecondary, marginBottom: 0 }]}>YOUR PROJECTION</Text>
                     {selected && (
-                      <View style={{ marginLeft: 8, backgroundColor: theme.accentBlueBg, borderWidth: 0.5, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
-                        <Text style={{ fontSize: 9, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 1 }}>
+                      <View style={{ marginLeft: 8, backgroundColor: accentBg, borderWidth: 0.5, borderColor: accentBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
+                        <Text style={{ fontSize: 9, fontFamily: Type.uiBold, color: accent, letterSpacing: 1 }}>
                           {selected.name.toUpperCase()}
                         </Text>
                       </View>
@@ -806,6 +848,7 @@ export default function YourStyleScreen() {
                   currentWeight={currentWeight}
                   goalWeight={goalWeight}
                   weightGoal={weightGoal}
+                  accent={accent}
                 />
               ) : (
                 <Text style={[styles.sectionLabel, { color: theme.textSecondary, marginTop: 24, marginBottom: 4 }]}>YOUR PROJECTION</Text>
@@ -836,11 +879,11 @@ export default function YourStyleScreen() {
                         styles.presetBtn,
                         { backgroundColor: theme.bgInput, borderColor: theme.borderInput,
                           shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity },
-                        isSelected && { backgroundColor: ACCENT_SELECTED, borderColor: theme.accentBlueBorder },
+                        isSelected && { backgroundColor: ACCENT_SELECTED, borderColor: accentBorder },
                       ]}
                     >
                       {isSelected ? <ButtonShine radius={10} /> : null}
-                      <Text style={[styles.presetLabel, { color: isSelected ? theme.accentBlue : theme.textPrimary }]}>
+                      <Text style={[styles.presetLabel, { color: isSelected ? accent : theme.textPrimary }]}>
                         {preset.label}
                       </Text>
                       <Text style={styles.presetRatio}>
@@ -884,13 +927,17 @@ export default function YourStyleScreen() {
           </Text>
         )}
         <PrimaryCTA
-          label={selectedMode === 'discipline' ? "I'm Ready" : 'Continue'}
-          fill={theme.accentBlueRaw}
+          label="Continue"
+          fill={accent}
           disabled={!canContinue}
           faceStyle={{ borderRadius: 14, paddingVertical: 18 }}
           onPress={handleContinue}
         />
       </View>
+
+      {showDisclaimer === true && (
+        <TargetsDisclaimerModal theme={theme} accent={accent} onAcknowledge={acknowledgeDisclaimer} />
+      )}
 
       {Platform.OS === 'ios' && [DONE_ID_CURRENT, DONE_ID_GOAL].map(id => (
         <InputAccessoryView key={id} nativeID={id}>
@@ -900,7 +947,7 @@ export default function YourStyleScreen() {
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); Keyboard.dismiss(); }}
               hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
             >
-              <Text style={[styles.keyboardDone, { color: theme.accentBlue }]}>Done</Text>
+              <Text style={[styles.keyboardDone, { color: accent }]}>Done</Text>
             </TouchableOpacity>
           </View>
         </InputAccessoryView>

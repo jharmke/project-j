@@ -11,6 +11,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { THEMES } from '../../theme';
 import { isOnboardingPreview } from '../../utils/onboardingPreview';
+import { getModeAccentTints, getSessionStyleMode } from '../../utils/modeAccent';
 import { storageSet } from '../../utils/storage';
 import { requestNotificationPermission } from '../../services/notifications';
 import { Type, numLine } from '../../typography';
@@ -39,8 +40,13 @@ export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
 
   const [faithJourney, setFaithJourney] = useState('rooted');
-  const [styleMode,    setStyleMode]    = useState('balanced');
+  // This run's choice wins over storage -- preview never writes pj_settings. Drives the COPY as well as the
+  // colour here, so in preview the Mindful wording was wrong too, not just the blue.
+  const [styleMode,    setStyleMode]    = useState(getSessionStyleMode() ?? 'balanced');
   const [connecting,   setConnecting]   = useState(false);
+  // styleMode was already read here (it drives the copy) -- it just was not driving the COLOUR. The mode a
+  // user picks IS the accent they keep (all-set.tsx calls setAccent from it), so this screen wears it.
+  const { accent, bg: accentBg, border: accentBorder } = getModeAccentTints(styleMode, theme);
 
   const fadeAnim  = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
@@ -54,7 +60,7 @@ export default function NotificationsScreen() {
       if (raw) {
         const s = JSON.parse(raw);
         if (s.faithJourney) setFaithJourney(s.faithJourney);
-        if (s.styleMode)    setStyleMode(s.styleMode);
+        if (s.styleMode && !getSessionStyleMode()) setStyleMode(s.styleMode);
       }
     });
 
@@ -122,12 +128,12 @@ export default function NotificationsScreen() {
         <TouchableOpacity
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          style={[styles.backBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+          style={[styles.backBtn, { backgroundColor: accentBg, borderColor: accentBorder }]}
         >
-          <Ionicons name="chevron-back" size={20} color={theme.accentBlue} />
+          <Ionicons name="chevron-back" size={20} color={accent} />
         </TouchableOpacity>
         <View style={[styles.progressTrack, { backgroundColor: theme.borderCard }]}>
-          <View style={[styles.progressFill, { backgroundColor: theme.accentBlueRaw, width: '92%' }]} />
+          <View style={[styles.progressFill, { backgroundColor: accent, width: '100%' }]} />
         </View>
       </View>
 
@@ -135,18 +141,18 @@ export default function NotificationsScreen() {
       <View style={styles.content}>
 
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-          <Text style={[styles.screenLabel, { color: theme.textMuted }]}>STEP 7 OF 8</Text>
+          <Text style={[styles.screenLabel, { color: theme.textMuted }]}>STEP 6 OF 6</Text>
 
-          <View style={[styles.iconBox, { backgroundColor: theme.accentBlueRaw + '12', borderColor: theme.accentBlueRaw + '25' }]}>
-            <Ionicons name="notifications" size={28} color={theme.accentBlueRaw} />
+          <View style={[styles.iconBox, { backgroundColor: accent + '12', borderColor: accent + '25' }]}>
+            <Ionicons name="notifications" size={28} color={accent} />
           </View>
 
-          <Text style={[styles.title, { color: theme.accentBlueRaw }]}>{title}</Text>
+          <Text style={[styles.title, { color: accent }]}>{title}</Text>
           <Text style={[styles.subtitle, { color: theme.textMuted }]}>{subtitle}</Text>
         </Animated.View>
 
         <Animated.View style={{ opacity: cardAnim, transform: [{ translateY: cardSlide }] }}>
-          <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
+          <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: accent }]}>
             {rows.map((row, i) => (
               <View
                 key={row.label}
@@ -158,8 +164,8 @@ export default function NotificationsScreen() {
                   },
                 ]}
               >
-                <View style={[styles.iconCircle, { backgroundColor: theme.accentBlueRaw + '12' }]}>
-                  <Ionicons name={row.icon as any} size={17} color={theme.accentBlueRaw} />
+                <View style={[styles.iconCircle, { backgroundColor: accent + '12' }]}>
+                  <Ionicons name={row.icon as any} size={17} color={accent} />
                 </View>
                 <View style={styles.rowText}>
                   <Text style={[styles.rowLabel, { color: theme.textPrimary }]}>{row.label}</Text>
@@ -174,7 +180,7 @@ export default function NotificationsScreen() {
           </Text>
           <Text style={[styles.pointer, { color: theme.textMuted }]}>
             Fine-tune exactly what you get anytime in{' '}
-            <Text style={{ color: theme.accentBlueRaw, fontFamily: Type.uiSemibold }}>Settings {'>'} Notifications</Text>.
+            <Text style={{ color: accent, fontFamily: Type.uiSemibold }}>Settings {'>'} Notifications</Text>.
           </Text>
         </Animated.View>
 
@@ -192,7 +198,7 @@ export default function NotificationsScreen() {
       ]}>
         <Animated.View style={{ transform: [{ scale: btnScale }], width: '100%' }}>
           <TouchableOpacity
-            style={[styles.connectBtn, { backgroundColor: theme.accentBlueRaw, opacity: connecting ? 0.7 : 1 }]}
+            style={[styles.connectBtn, { backgroundColor: accent, opacity: connecting ? 0.7 : 1 }]}
             onPress={handleEnable}
             activeOpacity={1}
             disabled={connecting}

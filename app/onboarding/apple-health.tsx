@@ -12,6 +12,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme, THEMES } from '../../theme';
 import { isOnboardingPreview } from '../../utils/onboardingPreview';
+import { getModeAccentTints, getSessionStyleMode } from '../../utils/modeAccent';
 import { storageSet } from '../../utils/storage';
 import { Type, numLine } from '../../typography';
 
@@ -75,6 +76,19 @@ export default function AppleHealthScreen() {
   const insets = useSafeAreaInsets();
 
   const [connecting, setConnecting] = useState(false);
+  // The coaching mode picked on Your Style is saved to pj_settings and IS the accent this user keeps
+  // (all-set.tsx calls setAccent from it), so the rest of the flow wears it from the moment they choose.
+  // This run's choice wins over storage: preview never writes pj_settings, so storage still holds the OLD
+  // mode there and this screen came up the wrong colour.
+  const [styleMode, setStyleMode] = useState<string | null>(getSessionStyleMode());
+  const { accent, bg: accentBg, border: accentBorder } = getModeAccentTints(styleMode, theme);
+
+  useEffect(() => {
+    if (getSessionStyleMode()) return;
+    AsyncStorage.getItem('pj_settings').then(raw => {
+      setStyleMode(raw ? (JSON.parse(raw).styleMode ?? 'balanced') : 'balanced');
+    });
+  }, []);
 
   const fadeAnim  = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
@@ -166,12 +180,12 @@ export default function AppleHealthScreen() {
         <TouchableOpacity
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          style={[styles.backBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+          style={[styles.backBtn, { backgroundColor: accentBg, borderColor: accentBorder }]}
         >
-          <Ionicons name="chevron-back" size={20} color={theme.accentBlue} />
+          <Ionicons name="chevron-back" size={20} color={accent} />
         </TouchableOpacity>
         <View style={[styles.progressTrack, { backgroundColor: theme.borderCard }]}>
-          <View style={[styles.progressFill, { backgroundColor: theme.accentBlueRaw, width: '85%' }]} />
+          <View style={[styles.progressFill, { backgroundColor: accent, width: '83%' }]} />
         </View>
       </View>
 
@@ -180,13 +194,13 @@ export default function AppleHealthScreen() {
 
         {/* Header block */}
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-          <Text style={[styles.screenLabel, { color: theme.textMuted }]}>STEP 6 OF 8</Text>
+          <Text style={[styles.screenLabel, { color: theme.textMuted }]}>STEP 5 OF 6</Text>
 
           <View style={[styles.ahIconBox, { backgroundColor: AH_RED + '12', borderColor: AH_RED + '25' }]}>
             <BeatingHeart />
           </View>
 
-          <Text style={[styles.title, { color: theme.accentBlueRaw }]}>
+          <Text style={[styles.title, { color: accent }]}>
             Better Data.{'\n'}Better Results.
           </Text>
           <Text style={[styles.subtitle, { color: theme.textMuted }]}>
@@ -195,7 +209,7 @@ export default function AppleHealthScreen() {
         </Animated.View>
 
         {/* Health items card */}
-        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
+        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: accent }]}>
           {HEALTH_ITEMS.map((item, i) => (
             <Animated.View
               key={item.label}
@@ -211,8 +225,8 @@ export default function AppleHealthScreen() {
                   borderBottomColor: theme.borderCard,
                 },
               ]}>
-                <View style={[styles.iconCircle, { backgroundColor: theme.accentBlueRaw + '12' }]}>
-                  <Ionicons name={item.icon as any} size={17} color={theme.accentBlueRaw} />
+                <View style={[styles.iconCircle, { backgroundColor: accent + '12' }]}>
+                  <Ionicons name={item.icon as any} size={17} color={accent} />
                 </View>
                 <View style={styles.rowText}>
                   <Text style={[styles.rowLabel, { color: theme.textPrimary }]}>{item.label}</Text>
@@ -237,7 +251,7 @@ export default function AppleHealthScreen() {
       ]}>
         <Animated.View style={{ transform: [{ scale: btnScale }], width: '100%' }}>
           <TouchableOpacity
-            style={[styles.connectBtn, { backgroundColor: theme.accentBlueRaw, opacity: connecting ? 0.7 : 1 }]}
+            style={[styles.connectBtn, { backgroundColor: accent, opacity: connecting ? 0.7 : 1 }]}
             onPress={handleConnect}
             activeOpacity={1}
             disabled={connecting}

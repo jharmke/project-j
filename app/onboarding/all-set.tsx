@@ -12,6 +12,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { THEMES, useTheme } from '../../theme';
 import { storageSet } from '../../utils/storage';
 import { isOnboardingPreview, setOnboardingPreview } from '../../utils/onboardingPreview';
+import { getModeAccent, getSessionStyleMode } from '../../utils/modeAccent';
 import { Type, numLine } from '../../typography';
 
 const theme = THEMES['light'];
@@ -83,7 +84,7 @@ const ALLSET_TIPS = [
 export default function AllSetScreen() {
   const insets = useSafeAreaInsets();
   const { setTheme, setAccent } = useTheme();
-  const [styleMode, setStyleMode]     = useState<string>('balanced');
+  const [styleMode, setStyleMode]     = useState<string>(getSessionStyleMode() ?? 'balanced');
   const [faithJourney, setFaithJourney] = useState<string>('rooted');
   const [saving, setSaving]           = useState(false);
 
@@ -106,7 +107,8 @@ export default function AllSetScreen() {
     AsyncStorage.getItem('pj_settings').then(raw => {
       if (raw) {
         const s = JSON.parse(raw);
-        if (s.styleMode)    setStyleMode(s.styleMode);
+        // This run's choice wins over storage -- preview never writes pj_settings.
+        if (s.styleMode && !getSessionStyleMode()) setStyleMode(s.styleMode);
         if (s.faithJourney) setFaithJourney(s.faithJourney);
       }
     });
@@ -208,9 +210,9 @@ export default function AllSetScreen() {
   };
 
   const isDiscipline = styleMode === 'discipline';
-  const accentColor  = styleMode === 'discipline' ? '#c2621a'
-                     : styleMode === 'mindful'    ? '#0d9268'
-                     : theme.accentBlueRaw;
+  // One source of truth with the rest of the flow. Balanced used to fall back to the base blue here, a
+  // near-miss of the #1a44c2 the 'green'-ID accent (labelled "Blue") actually grants three lines below.
+  const accentColor  = getModeAccent(styleMode);
 
   const modeLine = MODE_LINES[styleMode] ?? MODE_LINES.balanced;
   const modeIcon = MODE_ICON[styleMode]  ?? 'leaf';

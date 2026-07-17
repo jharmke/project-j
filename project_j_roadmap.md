@@ -657,9 +657,20 @@ are separate pre-submission checklists, NOT part of this menu.
   next to it, always has) and killed it. `fabScale` starts at 1 now (no entrance) but is STILL dual-purpose
   -- the same value also drives the press-in/press-out squish on tap, which had to be left untouched.
   >> This is the roadmap's own long-parked "card stagger on mount" item (see PARKED list), shipped here as
-  the answer to a real bug instead of built in isolation later. Stats and Profile need their OWN pass --
-  Stats has section headers that are not cards, so the right unit to stagger there is a whole SECTION
-  (header + its content together), not each header alone; do not blind-copy the Workout wiring over.
+  the answer to a real bug instead of built in isolation later.
+  >> **LOG TAB DONE 2026-07-17, device-verified, SAME shape** -- Today's Total, Advanced Nutrition, every
+  meal slot, the AI Estimator entry, Water, and the IF card all gated + cascading. Confirmed to scale off
+  `mealSlots.length`, not a hardcoded count, so it holds for any number of custom meal slots.
+  >> **HARD-WON LESSON, read before touching Stats/Profile:** gating a card behind `!loaded` can crash the
+  screen if that card has an INLINE hook call in its JSX (`useAnimatedStyle(...)` used directly as a style
+  prop, not assigned to a variable first). It was safe before because the JSX rendered unconditionally;
+  making it conditional makes the HOOK CALL conditional too -- "Rendered more hooks than during the
+  previous render" the instant `loaded` flips true. Caught on Log's calorie progress bar, fixed by moving
+  the hook to the component's top level and referencing the resulting style in the JSX. BEFORE gating any
+  card on Stats/Profile: grep that card's JSX for `use[A-Z]` and move anything inline out first.
+  >> Stats and Profile still need their OWN pass -- Stats has section headers that are not cards, so the
+  right unit to stagger there is a whole SECTION (header + its content together), not each header alone;
+  do not blind-copy the Workout/Log wiring over.
   >> **THE TAB-SWITCH FADE IS A SEPARATE QUESTION, DELIBERATELY DEFERRED** until the mount fix is verified
   on device. Justin finds the quick fade-out/fade-in "jittery, not super premium/luxury" -- but you cannot
   judge the animation while it is fading into an unfinished screen. Claude's instinct to test once this

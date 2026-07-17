@@ -692,30 +692,14 @@ export default function ProfileScreen() {
 
           </ProfileSection>
 
-        <ProfileSection label="Water Presets" subtitle="Quick-add water amounts" theme={theme} entering={FadeInDown.delay(300).springify()}>
-          <Text style={[styles.estimateNote, { color: theme.textSecondary }]}>Customize your quick-add water amounts (oz).</Text>
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            {([0, 1, 2] as const).map(i => (
-              <View key={i} style={{ flex: 1 }}>
-                <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>Preset {i + 1}</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
-                  value={String((profile.waterPresets || [8, 12, 16])[i])}
-                  onChangeText={v => {
-                    const val = parseInt(v) || 0;
-                    const updated: [number, number, number] = [...(profile.waterPresets || [8, 12, 16])] as [number, number, number];
-                    updated[i] = val;
-                    updateField('waterPresets', updated as any);
-                  }}
-                  keyboardType="number-pad"
-                  placeholder="oz"
-                  placeholderTextColor={theme.textPlaceholder}
-                />
-              </View>
-            ))}
-          </View>
-        </ProfileSection>
-
+        {/* Water Presets section REMOVED 2026-07-17 -- redundant with the water gear icon on Home + Log,
+            which already fully edits this same profile.waterPresets value. Justin was on the fence about
+            it living here for a while and finally called it. The `waterPresets` field itself stays in the
+            Profile type/initial-state/load-merge UNTOUCHED (just no UI for it anymore): saveProfile writes
+            the WHOLE profile object with no read-then-merge, so if this field vanished from state entirely,
+            every Profile save would silently blow away whatever presets Home/Log had set. Removing only the
+            JSX keeps it riding through as a silent pass-through field. Do not "clean up" the type/state --
+            that's the part that would actually lose data. */}
 
         <View style={{ height: 100 }} />
 

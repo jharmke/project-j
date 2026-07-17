@@ -28,6 +28,14 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-17 **Profile's Water Presets section REMOVED** -- redundant with the water gear icon on Home/Log,
+  which already fully edits the same `pj_profile.waterPresets` value; Justin had been on the fence on this
+  living on Profile for a while. Removed the JSX only -- the `waterPresets` field stays untouched in
+  Profile's type/initial-state/load-merge, since `saveProfile` writes the WHOLE profile object with no
+  read-then-merge; dropping the field from state would have silently erased Home/Log's saved presets on
+  the next Profile save. Otto's knowledge base + its markdown mirror + tutorial_system_spec.md all updated
+  same session, appCompanion redeployed. Not added to Settings (Justin's call, agreed): already reachable
+  from two contextual spots, a third path just adds sync surface for a low-frequency setting.
 - 2026-07-17 **THE BUTTON-TEXTURE THREAD IS CLOSED (both halves): chip/icon-button top shine AND the molded
   PrimaryCTA rollout.** Verified in code 2026-07-17, not in the roadmap's own bookkeeping: ButtonShine is in
   38 code files, PrimaryCTA in 41. The roadmap had been lying on both for a day-plus -- the shine item listed

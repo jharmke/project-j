@@ -275,7 +275,9 @@ Stats CollapsibleSections default to closed when not the first section. `Collaps
 | Faith & Style | BUILD | Quick definitions: what Discipline/Balanced/Mindful each change at a high level, what Rooted/Exploring/Not Right Now each change, how to switch post-onboarding |
 | Health (burn accuracy) | BUILD | What the burn accuracy adjustment does, why wearables overestimate, how the modifier is applied (calculation time only, raw value stored), when to use 90% vs 80% etc. |
 
-No toolkit needed: Basic Info, Weight Goal, Water Presets, Appearance (themes/accents), Goals, Notifications, Help section itself
+No toolkit needed: Basic Info, Membership, Weight Goal, Appearance (themes/accents), Goals, Notifications, Help section itself
+(Water Presets removed from Profile 2026-07-17 -- redundant with the water gear icon on Home/Log, which
+already fully edits the same value.)
 
 ### Tutorials (1)
 

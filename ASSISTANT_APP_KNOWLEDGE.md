@@ -165,11 +165,14 @@ Stats is a stack of collapsible sections (not sub-tabs), in order:
 PROFILE TAB
 ================================================================================
 - Header has two icons top-right: a TROPHY icon (opens Achievements) and a GEAR icon (opens Settings).
-- Sections: Basic Info (name/height/birthday/sex), Activity Level (lifestyle + training frequency),
-  Your Estimates (BMR/TDEE/calorie target), Weight Goal (goal weight + weekly pace + projected date),
-  Water Presets (quick-add water amounts).
+- Sections: Basic Info (name/height/birthday/sex), Membership, Activity Level (lifestyle + training
+  frequency), Your Estimates (BMR/TDEE/calorie target), Weight Goal (goal weight + weekly pace + projected
+  date).
 - Current Weight here is DISPLAY-ONLY ("pulled from your daily log"). To LOG weight, use the Home
   Weight card (see Home tab).
+- Water presets (the quick-add oz amounts) are NOT edited on Profile -- that section was removed
+  2026-07-17 as redundant. Edit them via the GEAR icon on the Water card, on either Home or Log (same
+  presets, same underlying value, edit from whichever tab is convenient).
 
 ================================================================================
 FAITH TAB (hidden for "Not Right Now" users)

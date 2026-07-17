@@ -7,7 +7,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { REPORTS_BETA_OPEN } from '../reports';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Animated, Dimensions, Easing, Keyboard, LayoutAnimation, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { Alert, Animated, Dimensions, Easing, InteractionManager, Keyboard, LayoutAnimation, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import Reanimated, { FadeInDown } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TAB_BAR_HEIGHT, TAB_SCROLL_PAD } from '../../components/CustomTabBar';
@@ -120,11 +121,38 @@ const fmtRecordDate = (dk: string | null) => {
   return `${RECORD_MONTHS[parseInt(m) - 1]} ${parseInt(d)}, ${y}`;
 };
 
+// ── Loading skeleton ───────────────────────────────────────────────────────────
+// Stands in for At a Glance's period picker + averages grid while periodData is still being computed for
+// the first time this session -- same pulsing-gray-bar recipe as Workout/Log/EvR, so the app has one
+// loading language. At a Glance is the ONLY section that needs this: it's the one section open by default
+// and the one place a real number (or the definitive "No data yet" empty state) could show before the
+// data is actually confirmed. Every other section is a static label behind a closed chevron -- no data
+// risk, so they just cascade in freely with no gate at all.
+function GlanceSkeleton({ theme, pulse }: { theme: any; pulse: Animated.Value }) {
+  const bar = (w: any, h: number, mb: number) => (
+    <Animated.View style={{ width: w, height: h, borderRadius: 5, marginBottom: mb, backgroundColor: theme.textMuted, opacity: pulse }} />
+  );
+  return (
+    <>
+      <View style={{ flexDirection: 'row', gap: 6, marginBottom: 14 }}>
+        {[0, 1, 2, 3, 4].map(i => (
+          <View key={i} style={{ flex: 1, height: 28, borderRadius: 6, backgroundColor: theme.bgInput }} />
+        ))}
+      </View>
+      {[0, 1, 2, 3, 4].map(i => (
+        <View key={i} style={{ flexDirection: 'row', paddingVertical: 10 }}>
+          <View style={{ flex: 1 }}>{bar('60%', 9, 6)}{bar('40%', 14, 0)}</View>
+          <View style={{ flex: 1 }}>{bar('60%', 9, 6)}{bar('40%', 14, 0)}</View>
+        </View>
+      ))}
+    </>
+  );
+}
 
 // ── Collapsible section header ─────────────────────────────────────────────────
 
-function CollapsibleSection({ label, subtitle, children, defaultOpen = true, theme, first = false, forceOpen = false }: {
-  label: string, subtitle?: string, children: React.ReactNode, defaultOpen?: boolean, theme: any, first?: boolean, forceOpen?: boolean
+function CollapsibleSection({ label, subtitle, children, defaultOpen = true, theme, first = false, forceOpen = false, entering }: {
+  label: string, subtitle?: string, children: React.ReactNode, defaultOpen?: boolean, theme: any, first?: boolean, forceOpen?: boolean, entering?: any
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const [visible, setVisible] = useState(defaultOpen);
@@ -150,7 +178,7 @@ function CollapsibleSection({ label, subtitle, children, defaultOpen = true, the
   };
 
   return (
-    <View style={{ marginTop: first ? 4 : 20 }}>
+    <Reanimated.View entering={entering} style={{ marginTop: first ? 4 : 20 }}>
       <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); toggle(); }} activeOpacity={0.7}
         style={{ paddingVertical: 6, marginBottom: 10, minHeight: 44, justifyContent: 'center' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -175,7 +203,7 @@ function CollapsibleSection({ label, subtitle, children, defaultOpen = true, the
           {children}
         </Animated.View>
       )}
-    </View>
+    </Reanimated.View>
   );
 }
 
@@ -277,6 +305,23 @@ export default function StatsScreen() {
     workoutDays: 0, totalDays: 0, loggedDays: 0,
     startWeight: null as number | null, endWeight: null as number | null,
   });
+  // At a Glance is the ONE section open by default, so it is the only one that can show a real number --
+  // every other section is a collapsed static label with no data risk, so those just cascade in freely.
+  // Gates ONLY this card's content: without it, "No data yet" (a real, definitive claim) can flash before
+  // periodData has ever been computed once this session -- same false-claim bug as Workout's "No exercises
+  // yet". Does NOT reset on every focus (periodData itself never resets to zero before recomputing, unlike
+  // Log), so this only ever shows once, on the first real load of the session.
+  const [glanceLoaded, setGlanceLoaded] = useState(false);
+  const glancePulse = useRef(new Animated.Value(0.3)).current;
+  useEffect(() => {
+    if (glanceLoaded) return;
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(glancePulse, { toValue: 0.6, duration: 650, useNativeDriver: true }),
+      Animated.timing(glancePulse, { toValue: 0.22, duration: 650, useNativeDriver: true }),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, [glanceLoaded]);
   const [liveStreaks, setLiveStreaks] = useState<LiveStreakData[]>([]);
   const [streakConfig, setStreakConfig] = useState<StreakConfigItem[]>([]);
   const [activeCalGoal, setActiveCalGoal] = useState(500);
@@ -968,8 +1013,14 @@ export default function StatsScreen() {
           loadPeriodData(activePeriod, target, sleep, burnAccuracy, netCarbsMode, paceTarget),
           loadStreaks(config, target, streakBaseTarget, burnAccuracy, wGoal, aCalGoal, exMinsGoal, pGoal, sleep, step, currentFaithJourney, paceTarget),
         ]);
+        setGlanceLoaded(true);
       };
-      loadAll();
+      // Deferred until the tab-switch transition finishes -- same fix shape as Workout/Log's tab-mount
+      // stutter. Safe to defer on EVERY focus here (not just the first), not only the first: periodData
+      // never resets to zero before recomputing (unlike Log), so a slightly-delayed refresh on later
+      // visits just means the old numbers sit a beat longer before quietly updating -- never a false flash.
+      const handle = InteractionManager.runAfterInteractions(loadAll);
+      return () => handle.cancel();
     }, [calendarMonth, calendarYear])
   );
 
@@ -1845,8 +1896,12 @@ export default function StatsScreen() {
           .map((section, idx) => {
             const isFirst = idx === 0;
             if (section.systemKey === 'atAGlance') return (
-              <CollapsibleSection key={section.id} label={section.label} subtitle="Averages across your logged days" defaultOpen={isFirst} theme={theme} first={isFirst}>
+              <CollapsibleSection key={section.id} label={section.label} subtitle="Averages across your logged days" defaultOpen={isFirst} theme={theme} first={isFirst} entering={FadeInDown.delay(idx * 60).springify()}>
           <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
+            {!glanceLoaded ? (
+              <GlanceSkeleton theme={theme} pulse={glancePulse} />
+            ) : (
+            <>
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 12 }}>
               <TooltipIcon tooltipKey="at_a_glance" />
             </View>
@@ -1919,11 +1974,13 @@ export default function StatsScreen() {
                   </View>
                 );
               })()}
+            </>
+            )}
           </View>
             </CollapsibleSection>
             );
             if (section.systemKey === 'trends') return (
-              <CollapsibleSection key={section.id} label={section.label} subtitle="Charts and graphs over time" defaultOpen={isFirst} theme={theme} first={isFirst} forceOpen={trendsSectionForceOpen}>
+              <CollapsibleSection key={section.id} label={section.label} subtitle="Charts and graphs over time" defaultOpen={isFirst} theme={theme} first={isFirst} forceOpen={trendsSectionForceOpen} entering={FadeInDown.delay(idx * 60).springify()}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <View style={{ flexDirection: 'row', gap: 6 }}>
               {(['7', '30', '90'] as const).map(p => (
@@ -1966,7 +2023,7 @@ export default function StatsScreen() {
             </CollapsibleSection>
             );
             if (section.systemKey === 'records') return (
-              <CollapsibleSection key={section.id} label={section.label} subtitle="All-time bests" defaultOpen={isFirst} theme={theme} first={isFirst}>
+              <CollapsibleSection key={section.id} label={section.label} subtitle="All-time bests" defaultOpen={isFirst} theme={theme} first={isFirst} entering={FadeInDown.delay(idx * 60).springify()}>
           <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
             <RecordTile icon="footsteps" label="Best Steps" value={records.steps} unit="steps"
               color={theme.accentBlue} date={records.stepsDate}
@@ -1998,7 +2055,7 @@ export default function StatsScreen() {
             </CollapsibleSection>
             );
             if (section.systemKey === 'streaks') return (
-              <CollapsibleSection key={section.id} label={section.label} subtitle="Consistency tracking" defaultOpen={isFirst} theme={theme} first={isFirst} forceOpen={streaksSectionForceOpen}>
+              <CollapsibleSection key={section.id} label={section.label} subtitle="Consistency tracking" defaultOpen={isFirst} theme={theme} first={isFirst} forceOpen={streaksSectionForceOpen} entering={FadeInDown.delay(idx * 60).springify()}>
           <View ref={streaksSectionRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
             {/* Card header row -- (i) inline with label, gear on right */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: liveStreaks.length > 0 ? 16 : 0 }}>
@@ -2067,7 +2124,7 @@ export default function StatsScreen() {
             </CollapsibleSection>
             );
             if (section.systemKey === 'challenges') return (
-              <CollapsibleSection key={section.id} label={section.label} subtitle="Beat a period or set a goal" defaultOpen={isFirst} theme={theme} first={isFirst}>
+              <CollapsibleSection key={section.id} label={section.label} subtitle="Beat a period or set a goal" defaultOpen={isFirst} theme={theme} first={isFirst} entering={FadeInDown.delay(idx * 60).springify()}>
                 {/* No overflow:'hidden' here -- nothing on this card bleeds, so it was doing nothing except
                     clipping the card's own shadow away (iOS masksToBounds). */}
                 <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
@@ -2118,13 +2175,13 @@ export default function StatsScreen() {
               </CollapsibleSection>
             );
             if (section.systemKey === 'hrZones') return (
-              <CollapsibleSection key={section.id} label={section.label} subtitle="Measurements and heart rate" defaultOpen={isFirst} theme={theme} first={isFirst}>
+              <CollapsibleSection key={section.id} label={section.label} subtitle="Measurements and heart rate" defaultOpen={isFirst} theme={theme} first={isFirst} entering={FadeInDown.delay(idx * 60).springify()}>
                 <BodyMeasurementsCard />
                 <HRZonesStatsCard />
               </CollapsibleSection>
             );
             if (section.systemKey === 'calendar') return (
-              <CollapsibleSection key={section.id} label={section.label} subtitle="Day-by-day history" defaultOpen={isFirst} theme={theme} first={isFirst}>
+              <CollapsibleSection key={section.id} label={section.label} subtitle="Day-by-day history" defaultOpen={isFirst} theme={theme} first={isFirst} entering={FadeInDown.delay(idx * 60).springify()}>
                 <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); if (calendarMonth === 0) { setCalendarMonth(11); setCalendarYear(y => y - 1); } else setCalendarMonth(m => m - 1); }} style={{ padding: 8 }}>
@@ -2185,7 +2242,7 @@ export default function StatsScreen() {
             );
             if (section.systemKey === 'reports') return (
               <View key={section.id} onLayout={e => { reportsLayoutY.current = e.nativeEvent.layout.y; }}>
-              <CollapsibleSection label={section.label} subtitle="Custom Reports, Summaries, Comparison and Effort vs. Results" defaultOpen={isFirst} theme={theme} first={isFirst} forceOpen={reportsSectionForceOpen}>
+              <CollapsibleSection label={section.label} subtitle="Custom Reports, Summaries, Comparison and Effort vs. Results" defaultOpen={isFirst} theme={theme} first={isFirst} forceOpen={reportsSectionForceOpen} entering={FadeInDown.delay(idx * 60).springify()}>
                 {/* Custom Reports (Pro; beta-open to all testers) -- build-your-own report */}
                 <TouchableOpacity activeOpacity={0.8} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push(reportsLocked ? '/support' : '/reports'); }}
                   style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 13 }]}>

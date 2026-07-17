@@ -6,7 +6,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Easing, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { Alert, Animated, Easing, InteractionManager, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import PressableButton from '../../components/PressableButton';
 import PrimaryCTA from '../../components/PrimaryCTA';
@@ -38,7 +38,7 @@ import { useToast } from '../../components/Toast';
 import { useTutorial } from '../../context/TutorialContext';
 import { useTutorialTarget } from '../../hooks/useTutorialTarget';
 import { useHealthKit } from '../../useHealthKit';
-import ReAnimated, { useAnimatedStyle, useSharedValue, withTiming, useAnimatedProps, withRepeat, cancelAnimation, Easing as ReAnimEasing } from 'react-native-reanimated';
+import ReAnimated, { useAnimatedStyle, useSharedValue, withTiming, useAnimatedProps, withRepeat, cancelAnimation, Easing as ReAnimEasing, FadeInDown } from 'react-native-reanimated';
 import { showToolkit } from '../../components/ToolkitSheet';
 import { IFCard, IF_METHODS } from '../../components/IFCard';
 import AnimatedNumber from '../../components/AnimatedNumber';
@@ -54,6 +54,45 @@ import { Type, numLine, DISPLAY_CAPS, DISPLAY_TRACKING, displaySize } from '../.
 import ModalHeader from '../../components/ModalHeader';
 
 const WATER_TARGET = 128;
+
+// ── Loading skeleton ───────────────────────────────────────────────────────────
+// Stands in for Today's Total, Advanced Nutrition, every meal slot, and the Water card while the initial
+// read is still in flight -- same pulsing-gray-bar recipe as the EvR skeleton and the one shipped on
+// Workout, so the app has one loading language, not three. Log is genuinely all cards (no odd-shaped
+// non-card elements like Workout's Effort grid), so one repeated card shape covers the whole screen.
+function LogSkeleton({ theme, pulse }: { theme: any; pulse: Animated.Value }) {
+  const bar = (w: any, h: number, mb: number) => (
+    <Animated.View style={{ width: w, height: h, borderRadius: 5, marginBottom: mb, backgroundColor: theme.textMuted, opacity: pulse }} />
+  );
+  const cardStyle = {
+    borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14, padding: 16, marginBottom: 12,
+    backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity,
+    shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6,
+    borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw,
+  } as const;
+  return (
+    <>
+      <View style={cardStyle}>
+        {bar('40%', 12, 14)}
+        {bar('60%', 34, 10)}
+        {bar('100%', 8, 0)}
+      </View>
+      <View style={cardStyle}>
+        {bar('50%', 12, 14)}
+        {bar('100%', 40, 0)}
+      </View>
+      {[0, 1, 2].map(i => (
+        <View key={i} style={[cardStyle, { paddingVertical: 14 }]}>
+          {bar('35%', 14, 0)}
+        </View>
+      ))}
+      <View style={cardStyle}>
+        {bar('30%', 12, 14)}
+        {bar('100%', 30, 0)}
+      </View>
+    </>
+  );
+}
 
 // The repeat pill is sized to its WORST CASE: "Repeat Yesterday · 1,248 kcal" (a 4-digit day) must never
 // truncate. Measured, that's ~205pt of content, so the cap is 212 with a little slack for wider accents/
@@ -196,6 +235,18 @@ export default function LogScreen() {
   const tutorialIfCardState = (tutorialActiveState?.tutorial.steps[tutorialActiveState.stepIndex] as any)?.ifCardState as
     'idle' | 'active' | 'eating' | undefined;
   const [loaded, setLoaded] = useState(false);
+  // Pulsing gray-bar skeleton shown while `loaded` is false -- same recipe as the EvR loading skeleton
+  // and the one just shipped on Workout, so the app speaks one "still loading" visual language.
+  const skeletonPulse = useRef(new Animated.Value(0.3)).current;
+  useEffect(() => {
+    if (loaded) return;
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(skeletonPulse, { toValue: 0.6, duration: 650, useNativeDriver: true }),
+      Animated.timing(skeletonPulse, { toValue: 0.22, duration: 650, useNativeDriver: true }),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, [loaded]);
   const [entries, setEntries] = useState<FoodEntry[]>([]);
   const [water, setWater] = useState(0);
   const [waterEntries, setWaterEntries] = useState<{amount:number;timestamp:string;sign:'add'|'remove'}[]>([]);
@@ -422,6 +473,12 @@ export default function LogScreen() {
   const onPaceTarget = Math.max(calTarget, profileBmr + activeAdj + paceDeficit);
   const displayTarget = styleMode === 'mindful' ? calTarget : onPaceTarget;
   const calPct = displayTarget > 0 ? (totalCals / displayTarget) * 100 : 0;
+  // Hooks must run unconditionally every render -- this used to be an INLINE useAnimatedStyle() call
+  // sitting inside the Today's Total card's JSX, which was safe only because that JSX was never
+  // conditional. Gating the card behind `!loaded` (2026-07-17) made the hook call itself conditional --
+  // "Rendered more hooks than during the previous render" the moment `loaded` flipped true. Moved to the
+  // component's top level so it always runs; the JSX below just references the resulting style object.
+  const calProgressBarStyle = useAnimatedStyle(() => ({ width: withTiming(`${Math.min(calPct, 100)}%` as any, { duration: 400 }) }));
   // Bottom stat strip (mirrors the home Calories card: REMAINING | ACTIVE | LIVE NET).
   const remainingVal = displayTarget - totalCals;
   const nowMinLog = new Date(currentTime).getHours() * 60 + new Date(currentTime).getMinutes();
@@ -530,6 +587,9 @@ export default function LogScreen() {
     });
   }, []);
 
+  // Deferred until the tab-switch transition finishes -- same fix shape as Workout's tab-mount stutter.
+  // ONE-TIME initial load only; useFocusEffect's reload below stays immediate on every focus/return-from-
+  // add-food, since that's what keeps this screen honest after a food gets logged elsewhere.
   useEffect(() => {
     const load = async () => {
     try {
@@ -593,7 +653,8 @@ export default function LogScreen() {
         setLoaded(true);
       }
     };
-    load();
+    const handle = InteractionManager.runAfterInteractions(load);
+    return () => handle.cancel();
   }, []);
 
   // ── Register log ScrollView with tutorial system ──────────────────────────
@@ -1212,8 +1273,16 @@ export default function LogScreen() {
         onScrollBeginDrag={() => {}}
       >
 
+      {/* Everything below is gated on `loaded` so it never shows a page of zeroed cards before the initial
+          read has actually finished -- same false-flash bug as Workout's, same fix. Skeleton holds the
+          shape; real cards cascade in as one wave once `loaded` flips true (once per session -- the
+          useFocusEffect reload below stays immediate and does NOT replay this cascade). */}
+      {!loaded ? (
+        <LogSkeleton theme={theme} pulse={skeletonPulse} />
+      ) : (
+      <>
       {/* Today's Total Card */}
-      <View ref={todayTotalRef} style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
+      <ReAnimated.View entering={FadeInDown.delay(0).springify()} ref={todayTotalRef} style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
           <Text style={[styles.cardLabel, { color: theme.textMuted, marginBottom: 0 }]}>Today's Total</Text>
           <TooltipIcon tooltipKey="todays_total" />
@@ -1227,7 +1296,7 @@ export default function LogScreen() {
               <Text style={[styles.calTarget, { color: theme.textSecondary }]}>/ {displayTarget} kcal</Text>
             </View>
             <View style={[styles.progressBarBg, { backgroundColor: theme.bgProgressTrack }]}>
-              <ReAnimated.View style={[styles.progressBarFill, useAnimatedStyle(() => ({ width: withTiming(`${Math.min(calPct, 100)}%` as any, { duration: 400 }) })), { backgroundColor: calColor }]} />
+              <ReAnimated.View style={[styles.progressBarFill, calProgressBarStyle, { backgroundColor: calColor }]} />
             </View>
           </View>
           <MacroStackedBar
@@ -1278,7 +1347,7 @@ export default function LogScreen() {
             )}
           </>
         )}
-      </View>
+      </ReAnimated.View>
 
       {/* Advanced Nutrition Card */}
       {(() => {
@@ -1350,7 +1419,7 @@ export default function LogScreen() {
         ];
         const allEmpty = advGroups.every(grp => grp.items.every(item => item.value === 0));
         return (
-          <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
+          <ReAnimated.View entering={FadeInDown.delay(60).springify()} style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); toggleAdvanced(); }}
@@ -1463,7 +1532,7 @@ export default function LogScreen() {
                 )}
               </Animated.View>
             )}
-          </View>
+          </ReAnimated.View>
         );
       })()}
       <NutritionGearModal
@@ -1506,7 +1575,7 @@ export default function LogScreen() {
           // cast a SHADOW -- never both. Meal rows need the clipping (the expanding food list would spill
           // past the corners without it), which is why they have never had a shadow and never floated.
           // So the shadow moves OUT to a wrapper and the clipping stays IN. Outer floats, inner clips.
-          <View key={slot.id} style={[styles.mealShadow, { shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity }]}>
+          <ReAnimated.View key={slot.id} entering={FadeInDown.delay(120 + mealIdx * 60).springify()} style={[styles.mealShadow, { shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity }]}>
           <View style={[styles.mealRow, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
             {/* + button on left */}
             <TouchableOpacity
@@ -1798,11 +1867,12 @@ export default function LogScreen() {
               </Animated.View>
             )}
           </View>
-          </View>
+          </ReAnimated.View>
         );
       })}
 
       {/* AI Meal Estimator -- persistent entry point, always shown below the meals */}
+      <ReAnimated.View entering={FadeInDown.delay(120 + mealSlots.length * 60).springify()}>
       <TouchableOpacity
         style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 10 }}
         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); returningFromChild.current = true; router.push({ pathname: '/ai-meal-estimator', params: { date: activeDate } }); }}>
@@ -1813,9 +1883,10 @@ export default function LogScreen() {
         </View>
         <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
       </TouchableOpacity>
+      </ReAnimated.View>
 
       {/* Water Card */}
-      <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
+      <ReAnimated.View entering={FadeInDown.delay(180 + mealSlots.length * 60).springify()} style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
         <CardWatermark name="water" color={theme.accentBlueRaw} />
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -1856,11 +1927,11 @@ export default function LogScreen() {
             </View>
           </PressableButton>
         </View>
-      </View>
+      </ReAnimated.View>
 
       {/* IF Card -- live today view */}
       {isToday && (
-        <View onLayout={(e) => { ifCardOffset.current = e.nativeEvent.layout.y; }}>
+        <ReAnimated.View entering={FadeInDown.delay(240 + mealSlots.length * 60).springify()} onLayout={(e) => { ifCardOffset.current = e.nativeEvent.layout.y; }}>
         <IFCard
           theme={theme}
           ifStart={ifStart}
@@ -1910,11 +1981,12 @@ export default function LogScreen() {
           onConfirmEnd={(t: Date) => { const now = new Date(); t.setFullYear(now.getFullYear(), now.getMonth(), now.getDate()); const ne = t.getTime(); setIfEnd(ne); saveToFirebase(todayKey, 'ifEnd', ne); }}
           tutorialOverrideState={tutorialIfCardState}
         />
-        </View>
+        </ReAnimated.View>
       )}
 
       {/* IF Card -- read-only past day summary (only when both start + end logged) */}
       {!isToday && pastIfStart && pastIfEnd && (
+        <ReAnimated.View entering={FadeInDown.delay(240 + mealSlots.length * 60).springify()}>
         <IFCard
           theme={theme}
           ifStart={pastIfStart}
@@ -1947,6 +2019,9 @@ export default function LogScreen() {
           onConfirmEnd={() => {}}
           readOnly
         />
+        </ReAnimated.View>
+      )}
+      </>
       )}
 
     </ScrollView>

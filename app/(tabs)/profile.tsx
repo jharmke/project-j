@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import Reanimated, { FadeInDown } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TAB_BAR_HEIGHT, TAB_SCROLL_PAD } from '../../components/CustomTabBar';
@@ -93,8 +94,8 @@ const TRAINING_OPTIONS = [
   { key: 'daily', label: 'Daily / twice daily',      sub: 'Elite or professional training volume',    dailyBonus: 400 },
 ];
 
-function ProfileSection({ label, subtitle, defaultOpen = false, children, theme, first = false }: {
-  label: string; subtitle?: string; defaultOpen?: boolean; children: React.ReactNode; theme: any; first?: boolean;
+function ProfileSection({ label, subtitle, defaultOpen = false, children, theme, first = false, entering }: {
+  label: string; subtitle?: string; defaultOpen?: boolean; children: React.ReactNode; theme: any; first?: boolean; entering?: any;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const [visible, setVisible] = useState(defaultOpen);
@@ -112,7 +113,7 @@ function ProfileSection({ label, subtitle, defaultOpen = false, children, theme,
   };
 
   return (
-    <View style={{ marginTop: first ? 4 : 20 }}>
+    <Reanimated.View entering={entering} style={{ marginTop: first ? 4 : 20 }}>
       <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); toggle(); }} activeOpacity={0.7} style={{ paddingVertical: 6, minHeight: 44, justifyContent: 'center' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <Text style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textSecondary }}>
@@ -135,7 +136,7 @@ function ProfileSection({ label, subtitle, defaultOpen = false, children, theme,
           {children}
         </Animated.View>
       )}
-    </View>
+    </Reanimated.View>
   );
 }
 
@@ -423,7 +424,7 @@ export default function ProfileScreen() {
 
       <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={[styles.content, { paddingTop: headerH + 16, paddingBottom: insets.bottom + TAB_SCROLL_PAD }]} automaticallyAdjustKeyboardInsets={true} onScroll={e => { scrollOffset.current = e.nativeEvent.contentOffset.y; }} scrollEventThrottle={16}>
 
-        <ProfileSection label="Basic Info" subtitle="Name, height, birthday, sex" defaultOpen={true} theme={theme} first={true}>
+        <ProfileSection label="Basic Info" subtitle="Name, height, birthday, sex" defaultOpen={true} theme={theme} first={true} entering={FadeInDown.delay(0).springify()}>
           <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>Name</Text>
           <TextInput style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} value={profile.name} onChangeText={v => updateField('name', v)} placeholder="Your name" placeholderTextColor={theme.textPlaceholder} />
 
@@ -497,14 +498,14 @@ export default function ProfileScreen() {
         </ProfileSection>
 
         {/* Shared with Settings > Membership (components/MembershipCard) so the two can never drift. */}
-        <ProfileSection label="Membership" subtitle={isSupporter ? 'Supporter' : 'Support the Mission'} defaultOpen={true} theme={theme}>
+        <ProfileSection label="Membership" subtitle={isSupporter ? 'Supporter' : 'Support the Mission'} defaultOpen={true} theme={theme} entering={FadeInDown.delay(60).springify()}>
           <View style={{ marginTop: 2 }}>
             <MembershipCard />
           </View>
         </ProfileSection>
 
         <View onLayout={e => { activityLevelY.current = e.nativeEvent.layout.y; }} />
-        <ProfileSection label="Activity Level" subtitle="Lifestyle & training frequency" theme={theme}>
+        <ProfileSection label="Activity Level" subtitle="Lifestyle & training frequency" theme={theme} entering={FadeInDown.delay(120).springify()}>
           <Text style={[styles.fieldLabel, { color: theme.textMuted, marginTop: 0 }]}>LIFESTYLE</Text>
           <Text style={{ fontSize: 11, fontFamily: Type.uiMedium, color: theme.textSecondary, marginBottom: 8 }}>Your day-to-day movement, not counting workouts.</Text>
           {LIFESTYLE_OPTIONS.map(o => (
@@ -545,7 +546,7 @@ export default function ProfileScreen() {
         </ProfileSection>
 
         {bmr > 0 && (
-          <ProfileSection label="Your Estimates" subtitle="BMR, TDEE, and calorie target" theme={theme}>
+          <ProfileSection label="Your Estimates" subtitle="BMR, TDEE, and calorie target" theme={theme} entering={FadeInDown.delay(180).springify()}>
             <Text style={[styles.estimateNote, { color: theme.textSecondary }]}>Based on Mifflin-St Jeor formula - estimates only, not exact values.</Text>
             <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, fontStyle: 'italic', marginBottom: 10 }}>For informational purposes only. Not medical advice.</Text>
             <View style={styles.statsRow}>
@@ -573,7 +574,7 @@ export default function ProfileScreen() {
           </ProfileSection>
         )}
 
-        <ProfileSection label="Weight Goal" subtitle="Goal weight & weekly pace" theme={theme}>
+        <ProfileSection label="Weight Goal" subtitle="Goal weight & weekly pace" theme={theme} entering={FadeInDown.delay(240).springify()}>
           {/* Goal weight input -- lives above pace so the story reads top to bottom */}
           <Text style={[styles.fieldLabel, { color: theme.textMuted, marginTop: 0 }]}>Goal Weight (optional)</Text>
           <Text style={{ fontSize: 11, fontFamily: Type.uiMedium, color: theme.textSecondary, marginBottom: 10 }}>
@@ -691,7 +692,7 @@ export default function ProfileScreen() {
 
           </ProfileSection>
 
-        <ProfileSection label="Water Presets" subtitle="Quick-add water amounts" theme={theme}>
+        <ProfileSection label="Water Presets" subtitle="Quick-add water amounts" theme={theme} entering={FadeInDown.delay(300).springify()}>
           <Text style={[styles.estimateNote, { color: theme.textSecondary }]}>Customize your quick-add water amounts (oz).</Text>
           <View style={{ flexDirection: 'row', gap: 12 }}>
             {([0, 1, 2] as const).map(i => (

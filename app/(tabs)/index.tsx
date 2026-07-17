@@ -3955,6 +3955,7 @@ export default function HomeScreen() {
                   onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); saveWaterPresets(); }}
                   disabled={!presetsSaveable}
                 >
+                  {presetsSaveable && <ButtonShine radius={8} />}
                   <Text style={{ color: presetsSaveable ? theme.accentBlue : theme.textDim, fontFamily:Type.uiSemibold, fontSize:14 }}>Save Presets</Text>
                 </TouchableOpacity>
               </View>
@@ -3982,6 +3983,7 @@ export default function HomeScreen() {
                         style={{ flex:2, backgroundColor: goalSaveable ? theme.bgSelected : theme.bgInput, borderWidth:1, borderColor: goalSaveable ? theme.accentBlueBorder : theme.borderInput, borderRadius:8, padding:12, alignItems:'center', opacity: goalSaveable ? 1 : 0.5, marginTop:1 }}
                         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); saveWaterGoal(); }}
                         disabled={!goalSaveable}>
+                        {goalSaveable && <ButtonShine radius={8} />}
                         <Text style={{ color: goalSaveable ? theme.accentBlue : theme.textDim, fontFamily:Type.uiSemibold, fontSize:14 }}>Save Goal</Text>
                       </TouchableOpacity>
                     );

@@ -100,6 +100,14 @@
   info popups: Calorie Floor (Profile) and How to Measure (Body Measurements) -- neither is wrong, just not
   the shared header. The genuinely-wrong one (TooltipModal title on the number font) was FIXED 2026-07-16.
 - Weight trend sparkline -- small inline trend line next to weight number showing recent direction over ~7-14 days. No axes, just shape.
+- MAYBE: delay Home's card cascade until after the launch splash cinematic lifts. Home's cards already
+  cascade in on cold launch (shipped 2026-07-17, matching the other 5 tabs) but it plays fully hidden
+  underneath the splash cinematic on a real kill+relaunch (app/_layout.tsx's coldSplashConsumed gate), so
+  by the time the splash lifts Home has already settled -- it only plays visibly for a brand-new user
+  landing on Home right after onboarding (that path has no splash gate). Justin's call 2026-07-17: leave it
+  invisible on cold launch for now, since stacking a second arrival right after the splash cinematic might
+  read as redundant rather than premium. Revisit only if that idea starts to feel worth the work -- not
+  urgent, not validated as an improvement yet.
 - Language / internationalization.
 - Apple Watch companion app -- V2 or later.
 - iOS home screen widget.

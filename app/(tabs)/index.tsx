@@ -9,7 +9,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, AppState, Dimensions, Easing, Keyboard, KeyboardAvoidingView, Modal, NativeScrollEvent, NativeSyntheticEvent, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
-import ReAnimated, { useAnimatedStyle, useAnimatedProps, useSharedValue, withTiming, withRepeat, withSequence, withDelay, cancelAnimation, Easing as ReAnimEasing } from 'react-native-reanimated';
+import ReAnimated, { useAnimatedStyle, useAnimatedProps, useSharedValue, withTiming, withRepeat, withSequence, withDelay, cancelAnimation, Easing as ReAnimEasing, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TAB_SCROLL_PAD } from '../../components/CustomTabBar';
 import Svg, { Circle } from 'react-native-svg';
@@ -4133,19 +4133,20 @@ export default function HomeScreen() {
           );
         })()}
 
-        {visibleCards.map((id) => (
-          <View key={id} onLayout={(e) => { cardOffsets.current[id] = e.nativeEvent.layout.y; }}>
+        {visibleCards.map((id, idx) => (
+          <ReAnimated.View key={id} entering={FadeInDown.delay(idx * 60).springify()} onLayout={(e) => { cardOffsets.current[id] = e.nativeEvent.layout.y; }}>
             {renderCardById(id)}
-          </View>
+          </ReAnimated.View>
         ))}
 
-        {/* Pinned graph cards */}
+        {/* Pinned graph cards -- continues the SAME stagger sequence right after the main cards, offset by
+            how many just cascaded, so this reads as one wave instead of a second, separately-timed batch. */}
         {allStatsCards
           .filter(c => c.type === 'graph' && c.placement === 'both' && c.dataKey)
           .sort((a, b) => a.order - b.order)
-          .map(card => (
+          .map((card, gIdx) => (
+            <ReAnimated.View key={card.id} entering={FadeInDown.delay(visibleCards.length * 60 + gIdx * 60).springify()}>
             <StatsGraphCard
-              key={card.id}
               card={card}
               cardTrendData={pinnedTrendData[card.id] ?? EMPTY_TREND_DATA}
               theme={theme}
@@ -4156,6 +4157,7 @@ export default function HomeScreen() {
               onEditPress={(c) => setHomeEditCard(c)}
               showNetCarbs={showNetCarbs}
             />
+            </ReAnimated.View>
           ))}
       </ScrollView>
 

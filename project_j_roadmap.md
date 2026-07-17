@@ -691,14 +691,23 @@ are separate pre-submission checklists, NOT part of this menu.
   their own loads finish) -- Justin has never seen it happen and said disregard unless it becomes a real
   issue; NOT fixed, logged here only so it isn't rediscovered as new.
   >> **PROFILE DONE 2026-07-17** -- section-based like Stats, not card-based. Basic Info + Membership open
-  by default, rest collapsed (Activity Level, Your Estimates, Weight Goal, Water Presets). Same shared-
-  component pattern: one `entering` prop added to `ProfileSection`, all 6 sections staggered.
-  >> **ALL FIVE NON-HOME TABS DONE.** Home (index.tsx) is the only one left untouched -- it was never part
-  of the original bug (nothing transitions INTO the first tab a cold launch lands on), but the other 5 all
-  cascade now and Home popping in flat would be the one visual inconsistency left. Justin also asked
-  2026-07-17 whether Home's hidden/custom graph cards are covered -- UNCHECKED, this needs the same read
-  Stats got (find Home's card-visibility system, confirm hidden cards aren't rendered, confirm any custom
-  cards inherit their section's cascade) before answering, not an assumption.
+  by default, rest collapsed (Activity Level, Your Estimates, Weight Goal). Same shared-component pattern:
+  one `entering` prop added to `ProfileSection`, all 6 sections staggered. (Water Presets was the 6th
+  section at the time this cascade was built; REMOVED the same day as redundant -- see RECENTLY SHIPPED.)
+  >> **HOME DONE 2026-07-17 -- ALL SIX TABS NOW CASCADE.** Main card list + pinned graph cards continue the
+  same stagger wave (graph cards pick up right where the main cards left off, not a separately-timed
+  batch). Carousels inside individual cards were deliberately left untouched (Justin's call) -- they just
+  ride along as part of whatever card contains them.
+  >> **HOME'S CASCADE IS INVISIBLE ON A REAL COLD LAUNCH, BY DESIGN -- not a bug, confirmed by reading
+  app/_layout.tsx.** The app plays a custom launch-splash cinematic AFTER the native splash but BEFORE
+  Home is revealed (specifically to avoid flashing Home underneath); Home fully mounts and cascades hidden
+  behind that splash, already settled by the time it lifts. This fires on EVERY true kill+relaunch
+  (`coldSplashConsumed` is module-scope, resets every fresh JS load) -- exactly how Justin tests, which is
+  why he saw nothing. It IS visible on one real path: a brand-new user landing on Home right after
+  onboarding's All Set screen, which routes straight to `/(tabs)` with no splash gate at all. Justin's
+  call: leave it as-is for now, a second "arrival" stacked right after the splash cinematic might read as
+  redundant rather than premium. The idea of delaying the cascade until the splash lifts is parked in
+  project_j_backlog.md (LOW PRIORITY / FUTURE) -- not validated as worth building, just not lost.
   >> **THE TAB-SWITCH FADE IS A SEPARATE QUESTION, DELIBERATELY DEFERRED** until the mount fix is verified
   on device. Justin finds the quick fade-out/fade-in "jittery, not super premium/luxury" -- but you cannot
   judge the animation while it is fading into an unfinished screen. Claude's instinct to test once this

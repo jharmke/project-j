@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '../theme';
 import { PAGE_TITLE, Type } from '../typography';
+import GradientTitle from './GradientTitle';
 
 // ─── ScreenHeader ─────────────────────────────────────────────────────────────
 // ONE header for every pushed screen in the app. Not a style guide -- an actual component, because a
@@ -82,12 +83,12 @@ export default function ScreenHeader({
           onPress={onTitlePress}
           style={styles.title}
         >
-          <Text
+          <GradientTitle
+            title={title}
+            color={color ?? theme.accentBlueRaw}
+            style={PAGE_TITLE}
             numberOfLines={numberOfLines}
-            style={[PAGE_TITLE, { color: color ?? theme.accentBlueRaw }]}
-          >
-            {title}
-          </Text>
+          />
           {subtitle ? (
             <Text numberOfLines={1} style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textMuted, marginTop: 1 }}>
               {subtitle}

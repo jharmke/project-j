@@ -77,7 +77,9 @@ export const ACCENT_PALETTES: Record<ThemeId, AccentOption[]> = {
     { id: 'default',    label: 'Lipstick', color: '#cc1144', accentBlue: '#cc1144', accentBlueBg: 'rgba(204,17,68,0.12)',   accentBlueBorder: 'rgba(204,17,68,0.28)'   },
     { id: 'rust',       label: 'Rose',     color: '#d4607a', accentBlue: '#d4607a', accentBlueBg: 'rgba(212,96,122,0.12)',  accentBlueBorder: 'rgba(212,96,122,0.28)'  },
     { id: 'discipline', label: 'Amber',    color: '#c2621a', accentBlue: '#c2621a', accentBlueBg: 'rgba(194,98,26,0.12)',   accentBlueBorder: 'rgba(194,98,26,0.28)'   },
-    { id: 'orange',     label: 'Yellow',   color: '#ffe600', accentBlue: '#ffe600', accentBlueBg: 'rgba(255,230,0,0.15)',   accentBlueBorder: 'rgba(255,230,0,0.35)',   buttonColor: '#8a6f00', buttonBg: 'rgba(138,111,0,0.15)', buttonBorder: 'rgba(138,111,0,0.35)' },
+    // Yellow ('orange' slot) CUT 2026-07-17: #ffe600 read as dull mustard on Blush's pale pink page across
+    // every element that uses it (icons, FAB, tab bar, not just this title-gradient work), not fixable
+    // from inside GradientTitle since it's not a gradient-specific issue. Yellow stays fine on Dark/Slate.
     { id: 'green',      label: 'Green',    color: '#2d6a4f', accentBlue: '#2d6a4f', accentBlueBg: 'rgba(45,106,79,0.12)',   accentBlueBorder: 'rgba(45,106,79,0.28)'   },
     { id: 'teal',       label: 'Teal',     color: '#3a9e8a', accentBlue: '#3a9e8a', accentBlueBg: 'rgba(58,158,138,0.12)',  accentBlueBorder: 'rgba(58,158,138,0.28)'  },
     { id: 'cyan',       label: 'Blue',     color: '#4878c8', accentBlue: '#4878c8', accentBlueBg: 'rgba(72,120,200,0.12)',  accentBlueBorder: 'rgba(72,120,200,0.28)'  },

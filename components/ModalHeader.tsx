@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '../theme';
 import { PAGE_TITLE, Type } from '../typography';
+import GradientTitle from './GradientTitle';
 
 // ─── ModalHeader ──────────────────────────────────────────────────────────────
 // The modal counterpart to ScreenHeader. Same discipline, DIFFERENT object.
@@ -52,9 +53,12 @@ export default function ModalHeader({
 
       <View style={styles.row}>
         <View style={{ flex: 1 }}>
-          <Text numberOfLines={1} style={[PAGE_TITLE, styles.title, { color: color ?? theme.accentBlueRaw }]}>
-            {title}
-          </Text>
+          <GradientTitle
+            title={title}
+            color={color ?? theme.accentBlueRaw}
+            style={[PAGE_TITLE, styles.title]}
+            numberOfLines={1}
+          />
           {subtitle ? (
             <Text numberOfLines={1} style={[styles.subtitle, { color: theme.textMuted, fontFamily: Type.ui }]}>{subtitle}</Text>
           ) : null}

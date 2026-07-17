@@ -28,6 +28,9 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-17 **Add Food's food list had zero bottom clearance, Otto's disc sat on the last row/FatSecret
+  footer.** One screen, not two -- it's titled "Food Library" in browse mode and "Add to [Meal]" when
+  logging to a slot. Fixed with the same `insets.bottom + 96` pattern already used on Achievements/Prayer.
 - 2026-07-17 **All six tabs now cascade on first open, tab-mount stutter fully closed.** Started as one
   TestFlight complaint, ended up touching Workout, Log, Stats, Faith, Profile, and Home -- each gated
   behind its own loaded-state (or given a straight cascade where no gate was needed) and revealing its

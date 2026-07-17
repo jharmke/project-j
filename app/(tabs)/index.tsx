@@ -35,6 +35,7 @@ import FaithTodayCard from '../../components/FaithTodayCard';
 import { loadCalorieTargets } from '../../utils/calorieTarget';
 import { useTheme, RECOVERY_PURPLE } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
+import GradientTitle from '../../components/GradientTitle';
 import { useHealthKit } from '../../useHealthKit';
 import { DayDetailContent } from '../day-detail';
 import TooltipModal from '../../components/TooltipModal';
@@ -3747,9 +3748,14 @@ export default function HomeScreen() {
           {/* paddingRight: the display faces are wider than Bebas was, so "Good afternoon" ran straight
               into the refresh button. Gives the title a gutter before the icon row. */}
           <View style={{ flex:1, paddingRight:8 }}>
-            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>
-              {(() => { const h=new Date().getHours(); return h<12?'Good morning':h<17?'Good afternoon':'Good evening'; })()}
-            </Text>
+            <GradientTitle
+              title={(() => { const h=new Date().getHours(); return h<12?'Good morning':h<17?'Good afternoon':'Good evening'; })()}
+              color={theme.accentBlueRaw}
+              style={styles.headerTitle}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.8}
+            />
             <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, marginTop:1, letterSpacing:2, textTransform:'uppercase' }}>
               {new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}
             </Text>

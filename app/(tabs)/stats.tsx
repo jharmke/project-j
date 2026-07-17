@@ -19,6 +19,7 @@ import { DayDetailContent } from '../day-detail';
 import { useTheme } from '../../theme';
 import { useMembership } from '../../MembershipContext';
 import HeaderAvatar from '../../components/HeaderAvatar';
+import GradientTitle from '../../components/GradientTitle';
 import HeaderIconButton from '../../components/HeaderIconButton';
 import PrimaryCTA from '../../components/PrimaryCTA';
 import ButtonShine from '../../components/ButtonShine';
@@ -1871,7 +1872,7 @@ export default function StatsScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
           <HeaderAvatar />
           <View style={{ flex: 1 }}>
-            <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Stats</Text>
+            <GradientTitle title="Stats" color={theme.accentBlueRaw} style={styles.headerTitle} />
             <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, marginTop: 1, letterSpacing: 2, textTransform: 'uppercase' }}>
               {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </Text>

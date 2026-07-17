@@ -1717,6 +1717,9 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
       {/* Results */}
       <FlatList
         ref={foodListRef}
+        // No bottom clearance previously: Otto's 56px disc (bottom+20..bottom+76) sat right over the
+        // last row/the FatSecret footer. Same +96 fix already applied on achievements/prayer/etc.
+        contentContainerStyle={{ paddingBottom: insets.bottom + 96 }}
         data={query.trim() ? results :
           activeTab === 'recent' ? recentFoods :
           activeTab === 'favorites' ? (() => {

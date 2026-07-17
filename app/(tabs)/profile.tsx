@@ -22,6 +22,7 @@ import { setFloatingBarHeight } from '../../utils/floatingBar';
 import { useTheme } from '../../theme';
 import { useMembership } from '../../MembershipContext';
 import HeaderAvatar from '../../components/HeaderAvatar';
+import GradientTitle from '../../components/GradientTitle';
 import HeaderIconButton from '../../components/HeaderIconButton';
 import PrimaryCTA from '../../components/PrimaryCTA';
 import SproutIcon from '../../components/SproutIcon';
@@ -410,7 +411,7 @@ export default function ProfileScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
           <HeaderAvatar inert />
           <View style={{ flex: 1 }}>
-            <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Profile</Text>
+            <GradientTitle title="Profile" color={theme.accentBlueRaw} style={styles.headerTitle} />
             <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, marginTop: 1, letterSpacing: 2, textTransform: 'uppercase' }}>
               {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </Text>

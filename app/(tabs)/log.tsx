@@ -31,6 +31,7 @@ import NutritionGearModal, { NUTRITION_PRESETS, NutritionGoals, NutritionPreset 
 import NutrientDrilldownModal, { DrilldownItem, computeNetCarbsForEntry } from '../../components/NutrientDrilldownModal';
 import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
+import GradientTitle from '../../components/GradientTitle';
 import HeaderIconButton from '../../components/HeaderIconButton';
 import ButtonShine from '../../components/ButtonShine';
 import { CardWatermark } from '../../components/GradientCard';
@@ -1236,7 +1237,7 @@ export default function LogScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
           <HeaderAvatar />
           <View style={{ flex: 1 }}>
-            <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Food Log</Text>
+            <GradientTitle title="Food Log" color={theme.accentBlueRaw} style={styles.headerTitle} />
             <View ref={dateNavRef} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 1, height: 12, overflow: 'visible' }}>
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openCalPicker(); }} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
                 <Text style={{ fontSize: 9, color: isToday ? theme.textMuted : theme.accentAmber, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase' }}>

@@ -20,6 +20,7 @@ import BackgroundLayers from '../../components/BackgroundLayers';
 import CompanionChat from '../../components/CompanionChat';
 import { showToolkit } from '../../components/ToolkitSheet';
 import TooltipIcon from '../../components/TooltipIcon';
+import GradientTitle from '../../components/GradientTitle';
 import { useTutorial } from '../../context/TutorialContext';
 import { useTutorialTarget } from '../../hooks/useTutorialTarget';
 import BibleStartGuide from '../../components/BibleStartGuide';
@@ -195,7 +196,7 @@ export default function FaithScreen() {
                 bar already ambers the active Faith icon -- the top chrome was the last piece still on the
                 accent, so cyan chrome sat over amber content. ScreenHeader's own comment says "Faith screens
                 go amber"; nothing had ever actually done it. Faith is a PLACE, and a place has a colour. */}
-            <Text style={[styles.headerTitle, { color: theme.accentAmber }]}>Faith</Text>
+            <GradientTitle title="Faith" color={theme.accentAmber} style={styles.headerTitle} />
             {/* Warm, like the rest of the tab. The other tabs' date lines are cool because their titles
                 are cool -- this one sits directly under an amber title, so a purple date fought it. */}
             <Text style={{ fontSize: 9, color: faithInkMuted(theme), fontFamily: Type.uiBold, marginTop: 1, letterSpacing: 2, textTransform: 'uppercase' }}>

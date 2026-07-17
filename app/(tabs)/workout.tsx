@@ -25,6 +25,7 @@ import { addNotification, clearNotification } from '../../utils/notifications';
 import * as Notifications from 'expo-notifications';
 import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
+import GradientTitle from '../../components/GradientTitle';
 import ButtonShine from '../../components/ButtonShine';
 import FabDome from '../../components/FabDome';
 import PrimaryCTA from '../../components/PrimaryCTA';
@@ -2240,7 +2241,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
             <HeaderAvatar />
             <View style={{ flex: 1 }}>
-              <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Workout</Text>
+              <GradientTitle title="Workout" color={theme.accentBlueRaw} style={styles.headerTitle} />
               <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, marginTop: 1, letterSpacing: 2, textTransform: 'uppercase' }}>
                 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
               </Text>

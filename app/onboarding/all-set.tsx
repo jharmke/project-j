@@ -13,6 +13,9 @@ import { THEMES, useTheme } from '../../theme';
 import { storageSet } from '../../utils/storage';
 import { isOnboardingPreview, setOnboardingPreview } from '../../utils/onboardingPreview';
 import { getModeAccent, getSessionStyleMode } from '../../utils/modeAccent';
+import BackgroundLayers from '../../components/BackgroundLayers';
+import PrimaryCTA from '../../components/PrimaryCTA';
+import { BlurView } from 'expo-blur';
 import { Type, numLine } from '../../typography';
 
 const theme = THEMES['light'];
@@ -55,23 +58,29 @@ const MODE_LINES: Record<string, string> = {
   mindful:    "Every day is a new start. We're glad you're here.",
 };
 
-const MODE_ICON: Record<string, string> = {
-  discipline: 'barbell',
-  balanced:   'leaf',
-  mindful:    'heart',
-};
+// MODE_ICON (barbell / leaf / heart) and its box are GONE 2026-07-16. The leaf was Balanced's badge and read
+// as clip art; the box below it cost real height on the one screen that should feel like arriving, not like
+// another form. The mode already speaks here through the accent colour and its own headline.
 
-// Quick tips, order locked: stuck -> refresher -> make it yours
+// Quick tips, order locked: Otto -> where the explainers are -> make it yours.
+//
+// OTTO LEADS. He introduces himself with a one-time callout on Home (AssistantOverlay), but a user who
+// never taps him never learns what he is -- naming him here is what makes that callout land.
+// Note the copy does NOT promise "anything, anytime": free accounts have an AI cap, and this screen is not
+// the place to write a cheque the quota won't cash.
+//
+// The old tips 1 and 2 ("Stuck on anything?" -> (i)/(?) and "Need a refresher?" -> Settings > Help) were the
+// SAME tip wearing two hats -- both are "where to look things up" -- and they ate two of the three rows.
 const ALLSET_TIPS = [
   {
-    icon: 'help-circle',
-    lead: 'Stuck on anything?',
-    body: 'Tap the (i) on any card to see what its numbers mean, or the (?) in a tab’s header for quick tips and tutorials.',
+    icon: 'sparkles',
+    lead: 'Meet Otto',
+    body: 'Your companion, bottom left of every screen. Ask him how something works, where a setting lives, or how your week is going.',
   },
   {
-    icon: 'book',
-    lead: 'Need a refresher?',
-    body: 'Every guide and explainer in the app lives in one place: Settings > Help.',
+    icon: 'information-circle',
+    lead: 'Want the details?',
+    body: 'Tap the (i) on any card for what its numbers mean, or the (?) in a tab’s header for tips and tutorials. Every guide also lives in Settings > Help.',
   },
   {
     icon: 'grid',
@@ -89,8 +98,6 @@ export default function AllSetScreen() {
   const [saving, setSaving]           = useState(false);
 
   // Entrance anims
-  const iconAnim    = useRef(new Animated.Value(0)).current;
-  const iconScale   = useRef(new Animated.Value(0.7)).current;
   const labelAnim   = useRef(new Animated.Value(0)).current;
   const labelSlide  = useRef(new Animated.Value(16)).current;
   const lineAnim    = useRef(new Animated.Value(0)).current;
@@ -99,7 +106,6 @@ export default function AllSetScreen() {
   const tipsSlide   = useRef(new Animated.Value(12)).current;
   const btnAnim     = useRef(new Animated.Value(0)).current;
   const btnSlide    = useRef(new Animated.Value(12)).current;
-  const btnScale    = useRef(new Animated.Value(1)).current;
   const secScale    = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -113,15 +119,11 @@ export default function AllSetScreen() {
       }
     });
 
-    // Staggered entrance
+    // Staggered entrance. The label leads now that the mode icon is gone, so it no longer waits 250ms for
+    // an icon that never arrives.
     Animated.parallel([
-      Animated.timing(iconAnim,  { toValue: 1, duration: 400, useNativeDriver: true }),
-      Animated.spring(iconScale, { toValue: 1, useNativeDriver: true, damping: 14, stiffness: 160 }),
-    ]).start();
-
-    Animated.parallel([
-      Animated.timing(labelAnim,  { toValue: 1, duration: 380, delay: 250, useNativeDriver: true }),
-      Animated.timing(labelSlide, { toValue: 0, duration: 380, delay: 250, useNativeDriver: true }),
+      Animated.timing(labelAnim,  { toValue: 1, duration: 380, useNativeDriver: true }),
+      Animated.timing(labelSlide, { toValue: 0, duration: 380, useNativeDriver: true }),
     ]).start();
 
     Animated.parallel([
@@ -195,10 +197,7 @@ export default function AllSetScreen() {
 
   const handlePrimary = () => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
-    Animated.sequence([
-      Animated.timing(btnScale, { toValue: 0.97, duration: 80, useNativeDriver: true }),
-      Animated.timing(btnScale, { toValue: 1.0,  duration: 80, useNativeDriver: true }),
-    ]).start(() => applyDefaultLayout(false));
+    applyDefaultLayout(false);
   };
 
   const handleSetItMyself = () => {
@@ -215,13 +214,15 @@ export default function AllSetScreen() {
   const accentColor  = getModeAccent(styleMode);
 
   const modeLine = MODE_LINES[styleMode] ?? MODE_LINES.balanced;
-  const modeIcon = MODE_ICON[styleMode]  ?? 'leaf';
 
   return (
-    <LinearGradient colors={['#c4c8e8', '#dadcef', '#f0f0f5']} style={{ flex: 1 }}>
+    <LinearGradient colors={[theme.gradientEnd, theme.gradientEnd]} style={{ flex: 1 }}>
+      <BackgroundLayers glow={accentColor} />
 
-      {/* Progress bar -- full */}
-      <View style={[styles.progressBar, { paddingTop: insets.top + 12 }]}>
+      {/* Progress bar -- full. Frosted chrome, absolute, glued to the top. */}
+      <View style={[styles.progressBar, { paddingTop: insets.top + 12, borderBottomColor: theme.borderCard }]}>
+        <BlurView intensity={28} tint="light" style={StyleSheet.absoluteFill} pointerEvents="none" />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.chromeFill }]} pointerEvents="none" />
         <TouchableOpacity
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -237,18 +238,9 @@ export default function AllSetScreen() {
       {/* Content */}
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={[styles.content, { paddingBottom: 24 }]}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + 78, paddingBottom: 24 }]}
         showsVerticalScrollIndicator={false}
       >
-
-        {/* Icon */}
-        <Animated.View style={[
-          styles.iconBox,
-          { backgroundColor: accentColor + '14', borderColor: accentColor + '30',
-            opacity: iconAnim, transform: [{ scale: iconScale }] },
-        ]}>
-          <Ionicons name={modeIcon as any} size={32} color={accentColor} />
-        </Animated.View>
 
         {/* Label */}
         <Animated.View style={{ opacity: labelAnim, transform: [{ translateY: labelSlide }] }}>
@@ -279,7 +271,7 @@ export default function AllSetScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.tipLead, { color: theme.textPrimary }]}>{tip.lead}</Text>
-                  <Text style={[styles.tipBody, { color: theme.textMuted }]}>{tip.body}</Text>
+                  <Text style={[styles.tipBody, { color: theme.textSecondary }]}>{tip.body}</Text>
                 </View>
               </View>
             ))}
@@ -295,26 +287,24 @@ export default function AllSetScreen() {
           opacity: btnAnim,
           transform: [{ translateY: btnSlide }],
           paddingBottom: insets.bottom + 20,
-          backgroundColor: theme.gradientEnd,
           borderTopColor: theme.borderCard,
         },
       ]}>
+        <BlurView intensity={28} tint="light" style={StyleSheet.absoluteFill} pointerEvents="none" />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.chromeFill }]} pointerEvents="none" />
 
         {/* Primary button */}
-        <Animated.View style={{ transform: [{ scale: btnScale }], width: '100%' }}>
-          <TouchableOpacity
-            style={[styles.primaryBtn, { backgroundColor: accentColor }]}
-            onPress={handlePrimary}
-            activeOpacity={1}
-            disabled={saving}
-          >
-            <Text style={styles.primaryBtnText}>
-              {isDiscipline ? "LET'S GO" : "WE'LL SET IT UP FOR YOU"}
-            </Text>
-          </TouchableOpacity>
-        </Animated.View>
+        <PrimaryCTA
+          label={isDiscipline ? "Let's Go" : "We'll Set It Up For You"}
+          fill={accentColor}
+          disabled={saving}
+          wrapperStyle={{ width: '100%' }}
+          faceStyle={{ borderRadius: 14, paddingVertical: 17 }}
+          onPress={handlePrimary}
+        />
 
-        {/* Secondary button -- Balanced and Mindful only */}
+        {/* Secondary button -- Balanced and Mindful only. Stays an outline: two molded buttons stacked would
+            leave neither reading as THE action. */}
         {!isDiscipline && (
           <Animated.View style={{ transform: [{ scale: secScale }], width: '100%', marginTop: 10 }}>
             <TouchableOpacity
@@ -337,40 +327,35 @@ export default function AllSetScreen() {
 }
 
 const styles = StyleSheet.create({
-  progressBar:      { paddingHorizontal: 24, paddingBottom: 8, flexDirection: 'row', alignItems: 'center' },
+  progressBar:      { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, paddingHorizontal: 24, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 0.5, overflow: 'hidden' },
   progressTrack:    { flex: 1, height: 3, borderRadius: 2, overflow: 'hidden' },
   progressFill:     { height: '100%', borderRadius: 2 },
   backBtn:          { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
 
-  content:          { flexGrow: 1, paddingHorizontal: 28, paddingTop: 40, alignItems: 'flex-start' },
-
-  iconBox:          { width: 68, height: 68, borderRadius: 20, borderWidth: 1,
-                      alignItems: 'center', justifyContent: 'center', marginBottom: 28 },
+  content:          { flexGrow: 1, paddingHorizontal: 28, alignItems: 'flex-start' },
 
   screenLabel:      { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3,
                       textTransform: 'uppercase', marginBottom: 12 },
 
+  // No textShadow -- a drop shadow on a display title is a trick nothing else in the app uses.
   headline:         { fontSize: 36, fontFamily: Type.display, letterSpacing: 0.3,
-                      lineHeight: numLine(36), marginBottom: 14,
-                      textShadowColor: 'rgba(0,0,0,0.12)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
+                      lineHeight: numLine(36), marginBottom: 14 },
 
-  subtext:          { fontSize: 15, fontFamily: Type.ui, lineHeight: 22, maxWidth: 300 },
+  // VOICE: this is the app talking, not a label.
+  subtext:          { fontSize: 15, fontFamily: Type.voice, lineHeight: 22, maxWidth: 300 },
 
+  // THEMES['light'] directly, not `theme` -- StyleSheet.create runs at module scope.
   tipCard:          { width: '100%', borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14,
-                      shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 },
+                      shadowColor: THEMES['light'].cardShadow, shadowOpacity: THEMES['light'].cardShadowOpacity,
+                      shadowOffset: { width: 0, height: 3 }, shadowRadius: 8, elevation: 2 },
   tipRow:           { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 13, gap: 12 },
   tipIconCircle:    { width: 36, height: 36, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   tipLead:          { fontSize: 13, fontFamily: Type.uiSemibold, marginBottom: 2 },
   tipBody:          { fontSize: 11, fontFamily: Type.ui, lineHeight: 16 },
 
-  footer:           { paddingHorizontal: 24, paddingTop: 14, borderTopWidth: 0.5,
-                      alignItems: 'center', gap: 0 },
-
-  primaryBtn:       { width: '100%', borderRadius: 14, paddingVertical: 17,
-                      alignItems: 'center', justifyContent: 'center',
-                      shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.12, shadowRadius: 8 },
-  primaryBtnText:   { fontSize: 16, fontFamily: Type.uiBold, letterSpacing: 1, color: '#ffffff' },
+  footer:           { position: 'absolute', bottom: 0, left: 0, right: 0,
+                      paddingHorizontal: 24, paddingTop: 14, borderTopWidth: 0.5,
+                      alignItems: 'center', gap: 0, overflow: 'hidden' },
 
   secondaryBtn:     { width: '100%', borderRadius: 14, paddingVertical: 15,
                       alignItems: 'center', justifyContent: 'center', borderWidth: 1 },

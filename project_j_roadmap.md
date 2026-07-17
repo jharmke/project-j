@@ -28,6 +28,25 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-16 **Onboarding All Set -- THE ONBOARDING RE-SKIN IS COMPLETE (all 6 steps + sign-in + All Set).**
+  Ground + glow in the mode colour, frosted top + footer, molded PrimaryCTAs ("LET'S GO" / "WE'LL SET IT UP
+  FOR YOU" -> mixed case), headline textShadow killed, subtext + tip bodies to Type.voice off textMuted, tips
+  card onto the theme shadow. "Set it up myself" stays an OUTLINE on purpose -- two molded buttons stacked
+  and neither reads as THE action.
+  >> **THE MODE ICON IS GONE** (MODE_ICON barbell/leaf/heart + its 68px box). Justin: "remove that stupid
+  leaf icon". It read as clip art and cost real height on the one screen that should feel like ARRIVING, not
+  like another form. The mode already speaks via the accent colour + its own headline.
+  >> **OTTO NOW LEADS THE TIPS CARD.** He self-introduces with a one-time callout on Home
+  (components/AssistantOverlay.tsx: "Hey, I'm Otto"), but a user who never taps him never learns what he is
+  -- naming him here is what makes that callout land. Copy deliberately does NOT promise "anything, anytime":
+  free accounts have an AI cap. The old tips 1 + 2 ("Stuck on anything?" -> (i)/(?) and "Need a refresher?"
+  -> Settings > Help) were the SAME tip twice (both "where to look things up") and merged into one row.
+  >> ⚠️ **CompanionFAB.tsx IS *HALO*, NOT OTTO** -- the FAITH companion (gold disc + cross, hidden entirely
+  for Not Right Now). Otto is `components/AssistantOverlay.tsx` + AssistantFAB/AssistantChat, bottom-LEFT,
+  never faith-gated. Do not confuse them again.
+  >> Explainer sync CHECKED (rule: same session): tooltipRegistry.ts, data/tutorials.ts and Otto's KB
+  (functions/src/assistantAppKnowledge.ts) never described the Commitment screen or the step count -- the
+  only hits are the WORD "commitment" in unrelated copy. Nothing went stale, nothing to redeploy.
 - 2026-07-16 **Onboarding steps 5 + 6 (Apple Health, Notifications).** Ground + glow in the MODE's colour,
   frosted top + footer, molded PrimaryCTAs with real disabled states (both were all-caps slabs faded to 0.7
   while "connecting"), titles' textShadows killed, subtitles to Type.voice 15, cards off hardcoded black onto

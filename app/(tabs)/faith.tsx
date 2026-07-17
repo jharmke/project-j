@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Reanimated, { FadeInDown } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, router, useLocalSearchParams } from 'expo-router';
@@ -224,10 +225,10 @@ export default function FaithScreen() {
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: headerH + 16, paddingBottom: insets.bottom + TAB_SCROLL_PAD }}
         showsVerticalScrollIndicator={false}
       >
-        {visibleCards.map(id => (
-          <View key={id} onLayout={e => { cardOffsets.current[id] = e.nativeEvent.layout.y; }}>
+        {visibleCards.map((id, idx) => (
+          <Reanimated.View key={id} entering={FadeInDown.delay(idx * 60).springify()} onLayout={e => { cardOffsets.current[id] = e.nativeEvent.layout.y; }}>
             {renderCard(id)}
-          </View>
+          </Reanimated.View>
         ))}
       </ScrollView>
 

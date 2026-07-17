@@ -12,6 +12,9 @@ import { triggerHaptic } from '@/utils/haptics';
 import { THEMES } from '../../theme';
 import { isOnboardingPreview } from '../../utils/onboardingPreview';
 import { getModeAccentTints, getSessionStyleMode } from '../../utils/modeAccent';
+import BackgroundLayers from '../../components/BackgroundLayers';
+import PrimaryCTA from '../../components/PrimaryCTA';
+import { BlurView } from 'expo-blur';
 import { storageSet } from '../../utils/storage';
 import { requestNotificationPermission } from '../../services/notifications';
 import { Type, numLine } from '../../typography';
@@ -36,6 +39,35 @@ const ROWS_MINDFUL: BenefitRow[] = [
   { icon: 'stats-chart', label: 'Weekly and monthly recaps', desc: 'Know the moment a new summary is ready.' },
 ];
 
+// Same idea as Apple Health's BeatingHeart, but a bell swings rather than pulses: a quick shake that decays,
+// then a long rest. The rest is what keeps it subtle -- a bell ringing nonstop is a fire alarm.
+function RingingBell({ color }: { color: string }) {
+  const swing = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const t = (toValue: number, duration: number) =>
+      Animated.timing(swing, { toValue, duration, useNativeDriver: true });
+    const ring = Animated.loop(
+      Animated.sequence([
+        t(1, 90), t(-1, 130), t(0.7, 120), t(-0.5, 110), t(0.25, 100), t(0, 90),
+        Animated.delay(2400),
+      ])
+    );
+    ring.start();
+    return () => ring.stop();
+  }, []);
+
+  // Small arc. A bell pivots at its crown, but RN rotates about centre, so a wide swing reads as the whole
+  // bell sliding rather than swinging -- 9 degrees is where it still looks hinged.
+  const rotate = swing.interpolate({ inputRange: [-1, 1], outputRange: ['-9deg', '9deg'] });
+
+  return (
+    <Animated.View style={{ transform: [{ rotate }] }}>
+      <Ionicons name="notifications" size={26} color={color} />
+    </Animated.View>
+  );
+}
+
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
 
@@ -53,7 +85,6 @@ export default function NotificationsScreen() {
   const cardAnim  = useRef(new Animated.Value(0)).current;
   const cardSlide = useRef(new Animated.Value(18)).current;
   const btnAnim   = useRef(new Animated.Value(0)).current;
-  const btnScale  = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     AsyncStorage.getItem('pj_settings').then(raw => {
@@ -100,10 +131,6 @@ export default function NotificationsScreen() {
     if (connecting) return;
     if (isOnboardingPreview()) { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); router.push('/onboarding/all-set'); return; }
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
-    Animated.sequence([
-      Animated.timing(btnScale, { toValue: 0.97, duration: 80, useNativeDriver: true }),
-      Animated.timing(btnScale, { toValue: 1.0,  duration: 80, useNativeDriver: true }),
-    ]).start();
     setConnecting(true);
     try {
       await requestNotificationPermission();
@@ -121,10 +148,13 @@ export default function NotificationsScreen() {
   };
 
   return (
-    <LinearGradient colors={['#c4c8e8', '#dadcef', '#f0f0f5']} style={{ flex: 1 }}>
+    <LinearGradient colors={[theme.gradientEnd, theme.gradientEnd]} style={{ flex: 1 }}>
+      <BackgroundLayers glow={accent} />
 
-      {/* Progress bar */}
-      <View style={[styles.progressBar, { paddingTop: insets.top + 12 }]}>
+      {/* Progress bar. Frosted chrome, absolute, glued to the top -- content scrolls under it. */}
+      <View style={[styles.progressBar, { paddingTop: insets.top + 12, borderBottomColor: theme.borderCard }]}>
+        <BlurView intensity={28} tint="light" style={StyleSheet.absoluteFill} pointerEvents="none" />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.chromeFill }]} pointerEvents="none" />
         <TouchableOpacity
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -138,17 +168,21 @@ export default function NotificationsScreen() {
       </View>
 
       {/* Content */}
-      <View style={styles.content}>
+      <View style={[styles.content, { paddingTop: insets.top + 66 }]}>
 
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
           <Text style={[styles.screenLabel, { color: theme.textMuted }]}>STEP 6 OF 6</Text>
 
-          <View style={[styles.iconBox, { backgroundColor: accent + '12', borderColor: accent + '25' }]}>
-            <Ionicons name="notifications" size={28} color={accent} />
+          {/* Icon FLOATS top-right, same as Apple Health. Stacked above the title it cost ~75px of height
+              for one decoration; in a row with the title it would steal width and force the title smaller,
+              breaking the one thing every screen in this flow shares -- the title's size and left edge. */}
+          <View>
+            <View style={[styles.iconBox, { backgroundColor: accent + '12', borderColor: accent + '25' }]}>
+              <RingingBell color={accent} />
+            </View>
+            <Text style={[styles.title, { color: accent }]}>{title}</Text>
           </View>
-
-          <Text style={[styles.title, { color: accent }]}>{title}</Text>
-          <Text style={[styles.subtitle, { color: theme.textMuted }]}>{subtitle}</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>{subtitle}</Text>
         </Animated.View>
 
         <Animated.View style={{ opacity: cardAnim, transform: [{ translateY: cardSlide }] }}>
@@ -175,42 +209,36 @@ export default function NotificationsScreen() {
             ))}
           </View>
 
-          <Text style={[styles.reassure, { color: theme.textDim }]}>
-            Quiet hours and a daily limit are on by default, so it stays helpful, never noisy.
-          </Text>
-          <Text style={[styles.pointer, { color: theme.textMuted }]}>
-            Fine-tune exactly what you get anytime in{' '}
+          {/* ONE line, not two. This was two centred paragraphs at two different sizes saying two halves of
+              the same thought ("we won't spam you" / "you can change it") -- a wall of small print under a
+              clean card. Also off textDim: the reassurance is what earns the permission. */}
+          <Text style={[styles.reassure, { color: theme.textSecondary }]}>
+            Quiet hours and a daily limit are on by default. Change anything anytime in{' '}
             <Text style={{ color: accent, fontFamily: Type.uiSemibold }}>Settings {'>'} Notifications</Text>.
           </Text>
         </Animated.View>
 
       </View>
 
-      {/* Footer */}
+      {/* Footer. Frosted chrome (blur + chromeFill), absolute, like every other screen in the flow. */}
       <Animated.View style={[
         styles.footer,
-        {
-          opacity: btnAnim,
-          paddingBottom: insets.bottom + 16,
-          backgroundColor: theme.gradientEnd,
-          borderTopColor: theme.borderCard,
-        },
+        { opacity: btnAnim, paddingBottom: insets.bottom + 16, borderTopColor: theme.borderCard },
       ]}>
-        <Animated.View style={{ transform: [{ scale: btnScale }], width: '100%' }}>
-          <TouchableOpacity
-            style={[styles.connectBtn, { backgroundColor: accent, opacity: connecting ? 0.7 : 1 }]}
-            onPress={handleEnable}
-            activeOpacity={1}
-            disabled={connecting}
-          >
-            <Text style={styles.connectBtnText}>
-              {connecting ? 'ENABLING...' : 'ENABLE NOTIFICATIONS'}
-            </Text>
-          </TouchableOpacity>
-        </Animated.View>
+        <BlurView intensity={28} tint="light" style={StyleSheet.absoluteFill} pointerEvents="none" />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.chromeFill }]} pointerEvents="none" />
+        <PrimaryCTA
+          label={connecting ? 'Enabling...' : 'Enable Notifications'}
+          fill={accent}
+          disabled={connecting}
+          wrapperStyle={{ width: '100%' }}
+          faceStyle={{ borderRadius: 14, paddingVertical: 17 }}
+          onPress={handleEnable}
+        />
 
+        {/* "Maybe later" is one of only two ways off this screen -- it was on textDim, the dimmest token. */}
         <TouchableOpacity onPress={handleSkip} style={styles.skipBtn} activeOpacity={0.6}>
-          <Text style={[styles.skipText, { color: theme.textDim }]}>Maybe later</Text>
+          <Text style={[styles.skipText, { color: theme.textSecondary }]}>Maybe later</Text>
         </TouchableOpacity>
       </Animated.View>
 
@@ -219,36 +247,34 @@ export default function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  progressBar:    { paddingHorizontal: 24, paddingBottom: 8, flexDirection: 'row', alignItems: 'center' },
+  progressBar:    { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, paddingHorizontal: 24, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 0.5, overflow: 'hidden' },
   progressTrack:  { flex: 1, height: 3, borderRadius: 2, overflow: 'hidden' },
   progressFill:   { height: '100%', borderRadius: 2 },
   backBtn:        { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
 
-  content:        { flex: 1, paddingHorizontal: 24, paddingTop: 24 },
+  content:        { flex: 1, paddingHorizontal: 24 },
   screenLabel:    { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 16 },
 
-  iconBox:        { width: 56, height: 56, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
+  iconBox:        { position: 'absolute', right: 0, top: 2, width: 48, height: 48, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 
-  title:          { fontSize: 40, fontFamily: Type.display, letterSpacing: 0.3, lineHeight: numLine(40), marginBottom: 10,
-                    textShadowColor: 'rgba(0,0,0,0.12)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
-  subtitle:       { fontSize: 13, fontFamily: Type.ui, lineHeight: 20, marginBottom: 22 },
+  // No textShadow -- a drop shadow on a display title is a trick nothing else in the app uses.
+  title:          { fontSize: 40, fontFamily: Type.display, letterSpacing: 0.3, lineHeight: numLine(40), marginBottom: 10 },
+  // VOICE: this is the app talking, not a label.
+  subtitle:       { fontSize: 15, fontFamily: Type.voice, lineHeight: 22, marginBottom: 22 },
 
+  // THEMES['light'] directly, not `theme` -- StyleSheet.create runs at module scope.
   card:           { borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14,
-                    shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 },
+                    shadowColor: THEMES['light'].cardShadow, shadowOpacity: THEMES['light'].cardShadowOpacity,
+                    shadowOffset: { width: 0, height: 3 }, shadowRadius: 8, elevation: 2 },
   row:            { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 11, gap: 12 },
   iconCircle:     { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   rowText:        { flex: 1 },
   rowLabel:       { fontSize: 13, fontFamily: Type.uiSemibold, marginBottom: 1 },
   rowDesc:        { fontSize: 11, fontFamily: Type.ui, lineHeight: 16 },
 
-  reassure:       { fontSize: 11, fontFamily: Type.ui, lineHeight: 16, textAlign: 'center', marginTop: 16, paddingHorizontal: 8 },
+  reassure:       { fontSize: 12, fontFamily: Type.ui, lineHeight: 17, textAlign: 'center', marginTop: 16, paddingHorizontal: 8 },
 
-  footer:         { paddingHorizontal: 24, paddingTop: 12, borderTopWidth: 0.5, alignItems: 'center' },
-  connectBtn:     { width: '100%', borderRadius: 14, paddingVertical: 17,
-                    alignItems: 'center', justifyContent: 'center',
-                    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8 },
-  connectBtnText: { fontSize: 16, fontFamily: Type.uiBold, letterSpacing: 1, color: '#ffffff' },
+  footer:         { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 24, paddingTop: 12, borderTopWidth: 0.5, alignItems: 'center', overflow: 'hidden' },
   skipBtn:        { paddingVertical: 12 },
-  skipText:       { fontSize: 14, fontFamily: Type.ui },
-  pointer:        { fontSize: 12, fontFamily: Type.ui, marginTop: 10, textAlign: 'center', paddingHorizontal: 8 },
+  skipText:       { fontSize: 14, fontFamily: Type.uiSemibold },
 });

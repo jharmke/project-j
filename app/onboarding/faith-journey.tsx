@@ -407,7 +407,8 @@ const styles = StyleSheet.create({
   progressFill:    { height: '100%', borderRadius: 2 },
   backBtn:         { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   content:         { flex: 1, paddingHorizontal: 24 },
-  screenLabel:     { fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 },
+  // 9/ls3 -- matches every other step label in the flow.
+  screenLabel:     { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 },
   // 44, not 52. Two lines of display type was the single biggest block on the screen and the verse had to
   // live somewhere. Still the loudest thing here by a mile.
   title:           { fontSize: 44, fontFamily: Type.display, letterSpacing: 0.3, lineHeight: numLine(44), marginBottom: 10 },

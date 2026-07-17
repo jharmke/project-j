@@ -28,6 +28,25 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-16 **Onboarding steps 5 + 6 (Apple Health, Notifications).** Ground + glow in the MODE's colour,
+  frosted top + footer, molded PrimaryCTAs with real disabled states (both were all-caps slabs faded to 0.7
+  while "connecting"), titles' textShadows killed, subtitles to Type.voice 15, cards off hardcoded black onto
+  the theme shadow, and every `textDim` line raised -- incl. "Maybe later", which is one of only TWO ways off
+  each screen, and Apple Health's read-only line (the reassurance that earns the permission).
+  >> HEADER ICONS NOW FLOAT TOP-RIGHT (heart, bell). Stacked above the title they cost ~75px of height for
+  one decoration and pushed the card onto the footer; a ROW with the title steals width and forces the title
+  down to 34, which breaks **the one thing every screen in this flow shares: the title's size and left edge**
+  (Justin caught that -- "every page's header title is in the same spot and now we're changing it"). The
+  corner is dead space beside a short first line, so the icon rides there free. Use this for any future
+  header icon. The bell RINGS (9deg decaying swing + a 2.4s rest; wider reads as sliding, no rest reads as a
+  fire alarm) -- same idea as the existing BeatingHeart.
+  >> Step label standardised to 9px/ls3 on ALL screens (I had bumped 4 + 5 to 11). Rule: SECTION names grew
+  to 11 because you hunt for them mid-scroll; the STEP label sits in the same spot on every screen and never
+  needs it.
+  >> Notifications: the two small-print paragraphs under the card merged into ONE line (two sizes, two
+  centred blocks, two halves of the same thought). **The "Weekly and monthly recaps" row is HONEST -- checked
+  services/notifications.ts: pj_weekly_summary fires Sunday, pj_monthly_summary on the 1st, per-mode copy,
+  deep-linked, gated on categorySummaries. Justin suspected it was never built; it is.**
 - 2026-07-16 **Onboarding step 4 (Faith Journey) polished INSIDE its own dark world.** It is the only dark
   screen in an all-light flow (and does not match the app's own light+amber faith pages either) -- KEPT
   dark deliberately: it is the one moment of gravity, and embers rising read as incense. Frosted top + footer

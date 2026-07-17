@@ -11,6 +11,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme, THEMES } from '../../theme';
+import BackgroundLayers from '../../components/BackgroundLayers';
+import PrimaryCTA from '../../components/PrimaryCTA';
+import { BlurView } from 'expo-blur';
 import { isOnboardingPreview } from '../../utils/onboardingPreview';
 import { getModeAccentTints, getSessionStyleMode } from '../../utils/modeAccent';
 import { storageSet } from '../../utils/storage';
@@ -97,7 +100,6 @@ export default function AppleHealthScreen() {
     slide: useRef(new Animated.Value(18)).current,
   }));
   const btnAnim  = useRef(new Animated.Value(0)).current;
-  const btnScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -137,10 +139,6 @@ export default function AppleHealthScreen() {
     if (connecting) return;
     if (isOnboardingPreview()) { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); router.push('/onboarding/notifications'); return; }
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
-    Animated.sequence([
-      Animated.timing(btnScale, { toValue: 0.97, duration: 80, useNativeDriver: true }),
-      Animated.timing(btnScale, { toValue: 1.0,  duration: 80, useNativeDriver: true }),
-    ]).start();
     setConnecting(true);
     try {
       const { requestAuthorization } = require('@kingstinct/react-native-healthkit');
@@ -171,12 +169,13 @@ export default function AppleHealthScreen() {
   };
 
   return (
-    <LinearGradient
-      colors={['#c4c8e8', '#dadcef', '#f0f0f5']}
-      style={{ flex: 1 }}
-    >
-      {/* Progress bar */}
-      <View style={[styles.progressBar, { paddingTop: insets.top + 12 }]}>
+    <LinearGradient colors={[theme.gradientEnd, theme.gradientEnd]} style={{ flex: 1 }}>
+      <BackgroundLayers glow={accent} />
+
+      {/* Progress bar. Frosted chrome, absolute, glued to the top -- content scrolls under it. */}
+      <View style={[styles.progressBar, { paddingTop: insets.top + 12, borderBottomColor: theme.borderCard }]}>
+        <BlurView intensity={28} tint="light" style={StyleSheet.absoluteFill} pointerEvents="none" />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.chromeFill }]} pointerEvents="none" />
         <TouchableOpacity
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -190,20 +189,26 @@ export default function AppleHealthScreen() {
       </View>
 
       {/* Content -- static, no scroll */}
-      <View style={styles.content}>
+      <View style={[styles.content, { paddingTop: insets.top + 66 }]}>
 
         {/* Header block */}
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
           <Text style={[styles.screenLabel, { color: theme.textMuted }]}>STEP 5 OF 6</Text>
 
-          <View style={[styles.ahIconBox, { backgroundColor: AH_RED + '12', borderColor: AH_RED + '25' }]}>
-            <BeatingHeart />
+          {/* Heart FLOATS in the top-right corner. Stacked above the title it cost ~75px of height for one
+              decoration and pushed the card onto the footer; in a ROW with the title it stole width and
+              forced the title down to 34, which broke the one thing every screen in this flow shares -- the
+              title's size and left edge. "Better Data." is short, so the corner is dead space and the icon
+              rides there for free. The title is untouched. */}
+          <View>
+            <View style={[styles.ahIconBox, { backgroundColor: AH_RED + '12', borderColor: AH_RED + '25' }]}>
+              <BeatingHeart />
+            </View>
+            <Text style={[styles.title, { color: accent }]}>
+              Better Data.{'\n'}Better Results.
+            </Text>
           </View>
-
-          <Text style={[styles.title, { color: accent }]}>
-            Better Data.{'\n'}Better Results.
-          </Text>
-          <Text style={[styles.subtitle, { color: theme.textMuted }]}>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
             Connect Apple Health and Project J gets smarter. Every metric is more accurate, more personal, and more useful.
           </Text>
         </Animated.View>
@@ -239,34 +244,29 @@ export default function AppleHealthScreen() {
 
       </View>
 
-      {/* Footer */}
+      {/* Footer. Frosted chrome (blur + chromeFill), absolute, like every other screen in the flow. */}
       <Animated.View style={[
         styles.footer,
-        {
-          opacity: btnAnim,
-          paddingBottom: insets.bottom + 16,
-          backgroundColor: theme.gradientEnd,
-          borderTopColor: theme.borderCard,
-        },
+        { opacity: btnAnim, paddingBottom: insets.bottom + 16, borderTopColor: theme.borderCard },
       ]}>
-        <Animated.View style={{ transform: [{ scale: btnScale }], width: '100%' }}>
-          <TouchableOpacity
-            style={[styles.connectBtn, { backgroundColor: accent, opacity: connecting ? 0.7 : 1 }]}
-            onPress={handleConnect}
-            activeOpacity={1}
-            disabled={connecting}
-          >
-            <Text style={styles.connectBtnText}>
-              {connecting ? 'CONNECTING...' : 'CONNECT APPLE HEALTH'}
-            </Text>
-          </TouchableOpacity>
-        </Animated.View>
+        <BlurView intensity={28} tint="light" style={StyleSheet.absoluteFill} pointerEvents="none" />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.chromeFill }]} pointerEvents="none" />
+        <PrimaryCTA
+          label={connecting ? 'Connecting...' : 'Connect Apple Health'}
+          fill={accent}
+          disabled={connecting}
+          wrapperStyle={{ width: '100%' }}
+          faceStyle={{ borderRadius: 14, paddingVertical: 17 }}
+          onPress={handleConnect}
+        />
 
         <TouchableOpacity onPress={handleSkip} style={styles.skipBtn} activeOpacity={0.6}>
-          <Text style={[styles.skipText, { color: theme.textDim }]}>Maybe later</Text>
+          <Text style={[styles.skipText, { color: theme.textSecondary }]}>Maybe later</Text>
         </TouchableOpacity>
 
-        <Text style={[styles.readOnly, { color: theme.textDim }]}>
+        {/* Both of these were on textDim -- the dimmest token in the app. "Maybe later" is one of only two
+            ways off this screen, and the read-only line is the reassurance that earns the permission. */}
+        <Text style={[styles.readOnly, { color: theme.textSecondary }]}>
           Read-only access. Project J never modifies your Apple Health data.
         </Text>
       </Animated.View>
@@ -276,34 +276,36 @@ export default function AppleHealthScreen() {
 }
 
 const styles = StyleSheet.create({
-  progressBar:    { paddingHorizontal: 24, paddingBottom: 8, flexDirection: 'row', alignItems: 'center' },
+  progressBar:    { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, paddingHorizontal: 24, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 0.5, overflow: 'hidden' },
   progressTrack:  { flex: 1, height: 3, borderRadius: 2, overflow: 'hidden' },
   progressFill:   { height: '100%', borderRadius: 2 },
   backBtn:        { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
 
-  content:        { flex: 1, paddingHorizontal: 24, paddingTop: 24 },
+  content:        { flex: 1, paddingHorizontal: 24 },
+  // 9/ls3 -- matches every other step label in the flow. The SECTION names on Your Style went to 11 because
+  // you hunt for those mid-scroll; the step label sits in the same spot on every screen and never needs it.
   screenLabel:    { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 16 },
 
-  ahIconBox:      { width: 56, height: 56, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
+  ahIconBox:      { position: 'absolute', right: 0, top: 2, width: 48, height: 48, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 
-  title:          { fontSize: 40, fontFamily: Type.display, letterSpacing: 0.3, lineHeight: numLine(40), marginBottom: 10,
-                    textShadowColor: 'rgba(0,0,0,0.12)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
-  subtitle:       { fontSize: 13, fontFamily: Type.ui, lineHeight: 20, marginBottom: 22 },
+  // No textShadow -- a drop shadow on a display title is a trick nothing else in the app uses.
+  title:          { fontSize: 40, fontFamily: Type.display, letterSpacing: 0.3, lineHeight: numLine(40), marginBottom: 10 },
+  // VOICE: this is the app talking, not a label.
+  subtitle:       { fontSize: 15, fontFamily: Type.voice, lineHeight: 22, marginBottom: 22 },
 
+  // THEMES['light'] directly, not `theme`: that const lives INSIDE the component, and StyleSheet.create
+  // runs at module scope.
   card:           { borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14,
-                    shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 },
+                    shadowColor: THEMES['light'].cardShadow, shadowOpacity: THEMES['light'].cardShadowOpacity,
+                    shadowOffset: { width: 0, height: 3 }, shadowRadius: 8, elevation: 2 },
   healthRow:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 11, gap: 12 },
   iconCircle:     { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   rowText:        { flex: 1 },
   rowLabel:       { fontSize: 13, fontFamily: Type.uiSemibold, marginBottom: 1 },
   rowDesc:        { fontSize: 11, fontFamily: Type.ui, lineHeight: 16 },
 
-  footer:         { paddingHorizontal: 24, paddingTop: 12, borderTopWidth: 0.5, alignItems: 'center' },
-  connectBtn:     { width: '100%', borderRadius: 14, paddingVertical: 17,
-                    alignItems: 'center', justifyContent: 'center',
-                    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8 },
-  connectBtnText: { fontSize: 16, fontFamily: Type.uiBold, letterSpacing: 1, color: '#ffffff' },
+  footer:         { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 24, paddingTop: 12, borderTopWidth: 0.5, alignItems: 'center', overflow: 'hidden' },
   skipBtn:        { paddingVertical: 12 },
-  skipText:       { fontSize: 14, fontFamily: Type.ui },
+  skipText:       { fontSize: 14, fontFamily: Type.uiSemibold },
   readOnly:       { fontSize: 11, fontFamily: Type.ui, marginTop: 2, textAlign: 'center' },
 });

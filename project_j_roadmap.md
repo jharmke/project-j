@@ -28,6 +28,13 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-17 **All six tabs now cascade on first open, tab-mount stutter fully closed.** Started as one
+  TestFlight complaint, ended up touching Workout, Log, Stats, Faith, Profile, and Home -- each gated
+  behind its own loaded-state (or given a straight cascade where no gate was needed) and revealing its
+  content as one staggered wave instead of popping in. Caught and fixed two real bugs along the way (a
+  false "No exercises yet" / "No data yet" flash, and a hook-order crash), plus killed a redundant Profile
+  section. Tab-switch fade itself: left as-is, Justin's call -- the original complaint was the mount, not
+  the fade. Full story in the archive.
 - 2026-07-17 **Profile's Water Presets section REMOVED** -- redundant with the water gear icon on Home/Log,
   which already fully edits the same `pj_profile.waterPresets` value; Justin had been on the fence on this
   living on Profile for a while. Removed the JSX only -- the `waterPresets` field stays untouched in
@@ -628,91 +635,6 @@ are separate pre-submission checklists, NOT part of this menu.
   is the known DOUBLED-UP TOP-LIGHT case -- it has a hand-rolled 1.5px bright accentBlueRaw top border AND
   ButtonShine. Rule: shine owns the top-light, so drop the BORDER (a border stays even on 4 sides). Also
   DEAD CODE in that file: `addNewBtn` + `addNewBtnText` styles are defined and never used.
-- [NOW, REBUILT ON WORKOUT 2026-07-17 -- AWAITING DEVICE TEST] **First tab open stutters -- lazy tab
-  mounting.** ROOT CAUSE, confirmed by reading the code (not lazy mounting itself -- React Navigation
-  already keeps a tab mounted after its first visit, which is WHY only the first-ever open per session
-  stutters and every later one is instant, matching what Justin saw): each tab's first-mount effect reads
-  AsyncStorage + HealthKit + parses JSON + fires several setStates in the SAME window the tab-switch fade
-  is playing. REJECTED FIX: `lazy={false}` (preload all 6 tabs at boot) -- moves all six tabs' worth of
-  work onto Home's own cold-launch critical path, trading "switching tabs stutters" for "the first thing
-  you ever see is slower."
-  >> **FIRST BUILD (narrow, superseded same day):** deferred the load, cascaded only the exercise cards.
-  Device-tested and caught a WORSE bug: Today's Effort and the Note box were already mounted from frame
-  one (their boxes don't depend on data to exist, only their VALUES do), so only the exercise section had
-  a real "arrival" to hook an entrance onto -- and because that section swaps between two very
-  differently-shaped states (the real "No exercises yet" empty-state UI, complete with Load Routine/
-  Browse Library CTAs, vs. a populated card), the deferred load made the FALSE "you have nothing logged"
-  window LONGER, not shorter (transition-time-plus-read-time, stacked, instead of read-time alone). Justin
-  caught this from a screen recording, not a guess -- worth remembering that this class of bug (empty
-  state shown as if confirmed, before storage is actually checked) is invisible to eyeballing without
-  timestamps.
-  >> **REBUILT, this is the shipped version:** a third state was missing -- not "has data" / "confirmed
-  empty" but "still checking." The ENTIRE data-dependent block (day tag, exercise section, Today's Effort,
-  Workout Note) is now gated behind `loaded` as ONE unit. While `!loaded` it shows `WorkoutDaySkeleton`
-  (pulsing gray bars, ~1.6s of 0.6<->0.22 opacity loop) instead of ANY real content or claim -- reusing the
-  exact pulse recipe from the EvR loading skeleton (diagnostic-report-view.tsx's `cardPulse`/
-  `SkeletonFeedCard`) so the app has one loading language, not two. The moment `loaded` flips true, the
-  whole cluster mounts for real and cascades in together (Reanimated `FadeInDown.springify()`): exercise
-  cards stagger at `idx*60`, Today's Effort at `exerciseCount*60+60`, the Note box at `+120` -- landing as
-  one wave instead of one card animating while everything around it just pops. This never shows a false
-  empty state (nothing renders until we actually know), never reflows the page (nothing swaps between
-  differently-sized states, it's skeleton-or-real, always), and the earlier "why did only Indoor Walking
-  animate" confusion is gone because everything genuinely mounts together now. `useFocusEffect`'s
-  reload-on-every-focus is UNTOUCHED, still immediate -- that is what keeps the screen in sync with edits
-  made elsewhere, deferring it would be a correctness bug not a perf fix.
-  >> **FAB spring cut, same session:** the "+" FAB's mount-time spring-in (0->1 scale, 300ms delay) was
-  pre-existing, unrelated code Claude did not add -- Justin flagged the asymmetry (Otto sits static right
-  next to it, always has) and killed it. `fabScale` starts at 1 now (no entrance) but is STILL dual-purpose
-  -- the same value also drives the press-in/press-out squish on tap, which had to be left untouched.
-  >> This is the roadmap's own long-parked "card stagger on mount" item (see PARKED list), shipped here as
-  the answer to a real bug instead of built in isolation later.
-  >> **LOG TAB DONE 2026-07-17, device-verified, SAME shape** -- Today's Total, Advanced Nutrition, every
-  meal slot, the AI Estimator entry, Water, and the IF card all gated + cascading. Confirmed to scale off
-  `mealSlots.length`, not a hardcoded count, so it holds for any number of custom meal slots.
-  >> **HARD-WON LESSON, read before touching Stats/Profile:** gating a card behind `!loaded` can crash the
-  screen if that card has an INLINE hook call in its JSX (`useAnimatedStyle(...)` used directly as a style
-  prop, not assigned to a variable first). It was safe before because the JSX rendered unconditionally;
-  making it conditional makes the HOOK CALL conditional too -- "Rendered more hooks than during the
-  previous render" the instant `loaded` flips true. Caught on Log's calorie progress bar, fixed by moving
-  the hook to the component's top level and referencing the resulting style in the JSX. BEFORE gating any
-  card on Stats/Profile: grep that card's JSX for `use[A-Z]` and move anything inline out first.
-  >> **STATS DONE 2026-07-17** -- section-based, not card-based: every collapsed section (Trends, Records,
-  Streaks, Challenges, HR Zones, Calendar, Reports) is a static label with no data risk, so all 8 cascade
-  freely via one `entering` prop added to the shared CollapsibleSection component. At a Glance (open by
-  default) is the one section with a real number at risk -- same false-claim bug as Workout's, gated behind
-  its own `glanceLoaded` flag + skeleton. Custom graph cards live INSIDE Trends and inherit its cascade as
-  one unit (correct -- Trends doesn't even mount its content until manually expanded).
-  >> **FAITH DONE 2026-07-17** -- simpler than expected, no gate needed anywhere: the card list starts with
-  sensible defaults (not empty/zero), so there's no false-state risk at the list level, just a straight
-  per-card cascade. Verse of the Day and Gratitude checked and confirmed ALREADY correct on their own
-  (Verse renders nothing until ready; Gratitude's zero-to-real transition is a deliberate `animateFromZero`
-  design, not a bug -- Justin caught Claude overclaiming this one). Bible & Plans and Prayer DO have the
-  same false-claim shape (first-timer framing / "no plans yet" / "add your first prayer" can show before
-  their own loads finish) -- Justin has never seen it happen and said disregard unless it becomes a real
-  issue; NOT fixed, logged here only so it isn't rediscovered as new.
-  >> **PROFILE DONE 2026-07-17** -- section-based like Stats, not card-based. Basic Info + Membership open
-  by default, rest collapsed (Activity Level, Your Estimates, Weight Goal). Same shared-component pattern:
-  one `entering` prop added to `ProfileSection`, all 6 sections staggered. (Water Presets was the 6th
-  section at the time this cascade was built; REMOVED the same day as redundant -- see RECENTLY SHIPPED.)
-  >> **HOME DONE 2026-07-17 -- ALL SIX TABS NOW CASCADE.** Main card list + pinned graph cards continue the
-  same stagger wave (graph cards pick up right where the main cards left off, not a separately-timed
-  batch). Carousels inside individual cards were deliberately left untouched (Justin's call) -- they just
-  ride along as part of whatever card contains them.
-  >> **HOME'S CASCADE IS INVISIBLE ON A REAL COLD LAUNCH, BY DESIGN -- not a bug, confirmed by reading
-  app/_layout.tsx.** The app plays a custom launch-splash cinematic AFTER the native splash but BEFORE
-  Home is revealed (specifically to avoid flashing Home underneath); Home fully mounts and cascades hidden
-  behind that splash, already settled by the time it lifts. This fires on EVERY true kill+relaunch
-  (`coldSplashConsumed` is module-scope, resets every fresh JS load) -- exactly how Justin tests, which is
-  why he saw nothing. It IS visible on one real path: a brand-new user landing on Home right after
-  onboarding's All Set screen, which routes straight to `/(tabs)` with no splash gate at all. Justin's
-  call: leave it as-is for now, a second "arrival" stacked right after the splash cinematic might read as
-  redundant rather than premium. The idea of delaying the cascade until the splash lifts is parked in
-  project_j_backlog.md (LOW PRIORITY / FUTURE) -- not validated as worth building, just not lost.
-  >> **THE TAB-SWITCH FADE IS A SEPARATE QUESTION, DELIBERATELY DEFERRED** until the mount fix is verified
-  on device. Justin finds the quick fade-out/fade-in "jittery, not super premium/luxury" -- but you cannot
-  judge the animation while it is fading into an unfinished screen. Claude's instinct to test once this
-  IS verified: the premium answer is probably LESS animation, not a fancier one (native iOS tabs swap
-  instantly; Apple Health/Fitness do not crossfade). Do not decide it blind.
 - [NOW] [TRACK, DECIDED + SPECCED 2026-07-14 -> building] **VISUAL REFRESH.** Justin: the app "still looks
   like a Claude/AI generated app -- a blank form page with data slapped on it." Diagnosis was NOT the headers
   he first pointed at: (1) every card is the same width/weight so nothing leads, (2) every button is FLAT

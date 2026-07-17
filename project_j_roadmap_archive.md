@@ -11,6 +11,95 @@
 
 ---
 
+## 🎬 TAB-MOUNT STUTTER -> ALL SIX TABS CASCADE (CLOSED 2026-07-17)
+Started as one TestFlight complaint ("first tab open feels choppy") and ended up touching every tab in
+the app. ROOT CAUSE, confirmed by reading the code, not lazy mounting itself: React Navigation already
+keeps a tab mounted after its first visit (why only the first-ever open per session stuttered, matching
+what Justin saw). Each tab's first-mount effect read AsyncStorage + parsed JSON + fired several setStates
+in the SAME window the tab-switch fade was playing. REJECTED FIX: `lazy={false}` (preload all 6 tabs at
+boot) -- moves all six tabs' worth of work onto Home's own cold-launch critical path, trading "switching
+tabs stutters" for "the first thing you ever see is slower."
+
+**Workout (first tab built, and the one that taught every lesson below):**
+- First attempt (narrow): deferred the load, cascaded only the exercise cards. Device-tested and caught a
+  WORSE bug: Today's Effort and the Note box were already mounted from frame one (their boxes don't depend
+  on data to exist, only their VALUES do), so only the exercise section had a real "arrival" to hook an
+  entrance onto -- and because that section swaps between two very differently-shaped states (the real
+  "No exercises yet" empty-state UI, complete with Load Routine/Browse Library CTAs, vs. a populated card),
+  the deferred load made the FALSE "you have nothing logged" window LONGER, not shorter (transition-time-
+  plus-read-time, stacked, instead of read-time alone). Justin caught this from a screen recording, not a
+  guess -- this class of bug (empty state shown as if confirmed, before storage is actually checked) is
+  invisible to eyeballing without timestamps.
+- Rebuilt (shipped version): a third state was missing -- not "has data" / "confirmed empty" but "still
+  checking." The ENTIRE data-dependent block (day tag, exercise section, Today's Effort, Workout Note) is
+  gated behind `loaded` as ONE unit. While `!loaded` it shows a pulsing gray-bar skeleton (reusing the EvR
+  loading skeleton's pulse recipe) instead of ANY real content or claim. The moment `loaded` flips true,
+  the whole cluster cascades in together (Reanimated `FadeInDown.springify()`, staggered by position).
+  Never shows a false empty state, never reflows the page, never confuses "why did only one thing
+  animate" because everything genuinely mounts together. `useFocusEffect`'s reload-on-every-focus stayed
+  untouched and immediate -- deferring it would be a correctness bug, not a perf fix.
+- The "+" FAB's mount-time spring-in (pre-existing, unrelated code) was cut -- Otto sits static right next
+  to it with no animation of his own, and the asymmetry read as an accident. `fabScale` starts at 1 now,
+  still dual-purpose (also drives the press-in/press-out squish).
+- This is the roadmap's own long-parked "card stagger on mount" item, shipped here as the answer to a
+  real bug instead of built in isolation later.
+
+**Log:** same shape as Workout -- Today's Total, Advanced Nutrition, every meal slot, the AI Estimator
+entry, Water, and the IF card all gated + cascading. Scales off `mealSlots.length`, not a hardcoded count,
+so it holds for any number of custom meal slots.
+
+**HARD-WON LESSON, caught on Log, relevant to any future gating work:** gating a card behind `!loaded` can
+crash the screen if that card has an INLINE hook call in its JSX (`useAnimatedStyle(...)` used directly as
+a style prop, not assigned to a variable first). It was safe before because the JSX rendered
+unconditionally; making it conditional makes the HOOK CALL conditional too -- "Rendered more hooks than
+during the previous render" the instant `loaded` flips true. Fixed by moving the hook to the component's
+top level and referencing the resulting style in the JSX. Before gating any card: grep its JSX for
+`use[A-Z]` and move anything inline out first.
+
+**Stats:** section-based, not card-based -- every collapsed section (Trends, Records, Streaks, Challenges,
+HR Zones, Calendar, Reports) is a static label with no data risk, so all 8 cascade freely via one
+`entering` prop added to the shared CollapsibleSection component (not touched individually). At a Glance
+(open by default) is the one section with a real number at risk -- same false-claim bug as Workout's,
+gated behind its own `glanceLoaded` flag + skeleton. Custom graph cards live INSIDE Trends and inherit its
+cascade as one unit (correct -- Trends doesn't even mount its content until manually expanded).
+
+**Faith:** simpler than expected, no gate needed anywhere -- the card list starts with sensible defaults
+(not empty/zero), so there's no false-state risk at the list level, just a straight per-card cascade.
+Verse of the Day and Gratitude checked and confirmed ALREADY correct on their own (Verse renders nothing
+until ready; Gratitude's zero-to-real transition is a deliberate `animateFromZero` design, not a bug --
+Justin caught Claude overclaiming this one). Bible & Plans and Prayer DO have the same false-claim shape
+(first-timer framing / "no plans yet" / "add your first prayer" can show before their own loads finish) --
+Justin has never seen it happen and said disregard unless it becomes a real issue; NOT fixed, logged here
+only so it isn't rediscovered as new.
+
+**Profile:** section-based like Stats. Basic Info + Membership open by default, rest collapsed (Activity
+Level, Your Estimates, Weight Goal). Same shared-component pattern: one `entering` prop added to
+`ProfileSection`, all sections staggered. (Water Presets was a 6th section at the time; removed the same
+day as redundant with the Home/Log water gear icon -- see its own archive entry.)
+
+**Home:** main card list + pinned graph cards continue the same stagger wave (graph cards pick up right
+where the main cards left off, not a separately-timed batch). Carousels inside individual cards
+deliberately left untouched (Justin's call) -- they ride along as part of whatever card contains them.
+Home's cascade is INVISIBLE on a real cold launch, by design, not a bug: the app plays a custom
+launch-splash cinematic after the native splash but before Home is revealed (app/_layout.tsx, specifically
+to avoid flashing Home underneath), so Home fully mounts and cascades hidden behind that splash, already
+settled by the time it lifts. This fires on every true kill+relaunch (`coldSplashConsumed` is
+module-scope, resets every fresh JS load) -- exactly how Justin tests, which is why he saw nothing. It IS
+visible for a brand-new user landing on Home right after onboarding's All Set screen, which has no splash
+gate. Justin's call: leave it invisible on cold launch, a second "arrival" stacked right after the splash
+cinematic might read as redundant rather than premium. Delaying the cascade until the splash lifts is
+parked in project_j_backlog.md (LOW PRIORITY / FUTURE) -- not validated as worth building, just not lost.
+
+**The tab-switch fade itself:** Justin's original "jittery, not super premium" complaint was about the
+first switch to each tab per session -- exactly the mount stutter this whole item fixed. With that gone,
+there was no remaining complaint about the fade itself to act on. Claude's case for cutting it entirely
+(native iOS tabs -- Settings, Mail, Health, Photos, App Store -- all switch instantly, no fade, matching
+the Whoop/Oura benchmark this app already uses) is on record here if this ever comes up again, but
+Justin's call was to leave the fade alone. Do not reopen without a new, specific complaint about the fade
+itself, not the mount.
+
+---
+
 ## ✨ CHIP / ICON-BUTTON TOP SHINE + THE MOLDED-CTA ROLLOUT (visual refresh, CLOSED 2026-07-17)
 The two button-texture threads, retired together once the code was actually read instead of the roadmap
 believed. Final state, verified 2026-07-17: ButtonShine in 38 code files, PrimaryCTA in 41.

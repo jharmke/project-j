@@ -668,9 +668,29 @@ are separate pre-submission checklists, NOT part of this menu.
   previous render" the instant `loaded` flips true. Caught on Log's calorie progress bar, fixed by moving
   the hook to the component's top level and referencing the resulting style in the JSX. BEFORE gating any
   card on Stats/Profile: grep that card's JSX for `use[A-Z]` and move anything inline out first.
-  >> Stats and Profile still need their OWN pass -- Stats has section headers that are not cards, so the
-  right unit to stagger there is a whole SECTION (header + its content together), not each header alone;
-  do not blind-copy the Workout/Log wiring over.
+  >> **STATS DONE 2026-07-17** -- section-based, not card-based: every collapsed section (Trends, Records,
+  Streaks, Challenges, HR Zones, Calendar, Reports) is a static label with no data risk, so all 8 cascade
+  freely via one `entering` prop added to the shared CollapsibleSection component. At a Glance (open by
+  default) is the one section with a real number at risk -- same false-claim bug as Workout's, gated behind
+  its own `glanceLoaded` flag + skeleton. Custom graph cards live INSIDE Trends and inherit its cascade as
+  one unit (correct -- Trends doesn't even mount its content until manually expanded).
+  >> **FAITH DONE 2026-07-17** -- simpler than expected, no gate needed anywhere: the card list starts with
+  sensible defaults (not empty/zero), so there's no false-state risk at the list level, just a straight
+  per-card cascade. Verse of the Day and Gratitude checked and confirmed ALREADY correct on their own
+  (Verse renders nothing until ready; Gratitude's zero-to-real transition is a deliberate `animateFromZero`
+  design, not a bug -- Justin caught Claude overclaiming this one). Bible & Plans and Prayer DO have the
+  same false-claim shape (first-timer framing / "no plans yet" / "add your first prayer" can show before
+  their own loads finish) -- Justin has never seen it happen and said disregard unless it becomes a real
+  issue; NOT fixed, logged here only so it isn't rediscovered as new.
+  >> **PROFILE DONE 2026-07-17** -- section-based like Stats, not card-based. Basic Info + Membership open
+  by default, rest collapsed (Activity Level, Your Estimates, Weight Goal, Water Presets). Same shared-
+  component pattern: one `entering` prop added to `ProfileSection`, all 6 sections staggered.
+  >> **ALL FIVE NON-HOME TABS DONE.** Home (index.tsx) is the only one left untouched -- it was never part
+  of the original bug (nothing transitions INTO the first tab a cold launch lands on), but the other 5 all
+  cascade now and Home popping in flat would be the one visual inconsistency left. Justin also asked
+  2026-07-17 whether Home's hidden/custom graph cards are covered -- UNCHECKED, this needs the same read
+  Stats got (find Home's card-visibility system, confirm hidden cards aren't rendered, confirm any custom
+  cards inherit their section's cascade) before answering, not an assumption.
   >> **THE TAB-SWITCH FADE IS A SEPARATE QUESTION, DELIBERATELY DEFERRED** until the mount fix is verified
   on device. Justin finds the quick fade-out/fade-in "jittery, not super premium/luxury" -- but you cannot
   judge the animation while it is fading into an unfinished screen. Claude's instinct to test once this

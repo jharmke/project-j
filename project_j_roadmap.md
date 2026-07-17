@@ -28,6 +28,16 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-17 **THE BUTTON-TEXTURE THREAD IS CLOSED (both halves): chip/icon-button top shine AND the molded
+  PrimaryCTA rollout.** Verified in code 2026-07-17, not in the roadmap's own bookkeeping: ButtonShine is in
+  38 code files, PrimaryCTA in 41. The roadmap had been lying on both for a day-plus -- the shine item listed
+  a "REMAINING" line sitting directly above the "GROUP 2 IS DONE" line that had already swept those same
+  screens, and the molded item still claimed "~4 CTAs, ~13 remain" after the 07-16 mold sweep. Two dead
+  sub-items also cleared: the PrimaryCTA row-height bug (faceStyle handles it at the call site; no sighting
+  since -- the glow wrapper still stretches while the face keeps its natural height, so if it EVER recurs fix
+  it inside the component, but do not go hunting) and the "no circular PrimaryCTA variant" (the round FABs --
+  "+" discs, Otto, Halo -- got `components/FabDome.tsx` instead, which is the better answer). Stragglers get
+  caught by eye during the gradient pass; Justin's call, and the catalog greps were wrong 4x for 4x the cost.
 - 2026-07-16 **Onboarding All Set -- THE ONBOARDING RE-SKIN IS COMPLETE (all 6 steps + sign-in + All Set).**
   Ground + glow in the mode colour, frosted top + footer, molded PrimaryCTAs ("LET'S GO" / "WE'LL SET IT UP
   FOR YOU" -> mixed case), headline textShadow killed, subtext + tip bodies to Type.voice off textMuted, tips
@@ -589,6 +599,38 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
+- [NOW] [BUG, found on TESTFLIGHT 2026-07-17 -- a real release build, NOT the dev-lag rule] **Tapping a
+  RECENT food takes ~10 seconds to reach Food Detail.** Justin, on good wifi next to his router: tapped "+"
+  on a meal, tapped a recent item, ~10s before the detail screen appeared. His screenshot shows the row
+  greyed out with a spinner IN the list -- so the tap fires a network call and BLOCKS the navigation on it.
+  The suspicious part: that row already renders 60 kcal + 1g/14g/1g, so the macros are ALREADY cached; it is
+  probably going out to FatSecret for the full micronutrient detail. Likely fix shape: navigate INSTANTLY
+  with what is cached, load the rest behind a small in-screen loader. INVESTIGATE THE WHOLE FAMILY, not just
+  this one tap (Justin's call): the other add-food tabs (My Foods / Favorites / Recipes / Set Foods), and
+  the workout library's pick-from-library routes, in case this is one shared flaw in how a saved item is
+  read back rather than a food-only bug.
+- [QUICK WIN] [found on TestFlight 2026-07-17] **Effort vs Results LOADING SKELETONS have no gap.** The 3
+  "Sharpening your read..." placeholder cards sit almost touching, no space between them -- surfaced by
+  yesterday's shadow/aesthetic pass. Justin leaning yes on spacing them out, Claude agrees. NOT a blind
+  marginBottom: the skeleton must use the SAME gap as the REAL cards it stands in for, or the layout jumps
+  the moment the content lands. Match the loaded rhythm, then check it.
+- [QUICK WIN] [found on TestFlight 2026-07-17] **add-food's "Use a Saved Food (42)" tray blends into the
+  background.** It is translucent over the moving ground, so the label dissolves into it. Should be OPAQUE
+  and read as the button it is (the View All Achievements treatment). NOTE while in there: this same button
+  is the known DOUBLED-UP TOP-LIGHT case -- it has a hand-rolled 1.5px bright accentBlueRaw top border AND
+  ButtonShine. Rule: shine owns the top-light, so drop the BORDER (a border stays even on 4 sides). Also
+  DEAD CODE in that file: `addNewBtn` + `addNewBtnText` styles are defined and never used.
+- [NOW] [found on TestFlight 2026-07-17] **First tab open stutters -- lazy tab mounting.** Cold start on
+  Home, then the first tap of any other tab is choppy and "pretty cheap" (Justin). Hypothesis, HIS and mine
+  independently: the tabs are lazily mounted, so the tab does not exist until tapped and the crossfade runs
+  while the screen is still building -- you are fading INTO a half-rendered page. Options: preload all tabs
+  at startup (fixes it, but each tab hits AsyncStorage + HealthKit, so it buys a slower cold start -- need
+  to MEASURE how much before choosing), or preload the other tabs quietly once Home has settled.
+  >> **THE TAB-SWITCH FADE IS A SEPARATE QUESTION, DELIBERATELY DEFERRED** until the mount is fixed. Justin
+  finds the quick fade-out/fade-in "jittery, not super premium/luxury" -- but you cannot judge the animation
+  while it is fading into an unfinished screen. Fix the mount, THEN look. Claude's instinct to test: the
+  premium answer is probably LESS animation, not a fancier one (native iOS tabs swap instantly; Apple
+  Health/Fitness do not crossfade). Do not decide it blind.
 - [NOW] [TRACK, DECIDED + SPECCED 2026-07-14 -> building] **VISUAL REFRESH.** Justin: the app "still looks
   like a Claude/AI generated app -- a blank form page with data slapped on it." Diagnosis was NOT the headers
   he first pointed at: (1) every card is the same width/weight so nothing leads, (2) every button is FLAT
@@ -623,8 +665,10 @@ are separate pre-submission checklists, NOT part of this menu.
   amber) on every titled modal -- ~15 standalone components + the inline modals across workout-library and
   all four tabs, plus the tag modals, drilldowns, prayer/faith modals, Otto Notifications, and Day Detail
   (which is always a sheet, so it uses ModalHeader at 20px not the 28px page title). Rules in the spec.
+  >> BUTTON TEXTURE IS DONE 2026-07-17 -- both the molded-CTA rollout and the chip/icon shine. See RECENTLY
+  SHIPPED; the 3-tier rules + the do-not-relearn list are in the archive.
   >> STILL OPEN, see the dedicated items below: the SURFACE pass, the JOURNAL slide-up sheet, the VOICE
-  pass, the molded-button rollout, and a short list of non-modal number-face stragglers.
+  pass, the title accent-gradient fill, and a short list of non-modal number-face stragglers.
 - [BUG, app-wide. **ALL PAGES DONE 2026-07-16.** MODALS + ONBOARDING OPEN] **Card shadows.** Full root
   cause + all five failure modes are in the RECENTLY SHIPPED entry.
   **DONE: every card on every PAGE in the app** -- 6 tabs + ~30 stack screens, plus the component-file
@@ -751,15 +795,6 @@ are separate pre-submission checklists, NOT part of this menu.
   etc.) are flat solid-fill on a flat track -- plain. Give the fill a subtle gradient and/or a soft top sheen
   (Whoop/Oura style), maybe a faint glow at the leading edge. Own mini-treatment, part of the visual refresh
   button/surface family. Every bar animates already, so just the fill styling. Justin flagged 2026-07-15.
-- [QUICK WIN] [found 2026-07-16] **Flat-button mold sweep, ROUND 2 (finish the honest gap).** Round 1
-  (2026-07-16) molded the flat solid-accent buttons on the main tabs + Add Food + Day Score. NOT yet scanned
-  for the same flat-button pattern: the deeper stack screens -- recipe-builder, recipe-log, day-detail,
-  challenge-create, comparison-report, adaptive-target, ai-meal-estimator, food-detail, index (home), faith,
-  sleep, achievements, bible, journal, settings, reports, diagnostic-report(-view), body-measurements,
-  support, mission, onboarding. Method that works: grep `backgroundColor: theme.accentBlue(Raw)?/accentAmber`
-  then READ each hit -- skip progress bars, dots, check circles, round FABs, and the labeled pills in the "+"
-  expand menus (those are FAB affordances, leave them). Only mold real primary buttons. Left on purpose:
-  the IF card "Last Meal" red button (Justin's call, leave), workout rest-timer Skip/Done pills.
 - [QUICK WIN] [found 2026-07-15] **Otto (+ Halo?) FAB placement audit.** The floating companion FAB sits
   bottom-left on many stack screens and OVERLAPS the last card's content when the page has no bottom padding
   (confirmed on Sleep & Recovery > Recovery: the FAB covers the Recovery Coach text). Sweep every screen that
@@ -769,61 +804,6 @@ are separate pre-submission checklists, NOT part of this menu.
   paddingBottom bumped to `insets.bottom + 96` (clears the 56px disc sitting at bottom+20..bottom+76).
   achievements was worse: a flat `40` that never even added the safe-area inset. STILL OPEN: the FULL sweep of
   every other Otto-FAB screen (day-detail, day-summary, settings, add-food, etc.) for the same clearance.
-- [NOW] [VISUAL REFRESH -> CHIP / ICON-BUTTON TOP SHINE] The SECOND button-texture thread (distinct from
-  the molded PrimaryCTA, which is the solid primary buttons). DONE so far: all 5 tab-header icon-squares,
-  Library pills, "+ Log", the 8 water buttons, HR Zones/Tags, the selected effort tile, Repeat/Pick-a-Day,
-  and (catalog GROUP 1) the stack-screen header squares -- Bible + Add Food -> HeaderIconButton, Bible's
-  Mark Read pill, the Achievements EARNED badge.
-  CATALOG, run 2026-07-15: 92 tappable tinted buttons across 22 files, and they are NOT one animal:
-    (1) header squares -- DONE.
-    (2) BODY tinted buttons. HONEST CATALOG re-run 2026-07-15 (filter = UNCONDITIONAL accent tint on a
-        tappable; a `active ? tint : grey` fill is a SELECTOR, not a button): ~23 real candidates in 14
-        files, down from the 410 raw hits / 92 "tappable-looking" I first quoted -- BOTH of those numbers
-        were mine and both oversized the job. Caveat: the filter misses real buttons whose tint is
-        CONDITIONAL (Load Program was one: blue normally, green when active), so the true count is ~23 + a
-        few. Expect some of the 23 to turn out to be badges/selectors on reading -- that was today's hit rate.
-        >> DONE 2026-07-15: workout-library (Fill from Preset, Load Program, Load Routine, USE) and
-        add-food + food-detail (Retry, Use a Saved Food, Create Food for this Barcode, Add x2, Edit, the
-        -/+ serving steppers, Replace).
-        >> REMAINING: stats (3 body buttons), ai-meal-estimator, journal, prayer, day-detail, day-summary,
-        settings (1 each).
-        >> ONBOARDING (6, one each in your-style/style-survey/commitment/apple-health/notifications/
-        profile-setup) is OUT of the shine pass -- a flow you see once, and they are CTAs (the molded
-        PrimaryCTA thread) or selectors. Justin agreed 2026-07-15.
-        >> DELIBERATELY SKIPPED, with reasons (do not "fix" these later without reading why):
-           - Duplicate (workout-library) + the library filter icon: bgInset/NEUTRAL, not tinted. Duplicate
-             is the quiet half of a pair next to USE -- shining it flattens a hierarchy that is working; the
-             filter icon would change TEXTURE between states, and bgInset IS the near-white fill where gloss
-             genuinely does not show.
-           - Remove (food-detail photo) + the EvR trash: DESTRUCTIVE. Shine says "press me", the last thing
-             a delete should say. Same call both times.
-           - The two SET buttons (add-food barcode override): ~18px tall AND they repeat down a list -- the
-             exact repetition that made the Repeat pills read plastic.
-           - AI ESTIMATE badge, unit selector (food-detail): a View and a selector.
-        >> WATCH: add-food's "Use a Saved Food" + "Create Food for this Barcode" already had a hand-rolled
-        top-light (a 1.5px BRIGHT accentBlueRaw top border) and now carry TWO top treatments. If they read
-        doubled-up, drop the BORDER (the rule: shine owns the top-light, border stays even on 4 sides).
-        >> DEAD CODE found: add-food's `addNewBtn` + `addNewBtnText` styles are defined and never used.
-        >> GROUP 2 IS DONE 2026-07-15. Also swept: stats (6) + BodyMeasurementsCard's Log Measurements +
-        StatsGraphCard's Select Nutrient, the 5 component MODALS (Got it / Full Breakdown x2 / Macros
-        expander / Add / CalorieFloor), the last 6 screens (journal sort, prayer's people icon -> another
-        HeaderIconButton, day-detail Cancel, ai-estimator Confirm+Edit, day-summary, settings Import), and
-        the whole FAITH tab (8 amber buttons incl. the reading tiles) + GratitudeStreakCard's 4.
-        >> THE CATALOG WAS WRONG THREE TIMES, all mine, all the same mistake -- quoting a grep instead of
-        reading code: (1) 410 raw hits -> (2) 92 "tappable-looking" -> (3) ~23 real. Then Justin found the
-        Log Measurements button, because I only ever grepped `app/` and never `components/` (+7). Then he
-        found the whole FAITH TAB, because every grep searched for the BLUE recipe and faith is AMBER.
-        LESSON: a tab file is not a screen (it renders components), and accentBlueBg is not "the tinted
-        button" (faith has a parallel amber system, half of it hardcoded).
-        >> STILL OPEN (hygiene, no visible payoff -- do not do it first): 25 hardcoded `rgba(212,134,10,..)`
-        across 10 files. That hex is DARK's amber baked in, so faith FILLS wear Dark's amber on every theme
-        while the text beside them uses each theme's own. Subtle at 10% alpha. bible.tsx's share was cleaned
-        as part of its sweep.
-    (3) SELECTORS -- SKIP: bible chapter pills / book rows / sort toggles, onboarding style-survey +
-        your-style. Same tint, but they are selected/unselected STATES. Design the states, don't gloss them.
-    (4) BARE icons -- NOT this pass: the TooltipIcon "?" on ~12 screens, day-detail's calendar, the EvR
-        trash. These belong to the title accent-GRADIENT fill pass.
-  Do NOT mass-apply; "if everything shines it looks cheap". Spec OPEN list + build order step 12.
 - [VISUAL REFRESH -> OWN DESIGN PASS] **Bible's Reflect bar does DOUBLE DUTY.** One tinted strip is
   simultaneously (a) a BUTTON -- the left flex:1 region is a tap target opening the reflection modal, or the
   journal once reflected -- and (b) a TOOLBAR holding four unrelated icon buttons (sun / star / share /
@@ -839,12 +819,11 @@ are separate pre-submission checklists, NOT part of this menu.
   workout-library's FULL-WIDTH Load Program/Load Routine took the default 0.52 unchanged and Justin liked
   them. "Plastic" came from REPETITION (2 pills x 8 slots), not width; it was DON'T-OVER-GLAZE in disguise.
   A wide button alone is fine. Count how many are on screen before blaming the gloss. Detail in the spec.
-- [PARKED -> molded-button rollout] The molded PrimaryCTA is on ~4 CTAs; ~13 more primary CTAs, the
-  circular FAB variant, and the PrimaryCTA row-height bug remain. Full detail in SPEC_visual_refresh.md
-  PARKED section. Also still open from the OPEN list: title accent-GRADIENT fill (INCLUDE the header "?"
-  help icon in this pass -- it's a bare icon, so it gets the SAME masked accent-gradient FILL as the titles,
-  not the square-shine the other header icon-buttons got), card stagger on mount, Warm + Blush getting the
-  Light treatment.
+- [VISUAL REFRESH -> what's actually left of it] The button-texture threads are CLOSED (see RECENTLY
+  SHIPPED 2026-07-17). Remaining from the spec's OPEN list: **title accent-GRADIENT fill** (INCLUDE the
+  header "?" help icon in this pass -- it's a bare icon, so it gets the SAME masked accent-gradient FILL as
+  the titles, not the square-shine the other header icon-buttons got), card stagger on mount, and Warm +
+  Blush getting the Light treatment.
 - [TRACK, VISION LOCKED + SPECCED 2026-07-07 -> ready to build] Custom Reports (Pro). Model: report =
   date range (week/month/3mo/6mo/1yr/custom) + chapters, each a PICKER into a library of ~55 pre-designed
   blocks the user assembles freely; templates = pre-filled block sets; exportable (PDF/share); Pro-gated

@@ -8,7 +8,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import Reanimated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, runOnJS } from 'react-native-reanimated';
-import { saveToFirebase } from '../firebaseConfig';
 import { storageSet } from '../utils/storage';
 import { ToastRenderer, useToast } from '../components/Toast';
 import { showAchievementToast } from '../components/AchievementToast';
@@ -2222,10 +2221,17 @@ export default function WorkoutLibraryScreen() {
     setFilterType('all');
   }, [activeTab]);
 
+  // storageSet ALREADY mirrors this key to the cloud (syncService, fire-and-forget by design). A second
+  // AWAITED saveToFirebase('exercise_library', ...) used to sit here, and every caller paid a full Firestore
+  // round trip before it could do anything else -- selectExercise waited on it before router.back(), which is
+  // where Justin's ~2s "Add exercise -> back to Workout" lag came from. It wrote the library into the DAYS
+  // collection as a fake day, a path that predates syncService and that NOTHING in the app ever read back
+  // (grepped 2026-07-17: that write was the only reference to it). Deleting it costs no backup: pj_exercise_
+  // library passes shouldSync (only pj_bible_ is excluded), so it still lands in users/{uid}/store, which is
+  // the location restoreIfFresh actually reads. Do not "restore" that line.
   const saveLibrary = async (updated: LibraryExercise[]) => {
     setLibrary(updated);
     await storageSet('pj_exercise_library', JSON.stringify(updated));
-    await saveToFirebase('exercise_library', 'exercises', updated);
   };
 
   const toggleFavorite = async (id: string) => {

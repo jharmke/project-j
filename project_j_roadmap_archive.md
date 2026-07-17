@@ -11,6 +11,53 @@
 
 ---
 
+## ✨ CHIP / ICON-BUTTON TOP SHINE + THE MOLDED-CTA ROLLOUT (visual refresh, CLOSED 2026-07-17)
+The two button-texture threads, retired together once the code was actually read instead of the roadmap
+believed. Final state, verified 2026-07-17: ButtonShine in 38 code files, PrimaryCTA in 41.
+
+**The 3-tier button system that came out of it** (this is the durable rule): MOLDED (solid PrimaryCTA, a
+screen's ONE primary action) / SHINED tinted (tier-2 secondary, ButtonShine) / FLAT (tier-3 passive).
+Shine = tappable. Do NOT mass-apply -- "if everything shines it looks cheap".
+
+**Hard-won rules, do not relearn these:**
+- A `active ? tint : grey` fill is a SELECTOR, not a button. Design the states, don't gloss them. (Bible
+  chapter pills / book rows / sort toggles, onboarding style-survey + your-style: all correctly skipped.)
+- "SHINE SCALES WITH AREA" was WRONG and was corrected the same day it was written. Justin's "plastic-y" on
+  the 190px Repeat pills was REPETITION (2 pills x 8 slots), not width -- workout-library's FULL-WIDTH Load
+  Program/Load Routine took the default 0.52 gloss unchanged and he liked them. Count how many are on screen
+  before blaming the gloss.
+- Shine owns the top-light. If a button already has a bright accent top BORDER and then gets shine, it reads
+  doubled-up -- drop the border (which stays even on 4 sides), keep the shine.
+- bgInset is the near-white fill where gloss genuinely does not show.
+- DESTRUCTIVE buttons get no shine (food-detail's photo Remove, the EvR trash). Shine says "press me" --
+  the last thing a delete should say. Same call was made twice independently.
+- Bare icons (TooltipIcon "?", day-detail's calendar) are NOT a shine target -- they belong to the title
+  accent-GRADIENT fill pass.
+
+**THE CATALOG WAS WRONG FOUR TIMES, all Claude's, all the same mistake -- quoting a grep instead of reading
+code.** (1) 410 raw hits -> (2) 92 "tappable-looking" -> (3) ~23 real. Then Justin found the Log Measurements
+button, because only `app/` was ever grepped, never `components/`. Then he found the WHOLE FAITH TAB, because
+every grep searched for the BLUE recipe and faith is AMBER (half of it hardcoded). LESSON: a tab file is not
+a screen (it renders components), and accentBlueBg is not "the tinted button". By 07-17 Justin called the
+scans a usage sink and ruled that the last stragglers get caught BY EYE during the gradient pass.
+
+**Two sub-items closed as dead, not built:**
+- *PrimaryCTA row-height bug* (a CTA in a row not matching its sibling's height). `faceStyle` handles it at
+  the call site and there has been no sighting since. The structure is still technically there -- the glow
+  WRAPPER stretches with the row while the button FACE keeps its natural height -- so if it ever recurs, fix
+  it INSIDE the component. Do not go hunting for it.
+- *"PrimaryCTA has no circular variant"* -- true and meaningless. The round FABs ("+" discs, Otto, Halo) got
+  `components/FabDome.tsx` instead: one full-width gradient (bright crown -> neutral middle -> soft dark
+  foot) so the disc reads as a lit sphere, deliberately NOT a clipped specular oval (which reads as a pill
+  stuck on top). It self-clips with its own round radius -- `overflow:'hidden'` on a FAB silently kills the
+  disc's shadow on iOS.
+
+**Still hygiene, no visible payoff, never done:** ~25 hardcoded `rgba(212,134,10,..)` across 10 files. That
+hex is DARK's amber baked in, so faith FILLS wear Dark's amber on every theme while the text beside them
+uses each theme's own. Subtle at 10% alpha. bible.tsx's share was cleaned during its sweep.
+
+---
+
 ## 🔁 REPEAT-A-MEAL PILLS -> INTO THE TRAY (visual refresh, SHIPPED 2026-07-15)
 Follow-on to REPEAT A MEAL (shipped 2026-07-10, see that section below for the feature itself). Started as
 the NEXT UP item "Repeat/Pick-a-Day (shine + DE-NEON)" and ended somewhere else entirely.

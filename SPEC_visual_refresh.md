@@ -7,9 +7,15 @@ SHIPPED so far: the surface (flat ground + bottom glow + halftone + grain, glass
 tab bar and header, per-theme shadows, bgSelected), the four-role type system, the type sweep across all 6
 tabs + 43 stack screens + 42 components, the font-packaging patch, and BOTH HEADER COMPONENTS (see below).
 
+BUTTON TEXTURE IS DONE 2026-07-17 -- BOTH threads. The molded PrimaryCTA (41 code files) and the chip /
+tinted-button shine (ButtonShine, 38 code files). Verified by reading the code, which is the only reason it
+was caught: this spec and the roadmap had BOTH been claiming "~4 CTAs, ~13 remain" and a stale shine
+REMAINING list for a day-plus after the work shipped. The 3-tier rules + the full do-not-relearn list live
+in project_j_roadmap_archive.md ("CHIP / ICON-BUTTON TOP SHINE + THE MOLDED-CTA ROLLOUT").
+
 STILL OPEN: the SURFACE pass (22 stack screens still top-lit), the VOICE pass, the Journal slide-up sheet,
-the molded-button rollout, chip shine, title gradient, card stagger, Warm + Blush getting the Light
-treatment, and a few non-modal number-face stragglers. (Roadmap NEXT UP has the ranked list.)
+title gradient, card stagger, Warm + Blush getting the Light treatment, and a few non-modal number-face
+stragglers. (Roadmap NEXT UP has the ranked list.)
 
 ---
 
@@ -294,19 +300,13 @@ Three bugs that polluted early verdicts, all mine, all fixed:
   its BOX stays the standard 32. Generalise: the rule is about FAINTNESS, so a glyph whose meaning is fine
   line detail is outside it. Icon size may vary for legibility; the BOX is what must stay consistent.
 
-## PARKED -- molded button rollout (started, not finished)
+## MOLDED BUTTON ROLLOUT -- DONE 2026-07-17 (kept for the rules only)
 
-Proven on three buttons and Justin signed off: Generate Analysis (diagnostic-report), Estimate My Meal +
-Add to Log (ai-meal-estimator, both the results-page hero and the confirm modal). Disabled states verified.
-
-Remaining:
-- **Sweep the other ~13 files' primary CTAs.** Mechanical now the pattern is proven.
-- **Circular variant + the FABs.** PrimaryCTA has no circular form yet; the app has a pile of 44/56px
-  accent circles (add-food, workout, bible scroll-speed, quick-add) that want the same mould.
-- **BUG in PrimaryCTA: a CTA in a row does not match its sibling's height.** The glow WRAPPER stretches
-  with the row but the button FACE inside it keeps its natural height, so a Cancel/Confirm pair comes out
-  uneven. Seen in the AI-estimator confirm modal. faceStyle was added as a stopgap and does NOT fix it.
-  Fix inside the component during the sweep, not per call site.
+Shipped across 41 code files. The circular FABs ("+" discs, Otto, Halo) were solved by `components/
+FabDome.tsx` rather than a circular PrimaryCTA variant -- the better answer, and the reason that line sat
+"open" for a day meaning nothing. The row-height mismatch (glow WRAPPER stretches with the row, button FACE
+keeps its natural height) is handled by `faceStyle` at the call site with no sighting since; if it EVER
+recurs, fix it INSIDE the component -- do not go hunting for it.
 
 NOT molding (deliberate, do not "fix" these):
 - Entry-point / doorway buttons (Stats > Open Analysis, Comparison, etc). Solid fill is reserved for a
@@ -322,11 +322,6 @@ NOT molding (deliberate, do not "fix" these):
   the word from a background now moving underneath), but confirm.
 - **Title accent-GRADIENT fill.** Still flat accent in-app. The gradient machinery exists
   (`GradientNumber` + masked-view) and is already carrying the hero numbers; titles never got it.
-- **Chip / tinted-button top shine.** BUILT and rolling out. DONE: tab-header squares, Library pills,
-  "+ Log", water buttons, HR Zones/Tags, selected effort tile, Repeat/Pick-a-Day, and the stack-screen
-  header squares (Bible + Add Food -> `HeaderIconButton`, Bible's Mark Read, Achievements' EARNED badge).
-  REMAINING: the BODY tinted buttons per screen (workout-library is the big one at 13) -- see the roadmap's
-  catalog for the full breakdown of what is a button vs a selector vs a bare icon.
 - **Bible's Reflect bar does DOUBLE DUTY -- own design pass.** One tinted strip is BOTH a button (the left
   `flex:1` region opens the reflection modal / the journal) AND a toolbar of four unrelated icon buttons
   (sun / star / share / Halo). The tint claims "one thing you press" while four parts do four things and
@@ -383,8 +378,8 @@ The "if Ranade wins the Voice, Interface must move" rule is DROPPED -- Clash (di
    voice actually earns its keep. Otto's bubbles are the single biggest win available: HIS bubbles are
    voice, YOURS stay Interface -- that contrast is the point.
 10. A single readability pass once the fonts are everywhere.
-11. Molded button rollout (see PARKED) -- including the row-height bug.
-12. Chip top-shine + title accent-gradient.
+11. Molded button rollout. **[DONE 2026-07-17]**
+12. Chip top-shine **[DONE 2026-07-17]** + **-> NEXT: title accent-gradient.**
 13. Card stagger (Reanimated `FadeInDown.delay(i*50).springify()`). Pure JS.
 14. Warm + Blush get the Light treatment once Light is signed off.
 15. `bgSelected` sweep for modals and stack screens as they get converted.

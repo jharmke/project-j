@@ -804,6 +804,8 @@ are separate pre-submission checklists, NOT part of this menu.
   paddingBottom bumped to `insets.bottom + 96` (clears the 56px disc sitting at bottom+20..bottom+76).
   achievements was worse: a flat `40` that never even added the safe-area inset. STILL OPEN: the FULL sweep of
   every other Otto-FAB screen (day-detail, day-summary, settings, add-food, etc.) for the same clearance.
+  >> NEW SIGHTING 2026-07-17 (TestFlight): add-food's "Add to Mealtime" screen -- Otto sits on top of a card.
+  Same bug, same fix shape as sleep/achievements. Fold into the full sweep, don't one-off it.
 - [VISUAL REFRESH -> OWN DESIGN PASS] **Bible's Reflect bar does DOUBLE DUTY.** One tinted strip is
   simultaneously (a) a BUTTON -- the left flex:1 region is a tap target opening the reflection modal, or the
   journal once reflected -- and (b) a TOOLBAR holding four unrelated icon buttons (sun / star / share /

@@ -79,7 +79,12 @@ function sanitizeParams(method: string, raw: Record<string, unknown>): Record<st
 }
 
 export const fatSecretProxy = onCall(
-  { secrets: [FATSECRET_KEY, FATSECRET_SECRET], maxInstances: 10 },
+  // minInstances: 1 keeps one instance warm so the first food lookup after a cold app launch
+  // doesn't pay container boot + Secret Manager fetch (this function pulls two secrets on cold
+  // start before it can do anything) -- that boot cost was Justin's ~10s first-tap-only delay.
+  // Idle instances under minInstances are billed for MEMORY only, not CPU (default mode, no
+  // "CPU always allocated") -- roughly $1-2/month for a 256MB instance, not a real cost.
+  { secrets: [FATSECRET_KEY, FATSECRET_SECRET], maxInstances: 10, minInstances: 1 },
   async (request) => {
     // Auth: only signed-in users. The key never leaves the server regardless, but gating on auth
     // keeps anonymous traffic off the FatSecret account quota.

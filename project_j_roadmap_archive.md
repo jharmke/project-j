@@ -11,6 +11,70 @@
 
 ---
 
+## 🎨 TITLE ACCENT-GRADIENT FILL (CLOSED 2026-07-17)
+The last big item on SPEC_visual_refresh.md's OPEN list: page/modal/tab titles were still flat accent
+color while GradientNumber had already been carrying the hero numbers app-wide since the numbers rollout.
+New component `components/GradientTitle.tsx`, wired into `ScreenHeader.tsx` and `ModalHeader.tsx` (the two
+components that own every pushed-screen and modal title in the app) plus all six tab headers by hand
+(Home's greeting, Food Log, Workout, Stats, Faith, Profile -- these hand-roll their own header, they don't
+go through ScreenHeader).
+
+**What shipped, in the order it was actually reached (each round tested live on device, not guessed):**
+1. First attempt copied GradientNumber's exact recipe (3-stop light/color/dark, ~168deg diagonal) --
+   broke immediately on long titles ("Today's Message" read almost entirely dark). ROOT CAUSE: the tilt's
+   x/y fractions were derived assuming a roughly SQUARE box, true for a single number glyph. Stretched
+   across a whole WIDE word, the same tilt runs mostly left-to-right instead of top-to-bottom, so by the
+   time you reach the middle of a long word you've already crossed into the dark stop.
+2. Switched to straight vertical (width-independent by construction) and added the 3rd stop (a lift at the
+   top, not just a sink at the bottom) -- a 2-stop version was tried first and dropped because "light" was
+   just "not yet darkened," which nearly vanished on already-muted colors like Faith's amber.
+3. Justin: still too subtle at title text size vs the hero numbers. Root cause: a hero number is 36-56px
+   tall, a title's glyphs are much shorter, so the same LIGHT/DARK amounts that read clearly on numbers
+   are nearly invisible on text. Bumped LIGHT 0.24->0.40, DARK 0.20->0.34 -- deliberately stronger than
+   GradientNumber, not matching it.
+4. Cranking flat amounts up broke Yellow: brutal on Blush (bright washes out against a pale page) even
+   though the exact same hex read fine on Dark (black backgrounds have contrast to spare regardless of how
+   bright a color goes). Added luminance-based scaling so LIGHT/DARK back off the brighter a color already
+   is -- full strength on the app's normal mid-tone accents, tapered at the bright end.
+5. Yellow was STILL "mustard" after that -- root cause turned out to be direction-asymmetric, not a single
+   scale factor: lifting an already-bright color toward white is what actually goes wrong (blown-out
+   against a pale page); sinking toward black is comparatively safe and does most of the "molded" work.
+   Split into independent liftScale/darkScale, LIFT tapering much faster (floor 0.15) than DARK (floor 0.4).
+6. Final round: even the reduced DARK sink still turned pure saturated Yellow (#ffe600/#fde047, near-zero
+   blue channel) to mustard. That hue has NO dark version at all -- human perception reads any meaningfully
+   darkened yellow as brown/olive, not "a deeper yellow," so no amount of floor-tuning alone fixes it.
+   Dropped DARK_FLOOR to 0.18 (from 0.4) so DARK falls off almost as fast as LIGHT at the extreme end.
+7. Even with the math fixed, Justin then noticed the app's home button / Otto FAB / header icons ALSO read
+   mustard on Blush+Yellow -- and those don't touch GradientTitle at all (confirmed: no references in
+   FabDome.tsx, HeaderIconButton.tsx, or CustomTabBar.tsx). That proved the problem was never really the
+   gradient math -- Yellow (#ffe600) just doesn't work on Blush's pale pink page, full stop, in ANY
+   rendering (flat fill, tint, gradient). **Decision: removed Yellow entirely from Blush's accent list**
+   (`theme.tsx` ACCENT_PALETTES.blush) rather than keep chasing it. Yellow stays available on Dark/Slate
+   where it works fine. Safe fallback confirmed: `accentOptions.find(...) ?? accentOptions[0]` in theme.tsx
+   means a user with Yellow selected on Blush just falls back to Lipstick (Blush's default) -- no crash.
+
+**A path NOT taken, on purpose:** partway through, when dark colors (Navy/Black) still weren't shining
+after 3 rounds of tuning, Claude proposed reverting titles to flat entirely -- the reasoning being that a
+title is signage, not a physical object like a button or number, and the ORIGINAL "flat title = AI tell"
+diagnosis may have already been solved by the rest of the visual refresh (type system, molded buttons,
+glass, texture) by the time this thread started. Justin rejected this hard ("worst solution ever") and
+was right to: three tuning rounds that hadn't yet succeeded is not the same as a provably wrong direction,
+and round 4-6 above is what actually got it right. Lesson: don't recommend abandoning a design direction
+just because the current tuning attempt hasn't landed yet -- exhaust the tuning space first.
+
+**Extra fixes found and shipped in the same session while testing this, unrelated to the gradient itself:**
+- Add Food's food list (`app/add-food.tsx`) had a FlatList with NO `contentContainerStyle` at all -- zero
+  bottom padding, so Otto's disc sat directly on the last row / FatSecret footer. Same `insets.bottom + 96`
+  clearance fix already used on achievements.tsx/sleep.tsx. One screen, not two: it's titled "Food Library"
+  in browse mode and "Add to [Meal]" when logging to a specific slot.
+
+**Still open, NOT done this round:** the header "?" help icon was originally scoped to get the SAME masked
+accent-gradient fill as the titles (a bare icon, not the square-shine the other header icon-buttons got)
+-- missed entirely this session, needs its own pass. Also Warm + Blush getting the Light treatment, and
+Stats/Profile's card-stagger-on-mount.
+
+---
+
 ## 🎬 TAB-MOUNT STUTTER -> ALL SIX TABS CASCADE (CLOSED 2026-07-17)
 Started as one TestFlight complaint ("first tab open feels choppy") and ended up touching every tab in
 the app. ROOT CAUSE, confirmed by reading the code, not lazy mounting itself: React Navigation already

@@ -28,6 +28,10 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-17 **Title accent-gradient fill shipped app-wide** (every page/modal/tab title) -- new
+  `GradientTitle` component, six tuning rounds on device (diagonal->vertical, 2-stop->3-stop, luminance
+  scaling, lift/dark split, Yellow-specific floor), Yellow dropped from Blush's accent list after proving
+  the mustard problem wasn't the gradient at all. Header "?" icon gradient still open. Full story in archive.
 - 2026-07-17 **Add Food's food list had zero bottom clearance, Otto's disc sat on the last row/FatSecret
   footer.** One screen, not two -- it's titled "Food Library" in browse mode and "Add to [Meal]" when
   logging to a slot. Fixed with the same `insets.bottom + 96` pattern already used on Achievements/Prayer.
@@ -617,16 +621,6 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
-- [NOW] [BUG, found on TESTFLIGHT 2026-07-17 -- a real release build, NOT the dev-lag rule] **Tapping a
-  RECENT food takes ~10 seconds to reach Food Detail.** Justin, on good wifi next to his router: tapped "+"
-  on a meal, tapped a recent item, ~10s before the detail screen appeared. His screenshot shows the row
-  greyed out with a spinner IN the list -- so the tap fires a network call and BLOCKS the navigation on it.
-  The suspicious part: that row already renders 60 kcal + 1g/14g/1g, so the macros are ALREADY cached; it is
-  probably going out to FatSecret for the full micronutrient detail. Likely fix shape: navigate INSTANTLY
-  with what is cached, load the rest behind a small in-screen loader. INVESTIGATE THE WHOLE FAMILY, not just
-  this one tap (Justin's call): the other add-food tabs (My Foods / Favorites / Recipes / Set Foods), and
-  the workout library's pick-from-library routes, in case this is one shared flaw in how a saved item is
-  read back rather than a food-only bug.
 - [QUICK WIN] [found on TestFlight 2026-07-17] **Effort vs Results LOADING SKELETONS have no gap.** The 3
   "Sharpening your read..." placeholder cards sit almost touching, no space between them -- surfaced by
   yesterday's shadow/aesthetic pass. Justin leaning yes on spacing them out, Claude agrees. NOT a blind
@@ -674,8 +668,10 @@ are separate pre-submission checklists, NOT part of this menu.
   (which is always a sheet, so it uses ModalHeader at 20px not the 28px page title). Rules in the spec.
   >> BUTTON TEXTURE IS DONE 2026-07-17 -- both the molded-CTA rollout and the chip/icon shine. See RECENTLY
   SHIPPED; the 3-tier rules + the do-not-relearn list are in the archive.
+  >> TITLE ACCENT-GRADIENT FILL SHIPPED 2026-07-17 -- see RECENTLY SHIPPED and the dedicated item below (the
+  header "?" icon still needs the same treatment, missed this round).
   >> STILL OPEN, see the dedicated items below: the SURFACE pass, the JOURNAL slide-up sheet, the VOICE
-  pass, the title accent-gradient fill, and a short list of non-modal number-face stragglers.
+  pass, and a short list of non-modal number-face stragglers.
 - [BUG, app-wide. **ALL PAGES DONE 2026-07-16.** MODALS + ONBOARDING OPEN] **Card shadows.** Full root
   cause + all five failure modes are in the RECENTLY SHIPPED entry.
   **DONE: every card on every PAGE in the app** -- 6 tabs + ~30 stack screens, plus the component-file
@@ -810,11 +806,13 @@ are separate pre-submission checklists, NOT part of this menu.
   >> PARTIAL 2026-07-16: the two Justin flagged from the gym are FIXED -- sleep.tsx + achievements.tsx scroll
   paddingBottom bumped to `insets.bottom + 96` (clears the 56px disc sitting at bottom+20..bottom+76).
   achievements was worse: a flat `40` that never even added the safe-area inset. STILL OPEN: the FULL sweep of
-  every other Otto-FAB screen (day-detail, day-summary, settings, add-food, etc.) for the same clearance.
+  every other Otto-FAB screen (day-detail, day-summary, settings, etc.) for the same clearance.
   workout.tsx CHECKED 2026-07-17 -- Otto clears fine at rest (scrolled to the bottom); Claude misread a
   mid-scroll frame from a screen recording as a resting-state overlap. Not a bug, no action needed.
-  >> NEW SIGHTING 2026-07-17 (TestFlight): add-food's "Add to Mealtime" screen -- Otto sits on top of a card.
-  Same bug, same fix shape as sleep/achievements. Fold into the full sweep, don't one-off it.
+  add-food.tsx FIXED 2026-07-17: the food list FlatList had NO contentContainerStyle at all (zero bottom
+  padding), same `insets.bottom + 96` fix. One screen, not two -- it's titled "Food Library" in browse mode
+  and "Add to [Meal]" when logging to a slot, so this closes both the general sweep item and the TestFlight
+  sighting at once.
 - [VISUAL REFRESH -> OWN DESIGN PASS] **Bible's Reflect bar does DOUBLE DUTY.** One tinted strip is
   simultaneously (a) a BUTTON -- the left flex:1 region is a tap target opening the reflection modal, or the
   journal once reflected -- and (b) a TOOLBAR holding four unrelated icon buttons (sun / star / share /
@@ -831,11 +829,15 @@ are separate pre-submission checklists, NOT part of this menu.
   them. "Plastic" came from REPETITION (2 pills x 8 slots), not width; it was DON'T-OVER-GLAZE in disguise.
   A wide button alone is fine. Count how many are on screen before blaming the gloss. Detail in the spec.
 - [VISUAL REFRESH -> what's actually left of it] The button-texture threads are CLOSED (see RECENTLY
-  SHIPPED 2026-07-17). Remaining from the spec's OPEN list: **title accent-GRADIENT fill** (INCLUDE the
-  header "?" help icon in this pass -- it's a bare icon, so it gets the SAME masked accent-gradient FILL as
-  the titles, not the square-shine the other header icon-buttons got), and Warm + Blush getting the Light
-  treatment. Card stagger on mount is IN PROGRESS -- see the tab-mount-stutter item above (built on
-  Workout 2026-07-17 as the fix for a real bug, Stats + Profile still need their own pass).
+  SHIPPED 2026-07-17). **Title accent-GRADIENT fill SHIPPED 2026-07-17** (see RECENTLY SHIPPED) -- every
+  page title, modal title, and tab header now has the masked lift/sink gradient, tuned across several
+  device rounds (vertical not diagonal, three-stop not two, brightness-adaptive so Yellow doesn't blow out
+  or brown out). STILL OPEN from that same spec line, MISSED this round: the header "?" help icon was
+  supposed to get the SAME masked accent-gradient fill as the titles (it's a bare icon, not the
+  square-shine treatment the other header icon-buttons got) -- do this next, it's the same GradientTitle-
+  style masked technique applied to an icon glyph instead of text. Also still open: Warm + Blush getting
+  the Light treatment. Card stagger on mount is IN PROGRESS -- see the tab-mount-stutter item above (built
+  on Workout 2026-07-17 as the fix for a real bug, Stats + Profile still need their own pass).
 - [TRACK, VISION LOCKED + SPECCED 2026-07-07 -> ready to build] Custom Reports (Pro). Model: report =
   date range (week/month/3mo/6mo/1yr/custom) + chapters, each a PICKER into a library of ~55 pre-designed
   blocks the user assembles freely; templates = pre-filled block sets; exportable (PDF/share); Pro-gated

@@ -7,10 +7,10 @@ import { triggerHaptic } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, AppState, Dimensions, Keyboard, KeyboardAvoidingView, Modal, PanResponder, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { Alert, Animated, AppState, Dimensions, InteractionManager, Keyboard, KeyboardAvoidingView, Modal, PanResponder, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import Reanimated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, runOnJS, FadeIn, FadeOut } from 'react-native-reanimated';
+import Reanimated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, runOnJS, FadeIn, FadeOut, FadeInDown } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TAB_BAR_HEIGHT, TAB_SCROLL_PAD } from '../../components/CustomTabBar';
@@ -46,6 +46,43 @@ import ModalHeader from '../../components/ModalHeader';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+// ── Loading skeleton ───────────────────────────────────────────────────────────
+// Stands in for the tag row, exercises, Today's Effort, and Workout Note while the initial read is still
+// in flight, so nothing ever shows a false "No exercises yet" before the day is actually checked. Same
+// pulsing-gray-bar recipe as the EvR loading skeleton (diagnostic-report-view.tsx's SkeletonFeedCard) --
+// one "still loading" visual language across the app, not two.
+function WorkoutDaySkeleton({ theme, pulse }: { theme: any; pulse: Animated.Value }) {
+  const bar = (w: any, h: number, mb: number) => (
+    <Animated.View style={{ width: w, height: h, borderRadius: 5, marginBottom: mb, backgroundColor: theme.textMuted, opacity: pulse }} />
+  );
+  const cardStyle = {
+    borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14, padding: 16, marginTop: 12,
+    backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity,
+    shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6,
+    borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw,
+  } as const;
+  return (
+    <>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        {bar('30%', 20, 0)}
+        {bar(60, 26, 0)}
+      </View>
+      <View style={cardStyle}>
+        {bar('55%', 16, 12)}
+        {bar('90%', 14, 8)}
+        {bar('70%', 14, 0)}
+      </View>
+      <View style={cardStyle}>
+        {bar('40%', 12, 14)}
+        {bar('100%', 60, 0)}
+      </View>
+      <View style={cardStyle}>
+        {bar('45%', 12, 14)}
+        {bar('100%', 70, 0)}
+      </View>
+    </>
+  );
+}
 
 const makeId = () => Math.random().toString(36).substr(2, 9);
 
@@ -251,15 +288,26 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   const durationCardOpacity = useSharedValue(0);
   const durationOverlayStyle = useAnimatedStyle(() => ({ opacity: durationOverlay.value }));
   const durationCardStyle = useAnimatedStyle(() => ({ transform: [{ scale: durationCardScale.value }], opacity: durationCardOpacity.value }));
-  const fabScale = useRef(new Animated.Value(0)).current;
+  // Starts at 1 (full size, no entrance) -- Otto sits static beside it with no animation of his own, and
+  // a lone spring on just this FAB read as an accident rather than a deliberate pairing (Justin, 2026-07-17).
+  // Still dual-purpose: same value also drives the press-in/press-out squish below, untouched.
+  const fabScale = useRef(new Animated.Value(1)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const originalForm = useRef<typeof form | null>(null);
   const effortAnims = useRef(Array.from({ length: 10 }, () => new Animated.Value(1))).current;
   const effortLabelAnim = useRef(new Animated.Value(0)).current;
-
+  // Pulsing gray-bar skeleton shown while `loaded` is false -- same recipe as the EvR loading skeleton
+  // (diagnostic-report-view.tsx's cardPulse), so the app speaks one "still loading" visual language.
+  const skeletonPulse = useRef(new Animated.Value(0.3)).current;
   useEffect(() => {
-    Animated.spring(fabScale, { toValue: 1, useNativeDriver: true, friction: 6, tension: 120, delay: 300 }).start();
-  }, []);
+    if (loaded) return; // stop looping once real content is showing -- nothing left to pulse
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(skeletonPulse, { toValue: 0.6, duration: 650, useNativeDriver: true }),
+      Animated.timing(skeletonPulse, { toValue: 0.22, duration: 650, useNativeDriver: true }),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, [loaded]);
 
   // Register main ScrollView so tutorial auto-scroll works on this tab
   useEffect(() => {
@@ -777,6 +825,12 @@ useEffect(() => {
   }, 100);
 }, [loaded, activeDay]);
 
+  // Deferred until the tab-switch transition finishes (InteractionManager -- React Navigation's own
+  // transitions register as an "interaction", so this fires right as the fade settles, not before). The
+  // FIRST mount of a session used to run this whole read/parse/setState burst DURING the fade, competing
+  // with it for the JS thread -- that's the "first tab open feels choppy" bug. Only this ONE-TIME initial
+  // load is deferred; useFocusEffect's reload below stays immediate on every focus (correctness -- it's
+  // what keeps this screen in sync with edits made elsewhere).
   useEffect(() => {
     const load = async () => {
       try {
@@ -826,7 +880,8 @@ useEffect(() => {
         setLoaded(true);
       }
     };
-    load();
+    const handle = InteractionManager.runAfterInteractions(load);
+    return () => handle.cancel();
   }, []);
 
   useFocusEffect(
@@ -1967,8 +2022,13 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
     const isFirst = idx <= 0;
     const isLast = idx === peers.length - 1;
     return (
-      <View
+      // FadeInDown cascade: only fires on a TRUE first mount (this card doesn't exist in the tree until
+      // programs[activeDay] first populates), so it plays once per day-list per session and never replays
+      // on a re-render from checking a set, editing a note, etc. idx is the SAME peer-position value the
+      // arrow enable/disable logic above already computes -- not a new index, just a second use of it.
+      <Reanimated.View
         key={ex.id}
+        entering={FadeInDown.delay(idx * 60).springify()}
         ref={ex.id === 'tutorial_demo_bench' ? firstExerciseRef : undefined}
         collapsable={false}
         style={inGroup
@@ -2079,7 +2139,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
             {formatLoggedAt(loggedAt)}
           </Text>
         )}
-      </View>
+      </Reanimated.View>
     );
   };
 
@@ -2264,6 +2324,15 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
         </ScrollView>
         </View>
 
+        {/* Everything below (tag row, exercises, Today's Effort, Workout Note) is gated on `loaded` so it
+            never shows a false "No exercises yet" before the initial read has actually finished -- that
+            false flash (and the layout jump it caused) was the real bug behind the tab-mount stutter, not
+            just the transition being janky. Skeleton holds this whole area's shape; real content cascades
+            in as one wave once `loaded` flips true, which only ever happens once per day-list per session. */}
+        {!loaded ? (
+          <WorkoutDaySkeleton theme={theme} pulse={skeletonPulse} />
+        ) : (
+        <>
         <View style={{ marginBottom: 12 }}>
           {(() => {
             const dayTagObjs = getDayTagObjects(activeDay);
@@ -2469,7 +2538,11 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
           // Add Exercise; the FAB has it too). Add Exercise is an outlined/solid-card button so it
           // stands off the page background; View Summary stays the wider filled primary CTA. View
           // Summary is a viewer, not a save gate -- sets already persist on every circle-check.
-          <View style={{ flexDirection: 'row', gap: 10, marginTop: 4, marginBottom: 4 }}>
+          // entering: was missing on the FIRST rebuild (Justin caught it 2026-07-17) -- this row just
+          // popped in solid while the exercise card above it was still fading, which read as arriving
+          // separately from the wave. Same delay slot the NEXT exercise card would have gotten
+          // (displayExercises.length*60), so it lands mid-stagger between the last card and Today's Effort.
+          <Reanimated.View entering={FadeInDown.delay(displayExercises.length * 60).springify()} style={{ flexDirection: 'row', gap: 10, marginTop: 4, marginBottom: 4 }}>
             {/* Was the LAST white button in the app, and the exact recipe the Repeat/Pick-a-Day pills had
                 before 2026-07-15: a near-white bgCardGlass fill with a FULL-STRENGTH 1.5px accent border --
                 the border carrying the entire button at 100% alpha with no tint to soften it, and a fill
@@ -2509,10 +2582,12 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                 else finishWorkout();
               }}
             />
-          </View>
+          </Reanimated.View>
         )}
 
-        <View ref={effortCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
+        {/* Cascades in AFTER the exercise cards -- delay picks up where their stagger left off, so the
+            whole day's content reads as one wave instead of the exercise section arriving separately. */}
+        <Reanimated.View ref={effortCardRef} entering={FadeInDown.delay(displayExercises.length * 60 + 60).springify()} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
           <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Today's Effort</Text>
           <View style={{ flexDirection: 'column', gap: 8, marginTop: 12 }}>
             {[[1,2,3,4,5],[6,7,8,9,10]].map((row, ri) => (
@@ -2561,9 +2636,10 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
               return <Text style={{ fontSize: 10, letterSpacing: 3, color: c, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>{getEffortLabel(s)}</Text>;
             })()}
           </Animated.View>
-        </View>
+        </Reanimated.View>
 
-        <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
+        {/* One stagger step after Today's Effort, so it lands last in the same wave. */}
+        <Reanimated.View entering={FadeInDown.delay(displayExercises.length * 60 + 120).springify()} style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <TextInput
               style={{ flex: 1, fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, fontFamily: Type.uiBold, padding: 0, marginRight: 8 }}
@@ -2608,7 +2684,9 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
               {!noteIsDirty && noteCurrentText ? 'Saved ✓' : noteIsDirty && !noteCurrentText ? 'Clear Note' : 'Save Note'}
             </Text>
           </TouchableOpacity>
-        </View>
+        </Reanimated.View>
+        </>
+        )}
 
       </ScrollView>
 

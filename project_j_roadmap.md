@@ -620,17 +620,51 @@ are separate pre-submission checklists, NOT part of this menu.
   is the known DOUBLED-UP TOP-LIGHT case -- it has a hand-rolled 1.5px bright accentBlueRaw top border AND
   ButtonShine. Rule: shine owns the top-light, so drop the BORDER (a border stays even on 4 sides). Also
   DEAD CODE in that file: `addNewBtn` + `addNewBtnText` styles are defined and never used.
-- [NOW] [found on TestFlight 2026-07-17] **First tab open stutters -- lazy tab mounting.** Cold start on
-  Home, then the first tap of any other tab is choppy and "pretty cheap" (Justin). Hypothesis, HIS and mine
-  independently: the tabs are lazily mounted, so the tab does not exist until tapped and the crossfade runs
-  while the screen is still building -- you are fading INTO a half-rendered page. Options: preload all tabs
-  at startup (fixes it, but each tab hits AsyncStorage + HealthKit, so it buys a slower cold start -- need
-  to MEASURE how much before choosing), or preload the other tabs quietly once Home has settled.
-  >> **THE TAB-SWITCH FADE IS A SEPARATE QUESTION, DELIBERATELY DEFERRED** until the mount is fixed. Justin
-  finds the quick fade-out/fade-in "jittery, not super premium/luxury" -- but you cannot judge the animation
-  while it is fading into an unfinished screen. Fix the mount, THEN look. Claude's instinct to test: the
-  premium answer is probably LESS animation, not a fancier one (native iOS tabs swap instantly; Apple
-  Health/Fitness do not crossfade). Do not decide it blind.
+- [NOW, REBUILT ON WORKOUT 2026-07-17 -- AWAITING DEVICE TEST] **First tab open stutters -- lazy tab
+  mounting.** ROOT CAUSE, confirmed by reading the code (not lazy mounting itself -- React Navigation
+  already keeps a tab mounted after its first visit, which is WHY only the first-ever open per session
+  stutters and every later one is instant, matching what Justin saw): each tab's first-mount effect reads
+  AsyncStorage + HealthKit + parses JSON + fires several setStates in the SAME window the tab-switch fade
+  is playing. REJECTED FIX: `lazy={false}` (preload all 6 tabs at boot) -- moves all six tabs' worth of
+  work onto Home's own cold-launch critical path, trading "switching tabs stutters" for "the first thing
+  you ever see is slower."
+  >> **FIRST BUILD (narrow, superseded same day):** deferred the load, cascaded only the exercise cards.
+  Device-tested and caught a WORSE bug: Today's Effort and the Note box were already mounted from frame
+  one (their boxes don't depend on data to exist, only their VALUES do), so only the exercise section had
+  a real "arrival" to hook an entrance onto -- and because that section swaps between two very
+  differently-shaped states (the real "No exercises yet" empty-state UI, complete with Load Routine/
+  Browse Library CTAs, vs. a populated card), the deferred load made the FALSE "you have nothing logged"
+  window LONGER, not shorter (transition-time-plus-read-time, stacked, instead of read-time alone). Justin
+  caught this from a screen recording, not a guess -- worth remembering that this class of bug (empty
+  state shown as if confirmed, before storage is actually checked) is invisible to eyeballing without
+  timestamps.
+  >> **REBUILT, this is the shipped version:** a third state was missing -- not "has data" / "confirmed
+  empty" but "still checking." The ENTIRE data-dependent block (day tag, exercise section, Today's Effort,
+  Workout Note) is now gated behind `loaded` as ONE unit. While `!loaded` it shows `WorkoutDaySkeleton`
+  (pulsing gray bars, ~1.6s of 0.6<->0.22 opacity loop) instead of ANY real content or claim -- reusing the
+  exact pulse recipe from the EvR loading skeleton (diagnostic-report-view.tsx's `cardPulse`/
+  `SkeletonFeedCard`) so the app has one loading language, not two. The moment `loaded` flips true, the
+  whole cluster mounts for real and cascades in together (Reanimated `FadeInDown.springify()`): exercise
+  cards stagger at `idx*60`, Today's Effort at `exerciseCount*60+60`, the Note box at `+120` -- landing as
+  one wave instead of one card animating while everything around it just pops. This never shows a false
+  empty state (nothing renders until we actually know), never reflows the page (nothing swaps between
+  differently-sized states, it's skeleton-or-real, always), and the earlier "why did only Indoor Walking
+  animate" confusion is gone because everything genuinely mounts together now. `useFocusEffect`'s
+  reload-on-every-focus is UNTOUCHED, still immediate -- that is what keeps the screen in sync with edits
+  made elsewhere, deferring it would be a correctness bug not a perf fix.
+  >> **FAB spring cut, same session:** the "+" FAB's mount-time spring-in (0->1 scale, 300ms delay) was
+  pre-existing, unrelated code Claude did not add -- Justin flagged the asymmetry (Otto sits static right
+  next to it, always has) and killed it. `fabScale` starts at 1 now (no entrance) but is STILL dual-purpose
+  -- the same value also drives the press-in/press-out squish on tap, which had to be left untouched.
+  >> This is the roadmap's own long-parked "card stagger on mount" item (see PARKED list), shipped here as
+  the answer to a real bug instead of built in isolation later. Stats and Profile need their OWN pass --
+  Stats has section headers that are not cards, so the right unit to stagger there is a whole SECTION
+  (header + its content together), not each header alone; do not blind-copy the Workout wiring over.
+  >> **THE TAB-SWITCH FADE IS A SEPARATE QUESTION, DELIBERATELY DEFERRED** until the mount fix is verified
+  on device. Justin finds the quick fade-out/fade-in "jittery, not super premium/luxury" -- but you cannot
+  judge the animation while it is fading into an unfinished screen. Claude's instinct to test once this
+  IS verified: the premium answer is probably LESS animation, not a fancier one (native iOS tabs swap
+  instantly; Apple Health/Fitness do not crossfade). Do not decide it blind.
 - [NOW] [TRACK, DECIDED + SPECCED 2026-07-14 -> building] **VISUAL REFRESH.** Justin: the app "still looks
   like a Claude/AI generated app -- a blank form page with data slapped on it." Diagnosis was NOT the headers
   he first pointed at: (1) every card is the same width/weight so nothing leads, (2) every button is FLAT
@@ -804,6 +838,8 @@ are separate pre-submission checklists, NOT part of this menu.
   paddingBottom bumped to `insets.bottom + 96` (clears the 56px disc sitting at bottom+20..bottom+76).
   achievements was worse: a flat `40` that never even added the safe-area inset. STILL OPEN: the FULL sweep of
   every other Otto-FAB screen (day-detail, day-summary, settings, add-food, etc.) for the same clearance.
+  workout.tsx CHECKED 2026-07-17 -- Otto clears fine at rest (scrolled to the bottom); Claude misread a
+  mid-scroll frame from a screen recording as a resting-state overlap. Not a bug, no action needed.
   >> NEW SIGHTING 2026-07-17 (TestFlight): add-food's "Add to Mealtime" screen -- Otto sits on top of a card.
   Same bug, same fix shape as sleep/achievements. Fold into the full sweep, don't one-off it.
 - [VISUAL REFRESH -> OWN DESIGN PASS] **Bible's Reflect bar does DOUBLE DUTY.** One tinted strip is
@@ -824,8 +860,9 @@ are separate pre-submission checklists, NOT part of this menu.
 - [VISUAL REFRESH -> what's actually left of it] The button-texture threads are CLOSED (see RECENTLY
   SHIPPED 2026-07-17). Remaining from the spec's OPEN list: **title accent-GRADIENT fill** (INCLUDE the
   header "?" help icon in this pass -- it's a bare icon, so it gets the SAME masked accent-gradient FILL as
-  the titles, not the square-shine the other header icon-buttons got), card stagger on mount, and Warm +
-  Blush getting the Light treatment.
+  the titles, not the square-shine the other header icon-buttons got), and Warm + Blush getting the Light
+  treatment. Card stagger on mount is IN PROGRESS -- see the tab-mount-stutter item above (built on
+  Workout 2026-07-17 as the fix for a real bug, Stats + Profile still need their own pass).
 - [TRACK, VISION LOCKED + SPECCED 2026-07-07 -> ready to build] Custom Reports (Pro). Model: report =
   date range (week/month/3mo/6mo/1yr/custom) + chapters, each a PICKER into a library of ~55 pre-designed
   blocks the user assembles freely; templates = pre-filled block sets; exportable (PDF/share); Pro-gated

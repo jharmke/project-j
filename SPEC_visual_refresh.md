@@ -380,7 +380,10 @@ The "if Ranade wins the Voice, Interface must move" rule is DROPPED -- Clash (di
 10. A single readability pass once the fonts are everywhere.
 11. Molded button rollout. **[DONE 2026-07-17]**
 12. Chip top-shine **[DONE 2026-07-17]** + **-> NEXT: title accent-gradient.**
-13. Card stagger (Reanimated `FadeInDown.delay(i*50).springify()`). Pure JS.
+13. Card stagger (Reanimated `FadeInDown.delay(i*60).springify()`). **IN PROGRESS 2026-07-17** -- built
+    on Workout as the fix for the tab-mount-stutter bug (see roadmap NEXT UP), not built in isolation.
+    Stats + Profile still need their own pass -- Stats' section headers aren't cards, so stagger by
+    SECTION there, don't blind-copy the per-card wiring.
 14. Warm + Blush get the Light treatment once Light is signed off.
 15. `bgSelected` sweep for modals and stack screens as they get converted.
 

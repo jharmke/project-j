@@ -6,6 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '../theme';
 import { Type } from '../typography';
+import GradientTitle from './GradientTitle';
 
 /**
  * "Where do I start?" guide for the faith Bible card's first-time state. A small centered fade
@@ -97,9 +98,7 @@ export default function BibleStartGuide({ visible, onClose }: Props) {
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
             <Ionicons name="book" size={15} color={theme.accentAmber} />
-            <Text style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentAmber }}>
-              Where do I start?
-            </Text>
+            <GradientTitle title="Where do I start?" color={theme.accentAmber} style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3 }} />
           </View>
           <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textMuted, marginBottom: 14, lineHeight: 20 }}>
             Good places to dig in, each with a reason why. Tap one to start reading.

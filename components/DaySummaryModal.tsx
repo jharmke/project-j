@@ -18,6 +18,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import TooltipIcon from './TooltipIcon';
 import { CardWash } from './GradientCard';
+import GradientTitle from './GradientTitle';
 import { ToastRenderer, useToast } from './Toast';
 import { DayScore, scoreLabel } from '../utils/dayScore';
 import { excludeDayFromAverages } from '../utils/dayScoreStore';
@@ -218,7 +219,7 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
                 its own header row rather than ModalHeader. Only the title face is fixed: was "DAY SUMMARY"
                 caps in Type.num (the number face). */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-              <Text style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentBlueRaw }}>Day Summary</Text>
+              <GradientTitle title="Day Summary" color={theme.accentBlueRaw} style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3 }} />
               <TooltipIcon tooltipKey="day_score" hideTour />
             </View>
 

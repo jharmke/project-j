@@ -24,6 +24,7 @@ import { groupSyncedWorkouts, loadSyncedLabels, saveSyncedLabel, summarizeSessio
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import ButtonShine from '../components/ButtonShine';
+import GradientTitle from '../components/GradientTitle';
 import FabDome from '../components/FabDome';
 import BackgroundLayers from '../components/BackgroundLayers';
 import PrimaryCTA from '../components/PrimaryCTA';
@@ -1239,7 +1240,7 @@ function ProgramBuilderModal({ onClose, onSave, editingProgram }: {
           <View style={{ position: 'absolute', top: '28%', left: 20, right: 20, backgroundColor: theme.bgSheet, borderRadius: 16, padding: 20, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 16 }}>
             {/* Compact padded popup + a form -> title fixed to mixed case and an X for a safe close. */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <Text style={{ fontSize: 18, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentBlueRaw }}>New Tag</Text>
+              <GradientTitle title="New Tag" color={theme.accentBlueRaw} style={{ fontSize: 18, fontFamily: Type.display, letterSpacing: 0.3 }} />
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowTagCreator(false); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                 <Ionicons name="close" size={20} color={theme.textMuted} />
               </TouchableOpacity>
@@ -1700,9 +1701,12 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }} pointerEvents="box-none">
             <Reanimated.View pointerEvents="box-none" style={[{ width: '100%', maxHeight: '80%' }, fillPickerCardStyle]}>
               <View pointerEvents="auto" style={{ backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
+                <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFillPicker(); }} style={{ alignSelf: 'center', paddingTop: 10, paddingBottom: 2, paddingHorizontal: 24 }} hitSlop={{ top: 8, bottom: 8, left: 40, right: 40 }}>
+                  <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
+                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 4, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
                   <View>
-                    <Text style={{ fontSize: 18, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentBlueRaw }}>FILL FROM PRESET</Text>
+                    <GradientTitle title="Fill From Preset" color={theme.accentBlueRaw} style={{ fontSize: 18, fontFamily: Type.display, letterSpacing: 0.3 }} />
                     {selectedTags.length > 0 && matchingPresets.length > 0 && (
                       <Text style={{ fontSize: 10, fontFamily: Type.ui, color: theme.textMuted, marginTop: 2 }}>Showing presets matching your tags</Text>
                     )}
@@ -3600,7 +3604,7 @@ export default function WorkoutLibraryScreen() {
                             <Text style={{ fontSize: 8, fontFamily: Type.uiBold, letterSpacing: 1, color: theme.accentGreen }}>APPLE HEALTH</Text>
                           </View>
                         </View>
-                        <Text style={{ color: accent, fontSize: 22, fontFamily: Type.num, letterSpacing: 1 }}>{syncedHistory.label}</Text>
+                        <GradientTitle title={syncedHistory.label} color={accent} style={{ fontSize: 22, fontFamily: Type.display, letterSpacing: 0.3 }} />
                         <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: Type.ui, marginTop: 2, marginBottom: 14 }}>{sum.count} sessions · Logs automatically from your watch</Text>
                       </View>
                       <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setSyncedHistory(null); }} style={{ paddingTop: 2 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -3682,6 +3686,7 @@ export default function WorkoutLibraryScreen() {
                     <TouchableOpacity
                       style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8, padding: 12, alignItems: 'center', marginTop: 18 }}
                       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); const it = syncedItems.find(x => x.syncedKey === syncedHistory.key); setRenaming({ key: syncedHistory.key, value: syncedHistory.label, def: it?.defaultLabel || syncedHistory.label }); }}>
+                      <ButtonShine radius={8} />
                       <Text style={{ color: theme.accentBlue, fontFamily: Type.uiSemibold, fontSize: 14 }}>Edit</Text>
                     </TouchableOpacity>
                   </ScrollView>
@@ -3700,7 +3705,7 @@ export default function WorkoutLibraryScreen() {
                   <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
                 </View>
                 <View style={{ padding: 20, paddingTop: 8 }}>
-                  <Text style={{ color: theme.accentBlueRaw, fontSize: 18, fontFamily: Type.display, letterSpacing: 0.3, marginBottom: 14 }}>RENAME</Text>
+                  <GradientTitle title="Rename" color={theme.accentBlueRaw} style={{ fontSize: 18, fontFamily: Type.display, letterSpacing: 0.3, marginBottom: 14 }} />
                   <TextInput
                     value={renaming?.value ?? ''}
                     onChangeText={v => setRenaming(p => p ? { ...p, value: v } : p)}
@@ -3717,6 +3722,7 @@ export default function WorkoutLibraryScreen() {
                       <Text style={{ color: theme.textMuted, fontSize: 14, fontFamily: Type.uiSemibold }}>Cancel</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); commitSyncedRename(); }} style={{ flex: 1, backgroundColor: theme.accentBlue, borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}>
+                      <ButtonShine radius={10} solid />
                       <Text style={{ color: '#ffffff', fontSize: 14, fontFamily: Type.uiSemibold }}>Save</Text>
                     </TouchableOpacity>
                   </View>

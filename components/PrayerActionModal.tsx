@@ -6,6 +6,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { type Prayer } from '../utils/prayers';
 import { useTheme } from '../theme';
 import PrimaryCTA from './PrimaryCTA';
+import GradientTitle from './GradientTitle';
 import { Type } from '../typography';
 
 /**
@@ -82,9 +83,7 @@ export default function PrayerActionModal({ prayer, onClose, onAnswer, onUnanswe
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <Ionicons name={answered ? 'checkmark-circle' : 'hand-left'} size={16} color={theme.accentAmber} />
-            <Text style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentAmber }}>
-              {answered ? 'Answered Prayer' : 'Prayer'}
-            </Text>
+            <GradientTitle title={answered ? 'Answered Prayer' : 'Prayer'} color={theme.accentAmber} style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3 }} />
           </View>
 
           <View style={{ backgroundColor: `rgba(${GOLD_RGB},0.10)`, borderWidth: 1, borderColor: `rgba(${GOLD_RGB},0.22)`, borderRadius: 12, padding: 14, marginBottom: 18 }}>

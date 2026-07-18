@@ -4,12 +4,47 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import MaskedView from '@react-native-masked-view/masked-view';
+import { LinearGradient } from 'expo-linear-gradient';
 import { storageSet } from '../utils/storage';
 import { useTheme } from '../theme';
 import { useToast, ToastRenderer } from './Toast';
 import PrimaryCTA from './PrimaryCTA';
 import { Type } from '../typography';
 import ModalHeader from './ModalHeader';
+import GradientTitle from './GradientTitle';
+
+// Same lift/sink recipe as GradientNumber -- a preset icon glyph is roughly square like a number
+// glyph, not a wide word, so GradientNumber's tuning fits it better than GradientTitle's.
+const ICON_LIGHT = 0.24;
+const ICON_DARK  = 0.20;
+function clampChan(n: number) { return Math.max(0, Math.min(255, Math.round(n))); }
+function parseHexChan(hex: string): [number, number, number] | null {
+  const m = /^#?([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(hex.trim());
+  if (!m) return null;
+  let h = m[1];
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+const toHexChan = (r: number, g: number, b: number) =>
+  '#' + [r, g, b].map(v => clampChan(v).toString(16).padStart(2, '0')).join('');
+const liftChan = (rgb: [number, number, number], amt: number) =>
+  toHexChan(rgb[0] + (255 - rgb[0]) * amt, rgb[1] + (255 - rgb[1]) * amt, rgb[2] + (255 - rgb[2]) * amt);
+const sinkChan = (rgb: [number, number, number], amt: number) =>
+  toHexChan(rgb[0] * (1 - amt), rgb[1] * (1 - amt), rgb[2] * (1 - amt));
+
+function GradientPresetIcon({ name, size, color }: { name: keyof typeof Ionicons.glyphMap; size: number; color: string }) {
+  const rgb = parseHexChan(color);
+  if (!rgb) return <Ionicons name={name} size={size} color={color} />;
+  const stops: [string, string, string] = [liftChan(rgb, ICON_LIGHT), color, sinkChan(rgb, ICON_DARK)];
+  return (
+    <MaskedView maskElement={<Ionicons name={name} size={size} color="#000000" />}>
+      <LinearGradient colors={stops} locations={[0, 0.52, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}>
+        <Ionicons name={name} size={size} color={color} style={{ opacity: 0 }} />
+      </LinearGradient>
+    </MaskedView>
+  );
+}
 
 export type NutritionPreset = 'standard' | 'keto' | 'heart' | 'fiber' | 'athletic' | 'custom';
 
@@ -287,18 +322,16 @@ export default function NutritionGearModal({ visible, onClose, preset, goals, on
                       transform: [{ scale: isPressed ? 0.94 : 1 }],
                     }}
                   >
-                    <Ionicons
+                    <GradientPresetIcon
                       name={p.icon}
                       size={22}
                       color={active ? theme.accentBlue : theme.textMuted}
                     />
-                    <Text style={{
-                      fontSize: 13,
-                      fontFamily: Type.uiBold,
-                      color: active ? theme.accentBlue : theme.textSecondary,
-                    }}>
-                      {p.label}
-                    </Text>
+                    <GradientTitle
+                      title={p.label}
+                      color={active ? theme.accentBlue : theme.textSecondary}
+                      style={{ fontSize: 13, fontFamily: Type.uiBold }}
+                    />
                     <Text style={{
                       fontSize: 10,
                       fontFamily: Type.ui,

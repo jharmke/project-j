@@ -8,6 +8,7 @@ import { useTheme } from '../theme';
 import { Type, numLine } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import BackgroundLayers from '../components/BackgroundLayers';
+import GradientTitle from '../components/GradientTitle';
 
 type MissionCard = {
   icon: string;
@@ -62,7 +63,7 @@ export default function MissionScreen() {
       <ScreenHeader title="Our Mission" />
 
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 32 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}
       >
 
@@ -82,7 +83,7 @@ export default function MissionScreen() {
               </View>
               <Text style={[styles.cardLabel, { color: t.textMuted }]}>{card.label}</Text>
             </View>
-            <Text style={[styles.cardHeadline, { color: t.accentBlueRaw }]}>{card.headline}</Text>
+            <GradientTitle title={card.headline} color={t.accentBlueRaw} style={styles.cardHeadline} />
             <Text style={[styles.cardBody, { color: t.textSecondary }]}>{card.body}</Text>
           </View>
           </View>

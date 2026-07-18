@@ -3,17 +3,60 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useEffect, useRef } from 'react';
 import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import MaskedView from '@react-native-masked-view/masked-view';
+import { LinearGradient } from 'expo-linear-gradient';
 import { TOOLTIP_REGISTRY, TooltipDefinition } from '../tooltipRegistry';
 import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 import { Type } from '../typography';
 import ButtonShine from './ButtonShine';
+import GradientTitle from './GradientTitle';
 
 interface Props {
   tooltipKey: string;
   visible: boolean;
   onClose: () => void;
   hideTour?: boolean;
+}
+
+// Same lift/sink recipe as GradientNumber (a big icon glyph is roughly square, same as a number glyph --
+// not a wide word -- so GradientNumber's tuning fits it better than GradientTitle's stronger word tuning).
+const ICON_LIGHT = 0.24;
+const ICON_DARK  = 0.20;
+
+function clamp(n: number) { return Math.max(0, Math.min(255, Math.round(n))); }
+
+function parseHex(hex: string): [number, number, number] | null {
+  const m = /^#?([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(hex.trim());
+  if (!m) return null;
+  let h = m[1];
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+
+const toHex = (r: number, g: number, b: number) =>
+  '#' + [r, g, b].map(v => clamp(v).toString(16).padStart(2, '0')).join('');
+
+const lift = (rgb: [number, number, number], amt: number) =>
+  toHex(rgb[0] + (255 - rgb[0]) * amt, rgb[1] + (255 - rgb[1]) * amt, rgb[2] + (255 - rgb[2]) * amt);
+
+const sink = (rgb: [number, number, number], amt: number) =>
+  toHex(rgb[0] * (1 - amt), rgb[1] * (1 - amt), rgb[2] * (1 - amt));
+
+// The big (i) icon, molded the same way a hero number is. Falls back to a flat icon if the colour isn't
+// a plain hex (shouldn't happen here -- accentBlue/accentAmber always are -- but matches GradientNumber's
+// own safety net).
+function GradientIcon({ name, size, color }: { name: keyof typeof Ionicons.glyphMap; size: number; color: string }) {
+  const rgb = parseHex(color);
+  if (!rgb) return <Ionicons name={name} size={size} color={color} />;
+  const stops: [string, string, string] = [lift(rgb, ICON_LIGHT), color, sink(rgb, ICON_DARK)];
+  return (
+    <MaskedView maskElement={<Ionicons name={name} size={size} color="#000000" />}>
+      <LinearGradient colors={stops} locations={[0, 0.52, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}>
+        <Ionicons name={name} size={size} color={color} style={{ opacity: 0 }} />
+      </LinearGradient>
+    </MaskedView>
+  );
 }
 
 export default function TooltipModal({ tooltipKey, visible, onClose, hideTour }: Props) {
@@ -29,6 +72,16 @@ export default function TooltipModal({ tooltipKey, visible, onClose, hideTour }:
   const tourPulse       = useRef(new Animated.Value(0.6)).current;
 
   const def: TooltipDefinition | undefined = TOOLTIP_REGISTRY.find(t => t.key === tooltipKey);
+
+  // Faith tooltips (Bible/prayer/etc.) run the app's amber scheme instead of the user's chosen accent --
+  // same rule PrayerRequestModal already follows (faith ? accentAmber : accentBlue[Raw]).
+  const isFaith = def?.category === 'Faith';
+  const accent    = isFaith ? theme.accentAmber : theme.accentBlue;
+  const accentRaw = isFaith ? theme.accentAmber : theme.accentBlueRaw;
+  const gotItBg     = isFaith ? theme.accentAmber + '18' : theme.accentBlueBg;
+  const gotItBorder = isFaith ? theme.accentAmber        : theme.accentBlueBorder;
+  const tourBg     = isFaith ? theme.accentAmber + '18' : theme.accentBlueRaw + '18';
+  const tourBorder = isFaith ? theme.accentAmber        : theme.accentBlueRaw;
 
   useEffect(() => {
     if (visible) {
@@ -112,7 +165,7 @@ export default function TooltipModal({ tooltipKey, visible, onClose, hideTour }:
           {
             backgroundColor: theme.bgSheet,
             borderColor: theme.borderCard,
-            borderTopColor: theme.accentBlueRaw + '55',
+            borderTopColor: accentRaw + '55',
             opacity: cardOpacity,
             transform: [{ translateY: cardTranslateY }],
           }
@@ -126,25 +179,22 @@ export default function TooltipModal({ tooltipKey, visible, onClose, hideTour }:
             <Animated.View style={[
               styles.iconCircle,
               {
-                backgroundColor: theme.accentBlueRaw + '22',
+                backgroundColor: accentRaw + '22',
                 opacity: contentOpacity,
                 transform: [{ translateY: contentTranslateY }],
               }
             ]}>
-              <Ionicons name="information-circle" size={32} color={theme.accentBlue} />
+              <GradientIcon name="information-circle" size={32} color={accent} />
             </Animated.View>
 
             {/* Title */}
-            <Animated.Text style={[
-              styles.title,
-              {
-                color: theme.accentBlue,
-                opacity: contentOpacity,
-                transform: [{ translateY: contentTranslateY }],
-              }
-            ]}>
-              {def.title}
-            </Animated.Text>
+            <Animated.View style={{
+              opacity: contentOpacity,
+              transform: [{ translateY: contentTranslateY }],
+              alignSelf: 'stretch',
+            }}>
+              <GradientTitle title={def.title} color={accent} style={styles.title} />
+            </Animated.View>
 
             {/* Body */}
             <Animated.Text style={[
@@ -197,7 +247,7 @@ export default function TooltipModal({ tooltipKey, visible, onClose, hideTour }:
                 {
                   backgroundColor: theme.bgCard,
                   borderColor: theme.borderCard,
-                  borderLeftColor: theme.accentBlueRaw,
+                  borderLeftColor: accentRaw,
                   opacity: contentOpacity,
                   transform: [{ translateY: contentTranslateY }],
                 }
@@ -216,7 +266,7 @@ export default function TooltipModal({ tooltipKey, visible, onClose, hideTour }:
                   <Text style={[styles.exampleDesc, { color: theme.textSecondary, fontFamily: Type.uiBold }]}>
                     {def.example.result.desc}
                   </Text>
-                  <Text style={[styles.exampleValue, { color: theme.accentBlue, fontFamily: Type.uiBold }]}>
+                  <Text style={[styles.exampleValue, { color: accent, fontFamily: Type.uiBold }]}>
                     {def.example.result.value}
                   </Text>
                 </View>
@@ -235,16 +285,17 @@ export default function TooltipModal({ tooltipKey, visible, onClose, hideTour }:
                       setTimeout(() => startTutorial(def.tutorialId!), 350);
                     }}
                     style={[styles.button, {
-                      backgroundColor: theme.accentBlueRaw + '18',
-                      borderColor: theme.accentBlueRaw,
+                      backgroundColor: tourBg,
+                      borderColor: tourBorder,
                       flexDirection: 'row',
                       gap: 8,
                       justifyContent: 'center',
                     }]}
                     activeOpacity={0.8}
                   >
-                    <Ionicons name="play-circle" size={16} color={theme.accentBlue} />
-                    <Text style={[styles.buttonText, { color: theme.accentBlue }]}>Take a Tour</Text>
+                    <ButtonShine radius={10} />
+                    <Ionicons name="play-circle" size={16} color={accent} />
+                    <Text style={[styles.buttonText, { color: accent }]}>Take a Tour</Text>
                   </TouchableOpacity>
                 </Animated.View>
               </Animated.View>
@@ -254,11 +305,11 @@ export default function TooltipModal({ tooltipKey, visible, onClose, hideTour }:
             <Animated.View style={{ opacity: buttonOpacity, marginTop: def.tutorialId && !hideTour ? 10 : 20, alignSelf: 'stretch' }}>
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleClose(); }}
-                style={[styles.button, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+                style={[styles.button, { backgroundColor: gotItBg, borderColor: gotItBorder }]}
                 activeOpacity={0.8}
               >
                 <ButtonShine radius={10} />
-                <Text style={[styles.buttonText, { color: theme.accentBlue }]}>Got it</Text>
+                <Text style={[styles.buttonText, { color: accent }]}>Got it</Text>
               </TouchableOpacity>
             </Animated.View>
 

@@ -28,6 +28,7 @@ import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import TooltipIcon from '../components/TooltipIcon';
 import HeaderIconButton from '../components/HeaderIconButton';
 import ButtonShine from '../components/ButtonShine';
+import GradientTitle from '../components/GradientTitle';
 import FabDome from '../components/FabDome';
 import BackgroundLayers from '../components/BackgroundLayers';
 import { useTheme } from '../theme';
@@ -636,7 +637,7 @@ export default function BibleScreen() {
           <Ionicons name="chevron-back" size={24} color={theme.accentAmber} />
         </TouchableOpacity>
         <TouchableOpacity ref={tutBookRef as any} onPress={openBookPicker} style={styles.headerTitle}>
-          <Text style={[styles.headerBookName, { color: theme.accentAmber }]}>{selectedBook.name}</Text>
+          <GradientTitle title={selectedBook.name} color={theme.accentAmber} style={styles.headerBookName} />
           <Ionicons name="chevron-down" size={14} color={theme.accentAmber} />
         </TouchableOpacity>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -858,7 +859,7 @@ export default function BibleScreen() {
               <TouchableOpacity onPress={() => startAutoScroll('fast')} style={{ backgroundColor: HALO_GOLD, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: HALO_GOLD, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Fast</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => startAutoScroll('fast')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: HALO_GOLD, alignItems: 'center', justifyContent: 'center', shadowColor: HALO_GOLD, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+              <TouchableOpacity onPress={() => startAutoScroll('fast')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: HALO_GOLD, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: HALO_GOLD, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Ionicons name="flash-outline" size={20} color="#ffffff" />
               </TouchableOpacity>
             </View>
@@ -870,7 +871,7 @@ export default function BibleScreen() {
               <TouchableOpacity onPress={() => startAutoScroll('medium')} style={{ backgroundColor: HALO_GOLD, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: HALO_GOLD, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Medium</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => startAutoScroll('medium')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: HALO_GOLD, alignItems: 'center', justifyContent: 'center', shadowColor: HALO_GOLD, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+              <TouchableOpacity onPress={() => startAutoScroll('medium')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: HALO_GOLD, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: HALO_GOLD, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Ionicons name="play-outline" size={20} color="#ffffff" />
               </TouchableOpacity>
             </View>
@@ -882,7 +883,7 @@ export default function BibleScreen() {
               <TouchableOpacity onPress={() => startAutoScroll('slow')} style={{ backgroundColor: HALO_GOLD, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: HALO_GOLD, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Slow</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => startAutoScroll('slow')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: HALO_GOLD, alignItems: 'center', justifyContent: 'center', shadowColor: HALO_GOLD, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+              <TouchableOpacity onPress={() => startAutoScroll('slow')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: HALO_GOLD, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: HALO_GOLD, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Ionicons name="leaf-outline" size={20} color="#ffffff" />
               </TouchableOpacity>
             </View>
@@ -908,11 +909,16 @@ export default function BibleScreen() {
       {showBookPicker && (
         <Modal transparent animationType="none" visible={showBookPicker} onRequestClose={closeBookPicker}>
           <TouchableOpacity style={[styles.overlay, { backgroundColor: theme.overlayBg }]} activeOpacity={1} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeBookPicker(); }} />
-          <Animated.View style={[styles.bookSheet, { backgroundColor: theme.bgSheet, borderColor: theme.borderSheet, transform: [{ translateY: bookSheetTranslate }] }]}>
-            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeBookPicker(); }} style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 24, marginBottom: 8 }}>
+          <Animated.View style={[styles.bookSheet, { backgroundColor: theme.bgSheet, borderColor: theme.borderSheet, borderTopColor: theme.accentAmber, transform: [{ translateY: bookSheetTranslate }] }]}>
+            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeBookPicker(); }} style={{ alignSelf: 'center', paddingVertical: 4, paddingHorizontal: 24 }} hitSlop={{ top: 8, bottom: 8, left: 40, right: 40 }}>
               <View style={[styles.sheetHandle, { backgroundColor: theme.sheetHandle }]} />
             </TouchableOpacity>
-            <Text style={[styles.sheetTitle, { color: theme.textPrimary }]}>Books</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4, marginBottom: 12 }}>
+              <GradientTitle title="Books" color={theme.accentAmber} style={[styles.sheetTitle, { marginBottom: 0 }]} />
+              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeBookPicker(); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Ionicons name="close" size={20} color={theme.textMuted} />
+              </TouchableOpacity>
+            </View>
             <View style={[styles.searchBox, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]}>
               <Ionicons name="search-outline" size={14} color={theme.textMuted} />
               <TextInput
@@ -997,7 +1003,7 @@ export default function BibleScreen() {
                 <View style={[styles.sheetHandle, { backgroundColor: theme.sheetHandle }]} />
               </TouchableOpacity>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                <Text style={[styles.sheetTitle, { color: theme.accentAmber, marginBottom: 0 }]}>Saved Verses</Text>
+                <GradientTitle title="Saved Verses" color={theme.accentAmber} style={[styles.sheetTitle, { marginBottom: 0 }]} />
                 <View style={{ flexDirection: 'row', backgroundColor: theme.bgInput, borderRadius: 8, borderWidth: 1, borderColor: theme.borderInput, overflow: 'hidden' }}>
                   {(['book', 'recent'] as const).map(s => (
                     <TouchableOpacity key={s} onPress={() => toggleFavoritesSort(s)} style={{ paddingHorizontal: 10, paddingVertical: 6, backgroundColor: favoritesSort === s ? theme.accentAmber + '1A' : 'transparent' }}>
@@ -1019,7 +1025,7 @@ export default function BibleScreen() {
                   {sortedFavorites.map(fav => (
                     <TouchableOpacity key={fav.ref} onPress={() => navigateToFavorite(fav)} style={[styles.favRow, { borderBottomColor: theme.borderSubtle }]}>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: theme.accentAmber, marginBottom: 2 }}>{fav.ref}</Text>
+                        <GradientTitle title={fav.ref} color={theme.accentAmber} style={{ fontSize: 12, fontFamily: Type.uiBold, marginBottom: 2 }} />
                         <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textSecondary }} numberOfLines={2}>{fav.text}</Text>
                       </View>
                       <TouchableOpacity onPress={() => removeFavorite(fav.ref)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -1040,11 +1046,16 @@ export default function BibleScreen() {
           <ToastRenderer />
           <TouchableOpacity style={[styles.overlay, { backgroundColor: theme.overlayBg }]} activeOpacity={1} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowSettingsModal(false); }} />
           <View style={[styles.overlay, { justifyContent: 'center', alignItems: 'center' }]} pointerEvents="box-none">
-            <View style={[styles.centeredModal, { backgroundColor: theme.bgSheet, borderColor: theme.borderCard }]}>
+            <View style={[styles.centeredModal, { backgroundColor: theme.bgSheet, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentAmber }]}>
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowSettingsModal(false); }} style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 24, marginBottom: 4 }}>
                 <View style={[styles.sheetHandle, { backgroundColor: theme.sheetHandle }]} />
               </TouchableOpacity>
-              <Text style={[styles.sheetTitle, { color: theme.accentAmber }]}>Bible Settings</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                <GradientTitle title="Bible Settings" color={theme.accentAmber} style={[styles.sheetTitle, { marginBottom: 0 }]} />
+                <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowSettingsModal(false); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                  <Ionicons name="close" size={20} color={theme.textMuted} />
+                </TouchableOpacity>
+              </View>
 
               <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                 {/* Live preview -- fixed height so modal doesn't resize */}
@@ -1105,6 +1116,7 @@ export default function BibleScreen() {
                     <Text style={[styles.modalBtnText, { color: theme.textMuted }]}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={saveSettings} style={[styles.modalBtn, { backgroundColor: theme.accentAmber + '1A', borderColor: theme.accentAmber + '4D', flex: 2 }]}>
+                    <ButtonShine radius={8} />
                     <Ionicons name="checkmark" size={14} color={theme.accentAmber} />
                     <Text style={[styles.modalBtnText, { color: theme.accentAmber }]}>Save</Text>
                   </TouchableOpacity>
@@ -1143,7 +1155,7 @@ const styles = StyleSheet.create({
   verseText:           { flex: 1 },
   partialNote:         { fontSize: 10, fontFamily: Type.ui, textAlign: 'center', marginTop: 24, fontStyle: 'italic' },
   overlay:             { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-  bookSheet:           { position: 'absolute', bottom: 0, left: 0, right: 0, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '85%', borderTopWidth: 0.5, padding: 20, paddingBottom: 0 },
+  bookSheet:           { position: 'absolute', bottom: 0, left: 0, right: 0, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '85%', borderTopWidth: 1.5, paddingTop: 10, paddingHorizontal: 20 },
   centeredModal:       { width: '90%', borderRadius: 14, borderWidth: 0.5, paddingHorizontal: 20, paddingTop: 4, paddingBottom: 20, maxHeight: '88%' },
   sheetHandle:         { width: 36, height: 4, borderRadius: 2 },
   sheetTitle:          { fontSize: 18, fontFamily: Type.display, letterSpacing: 0.3, marginBottom: 12 },

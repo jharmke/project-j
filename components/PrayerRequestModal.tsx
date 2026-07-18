@@ -8,6 +8,7 @@ import { auth, db } from '../firebaseConfig';
 import { useTheme } from '../theme';
 import { ToastRenderer, useToast } from './Toast';
 import PrimaryCTA from './PrimaryCTA';
+import GradientTitle from './GradientTitle';
 import { Type } from '../typography';
 
 interface Props {
@@ -104,9 +105,7 @@ export default function PrayerRequestModal({ visible, onClose, variant }: Props)
               fixed from Type.num (the number face) to Clash. */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
             <Ionicons name="heart" size={15} color={faith ? theme.accentAmber : theme.accentBlue} />
-            <Text style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, color: faith ? theme.accentAmber : theme.accentBlueRaw }}>
-              Send a Prayer Request
-            </Text>
+            <GradientTitle title="Send a Prayer Request" color={faith ? theme.accentAmber : theme.accentBlueRaw} style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3 }} />
           </View>
           <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textMuted, marginBottom: 16, lineHeight: 20 }}>
             Share what's on your heart. Every request is read and prayed over.

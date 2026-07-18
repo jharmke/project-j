@@ -11,6 +11,103 @@
 
 ---
 
+## 🌈 TOOLTIP + FULL TITLE/MODAL GRADIENT SWEEP, THEN LOG TAB NUMBERS PASS (CLOSED 2026-07-17)
+Follow-on to the Title Accent-Gradient Fill entry below: that pass covered ScreenHeader/ModalHeader and
+the 6 tab headers, but a search proved most of what Justin would call "a modal" in this app never routes
+through either shared component -- it's a hand-rolled floating card with its own copy-pasted title. Found
+by searching for the shared "handle pill" pattern every custom modal uses, then checking which files never
+import GradientTitle at all: 15 of 18 handle-pill files came back with zero import.
+
+**Tooltip system first** (one shared component, `components/TooltipModal.tsx`, used by every (i) tooltip
+app-wide): title + the big icon are now gradient (a new local `GradientIcon` helper, same lift/sink recipe
+as GradientNumber since an icon glyph is roughly square like a number, not a wide word). Faith-category
+tooltips (Bible, prayer) now render the whole thing in amber instead of blue -- icon, title, top border,
+both buttons -- using the registry's existing `category` field, same `faith ? accentAmber : accentBlue`
+rule PrayerRequestModal already used. "Take a Tour" was missing `ButtonShine` that "Got it" already had;
+added it.
+
+**Then the full sweep**, tab by tab: Bible (book header, Books sheet full touch-up incl. a new top
+border/X/handle-moved-up even though it stays a bottom sheet, Saved Verses + its verse-reference list,
+Bible Settings full touch-up + Save button shine), Journal (New Entry sheet full touch-up -- AND the handle
+was a bare `<View>` with no onPress at all, so it never closed the sheet; wired up + haptic added), Settings
+(mode-switch confirmation), Workout tab + Workout Library (Edit/Add Exercise, Assign/Manage Tags, tag
+creator, Rename, Fill From Preset -- which also had NO handle at all, added one, plus two ALL-CAPS titles
+["FILL FROM PRESET", "RENAME"] that were already on the correct font, just needed mixed case per the
+established title convention, and a synced-exercise name that was sitting on `Type.num`, the number face,
+same "word on the wrong face" bug class as Day Summary's earlier fix), Add Food (Sort modal, needed a font
+fix off `Type.uiBold` onto the title face plus an added X), Home + Log's water custom-amount modals
+(Log's was a stale pre-refresh version -- old 9px label, flat button -- rebuilt to match Home's molded
+`PrimaryCTA` + gradient title), and ~10 standalone modals (Day Summary, Prayer Request, Add a Prayer, Body
+Measurements' How to Measure [was a 9px eyebrow, upgraded to a real 18px title], Summary Ready [title was
+ALL CAPS, fixed + added the missing shine to its "Got it" button], Manage Streaks [the live modal got the
+full treatment; its tutorial-mode twin only got the title gradient, on purpose -- adding a manual close
+there risked fighting the tutorial script's own flow control], Create Custom Streak, BibleStartGuide,
+Otto's NotificationPanel, both first-use disclaimer modals [Day Score, Targets -- the latter lives in
+onboarding's Your Style screen, flagged since onboarding is a separate track]).
+
+**Real bugs caught along the way, not gradient work:**
+- Rest/hold timer chips (Workout tab) sat BEHIND the frosted tab bar. Root cause: the tab bar went absolute
+  or "floating" in the July 14 visual refresh and the FABs got a `TAB_BAR_HEIGHT + insets.bottom + 18`
+  offset to match, but these two chips were never updated off their stale bare `bottom: 16` -- a leftover
+  from before the tab bar floated over content, unrelated to anything shipped this session.
+- The hold timer's number went briefly invisible after the position fix: `GradientNumber`'s `style` prop
+  only reaches the INNER masked Text, never the outer `MaskedView` it wraps -- so passing `flex: 1` through
+  `style` (to make the number stretch in its row) did nothing for the actual box, which collapsed to zero
+  width. Fix: put `flex: 1` on a wrapping `<View>`, keep `GradientNumber`'s own style to text-level
+  properties only. Same fix applied preemptively to the IF card's `PulseSegment` (wraps `GradientNumber` in
+  an `Animated.View` for its pulse-scale transform, rather than passing the transform through `style`).
+- add-food's "Use a Saved Food (42)" tray was translucent (`accentBlueBg`) over the moving background glow,
+  so it visually dissolved -- swapped to `accentBlueBgOpaque` (same fix as View All Achievements). Also had
+  a doubled-up top-light: a hand-rolled 1.5px bright top border AND `ButtonShine` at once; dropped the
+  border per house rule (shine owns the top-light, a border stays on all four sides). Dead code cleaned up
+  in the same file: `addNewBtn`/`addNewBtnText` styles, defined and never rendered anywhere.
+- IF card: the Target/Actual/Window row used a fixed `gap: 28` with three auto-width columns and no wrap,
+  so "Window" (a wide "6:27 PM -> 6:27 PM" string) could overflow off the right edge of the screen. First
+  attempt made it wrap to its own centered row below -- Justin correctly called this out as needless
+  reinvention ("they weren't centered even when they weren't gradient, they were one row"). Real fix: keep
+  the original one-row layout, give Window's column `flex: 1` and switch it from `GradientNumber` to
+  `GradientTitle` with `numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}` so it shrinks to fit
+  whatever space is left rather than wrapping or clipping -- device-width-agnostic, no guessed font size.
+- IF card's duration-preset pills (12:12, 14:10, etc.) were rendering unselected text in a bespoke theme
+  token, `ifMethodText`, which resolves to a genuinely purple `#6666aa` on Light. Confirmed via grep it was
+  used NOWHERE else in the app; swapped the pill's bg/border/text to the same `bgInput`/`borderInput`/
+  `textMuted` combo every other pill in the app already uses.
+
+**New rule this pass discovered the hard way:** the gradient technique is a single vertical light-to-dark
+wash across the whole text box. On one line that's a subtle shine; across a WRAPPED 2-3 line sentence, each
+line sits at a different point in the same wash and reads as a visibly different color -- not a bug to
+tune, a hard limit of the technique. Found on the Diagnostic Report's correlation cards (`card.claim` /
+`card.proof` / `card.lever`, all full sentences that wrap) and reverted there. Rule going forward: gradient
+is for titles, numbers, and short single-line labels only -- never a sentence that can wrap. Food/recipe/
+ingredient NAMES were evaluated against this same rule and deliberately EXCLUDED app-wide (Add Food search
+results, AI Estimate, New/Edit Recipe ingredients) because fixing the wrap-risk requires truncating to one
+line, and Justin didn't want names cut short just to enable a decorative effect -- the one exception is
+add-food's "Use a Saved Food" tray, where the 1-line safeguard + gradient WAS applied, by explicit request.
+
+**Then the Log tab numbers pass (Section 2)**, six batches, each verified on device before the next: (1)
+IF card hero times [countdown digits, Started/Closes, Target/Actual/Window -- see bugs above], (2) Jump to
+Date's month name + Nutrition Goals' 6 presets [icon + label, reusing the tooltip system's `GradientIcon`],
+(3) Food Library's calorie amount, (4) AI Estimate's per-item + total calorie/macro numbers [food names
+skipped per the rule above], (5) New/Edit Recipe's full Total Nutrition card [same component serves both
+screens -- every value including all extended nutrients], (6) Food Detail / Edit Entry [also the same
+screen/component in two modes via an `isEditing` flag -- main food name with the 1-line safeguard, the 3
+macro values, and the Logged/Last Logged/Avg Serving boxes].
+
+Verified clean via `tsc --noEmit` after every batch. A handful of pre-existing, unrelated TS errors
+surfaced repeatedly across files (a `ref` + `collapsable` on `TouchableOpacity` type mismatch in
+workout-library.tsx/stats.tsx, an `AnimatedRef<ScrollView>` mismatch in bible.tsx, a `MyFood[]` state
+mismatch in add-food.tsx, a `TouchableOpacity` type-as-value error in food-detail.tsx) -- confirmed
+unrelated by line-number proximity each time, never chased, per the "don't run tsc twice to prove a
+pre-existing bug" rule.
+
+**Deliberately NOT done this pass, tracked separately:** Challenges page and Achievement names/badges
+(both genuinely numbers-and-repeating-list work, pinned to a later Section 2 continuation), the "Use a
+Saved Food" tray's sibling list at a different code path in add-food.tsx (same style, but allows 2-line
+wrap unlike the main list -- found, not touched, since it wasn't what was asked about), a stale reference
+to "Reports" page work and Diagnostic Report / Mission page hero titles beyond what's listed above
+(surfaced in a sweep, not chased down this session), and the non-modal number-face stragglers already
+flagged in NEXT UP (Profile save-bar buttons, REST DAY heading, some IFCard/cardio button labels).
+
 ## 🎨 TITLE ACCENT-GRADIENT FILL (CLOSED 2026-07-17)
 The last big item on SPEC_visual_refresh.md's OPEN list: page/modal/tab titles were still flat accent
 color while GradientNumber had already been carrying the hero numbers app-wide since the numbers rollout.

@@ -11,6 +11,7 @@ import { WHATS_NEW_RELEASES } from '../data/whatsNew';
 import { Type, numLine } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import BackgroundLayers from '../components/BackgroundLayers';
+import GradientTitle from '../components/GradientTitle';
 
 // What's New / release notes page. Mirrors the Mission page look (clean cards, big hero title).
 // Reached permanently from Settings > About, and once per release from an Otto hub notification.
@@ -45,7 +46,8 @@ export default function WhatsNewScreen() {
               }}
               style={styles.patchHeaderRow}
             >
-              <Text style={[styles.patchHeader, { color: t.textMuted }]}>{release.version}</Text>
+              <GradientTitle title={release.version} color={t.accentBlueRaw} style={styles.patchHeader} />
+              <View style={{ flex: 1, height: 1, backgroundColor: t.textMuted + '55', marginHorizontal: 10 }} />
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 {release.date ? (
                   <Text style={[styles.patchDate, { color: t.textMuted }]}>{release.date}</Text>
@@ -72,7 +74,7 @@ export default function WhatsNewScreen() {
                         <Ionicons name={h.icon as any} size={15} color={t.accentBlueRaw} />
                       </View>
                     )}
-                    <Text style={[styles.cardTitle, { color: t.textMuted }]}>{h.title}</Text>
+                    <GradientTitle title={h.title} color={t.accentBlueRaw} style={styles.cardTitle} />
                   </View>
 
                   {h.body ? (

@@ -7,6 +7,7 @@ import { useCallback, useRef, useEffect, useState } from 'react';
 import { Alert, Animated, Dimensions, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CustomFoodCreator from '../components/CustomFoodCreator';
+import GradientNumber from '../components/GradientNumber';
 import { useToast } from '../components/Toast';
 import { saveToFirebase } from '../firebaseConfig';
 import { storageSet } from '../utils/storage';
@@ -391,7 +392,7 @@ export default function RecipeBuilderScreen() {
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 12, paddingTop: 12, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
         {exts.map(e => (
           <View key={e.label} style={{ width: '25%', alignItems: 'center', marginBottom: 12 }}>
-            <Text style={styles.extVal}>{e.val}{e.unit}</Text>
+            <GradientNumber value={`${e.val}${e.unit}`} color={theme.textSecondary} style={styles.extVal} />
             <Text style={[styles.extLabel, { textAlign: 'center' }]}>{e.label}</Text>
           </View>
         ))}
@@ -552,7 +553,7 @@ export default function RecipeBuilderScreen() {
                   </View>
                 </View>
                 <View style={{ alignItems: 'flex-end', justifyContent: 'flex-start', marginRight: 12 }}>
-                  <Text style={{ fontSize: 18, color: theme.accentGreen, fontFamily: Type.num }}>{ing.cal}</Text>
+                  <GradientNumber value={String(ing.cal)} color={theme.accentGreen} style={{ fontSize: 18, fontFamily: Type.num }} />
                   <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.ui, letterSpacing: 1 }}>kcal</Text>
                 </View>
                 <TouchableOpacity onPress={() => removeIngredient(ing.id)} style={styles.removeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -569,22 +570,22 @@ export default function RecipeBuilderScreen() {
             <Text style={styles.cardLabel}>Total Nutrition</Text>
             <View style={styles.macroRow}>
               <View style={styles.macroStat}>
-                <Text style={[styles.macroVal, { color: theme.textSecondary }]}>{totalCal}</Text>
+                <GradientNumber value={String(totalCal)} color={theme.textSecondary} style={styles.macroVal} />
                 <Text style={styles.macroLabel}>kcal</Text>
               </View>
               <View style={styles.macroDivider} />
               <View style={styles.macroStat}>
-                <Text style={[styles.macroVal, { color: theme.macroProtein }]}>{totalProtein}<Text style={styles.macroUnit}>g</Text></Text>
+                <GradientNumber value={`${totalProtein}g`} color={theme.macroProtein} style={styles.macroVal} />
                 <Text style={styles.macroLabel}>Protein</Text>
               </View>
               <View style={styles.macroDivider} />
               <View style={styles.macroStat}>
-                <Text style={[styles.macroVal, { color: theme.macroCarbs }]}>{totalCarbs}<Text style={styles.macroUnit}>g</Text></Text>
+                <GradientNumber value={`${totalCarbs}g`} color={theme.macroCarbs} style={styles.macroVal} />
                 <Text style={styles.macroLabel}>Carbs</Text>
               </View>
               <View style={styles.macroDivider} />
               <View style={styles.macroStat}>
-                <Text style={[styles.macroVal, { color: theme.macroFat }]}>{totalFat}<Text style={styles.macroUnit}>g</Text></Text>
+                <GradientNumber value={`${totalFat}g`} color={theme.macroFat} style={styles.macroVal} />
                 <Text style={styles.macroLabel}>Fat</Text>
               </View>
             </View>
@@ -624,22 +625,22 @@ export default function RecipeBuilderScreen() {
               <Text style={[styles.cardLabel, { color: theme.accentBlue, marginBottom: 12 }]}>Per {servingName.trim() || 'serving'}</Text>
               <View style={styles.macroRow}>
                 <View style={styles.macroStat}>
-                  <Text style={[styles.macroVal, { color: theme.textSecondary }]}>{calPerServing}</Text>
+                  <GradientNumber value={String(calPerServing)} color={theme.textSecondary} style={styles.macroVal} />
                   <Text style={styles.macroLabel}>kcal</Text>
                 </View>
                 <View style={styles.macroDivider} />
                 <View style={styles.macroStat}>
-                  <Text style={[styles.macroVal, { color: theme.macroProtein }]}>{proteinPerServing}<Text style={styles.macroUnit}>g</Text></Text>
+                  <GradientNumber value={`${proteinPerServing}g`} color={theme.macroProtein} style={styles.macroVal} />
                   <Text style={styles.macroLabel}>Protein</Text>
                 </View>
                 <View style={styles.macroDivider} />
                 <View style={styles.macroStat}>
-                  <Text style={[styles.macroVal, { color: theme.macroCarbs }]}>{carbsPerServing}<Text style={styles.macroUnit}>g</Text></Text>
+                  <GradientNumber value={`${carbsPerServing}g`} color={theme.macroCarbs} style={styles.macroVal} />
                   <Text style={styles.macroLabel}>Carbs</Text>
                 </View>
                 <View style={styles.macroDivider} />
                 <View style={styles.macroStat}>
-                  <Text style={[styles.macroVal, { color: theme.macroFat }]}>{fatPerServing}<Text style={styles.macroUnit}>g</Text></Text>
+                  <GradientNumber value={`${fatPerServing}g`} color={theme.macroFat} style={styles.macroVal} />
                   <Text style={styles.macroLabel}>Fat</Text>
                 </View>
               </View>

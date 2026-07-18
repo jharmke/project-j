@@ -9,6 +9,7 @@ import { cancelPrayerNotification } from '../services/notifications';
 import { useTheme } from '../theme';
 import { ToastRenderer, useToast } from './Toast';
 import PrimaryCTA from './PrimaryCTA';
+import GradientTitle from './GradientTitle';
 import { Type } from '../typography';
 
 /**
@@ -128,9 +129,7 @@ export default function AddPrayerModal({ visible, onClose, onAdded, editPrayer }
           {/* Padded compact card; title face fixed from Type.num (the number face) to Clash. */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
             <Ionicons name="hand-left" size={15} color={theme.accentAmber} />
-            <Text style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentAmber }}>
-              {isEdit ? 'Edit a Prayer' : 'Add a Prayer'}
-            </Text>
+            <GradientTitle title={isEdit ? 'Edit a Prayer' : 'Add a Prayer'} color={theme.accentAmber} style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3 }} />
           </View>
           <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textMuted, marginBottom: 16, lineHeight: 20 }}>
             {isEdit

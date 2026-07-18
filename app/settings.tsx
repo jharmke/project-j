@@ -82,6 +82,7 @@ import { generateMonthlySummary } from '../utils/monthlySummary';
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import ButtonShine from '../components/ButtonShine';
+import GradientTitle from '../components/GradientTitle';
 import BackgroundLayers from '../components/BackgroundLayers';
 
 type FaithJourney = 'rooted' | 'exploring' | 'notrightnow';
@@ -3875,9 +3876,11 @@ export default function SettingsScreen() {
             </TouchableOpacity>
             {modeSwitchTarget && (
               <View style={{ paddingHorizontal: 20, paddingBottom: 18, paddingTop: 4 }}>
-                <Text style={{ fontSize: 24, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentBlue, textAlign: 'center', marginBottom: 8 }}>
-                  Switch to {MODE_LABEL[modeSwitchTarget]}?
-                </Text>
+                <GradientTitle
+                  title={`Switch to ${MODE_LABEL[modeSwitchTarget]}?`}
+                  color={theme.accentBlue}
+                  style={{ fontSize: 24, fontFamily: Type.display, letterSpacing: 0.3, textAlign: 'center', marginBottom: 8 }}
+                />
 
                 <Text style={{ fontSize: 13.5, lineHeight: 20, fontFamily: Type.ui, color: theme.textMuted, textAlign: 'center', marginBottom: 16 }}>
                   {MODE_SWITCH_COPY[modeSwitchTarget]}

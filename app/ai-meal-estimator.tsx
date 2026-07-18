@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastRenderer, useToast } from '../components/Toast';
+import GradientNumber from '../components/GradientNumber';
 import { saveToFirebase } from '../firebaseConfig';
 import { useTheme } from '../theme';
 import PrimaryCTA from '../components/PrimaryCTA';
@@ -715,7 +716,7 @@ export default function AIMealEstimatorScreen() {
                         </View>
                       </View>
                       <View style={{ alignItems: 'flex-end', marginRight: 8 }}>
-                        <Text style={{ fontSize: 20, color: mindful ? theme.textSecondary : theme.accentGreen, fontFamily: Type.num }}>{scaled(r.baseCal)}</Text>
+                        <GradientNumber value={String(scaled(r.baseCal))} color={mindful ? theme.textSecondary : theme.accentGreen} style={{ fontSize: 20, fontFamily: Type.num }} />
                         <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.ui, marginTop: -2 }}>KCAL</Text>
                         {!r.edited && multiplier !== 1 ? (
                           <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.uiMedium, marginTop: 3 }}>{multiplier}x</Text>
@@ -749,7 +750,7 @@ export default function AIMealEstimatorScreen() {
                   <Text style={cardLabel}>TOTAL</Text>
                   <View style={{ alignItems: 'center', marginTop: -2, marginBottom: 0 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
-                      <Text style={{ fontSize: 42, color: mindful ? theme.textSecondary : theme.accentGreen, fontFamily: Type.num }}>{liveTotals.calories}</Text>
+                      <GradientNumber value={String(liveTotals.calories)} color={mindful ? theme.textSecondary : theme.accentGreen} style={{ fontSize: 42, fontFamily: Type.num }} />
                       <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.uiMedium }}>KCAL</Text>
                     </View>
                   </View>
@@ -763,7 +764,7 @@ export default function AIMealEstimatorScreen() {
                       <View key={m.label} style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
                         {i > 0 && <View style={{ width: 1, height: 34, backgroundColor: theme.borderCard }} />}
                         <View style={{ flex: 1, alignItems: 'center' }}>
-                          <Text style={{ fontSize: 19, color: m.color, fontFamily: Type.uiBold }}>{m.value}g</Text>
+                          <GradientNumber value={`${m.value}g`} color={m.color} style={{ fontSize: 19, fontFamily: Type.uiBold }} />
                           <Text style={[cardLabel, { marginTop: 3 }]}>{m.label}</Text>
                         </View>
                       </View>

@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import PrimaryCTA from './PrimaryCTA';
+import GradientTitle from './GradientTitle';
 import { Type } from '../typography';
 
 // accent is passed in because Your Style recolours live with the chosen coaching mode -- a hardcoded blue
@@ -62,7 +63,7 @@ export default function TargetsDisclaimerModal({ theme, accent, onAcknowledge }:
               </View>
             </View>
 
-            <Text style={{ fontSize: 22, letterSpacing: 0.3, fontFamily: Type.display, color: accent, textAlign: 'center', marginBottom: 10 }}>About Your Targets</Text>
+            <GradientTitle title="About Your Targets" color={accent} style={{ fontSize: 22, letterSpacing: 0.3, fontFamily: Type.display, textAlign: 'center', marginBottom: 10 }} />
 
             <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.ui, textAlign: 'center', lineHeight: 20 }}>
               The calorie target and projection on this screen are estimates, worked out from the stats you enter using a standard formula. Real bodies vary, and yours will tell you more than any equation can. Treat these as a starting point to adjust from, never a rule to obey.

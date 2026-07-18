@@ -26,6 +26,7 @@ import * as Notifications from 'expo-notifications';
 import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import GradientTitle from '../../components/GradientTitle';
+import GradientNumber from '../../components/GradientNumber';
 import ButtonShine from '../../components/ButtonShine';
 import FabDome from '../../components/FabDome';
 import PrimaryCTA from '../../components/PrimaryCTA';
@@ -1888,7 +1889,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
               <View key={i} style={{ flexBasis: '47%', maxWidth: '47%', flexGrow: row.length === 2 ? 1 : 0, alignItems: 'center', backgroundColor: theme.bgInset, borderWidth: 0.5, borderColor: theme.borderCard, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 10,
                 shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 6, elevation: 3 }}>
                 <Ionicons name={s.icon} size={14} color={accentColor} style={{ marginBottom: 3 }} />
-                <Text style={{ fontSize: 23, fontFamily: Type.num, letterSpacing: 0.5, color: theme.textSecondary }}>{s.value}</Text>
+                <GradientNumber value={s.value} color={theme.textSecondary} style={{ fontSize: 23, fontFamily: Type.num, letterSpacing: 0.5 }} />
                 <Text style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textMuted, marginTop: 1 }}>{s.label}</Text>
               </View>
             ))}
@@ -1931,9 +1932,15 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
             <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>
               {running ? 'Workout Running' : hasTime ? 'Workout Time' : 'Workout Timer'}
             </Text>
-            <Text style={{ fontSize: 18, fontFamily: Type.num, letterSpacing: 0.5, color: running ? theme.accentBlueRaw : hasTime ? theme.textSecondary : theme.textMuted, marginTop: 1 }}>
-              {hasTime || running ? formatDuration(elapsed) : 'Not started'}
-            </Text>
+            {hasTime || running ? (
+              <GradientNumber
+                value={formatDuration(elapsed)}
+                color={running ? theme.accentBlueRaw : theme.textSecondary}
+                style={{ fontSize: 18, fontFamily: Type.num, letterSpacing: 0.5, marginTop: 1 }}
+              />
+            ) : (
+              <Text style={{ fontSize: 18, fontFamily: Type.num, letterSpacing: 0.5, color: theme.textMuted, marginTop: 1 }}>Not started</Text>
+            )}
           </View>
         </TouchableOpacity>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -2056,7 +2063,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
             {ex.fromAppleHealth && (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6, marginBottom: 6 }}>
                 <Ionicons name="heart" size={11} color={theme.accentGreen} />
-                <Text style={[styles.badgeText, { color: theme.accentGreen }]}>APPLE HEALTH</Text>
+                <GradientTitle title="APPLE HEALTH" color={theme.accentGreen} style={styles.badgeText} />
               </View>
             )}
             {ex.isCardio ? (
@@ -2406,7 +2413,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                 </View>
               </TouchableOpacity>
               <View ref={progressCountRef} collapsable={false}>
-                <Text style={[styles.progressCount, { color: doneCount === displayExercises.length && displayExercises.length > 0 ? theme.statusGood : color }]}>{doneCount}/{displayExercises.length}</Text>
+                <GradientNumber value={`${doneCount}/${displayExercises.length}`} color={doneCount === displayExercises.length && displayExercises.length > 0 ? theme.statusGood : color} style={styles.progressCount} />
               </View>
             </View>
             <View style={[styles.progressBarBg, { backgroundColor: theme.bgProgressTrack }]}>
@@ -2459,7 +2466,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                         <View style={{ width: 14, alignItems: 'center' }}>
                           <Ionicons name="heart" size={11} color={theme.accentGreen} />
                         </View>
-                        <Text style={[styles.badgeText, { color: theme.accentGreen }]}>APPLE HEALTH</Text>
+                        <GradientTitle title="APPLE HEALTH" color={theme.accentGreen} style={styles.badgeText} />
                       </View>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -2487,7 +2494,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                       <View key={i} style={{ flex: 1, flexDirection: 'row', alignItems: 'stretch' }}>
                         {i > 0 && <View style={{ width: 0.5, backgroundColor: theme.borderCard, marginVertical: 2 }} />}
                         <View style={{ flex: 1, alignItems: 'center', paddingHorizontal: 2 }}>
-                          <Text style={{ fontSize: 22, fontFamily: Type.num, letterSpacing: 0.5, color: theme.textSecondary }}>{s.value}</Text>
+                          <GradientNumber value={s.value} color={theme.textSecondary} style={{ fontSize: 22, fontFamily: Type.num, letterSpacing: 0.5 }} />
                           <Text style={{ fontSize: 8, letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textMuted, marginTop: 1, textAlign: 'center' }}>{s.label}</Text>
                         </View>
                       </View>
@@ -2704,7 +2711,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
         return (
           <>
             {restExpanded && !countUp && (
-              <View style={{ position: 'absolute', left: 90, right: 90, bottom: 16 + CHIP_H + 8, zIndex: 51, flexDirection: 'row', gap: 8 }}>
+              <View style={{ position: 'absolute', left: 90, right: 90, bottom: TAB_BAR_HEIGHT + insets.bottom + 18 + CHIP_H + 8, zIndex: 51, flexDirection: 'row', gap: 8 }}>
                 <TouchableOpacity onPress={() => adjustRest(-15)} style={{ flex: 1, backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 12, paddingVertical: 11, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 6 }} hitSlop={{ top: 4, bottom: 4 }}>
                   <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.textSecondary }}>−15s</Text>
                 </TouchableOpacity>
@@ -2713,7 +2720,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                 </TouchableOpacity>
               </View>
             )}
-            <Reanimated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(200)} style={{ position: 'absolute', left: 90, right: 90, bottom: 16, height: CHIP_H, zIndex: 50, backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 1, borderColor: theme.accentBlue, justifyContent: 'center', paddingHorizontal: 14, gap: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 }}>
+            <Reanimated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(200)} style={{ position: 'absolute', left: 90, right: 90, bottom: TAB_BAR_HEIGHT + insets.bottom + 18, height: CHIP_H, zIndex: 50, backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 1, borderColor: theme.accentBlue, justifyContent: 'center', paddingHorizontal: 14, gap: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 }}>
               {/* Row 1: time + Skip. Tapping the time area toggles the ±15 popover (countdown only). */}
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <TouchableOpacity
@@ -2723,10 +2730,11 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                   style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}
                   hitSlop={{ top: 12, bottom: 4 }}>
                   <Ionicons name={countUp ? 'stopwatch-outline' : 'timer-outline'} size={20} color={over ? theme.accentRed : theme.accentBlue} />
-                  <Text style={{ fontSize: 24, fontFamily: Type.num, letterSpacing: 1, color: over ? theme.accentRed : theme.textPrimary }}>{num}</Text>
+                  <GradientNumber value={num} color={over ? theme.accentRed : theme.textPrimary} style={{ fontSize: 24, fontFamily: Type.num, letterSpacing: 1 }} />
                   {!countUp && <Ionicons name={restExpanded ? 'chevron-down' : 'chevron-up'} size={14} color={theme.textMuted} />}
                 </TouchableOpacity>
                 <TouchableOpacity onPress={skipRest} style={{ backgroundColor: theme.accentBlue, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 9 }} hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}>
+                  <ButtonShine radius={10} solid />
                   <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.bgPrimary }}>{countUp ? 'Done' : 'Skip'}</Text>
                 </TouchableOpacity>
               </View>
@@ -2746,15 +2754,18 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
         const num = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
         const CHIP_H = 66;
         return (
-          <Reanimated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(200)} style={{ position: 'absolute', left: 90, right: 90, bottom: 16, height: CHIP_H, zIndex: 50, backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 1, borderColor: theme.accentGreen, justifyContent: 'center', paddingHorizontal: 14, gap: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 }}>
+          <Reanimated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(200)} style={{ position: 'absolute', left: 90, right: 90, bottom: TAB_BAR_HEIGHT + insets.bottom + 18, height: CHIP_H, zIndex: 50, backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 1, borderColor: theme.accentGreen, justifyContent: 'center', paddingHorizontal: 14, gap: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 }}>
             {/* Row 1: time + Cancel + Done. */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Ionicons name="stopwatch-outline" size={20} color={theme.accentGreen} />
-              <Text style={{ flex: 1, fontSize: 24, fontFamily: Type.num, letterSpacing: 1, color: theme.textPrimary }}>{num}</Text>
+              <View style={{ flex: 1 }}>
+                <GradientNumber value={num} color={theme.textPrimary} style={{ fontSize: 24, fontFamily: Type.num, letterSpacing: 1 }} />
+              </View>
               <TouchableOpacity onPress={cancelHold} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9 }} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
                 <Ionicons name="close" size={15} color={theme.textSecondary} />
               </TouchableOpacity>
               <TouchableOpacity onPress={stopHold} style={{ backgroundColor: theme.accentGreen, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 9 }} hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}>
+                <ButtonShine radius={10} solid />
                 <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.bgPrimary }}>Done</Text>
               </TouchableOpacity>
             </View>
@@ -2819,7 +2830,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                   </TouchableOpacity>
 
                   <View style={{ marginBottom: 18, paddingBottom: 12, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-                    <Text style={[styles.modalTitle, { color: theme.accentBlue, marginBottom: !!dateLabel ? 2 : 0 }]}>Workout Summary</Text>
+                    <GradientTitle title="Workout Summary" color={theme.accentBlue} style={[styles.modalTitle, { marginBottom: !!dateLabel ? 2 : 0 }]} />
                     {!!dateLabel && (
                       <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: theme.textMuted, letterSpacing: 0.3 }}>{dateLabel}</Text>
                     )}
@@ -2834,7 +2845,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                           {fs.liftItems.map((it, idx) => (
                             <View key={idx} style={{ backgroundColor: theme.bgInset, borderWidth: 0.5, borderLeftWidth: 2.5, borderColor: theme.borderCard, borderLeftColor: theme.accentBlue, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 }}>
                               <Text numberOfLines={1} style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textSecondary }}>{it.name}</Text>
-                              <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: theme.textSecondary, marginTop: 6 }}>{formatLiftSets(it.sets, it.unit, it.trackingType)}</Text>
+                              <GradientNumber value={formatLiftSets(it.sets, it.unit, it.trackingType)} color={theme.textSecondary} style={{ fontSize: 12, fontFamily: Type.uiBold, marginTop: 6 }} />
                             </View>
                           ))}
                         </View>
@@ -2853,7 +2864,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <Text numberOfLines={1} style={{ flex: 1, fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textSecondary, marginRight: 8 }}>{it.name}</Text>
                                 {it.durationSec > 0 && (
-                                  <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: theme.textMuted }}>{formatDuration(it.durationSec)}</Text>
+                                  <GradientNumber value={formatDuration(it.durationSec)} color={theme.textMuted} style={{ fontSize: 11, fontFamily: Type.uiSemibold }} />
                                 )}
                               </View>
                               {(it.avgHr != null || it.maxHr != null) ? (
@@ -2861,14 +2872,14 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                                   {it.avgHr != null && (
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                       <Ionicons name="heart-outline" size={12} color={theme.accentAmber} />
-                                      <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: theme.textSecondary }}>{it.avgHr}</Text>
+                                      <GradientNumber value={String(it.avgHr)} color={theme.textSecondary} style={{ fontSize: 12, fontFamily: Type.uiBold }} />
                                       <Text style={{ fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textMuted }}>Avg BPM</Text>
                                     </View>
                                   )}
                                   {it.maxHr != null && (
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                       <Ionicons name="heart" size={12} color={theme.accentAmber} />
-                                      <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: theme.textSecondary }}>{it.maxHr}</Text>
+                                      <GradientNumber value={String(it.maxHr)} color={theme.textSecondary} style={{ fontSize: 12, fontFamily: Type.uiBold }} />
                                       <Text style={{ fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textMuted }}>Max BPM</Text>
                                     </View>
                                   )}
@@ -3014,7 +3025,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                 <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
               </TouchableOpacity>
               <View style={{ paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-                <Text style={[styles.modalTitle, { color: theme.accentBlue }]}>{editingExercise ? 'Edit Exercise' : 'Add Exercise'}</Text>
+                <GradientTitle title={editingExercise ? 'Edit Exercise' : 'Add Exercise'} color={theme.accentBlue} style={styles.modalTitle} />
               </View>
               <ScrollView style={{ flexShrink: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                 <View style={{ padding: 20 }}>
@@ -3170,7 +3181,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
               <View style={{ backgroundColor: theme.bgSheet, borderRadius: 16, padding: 20, width: 320, borderWidth: 1, borderColor: theme.borderCard }}>
                 {/* Was 'ASSIGN TAGS' in Type.num (number face) AND textPrimary (near-black). */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ color: theme.accentBlueRaw, fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3 }}>Assign Tags</Text>
+                  <GradientTitle title="Assign Tags" color={theme.accentBlueRaw} style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3 }} />
                   <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowTagModal(false); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                     <Ionicons name="close" size={22} color={theme.textMuted} />
                   </TouchableOpacity>
@@ -3246,7 +3257,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                 {/* Was 'MANAGE TAGS' in Type.num (number face) AND textPrimary (near-black -- breaks the
                     no-black-titles rule). Draggable handle kept; X added for a clear close. */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                  <Text style={{ color: theme.accentBlueRaw, fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3 }}>Manage Tags</Text>
+                  <GradientTitle title="Manage Tags" color={theme.accentBlueRaw} style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3 }} />
                   <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeManageTags(); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                     <Ionicons name="close" size={22} color={theme.textMuted} />
                   </TouchableOpacity>

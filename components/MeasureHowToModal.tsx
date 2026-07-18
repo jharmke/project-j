@@ -14,6 +14,7 @@ import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View }
 import { useTheme } from '../theme';
 import { MEASURE_FIELDS, MEASURE_REGIONS, fieldsForRegion, MeasureFieldKey } from '../utils/bodyMeasurements';
 import { Type } from '../typography';
+import GradientTitle from './GradientTitle';
 
 // Technique copy per field. Steps are short and imperative.
 const HOWTO: Record<MeasureFieldKey, string[]> = {
@@ -117,7 +118,7 @@ export default function MeasureHowToModal({ visible, onClose }: Props) {
                 <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: accent }}>All measurements</Text>
               </TouchableOpacity>
             ) : (
-              <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>How to Measure</Text>
+              <GradientTitle title="How to Measure" color={accent} style={{ fontSize: 18, fontFamily: Type.display, letterSpacing: 0.3 }} />
             )}
             <TouchableOpacity onPress={closeWithHaptic} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <Ionicons name="close" size={20} color={theme.textMuted} />

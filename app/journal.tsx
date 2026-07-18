@@ -26,6 +26,7 @@ import ButtonShine from '../components/ButtonShine';
 import FabDome from '../components/FabDome';
 import BackgroundLayers from '../components/BackgroundLayers';
 import ModalHeader from '../components/ModalHeader';
+import GradientTitle from '../components/GradientTitle';
 import { BlurView } from 'expo-blur';
 
 type Category = 'verse' | 'prayer' | 'study' | 'personal' | 'gratitude' | 'fitness';
@@ -764,10 +765,18 @@ export default function JournalScreen() {
           <Animated.View style={[styles.sheet, {
             backgroundColor: theme.bgSheet,
             borderColor: theme.borderSheet,
+            borderTopColor: theme.accentBlueRaw,
             transform: [{ translateY: categorySheetTranslate }],
           }]}>
-            <View style={[styles.sheetHandle, { backgroundColor: theme.sheetHandle }]} />
-            <Text style={[styles.sheetTitle, { color: theme.textPrimary }]}>New Entry</Text>
+            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeCategorySheet(); }} style={{ alignSelf: 'center', paddingVertical: 4, paddingHorizontal: 24 }} hitSlop={{ top: 8, bottom: 8, left: 40, right: 40 }}>
+              <View style={[styles.sheetHandle, { backgroundColor: theme.sheetHandle }]} />
+            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, marginBottom: 4 }}>
+              <GradientTitle title="New Entry" color={theme.accentBlueRaw} style={[styles.sheetTitle, { marginBottom: 0 }]} />
+              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeCategorySheet(); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Ionicons name="close" size={20} color={theme.textMuted} />
+              </TouchableOpacity>
+            </View>
             <Text style={[styles.sheetSubtitle, { color: theme.textDim }]}>What would you like to write about?</Text>
             <View style={{ gap: 10, marginTop: 8 }}>
               {(Object.keys(CATEGORY_META) as Category[]).filter(c => c !== 'verse' && !isRetired(c)).map(cat => {
@@ -969,8 +978,8 @@ const styles = StyleSheet.create({
   fab:               { position: 'absolute', bottom: 32, right: 24 },
   fabBtn:            { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 },
   overlay:           { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-  sheet:             { position: 'absolute', bottom: 0, left: 0, right: 0, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 48, borderTopWidth: 0.5 },
-  sheetHandle:       { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
+  sheet:             { position: 'absolute', bottom: 0, left: 0, right: 0, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 10, paddingHorizontal: 20, paddingBottom: 48, borderTopWidth: 1.5 },
+  sheetHandle:       { width: 36, height: 4, borderRadius: 2, alignSelf: 'center' },
   sheetTitle:        { fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, marginBottom: 4 },
   sheetSubtitle:     { fontSize: 12, fontFamily: Type.ui, marginBottom: 8 },
   categoryRow:       { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 0.5, borderRadius: 12, padding: 14 },

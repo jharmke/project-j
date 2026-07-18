@@ -21,6 +21,7 @@ import { periodSummaryLines } from '../utils/daySummaryCopy';
 import { ScoreRing } from './DaySummaryModal';
 import { Type, numLine } from '../typography';
 import ButtonShine from './ButtonShine';
+import GradientTitle from './GradientTitle';
 
 type StyleMode = 'discipline' | 'balanced' | 'mindful';
 type Tier = 'week' | 'month';
@@ -95,7 +96,7 @@ export default function SummaryReadyModal({
   };
 
   const isMindful = styleMode === 'mindful';
-  const title = tier === 'week' ? 'WEEKLY SUMMARY' : 'MONTHLY SUMMARY';
+  const title = tier === 'week' ? 'Weekly Summary' : 'Monthly Summary';
   const composite = avgComposite ?? 0;
 
   // Same coloring rules as the Day modal: tier-graded in Discipline/Balanced,
@@ -148,7 +149,7 @@ export default function SummaryReadyModal({
 
             {/* Header row: title + inline (i) */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-              <Text style={{ fontSize: 18, letterSpacing: -0.2, fontFamily: Type.display, color: theme.accentBlue }}>{title}</Text>
+              <GradientTitle title={title} color={theme.accentBlue} style={{ fontSize: 18, letterSpacing: -0.2, fontFamily: Type.display }} />
               <View style={{ transform: [{ translateY: -2 }] }}>
                 <TooltipIcon tooltipKey="day_score" hideTour />
               </View>
@@ -204,6 +205,7 @@ export default function SummaryReadyModal({
 
             {/* GOT IT (labeled secondary exit) */}
             <TouchableOpacity onPress={dismiss} style={{ paddingVertical: 13, borderRadius: 10, alignItems: 'center', marginTop: 8, backgroundColor: theme.bgInset, borderWidth: 0.5, borderColor: theme.borderCard }}>
+              <ButtonShine radius={10} />
               <Text style={{ color: theme.textSecondary, fontSize: 13, letterSpacing: 1, fontFamily: Type.uiSemibold }}>GOT IT</Text>
             </TouchableOpacity>
 

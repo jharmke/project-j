@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import PrimaryCTA from './PrimaryCTA';
+import GradientTitle from './GradientTitle';
 import { Type } from '../typography';
 
 export default function DayScoreDisclaimerModal({ theme, onAcknowledge }: { theme: any; onAcknowledge: () => void }) {
@@ -58,7 +59,7 @@ export default function DayScoreDisclaimerModal({ theme, onAcknowledge }: { them
               </View>
             </View>
 
-            <Text style={{ fontSize: 22, letterSpacing: 0.3, fontFamily: Type.display, color: theme.accentBlueRaw, textAlign: 'center', marginBottom: 10 }}>Your Day Score</Text>
+            <GradientTitle title="Your Day Score" color={theme.accentBlueRaw} style={{ fontSize: 22, letterSpacing: 0.3, fontFamily: Type.display, textAlign: 'center', marginBottom: 10 }} />
 
             <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.ui, textAlign: 'center', lineHeight: 20 }}>
               Each morning you'll see a score out of 100 for the day before, built from the nutrition, activity, and recovery data you logged. It's a snapshot to help you spot patterns and reflect.

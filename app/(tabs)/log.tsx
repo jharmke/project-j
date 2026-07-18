@@ -32,6 +32,7 @@ import NutrientDrilldownModal, { DrilldownItem, computeNetCarbsForEntry } from '
 import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import GradientTitle from '../../components/GradientTitle';
+import GradientNumber from '../../components/GradientNumber';
 import HeaderIconButton from '../../components/HeaderIconButton';
 import ButtonShine from '../../components/ButtonShine';
 import { CardWatermark } from '../../components/GradientCard';
@@ -150,7 +151,12 @@ function MacroStackedBar({ protein, carbs, fat, proteinGoal, carbsGoal, fatGoal,
         </View>
         <Text style={{ fontSize: 11, color: theme.macroProtein, fontFamily: Type.uiBold, width: 12 }}>P</Text>
         <View style={{ width: 46, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'flex-end' }}>
-          <AnimatedNumber value={protein} style={{ fontSize: 15, color: theme.macroProtein, fontFamily: Type.uiSemibold }} duration={500} />
+          <AnimatedNumber
+            value={protein}
+            style={{ fontSize: 15, color: theme.macroProtein, fontFamily: Type.uiSemibold }}
+            duration={500}
+            renderValue={(s) => <GradientNumber value={s} color={theme.macroProtein} style={{ fontSize: 15, fontFamily: Type.uiSemibold }} />}
+          />
           <Text style={{ fontSize: 10, color: theme.macroProtein }}>g</Text>
         </View>
       </TouchableOpacity>
@@ -160,7 +166,12 @@ function MacroStackedBar({ protein, carbs, fat, proteinGoal, carbsGoal, fatGoal,
         </View>
         <Text style={{ fontSize: 11, color: theme.macroCarbs, fontFamily: Type.uiBold, width: 12 }}>C</Text>
         <View style={{ width: 46, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'flex-end' }}>
-          <AnimatedNumber value={carbs} style={{ fontSize: 15, color: theme.macroCarbs, fontFamily: Type.uiSemibold }} duration={500} />
+          <AnimatedNumber
+            value={carbs}
+            style={{ fontSize: 15, color: theme.macroCarbs, fontFamily: Type.uiSemibold }}
+            duration={500}
+            renderValue={(s) => <GradientNumber value={s} color={theme.macroCarbs} style={{ fontSize: 15, fontFamily: Type.uiSemibold }} />}
+          />
           <Text style={{ fontSize: 10, color: theme.macroCarbs }}>g</Text>
         </View>
       </TouchableOpacity>
@@ -170,7 +181,12 @@ function MacroStackedBar({ protein, carbs, fat, proteinGoal, carbsGoal, fatGoal,
         </View>
         <Text style={{ fontSize: 11, color: theme.macroFat, fontFamily: Type.uiBold, width: 12 }}>F</Text>
         <View style={{ width: 46, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'flex-end' }}>
-          <AnimatedNumber value={fat} style={{ fontSize: 15, color: theme.macroFat, fontFamily: Type.uiSemibold }} duration={500} />
+          <AnimatedNumber
+            value={fat}
+            style={{ fontSize: 15, color: theme.macroFat, fontFamily: Type.uiSemibold }}
+            duration={500}
+            renderValue={(s) => <GradientNumber value={s} color={theme.macroFat} style={{ fontSize: 15, fontFamily: Type.uiSemibold }} />}
+          />
           <Text style={{ fontSize: 10, color: theme.macroFat }}>g</Text>
         </View>
       </TouchableOpacity>
@@ -420,9 +436,7 @@ export default function LogScreen() {
           {/* textSecondary, not textPrimary: textPrimary is the harsh near-black on Light and this is a
               header, not data. And INTERFACE, not Type.num -- "July 2026" is a month NAME with a year on it,
               not a value; the number face is condensed + tabular and made it read like a readout. */}
-          <Text style={{ fontSize: 15, color: theme.textSecondary, fontFamily: Type.uiBold }}>
-            {CAL_MONTHS[pickerMonth]} {pickerYear}
-          </Text>
+          <GradientTitle title={`${CAL_MONTHS[pickerMonth]} ${pickerYear}`} color={theme.textSecondary} style={{ fontSize: 15, fontFamily: Type.uiBold }} />
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); calPickerNext(); }} disabled={!calPickerCanGoNext()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="chevron-forward" size={20} color={calPickerCanGoNext() ? theme.accentBlueRaw : theme.textDim} />
           </TouchableOpacity>
@@ -1292,9 +1306,16 @@ export default function LogScreen() {
           <View style={{ flex: 1 }}>
             <View style={styles.calRow}>
               <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
-                <AnimatedNumber value={totalCals} style={[styles.calNumber, { color: calColor, opacity: 0.88 }]} duration={500} />
+                <AnimatedNumber
+                  value={totalCals}
+                  style={[styles.calNumber, { color: calColor, opacity: 0.88 }]}
+                  duration={500}
+                  renderValue={styleMode === 'mindful' ? undefined : (s) => (
+                    <GradientNumber value={s} color={calColor} style={{ ...styles.calNumber, opacity: 0.88 }} />
+                  )}
+                />
               </View>
-              <Text style={[styles.calTarget, { color: theme.textSecondary }]}>/ {displayTarget} kcal</Text>
+              <GradientNumber value={`/ ${displayTarget} kcal`} color={theme.textSecondary} style={styles.calTarget} />
             </View>
             <View style={[styles.progressBarBg, { backgroundColor: theme.bgProgressTrack }]}>
               <ReAnimated.View style={[styles.progressBarFill, calProgressBarStyle, { backgroundColor: calColor }]} />
@@ -1334,7 +1355,7 @@ export default function LogScreen() {
                 <View key={i} style={{ flex: 1, alignItems: i === 1 ? 'center' : i === 2 ? 'flex-end' : 'flex-start' }}>
                   <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 2 }}>{s.label}</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
-                    <Text style={{ fontSize: 18, color: s.color, fontFamily: Type.num, letterSpacing: 1 }}>{s.value}</Text>
+                    <GradientNumber value={String(s.value)} color={s.color} style={{ fontSize: 18, fontFamily: Type.num, letterSpacing: 1 }} />
                     <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 1 }}>kcal</Text>
                   </View>
                 </View>
@@ -1495,7 +1516,7 @@ export default function LogScreen() {
                                 >
                                   <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.uiMedium, marginBottom: 1 }}>{item.label}</Text>
                                   <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 3, flexWrap: 'wrap' }}>
-                                    <Text style={{ fontSize: 14, color: getColor(item.value, item.dir, item.goal), fontFamily: Type.uiBold }}>{item.value}{item.unit}</Text>
+                                    <GradientNumber value={`${item.value}${item.unit}`} color={getColor(item.value, item.dir, item.goal)} style={{ fontSize: 14, fontFamily: Type.uiBold }} />
                                     {item.goal !== null && (
                                       <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.uiSemibold }}>/ {item.goal}{item.unit}</Text>
                                     )}
@@ -1517,7 +1538,7 @@ export default function LogScreen() {
                                 >
                                   <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.uiMedium, marginBottom: 1 }}>{item.label}</Text>
                                   <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 3, flexWrap: 'wrap' }}>
-                                    <Text style={{ fontSize: 14, color: getColor(item.value, item.dir, item.goal), fontFamily: Type.uiBold }}>{item.value}{item.unit}</Text>
+                                    <GradientNumber value={`${item.value}${item.unit}`} color={getColor(item.value, item.dir, item.goal)} style={{ fontSize: 14, fontFamily: Type.uiBold }} />
                                     {item.goal !== null && (
                                       <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.uiSemibold }}>/ {item.goal}{item.unit}</Text>
                                     )}
@@ -1640,7 +1661,7 @@ export default function LogScreen() {
               </View>
               {mealTotal > 0 && (
                 <View style={{ alignItems: 'flex-end', marginRight: 4 }}>
-                  <Text style={{ color: theme.textSecondary, fontSize: 18, fontFamily: Type.num, lineHeight: numLine(18) }}>{mealTotal}</Text>
+                  <GradientNumber value={String(mealTotal)} color={theme.textSecondary} style={{ fontSize: 18, fontFamily: Type.num, lineHeight: numLine(18) }} />
                   <Text style={{ color: theme.textDim, fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase' }}>kcal</Text>
                 </View>
               )}
@@ -1826,7 +1847,7 @@ export default function LogScreen() {
                       </View>
                       <View style={styles.foodEntryRight}>
                         <View style={{ alignItems: 'flex-end' }}>
-                          <Text style={[styles.foodEntryCal, { color: theme.macroProtein }]}>{entry.cal}</Text>
+                          <GradientNumber value={String(entry.cal)} color={theme.macroProtein} style={styles.foodEntryCal} />
                           <Text style={[styles.foodEntryCalLabel, { color: theme.textMuted }]}>kcal</Text>
                         </View>
                         <TouchableOpacity
@@ -2030,10 +2051,13 @@ export default function LogScreen() {
     {showWaterCustomModal && (
       <Animated.View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center', zIndex: 999, opacity: waterModalAnim }}>
         <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeWaterCustomModal} activeOpacity={1} />
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={{ backgroundColor: theme.bgSheet, borderRadius: 14, padding: 24, width: '80%', borderWidth: 0.5, borderColor: theme.borderCard }}>
-          <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>
-            {waterCustomSign === 'add' ? 'Add Custom Amount' : 'Remove Custom Amount'}
-          </Text>
+          <GradientTitle
+            title={waterCustomSign === 'add' ? 'Add Custom Amount' : 'Remove Custom Amount'}
+            color={theme.accentBlue}
+            style={{ fontSize: 20, fontFamily: Type.display, marginBottom: 12 }}
+          />
           <TextInput
             ref={waterCustomInputRef}
             style={{ backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 24, fontFamily: Type.num, textAlign: 'center', marginBottom: 16 }}
@@ -2043,20 +2067,21 @@ export default function LogScreen() {
             <TouchableOpacity style={{ flex: 1, padding: 12, borderRadius: 8, backgroundColor: theme.bgInput, alignItems: 'center' }} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeWaterCustomModal(); }}>
               <Text style={{ color: theme.textMuted, fontFamily: Type.uiSemibold, fontSize: 14 }}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={{ flex: 1, padding: 12, borderRadius: 8, backgroundColor: waterCustomSign === 'add' ? theme.accentBlueBg : theme.accentRedBg, alignItems: 'center' }}
-              onPress={() => {
-                triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+            <PrimaryCTA
+              label={waterCustomSign === 'add' ? 'Add' : 'Remove'}
+              disabled={!(parseInt(waterCustomInput) > 0)}
+              fill={waterCustomSign === 'add' ? undefined : theme.accentRed}
+              wrapperStyle={{ flex: 1 }}
+              faceStyle={{ paddingVertical: 12, borderRadius: 8 }}
+              onPress={async () => {
                 const amt = parseInt(waterCustomInput);
-                if (amt > 0) { updateWater(waterCustomSign === 'add' ? amt : -amt); }
+                if (amt > 0) { await updateWater(waterCustomSign === 'add' ? amt : -amt); }
                 closeWaterCustomModal();
-              }}>
-              <Text style={{ color: waterCustomSign === 'add' ? theme.accentBlue : theme.accentRed, fontFamily: Type.uiSemibold, fontSize: 14 }}>
-                {waterCustomSign === 'add' ? 'Add' : 'Remove'}
-              </Text>
-            </TouchableOpacity>
+              }}
+            />
           </View>
         </View>
+        </TouchableWithoutFeedback>
       </Animated.View>
     )}
 
@@ -2107,17 +2132,19 @@ export default function LogScreen() {
                   <View style={{ flexDirection:'row', marginBottom:12 }}>
                     <View style={{ flex:1 }}>
                       <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase', marginBottom:2 }}>Logged</Text>
-                      <Text style={{ fontSize:28, color: theme.accentBlueRaw, fontFamily:Type.num, letterSpacing:1 }}>
-                        {water}<Text style={{ fontSize:14, color: theme.textMuted, fontFamily:Type.num }}> oz</Text>
-                      </Text>
+                      <View style={{ flexDirection:'row', alignItems:'baseline' }}>
+                        <GradientNumber value={String(water)} color={theme.accentBlueRaw} style={{ fontSize:28, fontFamily:Type.num, letterSpacing:1 }} />
+                        <Text style={{ fontSize:14, color: theme.textMuted, fontFamily:Type.num }}> oz</Text>
+                      </View>
                       <Text style={{ fontSize:10, color: theme.textDim, fontFamily:Type.ui }}>of {waterGoal} oz goal</Text>
                     </View>
                     {isToday && !goalMet ? (
                       <View style={{ flex:1, borderLeftWidth:0.5, borderLeftColor: theme.borderCard, paddingLeft:14 }}>
                         <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase', marginBottom:2 }}>Expected Now</Text>
-                        <Text style={{ fontSize:28, color: statusColor, fontFamily:Type.num, letterSpacing:1 }}>
-                          {expectedOz}<Text style={{ fontSize:14, color: theme.textMuted, fontFamily:Type.num }}> oz</Text>
-                        </Text>
+                        <View style={{ flexDirection:'row', alignItems:'baseline' }}>
+                          <GradientNumber value={String(expectedOz)} color={statusColor} style={{ fontSize:28, fontFamily:Type.num, letterSpacing:1 }} />
+                          <Text style={{ fontSize:14, color: theme.textMuted, fontFamily:Type.num }}> oz</Text>
+                        </View>
                         <Text style={{ fontSize:10, color: theme.textDim, fontFamily:Type.ui }}>by this time of day</Text>
                       </View>
                     ) : (

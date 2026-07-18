@@ -367,7 +367,7 @@ function ScoreRing({ score, scoreColor, trackColor, donutSize, donutStroke, donu
       <View style={{ position:'absolute', top:0, left:0, width:donutSize, height:donutSize, alignItems:'center', justifyContent:'center' }}>
         <ReAnimated.View style={[{ alignItems:'center' }, shimmerCenterStyle]}>
           <View style={{ shadowColor:'#000000', shadowOffset:{width:0,height:2}, shadowOpacity:0.18, shadowRadius:0 }}>
-            <Text style={{ fontSize:36, fontFamily:Type.num, color:scoreColor, letterSpacing:1, lineHeight:numLine(36), opacity:0.88 }}>{score}</Text>
+            <GradientNumber value={String(score)} color={scoreColor} style={{ fontSize:36, fontFamily:Type.num, letterSpacing:1, lineHeight:numLine(36), opacity:0.88 }} />
           </View>
           <Text style={{ fontSize:8, fontFamily:Type.uiBold, letterSpacing:2, color:scoreColor, textTransform:'uppercase', opacity:0.7 }}>/100</Text>
         </ReAnimated.View>
@@ -2215,7 +2215,7 @@ export default function HomeScreen() {
               )}
             />
           </View>
-          <Text style={[styles.calTarget, { color: theme.textSecondary }]}>/ {styleMode === 'mindful' ? calTarget : onPaceTarget} kcal</Text>
+          <GradientNumber value={`/ ${styleMode === 'mindful' ? calTarget : onPaceTarget} kcal`} color={theme.textSecondary} style={styles.calTarget} />
         </View>
 
         {/* Progress bar -- neutral color in Mindful */}
@@ -2236,7 +2236,7 @@ export default function HomeScreen() {
                 <View key={i} ref={statRef} collapsable={false} style={{ flex:1, alignItems: i === 1 ? 'center' : i === 2 ? 'flex-end' : 'flex-start' }}>
                   <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:1.5, textTransform:'uppercase', marginBottom:2 }}>{s.label}</Text>
                   <View style={{ flexDirection:'row', alignItems:'baseline', gap:2 }}>
-                    <Text style={{ fontSize:18, color: s.color, fontFamily:Type.num, letterSpacing:1 }}>{s.value}</Text>
+                    <GradientNumber value={String(s.value)} color={s.color} style={{ fontSize:18, fontFamily:Type.num, letterSpacing:1 }} />
                     <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:1 }}>kcal</Text>
                   </View>
                 </View>
@@ -2309,7 +2309,14 @@ export default function HomeScreen() {
                   <View style={{ flexDirection:'row', alignItems:'baseline', justifyContent:'space-between', marginBottom:4 }}>
                     <Text style={{ fontSize:11, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase', flex:1 }}>{m.label}</Text>
                     <View style={{ flexDirection:'row', alignItems:'baseline', gap:4, width:120, justifyContent:'flex-end' }}>
-                      <AnimatedNumber value={m.val} style={{ fontSize:20, color: over ? theme.macroOver : m.color, fontFamily:Type.num, letterSpacing:1, textAlign:'right' }} decimals={0} />
+                      <AnimatedNumber
+                        value={m.val}
+                        style={{ fontSize:20, color: over ? theme.macroOver : m.color, fontFamily:Type.num, letterSpacing:1, textAlign:'right' }}
+                        decimals={0}
+                        renderValue={(s) => (
+                          <GradientNumber value={s} color={over ? theme.macroOver : m.color} style={{ fontSize:20, fontFamily:Type.num, letterSpacing:1, textAlign:'right' }} />
+                        )}
+                      />
                       <Text style={{ fontSize:11, color: over ? theme.macroOver : m.color, fontFamily:Type.uiMedium }}>g</Text>
                       <Text style={{ fontSize:11, color: theme.textDim, fontFamily:Type.uiMedium }}>/ {m.goal} g</Text>
                     </View>
@@ -2395,7 +2402,15 @@ export default function HomeScreen() {
       <View style={styles.weightRow}>
         <View style={styles.weightStat}>
           {weight ? (
-            <AnimatedNumber value={weight} style={[styles.weightVal, { color: styleMode === 'mindful' ? theme.textSecondary : theme.accentBlue }]} decimals={1} formatter={(n) => `${n.toFixed(1)} lbs`} />
+            <AnimatedNumber
+              value={weight}
+              style={[styles.weightVal, { color: styleMode === 'mindful' ? theme.textSecondary : theme.accentBlue }]}
+              decimals={1}
+              formatter={(n) => `${n.toFixed(1)} lbs`}
+              renderValue={styleMode === 'mindful' ? undefined : (s) => (
+                <GradientNumber value={s} color={theme.accentBlue} style={{ ...styles.weightVal }} />
+              )}
+            />
           ) : (
             <Text style={[styles.weightVal, { color: styleMode === 'mindful' ? theme.textSecondary : theme.textDim }]}>
               {lastKnownWeight ? `${lastKnownWeight.val} lbs` : '--'}
@@ -2406,9 +2421,11 @@ export default function HomeScreen() {
           </Text>
         </View>
         <View style={styles.weightStat}>
-          <Text style={[styles.weightVal, { color: styleMode === 'mindful' ? theme.textSecondary : weight&&yesterdayWeight ? weight<yesterdayWeight ? theme.statusGood : weight>yesterdayWeight ? theme.statusBad : theme.textPrimary : theme.accentBlue }]}>
-            {weight&&yesterdayWeight ? `${weight>yesterdayWeight?'+':''}${Math.round((weight-yesterdayWeight)*10)/10} lbs` : '--'}
-          </Text>
+          <GradientNumber
+            value={weight&&yesterdayWeight ? `${weight>yesterdayWeight?'+':''}${Math.round((weight-yesterdayWeight)*10)/10} lbs` : '--'}
+            color={styleMode === 'mindful' ? theme.textSecondary : weight&&yesterdayWeight ? weight<yesterdayWeight ? theme.statusGood : weight>yesterdayWeight ? theme.statusBad : theme.textPrimary : theme.accentBlue}
+            style={styles.weightVal}
+          />
           <Text style={[styles.weightLbl, { color: theme.textMuted }]}>vs Yesterday</Text>
         </View>
         <View style={styles.weightStat}>
@@ -2428,7 +2445,7 @@ export default function HomeScreen() {
             const valText = !hasData ? '--' : isMindful ? `${diff > 0 ? '+' : ''}${diff} lbs` : `${Math.abs(diff)} lbs`;
             return (
               <>
-                <Text style={[styles.weightVal, { color: valColor }]}>{valText}</Text>
+                <GradientNumber value={valText} color={valColor} style={styles.weightVal} />
                 <Text style={[styles.weightLbl, { color: theme.textMuted }]}>{label}</Text>
               </>
             );
@@ -2452,15 +2469,15 @@ export default function HomeScreen() {
         return (
           <View style={[styles.weightRow, { paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderCardTop }]}>
             <View style={styles.weightStat}>
-              <Text style={[styles.weightVal, { color: theme.textSecondary }]}>{goalWeight} lbs</Text>
+              <GradientNumber value={`${goalWeight} lbs`} color={theme.textSecondary} style={styles.weightVal} />
               <Text style={[styles.weightLbl, { color: theme.textMuted }]}>Goal</Text>
             </View>
             <View style={styles.weightStat}>
-              <Text style={[styles.weightVal, { color: theme.textSecondary }]}>{lbsToGo !== null ? `${Math.round(lbsToGo * 10) / 10} lbs` : '--'}</Text>
+              <GradientNumber value={lbsToGo !== null ? `${Math.round(lbsToGo * 10) / 10} lbs` : '--'} color={theme.textSecondary} style={styles.weightVal} />
               <Text style={[styles.weightLbl, { color: theme.textMuted }]}>To Go</Text>
             </View>
             <View style={styles.weightStat}>
-              <Text style={[styles.weightVal, { color: theme.textSecondary }]}>{projectedDate || '--'}</Text>
+              <GradientNumber value={projectedDate || '--'} color={theme.textSecondary} style={styles.weightVal} />
               <Text style={[styles.weightLbl, { color: theme.textMuted }]}>Projected</Text>
             </View>
           </View>
@@ -2525,7 +2542,7 @@ export default function HomeScreen() {
             const kcalBadge = burnedDisplay > 0 ? (
               <View style={{ flexDirection:'row', alignItems:'baseline', gap:3, marginLeft:'auto' }}>
                 <Ionicons name="flame-outline" size={11} color={theme.accentBlue} style={{ marginBottom:2 }} />
-                <Text style={{ fontSize:20, color: theme.accentBlue, fontFamily:Type.num, letterSpacing:1 }}>{burnedDisplay}</Text>
+                <GradientNumber value={String(burnedDisplay)} color={theme.accentBlue} style={{ fontSize:20, fontFamily:Type.num, letterSpacing:1 }} />
                 <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:1.5, textTransform:'uppercase' }}>kcal</Text>
               </View>
             ) : null;
@@ -2646,7 +2663,14 @@ export default function HomeScreen() {
         </View>
         <View style={{ flexDirection:'row', alignItems:'baseline', gap:6, marginBottom:6 }}>
           <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
-            <AnimatedNumber value={steps} style={{ fontSize:36, color:stepColor, fontFamily:Type.num, letterSpacing:1, opacity: 0.88 }} formatter={(n) => n.toLocaleString()} />
+            <AnimatedNumber
+              value={steps}
+              style={{ fontSize:36, color:stepColor, fontFamily:Type.num, letterSpacing:1, opacity: 0.88 }}
+              formatter={(n) => n.toLocaleString()}
+              renderValue={(s) => (
+                <GradientNumber value={s} color={stepColor} style={{ fontSize:36, fontFamily:Type.num, letterSpacing:1, opacity: 0.88 }} />
+              )}
+            />
           </View>
           <Text style={{ fontSize:13, color: theme.textMuted, fontFamily:Type.ui }}>/ {stepGoal.toLocaleString()} steps</Text>
         </View>
@@ -2760,7 +2784,7 @@ export default function HomeScreen() {
                         <View style={{ flex: 1 }}>
                           <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 1, textTransform: 'uppercase' }}>{s.label}</Text>
                           <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 3 }}>
-                            <Text style={{ fontSize: 19, color: s.color, fontFamily: Type.num, letterSpacing: 0.5 }}>{s.value}</Text>
+                            <GradientNumber value={String(s.value)} color={s.color} style={{ fontSize: 19, fontFamily: Type.num, letterSpacing: 0.5 }} />
                             <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: Type.ui }}>{s.unit}</Text>
                           </View>
                         </View>
@@ -2985,7 +3009,7 @@ export default function HomeScreen() {
                   <View style={{ flexDirection:'row', alignItems:'center', marginBottom:14 }}>
                     <View style={{ flex:1, paddingRight:12 }}>
                       <View style={{ shadowColor:'#000000', shadowOffset:{width:0,height:2}, shadowOpacity:0.18, shadowRadius:0 }}>
-                        <DurationValue value={`${hrs}h ${mins}m`} size={42} color={scoreColor} style={{ letterSpacing:1, opacity:0.88 }} />
+                        <DurationValue value={`${hrs}h ${mins}m`} size={42} color={scoreColor} style={{ letterSpacing:1, opacity:0.88 }} gradient />
                       </View>
                       {scoreLabel ? (
                         <Text style={{ fontSize:9, color:scoreColor, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase', marginTop:2 }}>{scoreLabel}</Text>
@@ -3027,7 +3051,7 @@ export default function HomeScreen() {
                         <View style={{ flex:1 }}>
                           <Text style={{ fontSize:9, color:theme.textMuted, fontFamily:Type.uiBold, letterSpacing:1, textTransform:'uppercase' }}>{s.label}</Text>
                           <View style={{ flexDirection:'row', alignItems:'baseline', gap:3 }}>
-                            <DurationValue value={s.value} size={19} color={s.color} style={{ letterSpacing:0.5 }} />
+                            <DurationValue value={s.value} size={19} color={s.color} style={{ letterSpacing:0.5 }} gradient />
                             <Text style={{ fontSize:9, color:theme.textDim, fontFamily:Type.ui }}>{s.unit}</Text>
                           </View>
                         </View>
@@ -3039,7 +3063,7 @@ export default function HomeScreen() {
                 <View style={{ flexDirection:'row', alignItems:'center' }}>
                   <View style={{ flex:1, paddingRight:12 }}>
                     <View style={{ shadowColor:'#000000', shadowOffset:{width:0,height:2}, shadowOpacity:0.18, shadowRadius:0 }}>
-                      <DurationValue value={`${hrs}h ${mins}m`} size={42} color={score !== null ? scoreColor : theme.textPrimary} style={{ letterSpacing:1, opacity:0.88 }} />
+                      <DurationValue value={`${hrs}h ${mins}m`} size={42} color={score !== null ? scoreColor : theme.textPrimary} style={{ letterSpacing:1, opacity:0.88 }} gradient />
                     </View>
                     {scoreLabel ? (
                       <Text style={{ fontSize:9, color:scoreColor, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase', marginBottom:6 }}>
@@ -3241,7 +3265,7 @@ export default function HomeScreen() {
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 1, textTransform: 'uppercase' }}>{m.label}</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 3 }}>
-                      <Text style={{ fontSize: 19, color: m.color, fontFamily: Type.num, letterSpacing: 0.5 }}>{m.value}</Text>
+                      <GradientNumber value={String(m.value)} color={m.color} style={{ fontSize: 19, fontFamily: Type.num, letterSpacing: 0.5 }} />
                       <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: Type.ui }}>{m.unit}</Text>
                     </View>
                   </View>
@@ -3495,11 +3519,11 @@ export default function HomeScreen() {
                     {!isMindful && youLead && (
                       <View style={{ position:'absolute', left:2, top:'10%', width:3, height:'80%', backgroundColor: accentRaw, borderRadius:2 }} />
                     )}
-                    <Text style={{ fontSize:20, fontFamily:Type.num, letterSpacing:1, color: youColor }}>{fmtChallengeVal(r.metric, r.youAvg)}</Text>
+                    <GradientNumber value={fmtChallengeVal(r.metric, r.youAvg)} color={youColor} style={{ fontSize:20, fontFamily:Type.num, letterSpacing:1 }} />
                     <Text style={{ fontSize:8, fontFamily:Type.uiBold, letterSpacing:1, textTransform:'uppercase', color: youColor, opacity:0.6 }}>{r.unit}</Text>
                   </View>
                   <View style={{ width:80, alignItems:'center' }}>
-                    <Text style={{ fontSize:20, fontFamily:Type.num, letterSpacing:1, color: benchColor }}>{fmtChallengeVal(r.metric, r.benchmarkAvg)}</Text>
+                    <GradientNumber value={fmtChallengeVal(r.metric, r.benchmarkAvg)} color={benchColor} style={{ fontSize:20, fontFamily:Type.num, letterSpacing:1 }} />
                     <Text style={{ fontSize:8, fontFamily:Type.uiBold, letterSpacing:1, textTransform:'uppercase', color: benchColor, opacity:0.6 }}>{r.unit}</Text>
                   </View>
                 </View>
@@ -3517,10 +3541,16 @@ export default function HomeScreen() {
             const pct = target > 0 ? Math.min((doneAbs / target) * 100, 100) : 0;
             return (
               <>
-                <Text style={{ fontSize:26, fontFamily:Type.num, letterSpacing:1, color: theme.textPrimary, marginBottom:8 }}>
-                  {change === null ? 'Need 2 weigh-ins' : `${lose ? 'Down' : 'Up'} ${Math.abs(change).toFixed(1)} `}
-                  {change !== null && <Text style={{ color: theme.textMuted }}>of {target.toFixed(1)} lbs</Text>}
-                </Text>
+                <View style={{ flexDirection:'row', alignItems:'baseline', flexWrap:'wrap', marginBottom:8 }}>
+                  {change === null ? (
+                    <Text style={{ fontSize:26, fontFamily:Type.num, letterSpacing:1, color: theme.textPrimary }}>Need 2 weigh-ins</Text>
+                  ) : (
+                    <>
+                      <GradientNumber value={`${lose ? 'Down' : 'Up'} ${Math.abs(change).toFixed(1)} `} color={theme.textPrimary} style={{ fontSize:26, fontFamily:Type.num, letterSpacing:1 }} />
+                      <Text style={{ fontSize:26, fontFamily:Type.num, letterSpacing:1, color: theme.textMuted }}>of {target.toFixed(1)} lbs</Text>
+                    </>
+                  )}
+                </View>
                 <AnimatedProgressBar pct={pct} color={accentRaw} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} />
                 <Text style={{ fontSize:12, fontFamily:Type.uiMedium, color: theme.textMuted, marginTop:8 }}>
                   {prog.daysRemaining} {prog.daysRemaining === 1 ? 'day' : 'days'} left
@@ -3540,8 +3570,8 @@ export default function HomeScreen() {
           return (
             <>
               <View style={{ flexDirection:'row', alignItems:'baseline', gap:6, marginBottom:8 }}>
-                <Text style={{ fontSize:26, fontFamily:Type.num, letterSpacing:1, color: theme.textPrimary }}>{fmtChallengeVal(metric, today)}</Text>
-                <Text style={{ fontSize:16, fontFamily:Type.num, letterSpacing:1, color: theme.textMuted }}>/ {fmtChallengeVal(metric, target)}{unitLabel ? ` ${unitLabel}` : ''}</Text>
+                <GradientNumber value={fmtChallengeVal(metric, today)} color={theme.textPrimary} style={{ fontSize:26, fontFamily:Type.num, letterSpacing:1 }} />
+                <GradientNumber value={`/ ${fmtChallengeVal(metric, target)}${unitLabel ? ` ${unitLabel}` : ''}`} color={theme.textMuted} style={{ fontSize:16, fontFamily:Type.num, letterSpacing:1 }} />
                 <Text style={{ fontSize:10, fontFamily:Type.uiMedium, color: theme.textDim, marginLeft:'auto' }}>today</Text>
               </View>
               {todayBarPct !== null && (
@@ -3645,7 +3675,7 @@ export default function HomeScreen() {
                           body -- two steps apart, where semibold/light was only one, which is why the block
                           used to read as a single mass. Leading is generous on purpose: air is the antidote
                           to ink density, and it costs no colour. */}
-                      <Text style={{ fontSize: 15, fontFamily: Type.voiceBold, color: theme.textSecondary, lineHeight: 22, marginBottom: 6 }}>{displayTitle}</Text>
+                      <GradientTitle title={displayTitle} color={theme.textSecondary} style={{ fontSize: 15, fontFamily: Type.voiceBold, lineHeight: 22, marginBottom: 6 }} />
                       <Text numberOfLines={3} ellipsizeMode="tail" style={{ fontSize: 13, fontFamily: Type.voice, color: theme.textSecondary, lineHeight: 22, marginBottom: 12 }}>{displayBody}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                         <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: theme.accentBlueRaw }}>View in Effort vs Results</Text>
@@ -3784,9 +3814,11 @@ export default function HomeScreen() {
           <View style={{ backgroundColor: theme.bgSheet, borderRadius:14, padding:24, width:'80%', borderWidth:0.5, borderColor: theme.borderCard }}>
             {/* A modal TITLE, not a card label. This was the 9px muted uppercase card-label recipe, which is
                 what every titled modal moved OFF of: 20px Clash, accent, mixed case (the ModalHeader rule). */}
-            <Text style={{ fontSize:20, color: theme.accentBlue, fontFamily:Type.display, marginBottom:12 }}>
-              {waterCustomSign==='add' ? 'Add Custom Amount' : 'Remove Custom Amount'}
-            </Text>
+            <GradientTitle
+              title={waterCustomSign==='add' ? 'Add Custom Amount' : 'Remove Custom Amount'}
+              color={theme.accentBlue}
+              style={{ fontSize:20, fontFamily:Type.display, marginBottom:12 }}
+            />
             <TextInput ref={waterCustomInputRef} style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textPrimary, padding:12, fontSize:24, fontFamily:Type.num, textAlign:'center', marginBottom:16 }}
               value={waterCustomInput} onChangeText={setWaterCustomInput} keyboardType="number-pad" placeholder="0" placeholderTextColor={theme.textPlaceholder} autoFocus />
             <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:1, textTransform:'uppercase', textAlign:'center', marginBottom:16 }}>oz</Text>
@@ -3877,17 +3909,19 @@ export default function HomeScreen() {
                 <View style={{ flexDirection:'row', marginBottom:12 }}>
                   <View style={{ flex:1 }}>
                     <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase', marginBottom:2 }}>Logged</Text>
-                    <Text style={{ fontSize:28, color: theme.accentBlueRaw, fontFamily:Type.num, letterSpacing:1 }}>
-                      {water}<Text style={{ fontSize:14, color: theme.textMuted, fontFamily:Type.num }}> oz</Text>
-                    </Text>
+                    <View style={{ flexDirection:'row', alignItems:'baseline' }}>
+                      <GradientNumber value={String(water)} color={theme.accentBlueRaw} style={{ fontSize:28, fontFamily:Type.num, letterSpacing:1 }} />
+                      <Text style={{ fontSize:14, color: theme.textMuted, fontFamily:Type.num }}> oz</Text>
+                    </View>
                     <Text style={{ fontSize:10, color: theme.textDim, fontFamily:Type.ui }}>of {waterGoal} oz goal</Text>
                   </View>
                   {!goalMet ? (
                     <View style={{ flex:1, borderLeftWidth:0.5, borderLeftColor: theme.borderCard, paddingLeft:14 }}>
                       <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:2, textTransform:'uppercase', marginBottom:2 }}>Expected Now</Text>
-                      <Text style={{ fontSize:28, color: statusColor, fontFamily:Type.num, letterSpacing:1 }}>
-                        {expectedOz}<Text style={{ fontSize:14, color: theme.textMuted, fontFamily:Type.num }}> oz</Text>
-                      </Text>
+                      <View style={{ flexDirection:'row', alignItems:'baseline' }}>
+                        <GradientNumber value={String(expectedOz)} color={statusColor} style={{ fontSize:28, fontFamily:Type.num, letterSpacing:1 }} />
+                        <Text style={{ fontSize:14, color: theme.textMuted, fontFamily:Type.num }}> oz</Text>
+                      </View>
                       <Text style={{ fontSize:10, color: theme.textDim, fontFamily:Type.ui }}>by this time of day</Text>
                     </View>
                   ) : (

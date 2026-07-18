@@ -28,6 +28,24 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-17 **Tooltip system gradient + amber-for-Faith fix, then a full title/modal gradient sweep
+  across the app** (Bible, Journal, Settings, Workout + Workout Library, Add Food, Log, Home, Mission,
+  What's New, Diagnostic Report insight cards, and ~10 standalone modals -- Day Summary, Prayer Request,
+  Add a Prayer, Body Measurements' How to Measure, Summary Ready, Manage Streaks, BibleStartGuide,
+  NotificationPanel, both disclaimer modals). Real bugs found and fixed along the way: Journal's New Entry
+  handle didn't close the sheet at all (no handler wired up), Workout's rest/hold timer chips sat behind
+  the tab bar (stale pre-refresh offset) and one had a `flex:1`-on-GradientNumber bug that made its number
+  invisible, add-food's "Use a Saved Food" tray was translucent + doubled-up top border (now opaque,
+  matches View All Achievements), and the IF card's Window time was overflowing off-screen (fixed the row
+  layout) plus its duration-preset pills were rendering a bespoke purple text token used nowhere else in
+  the app. Established rule from this pass: the gradient technique bands visibly across 2+ line wraps, so
+  it's title/number/short-label only -- never applied to a sentence that can wrap. Full story in archive.
+- 2026-07-17 **Log tab numbers pass (Section 2)** -- IF card's hero times, Jump to Date's month name,
+  Nutrition Goals' 6 presets (icon + label), Food Library's food name (added a 1-line safeguard first) +
+  calorie amount, AI Estimate's per-item and total calorie/macro numbers (food item names deliberately
+  skipped, per Justin's call, to avoid the truncation tradeoff), New/Edit Recipe's full Total Nutrition
+  card (every value including extended nutrients), and Food Detail / Edit Entry (same screen, two modes)
+  -- main food name, 3 macro values, and the Logged/Last Logged/Avg Serving boxes. Full story in archive.
 - 2026-07-17 **Title accent-gradient fill shipped app-wide** (every page/modal/tab title) -- new
   `GradientTitle` component, six tuning rounds on device (diagonal->vertical, 2-stop->3-stop, luminance
   scaling, lift/dark split, Yellow-specific floor), Yellow dropped from Blush's accent list after proving
@@ -626,12 +644,6 @@ are separate pre-submission checklists, NOT part of this menu.
   yesterday's shadow/aesthetic pass. Justin leaning yes on spacing them out, Claude agrees. NOT a blind
   marginBottom: the skeleton must use the SAME gap as the REAL cards it stands in for, or the layout jumps
   the moment the content lands. Match the loaded rhythm, then check it.
-- [QUICK WIN] [found on TestFlight 2026-07-17] **add-food's "Use a Saved Food (42)" tray blends into the
-  background.** It is translucent over the moving ground, so the label dissolves into it. Should be OPAQUE
-  and read as the button it is (the View All Achievements treatment). NOTE while in there: this same button
-  is the known DOUBLED-UP TOP-LIGHT case -- it has a hand-rolled 1.5px bright accentBlueRaw top border AND
-  ButtonShine. Rule: shine owns the top-light, so drop the BORDER (a border stays even on 4 sides). Also
-  DEAD CODE in that file: `addNewBtn` + `addNewBtnText` styles are defined and never used.
 - [NOW] [TRACK, DECIDED + SPECCED 2026-07-14 -> building] **VISUAL REFRESH.** Justin: the app "still looks
   like a Claude/AI generated app -- a blank form page with data slapped on it." Diagnosis was NOT the headers
   he first pointed at: (1) every card is the same width/weight so nothing leads, (2) every button is FLAT
@@ -670,8 +682,10 @@ are separate pre-submission checklists, NOT part of this menu.
   SHIPPED; the 3-tier rules + the do-not-relearn list are in the archive.
   >> TITLE ACCENT-GRADIENT FILL SHIPPED 2026-07-17 -- see RECENTLY SHIPPED and the dedicated item below (the
   header "?" icon still needs the same treatment, missed this round).
-  >> STILL OPEN, see the dedicated items below: the SURFACE pass, the JOURNAL slide-up sheet, the VOICE
-  pass, and a short list of non-modal number-face stragglers.
+  >> JOURNAL slide-up sheet DONE 2026-07-17 (full touch-up + the handle-doesn't-close bug fixed).
+  >> STILL OPEN, see the dedicated items below: the SURFACE pass, the VOICE pass, and a short list of
+  non-modal number-face stragglers (Profile save-bar buttons, REST DAY heading, some IFCard/cardio button
+  labels -- untouched this pass, still pending).
 - [BUG, app-wide. **ALL PAGES DONE 2026-07-16.** MODALS + ONBOARDING OPEN] **Card shadows.** Full root
   cause + all five failure modes are in the RECENTLY SHIPPED entry.
   **DONE: every card on every PAGE in the app** -- 6 tabs + ~30 stack screens, plus the component-file

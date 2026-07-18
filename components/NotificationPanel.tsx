@@ -28,6 +28,7 @@ import {
   useNotifications, markReadIds, clearNotification, clearAllNotifications, type NotifItem,
 } from '../utils/notifications';
 import { Type } from '../typography';
+import GradientTitle from './GradientTitle';
 
 const CARD_MIN_H = 70;
 
@@ -272,7 +273,7 @@ export default function NotificationPanel({
 
           <View style={styles.headerRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-              <Text style={[styles.title, { color: theme.accentBlueRaw }]}>Notifications</Text>
+              <GradientTitle title="Notifications" color={theme.accentBlueRaw} style={styles.title} />
               <TooltipIcon tooltipKey="notification_hub" size={15} />
             </View>
             {items.length > 0 && (

@@ -9,6 +9,8 @@ import ButtonShine from './ButtonShine';
 import TooltipIcon from './TooltipIcon';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { Type, numLine } from '../typography';
+import GradientNumber from './GradientNumber';
+import GradientTitle from './GradientTitle';
 
 export const IF_METHODS: Record<string, { fast: number; eat: number }> = {
   '12:12': { fast: 12, eat: 12 },
@@ -33,7 +35,7 @@ export const formatHrMin = (ms: number) => {
   return `${h}:${String(m).padStart(2,'0')} hrs`;
 };
 
-function PulseSegment({ value, style, shouldPulse }: { value: string; style: any; shouldPulse: boolean }) {
+function PulseSegment({ value, style, shouldPulse, color }: { value: string; style: any; shouldPulse: boolean; color: string }) {
   const anim = useRef(new Animated.Value(1)).current;
   const prev = useRef(value);
   useEffect(() => {
@@ -46,7 +48,14 @@ function PulseSegment({ value, style, shouldPulse }: { value: string; style: any
       ]).start();
     }
   }, [value]);
-  return <Animated.Text style={[style, { transform: [{ scale: anim }] }]}>{value}</Animated.Text>;
+  // Scale transform lives on this wrapper, NOT inside GradientNumber's own style -- GradientNumber
+  // forwards style only to its inner masked Text, so a transform/flex/etc. meant for how it sits in
+  // its parent has to be on a wrapping element (same lesson as the hold-timer flex:1 bug).
+  return (
+    <Animated.View style={{ transform: [{ scale: anim }] }}>
+      <GradientNumber value={value} color={color} style={style} />
+    </Animated.View>
+  );
 }
 
 export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remaining, windowEnd, ifResultLabel, ifResultColor, ifTargetMs, ifActualMs, showTimePicker, showEndTimePicker, pickerTime, setIfMethod, setIfCustomHours, setIfStart, setIfEnd, setShowTimePicker, setShowEndTimePicker, setPrickerTime, onStartFast, onLastMeal, onResetFast, onCancelFast, onResetComplete, onConfirmStart, onConfirmEnd, tutorialOverrideState, readOnly = false }: any) {
@@ -158,8 +167,8 @@ export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen,
         <View style={{ flexDirection: 'row', gap: 5, marginBottom: 12, flexWrap: 'wrap' }}>
           {Object.keys(IF_METHODS).map(m => (
             <TouchableOpacity key={m} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setIfMethod(m); }}
-              style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, backgroundColor: ifMethod === m ? theme.bgSelected : theme.ifMethodBg, borderWidth: 1, borderColor: ifMethod === m ? theme.accentBlueBorder : theme.ifMethodBorder }}>
-              <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: ifMethod === m ? theme.accentBlue : theme.ifMethodText }}>{m}</Text>
+              style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, backgroundColor: ifMethod === m ? theme.bgSelected : theme.bgInput, borderWidth: 1, borderColor: ifMethod === m ? theme.accentBlueBorder : theme.borderInput }}>
+              <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: ifMethod === m ? theme.accentBlue : theme.textMuted }}>{m}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -200,34 +209,37 @@ export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen,
               <Text style={[s.ifLabel, { marginBottom: 4, color: theme.textMuted }]}>{effIsOpen ? 'Window closes in' : 'Window closed'}</Text>
               {effRemaining ? (() => {
                 const [hh, mm, ss] = formatTime(effRemaining).split(':');
-                const seg = [s.ifCountdown, { color: theme.accentBlueRaw }];
                 const shouldPulse = effRemaining <= 30 * 60 * 1000;
                 return (
                   <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                    <PulseSegment value={hh} style={seg} shouldPulse={shouldPulse} />
-                    <Text style={seg}>:</Text>
-                    <PulseSegment value={mm} style={seg} shouldPulse={shouldPulse} />
-                    <Text style={seg}>:</Text>
-                    <PulseSegment value={ss} style={seg} shouldPulse={shouldPulse} />
+                    <PulseSegment value={hh} style={s.ifCountdown} color={theme.accentBlueRaw} shouldPulse={shouldPulse} />
+                    <GradientNumber value=":" color={theme.accentBlueRaw} style={s.ifCountdown} />
+                    <PulseSegment value={mm} style={s.ifCountdown} color={theme.accentBlueRaw} shouldPulse={shouldPulse} />
+                    <GradientNumber value=":" color={theme.accentBlueRaw} style={s.ifCountdown} />
+                    <PulseSegment value={ss} style={s.ifCountdown} color={theme.accentBlueRaw} shouldPulse={shouldPulse} />
                   </View>
                 );
               })() : (
-                <Text style={[s.ifCountdown, { color: theme.accentBlueRaw }]}>CLOSED</Text>
+                <GradientNumber value="CLOSED" color={theme.accentBlueRaw} style={s.ifCountdown} />
               )}
             </View>
             <View style={{ flexDirection: 'row', gap: 12, paddingTop: 2 }}>
               <View style={{ alignItems: 'center' }}>
                 <Text style={[s.ifLabel, { color: theme.textMuted, marginBottom: 2 }]}>Started</Text>
-                <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: Type.num, letterSpacing: 1 }}>
-                  {new Date(effIfStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </Text>
+                <GradientNumber
+                  value={new Date(effIfStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  color={theme.accentBlueRaw}
+                  style={{ fontSize: 22, fontFamily: Type.num, letterSpacing: 1 }}
+                />
               </View>
               {effWindowEnd && (
                 <View style={{ alignItems: 'center' }}>
                   <Text style={[s.ifLabel, { color: theme.textMuted, marginBottom: 2 }]}>Closes</Text>
-                  <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: Type.num, letterSpacing: 1 }}>
-                    {new Date(effWindowEnd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </Text>
+                  <GradientNumber
+                    value={new Date(effWindowEnd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    color={theme.accentBlueRaw}
+                    style={{ fontSize: 22, fontFamily: Type.num, letterSpacing: 1 }}
+                  />
                 </View>
               )}
             </View>
@@ -268,20 +280,31 @@ export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen,
         <View ref={ifEatingRef} collapsable={false}>
         <Animated.View style={{ opacity: contentOpacity, transform: [{ translateY: contentTranslate }] }}>
           <View style={{ borderTopWidth: 1, borderTopColor: theme.borderCardTop, paddingTop: 12, marginBottom: 14 }}>
-            <View style={{ flexDirection: 'row', gap: 28, marginBottom: 12 }}>
+            <View style={{ flexDirection: 'row', gap: 16, marginBottom: 12 }}>
               <View>
                 <Text style={[s.ifLabel, { color: theme.textMuted, marginBottom: 2 }]}>Target</Text>
-                <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: Type.num, letterSpacing: 1 }}>{formatHrMin(effIfTargetMs)}</Text>
+                <GradientNumber value={formatHrMin(effIfTargetMs)} color={theme.accentBlueRaw} style={{ fontSize: 22, fontFamily: Type.num, letterSpacing: 1 }} />
               </View>
               <View>
                 <Text style={[s.ifLabel, { color: theme.textMuted, marginBottom: 2 }]}>Actual</Text>
-                <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: Type.num, letterSpacing: 1 }}>{effIfActualMs ? formatHrMin(effIfActualMs) : '--'}</Text>
+                <GradientNumber value={effIfActualMs ? formatHrMin(effIfActualMs) : '--'} color={theme.accentBlueRaw} style={{ fontSize: 22, fontFamily: Type.num, letterSpacing: 1 }} />
               </View>
-              <View>
+              {/* flex:1 + adjustsFontSizeToFit: Target/Actual are short and fixed-width ("4:00 hrs"), but
+                  Window ("6:55 PM -> 6:55 PM") is long and its length varies with locale/12-24hr format.
+                  Rather than guess a font size that happens to fit, this takes whatever space is left in
+                  the row and shrinks the text down to whatever fits it -- guaranteed no overflow, one row,
+                  same as Target/Actual, no wrap (so no banding). GradientTitle (not GradientNumber) because
+                  it's the one that supports numberOfLines/adjustsFontSizeToFit. */}
+              <View style={{ flex: 1 }}>
                 <Text style={[s.ifLabel, { color: theme.textMuted, marginBottom: 2 }]}>Window</Text>
-                <Text style={{ fontSize: 22, color: theme.textSecondary, fontFamily: Type.num, letterSpacing: 1 }}>
-                  {new Date(effIfStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} → {new Date(effIfEnd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </Text>
+                <GradientTitle
+                  title={`${new Date(effIfStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} → ${new Date(effIfEnd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                  color={theme.textSecondary}
+                  style={{ fontSize: 22, fontFamily: Type.num, letterSpacing: 1 }}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.6}
+                />
               </View>
             </View>
 

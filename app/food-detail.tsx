@@ -11,6 +11,8 @@ import Svg, { Circle } from 'react-native-svg';
 import Reanimated, { useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
 import CustomFoodCreator from '../components/CustomFoodCreator';
 import { ToastRenderer, useToast } from '../components/Toast';
+import GradientNumber from '../components/GradientNumber';
+import GradientTitle from '../components/GradientTitle';
 import * as FileSystem from 'expo-file-system';
 import { Directory, File as FSFile, Paths } from 'expo-file-system/next';
 import * as ImagePicker from 'expo-image-picker';
@@ -1228,7 +1230,12 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                 <Text style={{ fontSize: 8, color: theme.accentGreen, fontFamily: Type.uiBold }}>MY FOOD</Text>
               </View>
             )}
-            <Text style={[styles.foodName, { marginBottom: (food.brand || food.description?.includes(' · ')) ? 4 : 0 }]}>{food.brand ? food.description : (food.description?.split(' · ')[0] ?? food.description)}</Text>
+            <GradientTitle
+              title={(food.brand ? food.description : (food.description?.split(' · ')[0] ?? food.description)) ?? ''}
+              color={theme.textSecondary}
+              style={[styles.foodName, { marginBottom: (food.brand || food.description?.includes(' · ')) ? 4 : 0 }]}
+              numberOfLines={1}
+            />
             {(food.brand || food.description?.split(' · ')[1]) && (
               <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.uiMedium }}>{food.brand || food.description?.split(' · ')[1]}</Text>
             )}
@@ -1370,17 +1377,17 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.macroProtein }} />
                 <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: Type.ui, flex: 1 }}>Protein</Text>
-                <Text style={{ color: theme.macroProtein, fontSize: 15, fontFamily: Type.uiSemibold }}>{protein}g</Text>
+                <GradientNumber value={`${protein}g`} color={theme.macroProtein} style={{ fontSize: 15, fontFamily: Type.uiSemibold }} />
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.macroCarbs }} />
                 <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: Type.ui, flex: 1 }}>Carbs</Text>
-                <Text style={{ color: theme.macroCarbs, fontSize: 15, fontFamily: Type.uiSemibold }}>{carbs}g</Text>
+                <GradientNumber value={`${carbs}g`} color={theme.macroCarbs} style={{ fontSize: 15, fontFamily: Type.uiSemibold }} />
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.macroFat }} />
                 <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: Type.ui, flex: 1 }}>Fat</Text>
-                <Text style={{ color: theme.macroFat, fontSize: 15, fontFamily: Type.uiSemibold }}>{fat}g</Text>
+                <GradientNumber value={`${fat}g`} color={theme.macroFat} style={{ fontSize: 15, fontFamily: Type.uiSemibold }} />
               </View>
             </View>
           </View>
@@ -1574,20 +1581,24 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16, marginTop: -4 }}>
             <View style={{ flex: 1, backgroundColor: theme.bgCard, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, padding: 10, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
               <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>LOGGED</Text>
-              <Text style={{ fontSize: 18, color: theme.textSecondary, fontFamily: Type.num }}>{foodStats.count}x</Text>
+              <GradientNumber value={`${foodStats.count}x`} color={theme.textSecondary} style={{ fontSize: 18, fontFamily: Type.num }} />
             </View>
             <View style={{ flex: 1.8, backgroundColor: theme.bgCard, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, padding: 10, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
               <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>LAST LOGGED</Text>
-              <Text style={{ fontSize: 18, color: theme.textSecondary, fontFamily: Type.num }}>
-                {foodStats.lastDate ? new Date(foodStats.lastDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '--'}
-              </Text>
+              <GradientNumber
+                value={foodStats.lastDate ? new Date(foodStats.lastDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '--'}
+                color={theme.textSecondary}
+                style={{ fontSize: 18, fontFamily: Type.num }}
+              />
             </View>
             <View style={{ flex: 1.8, backgroundColor: theme.bgCard, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, padding: 10, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
               <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>AVG SERVING</Text>
               <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                <Text style={{ fontSize: 18, color: theme.textSecondary, fontFamily: Type.num }}>
-                  {foodStats.avgGrams > 0 ? Math.round(foodStats.avgGrams) : '--'}
-                </Text>
+                <GradientNumber
+                  value={foodStats.avgGrams > 0 ? String(Math.round(foodStats.avgGrams)) : '--'}
+                  color={theme.textSecondary}
+                  style={{ fontSize: 18, fontFamily: Type.num }}
+                />
                 {foodStats.avgGrams > 0 && <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiMedium, marginLeft: 1 }}>{effectiveServing?.unit || food?.servingUnitType || 'g'}</Text>}
               </View>
             </View>

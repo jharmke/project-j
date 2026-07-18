@@ -3038,7 +3038,7 @@ export default function StatsScreen() {
             borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderSheet, borderTopColor: theme.accentBlueRaw,
             padding: 20,
           }}>
-            <Text style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentBlueRaw, marginBottom: 16 }}>Manage Streaks</Text>
+            <GradientTitle title="Manage Streaks" color={theme.accentBlueRaw} style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, marginBottom: 16 }} />
             <ScrollView ref={manageStreaksScrollRef} showsVerticalScrollIndicator={false}>
               {streakConfig.length > 0 && (
                 <>
@@ -3114,11 +3114,16 @@ export default function StatsScreen() {
           <Animated.View style={{
             width: '92%', maxHeight: '72%', borderRadius: 16, backgroundColor: theme.bgSheet,
             borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderSheet, borderTopColor: theme.accentBlueRaw,
-            padding: 20,
+            paddingTop: 10, paddingHorizontal: 20, paddingBottom: 20,
             transform: [{ scale: manageStreaksAnim.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) }],
           }}>
-            <TouchableOpacity style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textMuted, opacity: 0.5, marginBottom: 16 }} activeOpacity={0.6} hitSlop={{ top: 16, bottom: 16, left: 40, right: 40 }} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeManageStreaks(); }} />
-            <Text style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentBlueRaw, marginBottom: 16 }}>Manage Streaks</Text>
+            <TouchableOpacity style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textMuted, opacity: 0.5, marginBottom: 4 }} activeOpacity={0.6} hitSlop={{ top: 16, bottom: 16, left: 40, right: 40 }} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeManageStreaks(); }} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4, marginBottom: 16 }}>
+              <GradientTitle title="Manage Streaks" color={theme.accentBlueRaw} style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3 }} />
+              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeManageStreaks(); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Ionicons name="close" size={20} color={theme.textMuted} />
+              </TouchableOpacity>
+            </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               {/* Active streaks -- drag to reorder */}
@@ -3221,7 +3226,7 @@ export default function StatsScreen() {
               transform: [{ translateY: modalKeyboardOffset }],
             }}>
                 <TouchableOpacity style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textMuted, opacity: 0.5, marginBottom: 16 }} activeOpacity={0.6} hitSlop={{ top: 16, bottom: 16, left: 40, right: 40 }} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeCreateCustom(); }} />
-                <Text style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, color: theme.accentBlueRaw, marginBottom: 4 }}>Create Custom Streak</Text>
+                <GradientTitle title="Create Custom Streak" color={theme.accentBlueRaw} style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, marginBottom: 4 }} />
               <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textDim, marginBottom: 20 }}>Manual check-in: tap the tile each day to log it.</Text>
 
               <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 6 }}>STREAK NAME</Text>

@@ -27,6 +27,8 @@ import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import HeaderIconButton from '../components/HeaderIconButton';
 import ButtonShine from '../components/ButtonShine';
+import GradientTitle from '../components/GradientTitle';
+import GradientNumber from '../components/GradientNumber';
 import FabDome from '../components/FabDome';
 import BackgroundLayers from '../components/BackgroundLayers';
 import PrimaryCTA from '../components/PrimaryCTA';
@@ -1856,7 +1858,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                 {/* Food name + brand */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                   {isSupplement && <Ionicons name="medical" size={11} color={theme.textMuted} />}
-                  <Text style={styles.resultName} numberOfLines={1}>{foodName}</Text>
+                  <GradientTitle title={foodName} color={theme.textSecondary} style={{ fontSize: 14, fontFamily: Type.uiSemibold }} numberOfLines={1} />
                 </View>
                 <Text style={[styles.resultBrand, !brandName && { color: theme.textDim }]} numberOfLines={1}>{brandName || 'Unbranded'}</Text>
                 {/* Macro strip */}
@@ -1928,7 +1930,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                     <ActivityIndicator size="small" color={theme.accentBlue} />
                   ) : (
                     <>
-                      <Text style={styles.resultCal}>{getCalories(item)}</Text>
+                      <GradientNumber value={String(getCalories(item))} color={theme.accentGreen} style={{ fontSize: 20, fontFamily: Type.num, textAlign: 'right' }} />
                       <Text style={styles.resultCalLabel}>kcal</Text>
                     </>
                   )}
@@ -2020,11 +2022,11 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
               <View style={{ marginHorizontal: 12, marginTop: 8, marginBottom: 4 }}>
                 <TouchableOpacity
                   onPress={() => setShowSavedFoodsSection(v => !v)}
-                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, paddingHorizontal: 14, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 10, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw }}>
-                  {/* NOTE: this button already had a hand-rolled top-light -- a 1.5px BRIGHT accent top border
-                      (accentBlueRaw). So it now carries TWO top treatments at once. The house rule says the
-                      shine does the top-light and the border stays even on all four sides; if this reads
-                      doubled-up, the bright border is the part to drop, not the shine. */}
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, paddingHorizontal: 14, backgroundColor: theme.accentBlueBgOpaque, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 10 }}>
+                  {/* Was translucent (accentBlueBg) over the moving page glow, so the button dissolved into
+                      the background -- same fix as View All Achievements (accentBlueBgOpaque). Also dropped
+                      the hand-rolled 1.5px bright top border: shine owns the top-light, a border stays on
+                      all four sides, having both was doubled-up. */}
                   <ButtonShine radius={10} />
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <Ionicons name="bookmark" size={14} color={theme.accentBlue} />
@@ -2042,7 +2044,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                       </View>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                         {f.type === 'supplement' && <Ionicons name="medical" size={11} color={theme.textMuted} />}
-                        <Text style={styles.resultName} numberOfLines={2}>{f.name}</Text>
+                        <GradientTitle title={f.name} color={theme.textSecondary} style={{ fontSize: 14, fontFamily: Type.uiSemibold }} numberOfLines={1} />
                       </View>
                       {f.brand ? <Text style={styles.resultBrand} numberOfLines={1}>{f.brand}</Text> : null}
                       {(f.protein != null || f.carbs != null || f.fat != null) && (
@@ -2084,7 +2086,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                         <Text style={{ fontSize: 10, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>SET</Text>
                       </TouchableOpacity>
                       <View style={styles.calBlock}>
-                        <Text style={styles.resultCal}>{f.cal}</Text>
+                        <GradientNumber value={String(f.cal)} color={theme.accentGreen} style={{ fontSize: 20, fontFamily: Type.num, textAlign: 'right' }} />
                         <Text style={styles.resultCalLabel}>kcal</Text>
                       </View>
                     </View>
@@ -2472,12 +2474,17 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
               <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textDim }} />
             </TouchableOpacity>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-              <Text style={{ color: theme.accentBlue, fontSize: 18, fontFamily: Type.uiBold, letterSpacing: 1 }}>SORT</Text>
-              {sortOption !== 'az' && (
-                <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setSortOption('az'); }} style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: theme.accentRedBorder, backgroundColor: theme.accentRedBg }}>
-                  <Text style={{ color: theme.accentRed, fontSize: 11, fontFamily: Type.uiBold }}>CLEAR</Text>
+              <GradientTitle title="Sort" color={theme.accentBlue} style={{ fontSize: 18, fontFamily: Type.display, letterSpacing: 0.3 }} />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                {sortOption !== 'az' && (
+                  <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setSortOption('az'); }} style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: theme.accentRedBorder, backgroundColor: theme.accentRedBg }}>
+                    <Text style={{ color: theme.accentRed, fontSize: 11, fontFamily: Type.uiBold }}>CLEAR</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeSortModal(); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                  <Ionicons name="close" size={20} color={theme.textMuted} />
                 </TouchableOpacity>
-              )}
+              </View>
             </View>
             <View style={{ padding: 20 }}>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -2600,8 +2607,6 @@ const useStyles = (theme: any, themeId: string) => {
   searchRow: { flexDirection: 'row', alignItems: 'center', padding: 16, paddingBottom: 8 },
   searchInput: { flex: 1, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 15, fontFamily: Type.ui },
   searching: { color: theme.textMuted, marginLeft: 8, fontFamily: Type.ui },
-  addNewBtn: { marginHorizontal: 16, marginBottom: 8, paddingVertical: 6, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6 },
-  addNewBtnText: { color: theme.accentBlue, fontSize: 12, fontFamily: Type.uiSemibold },
   addNewForm: { marginHorizontal: 16, marginBottom: 8, backgroundColor: theme.bgCard, borderRadius: 8, padding: 12, borderWidth: 1, borderColor: theme.borderCard },
   formInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: Type.ui, marginBottom: 8 },
   formRow: { flexDirection: 'row', gap: 8 },

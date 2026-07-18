@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastRenderer, useToast } from '../components/Toast';
 import TooltipIcon from '../components/TooltipIcon';
 import { CardWash } from '../components/GradientCard';
+import GradientTitle from '../components/GradientTitle';
 import { useTheme } from '../theme';
 import { useMembership } from '../MembershipContext';
 import { useTutorial } from '../context/TutorialContext';
@@ -444,9 +445,7 @@ function InsightTipCard({ tip, isBlurred, theme, shadowStyle }: { tip: StoredTip
             </View>
           </View>
         </View>
-        <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.textSecondary, lineHeight: 20, marginBottom: 10 }}>
-          {tip.title}
-        </Text>
+        <GradientTitle title={tip.title} color={theme.textSecondary} style={{ fontSize: 14, fontFamily: Type.uiSemibold, lineHeight: 20, marginBottom: 10 }} />
         <View style={{ gap: 6 }}>
           <View style={{ height: 10, backgroundColor: theme.textMuted + '30', borderRadius: 4, width: '100%' }} />
           <View style={{ height: 10, backgroundColor: theme.textMuted + '30', borderRadius: 4, width: '82%' }} />
@@ -460,9 +459,7 @@ function InsightTipCard({ tip, isBlurred, theme, shadowStyle }: { tip: StoredTip
       <View style={{ marginBottom: 10 }}>
         <ChipLabel label={chipLabel} theme={theme} />
       </View>
-      <Text style={{ fontSize: 15, fontFamily: Type.uiSemibold, color: theme.textSecondary, lineHeight: 21, marginBottom: 8 }}>
-        {tip.title}
-      </Text>
+      <GradientTitle title={tip.title} color={theme.textSecondary} style={{ fontSize: 15, fontFamily: Type.uiSemibold, lineHeight: 21, marginBottom: 8 }} />
       <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textSecondary, lineHeight: 20 }}>
         {tip.body}
       </Text>
@@ -576,9 +573,7 @@ function SmartTipCard({ tip, theme, shadowStyle }: { tip: StoredTip; theme: any;
           <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, color: chipColor }}>{chipLabel}</Text>
         </View>
       </View>
-      <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.textSecondary, lineHeight: 20, marginBottom: 6 }}>
-        {tip.title}
-      </Text>
+      <GradientTitle title={tip.title} color={theme.textSecondary} style={{ fontSize: 14, fontFamily: Type.uiSemibold, lineHeight: 20, marginBottom: 6 }} />
       <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textSecondary, lineHeight: 18 }}>
         {tip.body}
       </Text>

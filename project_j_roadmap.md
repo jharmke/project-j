@@ -865,9 +865,13 @@ are separate pre-submission checklists, NOT part of this menu.
   >> TITLE ACCENT-GRADIENT FILL SHIPPED 2026-07-17 -- see RECENTLY SHIPPED. The header "?" icon (missed
   that round) plus every (i) icon and gear icon app-wide SHIPPED 2026-07-18, see RECENTLY SHIPPED.
   >> JOURNAL slide-up sheet DONE 2026-07-17 (full touch-up + the handle-doesn't-close bug fixed).
-  >> STILL OPEN, see the dedicated items below: the SURFACE pass, the VOICE pass, and a short list of
-  non-modal number-face stragglers (Profile save-bar buttons, REST DAY heading, some IFCard/cardio button
-  labels -- untouched this pass, still pending).
+  >> NUMBER-FACE STRAGGLERS DONE 2026-07-18: Profile save-bar Cancel/Save Profile were already fixed
+  (stale roadmap note, confirmed in code + on device). REST DAY heading (Workout empty state) moved off
+  the numeric font onto a heading font + gradiented. IFCard's "LAST MEAL" button font-face fixed (stays
+  flat white, same as every other solid CTA label). Workout's "mark complete" button doesn't exist
+  anywhere on screen (dead, unused style) and "Add Exercise" already had the correct font/color -- both
+  turned out to be stale roadmap notes, not real bugs.
+  >> STILL OPEN, see the dedicated items below: the SURFACE pass, the VOICE pass.
 - [BUG, app-wide. **ALL PAGES DONE 2026-07-16.** MODALS + ONBOARDING OPEN] **Card shadows.** Full root
   cause + all five failure modes are in the RECENTLY SHIPPED entry.
   **DONE: every card on every PAGE in the app** -- 6 tabs + ~30 stack screens, plus the component-file

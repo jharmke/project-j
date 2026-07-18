@@ -2401,7 +2401,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
         {isRest ? (
           <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, alignItems: 'center', paddingVertical: 32 }]}>
             <Ionicons name="moon" size={36} color={theme.textMuted} />
-            <Text style={{ color: theme.textPrimary, fontSize: 20, fontFamily: Type.num, letterSpacing: 1, marginTop: 12 }}>REST DAY</Text>
+            <GradientNumber value="REST DAY" color={theme.textSecondary} style={{ fontSize: 20, fontFamily: Type.uiBold, letterSpacing: 1, marginTop: 12 }} />
             <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: Type.ui, marginTop: 8, textAlign: 'center' }}>Recovery is part of the program. Rest well.</Text>
             <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: Type.ui, marginTop: 12 }}>Tap + to add an exercise anyway</Text>
           </View>

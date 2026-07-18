@@ -255,7 +255,7 @@ export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen,
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); onLastMeal(); }}
               style={{ backgroundColor: theme.accentRed, borderRadius: 10, paddingHorizontal: 22, paddingVertical: 10 }}
             >
-              <Text style={{ color: '#ffffff', fontSize: 16, fontFamily: Type.num, letterSpacing: 2 }}>LAST MEAL</Text>
+              <Text style={{ color: '#ffffff', fontSize: 16, fontFamily: Type.uiBold, letterSpacing: 2 }}>LAST MEAL</Text>
             </TouchableOpacity>
             <IFLinkBtn label="Cancel fast" color={theme.textSecondary} onPress={onCancelFast} />
           </View>

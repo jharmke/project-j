@@ -9,6 +9,7 @@ import { useMembership } from '../MembershipContext';
 import SproutIcon from './SproutIcon';
 import { FoilChip, FoilEdge, GOLD_EDGE, GOLD_TINT } from './SupporterFoil';
 import { Type, numLine } from '../typography';
+import GradientTitle from './GradientTitle';
 
 // ─── Membership card ─────────────────────────────────────────────────────────
 // ONE component, used by BOTH Profile > Membership and Settings > Membership, so the two can't drift.
@@ -88,12 +89,12 @@ export default function MembershipCard() {
       )}
 
       <View style={{ flex: 1 }}>
-        <Text style={{
-          fontSize: 20, fontFamily: Type.num, letterSpacing: 0.8, lineHeight: numLine(20),
-          color: isSupporter ? theme.textSecondary : theme.accentBlue,
-        }}>
-          {isSupporter ? "You're a Supporter" : 'Support the Mission'}
-        </Text>
+        <GradientTitle
+          title={isSupporter ? "You're a Supporter" : 'Support the Mission'}
+          color={isSupporter ? theme.textSecondary : theme.accentBlue}
+          numberOfLines={1}
+          style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 0.8, lineHeight: numLine(20) }}
+        />
 
         {isSupporter ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 }}>

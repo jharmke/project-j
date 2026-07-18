@@ -28,6 +28,18 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-18 **Settings page gradient pass** (MembershipCard's "You're a Supporter"/"Support the Mission" --
+  shared with Profile so both pages get it free; all 12 borderLeftWidth-accent-line sub-section titles
+  across the page in one sweep: Fitness/Nutrition Goals, Coaching Mode, Faith Journey, Active Calorie
+  Accuracy, Heart Rate Zones, Workout History Import, Definitions, Tips & Guides, Tutorials, Prayer,
+  Feedback; Quiet Hours/How Many Per Day/Water Reminders titles + their time boxes; the 5 Advanced
+  notification titles + their time boxes; the 3 macro goal computed values (grams-in-ratio / kcal-in-fixed)
+  + both Total rows -- the % and gram INPUT boxes themselves stay flat, can't gradient a live TextInput's
+  value without breaking editability, no precedent for it anywhere in the app; Vacation Mode's calendar
+  month header, +/- stepper icons via a new local icon-gradient helper, the day count, and both duration
+  date-range lines; ButtonShine added to every selected pill/tile on the page that was flat-tinted before
+  (Burn Accuracy, HR Zone model, Workout Import range, Daily Cap, notification category pills, Water Count,
+  Weight Frequency, IF Window lead time, Streak Protection offset).
 - 2026-07-17 **Faith tab gradient pass** (Bible and Plans card incl. amber color fix on plan/devotional
   names, Gratitude Streak Card's flame + hero number using a new local icon-gradient helper + AnimatedNumber's
   built-in `renderValue` hook -- week dots intentionally left flat, too small to read as gradient; Prayer

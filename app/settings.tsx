@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
+import MaskedView from '@react-native-masked-view/masked-view';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -83,7 +84,40 @@ import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import ButtonShine from '../components/ButtonShine';
 import GradientTitle from '../components/GradientTitle';
+import GradientNumber from '../components/GradientNumber';
 import BackgroundLayers from '../components/BackgroundLayers';
+
+// Same lift/sink recipe as GradientNumber -- an icon glyph is roughly square like a number glyph, not
+// a wide word, so GradientNumber's tuning fits it better than GradientTitle's.
+const VAC_ICON_LIGHT = 0.24;
+const VAC_ICON_DARK  = 0.20;
+function clampVacIcon(n: number) { return Math.max(0, Math.min(255, Math.round(n))); }
+function parseHexVacIcon(hex: string): [number, number, number] | null {
+  const m = /^#?([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(hex.trim());
+  if (!m) return null;
+  let h = m[1];
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+const toHexVacIcon = (r: number, g: number, b: number) =>
+  '#' + [r, g, b].map(v => clampVacIcon(v).toString(16).padStart(2, '0')).join('');
+const liftVacIcon = (rgb: [number, number, number], amt: number) =>
+  toHexVacIcon(rgb[0] + (255 - rgb[0]) * amt, rgb[1] + (255 - rgb[1]) * amt, rgb[2] + (255 - rgb[2]) * amt);
+const sinkVacIcon = (rgb: [number, number, number], amt: number) =>
+  toHexVacIcon(rgb[0] * (1 - amt), rgb[1] * (1 - amt), rgb[2] * (1 - amt));
+
+function GradientVacIcon({ name, size, color }: { name: keyof typeof Ionicons.glyphMap; size: number; color: string }) {
+  const rgb = parseHexVacIcon(color);
+  if (!rgb) return <Ionicons name={name} size={size} color={color} />;
+  const stops: [string, string, string] = [liftVacIcon(rgb, VAC_ICON_LIGHT), color, sinkVacIcon(rgb, VAC_ICON_DARK)];
+  return (
+    <MaskedView maskElement={<Ionicons name={name} size={size} color="#000000" />}>
+      <LinearGradient colors={stops} locations={[0, 0.52, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}>
+        <Ionicons name={name} size={size} color={color} style={{ opacity: 0 }} />
+      </LinearGradient>
+    </MaskedView>
+  );
+}
 
 type FaithJourney = 'rooted' | 'exploring' | 'notrightnow';
 
@@ -797,7 +831,7 @@ export default function SettingsScreen() {
           <TouchableOpacity hitSlop={hit} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); if (vacCalMonth === 0) { setVacCalMonth(11); setVacCalYear(y => y - 1); } else setVacCalMonth(m => m - 1); }}>
             <Ionicons name="chevron-back" size={20} color={theme.accentBlue} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 15, color: theme.accentBlue, fontFamily: Type.num, letterSpacing: 1 }}>{VAC_MONTHS[vacCalMonth]} {vacCalYear}</Text>
+          <GradientNumber value={`${VAC_MONTHS[vacCalMonth]} ${vacCalYear}`} color={theme.accentBlue} style={{ fontSize: 15, fontFamily: Type.num, letterSpacing: 1 }} />
           <TouchableOpacity hitSlop={hit} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); if (vacCalMonth === 11) { setVacCalMonth(0); setVacCalYear(y => y + 1); } else setVacCalMonth(m => m + 1); }}>
             <Ionicons name="chevron-forward" size={20} color={theme.accentBlue} />
           </TouchableOpacity>
@@ -1328,7 +1362,7 @@ export default function SettingsScreen() {
 
             {/* FITNESS GOALS */}
             <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginBottom: 16, marginTop: 4 }}>
-              <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Fitness Goals</Text>
+              <GradientTitle title="Fitness Goals" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase' }} />
             </View>
 
             {/* Steps */}
@@ -1396,7 +1430,7 @@ export default function SettingsScreen() {
 
             {/* NUTRITION GOALS */}
             <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginBottom: 16 }}>
-              <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Nutrition Goals</Text>
+              <GradientTitle title="Nutrition Goals" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase' }} />
             </View>
 
             {/* Calorie Target */}
@@ -1527,10 +1561,7 @@ export default function SettingsScreen() {
                         />
                         <Text style={{ color: theme.textMuted, fontSize: 16, fontFamily: Type.ui }}>%</Text>
                         <View style={{ flex: 2, backgroundColor: theme.bgInset, borderRadius: 8, borderWidth: 0.5, borderColor: color + '50', padding: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
-                          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
-                            <Text style={{ color, fontSize: 18, fontFamily: Type.num, letterSpacing: 1 }}>{grams}</Text>
-                            <Text style={{ color, fontSize: 11, fontFamily: Type.uiMedium }}>g</Text>
-                          </View>
+                          <GradientNumber value={`${grams}g`} color={color} style={{ fontSize: 18, fontFamily: Type.num, letterSpacing: 1 }} />
                           <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: Type.ui, alignSelf: 'center' }}>{kcal} kcal</Text>
                         </View>
                       </View>
@@ -1543,9 +1574,7 @@ export default function SettingsScreen() {
                   return (
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4, padding: 10, backgroundColor: theme.bgInset, borderRadius: 8 }}>
                       <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.ui }}>Total</Text>
-                      <Text style={{ fontSize: 16, color, fontFamily: Type.num, letterSpacing: 1 }}>
-                        {total}% {total === 100 ? '✓' : '-- needs to equal 100%'}
-                      </Text>
+                      <GradientTitle title={`${total}% ${total === 100 ? '✓' : '-- needs to equal 100%'}`} color={color} numberOfLines={1} style={{ fontSize: 16, fontFamily: Type.num, letterSpacing: 1 }} />
                     </View>
                   );
                 })()}
@@ -1575,7 +1604,7 @@ export default function SettingsScreen() {
                         />
                         <Text style={{ color: theme.textMuted, fontSize: 16, fontFamily: Type.ui }}>g</Text>
                         <View style={{ flex: 2, backgroundColor: theme.bgInset, borderRadius: 8, borderWidth: 0.5, borderColor: color + '50', padding: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
-                          <Text style={{ color, fontSize: 18, fontFamily: Type.num, letterSpacing: 1 }}>{kcal} kcal</Text>
+                          <GradientNumber value={`${kcal} kcal`} color={color} style={{ fontSize: 18, fontFamily: Type.num, letterSpacing: 1 }} />
                           <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: Type.ui, alignSelf: 'center' }}>{pct}%</Text>
                         </View>
                       </View>
@@ -1589,9 +1618,12 @@ export default function SettingsScreen() {
                   return (
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4, padding: 10, backgroundColor: theme.bgInset, borderRadius: 8 }}>
                       <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.ui }}>Total · {Math.round(totalKcal)} kcal</Text>
-                      <Text style={{ fontSize: 13, color, fontFamily: Type.uiSemibold }}>
-                        {Math.abs(diff) <= 50 ? 'Matches target ✓' : diff > 0 ? `+${diff} kcal over · adjust to save` : `${Math.abs(diff)} kcal under · adjust to save`}
-                      </Text>
+                      <GradientTitle
+                        title={Math.abs(diff) <= 50 ? 'Matches target ✓' : diff > 0 ? `+${diff} kcal over · adjust to save` : `${Math.abs(diff)} kcal under · adjust to save`}
+                        color={color}
+                        numberOfLines={1}
+                        style={{ fontSize: 13, fontFamily: Type.uiSemibold }}
+                      />
                     </View>
                   );
                 })()}
@@ -1624,7 +1656,7 @@ export default function SettingsScreen() {
         {/* ── Faith & Style ── */}
         <CollapsibleSection label="Faith & Style" subtitle="Coaching Mode · Faith Journey" defaultOpen={deepLinkSection === 'faith_style'} forceOpen={faithStyleForceOpen} theme={theme}>
           <View ref={fsCoachingSectionRef} style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginBottom: 8 }}>
-            <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Coaching Mode</Text>
+            <GradientTitle title="Coaching Mode" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase' }} />
           </View>
           {([
             { key: 'discipline', label: 'Discipline', sub: 'Tight targets. Direct feedback. Commit fully.' },
@@ -1669,7 +1701,7 @@ export default function SettingsScreen() {
           )}
 
           <View ref={fsFaithSectionRef} style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 16, marginBottom: 8 }}>
-            <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Faith Journey</Text>
+            <GradientTitle title="Faith Journey" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase' }} />
           </View>
           {([
             { key: 'rooted',      label: 'Rooted',        sub: 'Full faith experience. Daily verse, prayer, Bible reader.' },
@@ -1706,7 +1738,9 @@ export default function SettingsScreen() {
         <CollapsibleSection label="Health" subtitle="Burn Accuracy · HR Zones · Apple Health" defaultOpen={deepLinkSection === 'health'} theme={theme}>
           <View style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}>
             <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', flex: 1 }}>Active Calorie Accuracy</Text>
+              <View style={{ flex: 1 }}>
+                <GradientTitle title="Active Calorie Accuracy" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase' }} />
+              </View>
               <TooltipIcon tooltipKey="burn_accuracy" />
             </View>
             <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textMuted, lineHeight: 18 }}>
@@ -1722,6 +1756,7 @@ export default function SettingsScreen() {
                     borderColor: burnAccuracyPct === pct ? theme.accentBlueBorder : theme.borderInput,
                     backgroundColor: burnAccuracyPct === pct ? theme.accentBlueBg : theme.bgInput,
                   }}>
+                  {burnAccuracyPct === pct && <ButtonShine radius={8} />}
                   <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: burnAccuracyPct === pct ? theme.accentBlue : theme.textMuted }}>
                     {pct}%
                   </Text>
@@ -1737,7 +1772,9 @@ export default function SettingsScreen() {
 
           {/* Heart Rate Zones */}
           <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 4, marginBottom: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', flex: 1 }}>Heart Rate Zones</Text>
+            <View style={{ flex: 1 }}>
+              <GradientTitle title="Heart Rate Zones" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase' }} />
+            </View>
             <TooltipIcon tooltipKey="hr_zones" />
           </View>
           <View style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 14 }}>
@@ -1779,6 +1816,7 @@ export default function SettingsScreen() {
                       borderColor: hrZoneModel === val ? theme.accentBlueBorder : theme.borderInput,
                       backgroundColor: hrZoneModel === val ? theme.accentBlueBg : theme.bgInput,
                     }}>
+                    {hrZoneModel === val && <ButtonShine radius={8} />}
                     <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: hrZoneModel === val ? theme.accentBlue : theme.textMuted }}>{label}</Text>
                   </TouchableOpacity>
                 ))}
@@ -1792,7 +1830,7 @@ export default function SettingsScreen() {
           </View>
 
           <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 4, marginBottom: 12 }}>
-            <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Workout History Import</Text>
+            <GradientTitle title="Workout History Import" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase' }} />
           </View>
           <View style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 12 }}>
             <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textMuted, lineHeight: 18 }}>
@@ -1804,6 +1842,7 @@ export default function SettingsScreen() {
                   key={d}
                   onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setImportRange(d); }}
                   style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: importRange === d ? theme.accentBlueBorder : theme.borderInput, backgroundColor: importRange === d ? theme.accentBlueBg : theme.bgInput }}>
+                  {importRange === d && <ButtonShine radius={8} />}
                   <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: importRange === d ? theme.accentBlue : theme.textMuted }}>
                     {d === 14 ? '2 WEEKS' : d === 30 ? '1 MONTH' : '3 MONTHS'}
                   </Text>
@@ -1839,9 +1878,12 @@ export default function SettingsScreen() {
                   <Text style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, color: theme.textMuted, textTransform: 'uppercase', marginBottom: 4 }}>
                     {vacationTodayKey() < vacation.startKey ? 'Scheduled' : 'On vacation'}
                   </Text>
-                  <Text style={{ fontSize: 24, fontFamily: Type.num, letterSpacing: 1, color: theme.accentBlue, textAlign: 'center' }}>
-                    {vacFmtNice(vacation.startKey)}  to  {vacFmtNice(vacation.endKey)}
-                  </Text>
+                  <GradientTitle
+                    title={`${vacFmtNice(vacation.startKey)}  to  ${vacFmtNice(vacation.endKey)}`}
+                    color={theme.accentBlue}
+                    numberOfLines={1}
+                    style={{ fontSize: 24, fontFamily: Type.num, letterSpacing: 1, textAlign: 'center' }}
+                  />
                   <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textMuted, marginTop: 4 }}>
                     Resumes {vacFmtNice(addDaysKey(vacation.endKey, 1))}
                   </Text>
@@ -1860,21 +1902,28 @@ export default function SettingsScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 28, marginBottom: 8 }}>
                   <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} disabled={vacDays <= 1}
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setVacDays(d => Math.max(1, d - 1)); }}>
-                    <Ionicons name="remove-circle" size={34} color={vacDays <= 1 ? theme.textDim : theme.accentBlue} />
+                    {vacDays <= 1
+                      ? <Ionicons name="remove-circle" size={34} color={theme.textDim} />
+                      : <GradientVacIcon name="remove-circle" size={34} color={theme.accentBlue} />}
                   </TouchableOpacity>
                   <View style={{ alignItems: 'center', minWidth: 80 }}>
-                    <Text style={{ fontSize: 34, fontFamily: Type.num, color: theme.accentBlue }}>{vacDays}</Text>
+                    <GradientNumber value={String(vacDays)} color={theme.accentBlue} style={{ fontSize: 34, fontFamily: Type.num }} />
                     <Text style={{ fontSize: 10, fontFamily: Type.uiBold, letterSpacing: 1, color: theme.textMuted, textTransform: 'uppercase' }}>{vacDays === 1 ? 'day' : 'days'}</Text>
                   </View>
                   <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} disabled={vacDays >= MAX_VACATION_DAYS}
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setVacDays(d => Math.min(MAX_VACATION_DAYS, d + 1)); }}>
-                    <Ionicons name="add-circle" size={34} color={vacDays >= MAX_VACATION_DAYS ? theme.textDim : theme.accentBlue} />
+                    {vacDays >= MAX_VACATION_DAYS
+                      ? <Ionicons name="add-circle" size={34} color={theme.textDim} />
+                      : <GradientVacIcon name="add-circle" size={34} color={theme.accentBlue} />}
                   </TouchableOpacity>
                 </View>
                 <View style={{ alignItems: 'center', marginBottom: 16 }}>
-                  <Text style={{ fontSize: 14, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 0.3 }}>
-                    {vacFmtNice(vacStartKey)}  to  {vacFmtNice(addDaysKey(vacStartKey, vacDays - 1))}
-                  </Text>
+                  <GradientTitle
+                    title={`${vacFmtNice(vacStartKey)}  to  ${vacFmtNice(addDaysKey(vacStartKey, vacDays - 1))}`}
+                    color={theme.accentBlue}
+                    numberOfLines={1}
+                    style={{ fontSize: 14, fontFamily: Type.uiBold, letterSpacing: 0.3 }}
+                  />
                   <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textMuted, marginTop: 3 }}>
                     {vacDays} {vacDays === 1 ? 'Day Off' : 'Days Off'} · Resumes {vacFmtNice(addDaysKey(vacStartKey, vacDays))}
                   </Text>
@@ -1925,14 +1974,14 @@ export default function SettingsScreen() {
             {(notifSettings.masterEnabled || notifTutorialActive) && (
               <>
                 {/* ── Quiet Hours ── */}
-                <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginTop: 16, marginBottom: 10 }}>Quiet Hours</Text>
+                <GradientTitle title="Quiet Hours" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginTop: 16, marginBottom: 10 }} />
                 <View ref={quietHoursRowRef} style={{ flexDirection: 'row', gap: 12, marginBottom: 4 }}>
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.uiSemibold, marginBottom: 6 }}>From</Text>
                     <TouchableOpacity
                       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openTimePicker('quietStart', notifSettings.quietStart); }}
                       style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 10, alignItems: 'center' }}>
-                      <Text style={{ color: theme.textPrimary, fontSize: 15, fontFamily: Type.uiSemibold }}>{formatNotifTime(notifSettings.quietStart)}</Text>
+                      <GradientNumber value={formatNotifTime(notifSettings.quietStart)} color={theme.textSecondary} style={{ fontSize: 15, fontFamily: Type.uiSemibold }} />
                     </TouchableOpacity>
                   </View>
                   <View style={{ flex: 1 }}>
@@ -1940,7 +1989,7 @@ export default function SettingsScreen() {
                     <TouchableOpacity
                       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openTimePicker('quietEnd', notifSettings.quietEnd); }}
                       style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 10, alignItems: 'center' }}>
-                      <Text style={{ color: theme.textPrimary, fontSize: 15, fontFamily: Type.uiSemibold }}>{formatNotifTime(notifSettings.quietEnd)}</Text>
+                      <GradientNumber value={formatNotifTime(notifSettings.quietEnd)} color={theme.textSecondary} style={{ fontSize: 15, fontFamily: Type.uiSemibold }} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1961,7 +2010,7 @@ export default function SettingsScreen() {
                 {/* ── Daily cap ── */}
                 <View style={{ height: 1, backgroundColor: theme.borderInput, marginTop: 16, marginBottom: 12 }} />
                 <View ref={notifCapRef}>
-                  <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>How Many Per Day</Text>
+                  <GradientTitle title="How Many Per Day" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }} />
                   <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginBottom: 10 }}>Streaks, IF window, summaries, and water reminders are not counted toward this.</Text>
                   <View style={{ flexDirection: 'row', gap: 8 }}>
                     {([3, 5, 'all'] as const).map(cap => (
@@ -1969,6 +2018,7 @@ export default function SettingsScreen() {
                         key={String(cap)}
                         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateNotifSettings({ ...notifSettings, dailyCap: cap }); }}
                         style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: notifSettings.dailyCap === cap ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: notifSettings.dailyCap === cap ? theme.accentBlueBorder : theme.borderInput }}>
+                        {notifSettings.dailyCap === cap && <ButtonShine radius={8} />}
                         <Text style={{ fontSize: 14, fontFamily: Type.uiBold, color: notifSettings.dailyCap === cap ? theme.accentBlue : theme.textMuted }}>{cap === 'all' ? 'All' : String(cap)}</Text>
                       </TouchableOpacity>
                     ))}
@@ -1998,6 +2048,7 @@ export default function SettingsScreen() {
                         }}
                         activeOpacity={isNRN ? 1 : 0.7}
                         style={{ paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: isOn ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: isOn ? theme.accentBlueBorder : theme.borderInput, opacity: isNRN ? 0.4 : 1 }}>
+                        {isOn && <ButtonShine radius={20} />}
                         <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: isOn ? theme.accentBlue : theme.textMuted }}>{label}</Text>
                       </TouchableOpacity>
                     );
@@ -2009,7 +2060,7 @@ export default function SettingsScreen() {
                 {(notifSettings.categoryFitness || notifTutorialActive) && (
                   <View ref={notifWaterRef}>
                     <View style={{ height: 1, backgroundColor: theme.borderInput, marginTop: 16, marginBottom: 12 }} />
-                    <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>Water Reminders</Text>
+                    <GradientTitle title="Water Reminders" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }} />
                     <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginBottom: 10 }}>Spaced evenly through your waking hours. Does not count toward the daily cap.</Text>
                     <View style={{ flexDirection: 'row', gap: 8 }}>
                       {([0, 1, 2, 3, 4] as const).map(count => (
@@ -2017,6 +2068,7 @@ export default function SettingsScreen() {
                           key={count}
                           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateNotifSettings({ ...notifSettings, waterCount: count }); }}
                           style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: notifSettings.waterCount === count ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: notifSettings.waterCount === count ? theme.accentBlueBorder : theme.borderInput }}>
+                          {notifSettings.waterCount === count && <ButtonShine radius={8} />}
                           <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: notifSettings.waterCount === count ? theme.accentBlue : theme.textMuted }}>{count === 0 ? 'Off' : String(count)}</Text>
                         </TouchableOpacity>
                       ))}
@@ -2030,19 +2082,19 @@ export default function SettingsScreen() {
                 <NotifGroup label="Advanced" summary="Activity time, weight frequency, and more" theme={theme}>
 
                   {/* Activity reminder time */}
-                  <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>Activity Reminder Time</Text>
+                  <GradientTitle title="Activity Reminder Time" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }} />
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                     <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: Type.ui, flex: 1, paddingRight: 10 }}>Fires if no workout and steps below 75% of goal</Text>
                     <TouchableOpacity
                       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openTimePicker('activityTime', notifSettings.activityTime); }}
                       style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14, marginLeft: 12 }}>
-                      <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: Type.uiSemibold }}>{formatNotifTime(notifSettings.activityTime)}</Text>
+                      <GradientNumber value={formatNotifTime(notifSettings.activityTime)} color={theme.textSecondary} style={{ fontSize: 14, fontFamily: Type.uiSemibold }} />
                     </TouchableOpacity>
                   </View>
 
                   {/* Weight log frequency */}
                   <View style={{ height: 1, backgroundColor: theme.borderInput, marginBottom: 12 }} />
-                  <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>Weight Log Frequency</Text>
+                  <GradientTitle title="Weight Log Frequency" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }} />
                   <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
                     {([
                       { value: 'daily' as const, label: 'Daily' },
@@ -2053,6 +2105,7 @@ export default function SettingsScreen() {
                         key={value}
                         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateNotifSettings({ ...notifSettings, weightFrequency: value }); }}
                         style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center', backgroundColor: notifSettings.weightFrequency === value ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: notifSettings.weightFrequency === value ? theme.accentBlueBorder : theme.borderInput }}>
+                        {notifSettings.weightFrequency === value && <ButtonShine radius={8} />}
                         <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: notifSettings.weightFrequency === value ? theme.accentBlue : theme.textMuted, textAlign: 'center' }}>{label}</Text>
                       </TouchableOpacity>
                     ))}
@@ -2062,13 +2115,13 @@ export default function SettingsScreen() {
                   {faithJourney === 'rooted' && (
                     <>
                       <View style={{ height: 1, backgroundColor: theme.borderInput, marginBottom: 12 }} />
-                      <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>Prayer Check-In Time</Text>
+                      <GradientTitle title="Prayer Check-In Time" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }} />
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                         <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: Type.ui }}>Fires if no prayer logged today</Text>
                         <TouchableOpacity
                           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openTimePicker('prayerTime', notifSettings.prayerTime); }}
                           style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14, marginLeft: 12 }}>
-                          <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: Type.uiSemibold }}>{formatNotifTime(notifSettings.prayerTime)}</Text>
+                          <GradientNumber value={formatNotifTime(notifSettings.prayerTime)} color={theme.textSecondary} style={{ fontSize: 14, fontFamily: Type.uiSemibold }} />
                         </TouchableOpacity>
                       </View>
                     </>
@@ -2076,13 +2129,14 @@ export default function SettingsScreen() {
 
                   {/* IF window reminder lead time */}
                   <View style={{ height: 1, backgroundColor: theme.borderInput, marginBottom: 12 }} />
-                  <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>IF Window Reminder</Text>
+                  <GradientTitle title="IF Window Reminder" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }} />
                   <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
                     {([15, 30, 60] as const).map(mins => (
                       <TouchableOpacity
                         key={mins}
                         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateNotifSettings({ ...notifSettings, ifLeadMins: mins }); }}
                         style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center', backgroundColor: notifSettings.ifLeadMins === mins ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: notifSettings.ifLeadMins === mins ? theme.accentBlueBorder : theme.borderInput }}>
+                        {notifSettings.ifLeadMins === mins && <ButtonShine radius={8} />}
                         <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: notifSettings.ifLeadMins === mins ? theme.accentBlue : theme.textMuted }}>{mins} min</Text>
                       </TouchableOpacity>
                     ))}
@@ -2091,13 +2145,14 @@ export default function SettingsScreen() {
 
                   {/* Streak protection offset */}
                   <View style={{ height: 1, backgroundColor: theme.borderInput, marginTop: 8, marginBottom: 12 }} />
-                  <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>Streak Protection Timing</Text>
+                  <GradientTitle title="Streak Protection Timing" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }} />
                   <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
                     {([30, 45, 60] as const).map(mins => (
                       <TouchableOpacity
                         key={mins}
                         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateNotifSettings({ ...notifSettings, streakOffsetMins: mins }); }}
                         style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center', backgroundColor: notifSettings.streakOffsetMins === mins ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: notifSettings.streakOffsetMins === mins ? theme.accentBlueBorder : theme.borderInput }}>
+                        {notifSettings.streakOffsetMins === mins && <ButtonShine radius={8} />}
                         <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: notifSettings.streakOffsetMins === mins ? theme.accentBlue : theme.textMuted }}>{mins} min</Text>
                       </TouchableOpacity>
                     ))}
@@ -2118,7 +2173,7 @@ export default function SettingsScreen() {
         <CollapsibleSection label="Help" subtitle="Definitions · Guides · Prayer · Feedback" defaultOpen={false} theme={theme}>
           <View style={{ paddingBottom: 8 }}>
             <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 8, marginBottom: 8 }}>
-              <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Definitions</Text>
+              <GradientTitle title="Definitions" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase' }} />
             </View>
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/definitions'); }} activeOpacity={0.7}>
               <View style={{ flex: 1 }}>
@@ -2128,7 +2183,7 @@ export default function SettingsScreen() {
               <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
             </TouchableOpacity>
             <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 16, marginBottom: 8 }}>
-              <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Tips {'&'} Guides</Text>
+              <GradientTitle title="Tips & Guides" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase' }} />
             </View>
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/mission'); }} activeOpacity={0.7}>
               <View style={{ flex: 1 }}>
@@ -2138,7 +2193,7 @@ export default function SettingsScreen() {
               <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
             </TouchableOpacity>
             <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 16, marginBottom: 8 }}>
-              <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Tutorials</Text>
+              <GradientTitle title="Tutorials" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase' }} />
             </View>
             <TouchableOpacity
               style={[styles.row, { borderTopColor: theme.borderCard }]}
@@ -2152,7 +2207,7 @@ export default function SettingsScreen() {
               <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
             </TouchableOpacity>
             <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 16, marginBottom: 8 }}>
-              <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Prayer</Text>
+              <GradientTitle title="Prayer" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase' }} />
             </View>
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowPrayerModal(true); }} activeOpacity={0.7}>
               <View style={{ flex: 1 }}>
@@ -2162,7 +2217,7 @@ export default function SettingsScreen() {
               <Ionicons name="heart" size={15} color={theme.textMuted} />
             </TouchableOpacity>
             <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 16, marginBottom: 8 }}>
-              <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Feedback</Text>
+              <GradientTitle title="Feedback" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase' }} />
             </View>
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setFeedbackOpen(true); }} activeOpacity={0.7}>
               <View style={{ flex: 1 }}>

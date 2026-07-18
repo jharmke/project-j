@@ -45,7 +45,7 @@ export default function ModalHeader({
   const close = onClose ? () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); onClose(); } : undefined;
 
   return (
-    <View>
+    <View style={{ alignSelf: 'stretch', width: '100%' }}>
       {/* Handle pill -- centred grab affordance, also taps to close. */}
       <TouchableOpacity onPress={close} disabled={!close} style={styles.pillHit} hitSlop={{ top: 8, bottom: 8, left: 20, right: 20 }}>
         <View style={[styles.pill, { backgroundColor: theme.borderCard }]} />

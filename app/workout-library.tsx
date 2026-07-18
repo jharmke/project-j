@@ -6,6 +6,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Dimensions, Easing, FlatList, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import MaskedView from '@react-native-masked-view/masked-view';
+import { LinearGradient } from 'expo-linear-gradient';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import Reanimated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, runOnJS } from 'react-native-reanimated';
 import { storageSet } from '../utils/storage';
@@ -25,10 +27,43 @@ import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import ButtonShine from '../components/ButtonShine';
 import GradientTitle from '../components/GradientTitle';
+import GradientNumber from '../components/GradientNumber';
 import FabDome from '../components/FabDome';
 import BackgroundLayers from '../components/BackgroundLayers';
 import PrimaryCTA from '../components/PrimaryCTA';
 import ModalHeader from '../components/ModalHeader';
+
+// Same lift/sink recipe as GradientNumber -- an icon glyph is roughly square like a number glyph, not
+// a wide word, so GradientNumber's tuning fits it better than GradientTitle's.
+const LIB_ICON_LIGHT = 0.24;
+const LIB_ICON_DARK  = 0.20;
+function clampLibIcon(n: number) { return Math.max(0, Math.min(255, Math.round(n))); }
+function parseHexLibIcon(hex: string): [number, number, number] | null {
+  const m = /^#?([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(hex.trim());
+  if (!m) return null;
+  let h = m[1];
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+const toHexLibIcon = (r: number, g: number, b: number) =>
+  '#' + [r, g, b].map(v => clampLibIcon(v).toString(16).padStart(2, '0')).join('');
+const liftLibIcon = (rgb: [number, number, number], amt: number) =>
+  toHexLibIcon(rgb[0] + (255 - rgb[0]) * amt, rgb[1] + (255 - rgb[1]) * amt, rgb[2] + (255 - rgb[2]) * amt);
+const sinkLibIcon = (rgb: [number, number, number], amt: number) =>
+  toHexLibIcon(rgb[0] * (1 - amt), rgb[1] * (1 - amt), rgb[2] * (1 - amt));
+
+function GradientLibIcon({ name, size, color }: { name: keyof typeof Ionicons.glyphMap; size: number; color: string }) {
+  const rgb = parseHexLibIcon(color);
+  if (!rgb) return <Ionicons name={name} size={size} color={color} />;
+  const stops: [string, string, string] = [liftLibIcon(rgb, LIB_ICON_LIGHT), color, sinkLibIcon(rgb, LIB_ICON_DARK)];
+  return (
+    <MaskedView maskElement={<Ionicons name={name} size={size} color="#000000" />}>
+      <LinearGradient colors={stops} locations={[0, 0.52, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}>
+        <Ionicons name={name} size={size} color={color} style={{ opacity: 0 }} />
+      </LinearGradient>
+    </MaskedView>
+  );
+}
 
 interface LibraryExercise {
   id: string;
@@ -2666,8 +2701,8 @@ export default function WorkoutLibraryScreen() {
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openAllPRs(); }}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Ionicons name="trophy" size={15} color={theme.accentAmber} />
-            <Text style={{ color: theme.accentAmber, fontSize: 14, fontFamily: Type.uiSemibold }}>PRs</Text>
+            <GradientLibIcon name="trophy" size={15} color={theme.accentAmber} />
+            <GradientTitle title="PRs" color={theme.accentAmber} style={{ fontSize: 14, fontFamily: Type.uiSemibold }} />
           </TouchableOpacity>
         )}
       />
@@ -2745,7 +2780,9 @@ export default function WorkoutLibraryScreen() {
                       <Text style={{ fontSize: 8, fontFamily: Type.uiBold, letterSpacing: 1, color: theme.accentGreen }}>APPLE HEALTH</Text>
                     </View>
                   )}
-                  <Text style={styles.exName}>{item.name}</Text>
+                  <View style={{ flex: 1 }}>
+                    <GradientTitle title={item.name} color={theme.textSecondary} style={{ fontSize: 14, fontFamily: Type.uiSemibold }} numberOfLines={1} />
+                  </View>
                 </View>
                 {item.source === 'apple'
                   ? <Text style={styles.exNote}>Logs automatically from your watch · {item.sessions.length} session{item.sessions.length === 1 ? '' : 's'}</Text>
@@ -2814,7 +2851,9 @@ export default function WorkoutLibraryScreen() {
             <ScaleDecorator>
               <View ref={getIndex() === 0 ? libProgramCardRef : undefined} collapsable={false} style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 12, opacity: isActive ? 0.95 : 1, shadowColor: theme.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: theme.cardShadowOpacity, shadowRadius: 12, elevation: 6 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ color: theme.textSecondary, fontSize: 16, fontFamily: Type.uiBold, flex: 1, marginRight: 8 }}>{program.name}</Text>
+                  <View style={{ flex: 1, marginRight: 8 }}>
+                    <GradientTitle title={program.name} color={theme.textSecondary} style={{ fontSize: 16, fontFamily: Type.uiBold }} numberOfLines={1} />
+                  </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <TouchableOpacity
                       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditingProgram(program); setShowBuilder(true); }}
@@ -2906,7 +2945,9 @@ export default function WorkoutLibraryScreen() {
                   {getFilteredRoutines(myRoutines).map((routine) => (
                     <View key={routine.id} style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 12, shadowColor: theme.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: theme.cardShadowOpacity, shadowRadius: 12, elevation: 6 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
-                        <Text style={{ color: theme.textSecondary, fontSize: 16, fontFamily: Type.uiBold, flex: 1, marginRight: 8 }}>{routine.name}</Text>
+                        <View style={{ flex: 1, marginRight: 8 }}>
+                          <GradientTitle title={routine.name} color={theme.textSecondary} style={{ fontSize: 16, fontFamily: Type.uiBold }} numberOfLines={1} />
+                        </View>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditingRoutine(routine); setShowRoutineBuilder(true); }}
                             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
@@ -2992,7 +3033,9 @@ export default function WorkoutLibraryScreen() {
                     {filtered.map((routine, idx) => (
                       <View key={routine.id} ref={idx === 0 ? libRoutinePresetRef : undefined} collapsable={false} style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 10, shadowColor: theme.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: theme.cardShadowOpacity, shadowRadius: 12, elevation: 6 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
-                          <Text style={{ color: theme.textSecondary, fontSize: 15, fontFamily: Type.uiBold, flex: 1, marginRight: 8 }}>{routine.name}</Text>
+                          <View style={{ flex: 1, marginRight: 8 }}>
+                            <GradientTitle title={routine.name} color={theme.textSecondary} style={{ fontSize: 15, fontFamily: Type.uiBold }} numberOfLines={1} />
+                          </View>
                           <View style={{ backgroundColor: theme.bgInset, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
                             <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiSemibold, letterSpacing: 1 }}>PRESET</Text>
                           </View>
@@ -3308,7 +3351,9 @@ export default function WorkoutLibraryScreen() {
                         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openLiftDetailByName(p.name); }}
                         style={{ backgroundColor: theme.bgInset, borderRadius: 12, borderWidth: 0.5, borderColor: theme.borderCard, padding: 12, marginBottom: 10 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                          <Text style={{ flex: 1, color: theme.textSecondary, fontSize: 15, fontFamily: Type.uiBold, marginRight: 8 }} numberOfLines={1}>{p.name}</Text>
+                          <View style={{ flex: 1, marginRight: 8 }}>
+                            <GradientTitle title={p.name} color={theme.textSecondary} style={{ fontSize: 15, fontFamily: Type.uiBold }} numberOfLines={1} />
+                          </View>
                           {dateKey ? <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: Type.uiMedium }}>{fmtPRDate(dateKey)}</Text> : null}
                         </View>
                         {p.bestDuration && !p.bestWeight ? (
@@ -3316,18 +3361,22 @@ export default function WorkoutLibraryScreen() {
                           <View style={{ flexDirection: 'row', gap: 8 }}>
                             <View style={{ flex: 1, backgroundColor: theme.bgSheet, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, paddingVertical: 8, paddingHorizontal: 10 }}>
                               <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase', marginBottom: 3 }}>Longest hold</Text>
-                              <Text style={{ color: theme.textSecondary, fontSize: 14, fontFamily: Type.uiBold }}>{formatHold(p.bestDuration.value)}{p.bestDuration.weight != null && p.bestDuration.weight > 0 ? ` · ${p.bestDuration.weight} ${weightUnitLabel(p.bestDuration.unit)}` : ''}</Text>
+                              <GradientNumber
+                                value={`${formatHold(p.bestDuration.value)}${p.bestDuration.weight != null && p.bestDuration.weight > 0 ? ` · ${p.bestDuration.weight} ${weightUnitLabel(p.bestDuration.unit)}` : ''}`}
+                                color={theme.textSecondary}
+                                style={{ fontSize: 14, fontFamily: Type.uiBold }}
+                              />
                             </View>
                           </View>
                         ) : (
                         <View style={{ flexDirection: 'row', gap: 8 }}>
                           <View style={{ flex: 1, backgroundColor: theme.bgSheet, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, paddingVertical: 8, paddingHorizontal: 10 }}>
                             <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase', marginBottom: 3 }}>Heaviest set</Text>
-                            <Text style={{ color: theme.textSecondary, fontSize: 14, fontFamily: Type.uiBold }}>{p.bestWeight ? `${p.bestWeight.value} ${weightUnitLabel(p.bestWeight.unit)} × ${p.bestWeight.reps}` : '—'}</Text>
+                            <GradientNumber value={p.bestWeight ? `${p.bestWeight.value} ${weightUnitLabel(p.bestWeight.unit)} × ${p.bestWeight.reps}` : '—'} color={theme.textSecondary} style={{ fontSize: 14, fontFamily: Type.uiBold }} />
                           </View>
                           <View style={{ flex: 1, backgroundColor: theme.bgSheet, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, paddingVertical: 8, paddingHorizontal: 10 }}>
                             <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase', marginBottom: 3 }}>Est. 1-rep max</Text>
-                            <Text style={{ color: theme.textSecondary, fontSize: 14, fontFamily: Type.uiBold }}>{p.bestE1RM ? `${p.bestE1RM.value} ${weightUnitLabel(p.bestE1RM.unit)}` : '—'}</Text>
+                            <GradientNumber value={p.bestE1RM ? `${p.bestE1RM.value} ${weightUnitLabel(p.bestE1RM.unit)}` : '—'} color={theme.textSecondary} style={{ fontSize: 14, fontFamily: Type.uiBold }} />
                           </View>
                         </View>
                         )}

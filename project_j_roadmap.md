@@ -28,6 +28,14 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-17 **Workout Library gradient pass** (exercise/program/routine list names + 1-line safeguard,
+  trophy+PRs header button, All PRs modal) and Workout tab's exercise names (gradient while active, flat
+  once checked off). Also fixed a real, app-wide **ModalHeader bug**: any modal wrapping its content
+  container in `alignItems: 'center'` collapsed the shared title to a sliver, since `ModalHeader`'s own
+  root View had no explicit width and inherited shrink-to-fit sizing instead of stretch -- found via
+  recipe-log's "Add to Which Meal?" picker rendering with no visible title at all. Fixed at the component
+  level (`alignSelf: 'stretch', width: '100%'` on ModalHeader's root), protecting every other modal that
+  uses it, not just this one call site.
 - 2026-07-17 **Tooltip system gradient + amber-for-Faith fix, then a full title/modal gradient sweep
   across the app** (Bible, Journal, Settings, Workout + Workout Library, Add Food, Log, Home, Mission,
   What's New, Diagnostic Report insight cards, and ~10 standalone modals -- Day Summary, Prayer Request,

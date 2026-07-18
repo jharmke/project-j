@@ -2055,7 +2055,11 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
           <View style={styles.exerciseInfo}>
             <TouchableOpacity style={styles.exerciseNameRow} activeOpacity={0.7}
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openInfoModal(ex.name); }}>
-              <Text style={[styles.exerciseName, { color: theme.textSecondary }, isDone && [styles.exerciseNameDone, { color: theme.textDim }]]}>{ex.name}</Text>
+              {isDone ? (
+                <Text style={[styles.exerciseName, styles.exerciseNameDone, { color: theme.textDim }]} numberOfLines={1}>{ex.name}</Text>
+              ) : (
+                <GradientTitle title={ex.name} color={theme.textSecondary} style={styles.exerciseName} numberOfLines={1} />
+              )}
               {exerciseLibrary.find((e: any) => e.name === ex.name && (e.instructions?.length || e.primaryMuscles?.length)) ? (
                 <Ionicons name="information-circle-outline" size={14} color={theme.textDim} style={{ marginLeft: -2 }} />
               ) : null}

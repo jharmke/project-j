@@ -28,6 +28,7 @@ import ScreenHeader from '../components/ScreenHeader';
 import BackgroundLayers from '../components/BackgroundLayers';
 import PrimaryCTA from '../components/PrimaryCTA';
 import ButtonShine from '../components/ButtonShine';
+import GradientTitle from '../components/GradientTitle';
 
 /**
  * Devotional day screen. The interactive half of Bucket C (distinct from a pure reading plan).
@@ -255,7 +256,7 @@ export default function DevotionalScreen() {
       >
           {/* Day heading */}
           <Text style={[styles.dayLabel, { color: theme.accentAmber }]}>DAY {day}</Text>
-          <Text style={[styles.dayTitle, { color: theme.textPrimary }]}>{dayData.title}</Text>
+          <GradientTitle title={dayData.title} color={theme.accentAmber} numberOfLines={1} style={styles.dayTitle} />
           <Text style={[styles.passageRef, { color: theme.textSecondary }]}>
             {formatDevotionalPassage(dayData.passage)}
           </Text>
@@ -350,7 +351,7 @@ export default function DevotionalScreen() {
                   <MiniCross size={15} color={CROSS_LIGHT} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.haloRowTitle, { color: theme.accentAmber }]}>Your reflection with Halo</Text>
+                  <GradientTitle title="Your reflection with Halo" color={theme.accentAmber} numberOfLines={1} style={styles.haloRowTitle} />
                   <Text numberOfLines={1} style={[styles.haloRowPreview, { color: theme.textSecondary }]}>Tap to continue your conversation</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
@@ -367,7 +368,7 @@ export default function DevotionalScreen() {
                 <View style={[styles.haloBadge, { backgroundColor: HALO_GOLD }]}>
                   <MiniCross size={15} color={CROSS_LIGHT} />
                 </View>
-                <Text style={[styles.haloBtnText, { color: theme.textPrimary }]}>Reflect on this with Halo</Text>
+                <GradientTitle title="Reflect on this with Halo" color={theme.accentAmber} numberOfLines={1} style={styles.haloBtnText} />
               </PressScale>
             )}
           </View>
@@ -386,9 +387,7 @@ export default function DevotionalScreen() {
               size={20}
               color={completed ? '#0d9268' : theme.accentAmber}
             />
-            <Text style={[styles.completeText, { color: completed ? '#0d9268' : theme.textPrimary }]}>
-              {completed ? 'Completed' : 'Mark this day complete'}
-            </Text>
+            <GradientTitle title={completed ? 'Completed' : 'Mark this day complete'} color={completed ? '#0d9268' : theme.accentAmber} numberOfLines={1} style={styles.completeText} />
           </TouchableOpacity>
 
           {/* Day navigation */}
@@ -450,7 +449,7 @@ const styles = StyleSheet.create({
   readerLink:      { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 14, paddingTop: 12, borderTopWidth: 0.5, borderTopColor: 'rgba(255,255,255,0.06)' },
   readerLinkText:  { fontSize: 13, fontFamily: Type.uiSemibold },
   reflection:      { fontSize: 16, fontFamily: 'Lora_500Medium', lineHeight: 26, marginBottom: 16 },
-  reflectBlock:    { marginTop: 6, marginBottom: 8 },
+  reflectBlock:    { marginTop: 6, marginBottom: 0 },
   reflectLabel:    { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold, marginBottom: 8 },
   question:        { fontSize: 18, fontFamily: 'Lora_500Medium', lineHeight: 26, marginBottom: 14 },
   answerInput:     { minHeight: 110, borderRadius: 12, borderWidth: 1, padding: 14, fontSize: 15, fontFamily: Type.ui, lineHeight: 22, textAlignVertical: 'top' },
@@ -462,7 +461,7 @@ const styles = StyleSheet.create({
   haloRow:         { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12, borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, minHeight: 56, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
   haloRowTitle:    { fontSize: 14, fontFamily: Type.uiSemibold },
   haloRowPreview:  { fontSize: 12, fontFamily: Type.ui, marginTop: 2 },
-  completeBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 22, height: 52, borderRadius: 14, borderWidth: 1 },
+  completeBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 12, height: 52, borderRadius: 14, borderWidth: 1 },
   completeText:    { fontSize: 15, fontFamily: Type.uiSemibold },
   navRow:          { flexDirection: 'row', justifyContent: 'space-between', marginTop: 24 },
   navBtn:          { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 10, paddingHorizontal: 4, minHeight: 44 },

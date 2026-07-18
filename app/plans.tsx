@@ -29,6 +29,7 @@ import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import BackgroundLayers from '../components/BackgroundLayers';
+import GradientTitle from '../components/GradientTitle';
 
 /**
  * Plans hub. One Stack screen (so the faith-tab keyboard bug never applies) with two tabs:
@@ -444,7 +445,7 @@ function PlanRow({
           <Ionicons name={icon as any} size={20} color={theme.accentAmber} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>{title}</Text>
+          <GradientTitle title={title} color={theme.accentAmber} numberOfLines={1} style={styles.cardTitle} />
           <Text style={[styles.cardLength, { color: theme.textMuted }]}>{lengthLabel}</Text>
         </View>
       </View>

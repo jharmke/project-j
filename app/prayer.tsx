@@ -23,6 +23,7 @@ import { useTheme, type Theme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { Type, numLine, PAGE_TITLE } from '../typography';
+import GradientTitle from '../components/GradientTitle';
 import ScreenHeader from '../components/ScreenHeader';
 import FabDome from '../components/FabDome';
 import BackgroundLayers from '../components/BackgroundLayers';
@@ -285,7 +286,7 @@ export default function PrayerScreen() {
               <Ionicons name="people" size={18} color={theme.accentAmber} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.askTitle, { color: theme.textPrimary }]}>Need prayer? Ask us</Text>
+              <GradientTitle title="Need prayer? Ask us" color={theme.accentAmber} numberOfLines={1} style={styles.askTitle} />
               <Text style={[styles.askSub, { color: theme.textSecondary }]}>
                 Send a request to the team. Every one is read and prayed over.
               </Text>

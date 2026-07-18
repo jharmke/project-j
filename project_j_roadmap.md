@@ -28,6 +28,14 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-17 **Faith tab gradient pass** (Bible and Plans card incl. amber color fix on plan/devotional
+  names, Gratitude Streak Card's flame + hero number using a new local icon-gradient helper + AnimatedNumber's
+  built-in `renderValue` hook -- week dots intentionally left flat, too small to read as gradient; Prayer
+  page's "Need prayer? Ask us"; every Plans-page reading plan + devotional title; Devotional page title,
+  both bottom buttons, plus fixed their genuinely random vertical spacing to an even 12px; Today's Message
+  curated-verses toggle recolored blue-to-amber via a new optional `accent` prop on the shared ToggleSwitch,
+  every other toggle in the app is unaffected). Skipped gradienting the devotional reflection QUESTION on
+  purpose -- those are full sentences that wrap 2-3 lines, the exact banding case reverted on EvR earlier.
 - 2026-07-17 **Stats tab gradient pass** (At a Glance, Comparison incl. preset chip shine + G/oz baseline
   fix, Day/Weekly/Monthly Summaries on both the Stats-tab cards and the 3 dedicated summary pages incl. the
   shared hero score donut, the archive + inline calendars, Trends bottom-row stats, Records' 4 hero tiles,

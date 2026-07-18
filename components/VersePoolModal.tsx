@@ -214,7 +214,7 @@ export default function VersePoolModal({ visible, onClose, onChanged }: Props) {
                     <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.textSecondary }}>Curated verses</Text>
                     <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textMuted, marginTop: 2 }}>{VERSES.length} Hand-picked verses</Text>
                   </View>
-                  <ToggleSwitch value={builtInsOn} onValueChange={toggleBuiltIns} />
+                  <ToggleSwitch value={builtInsOn} onValueChange={toggleBuiltIns} accent={theme.accentAmber} />
                 </View>
 
                 {/* Cherry-pick presets */}
@@ -236,7 +236,7 @@ export default function VersePoolModal({ visible, onClose, onChanged }: Props) {
                             <Text numberOfLines={2} style={{ fontSize: 13, fontFamily: 'Lora_500Medium', color: theme.textSecondary, lineHeight: 18 }}>{v.text}</Text>
                             <Text style={{ fontSize: 10, fontFamily: Type.uiBold, color: theme.accentAmber, letterSpacing: 1, marginTop: 3, textTransform: 'uppercase' }}>{v.reference}</Text>
                           </View>
-                          <ToggleSwitch value={on} onValueChange={() => togglePreset(v.reference, on)} />
+                          <ToggleSwitch value={on} onValueChange={() => togglePreset(v.reference, on)} accent={theme.accentAmber} />
                         </View>
                       );
                     })}

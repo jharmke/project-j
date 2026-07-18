@@ -6,6 +6,9 @@ interface Props {
   value: boolean;
   onValueChange: (val: boolean) => void;
   disabled?: boolean;
+  // Override the "on" color for a category-specific instance (e.g. amber for a Faith toggle),
+  // instead of the default accent blue every other toggle in the app uses.
+  accent?: string;
 }
 
 const TRACK_WIDTH = 51;
@@ -13,8 +16,11 @@ const TRACK_HEIGHT = 31;
 const THUMB_SIZE = 27;
 const THUMB_TRAVEL = TRACK_WIDTH - THUMB_SIZE - 4;
 
-export default function ToggleSwitch({ value, onValueChange, disabled }: Props) {
+export default function ToggleSwitch({ value, onValueChange, disabled, accent }: Props) {
   const { theme } = useTheme();
+  const onBg = accent ? `${accent}20` : theme.accentBlueBg;
+  const onBorder = accent ? `${accent}40` : theme.accentBlueBorder;
+  const onThumb = accent ?? theme.accentBlueRaw;
   const translateX = useRef(new Animated.Value(value ? THUMB_TRAVEL : 2)).current;
   const trackOpacity = useRef(new Animated.Value(value ? 1 : 0)).current;
 
@@ -57,10 +63,10 @@ export default function ToggleSwitch({ value, onValueChange, disabled }: Props) 
       <Animated.View style={{
         position: 'absolute',
         top: 0, left: 0, right: 0, bottom: 0,
-        backgroundColor: theme.accentBlueBg,
+        backgroundColor: onBg,
         borderRadius: TRACK_HEIGHT / 2,
         borderWidth: 1,
-        borderColor: theme.accentBlueBorder,
+        borderColor: onBorder,
         opacity: trackOpacity,
       }} />
       {/* Thumb */}
@@ -68,7 +74,7 @@ export default function ToggleSwitch({ value, onValueChange, disabled }: Props) 
         width: THUMB_SIZE,
         height: THUMB_SIZE,
         borderRadius: THUMB_SIZE / 2,
-        backgroundColor: value ? theme.accentBlueRaw : '#ffffff',
+        backgroundColor: value ? onThumb : '#ffffff',
         transform: [{ translateX }],
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },

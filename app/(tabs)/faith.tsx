@@ -460,7 +460,7 @@ function BibleCard({ theme }: { theme: Theme }) {
               <ButtonShine radius={10} />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.bibleContinueLabel, { color: inkMuted }]}>CONTINUE READING</Text>
-                <Text style={[styles.bibleContinueRef, { color: theme.accentAmber }]}>{lastRead.book} {lastRead.chapter}</Text>
+                <GradientTitle title={`${lastRead.book} ${lastRead.chapter}`} color={theme.accentAmber} numberOfLines={1} style={styles.bibleContinueRef} />
               </View>
               <Ionicons name="chevron-forward" size={18} color={theme.accentAmber} />
             </PressButton>
@@ -470,7 +470,7 @@ function BibleCard({ theme }: { theme: Theme }) {
             >
               <ButtonShine radius={10} />
               <Ionicons name="compass-outline" size={15} color={theme.accentAmber} />
-              <Text style={[styles.bibleFindBtnText, { color: theme.accentAmber }]}>Find something to read</Text>
+              <GradientTitle title="Find something to read" color={theme.accentAmber} numberOfLines={1} style={styles.bibleFindBtnText} />
             </PressButton>
           </>
         ) : (
@@ -626,7 +626,9 @@ function PlansColumn({ theme, label, emptyText, items, atCap, onBrowse, colRef }
                 <View style={[styles.tileChip, { backgroundColor: chipBg }]}>
                   <Ionicons name={it.icon as any} size={14} color={theme.accentAmber} />
                 </View>
-                <Text numberOfLines={1} style={[styles.tileName, { color: inkText }]}>{it.name}</Text>
+                <View style={{ flex: 1 }}>
+                  <GradientTitle title={it.name} color={theme.accentAmber} numberOfLines={1} style={{ fontSize: 13, fontFamily: Type.uiSemibold, lineHeight: 17 }} />
+                </View>
               </View>
               <TileProgress progress={it.progress} refLabel={it.ref} theme={theme} />
             </PressCard>

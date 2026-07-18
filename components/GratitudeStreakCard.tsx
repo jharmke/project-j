@@ -1,5 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import MaskedView from '@react-native-masked-view/masked-view';
+import { LinearGradient } from 'expo-linear-gradient';
 import { storageSet } from '../utils/storage';
 import { cancelEveningGratitudeNotification, rescheduleStreakProtection } from '../services/notifications';
 import * as Haptics from 'expo-haptics';
@@ -11,8 +13,41 @@ import { useToast } from './Toast';
 import TooltipIcon from './TooltipIcon';
 import ButtonShine from './ButtonShine';
 import AnimatedNumber from './AnimatedNumber';
+import GradientNumber from './GradientNumber';
 import { CardWash, CardWatermark } from './GradientCard';
 import { Type, numLine } from '../typography';
+
+// Same lift/sink recipe as GradientNumber -- an icon glyph is roughly square like a number glyph, not
+// a wide word, so GradientNumber's tuning fits it better than GradientTitle's.
+const FLAME_ICON_LIGHT = 0.24;
+const FLAME_ICON_DARK  = 0.20;
+function clampFlameIcon(n: number) { return Math.max(0, Math.min(255, Math.round(n))); }
+function parseHexFlameIcon(hex: string): [number, number, number] | null {
+  const m = /^#?([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(hex.trim());
+  if (!m) return null;
+  let h = m[1];
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+const toHexFlameIcon = (r: number, g: number, b: number) =>
+  '#' + [r, g, b].map(v => clampFlameIcon(v).toString(16).padStart(2, '0')).join('');
+const liftFlameIcon = (rgb: [number, number, number], amt: number) =>
+  toHexFlameIcon(rgb[0] + (255 - rgb[0]) * amt, rgb[1] + (255 - rgb[1]) * amt, rgb[2] + (255 - rgb[2]) * amt);
+const sinkFlameIcon = (rgb: [number, number, number], amt: number) =>
+  toHexFlameIcon(rgb[0] * (1 - amt), rgb[1] * (1 - amt), rgb[2] * (1 - amt));
+
+function GradientFlameIcon({ size, color }: { size: number; color: string }) {
+  const rgb = parseHexFlameIcon(color);
+  if (!rgb) return <Ionicons name="flame" size={size} color={color} />;
+  const stops: [string, string, string] = [liftFlameIcon(rgb, FLAME_ICON_LIGHT), color, sinkFlameIcon(rgb, FLAME_ICON_DARK)];
+  return (
+    <MaskedView maskElement={<Ionicons name="flame" size={size} color="#000000" />}>
+      <LinearGradient colors={stops} locations={[0, 0.52, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}>
+        <Ionicons name="flame" size={size} color={color} style={{ opacity: 0 }} />
+      </LinearGradient>
+    </MaskedView>
+  );
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -404,13 +439,13 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Animated.View style={{ transform: [{ scale: flameLit ? flamePulse : 1 }], opacity: flameLit ? 1 : 0.3 }}>
-            <Ionicons name="flame" size={22} color={accent} />
+            <GradientFlameIcon size={22} color={accent} />
           </Animated.View>
           <AnimatedNumber
             value={heroValue}
             animateFromZero
             duration={600}
-            style={[styles.heroNumber, { color: accent }]}
+            renderValue={(formatted) => <GradientNumber value={formatted} color={accent} style={styles.heroNumber} />}
           />
           <Text style={[styles.heroLabel, { color: inkMuted }]}>
             {isMindful ? 'TOTAL DAYS' : 'DAY STREAK'}

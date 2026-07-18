@@ -701,6 +701,22 @@ are separate pre-submission checklists, NOT part of this menu.
 - [BUG] [found 2026-07-17] **Workout achievement trophies look like they're tracking TOTAL workout count, not workout DAYS.** Justin earned the "100 days" tier trophy today, but the app was only created ~2 months ago -- 100 distinct workout DAYS isn't possible yet, so the counter is likely summing something else (total workout entries logged, maybe counting multiple exercises/sets per day). Not investigated, look tomorrow.
 - [BUG] [found 2026-07-17] **Momentum streak achievements: "All In" (90 days) progress shows 0/90 despite already holding "Sixty Strong" (60 days).** Should be well past 0 if the streak is continuous. Justin's guess: may be an artifact of switching from TestFlight to an Expo dev build partway through (streak/count reset or split across install contexts) -- if that's the cause it's expected/fine, but needs confirming, not assumed. Not investigated, look tomorrow.
 - [QUICK WIN] [found 2026-07-18] **Halo/Otto chat header icon buttons (refresh/close/bell) feel slightly off.** Justin flagged it looking at Halo's on-device but couldn't pin down what specifically (color? size/shape? spacing?) on a first look and dropped it for now ("forget it its fine"). Worth a second look with fresh eyes -- maybe side by side against a real tab header for comparison.
+- [NOW] [TITLE/NUMBER GRADIENT ROLLOUT -- ACTIVE PUNCH LIST, 2026-07-18] Continuing the tab-by-tab
+  gradient/number pass (Home, Log, Workout+Library, Bible, Journal(first pass), Settings, Add Food, tooltip
+  system, Day Detail + Water/Weight/Macros modals, Faith tab, Stats tab, Feedback modal, Otto/Halo chat all
+  DONE). A `theme.textPrimary` grep across the whole app still shows ~180 hits in 30 files (not all bugs --
+  many are legit input/body text -- but it's the reliable smell for a missed title/value). PROCESS: Justin
+  scans a screen himself on-device and reports findings; Claude greps/reads that screen to verify nothing
+  was missed and flags anything ambiguous BEFORE coding; implement once aligned. Remaining screens, in
+  priority order:
+  1. Profile (9 hits) -- same category as Settings, just finished.
+  2. Sleep & Recovery (5 hits)
+  3. Food Detail (15 hits) -- high traffic, logged into constantly.
+  4. Journal (8 hits) -- flagged done earlier in the week but still has hits, re-check rather than trust the old note.
+  5. AI Meal Estimator (9 hits)
+  6. Lower-traffic batch, a few hits each: Mission, Tutorials, Head-to-Head, Recipe Builder, Recipe Log, Challenges/Challenge Create, Definitions.
+  7. Onboarding (6-7 screens) -- deliberately parked, Justin wants a plan first since it may change more than just the surface treatment.
+  8. Reports -- separately pinned by Justin (1118 lines, distinct block types, own future pass).
 - [QUICK WIN] [found on TestFlight 2026-07-17] **Effort vs Results LOADING SKELETONS have no gap.** The 3
   "Sharpening your read..." placeholder cards sit almost touching, no space between them -- surfaced by
   yesterday's shadow/aesthetic pass. Justin leaning yes on spacing them out, Claude agrees. NOT a blind

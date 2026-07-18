@@ -25,6 +25,8 @@ import { Type, numLine, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import BackgroundLayers from '../components/BackgroundLayers';
 import ButtonShine from '../components/ButtonShine';
+import GradientTitle from '../components/GradientTitle';
+import GradientNumber from '../components/GradientNumber';
 
 // ─── Tier Config ──────────────────────────────────────────────────────────────
 
@@ -387,16 +389,26 @@ function AchievementCard({ def, unlocked, progressValue = 0, highlight = false }
       </View>
 
       {/* Name */}
-      <Text style={{
-        fontSize: 13,
-        fontFamily: Type.uiBold,
-        color: isUnlocked ? theme.textPrimary : theme.textMuted,
-        textAlign: 'center',
-        marginBottom: 3,
-        letterSpacing: 0.3,
-      }}>
-        {def.name}
-      </Text>
+      {isUnlocked ? (
+        <GradientTitle title={def.name} color={theme.textSecondary} numberOfLines={1} style={{
+          fontSize: 13,
+          fontFamily: Type.uiBold,
+          textAlign: 'center',
+          marginBottom: 3,
+          letterSpacing: 0.3,
+        }} />
+      ) : (
+        <Text style={{
+          fontSize: 13,
+          fontFamily: Type.uiBold,
+          color: theme.textMuted,
+          textAlign: 'center',
+          marginBottom: 3,
+          letterSpacing: 0.3,
+        }} numberOfLines={1}>
+          {def.name}
+        </Text>
+      )}
 
       {/* Criteria */}
       <Text style={{
@@ -545,12 +557,8 @@ function DailyGoalCard({ def, count, lastEarned }: { def: DailyGoalDef; count: n
       <View style={{ alignItems: 'center', marginBottom: 8 }}>
         <DailyGoalHexBadge color={def.color} icon={def.icon} size={56} />
       </View>
-      <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.textPrimary, textAlign: 'center', marginBottom: 6, letterSpacing: 0.3 }}>
-        {def.name}
-      </Text>
-      <Text style={{ fontSize: 30, fontFamily: Type.num, color: count > 0 ? def.color : theme.textMuted, textAlign: 'center', letterSpacing: 1, lineHeight: numLine(30) }}>
-        {count}×
-      </Text>
+      <GradientTitle title={def.name} color={theme.textSecondary} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, textAlign: 'center', marginBottom: 6, letterSpacing: 0.3 }} />
+      <GradientNumber value={`${count}×`} color={count > 0 ? def.color : theme.textMuted} style={{ fontSize: 30, fontFamily: Type.num, textAlign: 'center', letterSpacing: 1, lineHeight: numLine(30) }} />
       <Text style={{ fontSize: 8, fontFamily: Type.uiSemibold, color: theme.textMuted, textAlign: 'center', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>
         achieved
       </Text>

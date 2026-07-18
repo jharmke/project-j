@@ -30,6 +30,9 @@ import {
 import { Type, numLine } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import BackgroundLayers from '../components/BackgroundLayers';
+import GradientNumber from '../components/GradientNumber';
+import GradientTitle from '../components/GradientTitle';
+import ButtonShine from '../components/ButtonShine';
 
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
@@ -341,9 +344,10 @@ export default function ComparisonReportScreen() {
                   shadowColor: theme.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: theme.cardShadowOpacity, shadowRadius: 12, elevation: 6,
                 }}
               >
+                {isSel && <ButtonShine radius={12} />}
                 <Ionicons name={p.icon as any} size={20} color={isSel ? accent : theme.textSecondary} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 10, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', color: isSel ? accent : theme.textPrimary }}>{p.line1}</Text>
+                  <GradientTitle title={p.line1} color={isSel ? accent : theme.textSecondary} numberOfLines={1} style={{ fontSize: 10, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase' }} />
                   <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textDim, marginTop: 2 }}>{p.line2}</Text>
                 </View>
                 {isSel && <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: accent }} />}
@@ -507,9 +511,9 @@ function MetricCard({ row, theme, accent, labelA, labelB, dayMode }: {
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase', color: aLabelColor, marginBottom: 4 }}>{labelA}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
-            <Text style={{ fontSize: 32, fontFamily: Type.num, color: aColor, letterSpacing: 0.5, lineHeight: numLine(32) }}>{formatValueNum(row.id, row.a.avg)}</Text>
+            <GradientNumber value={formatValueNum(row.id, row.a.avg)} color={aColor} style={{ fontSize: 32, fontFamily: Type.num, letterSpacing: 0.5, lineHeight: numLine(32) }} />
             {!!inlineUnit(row.id) && row.a.avg !== null && (
-              <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: aColor, paddingBottom: 3, marginLeft: 1 }}>{inlineUnit(row.id)}</Text>
+              <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: aColor, paddingBottom: 6, marginLeft: 1 }}>{inlineUnit(row.id)}</Text>
             )}
           </View>
           {!dayMode && <Text style={{ fontSize: 10, fontFamily: Type.ui, color: theme.textDim, marginTop: 4 }}>{subCount(row.a)}</Text>}
@@ -529,9 +533,9 @@ function MetricCard({ row, theme, accent, labelA, labelB, dayMode }: {
         <View style={{ flex: 1, alignItems: 'flex-end' }}>
           <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase', color: bLabelColor, marginBottom: 4, textAlign: 'right' }}>{labelB}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'flex-end' }}>
-            <Text style={{ fontSize: 32, fontFamily: Type.num, color: bColor, letterSpacing: 0.5, lineHeight: numLine(32) }}>{formatValueNum(row.id, row.b.avg)}</Text>
+            <GradientNumber value={formatValueNum(row.id, row.b.avg)} color={bColor} style={{ fontSize: 32, fontFamily: Type.num, letterSpacing: 0.5, lineHeight: numLine(32) }} />
             {!!inlineUnit(row.id) && row.b.avg !== null && (
-              <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: bColor, paddingBottom: 3, marginLeft: 1 }}>{inlineUnit(row.id)}</Text>
+              <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: bColor, paddingBottom: 6, marginLeft: 1 }}>{inlineUnit(row.id)}</Text>
             )}
           </View>
           {!dayMode && <Text style={{ fontSize: 10, fontFamily: Type.ui, color: theme.textDim, marginTop: 4, textAlign: 'right' }}>{subCount(row.b)}</Text>}

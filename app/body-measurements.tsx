@@ -27,6 +27,9 @@ import {
 } from '../utils/bodyMeasurements';
 import { Type } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import GradientNumber from '../components/GradientNumber';
+import GradientTitle from '../components/GradientTitle';
+import ButtonShine from '../components/ButtonShine';
 import FabDome from '../components/FabDome';
 import BackgroundLayers from '../components/BackgroundLayers';
 
@@ -129,16 +132,12 @@ export default function BodyMeasurementsScreen() {
                 <View style={{ flexDirection: 'row', marginBottom: 4 }}>
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: Type.uiBold }}>BODY FAT</Text>
-                    <Text style={{ fontSize: 34, fontFamily: Type.num, color: theme.textPrimary, letterSpacing: 0.5 }}>
-                      {bf ? `${bf.value}%` : '--'}
-                    </Text>
+                    <GradientNumber value={bf ? `${bf.value}%` : '--'} color={theme.textSecondary} style={{ fontSize: 34, fontFamily: Type.num, letterSpacing: 0.5 }} />
                     <Text style={{ fontSize: 10, fontFamily: Type.ui, color: theme.textDim }}>{bf ? `Navy · ${relativeAge(bf.date)}` : 'Log neck + waist'}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: Type.uiBold }}>WEIGHT</Text>
-                    <Text style={{ fontSize: 34, fontFamily: Type.num, color: theme.textPrimary, letterSpacing: 0.5 }}>
-                      {profile.weight ? `${profile.weight}` : '--'}<Text style={{ fontSize: 15, color: theme.textMuted }}>{profile.weight ? ' lb' : ''}</Text>
-                    </Text>
+                    <GradientNumber value={profile.weight ? `${profile.weight} lb` : '--'} color={theme.textSecondary} style={{ fontSize: 34, fontFamily: Type.num, letterSpacing: 0.5 }} />
                     <Text style={{ fontSize: 10, fontFamily: Type.ui, color: theme.textDim }}>From your profile</Text>
                   </View>
                 </View>
@@ -157,9 +156,7 @@ export default function BodyMeasurementsScreen() {
                         <Text style={{ fontSize: 9, fontFamily: Type.uiBold, color: theme.textMuted, letterSpacing: 1, textTransform: 'uppercase' }} numberOfLines={1}>{f.label}</Text>
                         {lk ? (
                           <>
-                            <Text style={{ fontSize: 22, fontFamily: Type.num, letterSpacing: 0.5, color: stale ? theme.textDim : theme.textSecondary }}>
-                              {toDisplay(lk.value, u)}<Text style={{ fontSize: 11, fontFamily: Type.uiMedium, color: theme.textMuted }}> {unitLabel(u)}</Text>
-                            </Text>
+                            <GradientNumber value={`${toDisplay(lk.value, u)} ${unitLabel(u)}`} color={stale ? theme.textDim : theme.textSecondary} style={{ fontSize: 22, fontFamily: Type.num, letterSpacing: 0.5 }} />
                             <Text style={{ fontSize: 9.5, fontFamily: Type.ui, color: stale ? theme.accentAmber : theme.textDim }}>{relativeAge(lk.date)}</Text>
                           </>
                         ) : (
@@ -207,7 +204,7 @@ export default function BodyMeasurementsScreen() {
                       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setExpandedId(isOpen ? null : entry.id); }}
                       style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14 }}>
                       <View>
-                        <Text style={{ fontSize: 15, fontFamily: Type.uiBold, color: theme.textPrimary }}>{formatDate(entry.date)}</Text>
+                        <GradientTitle title={formatDate(entry.date)} color={theme.textSecondary} numberOfLines={1} style={{ fontSize: 15, fontFamily: Type.uiBold }} />
                         <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textMuted }}>
                           {count} field{count === 1 ? '' : 's'}{typeof entry.bodyFat === 'number' ? ` · ${entry.bodyFat}% BF` : ''}
                         </Text>
@@ -220,9 +217,7 @@ export default function BodyMeasurementsScreen() {
                         {MEASURE_FIELDS.filter(f => typeof entry.values[f.key] === 'number').map(f => (
                           <View key={f.key} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
                             <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textSecondary }}>{f.label}</Text>
-                            <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textPrimary }}>
-                              {toDisplay(entry.values[f.key] as number, u)} {unitLabel(u)}
-                            </Text>
+                            <GradientNumber value={`${toDisplay(entry.values[f.key] as number, u)} ${unitLabel(u)}`} color={theme.textSecondary} style={{ fontSize: 13, fontFamily: Type.uiSemibold }} />
                           </View>
                         ))}
                         <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
@@ -269,9 +264,11 @@ export default function BodyMeasurementsScreen() {
         {/* First-use Navy BF% disclaimer */}
         <Modal visible={showDisclaimer} transparent animationType="fade" onRequestClose={dismissDisclaimer}>
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.overlayBg, paddingHorizontal: 28 }}>
-            <View style={{ width: '100%', backgroundColor: theme.bgSheet, borderRadius: 18, borderTopWidth: 4, borderTopColor: accent, padding: 22, ...shadowStyle }}>
-              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle, alignSelf: 'center', marginBottom: 14 }} />
-              <Text style={{ fontSize: 18, fontFamily: Type.uiBold, color: theme.textPrimary, marginBottom: 10, textAlign: 'center' }}>About Body Fat %</Text>
+            <View style={{ width: '100%', backgroundColor: theme.bgSheet, borderRadius: 18, borderTopWidth: 4, borderTopColor: accent, paddingHorizontal: 22, paddingBottom: 22, ...shadowStyle }}>
+              <TouchableOpacity onPress={dismissDisclaimer} style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }} hitSlop={{ top: 12, bottom: 12, left: 60, right: 60 }}>
+                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
+              </TouchableOpacity>
+              <GradientTitle title="About Body Fat %" color={accent} numberOfLines={1} style={{ fontSize: 18, fontFamily: Type.uiBold, marginBottom: 10, textAlign: 'center' }} />
               <Text style={{ fontSize: 13.5, lineHeight: 21, fontFamily: Type.ui, color: theme.textSecondary, textAlign: 'center' }}>
                 This uses the U.S. Navy tape method to estimate body fat from your neck, waist{profile.sex === 'female' ? ', hips' : ''} and height. It is an estimate, not a clinical scan like DEXA, and can be off by a few points. Use the trend over time, not any single number.
               </Text>
@@ -279,6 +276,7 @@ export default function BodyMeasurementsScreen() {
                 For informational purposes only. Not medical advice.
               </Text>
               <TouchableOpacity onPress={dismissDisclaimer} style={{ backgroundColor: accent, borderRadius: 10, paddingVertical: 13, alignItems: 'center', marginTop: 18 }}>
+                <ButtonShine radius={10} />
                 <Text style={{ fontSize: 14, fontFamily: Type.uiBold, color: '#fff' }}>Got it</Text>
               </TouchableOpacity>
             </View>

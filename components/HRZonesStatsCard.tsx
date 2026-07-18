@@ -15,6 +15,8 @@ import TooltipIcon from './TooltipIcon';
 import { useHealthKit } from '../useHealthKit';
 import { resolveMaxHR, zoneBounds, timeInZones, fmtZoneTime, ageFromBirthday, ZoneBound, MaxHRSource } from '../utils/hrZones';
 import { Type } from '../typography';
+import GradientNumber from './GradientNumber';
+import GradientTitle from './GradientTitle';
 
 interface AggData {
   secs: number[];      // Z1..Z5 total seconds
@@ -172,7 +174,9 @@ export default function HRZonesStatsCard() {
                 <View style={{ width: 96, paddingRight: 8 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                     <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: r.color }} />
-                    <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: theme.textSecondary }} numberOfLines={1}>{r.label}</Text>
+                    <View style={{ flex: 1 }}>
+                      <GradientTitle title={r.label} color={theme.textSecondary} numberOfLines={1} style={{ fontSize: 12, fontFamily: Type.uiSemibold }} />
+                    </View>
                   </View>
                   <Text style={{ fontSize: 9.5, fontFamily: Type.ui, color: theme.textMuted, marginLeft: 13 }}>{r.range}</Text>
                 </View>
@@ -183,7 +187,7 @@ export default function HRZonesStatsCard() {
                   <Animated.View style={{ height: '100%', borderRadius: 5, backgroundColor: r.color, width: trackW > 0 ? barProgress.interpolate({ inputRange: [0, 1], outputRange: [0, trackW * pct / 100] }) : 0 }} />
                 </View>
                 <View style={{ width: 56, alignItems: 'flex-end', paddingLeft: 6 }}>
-                  <Text style={{ fontSize: 16, fontFamily: Type.num, letterSpacing: 0.5, color: r.sec > 0 ? theme.textPrimary : theme.textDim }}>{fmtZoneTime(r.sec)}</Text>
+                  <GradientNumber value={fmtZoneTime(r.sec)} color={r.sec > 0 ? theme.textSecondary : theme.textDim} style={{ fontSize: 16, fontFamily: Type.num, letterSpacing: 0.5 }} />
                   <Text style={{ fontSize: 10, fontFamily: Type.uiMedium, color: theme.textMuted }}>{pct}%</Text>
                 </View>
               </View>

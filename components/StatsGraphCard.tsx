@@ -7,6 +7,7 @@ import Svg, { Circle, Defs, Line, LinearGradient as SvgLinearGradient, Path, Pol
 import { ADVANCED_NUTRIENTS, CardPeriod, DATA_KEY_META, NUTRIENT_CATEGORIES, StatsCard } from '../statsCardRegistry';
 import { TrendData } from '../utils/statsData';
 import ButtonShine from './ButtonShine';
+import GradientNumber from './GradientNumber';
 import { Type } from '../typography';
 
 const CHART_WIDTH = Dimensions.get('window').width - 64;
@@ -1518,7 +1519,7 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
           {stats.map((s, i) => (
             <View key={i} style={{ flex: 1, alignItems: 'center' }}>
               <Text style={{ fontSize: 9, letterSpacing: 1.5, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase', marginBottom: 3, textAlign: 'center' }}>{s.label}</Text>
-              <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: Type.uiSemibold, textAlign: 'center' }}>{s.value}</Text>
+              <GradientNumber value={s.value} color={theme.textSecondary} style={{ fontSize: 13, fontFamily: Type.uiSemibold, textAlign: 'center' }} />
             </View>
           ))}
         </View>

@@ -20,6 +20,7 @@ import { useTheme } from '../../theme';
 import { useMembership } from '../../MembershipContext';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import GradientTitle from '../../components/GradientTitle';
+import GradientNumber from '../../components/GradientNumber';
 import HeaderIconButton from '../../components/HeaderIconButton';
 import PrimaryCTA from '../../components/PrimaryCTA';
 import ButtonShine from '../../components/ButtonShine';
@@ -1152,7 +1153,7 @@ export default function StatsScreen() {
           <Text style={{ flex: 1, fontSize: 12, color: theme.textDim, fontFamily: Type.ui, fontStyle: 'italic' }}>{day.excluded ? 'Excluded' : 'No score'}</Text>
         ) : (
           <>
-            <Text style={{ width: 34, fontSize: 20, lineHeight: numLine(20), fontFamily: Type.num, color: archTierColor(sc.composite) }}>{Math.round(sc.composite)}</Text>
+            <GradientNumber value={String(Math.round(sc.composite))} color={archTierColor(sc.composite)} style={{ width: 34, fontSize: 20, lineHeight: numLine(20), fontFamily: Type.num }} />
             <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
               {[['N', sc.nutritionScore], ['R', sc.recoveryCategoryScore ?? sc.sleepScore], ['A', sc.activityScore]].map(([lbl, val]) => (
                 <View key={lbl as string} style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
@@ -1177,14 +1178,14 @@ export default function StatsScreen() {
           <TouchableOpacity onPress={() => toggleWeek(w.startKey)} activeOpacity={0.6}
             style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 4 }}>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: Type.uiSemibold }}>{archWeekRange(w.startKey, w.endKey)}</Text>
+              <GradientTitle title={archWeekRange(w.startKey, w.endKey)} color={theme.textSecondary} numberOfLines={1} style={{ fontSize: 13, fontFamily: Type.uiSemibold }} />
               <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.ui, marginTop: 2 }}>
                 {w.scoredCount} {w.scoredCount === 1 ? 'day' : 'days'} scored
                 {w.avgLabel ? ` · ${w.avgLabel}` : ''}
               </Text>
             </View>
             {w.avgComposite !== null && (
-              <Text style={{ fontSize: 26, lineHeight: numLine(26), fontFamily: Type.num, color: archTierColor(w.avgComposite), marginRight: 10 }}>{Math.round(w.avgComposite)}</Text>
+              <GradientNumber value={String(Math.round(w.avgComposite))} color={archTierColor(w.avgComposite)} style={{ fontSize: 26, lineHeight: numLine(26), fontFamily: Type.num, marginRight: 10 }} />
             )}
             <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textMuted} />
           </TouchableOpacity>
@@ -1249,7 +1250,9 @@ export default function StatsScreen() {
               <View key={g.monthKey} style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard }}>
                 <TouchableOpacity onPress={() => toggleMonth(g.monthKey)} activeOpacity={0.6}
                   style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 4 }}>
-                  <Text style={{ flex: 1, fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', color: theme.textSecondary, fontFamily: Type.uiBold }}>{g.monthLabel}</Text>
+                  <View style={{ flex: 1 }}>
+                    <GradientTitle title={g.monthLabel} color={theme.textSecondary} numberOfLines={1} style={{ fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: Type.uiBold }} />
+                  </View>
                   <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.ui, marginRight: 8 }}>
                     {g.weeks.length} {g.weeks.length === 1 ? 'week' : 'weeks'}
                   </Text>
@@ -1324,9 +1327,11 @@ export default function StatsScreen() {
                   activeOpacity={0.6}
                   style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 4 }}
                 >
-                  <Text style={{ flex: 1, fontSize: 13, color: theme.textPrimary, fontFamily: Type.uiSemibold }}>{group.monthLabel}</Text>
+                  <View style={{ flex: 1 }}>
+                    <GradientTitle title={group.monthLabel} color={theme.textSecondary} numberOfLines={1} style={{ fontSize: 13, fontFamily: Type.uiSemibold }} />
+                  </View>
                   {monthAvg !== null && (
-                    <Text style={{ fontSize: 26, lineHeight: numLine(26), fontFamily: Type.num, color: monthAvgColor, marginRight: 8 }}>{monthAvg}</Text>
+                    <GradientNumber value={String(monthAvg)} color={monthAvgColor} style={{ fontSize: 26, lineHeight: numLine(26), fontFamily: Type.num, marginRight: 8 }} />
                   )}
                   <Ionicons name={monthOpen ? 'chevron-up' : 'chevron-down'} size={14} color={theme.textDim} />
                 </TouchableOpacity>
@@ -1343,13 +1348,9 @@ export default function StatsScreen() {
                       style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 11, paddingHorizontal: 4, borderTopWidth: 0.5, borderTopColor: theme.borderCard }}
                     >
                       {/* Date + score on left (matches Day Summaries row layout) */}
-                      <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiMedium }}>
-                        {weeklyDateRange(s.weekStart, s.weekEnd)}
-                      </Text>
+                      <GradientTitle title={weeklyDateRange(s.weekStart, s.weekEnd)} color={theme.textSecondary} numberOfLines={1} style={{ fontSize: 12, fontFamily: Type.uiMedium }} />
                       {hasScore && (
-                        <Text style={{ fontSize: 22, lineHeight: numLine(22), fontFamily: Type.num, color: scoreColor, marginLeft: 8 }}>
-                          {Math.round(s.avgComposite!)}
-                        </Text>
+                        <GradientNumber value={String(Math.round(s.avgComposite!))} color={scoreColor} style={{ fontSize: 22, lineHeight: numLine(22), fontFamily: Type.num, marginLeft: 8 }} />
                       )}
                       <View style={{ flex: 1 }} />
                       {hasScore ? (
@@ -1419,13 +1420,9 @@ export default function StatsScreen() {
                 onPress={() => { if (hasScore) { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/monthly-summary', params: { monthKey: s.monthKey } }); } }}
                 style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 11, paddingHorizontal: 4, borderTopWidth: 0.5, borderTopColor: theme.borderCard }}
               >
-                <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiMedium }}>
-                  {monthLabel(s.monthKey)}
-                </Text>
+                <GradientTitle title={monthLabel(s.monthKey)} color={theme.textSecondary} numberOfLines={1} style={{ fontSize: 12, fontFamily: Type.uiMedium }} />
                 {hasScore && (
-                  <Text style={{ fontSize: 22, lineHeight: numLine(22), fontFamily: Type.num, color: scoreColor, marginLeft: 8 }}>
-                    {Math.round(s.avgComposite!)}
-                  </Text>
+                  <GradientNumber value={String(Math.round(s.avgComposite!))} color={scoreColor} style={{ fontSize: 22, lineHeight: numLine(22), fontFamily: Type.num, marginLeft: 8 }} />
                 )}
                 <View style={{ flex: 1 }} />
                 {hasScore ? (
@@ -1845,9 +1842,7 @@ export default function StatsScreen() {
   }) => (
     <View style={[{ flex: 1, backgroundColor: theme.bgCardGlass, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, borderRadius: 14, padding: 14, alignItems: 'center' }, shadowStyle]}>
       <Ionicons name={icon as any} size={18} color={color} style={{ marginBottom: 4 }} />
-      <Text style={{ fontSize: 26, color, fontFamily: Type.num, letterSpacing: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0, opacity: 0.88 }}>
-        {value !== null ? fmt(value) : '--'}
-      </Text>
+      <GradientNumber value={value !== null ? fmt(value) : '--'} color={color} style={{ fontSize: 26, fontFamily: Type.num, letterSpacing: 1, opacity: 0.88 }} />
       <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 2, textAlign: 'center' }}>{unit}</Text>
       <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: Type.ui, marginTop: 2 }}>{label}</Text>
       {date && value !== null && (
@@ -1939,7 +1934,7 @@ export default function StatsScreen() {
                 g.push({ label: 'SLEEP SCORE', value: periodData.avgSleepScore !== null ? `${periodData.avgSleepScore}` : '--' });
                 g.push({ label: 'SLEEP / NIGHT', value: fmtSleep(periodData.avgSleep) });
                 if (has('recovery')) g.push({ label: 'RECOVERY SCORE', value: periodData.avgRecoveryScore !== null ? `${periodData.avgRecoveryScore}` : '--' });
-                g.push({ label: 'WEIGHT CHANGE', value: weightChange !== null ? `${weightChange > 0 ? '+' : ''}${weightChange} lbs` : '--', color: (weightChange !== null && !isMindful) ? (weightChange < 0 ? theme.statusGood : weightChange > 0 ? theme.statusBad : theme.textPrimary) : theme.textSecondary });
+                g.push({ label: 'WEIGHT CHANGE', value: weightChange !== null ? `${weightChange > 0 ? '+' : ''}${weightChange} lbs` : '--', color: (weightChange !== null && !isMindful) ? (weightChange < 0 ? theme.statusGood : weightChange > 0 ? theme.statusBad : theme.textSecondary) : theme.textSecondary });
                 g.push({ label: 'STEPS / DAY', value: periodData.avgSteps > 0 ? periodData.avgSteps.toLocaleString() : '--' });
                 g.push({ label: 'WATER / DAY', value: periodData.avgWater > 0 ? `${periodData.avgWater} oz` : '--' });
 
@@ -1960,13 +1955,13 @@ export default function StatsScreen() {
                       <View key={ri} style={[styles.glanceRow, { borderBottomColor: ri === rows.length - 1 ? 'transparent' : theme.borderSubtle }]}>
                         <View style={styles.glanceCellL}>
                           <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>{pair[0].label}</Text>
-                          <Text style={[styles.glanceVal, { color: pair[0].color ?? theme.textSecondary }]}>{pair[0].value}</Text>
+                          <GradientNumber value={pair[0].value} color={pair[0].color ?? theme.textSecondary} style={styles.glanceVal} />
                         </View>
                         <View style={styles.glanceCellR}>
                           {pair[1] ? (
                             <>
                               <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>{pair[1].label}</Text>
-                              <Text style={[styles.glanceVal, { color: pair[1].color ?? theme.textSecondary }]}>{pair[1].value}</Text>
+                              <GradientNumber value={pair[1].value} color={pair[1].color ?? theme.textSecondary} style={styles.glanceVal} />
                             </>
                           ) : null}
                         </View>
@@ -2099,9 +2094,7 @@ export default function StatsScreen() {
                             activeOpacity={isTappable ? 0.7 : 1}
                             style={{ alignItems: 'center', width: '33%' }}>
                             <Text style={{ fontSize: 28, marginBottom: 4 }}>{s.emoji}</Text>
-                            <Text style={{ fontSize: 32, fontFamily: Type.num, color: tileColor, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0, opacity: 0.88, lineHeight: numLine(32) }}>
-                              {s.value}
-                            </Text>
+                            <GradientNumber value={String(s.value)} color={tileColor} style={{ fontSize: 32, fontFamily: Type.num, opacity: 0.88, lineHeight: numLine(32) }} />
                             <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase', textAlign: 'center' }} numberOfLines={1}>
                               {s.label}
                             </Text>
@@ -2188,7 +2181,7 @@ export default function StatsScreen() {
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); if (calendarMonth === 0) { setCalendarMonth(11); setCalendarYear(y => y - 1); } else setCalendarMonth(m => m - 1); }} style={{ padding: 8 }}>
                 <Ionicons name="chevron-back" size={18} color={theme.accentBlue} />
               </TouchableOpacity>
-              <Text style={[styles.cardLabel, { marginBottom: 0, color: theme.textMuted }]}>{MONTH_NAMES[month]} {year}</Text>
+              <GradientTitle title={`${MONTH_NAMES[month]} ${year}`} color={theme.textMuted} numberOfLines={1} style={[styles.cardLabel, { marginBottom: 0 }]} />
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); if (calendarMonth === 11) { setCalendarMonth(0); setCalendarYear(y => y + 1); } else setCalendarMonth(m => m + 1); }} style={{ padding: 8 }}>
                 <Ionicons name="chevron-forward" size={18} color={theme.accentBlue} />
               </TouchableOpacity>
@@ -2993,7 +2986,7 @@ export default function StatsScreen() {
                     <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); prevMonth(); }} style={{ padding: 8 }}>
                       <Ionicons name="chevron-back" size={18} color={theme.accentBlue} />
                     </TouchableOpacity>
-                    <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: Type.uiSemibold }}>{ARCH_MONTHS[archiveCalMonth]} {archiveCalYear}</Text>
+                    <GradientTitle title={`${ARCH_MONTHS[archiveCalMonth]} ${archiveCalYear}`} color={theme.textSecondary} numberOfLines={1} style={{ fontSize: 15, fontFamily: Type.uiSemibold }} />
                     <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); nextMonth(); }} disabled={isCurrentMonth} style={{ padding: 8, opacity: isCurrentMonth ? 0.25 : 1 }}>
                       <Ionicons name="chevron-forward" size={18} color={theme.accentBlue} />
                     </TouchableOpacity>

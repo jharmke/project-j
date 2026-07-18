@@ -28,6 +28,12 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-17 **Stats tab gradient pass** (At a Glance, Comparison incl. preset chip shine + G/oz baseline
+  fix, Day/Weekly/Monthly Summaries on both the Stats-tab cards and the 3 dedicated summary pages incl. the
+  shared hero score donut, the archive + inline calendars, Trends bottom-row stats, Records' 4 hero tiles,
+  Streaks numbers, HR Zones, Body Measurements card/page/history + About Body Fat % and Card Fields modal
+  workups, every Achievement name + the 4 Daily Goal tiles). Reports intentionally pinned/skipped -- Justin
+  wants a separate pass on that one later, it is 1118 lines of distinct block types.
 - 2026-07-17 **Day Detail modal gradient pass** (basically every value: Day at a Glance, Sleep, Recovery,
   Workout, per-meal food names/calories, all 6 Advanced Nutrition categories, journal entry titles, the
   date header) plus the Home + Log water-log entries lists (+/- oz), Weight modal (starting weight +
@@ -651,6 +657,9 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
+- [BUG] [found 2026-07-17, gradient pass on Stats At a Glance] **Weight Change on Stats > At a Glance shows "0 lbs" no matter which period (7D/30D/90D/180D/YTD) is selected.** Value never changes with the period toggle -- looks like `weightChange` calc is stuck/not recomputing per period. Not investigated yet, Justin deferred it.
+- [BUG] [found 2026-07-17] **Workout achievement trophies look like they're tracking TOTAL workout count, not workout DAYS.** Justin earned the "100 days" tier trophy today, but the app was only created ~2 months ago -- 100 distinct workout DAYS isn't possible yet, so the counter is likely summing something else (total workout entries logged, maybe counting multiple exercises/sets per day). Not investigated, look tomorrow.
+- [BUG] [found 2026-07-17] **Momentum streak achievements: "All In" (90 days) progress shows 0/90 despite already holding "Sixty Strong" (60 days).** Should be well past 0 if the streak is continuous. Justin's guess: may be an artifact of switching from TestFlight to an Expo dev build partway through (streak/count reset or split across install contexts) -- if that's the cause it's expected/fine, but needs confirming, not assumed. Not investigated, look tomorrow.
 - [QUICK WIN] [found on TestFlight 2026-07-17] **Effort vs Results LOADING SKELETONS have no gap.** The 3
   "Sharpening your read..." placeholder cards sit almost touching, no space between them -- surfaced by
   yesterday's shadow/aesthetic pass. Justin leaning yes on spacing them out, Claude agrees. NOT a blind

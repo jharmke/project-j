@@ -36,6 +36,7 @@ import { Type, numLine } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import ButtonShine from '../components/ButtonShine';
 import BackgroundLayers from '../components/BackgroundLayers';
+import GradientNumber from '../components/GradientNumber';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -278,12 +279,10 @@ export default function DaySummaryScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Ionicons name={icon} size={17} color={barC} />
-            <Text style={{ fontSize: 17, letterSpacing: 1.5, color: theme.textSecondary, fontFamily: Type.num }}>{label.toUpperCase()}</Text>
+            <GradientNumber value={label.toUpperCase()} color={theme.textSecondary} style={{ fontSize: 17, letterSpacing: 1.5, fontFamily: Type.num }} />
           </View>
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={{ fontSize: 26, lineHeight: numLine(26), fontFamily: Type.num, color: barC }}>
-              {value !== null ? Math.round(value) : '--'}
-            </Text>
+            <GradientNumber value={value !== null ? String(Math.round(value)) : '--'} color={barC} style={{ fontSize: 26, lineHeight: numLine(26), fontFamily: Type.num }} />
             {value !== null && weightPct != null && (
               <Text style={{ fontSize: 8, letterSpacing: 0.8, color: theme.textMuted, fontFamily: Type.uiBold }}>{weightPct}% OF SCORE</Text>
             )}
@@ -299,12 +298,12 @@ export default function DaySummaryScreen() {
       <View style={{ flexDirection: 'row', marginTop: 6 }}>
         <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 2 }}>
           <Text style={{ fontSize: 9, fontFamily: Type.uiBold, color: theme.textMuted, letterSpacing: 1.5 }}>{left.label}</Text>
-          <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textSecondary, marginTop: 1 }}>{left.value}</Text>
+          <GradientNumber value={left.value} color={theme.textSecondary} style={{ fontSize: 13, fontFamily: Type.uiSemibold, marginTop: 1 }} />
         </View>
         {right && (
           <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 2 }}>
             <Text style={{ fontSize: 9, fontFamily: Type.uiBold, color: theme.textMuted, letterSpacing: 1.5 }}>{right.label}</Text>
-            <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textSecondary, marginTop: 1 }}>{right.value}</Text>
+            <GradientNumber value={right.value} color={theme.textSecondary} style={{ fontSize: 13, fontFamily: Type.uiSemibold, marginTop: 1 }} />
           </View>
         )}
       </View>
@@ -322,9 +321,11 @@ export default function DaySummaryScreen() {
   const SubRow = ({ name, detail, pts, subBlock, labelColor }: { name: string; detail?: string; pts?: string; subBlock?: React.ReactNode; labelColor?: string }) => (
     <View style={{ paddingVertical: 7, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text style={{ fontSize: 13, color: labelColor ?? theme.textSecondary, fontFamily: Type.uiSemibold, flex: 1 }}>{name}</Text>
+        <View style={{ flex: 1 }}>
+          <GradientNumber value={name} color={labelColor ?? theme.textSecondary} style={{ fontSize: 13, fontFamily: Type.uiSemibold }} />
+        </View>
         {!!pts && (
-          <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiSemibold }}>{pts}</Text>
+          <GradientNumber value={pts} color={theme.textSecondary} style={{ fontSize: 12, fontFamily: Type.uiSemibold }} />
         )}
       </View>
       {!!detail && <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginTop: 1 }}>{detail}</Text>}
@@ -354,9 +355,7 @@ export default function DaySummaryScreen() {
       <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 120 }} showsVerticalScrollIndicator={false}>
 
         {/* Date */}
-        <Text style={{ fontSize: 17, color: theme.textPrimary, fontFamily: Type.num, letterSpacing: 2, textAlign: 'center', marginTop: 4 }}>
-          {date ? formatLongDate(date) : ''}
-        </Text>
+        <GradientNumber value={date ? formatLongDate(date) : ''} color={theme.textSecondary} style={{ fontSize: 17, fontFamily: Type.num, letterSpacing: 2, textAlign: 'center', marginTop: 4 }} />
 
         {/* Hero ring + label + narrative (context / win / coach) */}
         <View ref={ringRef} collapsable={false} style={{ alignItems: 'center', marginTop: 10, marginBottom: 18 }}>

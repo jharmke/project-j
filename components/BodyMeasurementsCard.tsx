@@ -22,6 +22,8 @@ import {
   BodyMeasureSettings, BodyProfile,
 } from '../utils/bodyMeasurements';
 import { Type } from '../typography';
+import GradientNumber from './GradientNumber';
+import GradientTitle from './GradientTitle';
 
 export default function BodyMeasurementsCard() {
   const { theme } = useTheme();
@@ -134,12 +136,8 @@ export default function BodyMeasurementsCard() {
               return (
                 <View key={key} style={{ width: isLastOdd ? '100%' : '50%', alignItems: isLastOdd ? 'center' : 'flex-start', paddingVertical: 7, paddingRight: isLastOdd ? 0 : 8 }}>
                   <Text style={{ fontSize: 10, fontFamily: Type.uiSemibold, color: theme.textMuted }}>{def.label}</Text>
-                  <Text style={{ fontSize: 22, fontFamily: Type.num, letterSpacing: 0.5, color: lk ? theme.textPrimary : theme.textDim }}>
-                    {lk ? toDisplay(lk.value, u) : '--'}<Text style={{ fontSize: 12, color: theme.textMuted }}>{lk ? ` ${unitLabel(u)}` : ''}</Text>
-                  </Text>
-                  <Text style={{ fontSize: 10.5, fontFamily: Type.uiMedium, color: deltaColor }}>
-                    {delta == null ? '—' : fmtDelta(delta)}
-                  </Text>
+                  <GradientNumber value={lk ? `${toDisplay(lk.value, u)} ${unitLabel(u)}` : '--'} color={lk ? theme.textSecondary : theme.textDim} style={{ fontSize: 22, fontFamily: Type.num, letterSpacing: 0.5 }} />
+                  <GradientNumber value={delta == null ? '—' : fmtDelta(delta)} color={deltaColor} style={{ fontSize: 10.5, fontFamily: Type.uiMedium }} />
                 </View>
               );
             })}
@@ -149,15 +147,11 @@ export default function BodyMeasurementsCard() {
           <View style={{ flexDirection: 'row', borderTopWidth: 0.5, borderTopColor: theme.borderCard, marginTop: 8, paddingTop: 12 }}>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 9, letterSpacing: 1.5, color: theme.textMuted, fontFamily: Type.uiBold }}>WEIGHT</Text>
-              <Text style={{ fontSize: 18, fontFamily: Type.uiBold, color: profile.weight ? theme.textPrimary : theme.textDim }}>
-                {profile.weight ? `${profile.weight}` : '--'}<Text style={{ fontSize: 11, color: theme.textMuted }}>{profile.weight ? ' lb' : ''}</Text>
-              </Text>
+              <GradientNumber value={profile.weight ? `${profile.weight} lb` : '--'} color={profile.weight ? theme.textSecondary : theme.textDim} style={{ fontSize: 18, fontFamily: Type.uiBold }} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 9, letterSpacing: 1.5, color: theme.textMuted, fontFamily: Type.uiBold }}>BODY FAT</Text>
-              <Text style={{ fontSize: 18, fontFamily: Type.uiBold, color: bf ? theme.textPrimary : theme.textDim }}>
-                {bf ? `${bf.value}%` : '--'}
-              </Text>
+              <GradientNumber value={bf ? `${bf.value}%` : '--'} color={bf ? theme.textSecondary : theme.textDim} style={{ fontSize: 18, fontFamily: Type.uiBold }} />
             </View>
           </View>
         </>
@@ -190,7 +184,7 @@ export default function BodyMeasurementsCard() {
             </TouchableOpacity>
             {/* Header */}
             <View style={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.accentBlue, fontFamily: Type.uiBold, textTransform: 'uppercase' }}>Card Fields</Text>
+              <GradientTitle title="Card Fields" color={theme.accentBlue} style={{ fontSize: 18, letterSpacing: 0.3, fontFamily: Type.display }} />
               <TouchableOpacity onPress={closePickerHaptic} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                 <Ionicons name="close" size={20} color={theme.textMuted} />
               </TouchableOpacity>
@@ -202,7 +196,7 @@ export default function BodyMeasurementsCard() {
                 return (
                   <TouchableOpacity key={f.key} onPress={() => toggleSlot(f.key)}
                     style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 11, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-                    <Text style={{ fontSize: 14, fontFamily: Type.uiMedium, color: on ? theme.textPrimary : theme.textSecondary }}>{f.label}</Text>
+                    <Text style={{ fontSize: 14, fontFamily: Type.uiMedium, color: on ? accent : theme.textSecondary }}>{f.label}</Text>
                     <Ionicons name={on ? 'checkmark-circle' : 'ellipse-outline'} size={20} color={on ? accent : theme.textDim} />
                   </TouchableOpacity>
                 );
@@ -213,6 +207,7 @@ export default function BodyMeasurementsCard() {
                 <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.textSecondary }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity disabled={draftSlots.length < 1} onPress={savePicker} style={{ flex: 1, alignItems: 'center', paddingVertical: 13, borderRadius: 10, backgroundColor: draftSlots.length < 1 ? theme.bgInput : accent }}>
+                {draftSlots.length >= 1 && <ButtonShine radius={10} />}
                 <Text style={{ fontSize: 14, fontFamily: Type.uiBold, color: draftSlots.length < 1 ? theme.textDim : '#fff' }}>Save</Text>
               </TouchableOpacity>
             </View>

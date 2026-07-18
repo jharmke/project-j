@@ -19,6 +19,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import TooltipIcon from './TooltipIcon';
 import { CardWash } from './GradientCard';
 import GradientTitle from './GradientTitle';
+import GradientNumber from './GradientNumber';
 import { ToastRenderer, useToast } from './Toast';
 import { DayScore, scoreLabel } from '../utils/dayScore';
 import { excludeDayFromAverages } from '../utils/dayScoreStore';
@@ -104,9 +105,7 @@ export function ScoreRing({ value, color, theme, celebrate }: { value: number; c
       </Svg>
       <Reanimated.View style={[{ alignItems: 'center' }, pulseStyle]}>
         <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
-          <Text style={{ fontSize: 54, lineHeight: numLine(54), fontFamily: Type.num, color, opacity: 0.92 }}>
-            {Math.round(value)}
-          </Text>
+          <GradientNumber value={String(Math.round(value))} color={color} style={{ fontSize: 54, lineHeight: numLine(54), fontFamily: Type.num, opacity: 0.92 }} />
         </View>
         <Text style={{ fontSize: 8, letterSpacing: 2, fontFamily: Type.uiBold, color, opacity: 0.55, marginTop: -2 }}>OUT OF 100</Text>
       </Reanimated.View>

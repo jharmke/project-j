@@ -18,6 +18,7 @@ import { TIPS_GATED, CoachTipCache, loadCoachTipCache } from '../utils/smartTips
 import { refreshCoachTipMonthly, resolveTipBody } from '../utils/coachAI';
 import { Type, numLine } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import GradientNumber from '../components/GradientNumber';
 import BackgroundLayers from '../components/BackgroundLayers';
 
 const MONTHS_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -80,7 +81,7 @@ function SectionCard({ label, icon, score, pct, borderColor, children }: {
         <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase', flex: 1 }}>{label}</Text>
         <View style={{ alignItems: 'flex-end' }}>
           {score !== null && (
-            <Text style={{ fontSize: 20, lineHeight: numLine(20), fontFamily: Type.num, color: barC }}>{Math.round(score)}</Text>
+            <GradientNumber value={String(Math.round(score))} color={barC} style={{ fontSize: 20, lineHeight: numLine(20), fontFamily: Type.num }} />
           )}
           {!!pct && (
             <Text style={{ fontSize: 8, letterSpacing: 0.8, color: theme.textMuted, fontFamily: Type.uiBold }}>{pct}</Text>
@@ -99,9 +100,9 @@ function StatRow({ label, value, sub, valueColor, labelColor, subNode, deltaStr,
   return (
     <View style={{ paddingVertical: 8, borderTopWidth: 0.5, borderTopColor: theme.borderCard }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text style={{ fontSize: 13, color: labelColor ?? theme.textSecondary, fontFamily: Type.uiSemibold }}>{label}</Text>
+        <GradientNumber value={label} color={labelColor ?? theme.textSecondary} style={{ fontSize: 13, fontFamily: Type.uiSemibold }} />
         <View style={{ alignItems: 'flex-end', paddingLeft: 8 }}>
-          <Text style={{ fontSize: 13, color: valueColor ?? theme.textPrimary, fontFamily: Type.uiSemibold }}>{value}</Text>
+          <GradientNumber value={value} color={valueColor ?? theme.textSecondary} style={{ fontSize: 13, fontFamily: Type.uiSemibold }} />
           {!!deltaStr && (
             <Text style={{ fontSize: 10, color: deltaColor ?? theme.textDim, fontFamily: Type.uiSemibold, marginTop: 1 }}>{deltaStr}</Text>
           )}
@@ -121,12 +122,12 @@ function SubBlock({ left, right }: {
     <View style={{ flexDirection: 'row', marginTop: 6 }}>
       <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 2 }}>
         <Text style={{ fontSize: 9, fontFamily: Type.uiBold, color: theme.textMuted, letterSpacing: 1.5 }}>{left.label}</Text>
-        <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textSecondary, marginTop: 1 }}>{left.value}</Text>
+        <GradientNumber value={left.value} color={theme.textSecondary} style={{ fontSize: 13, fontFamily: Type.uiSemibold, marginTop: 1 }} />
       </View>
       {right && (
         <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 2 }}>
           <Text style={{ fontSize: 9, fontFamily: Type.uiBold, color: theme.textMuted, letterSpacing: 1.5 }}>{right.label}</Text>
-          <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textSecondary, marginTop: 1 }}>{right.value}</Text>
+          <GradientNumber value={right.value} color={theme.textSecondary} style={{ fontSize: 13, fontFamily: Type.uiSemibold, marginTop: 1 }} />
         </View>
       )}
     </View>

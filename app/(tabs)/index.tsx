@@ -80,6 +80,7 @@ import { getVacation, endVacationEarly, vacationTodayKey, addDaysKey, VacationSt
 import { BlurView } from 'expo-blur';
 import DurationValue from '../../components/DurationValue';
 import GradientNumber from '../../components/GradientNumber';
+import GradientIcon from '../../components/GradientIcon';
 import BackgroundLayers from '../../components/BackgroundLayers';
 import { Type, DISPLAY_CAPS, DISPLAY_TRACKING, displaySize, numLine } from '../../typography';
 import ModalHeader from '../../components/ModalHeader';
@@ -2327,7 +2328,7 @@ export default function HomeScreen() {
           <View style={{ flexDirection:'row', alignItems:'center', gap:10 }}>
             <Text style={{ fontSize:9, color: theme.textDim, fontFamily:Type.uiBold, letterSpacing:1.5, textTransform:'uppercase' }}>vs goal</Text>
             <TouchableOpacity onPress={() => openMacroSheet()} hitSlop={{ top:8, bottom:8, left:8, right:8 }}>
-              <Ionicons name="settings" size={16} color={theme.textMuted} />
+              <GradientIcon name="settings" size={16} color={theme.textMuted} />
             </TouchableOpacity>
           </View>
         </View>
@@ -2382,7 +2383,7 @@ export default function HomeScreen() {
           </View>
         </View>
         <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openWaterDetailModal(); }} hitSlop={{ top:8, bottom:8, left:8, right:8 }}>
-          <Ionicons name="settings" size={16} color={theme.textMuted} />
+          <GradientIcon name="settings" size={16} color={theme.textMuted} />
         </TouchableOpacity>
       </View>
       <AnimatedProgressBar pct={Math.min(100,(water/waterGoal)*100)} color={theme.accentBlue} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} overGoal={water > waterGoal} />
@@ -2429,7 +2430,7 @@ export default function HomeScreen() {
           <TooltipIcon tooltipKey="weight_card" hideTour />
         </View>
         <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setWeightHistoryVisible(true); }} hitSlop={{ top:12, bottom:12, left:12, right:12 }}>
-          <Ionicons name="settings" size={16} color={theme.textMuted} />
+          <GradientIcon name="settings" size={16} color={theme.textMuted} />
         </TouchableOpacity>
       </View>
       <View style={styles.weightRow}>
@@ -2862,7 +2863,7 @@ export default function HomeScreen() {
           </View>
           <View style={{ flexDirection:'row', alignItems:'center', gap:14 }}>
             <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditingSleep(!editingSleep); }} hitSlop={{ top:8, bottom:8, left:8, right:8 }}>
-              <Ionicons name="settings" size={16} color={theme.textMuted} />
+              <GradientIcon name="settings" size={16} color={theme.textMuted} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/sleep'); }} hitSlop={{ top:8, bottom:8, left:8, right:8 }}>
               <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
@@ -3840,7 +3841,7 @@ export default function HomeScreen() {
             </View>
             <View ref={toolkitRef} collapsable={false}>
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); showToolkit('home'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
-                <Ionicons name="help-circle" size={22} color={theme.accentBlue} />
+                <GradientIcon name="help-circle" size={22} color={theme.accentBlue} />
               </TouchableOpacity>
             </View>
           </View>

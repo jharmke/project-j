@@ -34,6 +34,7 @@ import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import GradientTitle from '../../components/GradientTitle';
 import GradientNumber from '../../components/GradientNumber';
+import GradientIcon from '../../components/GradientIcon';
 import HeaderIconButton from '../../components/HeaderIconButton';
 import ButtonShine from '../../components/ButtonShine';
 import { CardWatermark } from '../../components/GradientCard';
@@ -1312,7 +1313,7 @@ export default function LogScreen() {
             <HeaderIconButton icon="grid" haptic={Haptics.ImpactFeedbackStyle.Medium} onPress={() => { openEditMeals(); }} />
           </View>
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); showToolkit('log'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
-            <Ionicons name="help-circle" size={22} color={theme.accentBlue} />
+            <GradientIcon name="help-circle" size={22} color={theme.accentBlue} />
           </TouchableOpacity>
         </View>
       </View>
@@ -1491,7 +1492,7 @@ export default function LogScreen() {
                   style={{ width: 36, height: 32, alignItems: 'center', justifyContent: 'center' }}
                   hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                 >
-                  <Ionicons name="settings" size={15} color={theme.textMuted} />
+                  <GradientIcon name="settings" size={15} color={theme.textMuted} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); toggleAdvanced(); }}
@@ -1953,7 +1954,7 @@ export default function LogScreen() {
             </Text>
           </View>
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openWaterDetailModal(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons name="settings" size={16} color={theme.textMuted} />
+            <GradientIcon name="settings" size={16} color={theme.textMuted} />
           </TouchableOpacity>
         </View>
         <WaterBar pct={waterPct} color={theme.accentBlue} trackColor={theme.bgProgressTrack} refreshKey={logRefreshKey} overGoal={water > waterGoal} />

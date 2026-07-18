@@ -21,6 +21,7 @@ import { useMembership } from '../../MembershipContext';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import GradientTitle from '../../components/GradientTitle';
 import GradientNumber from '../../components/GradientNumber';
+import GradientIcon from '../../components/GradientIcon';
 import HeaderIconButton from '../../components/HeaderIconButton';
 import PrimaryCTA from '../../components/PrimaryCTA';
 import ButtonShine from '../../components/ButtonShine';
@@ -347,6 +348,11 @@ export default function StatsScreen() {
   const [excludedDays, setExcludedDays] = useState<{ date: string, diet: boolean, water: boolean, exercise: boolean, sleepTrend: boolean }[]>([]);
 
   const [statsCards, setStatsCards] = useState<StatsCard[]>(DEFAULT_STATS_CARDS);
+  // Gates the section list render. statsCards starts as the hardcoded DEFAULT order and is replaced by
+  // the user's real saved order once loadStatsCards() resolves -- without this gate, any section the user
+  // has reordered away from default (e.g. Body/Calendar) visibly draws in the wrong order for a beat, then
+  // snaps to the right one. Wait for the real order, draw once.
+  const [cardsLoaded, setCardsLoaded] = useState(false);
   const [editSheetVisible, setEditSheetVisible] = useState(false);
   const [editCards, setEditCards] = useState<StatsCard[]>([]);
   const editSheetAnim = useRef(new Animated.Value(0)).current;
@@ -1008,6 +1014,7 @@ export default function StatsScreen() {
 
         const cards = await loadStatsCards();
         setStatsCards(cards);
+        setCardsLoaded(true);
 
         await Promise.all([
           loadAllCardData(cards, 30, sleep),
@@ -1024,6 +1031,22 @@ export default function StatsScreen() {
       const handle = InteractionManager.runAfterInteractions(loadAll);
       return () => handle.cancel();
     }, [calendarMonth, calendarYear])
+  );
+
+  // Card order, on its own -- NOT behind runAfterInteractions and NOT behind the huge sequential-read
+  // chain above (a day-by-day calendar loop + a weight lookup loop, both slow on the dev-build JS thread).
+  // One fast, independent read, so the section list can draw once in the RIGHT order instead of drawing
+  // in the default order first and visibly snapping to the saved one a beat later.
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      loadStatsCards().then(cards => {
+        if (cancelled) return;
+        setStatsCards(cards);
+        setCardsLoaded(true);
+      });
+      return () => { cancelled = true; };
+    }, [])
   );
 
   // Load the Day Score archive (Reports > Day Summaries). Reused by the focus
@@ -1879,14 +1902,14 @@ export default function StatsScreen() {
           <HeaderIconButton icon="journal" onPress={() => { router.push('/journal'); }} />
           <HeaderIconButton icon="grid" onPress={() => { openEditSheet(); }} />
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); showToolkit('stats'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
-            <Ionicons name="help-circle" size={22} color={theme.accentBlue} />
+            <GradientIcon name="help-circle" size={22} color={theme.accentBlue} />
           </TouchableOpacity>
         </View>
       </View>
 
       <ScrollView ref={statsScrollRef} style={styles.container} contentContainerStyle={[styles.content, { paddingTop: headerH + 16, paddingBottom: insets.bottom + TAB_SCROLL_PAD }]}>
 
-        {statsCards
+        {cardsLoaded && statsCards
           .filter(c => c.type === 'system')
           .sort((a, b) => a.order - b.order)
           .filter(c => c.visible)
@@ -2061,7 +2084,7 @@ export default function StatsScreen() {
                 <TooltipIcon tooltipKey="streaks_card" />
               </View>
               <TouchableOpacity ref={streakGearRef} collapsable={false} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openManageStreaks(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Ionicons name="settings" size={16} color={theme.textMuted} />
+                <GradientIcon name="settings" size={16} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
             {liveStreaks.length === 0 ? (

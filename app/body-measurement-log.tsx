@@ -7,6 +7,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
+import GradientIcon from '../components/GradientIcon';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -162,7 +163,7 @@ export default function BodyMeasurementLogScreen() {
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setHowToOpen(true); }}
               style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: theme.accentBlueBgOpaque, borderColor: theme.accentBlueBorder, borderWidth: 1, borderRadius: 8, paddingVertical: 14, marginBottom: 14 }}>
               <ButtonShine radius={8} />
-              <Ionicons name="help-circle" size={16} color={theme.accentBlue} />
+              <GradientIcon name="help-circle" size={16} color={theme.accentBlue} />
               <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 1 }}>HOW TO MEASURE</Text>
             </TouchableOpacity>
 

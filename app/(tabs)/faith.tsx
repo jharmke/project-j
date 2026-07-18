@@ -21,6 +21,7 @@ import CompanionChat from '../../components/CompanionChat';
 import { showToolkit } from '../../components/ToolkitSheet';
 import TooltipIcon from '../../components/TooltipIcon';
 import GradientTitle from '../../components/GradientTitle';
+import GradientIcon from '../../components/GradientIcon';
 import { useTutorial } from '../../context/TutorialContext';
 import { useTutorialTarget } from '../../hooks/useTutorialTarget';
 import BibleStartGuide from '../../components/BibleStartGuide';
@@ -216,7 +217,7 @@ export default function FaithScreen() {
             border={theme.accentAmber + '4D'}
           />
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); showToolkit('faith'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
-            <Ionicons name="help-circle" size={22} color={theme.accentAmber} />
+            <GradientIcon name="help-circle" size={22} color={theme.accentAmber} />
           </TouchableOpacity>
         </View>
       </View>
@@ -322,7 +323,7 @@ function VotdCard({ verse, theme, onReflect }: { verse: DailyVerse | null; theme
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <TooltipIcon tooltipKey="todays_message" color={theme.accentAmber} />
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setManageOpen(true); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons name="settings" size={15} color={theme.accentAmber} />
+            <GradientIcon name="settings" size={15} color={theme.accentAmber} />
           </TouchableOpacity>
         </View>
       </View>

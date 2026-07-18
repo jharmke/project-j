@@ -27,6 +27,7 @@ import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import GradientTitle from '../../components/GradientTitle';
 import GradientNumber from '../../components/GradientNumber';
+import GradientIcon from '../../components/GradientIcon';
 import ButtonShine from '../../components/ButtonShine';
 import FabDome from '../../components/FabDome';
 import PrimaryCTA from '../../components/PrimaryCTA';
@@ -2264,7 +2265,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
               <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>Library</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); showToolkit('workout'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
-              <Ionicons name="help-circle" size={22} color={theme.accentBlue} />
+              <GradientIcon name="help-circle" size={22} color={theme.accentBlue} />
             </TouchableOpacity>
           </View>
         </View>

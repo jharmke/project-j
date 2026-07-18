@@ -86,6 +86,7 @@ import ScreenHeader from '../components/ScreenHeader';
 import ButtonShine from '../components/ButtonShine';
 import GradientTitle from '../components/GradientTitle';
 import GradientNumber from '../components/GradientNumber';
+import GradientIcon from '../components/GradientIcon';
 import BackgroundLayers from '../components/BackgroundLayers';
 
 // Same lift/sink recipe as GradientNumber -- an icon glyph is roughly square like a number glyph, not
@@ -1242,7 +1243,7 @@ export default function SettingsScreen() {
         }}
         right={
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); showToolkit('settings'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
-            <Ionicons name="help-circle" size={22} color={theme.accentBlue} />
+            <GradientIcon name="help-circle" size={22} color={theme.accentBlue} />
           </TouchableOpacity>
         }
       />

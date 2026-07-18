@@ -16,6 +16,7 @@ import { loadDevotionalProgress, getDevotionalProgress, getNextDay } from '../ut
 import { useTheme, faithInk, faithInkBody, faithInkMuted, faithTintBg, faithTintBorder, type Theme } from '../theme';
 import ButtonShine from './ButtonShine';
 import { LinearGradient } from 'expo-linear-gradient';
+import GradientIcon from './GradientIcon';
 import VersePoolModal from './VersePoolModal';
 import { Type } from '../typography';
 
@@ -62,7 +63,7 @@ function PageHeader({ title, icon, theme, withJournal, onJournal, withGear, onGe
           )}
           {withGear && (
             <TouchableOpacity onPress={onGear} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="settings" size={16} color={theme.accentAmber} />
+              <GradientIcon name="settings" size={16} color={theme.accentAmber} />
             </TouchableOpacity>
           )}
         </View>

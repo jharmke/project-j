@@ -8,6 +8,7 @@ import { ADVANCED_NUTRIENTS, CardPeriod, DATA_KEY_META, NUTRIENT_CATEGORIES, Sta
 import { TrendData } from '../utils/statsData';
 import ButtonShine from './ButtonShine';
 import GradientNumber from './GradientNumber';
+import GradientIcon from './GradientIcon';
 import { Type } from '../typography';
 
 const CHART_WIDTH = Dimensions.get('window').width - 64;
@@ -1449,7 +1450,7 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
         </View>
         {!homeMode && (
           <TouchableOpacity ref={editBtnRef} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); onEditPress?.(card); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons name="settings" size={16} color={theme.textMuted} />
+            <GradientIcon name="settings" size={16} color={theme.textMuted} />
           </TouchableOpacity>
         )}
       </View>

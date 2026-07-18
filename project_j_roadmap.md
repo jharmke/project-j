@@ -28,6 +28,22 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-18 **Stats tab section-order flash fixed, device-confirmed.** Any section the user had dragged
+  into a custom order (e.g. Body/Calendar) briefly rendered in the hardcoded DEFAULT order on every tab
+  focus, then visibly snapped to the real saved order -- `loadStatsCards()` was buried at the tail of a
+  60+-sequential-AsyncStorage-read chain (a day-by-day calendar loop + a weight-lookup loop), slow enough
+  on the dev-build JS thread to be very visible. First attempt (gate the whole section list on that same
+  chain) was worse -- multiple seconds of blank screen, reverted same session. Real fix: pulled the card-
+  order load into its own small, independent `useFocusEffect`, un-gated by `runAfterInteractions` and by
+  the slow chain, so it resolves in 1-2 fast reads and the list draws once, already correct.
+- 2026-07-18 **(i) / (?) / gear icon gradient sweep, app-wide.** TooltipIcon is a single shared component,
+  so gradienting it once covers every (i) icon in the app. The 6 header (?) icons (all 5 tabs + Settings)
+  and the "HOW TO MEASURE" button icon got the same treatment -- all already accent-colored, so no color
+  change, same low-risk pattern as the rest of the rollout. Gear icons (Home x4, Stats, Log x2, Faith,
+  StatsGraphCard, FaithTodayCard) got it too, but colors were deliberately LEFT AS-IS (grey stays grey,
+  amber stays amber) -- this is what un-parks the gear-icon item from 2026-07-18: switching to accent was
+  the risk that got it parked ("a quiet settings affordance starting to look like a CTA"), so this sidesteps
+  it entirely by never touching color, only adding the wash.
 - 2026-07-18 **Four device-confirmed fixes:** Stats > At a Glance Weight Change was reading a totally
   disconnected period variable (rewired to `periodData`, now moves correctly with 7D/30D/90D/180D/YTD);
   workout achievement trophies (workout_first...365, both the unlock check and the progress-bar copy)
@@ -810,19 +826,6 @@ are separate pre-submission checklists, NOT part of this menu.
   individually -- not a one-spot fix like everything else in this rollout. Justin: not worth brute-forcing
   right now, current state isn't broken, just cosmetically behind. Revisit only if it starts to bother him
   again or a shared tutorial-card component gets built for other reasons.
-- [PARKED, 2026-07-18] **Gear icon gradient -- PIN, not now.** A `GradientIcon` component now exists
-  (components/GradientIcon.tsx, consolidated out of two ad-hoc copies in settings.tsx and TooltipModal.tsx)
-  and got a one-spot trial on the Home Water card's gear icon. Justin's verdict: looked fine there
-  specifically because the Water card is already accent-heavy everywhere else, but not confident it reads
-  right on more neutral cards (Weight, Macros, etc. -- gear icons are scattered across the whole app) --
-  risk is a quiet settings affordance starting to look like a CTA. Reverted the Water trial back to flat
-  `theme.textMuted`. Revisit once the rest of the gradient rollout is done; test against a neutral card
-  (Weight) before deciding app-wide.
-- [QUICK WIN] [found on TestFlight 2026-07-17] **Effort vs Results LOADING SKELETONS have no gap.** The 3
-  "Sharpening your read..." placeholder cards sit almost touching, no space between them -- surfaced by
-  yesterday's shadow/aesthetic pass. Justin leaning yes on spacing them out, Claude agrees. NOT a blind
-  marginBottom: the skeleton must use the SAME gap as the REAL cards it stands in for, or the layout jumps
-  the moment the content lands. Match the loaded rhythm, then check it.
 - [NOW] [TRACK, DECIDED + SPECCED 2026-07-14 -> building] **VISUAL REFRESH.** Justin: the app "still looks
   like a Claude/AI generated app -- a blank form page with data slapped on it." Diagnosis was NOT the headers
   he first pointed at: (1) every card is the same width/weight so nothing leads, (2) every button is FLAT
@@ -859,8 +862,8 @@ are separate pre-submission checklists, NOT part of this menu.
   (which is always a sheet, so it uses ModalHeader at 20px not the 28px page title). Rules in the spec.
   >> BUTTON TEXTURE IS DONE 2026-07-17 -- both the molded-CTA rollout and the chip/icon shine. See RECENTLY
   SHIPPED; the 3-tier rules + the do-not-relearn list are in the archive.
-  >> TITLE ACCENT-GRADIENT FILL SHIPPED 2026-07-17 -- see RECENTLY SHIPPED and the dedicated item below (the
-  header "?" icon still needs the same treatment, missed this round).
+  >> TITLE ACCENT-GRADIENT FILL SHIPPED 2026-07-17 -- see RECENTLY SHIPPED. The header "?" icon (missed
+  that round) plus every (i) icon and gear icon app-wide SHIPPED 2026-07-18, see RECENTLY SHIPPED.
   >> JOURNAL slide-up sheet DONE 2026-07-17 (full touch-up + the handle-doesn't-close bug fixed).
   >> STILL OPEN, see the dedicated items below: the SURFACE pass, the VOICE pass, and a short list of
   non-modal number-face stragglers (Profile save-bar buttons, REST DAY heading, some IFCard/cardio button

@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useEffect, useRef, useState } from 'react';
@@ -6,6 +5,7 @@ import { Animated, TouchableOpacity } from 'react-native';
 import { useTooltip } from '../useTooltip';
 import { useTheme } from '../theme';
 import TooltipModal from './TooltipModal';
+import GradientIcon from './GradientIcon';
 
 interface Props {
   tooltipKey: string;
@@ -57,7 +57,7 @@ export default function TooltipIcon({ tooltipKey, size = 13, hideTour, color }: 
         activeOpacity={0.7}
       >
         <Animated.View style={{ transform: [{ scale }] }}>
-          <Ionicons name="information-circle" size={size} color={color ?? theme.accentBlueRaw} />
+          <GradientIcon name="information-circle" size={size} color={color ?? theme.accentBlueRaw} />
         </Animated.View>
       </TouchableOpacity>
       <TooltipModal

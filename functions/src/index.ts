@@ -181,7 +181,7 @@ export const onPrayerRequestCreated = onDocumentCreated(
         auth: { user: 'jtharmke@gmail.com', pass: GMAIL_APP_PASSWORD.value() },
       });
       await transporter.sendMail({
-        from: '"Project J" <jtharmke@gmail.com>',
+        from: '"GoodForge" <jtharmke@gmail.com>',
         to: 'dev.harmke@gmail.com',
         subject: `Prayer Request -- ${userName || 'App User'}`,
         text: `From: ${userName || 'Anonymous'}${userEmail ? ` (${userEmail})` : ''}\n\n${message}`,

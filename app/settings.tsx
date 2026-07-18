@@ -1836,7 +1836,7 @@ export default function SettingsScreen() {
           </View>
           <View style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 12 }}>
             <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textMuted, lineHeight: 18 }}>
-              Import your Apple Health workout history into Project J. Existing data and manual entries will not be affected.
+              Import your Apple Health workout history into GoodForge. Existing data and manual entries will not be affected.
             </Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               {([14, 30, 90] as const).map(d => (
@@ -1949,7 +1949,7 @@ export default function SettingsScreen() {
             {notifPermission === 'denied' && (
               <View style={{ backgroundColor: theme.accentRedBg ?? 'rgba(204,51,51,0.12)', borderWidth: 1, borderColor: theme.accentRed, borderRadius: 10, padding: 12, marginBottom: 16 }}>
                 <Text style={{ color: theme.accentRed, fontSize: 13, fontFamily: Type.uiSemibold }}>Notifications Blocked</Text>
-                <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: Type.ui, marginTop: 4 }}>iOS permission was denied. Go to Settings then Project J then Notifications to enable.</Text>
+                <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: Type.ui, marginTop: 4 }}>iOS permission was denied. Go to Settings then GoodForge then Notifications to enable.</Text>
               </View>
             )}
 
@@ -3423,7 +3423,7 @@ export default function SettingsScreen() {
                     try {
                       const r = await restoreAppleWorkoutHistory(90);
                       if (r.total === 0) {
-                        Alert.alert('No workouts found', 'Found 0 Apple workouts in the last 90 days. Make sure Apple Health is connected (iOS Settings > Privacy > Health > Project J) with Workouts permission on, then try again.');
+                        Alert.alert('No workouts found', 'Found 0 Apple workouts in the last 90 days. Make sure Apple Health is connected (iOS Settings > Privacy > Health > GoodForge) with Workouts permission on, then try again.');
                       } else {
                         Alert.alert('Done', `Found ${r.total} Apple workouts in the last ${r.days} days.\n\nImported ${r.imported} new, marked ${r.markedComplete} completed.\n\nOpen the Workout tab to check.`);
                       }

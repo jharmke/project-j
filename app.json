@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "ProjectJ",
+    "name": "GoodForge",
     "slug": "ProjectJ",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -17,8 +17,8 @@
       },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSUserNotificationUsageDescription": "Project J sends reminders for your fasting window, streaks, daily goals, and wellness check-ins.",
-        "NSPhotoLibraryUsageDescription": "Project J uses your photo library to attach food photos for easy meal identification."
+        "NSUserNotificationUsageDescription": "GoodForge sends reminders for your fasting window, streaks, daily goals, and wellness check-ins.",
+        "NSPhotoLibraryUsageDescription": "GoodForge uses your photo library to attach food photos for easy meal identification."
       },
       "privacyManifests": {
         "NSPrivacyAccessedAPITypes": [
@@ -59,11 +59,11 @@
       ],
       "expo-font",
       "@react-native-community/datetimepicker",
-      ["expo-camera", { "cameraPermission": "Project J uses your camera to scan food barcodes for nutritional information." }],
+      ["expo-camera", { "cameraPermission": "GoodForge uses your camera to scan food barcodes for nutritional information." }],
       [
         "@kingstinct/react-native-healthkit",
         {
-          "NSHealthShareUsageDescription": "Project J uses HealthKit to read your fitness and health data including activity, sleep, heart rate, body measurements, and other health metrics to provide personalized insights."
+          "NSHealthShareUsageDescription": "GoodForge uses HealthKit to read your fitness and health data including activity, sleep, heart rate, body measurements, and other health metrics to provide personalized insights."
         }
       ],
       "expo-apple-authentication",
@@ -91,14 +91,14 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Project J uses your photo library to attach food photos for easy meal identification."
+          "photosPermission": "GoodForge uses your photo library to attach food photos for easy meal identification."
         }
       ],
       [
         "expo-speech-recognition",
         {
-          "microphonePermission": "Project J uses your microphone so you can dictate food and meal descriptions by voice.",
-          "speechRecognitionPermission": "Project J uses speech recognition to turn your dictation into text when logging meals."
+          "microphonePermission": "GoodForge uses your microphone so you can dictate food and meal descriptions by voice.",
+          "speechRecognitionPermission": "GoodForge uses speech recognition to turn your dictation into text when logging meals."
         }
       ],
       "./plugins/withModularHeaders"

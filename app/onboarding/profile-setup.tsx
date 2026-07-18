@@ -114,7 +114,7 @@ export default function ProfileSetupScreen() {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     const ageYears = (Date.now() - birthday!.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
     if (ageYears < 13) {
-      Alert.alert('Age Requirement', 'Project J is designed for users 13 and older.');
+      Alert.alert('Age Requirement', 'GoodForge is designed for users 13 and older.');
       return;
     }
     try {

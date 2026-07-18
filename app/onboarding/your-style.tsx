@@ -908,7 +908,7 @@ export default function YourStyleScreen() {
                 You've already taken the first step.
               </Text>
               <Text style={[styles.mindfulSub, { color: theme.textMuted }]}>
-                Project J will celebrate your effort, not judge your numbers.
+                GoodForge will celebrate your effort, not judge your numbers.
               </Text>
             </View>
           )}

@@ -9,7 +9,7 @@
 // Same keep-in-sync arrangement as crisis.ts <-> utils/faithCrisis.ts. No double dashes in app
 // strings, but this is internal prompt content (the doc itself uses "--" freely), so it is fine here.
 
-export const ASSISTANT_APP_KNOWLEDGE = `# Project J -- Companion Assistant App Knowledge (v2, FULL)
+export const ASSISTANT_APP_KNOWLEDGE = `# GoodForge -- Companion Assistant App Knowledge (v2, FULL)
 
 PURPOSE: This is your map of the app: every screen, feature, and how-to, so you can answer
 "how do I / where is" questions and guide users through the real UI.
@@ -485,8 +485,8 @@ Collapsible sections, confirmed names + subtitles:
   correction %, set max HR override + the training-zone model, and import past Apple Health workouts.
   IMPORTANT: this section does NOT grant or revoke Apple Health ACCESS. Apple controls HealthKit
   permissions itself, so an app cannot connect/disconnect them in-app. To turn Apple Health on/off or
-  change what Project J can read, the user uses the iOS SETTINGS APP: Settings > Privacy & Security >
-  Health > Project J, then toggle the individual data types. If asked how to change Apple Health
+  change what GoodForge can read, the user uses the iOS SETTINGS APP: Settings > Privacy & Security >
+  Health > GoodForge, then toggle the individual data types. If asked how to change Apple Health
   permissions, direct them THERE, never to the app's own iOS settings page (which has no Health row)
   and never to this in-app section.
 - VACATION MODE: set a trip date range that pauses scoring / streaks / notifications while still
@@ -522,7 +522,7 @@ Set in Settings > Faith & Style (and during onboarding).
 ================================================================================
 SUPPORT THE MISSION / MEMBERSHIP (the app's paid layer)
 ================================================================================
-- Project J is built and run by ONE independent developer. About 95% of the app is FREE and stays that way.
+- GoodForge is built and run by ONE independent developer. About 95% of the app is FREE and stays that way.
   The paid layer is framed as SUPPORT ("if the app helps you, chip in to keep it running and improving"), NOT
   as unlocking features that were hidden. Be warm and low-key. NEVER nag, pressure, or bring it up unprompted --
   only discuss it when the user asks, and keep the tone grateful, never salesy.
@@ -569,7 +569,7 @@ COMMON "HOW DO I..." QUICK INDEX
 - Change coaching style (Discipline/Balanced/Mindful): Profile > gear > Faith & Style.
 - Turn faith features on/off: Profile > gear > Faith & Style.
 - Turn Apple Health access on/off or change permissions: the iOS SETTINGS APP > Privacy & Security >
-  Health > Project J (Apple manages this; it CANNOT be done inside Project J). The in-app Profile >
+  Health > GoodForge (Apple manages this; it CANNOT be done inside GoodForge). The in-app Profile >
   gear > Health section only holds accuracy / HR-zone / workout-import settings, not the connection.
 - Set weight goal / weekly pace: Profile > Weight Goal section.
 - Log weight: Home > Weight card (add it via Edit Layout if not visible).

@@ -365,7 +365,7 @@ export default function FaithJourneyScreen() {
             }]}
           />
           <Text style={[styles.subtitle, { color: 'rgba(255,255,255,0.66)' }]}>
-            No wrong answer. This shapes how Project J walks with you.
+            No wrong answer. This shapes how GoodForge walks with you.
           </Text>
         </Animated.View>
 

@@ -1,4 +1,4 @@
-// ─── Project J Type System ────────────────────────────────────────────────────
+// ─── GoodForge Type System ────────────────────────────────────────────────────
 // FOUR ROLES. They are INDEPENDENT -- a serif title over condensed numbers is the point, not an
 // accident. No family has to do two jobs. Full reasoning: SPEC_visual_refresh.md
 //

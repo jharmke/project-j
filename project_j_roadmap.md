@@ -28,6 +28,10 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-18 **App renamed to GoodForge.** Verified available (App Store search + App Store Connect name-field
+  save), full code + legal-doc rename pass done, 8 Cloud Functions redeployed. See the LAUNCH BLOCKERS entry
+  for exactly what changed vs. what's deliberately left as the old identifier (bundle ID, Firebase project).
+  Fresh EAS build still needed for iOS permission-prompt strings to show on-device.
 - 2026-07-18 **Visual Refresh track closed out.** Surface, Voice, and Card Stagger passes all confirmed done
   app-wide; Warm + Blush reviewed on-device, no issues; card shadows done on every page + all onboarding
   screens (modals stay parked, Justin's call); number-face stragglers (REST DAY heading, IFCard "LAST MEAL",
@@ -970,10 +974,16 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 ---
 
 ## 🚧 LAUNCH BLOCKERS
-- App name -- ⚠️ OLD SHORTLIST KILLED 2026-07-13 (Prevail/Steadfast/Worthy/Haven/Witness/Sown -- Justin: "those
-  aren't good"). Do NOT resurrect it. Starting fresh. Check App Store + TikTok/IG handle + domain availability on
-  any candidate. THIS BLOCKS the whole App Store listing (description, screenshots, URLs). Logo already exists
-  (assets/images/icon.png + the gold variant).
+- [RESOLVED 2026-07-18] App name -- **GoodForge**, locked in. Old shortlist (Prevail/Steadfast/Worthy/Haven/
+  Witness/Sown) killed 2026-07-13, do not resurrect. GoodForge verified available (App Store search, App Store
+  Connect name-field save, web search) and confirmed accepted in App Store Connect. Full rename pass done
+  same session: app.json display name + iOS permission strings, sign-in wordmark, all in-app strings
+  (settings/report/FeedbackModal/onboarding x4), Otto + Halo's knowledge base, Cloud Function email sender
+  (redeployed), privacy.html + terms.html (dates bumped), package.json/theme.tsx/typography.ts comments.
+  Bundle identifier, EAS slug/scheme, and the Firebase project ID/hosting domain deliberately left untouched
+  (technical identifiers, not user-facing, not renameable in Apple's/Google's case) -- Justin confirmed fine
+  leaving those. STILL OPEN: fresh EAS dev build needed for the iOS permission-prompt strings to actually
+  show the new text on-device (pure JS parts already correct on next reload).
 - App Store Connect setup -- privacy label, age rating, URLs, description, screenshots, review notes. No code. Do after name is locked.
 - Verification scan -- production build, device install, all flows confirmed before submitting.
 - Anthropic account spend limit -- hard monthly spend cap in the console so AI cost can never run away (the final "sleep at night" switch on top of per-user daily caps).

@@ -213,7 +213,7 @@ export default function AppleHealthScreen() {
             />
           </View>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            Connect Apple Health and Project J gets smarter. Every metric is more accurate, more personal, and more useful.
+            Connect Apple Health and GoodForge gets smarter. Every metric is more accurate, more personal, and more useful.
           </Text>
         </Animated.View>
 
@@ -271,7 +271,7 @@ export default function AppleHealthScreen() {
         {/* Both of these were on textDim -- the dimmest token in the app. "Maybe later" is one of only two
             ways off this screen, and the read-only line is the reassurance that earns the permission. */}
         <Text style={[styles.readOnly, { color: theme.textSecondary }]}>
-          Read-only access. Project J never modifies your Apple Health data.
+          Read-only access. GoodForge never modifies your Apple Health data.
         </Text>
       </Animated.View>
 

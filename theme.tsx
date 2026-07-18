@@ -1,4 +1,4 @@
-// ─── Project J Theme System ───────────────────────────────────────────────────
+// ─── GoodForge Theme System ───────────────────────────────────────────────────
 // One file. All colors live here. No hardcoded hex anywhere else.
 // Swapping themes = one state change.
 //

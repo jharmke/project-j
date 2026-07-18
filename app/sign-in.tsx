@@ -212,7 +212,7 @@ export default function SignInScreen() {
 
       {/* Wordmark */}
       <Animated.Text style={[styles.wordmark, { opacity: nameAnim, transform: [{ translateY: nameY }] }]}>
-        PROJECT J
+        GOODFORGE
       </Animated.Text>
 
       {/* Button area -- Stage 1 and Stage 2 overlap in the same space */}

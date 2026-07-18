@@ -67,7 +67,7 @@ export default function FeedbackModal({ visible, onClose }: Props) {
     if (!canSend) return;
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     const version = Constants.expoConfig?.version ?? '1.0';
-    const subject = `[Project J] ${type}`;
+    const subject = `[GoodForge] ${type}`;
     const body = `${description.trim()}\n\n----------\nType: ${type}\nApp version: ${version}\nDevice: ${Platform.OS} ${Platform.Version}`;
     const url = `mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     try {

@@ -13,6 +13,8 @@ import { recoveryZone } from '../utils/recoveryScore';
 import { Type, PAGE_TITLE } from '../typography';
 import ModalHeader from '../components/ModalHeader';
 import ButtonShine from '../components/ButtonShine';
+import GradientNumber from '../components/GradientNumber';
+import GradientTitle from '../components/GradientTitle';
 
 type SleepStages = { core: number; deep: number; rem: number; totalMs: number };
 
@@ -361,7 +363,9 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
               <TouchableOpacity onPress={navPrev} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                 <Ionicons name="chevron-back" size={20} color={theme.accentBlueRaw} />
               </TouchableOpacity>
-              <Text style={styles.headerDate}>{formatDate(currentDate)}</Text>
+              <View style={{ flex: 1 }}>
+                <GradientTitle title={formatDate(currentDate)} color={theme.textPrimary} style={{ fontSize: 15, fontFamily: Type.display, letterSpacing: 0.3, textAlign: 'center' }} />
+              </View>
               <TouchableOpacity onPress={navNext} disabled={isToday} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                 <Ionicons name="chevron-forward" size={20} color={isToday ? theme.textDim : theme.accentBlueRaw} />
               </TouchableOpacity>
@@ -400,45 +404,45 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
           <Text style={styles.cardLabel}>Day at a Glance</Text>
           <View style={styles.statRow}>
             <View style={styles.stat}>
-              <Text style={styles.statVal}>{totalCals || '--'}</Text>
+              <GradientNumber value={String(totalCals || '--')} color={theme.textSecondary} style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 1 }} />
               <Text style={styles.statLabel}>Consumed</Text>
             </View>
             <View style={styles.stat}>
-              <Text style={styles.statVal}>{caloriesBurned || '--'}</Text>
+              <GradientNumber value={String(caloriesBurned || '--')} color={theme.textSecondary} style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 1 }} />
               <Text style={styles.statLabel}>Burned</Text>
             </View>
             <View style={styles.stat}>
-              <Text style={styles.statVal}>{totalCals > 0 ? `${netcals > 0 ? '+' : ''}${Math.round(netcals)}` : '--'}</Text>
+              <GradientNumber value={totalCals > 0 ? `${netcals > 0 ? '+' : ''}${Math.round(netcals)}` : '--'} color={theme.textSecondary} style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 1 }} />
               <Text style={styles.statLabel}>Net Cals</Text>
             </View>
           </View>
           <View style={styles.divider} />
           <View style={styles.statRow}>
             <View style={styles.stat}>
-              <Text style={[styles.statVal, { color: '#0d9268' }]}>{totalProtein}<Text style={styles.statUnit}>g</Text></Text>
+              <GradientNumber value={`${totalProtein}g`} color="#0d9268" style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 1 }} />
               <Text style={styles.statLabel}>Protein</Text>
             </View>
             <View style={styles.stat}>
-              <Text style={[styles.statVal, { color: '#c47d1a' }]}>{showNetCarbs && totalFiber > 0 ? totalNetCarbs : totalCarbs}<Text style={styles.statUnit}>g</Text></Text>
+              <GradientNumber value={`${showNetCarbs && totalFiber > 0 ? totalNetCarbs : totalCarbs}g`} color="#c47d1a" style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 1 }} />
               <Text style={styles.statLabel}>{showNetCarbs && totalFiber > 0 ? 'Net Carbs' : 'Carbs'}</Text>
             </View>
             <View style={styles.stat}>
-              <Text style={[styles.statVal, { color: '#a83232' }]}>{totalFat}<Text style={styles.statUnit}>g</Text></Text>
+              <GradientNumber value={`${totalFat}g`} color="#a83232" style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 1 }} />
               <Text style={styles.statLabel}>Fat</Text>
             </View>
           </View>
           <View style={styles.divider} />
           <View style={styles.statRow}>
             <View style={styles.stat}>
-              <Text style={styles.statVal}>{weight ?? '--'}</Text>
+              <GradientNumber value={String(weight ?? '--')} color={theme.textSecondary} style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 1 }} />
               <Text style={styles.statLabel}>Weight</Text>
             </View>
             <View style={styles.stat}>
-              <Text style={styles.statVal}>{water || '--'}</Text>
+              <GradientNumber value={String(water || '--')} color={theme.textSecondary} style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 1 }} />
               <Text style={styles.statLabel}>Water (oz)</Text>
             </View>
             <View style={styles.stat}>
-              <Text style={styles.statVal}>{steps ? steps.toLocaleString() : '--'}</Text>
+              <GradientNumber value={steps ? steps.toLocaleString() : '--'} color={theme.textSecondary} style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 1 }} />
               <Text style={styles.statLabel}>Steps</Text>
             </View>
           </View>
@@ -453,7 +457,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 {sleepScore !== null && (
                   <View style={[styles.scorePill, { backgroundColor: sleepScoreColor + '22', borderColor: sleepScoreColor + '66' }]}>
-                    <Text style={[styles.scorePillText, { color: sleepScoreColor }]}>{sleepScore} · {sleepLabel}</Text>
+                    <GradientNumber value={`${sleepScore} · ${sleepLabel}`} color={sleepScoreColor} style={{ fontSize: 10, fontFamily: Type.uiBold, letterSpacing: 0.5 }} />
                   </View>
                 )}
                 <Ionicons name={sleepOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textDim} />
@@ -464,15 +468,15 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                 {/* Row 1: Duration + Bedtime + Wake */}
                 <View style={styles.statRow}>
                   <View style={styles.stat}>
-                    <Text style={styles.statVal}>{fmtSleep(sleepHours)}</Text>
+                    <GradientNumber value={fmtSleep(sleepHours)} color={theme.textSecondary} style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 1 }} />
                     <Text style={styles.statLabel}>Duration</Text>
                   </View>
                   <View style={styles.stat}>
-                    <Text style={styles.statVal}>{fmtTime(sleepBedTime)}</Text>
+                    <GradientNumber value={fmtTime(sleepBedTime)} color={theme.textSecondary} style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 1 }} />
                     <Text style={styles.statLabel}>Bedtime</Text>
                   </View>
                   <View style={styles.stat}>
-                    <Text style={styles.statVal}>{fmtTime(sleepWakeTime)}</Text>
+                    <GradientNumber value={fmtTime(sleepWakeTime)} color={theme.textSecondary} style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 1 }} />
                     <Text style={styles.statLabel}>Wake</Text>
                   </View>
                 </View>
@@ -482,15 +486,15 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                     <View style={styles.divider} />
                     <View style={styles.statRow}>
                       <View style={styles.stat}>
-                        <Text style={styles.statVal}>{fmtMs(sleepStages.deep)}</Text>
+                        <GradientNumber value={fmtMs(sleepStages.deep)} color={theme.textSecondary} style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 1 }} />
                         <Text style={styles.statLabel}>Deep</Text>
                       </View>
                       <View style={styles.stat}>
-                        <Text style={styles.statVal}>{fmtMs(sleepStages.rem)}</Text>
+                        <GradientNumber value={fmtMs(sleepStages.rem)} color={theme.textSecondary} style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 1 }} />
                         <Text style={styles.statLabel}>REM</Text>
                       </View>
                       <View style={styles.stat}>
-                        <Text style={styles.statVal}>{fmtMs(sleepStages.core)}</Text>
+                        <GradientNumber value={fmtMs(sleepStages.core)} color={theme.textSecondary} style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 1 }} />
                         <Text style={styles.statLabel}>Core</Text>
                       </View>
                     </View>
@@ -521,7 +525,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
               <Text style={[styles.cardLabel, { marginBottom: 0 }]}>Recovery</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <View style={[styles.scorePill, { backgroundColor: recColor + '22', borderColor: recColor + '66' }]}>
-                  <Text style={[styles.scorePillText, { color: recColor }]}>{recoveryScore} · {recZone?.label}</Text>
+                  <GradientNumber value={`${recoveryScore} · ${recZone?.label ?? ''}`} color={recColor} style={{ fontSize: 10, fontFamily: Type.uiBold, letterSpacing: 0.5 }} />
                 </View>
                 <Ionicons name={recoveryOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textDim} />
               </View>
@@ -530,30 +534,38 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
               <View style={{ marginTop: 12 }}>
                 <View style={styles.statRow}>
                   <View style={styles.stat}>
-                    <Text style={styles.statVal}>
-                      {recoverySignals?.hrv != null ? <>{Math.round(recoverySignals.hrv)}<Text style={styles.statUnit}> ms</Text></> : '--'}
-                    </Text>
+                    <GradientNumber
+                      value={recoverySignals?.hrv != null ? `${Math.round(recoverySignals.hrv)} ms` : '--'}
+                      color={theme.textSecondary}
+                      style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 1 }}
+                    />
                     <Text style={styles.statLabel}>HRV</Text>
                   </View>
                   <View style={styles.stat}>
-                    <Text style={styles.statVal}>
-                      {recoverySignals?.rhr != null ? <>{Math.round(recoverySignals.rhr)}<Text style={styles.statUnit}> bpm</Text></> : '--'}
-                    </Text>
+                    <GradientNumber
+                      value={recoverySignals?.rhr != null ? `${Math.round(recoverySignals.rhr)} bpm` : '--'}
+                      color={theme.textSecondary}
+                      style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 1 }}
+                    />
                     <Text style={styles.statLabel}>Resting HR</Text>
                   </View>
                 </View>
                 <View style={styles.divider} />
                 <View style={styles.statRow}>
                   <View style={styles.stat}>
-                    <Text style={styles.statVal}>
-                      {recoverySignals?.resp != null ? <>{recoverySignals.resp.toFixed(1)}<Text style={styles.statUnit}> brpm</Text></> : '--'}
-                    </Text>
+                    <GradientNumber
+                      value={recoverySignals?.resp != null ? `${recoverySignals.resp.toFixed(1)} brpm` : '--'}
+                      color={theme.textSecondary}
+                      style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 1 }}
+                    />
                     <Text style={styles.statLabel}>Resp Rate</Text>
                   </View>
                   <View style={styles.stat}>
-                    <Text style={styles.statVal}>
-                      {recoverySignals?.spo2 != null ? <>{Math.round(recoverySignals.spo2)}<Text style={styles.statUnit}>%</Text></> : '--'}
-                    </Text>
+                    <GradientNumber
+                      value={recoverySignals?.spo2 != null ? `${Math.round(recoverySignals.spo2)}%` : '--'}
+                      color={theme.textSecondary}
+                      style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 1 }}
+                    />
                     <Text style={styles.statLabel}>Blood O2</Text>
                   </View>
                 </View>
@@ -621,13 +633,13 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
               {daycardiolog.effortScore != null && (
                 <View style={styles.metaRow}>
                   <Text style={styles.metaLabel}>Effort Score</Text>
-                  <Text style={styles.metaVal}>{daycardiolog.effortScore} / 10</Text>
+                  <GradientNumber value={`${daycardiolog.effortScore} / 10`} color={theme.textPrimary} style={{ fontSize: 18, fontFamily: Type.num, letterSpacing: 1 }} />
                 </View>
               )}
               {!!daycardiolog.caloriesBurned && (
                 <View style={styles.metaRow}>
                   <Text style={styles.metaLabel}>Calories Burned</Text>
-                  <Text style={[styles.metaVal, { color: theme.accentRed }]}>{daycardiolog.caloriesBurned} kcal</Text>
+                  <GradientNumber value={`${daycardiolog.caloriesBurned} kcal`} color={theme.accentRed} style={{ fontSize: 18, fontFamily: Type.num, letterSpacing: 1 }} />
                 </View>
               )}
             </View>
@@ -663,12 +675,14 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                       <View key={mealKey} style={{ marginBottom: 12 }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
                           <Text style={styles.sectionLabel}>{displayName}</Text>
-                          <Text style={{ fontSize: 12, color: theme.accentGreen, fontFamily: Type.uiSemibold }}>{mealTotal} kcal</Text>
+                          <GradientNumber value={`${mealTotal} kcal`} color={theme.accentGreen} style={{ fontSize: 12, fontFamily: Type.uiSemibold }} />
                         </View>
                         {mealEntries.map((entry: any, i: number) => (
                           <View key={i} style={styles.foodRow}>
-                            <Text style={styles.foodName} numberOfLines={1}>{entry.name}</Text>
-                            <Text style={styles.foodCal}>{entry.cal} kcal</Text>
+                            <View style={{ flex: 1, marginRight: 8 }}>
+                              <GradientTitle title={entry.name} color={theme.textSecondary} style={{ fontSize: 13, fontFamily: Type.uiSemibold }} numberOfLines={1} />
+                            </View>
+                            <GradientNumber value={`${entry.cal} kcal`} color={theme.textDim} style={{ fontSize: 13, fontFamily: Type.uiSemibold }} />
                           </View>
                         ))}
                       </View>
@@ -705,7 +719,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                     ].filter(r => parseFloat(r.value) > 0 || r.bold).map((row, i, arr) => (
                       <View key={row.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
                         <Text style={[styles.sectionLabel, row.bold && { fontFamily: Type.uiBold, color: theme.textPrimary }]}>{row.label}</Text>
-                        <Text style={{ fontSize: 13, color: row.bold ? '#c47d1a' : theme.textMuted, fontFamily: row.bold ? Type.uiBold : Type.uiSemibold }}>{row.value}</Text>
+                        <GradientNumber value={row.value} color={row.bold ? '#c47d1a' : theme.textMuted} style={{ fontSize: 13, fontFamily: row.bold ? Type.uiBold : Type.uiSemibold }} />
                       </View>
                     ))}
                   </View>
@@ -723,7 +737,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                     ].filter(n => n.value > 0).map((n, i, arr) => (
                       <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
                         <Text style={styles.sectionLabel}>{n.label}</Text>
-                        <Text style={{ fontSize: 13, color: '#a83232', fontFamily: Type.uiSemibold }}>{n.value}{n.unit}</Text>
+                        <GradientNumber value={`${n.value}${n.unit}`} color="#a83232" style={{ fontSize: 13, fontFamily: Type.uiSemibold }} />
                       </View>
                     ))}
                   </View>
@@ -741,7 +755,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                     ].filter(n => n.value > 0).map((n, i, arr) => (
                       <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
                         <Text style={styles.sectionLabel}>{n.label}</Text>
-                        <Text style={{ fontSize: 13, color: n.color, fontFamily: Type.uiSemibold }}>{n.value}{n.unit}</Text>
+                        <GradientNumber value={`${n.value}${n.unit}`} color={n.color} style={{ fontSize: 13, fontFamily: Type.uiSemibold }} />
                       </View>
                     ))}
                   </View>
@@ -760,7 +774,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                     ].filter(n => n.value > 0).map((n, i, arr) => (
                       <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
                         <Text style={styles.sectionLabel}>{n.label}</Text>
-                        <Text style={{ fontSize: 13, color: theme.accentGreen, fontFamily: Type.uiSemibold }}>{n.value}{n.unit}</Text>
+                        <GradientNumber value={`${n.value}${n.unit}`} color={theme.accentGreen} style={{ fontSize: 13, fontFamily: Type.uiSemibold }} />
                       </View>
                     ))}
                   </View>
@@ -778,7 +792,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                     ].filter(n => n.value > 0).map((n, i, arr) => (
                       <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
                         <Text style={styles.sectionLabel}>{n.label}</Text>
-                        <Text style={{ fontSize: 13, color: theme.accentGreen, fontFamily: Type.uiSemibold }}>{n.value}{n.unit}</Text>
+                        <GradientNumber value={`${n.value}${n.unit}`} color={theme.accentGreen} style={{ fontSize: 13, fontFamily: Type.uiSemibold }} />
                       </View>
                     ))}
                   </View>
@@ -797,7 +811,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                     ].filter(n => n.value > 0).map((n, i, arr) => (
                       <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
                         <Text style={styles.sectionLabel}>{n.label}</Text>
-                        <Text style={{ fontSize: 13, color: theme.accentGreen, fontFamily: Type.uiSemibold }}>{n.value}{n.unit}</Text>
+                        <GradientNumber value={`${n.value}${n.unit}`} color={theme.accentGreen} style={{ fontSize: 13, fontFamily: Type.uiSemibold }} />
                       </View>
                     ))}
                   </View>
@@ -826,9 +840,9 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                       <Ionicons name={meta.icon as any} size={10} color={meta.color} />
                       <Text style={[styles.catPillText, { color: meta.color }]}>{meta.label}</Text>
                     </View>
-                    <Text style={{ flex: 1, fontSize: 13, color: theme.textSecondary, fontFamily: Type.uiSemibold }} numberOfLines={1}>
-                      {entry.title}
-                    </Text>
+                    <View style={{ flex: 1 }}>
+                      <GradientTitle title={entry.title} color={theme.textSecondary} style={{ fontSize: 13, fontFamily: Type.uiSemibold }} numberOfLines={1} />
+                    </View>
                     <Ionicons name="chevron-forward" size={14} color={theme.textDim} />
                   </View>
                 </TouchableOpacity>

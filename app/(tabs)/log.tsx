@@ -2177,9 +2177,9 @@ export default function LogScreen() {
                       return (
                         <View key={realIdx} style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingVertical:9, borderBottomWidth:0.5, borderBottomColor: theme.borderCard }}>
                           <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:Type.uiMedium, width:68 }}>{entryTime}</Text>
-                          <Text style={{ fontSize:14, color: entry.sign === 'add' ? theme.statusGood : theme.statusBad, fontFamily:Type.uiSemibold, flex:1 }}>
-                            {entry.sign === 'add' ? '+' : '-'}{entry.amount} oz
-                          </Text>
+                          <View style={{ flex:1 }}>
+                            <GradientNumber value={`${entry.sign === 'add' ? '+' : '-'}${entry.amount} oz`} color={entry.sign === 'add' ? theme.statusGood : theme.statusBad} style={{ fontSize:14, fontFamily:Type.uiSemibold }} />
+                          </View>
                           <TouchableOpacity onPress={() => deleteWaterEntry(realIdx)} hitSlop={{top:8,bottom:8,left:12,right:8}}>
                             <Ionicons name="trash-outline" size={16} color={theme.accentRed} />
                           </TouchableOpacity>

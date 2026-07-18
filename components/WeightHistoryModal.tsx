@@ -21,6 +21,7 @@ import { deleteWeightForDate, gatherWeightHistory, saveWeightForDate, startingWe
 import { Type } from '../typography';
 import ModalHeader from './ModalHeader';
 import ButtonShine from './ButtonShine';
+import GradientNumber from './GradientNumber';
 
 interface Props {
   visible: boolean;
@@ -224,9 +225,7 @@ export default function WeightHistoryModal({ visible, onClose, styleMode, goalWe
                 {start ? (
                   <TouchableOpacity onPress={() => openEdit(start.date, start.weight, true)} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <View>
-                      <Text style={{ fontSize: 26, color: valueColor, fontFamily: Type.num, letterSpacing: 1 }}>
-                        {start.weight} lbs
-                      </Text>
+                      <GradientNumber value={`${start.weight} lbs`} color={valueColor} style={{ fontSize: 26, fontFamily: Type.num, letterSpacing: 1 }} />
                       <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, marginTop: 2 }}>
                         {formatDate(start.date)}
                       </Text>
@@ -279,7 +278,9 @@ export default function WeightHistoryModal({ visible, onClose, styleMode, goalWe
                       ) : (
                         <>
                           <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.uiMedium, width: 110 }}>{formatDate(w.date)}</Text>
-                          <Text style={{ fontSize: 15, color: valueColor, fontFamily: Type.uiSemibold, flex: 1 }}>{w.weight} lbs</Text>
+                          <View style={{ flex: 1 }}>
+                            <GradientNumber value={`${w.weight} lbs`} color={valueColor} style={{ fontSize: 15, fontFamily: Type.uiSemibold }} />
+                          </View>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
                             <TouchableOpacity onPress={() => openEdit(w.date, w.weight, start?.date === w.date)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                               <Ionicons name="pencil" size={15} color={theme.accentBlue} />

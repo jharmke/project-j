@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import MaskedView from '@react-native-masked-view/masked-view';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useScrollToTop } from '@react-navigation/native';
@@ -172,6 +173,38 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const GOAL_DEFICITS: Record<string, number> = { lose_2: -1000, lose_1_5: -750, lose_1: -500, lose_0_75: -375, lose_0_5: -250, lose_0_25: -125, maintain: 0, gain_0_5: 250, gain_1: 500 };
 // VERSES and the daily rotation picker now live in data/verses.ts, shared with the Faith
 // tab so both tabs show the same verse and the no-repeat rotation never double advances.
+
+// Same lift/sink recipe as GradientNumber -- an icon glyph is roughly square like a number glyph, not
+// a wide word, so GradientNumber's tuning fits it better than GradientTitle's.
+const HOME_ICON_LIGHT = 0.24;
+const HOME_ICON_DARK  = 0.20;
+function clampHomeIcon(n: number) { return Math.max(0, Math.min(255, Math.round(n))); }
+function parseHexHomeIcon(hex: string): [number, number, number] | null {
+  const m = /^#?([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(hex.trim());
+  if (!m) return null;
+  let h = m[1];
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+const toHexHomeIcon = (r: number, g: number, b: number) =>
+  '#' + [r, g, b].map(v => clampHomeIcon(v).toString(16).padStart(2, '0')).join('');
+const liftHomeIcon = (rgb: [number, number, number], amt: number) =>
+  toHexHomeIcon(rgb[0] + (255 - rgb[0]) * amt, rgb[1] + (255 - rgb[1]) * amt, rgb[2] + (255 - rgb[2]) * amt);
+const sinkHomeIcon = (rgb: [number, number, number], amt: number) =>
+  toHexHomeIcon(rgb[0] * (1 - amt), rgb[1] * (1 - amt), rgb[2] * (1 - amt));
+
+function GradientHomeIcon({ name, size, color }: { name: keyof typeof Ionicons.glyphMap; size: number; color: string }) {
+  const rgb = parseHexHomeIcon(color);
+  if (!rgb) return <Ionicons name={name} size={size} color={color} />;
+  const stops: [string, string, string] = [liftHomeIcon(rgb, HOME_ICON_LIGHT), color, sinkHomeIcon(rgb, HOME_ICON_DARK)];
+  return (
+    <MaskedView maskElement={<Ionicons name={name} size={size} color="#000000" />}>
+      <LinearGradient colors={stops} locations={[0, 0.52, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}>
+        <Ionicons name={name} size={size} color={color} style={{ opacity: 0 }} />
+      </LinearGradient>
+    </MaskedView>
+  );
+}
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 function MacroDonut({ protein, carbs, fat, calories, theme }: { protein: number; carbs: number; fat: number; calories: number; theme: any }) {
@@ -3950,9 +3983,9 @@ export default function HomeScreen() {
                     return (
                       <View key={realIdx} style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingVertical:9, borderBottomWidth:0.5, borderBottomColor: theme.borderCard }}>
                         <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:Type.uiMedium, width:68 }}>{entryTime}</Text>
-                        <Text style={{ fontSize:14, color: entry.sign === 'add' ? theme.statusGood : theme.statusBad, fontFamily:Type.uiSemibold, flex:1 }}>
-                          {entry.sign === 'add' ? '+' : '-'}{entry.amount} oz
-                        </Text>
+                        <View style={{ flex:1 }}>
+                          <GradientNumber value={`${entry.sign === 'add' ? '+' : '-'}${entry.amount} oz`} color={entry.sign === 'add' ? theme.statusGood : theme.statusBad} style={{ fontSize:14, fontFamily:Type.uiSemibold }} />
+                        </View>
                         <View style={{ flexDirection:'row', alignItems:'center', gap:16 }}>
                           <TouchableOpacity onPress={() => openWaterEntryEdit(realIdx)} hitSlop={{top:8,bottom:8,left:8,right:8}}>
                             <Ionicons name="pencil" size={15} color={theme.accentBlue} />
@@ -4546,8 +4579,8 @@ export default function HomeScreen() {
                             borderWidth: active ? 1.5 : 1,
                             backgroundColor: active ? theme.accentBlueBg : theme.bgCardGlass,
                             borderColor: active ? theme.accentBlueBorder : theme.borderCard, alignItems:'center', gap:4 }}>
-                          <Ionicons name={pr.icon} size={22} color={active ? theme.accentBlue : theme.textMuted} />
-                          <Text style={{ fontSize:14, fontFamily:Type.uiBold, color: active ? theme.accentBlue : theme.textSecondary }}>{pr.label}</Text>
+                          <GradientHomeIcon name={pr.icon} size={22} color={active ? theme.accentBlue : theme.textMuted} />
+                          <GradientTitle title={pr.label} color={active ? theme.accentBlue : theme.textSecondary} style={{ fontSize:14, fontFamily:Type.uiBold }} />
                           <Text style={{ fontSize:11, fontFamily:Type.ui, color: theme.textDim }}>{pr.p}P · {pr.c}C · {pr.f}F</Text>
                         </TouchableOpacity>
                       );

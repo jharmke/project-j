@@ -28,6 +28,10 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-17 **Day Detail modal gradient pass** (basically every value: Day at a Glance, Sleep, Recovery,
+  Workout, per-meal food names/calories, all 6 Advanced Nutrition categories, journal entry titles, the
+  date header) plus the Home + Log water-log entries lists (+/- oz), Weight modal (starting weight +
+  history), and the Macros modal's 4 preset cards (icon + name).
 - 2026-07-17 **Workout Library gradient pass** (exercise/program/routine list names + 1-line safeguard,
   trophy+PRs header button, All PRs modal) and Workout tab's exercise names (gradient while active, flat
   once checked off). Also fixed a real, app-wide **ModalHeader bug**: any modal wrapping its content

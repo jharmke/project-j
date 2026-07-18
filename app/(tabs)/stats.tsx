@@ -188,7 +188,7 @@ function CollapsibleSection({ label, subtitle, children, defaultOpen = true, the
               now accent-coloured (the glow) -- accent text on an accent ground is the same hue fighting
               itself, and it washed out completely. The accent's job is "this is interactive"; a section
               header is not. The rule and the chevron keep the accent, so the section still reads as ours. */}
-          <Text style={{ fontSize: 13, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textSecondary }}>
+          <Text style={{ fontSize: 14, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textSecondary }}>
             {label}
           </Text>
           <View style={{ flex: 1, height: 1, backgroundColor: theme.textMuted + '88' }} />
@@ -2117,33 +2117,45 @@ export default function StatsScreen() {
           </View>
             </CollapsibleSection>
             );
-            if (section.systemKey === 'challenges') return (
+            if (section.systemKey === 'challenges') {
+            const challengeCardScale = new Animated.Value(1);
+            const challengeCardPressIn = () => Animated.timing(challengeCardScale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start();
+            const challengeCardPressOut = () => Animated.timing(challengeCardScale, { toValue: 1, duration: 150, useNativeDriver: true }).start();
+            return (
               <CollapsibleSection key={section.id} label={section.label} subtitle="Beat a period or set a goal" defaultOpen={isFirst} theme={theme} first={isFirst} entering={FadeInDown.delay(idx * 60).springify()}>
                 {/* No overflow:'hidden' here -- nothing on this card bleeds, so it was doing nothing except
                     clipping the card's own shadow away (iOS masksToBounds). */}
-                <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
+                <Animated.View style={{ transform: [{ scale: challengeCardScale }] }}>
+                <TouchableOpacity activeOpacity={0.99} delayPressIn={0}
+                  onPressIn={challengeCardPressIn} onPressOut={challengeCardPressOut}
+                  onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/challenges'); }}
+                  style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: challengeActive && challengeProg ? 4 : 8 }}>
                     <Text style={[styles.cardLabel, { color: theme.textMuted }]}>
                       {challengeActive && challengeProg
                         ? (challengeProg.status === 'pending' ? 'Starts Tomorrow' : challengeProg.status === 'ended' ? 'Complete' : `Day ${challengeProg.dayNumber} of ${challengeProg.totalDays}`)
                         : 'CHALLENGES'}
                     </Text>
-                    <TooltipIcon tooltipKey="challenge_system" />
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <TooltipIcon tooltipKey="challenge_system" />
+                      <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
+                    </View>
                   </View>
                   {challengeActive && challengeProg ? (
-                    <TouchableOpacity activeOpacity={0.7} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/challenges'); }}>
-                      <Text style={{ fontSize: 17, fontFamily: Type.uiBold, color: theme.textPrimary, marginBottom: 6 }}>{challengeTitle(challengeActive, styleMode === 'Mindful')}</Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.accentBlueRaw }}>
-                          {challengeActive.type === 'beat'
-                            ? (challengeProg.won ? (styleMode === 'Mindful' ? 'Ahead on every metric' : 'Beating it on all metrics') : `Ahead on ${challengeProg.metricsBeaten ?? 0} of ${challengeProg.metricsTotal ?? 0}`)
-                            : challengeProg.isWeight
-                              ? `${challengeProg.weightChangeSoFar == null ? '—' : `${challengeProg.weightChangeSoFar > 0 ? '+' : ''}${challengeProg.weightChangeSoFar.toFixed(1)}`} of ${Math.abs(challengeActive.target ?? 0)} lbs`
-                              : `Hit ${challengeProg.daysHit ?? 0} of ${challengeProg.daysElapsed ?? 0} days`}
-                        </Text>
-                        <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
+                    <View>
+                      <View style={{ marginBottom: 6 }}>
+                        <GradientNumber value={challengeTitle(challengeActive, styleMode === 'Mindful')} color={theme.textSecondary} style={{ fontSize: 17, fontFamily: Type.uiBold }} />
                       </View>
-                    </TouchableOpacity>
+                      <GradientNumber
+                        value={challengeActive.type === 'beat'
+                          ? (challengeProg.won ? (styleMode === 'Mindful' ? 'Ahead on every metric' : 'Beating it on all metrics') : `Ahead on ${challengeProg.metricsBeaten ?? 0} of ${challengeProg.metricsTotal ?? 0}`)
+                          : challengeProg.isWeight
+                            ? `${challengeProg.weightChangeSoFar == null ? '—' : `${challengeProg.weightChangeSoFar > 0 ? '+' : ''}${challengeProg.weightChangeSoFar.toFixed(1)}`} of ${Math.abs(challengeActive.target ?? 0)} lbs`
+                            : `Hit ${challengeProg.daysHit ?? 0} of ${challengeProg.daysElapsed ?? 0} days`}
+                        color={theme.accentBlueRaw}
+                        style={{ fontSize: 13, fontFamily: Type.uiSemibold }}
+                      />
+                    </View>
                   ) : (
                     <>
                       <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textSecondary, lineHeight: 20, marginBottom: 14 }}>
@@ -2165,9 +2177,11 @@ export default function StatsScreen() {
                       </TouchableOpacity>
                     </>
                   )}
-                </View>
+                </TouchableOpacity>
+                </Animated.View>
               </CollapsibleSection>
             );
+            }
             if (section.systemKey === 'hrZones') return (
               <CollapsibleSection key={section.id} label={section.label} subtitle="Measurements and heart rate" defaultOpen={isFirst} theme={theme} first={isFirst} entering={FadeInDown.delay(idx * 60).springify()}>
                 <BodyMeasurementsCard />
@@ -2871,11 +2885,13 @@ export default function StatsScreen() {
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => router.push('/reports'), 150); }}
                 style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlueRaw, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <ButtonShine radius={8} solid />
                 <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Reports</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => router.push('/reports'), 150); }}
                 style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlueRaw, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlueRaw, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <ButtonShine radius={22} solid />
                 <Ionicons name="document-text" size={20} color="#ffffff" />
               </TouchableOpacity>
             </View>
@@ -2887,11 +2903,13 @@ export default function StatsScreen() {
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => router.push('/challenges'), 150); }}
                 style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlueRaw, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <ButtonShine radius={8} solid />
                 <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Challenges</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => router.push('/challenges'), 150); }}
                 style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlueRaw, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlueRaw, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <ButtonShine radius={22} solid />
                 <Ionicons name="trophy" size={20} color="#ffffff" />
               </TouchableOpacity>
             </View>
@@ -2903,11 +2921,13 @@ export default function StatsScreen() {
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => router.push('/comparison-report'), 150); }}
                 style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlueRaw, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <ButtonShine radius={8} solid />
                 <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Comparison</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => router.push('/comparison-report'), 150); }}
                 style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlueRaw, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlueRaw, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <ButtonShine radius={22} solid />
                 <Ionicons name="swap-horizontal" size={20} color="#ffffff" />
               </TouchableOpacity>
             </View>
@@ -2919,11 +2939,13 @@ export default function StatsScreen() {
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => openCreatorModal(), 150); }}
                 style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlueRaw, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <ButtonShine radius={8} solid />
                 <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Add Graph</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => openCreatorModal(), 150); }}
                 style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlueRaw, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlueRaw, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <ButtonShine radius={22} solid />
                 <Ionicons name="analytics-outline" size={20} color="#ffffff" />
               </TouchableOpacity>
             </View>

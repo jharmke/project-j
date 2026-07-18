@@ -857,9 +857,11 @@ export default function BibleScreen() {
           <Animated.View style={{ opacity: fabItem3Anim, transform: [{ translateY: fabItem3Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <TouchableOpacity onPress={() => startAutoScroll('fast')} style={{ backgroundColor: HALO_GOLD, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: HALO_GOLD, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <ButtonShine radius={8} solid />
                 <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Fast</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => startAutoScroll('fast')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: HALO_GOLD, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: HALO_GOLD, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <ButtonShine radius={22} solid />
                 <Ionicons name="flash-outline" size={20} color="#ffffff" />
               </TouchableOpacity>
             </View>
@@ -869,9 +871,11 @@ export default function BibleScreen() {
           <Animated.View style={{ opacity: fabItem2Anim, transform: [{ translateY: fabItem2Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <TouchableOpacity onPress={() => startAutoScroll('medium')} style={{ backgroundColor: HALO_GOLD, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: HALO_GOLD, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <ButtonShine radius={8} solid />
                 <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Medium</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => startAutoScroll('medium')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: HALO_GOLD, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: HALO_GOLD, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <ButtonShine radius={22} solid />
                 <Ionicons name="play-outline" size={20} color="#ffffff" />
               </TouchableOpacity>
             </View>
@@ -881,9 +885,11 @@ export default function BibleScreen() {
           <Animated.View style={{ opacity: fabItem1Anim, transform: [{ translateY: fabItem1Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <TouchableOpacity onPress={() => startAutoScroll('slow')} style={{ backgroundColor: HALO_GOLD, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: HALO_GOLD, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <ButtonShine radius={8} solid />
                 <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Slow</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => startAutoScroll('slow')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: HALO_GOLD, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: HALO_GOLD, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <ButtonShine radius={22} solid />
                 <Ionicons name="leaf-outline" size={20} color="#ffffff" />
               </TouchableOpacity>
             </View>

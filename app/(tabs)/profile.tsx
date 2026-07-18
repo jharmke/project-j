@@ -23,6 +23,8 @@ import { useTheme } from '../../theme';
 import { useMembership } from '../../MembershipContext';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import GradientTitle from '../../components/GradientTitle';
+import GradientNumber from '../../components/GradientNumber';
+import ButtonShine from '../../components/ButtonShine';
 import HeaderIconButton from '../../components/HeaderIconButton';
 import PrimaryCTA from '../../components/PrimaryCTA';
 import SproutIcon from '../../components/SproutIcon';
@@ -117,7 +119,7 @@ function ProfileSection({ label, subtitle, defaultOpen = false, children, theme,
     <Reanimated.View entering={entering} style={{ marginTop: first ? 4 : 20 }}>
       <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); toggle(); }} activeOpacity={0.7} style={{ paddingVertical: 6, minHeight: 44, justifyContent: 'center' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <Text style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textSecondary }}>
+          <Text style={{ fontSize: 12, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textSecondary }}>
             {label}
           </Text>
           <View style={{ flex: 1, height: 1, backgroundColor: theme.textMuted + '55' }} />
@@ -427,11 +429,11 @@ export default function ProfileScreen() {
 
         <ProfileSection label="Basic Info" subtitle="Name, height, birthday, sex" defaultOpen={true} theme={theme} first={true} entering={FadeInDown.delay(0).springify()}>
           <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>Name</Text>
-          <TextInput style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} value={profile.name} onChangeText={v => updateField('name', v)} placeholder="Your name" placeholderTextColor={theme.textPlaceholder} />
+          <TextInput style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, fontFamily: Type.uiMedium }]} value={profile.name} onChangeText={v => updateField('name', v)} placeholder="Your name" placeholderTextColor={theme.textPlaceholder} />
 
           <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>Birthday</Text>
           <TouchableOpacity style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowDatePicker(true); }}>
-            <Text style={{ color: profile.birthday ? theme.textPrimary : theme.textPlaceholder, fontFamily: Type.ui, fontSize: 15 }}>
+            <Text style={{ color: profile.birthday ? theme.textPrimary : theme.textPlaceholder, fontFamily: Type.uiMedium, fontSize: 15 }}>
               {profile.birthday ? new Date(profile.birthday).toLocaleDateString() : 'Select birthday...'}
             </Text>
           </TouchableOpacity>
@@ -466,18 +468,18 @@ export default function ProfileScreen() {
           <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>Height</Text>
           <View style={styles.heightRow}>
             <View style={styles.heightField}>
-              <TextInput style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} value={profile.heightFt} onChangeText={v => { const n = parseInt(v.replace(/[^0-9]/g, ''), 10); updateField('heightFt', isNaN(n) ? '' : String(Math.min(8, Math.max(1, n)))); }} keyboardType="number-pad" placeholder="5" placeholderTextColor={theme.textPlaceholder} maxLength={1} />
+              <TextInput style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, fontFamily: Type.uiMedium }]} value={profile.heightFt} onChangeText={v => { const n = parseInt(v.replace(/[^0-9]/g, ''), 10); updateField('heightFt', isNaN(n) ? '' : String(Math.min(8, Math.max(1, n)))); }} keyboardType="number-pad" placeholder="5" placeholderTextColor={theme.textPlaceholder} maxLength={1} />
               <Text style={[styles.heightUnit, { color: theme.textMuted }]}>ft</Text>
             </View>
             <View style={styles.heightField}>
-              <TextInput style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} value={profile.heightIn} onChangeText={v => { const n = parseInt(v.replace(/[^0-9]/g, ''), 10); updateField('heightIn', isNaN(n) ? '' : String(Math.min(11, Math.max(0, n)))); }} keyboardType="number-pad" placeholder="9" placeholderTextColor={theme.textPlaceholder} maxLength={2} />
+              <TextInput style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, fontFamily: Type.uiMedium }]} value={profile.heightIn} onChangeText={v => { const n = parseInt(v.replace(/[^0-9]/g, ''), 10); updateField('heightIn', isNaN(n) ? '' : String(Math.min(11, Math.max(0, n)))); }} keyboardType="number-pad" placeholder="9" placeholderTextColor={theme.textPlaceholder} maxLength={2} />
               <Text style={[styles.heightUnit, { color: theme.textMuted }]}>in</Text>
             </View>
           </View>
 
           <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>Current Weight</Text>
           <View style={[styles.weightDisplay, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]}>
-            <Text style={[styles.weightVal, { color: theme.accentBlue }]}>{currentWeight ? `${currentWeight} lbs` : '--'}</Text>
+            <GradientNumber value={currentWeight ? `${currentWeight} lbs` : '--'} color={theme.accentBlueRaw} style={styles.weightVal} />
             <Text style={[styles.weightSub, { color: theme.textMuted }]}>Pulled from your daily log</Text>
           </View>
 
@@ -487,12 +489,14 @@ export default function ProfileScreen() {
               style={[styles.toggleBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput },
                 profile.sex === 'male' && { backgroundColor: theme.bgSelected, borderColor: theme.accentBlue }]}
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateField('sex', 'male'); }}>
+              {profile.sex === 'male' && <ButtonShine radius={8} />}
               <Text style={[styles.toggleBtnText, { color: theme.textMuted }, profile.sex === 'male' && { color: theme.accentBlue }]}>Male</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.toggleBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput },
                 profile.sex === 'female' && { backgroundColor: theme.bgSelected, borderColor: theme.accentBlue }]}
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateField('sex', 'female'); }}>
+              {profile.sex === 'female' && <ButtonShine radius={8} />}
               <Text style={[styles.toggleBtnText, { color: theme.textMuted }, profile.sex === 'female' && { color: theme.accentBlue }]}>Female</Text>
             </TouchableOpacity>
           </View>
@@ -515,11 +519,12 @@ export default function ProfileScreen() {
               style={[styles.activityBtn, { borderWidth: 0.5, borderColor: theme.borderInput, backgroundColor: theme.bgInput },
                 profile.lifestyleActivity === o.key && { backgroundColor: theme.bgSelected, borderColor: theme.accentBlue }]}
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateField('lifestyleActivity', o.key); }}>
+              {profile.lifestyleActivity === o.key && <ButtonShine radius={8} />}
               <View style={[styles.activityDot, { backgroundColor: theme.textDim },
                 profile.lifestyleActivity === o.key && { backgroundColor: theme.accentBlue }]} />
               <View style={{ flex: 1 }}>
                 <Text style={[{ fontSize: 13, fontFamily: Type.uiMedium }, { color: theme.textMuted },
-                  profile.lifestyleActivity === o.key && { color: theme.textPrimary }]}>{o.label}</Text>
+                  profile.lifestyleActivity === o.key && { color: theme.accentBlue }]}>{o.label}</Text>
                 <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textDim, marginTop: 1 }}>{o.sub}</Text>
               </View>
             </TouchableOpacity>
@@ -535,11 +540,12 @@ export default function ProfileScreen() {
               style={[styles.activityBtn, { borderWidth: 0.5, borderColor: theme.borderInput, backgroundColor: theme.bgInput },
                 profile.trainingFrequency === o.key && { backgroundColor: theme.bgSelected, borderColor: theme.accentBlue }]}
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateField('trainingFrequency', o.key); }}>
+              {profile.trainingFrequency === o.key && <ButtonShine radius={8} />}
               <View style={[styles.activityDot, { backgroundColor: theme.textDim },
                 profile.trainingFrequency === o.key && { backgroundColor: theme.accentBlue }]} />
               <View style={{ flex: 1 }}>
                 <Text style={[{ fontSize: 13, fontFamily: Type.uiMedium }, { color: theme.textMuted },
-                  profile.trainingFrequency === o.key && { color: theme.textPrimary }]}>{o.label}</Text>
+                  profile.trainingFrequency === o.key && { color: theme.accentBlue }]}>{o.label}</Text>
                 <Text style={{ fontSize: 11, fontFamily: Type.ui, color: theme.textDim, marginTop: 1 }}>{o.sub}</Text>
               </View>
             </TouchableOpacity>
@@ -549,20 +555,20 @@ export default function ProfileScreen() {
         {bmr > 0 && (
           <ProfileSection label="Your Estimates" subtitle="BMR, TDEE, and calorie target" theme={theme} entering={FadeInDown.delay(180).springify()}>
             <Text style={[styles.estimateNote, { color: theme.textSecondary }]}>Based on Mifflin-St Jeor formula - estimates only, not exact values.</Text>
-            <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, fontStyle: 'italic', marginBottom: 10 }}>For informational purposes only. Not medical advice.</Text>
+            <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.ui, fontStyle: 'italic', marginBottom: 10 }}>For informational purposes only. Not medical advice.</Text>
             <View style={styles.statsRow}>
               <View style={[styles.statBox, { backgroundColor: theme.bgInset, borderWidth: 0.5, borderColor: theme.borderInput }]}>
-                <Text style={[styles.statVal, { color: theme.textPrimary }]}>{bmr}</Text>
+                <GradientNumber value={String(bmr)} color={theme.accentBlueRaw} style={styles.statVal} />
                 <Text style={[styles.statLabel, { color: theme.textMuted }]}>BMR</Text>
                 <Text style={[styles.statSub, { color: theme.textMuted }]}>calories at rest</Text>
               </View>
               <View style={[styles.statBox, { backgroundColor: theme.bgInset, borderWidth: 0.5, borderColor: theme.borderInput }]}>
-                <Text style={[styles.statVal, { color: theme.textPrimary }]}>{tdee}</Text>
+                <GradientNumber value={String(tdee)} color={theme.accentBlueRaw} style={styles.statVal} />
                 <Text style={[styles.statLabel, { color: theme.textMuted }]}>TDEE</Text>
                 <Text style={[styles.statSub, { color: theme.textMuted }]}>maintenance</Text>
               </View>
               <View style={[styles.statBox, { backgroundColor: theme.bgInset, borderWidth: 0.5, borderColor: theme.borderInput }]}>
-                <Text style={[styles.statVal, { color: theme.macroProtein }]}>{suggested}</Text>
+                <GradientNumber value={String(suggested)} color={theme.macroProtein} style={styles.statVal} />
                 <Text style={[styles.statLabel, { color: theme.textMuted }]}>Target</Text>
                 <Text style={[styles.statSub, { color: theme.textMuted }]}>{GOAL_LABELS[profile.weightGoal] || 'Goal based'}</Text>
               </View>
@@ -636,6 +642,7 @@ export default function ProfileScreen() {
                     backgroundColor: selected ? theme.accentBlueBgOpaque : theme.bgInset,
                     borderColor: selected ? theme.accentBlue : theme.borderCard,
                   }}>
+                  {selected && <ButtonShine radius={20} />}
                   <Text style={{
                     fontSize: 13,
                     fontFamily: selected ? Type.uiBold : Type.uiSemibold,
@@ -679,14 +686,14 @@ export default function ProfileScreen() {
                 <View style={{ padding: 12, backgroundColor: theme.bgInset, borderWidth: 0.5, borderColor: theme.borderInput, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <View>
                     <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 3 }}>Projected</Text>
-                    <Text style={{ fontSize: 22, fontFamily: Type.num, letterSpacing: 1, color: theme.accentBlue }}>{projected}</Text>
+                    <GradientNumber value={projected} color={theme.accentBlueRaw} style={{ fontSize: 22, fontFamily: Type.num, letterSpacing: 1 }} />
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
                     <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 3 }}>To Go</Text>
-                    <Text style={{ fontSize: 22, fontFamily: Type.num, letterSpacing: 1, color: theme.textPrimary }}>{Math.round(lbsToGo * 10) / 10} lbs</Text>
+                    <GradientNumber value={`${Math.round(lbsToGo * 10) / 10} lbs`} color={theme.accentBlueRaw} style={{ fontSize: 22, fontFamily: Type.num, letterSpacing: 1 }} />
                   </View>
                 </View>
-                <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, fontStyle: 'italic', textAlign: 'center', marginTop: 6 }}>For informational purposes only. Not medical advice.</Text>
+                <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.ui, fontStyle: 'italic', textAlign: 'center', marginTop: 6 }}>For informational purposes only. Not medical advice.</Text>
               </View>
             );
           })()}

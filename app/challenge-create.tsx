@@ -16,6 +16,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import PrimaryCTA from '../components/PrimaryCTA';
+import GradientNumber from '../components/GradientNumber';
+import GradientIcon from '../components/GradientIcon';
+import ButtonShine from '../components/ButtonShine';
 import { useTheme } from '../theme';
 import { useToast } from '../components/Toast';
 import { loadComparisonGoals, METRIC_META } from '../utils/comparisonEngine';
@@ -273,9 +276,10 @@ export default function ChallengeCreateScreen() {
               <TouchableOpacity key={opt.id} activeOpacity={0.8}
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setType(opt.id); }}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: sel ? theme.accentBlueBgOpaque : theme.bgCard, borderWidth: 1, borderColor: sel ? `${accent}80` : theme.borderCard, borderRadius: 12, padding: 14 }}>
+                {sel && <ButtonShine radius={12} />}
                 <Ionicons name={opt.icon as any} size={22} color={sel ? accent : theme.textSecondary} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 15, fontFamily: Type.uiBold, color: sel ? accent : theme.textSecondary }}>{opt.title}</Text>
+                  <GradientNumber value={opt.title} color={sel ? accent : theme.textSecondary} style={{ fontSize: 15, fontFamily: Type.uiBold }} />
                   <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textSecondary, marginTop: 2, lineHeight: 17 }}>{opt.sub}</Text>
                 </View>
               </TouchableOpacity>
@@ -293,6 +297,7 @@ export default function ChallengeCreateScreen() {
                 return (
                   <TouchableOpacity key={m} activeOpacity={0.7} onPress={() => toggleMetric(m)}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: sel ? theme.accentBlueBgOpaque : theme.bgCard, borderWidth: 1, borderColor: sel ? `${accent}80` : theme.borderCard, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 12 }}>
+                    {sel && <ButtonShine radius={20} />}
                     <Ionicons name={METRIC_ICON[m] as any} size={14} color={sel ? accent : theme.textSecondary} />
                     <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: sel ? accent : theme.textSecondary }}>{METRIC_META[m].label}</Text>
                   </TouchableOpacity>
@@ -308,6 +313,7 @@ export default function ChallengeCreateScreen() {
                 return (
                   <TouchableOpacity key={o.id} activeOpacity={0.7} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setBenchmarkMode(o.id); }}
                     style={{ flex: 1, alignItems: 'center', backgroundColor: sel ? theme.accentBlueBgOpaque : theme.bgCard, borderWidth: 1, borderColor: sel ? `${accent}80` : theme.borderCard, borderRadius: 10, paddingVertical: 11 }}>
+                    {sel && <ButtonShine radius={10} />}
                     <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: sel ? accent : theme.textSecondary }}>{o.label}</Text>
                   </TouchableOpacity>
                 );
@@ -333,6 +339,7 @@ export default function ChallengeCreateScreen() {
                 return (
                   <TouchableOpacity key={m} activeOpacity={0.7} onPress={() => pickCustomMetric(m)}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: sel ? theme.accentBlueBgOpaque : theme.bgCard, borderWidth: 1, borderColor: sel ? `${accent}80` : theme.borderCard, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 12 }}>
+                    {sel && <ButtonShine radius={20} />}
                     <Ionicons name={METRIC_ICON[m] as any} size={14} color={sel ? accent : theme.textSecondary} />
                     <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: sel ? accent : theme.textSecondary }}>{METRIC_META[m].label}</Text>
                   </TouchableOpacity>
@@ -349,10 +356,10 @@ export default function ChallengeCreateScreen() {
                 const next = Math.max(cfg.min, cur - cfg.step);
                 setTarget(cfg.decimals > 0 ? next.toFixed(cfg.decimals) : String(next));
               }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                <Ionicons name="remove-circle" size={32} color={parseFloat(target) <= STEP_CONFIG[customMetric].min ? theme.textDim : accent} />
+                <GradientIcon name="remove-circle" size={32} color={parseFloat(target) <= STEP_CONFIG[customMetric].min ? theme.textDim : accent} />
               </TouchableOpacity>
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 28, fontFamily: Type.num, color: theme.textPrimary, letterSpacing: 1 }}>{target || '0'}</Text>
+                <GradientNumber value={target || '0'} color={accent} style={{ fontSize: 28, fontFamily: Type.num, letterSpacing: 1 }} />
                 <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.uiMedium }}>
                   {customMetric === 'weight' ? 'lbs total' : `${METRIC_META[customMetric].unit}/day`}
                 </Text>
@@ -365,7 +372,7 @@ export default function ChallengeCreateScreen() {
                 const next = Math.min(max, cur + cfg.step);
                 setTarget(cfg.decimals > 0 ? next.toFixed(cfg.decimals) : String(next));
               }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                <Ionicons name="add-circle" size={32} color={parseFloat(target) >= STEP_CONFIG[customMetric].maxFn(weightCap) ? theme.textDim : accent} />
+                <GradientIcon name="add-circle" size={32} color={parseFloat(target) >= STEP_CONFIG[customMetric].maxFn(weightCap) ? theme.textDim : accent} />
               </TouchableOpacity>
             </View>
             {customMetric === 'weight' && (
@@ -391,23 +398,25 @@ export default function ChallengeCreateScreen() {
                 return (
                   <TouchableOpacity key={d.id} activeOpacity={0.7} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setDurationId(d.id); }}
                     style={{ backgroundColor: sel ? theme.accentBlueBgOpaque : theme.bgCard, borderWidth: 1, borderColor: sel ? `${accent}80` : theme.borderCard, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16 }}>
+                    {sel && <ButtonShine radius={20} />}
                     <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: sel ? accent : theme.textSecondary }}>{d.label}</Text>
                   </TouchableOpacity>
                 );
               })}
               <TouchableOpacity activeOpacity={0.7} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setDurationId('custom'); }}
                 style={{ backgroundColor: durationId === 'custom' ? theme.accentBlueBgOpaque : theme.bgCard, borderWidth: 1, borderColor: durationId === 'custom' ? `${accent}80` : theme.borderCard, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16 }}>
+                {durationId === 'custom' && <ButtonShine radius={20} />}
                 <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: durationId === 'custom' ? accent : theme.textSecondary }}>Custom</Text>
               </TouchableOpacity>
             </View>
             {durationId === 'custom' && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20, marginTop: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20, backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, paddingVertical: 12, marginTop: 12 }}>
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setCustomDays(d => Math.max(2, d - 1)); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                  <Ionicons name="remove-circle" size={32} color={accent} />
+                  <GradientIcon name="remove-circle" size={32} color={accent} />
                 </TouchableOpacity>
-                <Text style={{ fontSize: 22, fontFamily: Type.num, color: theme.textPrimary, minWidth: 80, textAlign: 'center' }}>{customDays} DAYS</Text>
+                <GradientNumber value={`${customDays} DAYS`} color={accent} style={{ fontSize: 22, fontFamily: Type.num, minWidth: 80, textAlign: 'center' }} />
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setCustomDays(d => Math.min(90, d + 1)); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                  <Ionicons name="add-circle" size={32} color={accent} />
+                  <GradientIcon name="add-circle" size={32} color={accent} />
                 </TouchableOpacity>
               </View>
             )}
@@ -419,6 +428,7 @@ export default function ChallengeCreateScreen() {
                 return (
                   <TouchableOpacity key={o.id} activeOpacity={0.7} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setStartMode(o.id); }}
                     style={{ flex: 1, alignItems: 'center', backgroundColor: sel ? theme.accentBlueBgOpaque : theme.bgCard, borderWidth: 1, borderColor: sel ? `${accent}80` : theme.borderCard, borderRadius: 10, paddingVertical: 11 }}>
+                    {sel && <ButtonShine radius={10} />}
                     <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: sel ? accent : theme.textSecondary }}>{o.label}</Text>
                   </TouchableOpacity>
                 );

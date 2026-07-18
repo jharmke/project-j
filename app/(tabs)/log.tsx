@@ -15,7 +15,8 @@ import { getRepeatSummary, logRepeatedItems, SlotRepeatInfo, tidyFoodName } from
 import RepeatMealModal from '../../components/RepeatMealModal';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TAB_SCROLL_PAD } from '../../components/CustomTabBar';
+import { TAB_SCROLL_PAD, TAB_BAR_HEIGHT } from '../../components/CustomTabBar';
+import FabDome from '../../components/FabDome';
 import BackgroundLayers from '../../components/BackgroundLayers';
 import Svg, { Circle } from 'react-native-svg';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
@@ -298,6 +299,39 @@ export default function LogScreen() {
     return mealAnimations.current[meal];
   };
   const [activeDate, setActiveDate] = useState(todayKey);
+  // Log tab FAB -- multiple entry points (Create Food, Create Recipe, Barcode, Add to Meal), same
+  // speed-dial structure as workout-library.tsx / add-food.tsx's own FABs.
+  const [showLogFabMenu, setShowLogFabMenu] = useState(false);
+  const logFabScale = useRef(new Animated.Value(1)).current;
+  const logFabItem1Anim = useRef(new Animated.Value(0)).current; // Add to Meal -- bottom, animates first
+  const logFabItem2Anim = useRef(new Animated.Value(0)).current; // Barcode
+  const logFabItem3Anim = useRef(new Animated.Value(0)).current; // Create Recipe
+  const logFabItem4Anim = useRef(new Animated.Value(0)).current; // Create Food -- top, animates last
+  const openLogFabMenu = () => {
+    logFabItem1Anim.setValue(0);
+    logFabItem2Anim.setValue(0);
+    logFabItem3Anim.setValue(0);
+    logFabItem4Anim.setValue(0);
+    setShowLogFabMenu(true);
+    Animated.stagger(70, [
+      Animated.spring(logFabItem1Anim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 120 }),
+      Animated.spring(logFabItem2Anim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 120 }),
+      Animated.spring(logFabItem3Anim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 120 }),
+      Animated.spring(logFabItem4Anim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 120 }),
+    ]).start();
+  };
+  const closeLogFabMenu = () => {
+    Animated.parallel([
+      Animated.timing(logFabItem1Anim, { toValue: 0, duration: 130, useNativeDriver: true }),
+      Animated.timing(logFabItem2Anim, { toValue: 0, duration: 130, useNativeDriver: true }),
+      Animated.timing(logFabItem3Anim, { toValue: 0, duration: 130, useNativeDriver: true }),
+      Animated.timing(logFabItem4Anim, { toValue: 0, duration: 130, useNativeDriver: true }),
+    ]).start(() => setShowLogFabMenu(false));
+  };
+  const toggleLogFabMenu = () => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    if (showLogFabMenu) closeLogFabMenu(); else openLogFabMenu();
+  };
   const [waterPresets, setWaterPresets] = useState<[number,number,number]>([8,12,16]);
   const [waterGoal, setWaterGoal] = useState(WATER_TARGET);
   const [achievementStore, setAchievementStore] = useState<AchievementsStore>({});
@@ -1610,7 +1644,7 @@ export default function LogScreen() {
             {/* Meal info middle */}
             <TouchableOpacity ref={entries.some(e => e.tutorialEntry) ? (slot.id === 'ms_lunch' ? (mealTotalRef as any) : undefined) : (mealIdx === 0 ? (mealTotalRef as any) : undefined)} style={[styles.mealInfo, { flexDirection: 'row', alignItems: 'center' }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); toggleMeal(slot.id); }}>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.mealName, { color: theme.textSecondary }]}>{slot.name}</Text>
+                <GradientNumber value={slot.name} color={theme.textSecondary} style={styles.mealName} />
                 {mealTotal > 0 && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
@@ -1900,8 +1934,8 @@ export default function LogScreen() {
         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); returningFromChild.current = true; router.push({ pathname: '/ai-meal-estimator', params: { date: activeDate } }); }}>
         <Ionicons name="sparkles" size={20} color={theme.accentBlueRaw} />
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: Type.uiSemibold }}>Eating out? AI can estimate your meal.</Text>
-          <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.ui, marginTop: 1 }}>Photo or description, no weighing needed</Text>
+          <GradientNumber value="AI Meal Estimate" color={theme.textSecondary} style={{ fontSize: 16, fontFamily: Type.uiSemibold }} />
+          <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.ui, marginTop: 1 }}>Snap a photo or describe your meal, no weighing needed.</Text>
         </View>
         <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
       </TouchableOpacity>
@@ -2403,6 +2437,103 @@ export default function LogScreen() {
           </View>
         </Animated.View>
       </Modal>
+
+      {/* Log tab FAB -- multiple entry points into logging, same speed-dial pattern as
+          workout-library.tsx / add-food.tsx's own FAB. Positioned above the tab bar. */}
+      {showLogFabMenu && (
+        <TouchableOpacity
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          activeOpacity={1}
+          onPress={closeLogFabMenu}
+        />
+      )}
+      {showLogFabMenu && (
+        <View style={{ position: 'absolute', bottom: 90 + TAB_BAR_HEIGHT + insets.bottom, right: 20, alignItems: 'flex-end', gap: 12 }}>
+          {/* Create Food - top, animates last */}
+          <Animated.View style={{ opacity: logFabItem4Anim, transform: [{ translateY: logFabItem4Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <TouchableOpacity
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeLogFabMenu(); returningFromChild.current = true; router.push({ pathname: '/add-food', params: { meal: 'browse', date: activeDate, openCreate: '1' } }); }}
+                style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <ButtonShine radius={8} solid />
+                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Create Food</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeLogFabMenu(); returningFromChild.current = true; router.push({ pathname: '/add-food', params: { meal: 'browse', date: activeDate, openCreate: '1' } }); }}
+                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <ButtonShine radius={22} solid />
+                <Ionicons name="restaurant-outline" size={20} color="#ffffff" />
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+
+          {/* Create Recipe */}
+          <Animated.View style={{ opacity: logFabItem3Anim, transform: [{ translateY: logFabItem3Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <TouchableOpacity
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeLogFabMenu(); returningFromChild.current = true; router.push('/recipe-builder'); }}
+                style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <ButtonShine radius={8} solid />
+                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Create Recipe</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeLogFabMenu(); returningFromChild.current = true; router.push('/recipe-builder'); }}
+                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <ButtonShine radius={22} solid />
+                <Ionicons name="book-outline" size={20} color="#ffffff" />
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+
+          {/* Barcode */}
+          <Animated.View style={{ opacity: logFabItem2Anim, transform: [{ translateY: logFabItem2Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <TouchableOpacity
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeLogFabMenu(); returningFromChild.current = true; router.push({ pathname: '/add-food', params: { meal: 'browse', date: activeDate, openScanner: '1' } }); }}
+                style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <ButtonShine radius={8} solid />
+                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Barcode</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeLogFabMenu(); returningFromChild.current = true; router.push({ pathname: '/add-food', params: { meal: 'browse', date: activeDate, openScanner: '1' } }); }}
+                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <ButtonShine radius={22} solid />
+                <Ionicons name="barcode-outline" size={20} color="#ffffff" />
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+
+          {/* Add to Meal - bottom, animates first, closest to the FAB */}
+          <Animated.View style={{ opacity: logFabItem1Anim, transform: [{ translateY: logFabItem1Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <TouchableOpacity
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeLogFabMenu(); returningFromChild.current = true; router.push({ pathname: '/add-food', params: { meal: 'browse', date: activeDate } }); }}
+                style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <ButtonShine radius={8} solid />
+                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Add to Meal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeLogFabMenu(); returningFromChild.current = true; router.push({ pathname: '/add-food', params: { meal: 'browse', date: activeDate } }); }}
+                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <ButtonShine radius={22} solid />
+                <Ionicons name="search-outline" size={20} color="#ffffff" />
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </View>
+      )}
+
+      <Animated.View style={{ position: 'absolute', bottom: 20 + TAB_BAR_HEIGHT + insets.bottom, right: 20, transform: [{ scale: logFabScale }] }}>
+        <TouchableOpacity
+          onPress={toggleLogFabMenu}
+          onPressIn={() => Animated.timing(logFabScale, { toValue: 0.9, duration: 80, useNativeDriver: true }).start()}
+          onPressOut={() => Animated.timing(logFabScale, { toValue: 1, duration: 80, useNativeDriver: true }).start()}
+          activeOpacity={1}
+          style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 }}>
+          <FabDome size={56} />
+          <Ionicons name={showLogFabMenu ? 'close' : 'add'} size={28} color="#ffffff" />
+        </TouchableOpacity>
+      </Animated.View>
 
     </LinearGradient>
   );

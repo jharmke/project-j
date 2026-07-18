@@ -94,6 +94,7 @@ interface Recipe {
 const makeId = () => Math.random().toString(36).substr(2, 9);
 const WEIGHT_UNITS = ['g', 'oz', 'lbs', 'ml', 'cups'];
 const SCREEN_W = Dimensions.get('window').width;
+const SCREEN_H = Dimensions.get('window').height;
 
 const filterDecimal = (v: string, set: (s: string) => void) => {
   const stripped = v.replace(/[^0-9.]/g, '');
@@ -123,7 +124,7 @@ export default function RecipeBuilderScreen() {
   const [defaultToWeight, setDefaultToWeight] = useState(false);
   const [showCustomFoodModal, setShowCustomFoodModal] = useState(false);
   const [showWeightUnitDropdown, setShowWeightUnitDropdown] = useState(false);
-  const [unitBtnPos, setUnitBtnPos] = useState<{ top: number; right: number } | null>(null);
+  const [unitBtnPos, setUnitBtnPos] = useState<{ top?: number; bottom?: number; right: number } | null>(null);
   const weightUnitAnim = useRef(new Animated.Value(0)).current;
   const unitBtnRef = useRef<View>(null);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -141,7 +142,13 @@ export default function RecipeBuilderScreen() {
   const openWeightUnitDropdown = () => {
     weightUnitAnim.setValue(0);
     unitBtnRef.current?.measureInWindow((x, y, width, height) => {
-      setUnitBtnPos({ top: y + height + 4, right: SCREEN_W - x - width });
+      const dropdownHeight = WEIGHT_UNITS.length * 44 + 8;
+      const spaceBelow = SCREEN_H - (y + height);
+      if (spaceBelow < dropdownHeight + 20) {
+        setUnitBtnPos({ bottom: SCREEN_H - y + 4, right: SCREEN_W - x - width });
+      } else {
+        setUnitBtnPos({ top: y + height + 4, right: SCREEN_W - x - width });
+      }
       setShowWeightUnitDropdown(true);
       Animated.timing(weightUnitAnim, { toValue: 1, duration: 180, useNativeDriver: true }).start();
     });
@@ -686,10 +693,10 @@ export default function RecipeBuilderScreen() {
           <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={closeWeightUnitDropdown} />
           <Animated.View style={[styles.unitDropdown, {
             position: 'absolute',
-            top: unitBtnPos.top,
+            ...(unitBtnPos.top !== undefined ? { top: unitBtnPos.top } : { bottom: unitBtnPos.bottom }),
             right: unitBtnPos.right,
             opacity: weightUnitAnim,
-            transform: [{ translateY: weightUnitAnim.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) }],
+            transform: [{ translateY: weightUnitAnim.interpolate({ inputRange: [0, 1], outputRange: [unitBtnPos.top !== undefined ? -6 : 6, 0] }) }],
           }]}>
             {WEIGHT_UNITS.map((u, i) => (
               <TouchableOpacity

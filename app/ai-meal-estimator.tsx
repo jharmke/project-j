@@ -522,7 +522,7 @@ export default function AIMealEstimatorScreen() {
                   <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowRecent(true); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, borderRadius: 12, padding: 14, marginBottom: 16, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
                     <Ionicons name="time-outline" size={20} color={theme.accentBlue} />
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiSemibold }}>Recent Estimates Today</Text>
+                      <GradientNumber value="Recent Estimates Today" color={theme.textSecondary} style={{ fontSize: 14, fontFamily: Type.uiSemibold }} />
                       <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginTop: 2 }}>{todayEstimates.length} {todayEstimates.length === 1 ? 'estimate' : 'estimates'} saved earlier today</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
@@ -634,7 +634,7 @@ export default function AIMealEstimatorScreen() {
                     </Text>
                     {pendingRows.map((r) => (
                       <View key={r.id} style={{ backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.accentAmber, borderRadius: 12, padding: 14, marginBottom: 10, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
-                        <Text style={{ fontSize: 14, color: theme.textPrimary, fontFamily: Type.uiSemibold }}>{r.name}</Text>
+                        <GradientNumber value={r.name} color={theme.textSecondary} style={{ fontSize: 14, fontFamily: Type.uiSemibold }} />
                         {!!r.portion && <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginTop: 1 }}>{r.portion}</Text>}
                         <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginTop: 6 }}>
                           Best guess: {r.baseCal} kcal · {r.baseP}p · {r.baseC}c · {r.baseF}f
@@ -665,21 +665,21 @@ export default function AIMealEstimatorScreen() {
                 {/* Section 1: What we estimated (read-only, clean list) */}
                 {keptRows.length > 0 && (
                   <View style={{ marginBottom: 18 }}>
-                    <Text style={[cardLabel, { marginBottom: 10 }]}>WHAT WE ESTIMATED</Text>
+                    <Text style={[cardLabel, { marginBottom: 10, fontSize: 10 }]}>WHAT WE ESTIMATED</Text>
                     {keptRows.map((r) => (
                       <View key={r.id} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 9, marginBottom: 8 }}>
                         <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: theme.accentBlueRaw, marginTop: 7 }} />
-                        <Text style={{ flex: 1, fontSize: 14, lineHeight: 20 }}>
-                          <Text style={{ fontFamily: Type.uiSemibold, color: theme.textPrimary }}>{r.name}</Text>
-                          {!!r.portion && <Text style={{ fontFamily: Type.ui, color: theme.textMuted }}>{`   ${r.portion}`}</Text>}
-                        </Text>
+                        <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline' }}>
+                          <GradientNumber value={r.name} color={theme.textSecondary} style={{ fontSize: 14, lineHeight: 20, fontFamily: Type.uiSemibold }} />
+                          {!!r.portion && <Text style={{ fontSize: 14, lineHeight: 20, fontFamily: Type.ui, color: theme.textMuted }}>{`   ${r.portion}`}</Text>}
+                        </View>
                       </View>
                     ))}
                   </View>
                 )}
 
                 {/* Portion multiplier */}
-                <Text style={[cardLabel, { marginBottom: 8 }]}>PORTION SIZE</Text>
+                <Text style={[cardLabel, { marginBottom: 8, fontSize: 10 }]}>PORTION SIZE</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }} style={{ marginBottom: 18 }}>
                   {MULTIPLIERS.map((m) => {
                     const active = m === multiplier;
@@ -689,6 +689,7 @@ export default function AIMealEstimatorScreen() {
                          glow (mud) and the unselected ones leaned on bgInput, which is near-invisible
                          against the ground. Same fix as the Plans sort chips. */
                       <TouchableOpacity key={m} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setMultiplier(m); }} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: active ? theme.accentBlueBgOpaque : theme.bgCard, borderWidth: 1, borderColor: active ? theme.accentBlueBorder : theme.borderInput }}>
+                        {active && <ButtonShine radius={20} />}
                         <Text style={{ fontSize: 13, color: active ? theme.accentBlue : theme.textMuted, fontFamily: active ? Type.uiBold : Type.uiMedium }}>{m}x</Text>
                       </TouchableOpacity>
                     );
@@ -701,7 +702,7 @@ export default function AIMealEstimatorScreen() {
                     <TouchableOpacity activeOpacity={0.7} onPress={() => { if (editingId === r.id) { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditingId(null); } else openEditor(r); }} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                       <View style={{ flex: 1, marginRight: 12 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
-                          <Text style={{ fontSize: 14, color: theme.textPrimary, fontFamily: Type.uiSemibold }}>{r.name}</Text>
+                          <GradientNumber value={r.name} color={theme.textSecondary} style={{ fontSize: 14, fontFamily: Type.uiSemibold }} />
                           {r.edited && (
                             <View style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
                               <Text style={{ fontSize: 8, letterSpacing: 1, color: theme.accentBlue, fontFamily: Type.uiBold }}>CUSTOM</Text>
@@ -739,7 +740,7 @@ export default function AIMealEstimatorScreen() {
                     {result.hidden_items.map((h, i) => (
                       <View key={i} style={{ flexDirection: 'row', gap: 8, marginBottom: i === result.hidden_items.length - 1 ? 0 : 6 }}>
                         <Text style={{ color: theme.textMuted, fontSize: 13 }}>•</Text>
-                        <Text style={{ flex: 1, fontSize: 13, color: theme.textSecondary, fontFamily: Type.ui, lineHeight: 19 }}>{h}</Text>
+                        <Text style={{ flex: 1, fontSize: 13, color: theme.textSecondary, fontFamily: Type.ui, lineHeight: 19 }}>{h.charAt(0).toUpperCase() + h.slice(1)}</Text>
                       </View>
                     ))}
                   </View>
@@ -818,7 +819,7 @@ export default function AIMealEstimatorScreen() {
             return (
               <TouchableOpacity key={e.id} onPress={() => loadEstimate(e)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 10, padding: 12, marginBottom: 8 }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 14, color: theme.textPrimary, fontFamily: Type.uiSemibold }} numberOfLines={1}>{e.mealName}</Text>
+                  <GradientNumber value={e.mealName} color={theme.textSecondary} style={{ fontSize: 14, fontFamily: Type.uiSemibold }} numberOfLines={1} />
                   <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginTop: 1 }}>{t.calories} kcal · {new Date(e.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
@@ -857,6 +858,7 @@ export default function AIMealEstimatorScreen() {
               const active = draft.mult === m;
               return (
                 <TouchableOpacity key={m} onPress={() => applyItemMultiplier(m)} style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: active ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: active ? theme.accentBlueBorder : theme.borderInput }}>
+                  {active && <ButtonShine radius={16} />}
                   <Text style={{ fontSize: 12, color: active ? theme.accentBlue : theme.textMuted, fontFamily: active ? Type.uiBold : Type.uiMedium }}>{m}x</Text>
                 </TouchableOpacity>
               );

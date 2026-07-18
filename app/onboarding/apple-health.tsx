@@ -13,6 +13,8 @@ import { triggerHaptic } from '@/utils/haptics';
 import { useTheme, THEMES } from '../../theme';
 import BackgroundLayers from '../../components/BackgroundLayers';
 import PrimaryCTA from '../../components/PrimaryCTA';
+import GradientTitle from '../../components/GradientTitle';
+import GradientNumber from '../../components/GradientNumber';
 import { BlurView } from 'expo-blur';
 import { isOnboardingPreview } from '../../utils/onboardingPreview';
 import { getModeAccentTints, getSessionStyleMode } from '../../utils/modeAccent';
@@ -204,9 +206,11 @@ export default function AppleHealthScreen() {
             <View style={[styles.ahIconBox, { backgroundColor: AH_RED + '12', borderColor: AH_RED + '25' }]}>
               <BeatingHeart />
             </View>
-            <Text style={[styles.title, { color: accent }]}>
-              Better Data.{'\n'}Better Results.
-            </Text>
+            <GradientTitle
+              title="Smarter Tracking"
+              color={accent}
+              style={styles.title}
+            />
           </View>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
             Connect Apple Health and Project J gets smarter. Every metric is more accurate, more personal, and more useful.
@@ -234,7 +238,7 @@ export default function AppleHealthScreen() {
                   <Ionicons name={item.icon as any} size={17} color={accent} />
                 </View>
                 <View style={styles.rowText}>
-                  <Text style={[styles.rowLabel, { color: theme.textPrimary }]}>{item.label}</Text>
+                  <GradientNumber value={item.label} color={theme.textSecondary} style={styles.rowLabel} />
                   <Text style={[styles.rowDesc,  { color: theme.textMuted }]}>{item.desc}</Text>
                 </View>
               </View>
@@ -282,14 +286,15 @@ const styles = StyleSheet.create({
   backBtn:        { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
 
   content:        { flex: 1, paddingHorizontal: 24 },
-  // 9/ls3 -- matches every other step label in the flow. The SECTION names on Your Style went to 11 because
-  // you hunt for those mid-scroll; the step label sits in the same spot on every screen and never needs it.
-  screenLabel:    { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 16 },
+  // 9/ls3, marginBottom 8 -- matches every other step label in the flow. Was 16, which is what pushed
+  // this title down relative to the others once the sizes got unified.
+  screenLabel:    { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 },
 
   ahIconBox:      { position: 'absolute', right: 0, top: 2, width: 48, height: 48, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 
-  // No textShadow -- a drop shadow on a display title is a trick nothing else in the app uses.
-  title:          { fontSize: 40, fontFamily: Type.display, letterSpacing: 0.3, lineHeight: numLine(40), marginBottom: 10 },
+  // 36, matching every other step's title (was 40 -- the flow's titles were never actually one
+  // consistent size, which is why this one read as jarring the moment it got shrunk to fit).
+  title:          { fontSize: 36, fontFamily: Type.display, letterSpacing: 0.3, lineHeight: numLine(36), marginBottom: 10 },
   // VOICE: this is the app talking, not a label.
   subtitle:       { fontSize: 15, fontFamily: Type.voice, lineHeight: 22, marginBottom: 22 },
 

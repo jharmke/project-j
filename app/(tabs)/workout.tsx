@@ -2298,6 +2298,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                   isActiveDayTab && { borderColor: c, backgroundColor: c + '18', borderWidth: 1.5 },
                   isToday && !isActiveDayTab && { borderColor: theme.textSecondary, borderWidth: 1.5 }]}
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setActiveDay(key); setCalBurnedSaved(!!cardioLogs[key]?.caloriesBurned); }}>
+                {isActiveDayTab && <ButtonShine radius={8} />}
                 {(() => {
                   const dayTagObjs = getDayTagObjects(key);
                   const n = Math.min(dayTagObjs.length, 6);
@@ -3393,11 +3394,13 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openLoadRoutineModal(); }}
                 style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <ButtonShine radius={8} solid />
                 <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Load Routine</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openLoadRoutineModal(); }}
                 style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <ButtonShine radius={22} solid />
                 <Ionicons name="repeat" size={20} color="#ffffff" />
               </TouchableOpacity>
             </View>
@@ -3409,11 +3412,13 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); router.push({ pathname: '/workout-library', params: { selectMode: 'true', day: activeDay } }); }}
                 style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <ButtonShine radius={8} solid />
                 <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Add Exercise</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); router.push({ pathname: '/workout-library', params: { selectMode: 'true', day: activeDay } }); }}
                 style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <ButtonShine radius={22} solid />
                 <Ionicons name="barbell-outline" size={20} color="#ffffff" />
               </TouchableOpacity>
             </View>

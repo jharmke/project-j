@@ -14,6 +14,8 @@ import { isOnboardingPreview } from '../../utils/onboardingPreview';
 import { getModeAccentTints, getSessionStyleMode } from '../../utils/modeAccent';
 import BackgroundLayers from '../../components/BackgroundLayers';
 import PrimaryCTA from '../../components/PrimaryCTA';
+import GradientTitle from '../../components/GradientTitle';
+import GradientNumber from '../../components/GradientNumber';
 import { BlurView } from 'expo-blur';
 import { storageSet } from '../../utils/storage';
 import { requestNotificationPermission } from '../../services/notifications';
@@ -180,7 +182,7 @@ export default function NotificationsScreen() {
             <View style={[styles.iconBox, { backgroundColor: accent + '12', borderColor: accent + '25' }]}>
               <RingingBell color={accent} />
             </View>
-            <Text style={[styles.title, { color: accent }]}>{title}</Text>
+            <GradientTitle title={title} color={accent} style={styles.title} />
           </View>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>{subtitle}</Text>
         </Animated.View>
@@ -202,7 +204,7 @@ export default function NotificationsScreen() {
                   <Ionicons name={row.icon as any} size={17} color={accent} />
                 </View>
                 <View style={styles.rowText}>
-                  <Text style={[styles.rowLabel, { color: theme.textPrimary }]}>{row.label}</Text>
+                  <GradientNumber value={row.label} color={theme.textSecondary} style={styles.rowLabel} />
                   <Text style={[styles.rowDesc,  { color: theme.textMuted }]}>{row.desc}</Text>
                 </View>
               </View>
@@ -253,12 +255,14 @@ const styles = StyleSheet.create({
   backBtn:        { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
 
   content:        { flex: 1, paddingHorizontal: 24 },
-  screenLabel:    { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 16 },
+  // marginBottom 8, matches every other step label in the flow (was 16, same leftover as Apple Health).
+  screenLabel:    { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 },
 
   iconBox:        { position: 'absolute', right: 0, top: 2, width: 48, height: 48, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 
+  // 36, matching every other step's title (was 40).
   // No textShadow -- a drop shadow on a display title is a trick nothing else in the app uses.
-  title:          { fontSize: 40, fontFamily: Type.display, letterSpacing: 0.3, lineHeight: numLine(40), marginBottom: 10 },
+  title:          { fontSize: 36, fontFamily: Type.display, letterSpacing: 0.3, lineHeight: numLine(36), marginBottom: 10 },
   // VOICE: this is the app talking, not a label.
   subtitle:       { fontSize: 15, fontFamily: Type.voice, lineHeight: 22, marginBottom: 22 },
 

@@ -9,6 +9,7 @@ import Svg, { Rect } from 'react-native-svg';
 import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, runOnJS } from 'react-native-reanimated';
 import { GestureHandlerRootView, GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
+import ButtonShine from './ButtonShine';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic, triggerHapticNotification } from '@/utils/haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -37,6 +38,7 @@ import HeaderIconButton from './HeaderIconButton';
 
 const GOLD = '#e8a020';      // Halo identity
 const CROSS_DARK = '#2e1c03';
+const CROSS_LIGHT = '#fff4dd'; // matches the cross on Halo's own FAB (components/CompanionFAB.tsx)
 const CRISIS_RED = '#cc3333';
 
 const GREETINGS = [
@@ -265,7 +267,8 @@ const HALO_AVATAR = 26;
 function HaloAvatar() {
   return (
     <View style={{ width: HALO_AVATAR, height: HALO_AVATAR, borderRadius: HALO_AVATAR / 2, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', marginTop: 1 }}>
-      <MiniCross size={15} color={CROSS_DARK} />
+      <ButtonShine radius={HALO_AVATAR / 2} solid />
+      <MiniCross size={15} color={CROSS_LIGHT} />
     </View>
   );
 }
@@ -685,7 +688,8 @@ export default function CompanionChat({
                 <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
               <View style={styles.brandRow}>
                 <View style={[styles.brandDot, { backgroundColor: GOLD }]}>
-                  <MiniCross size={16} color={CROSS_DARK} />
+                  <ButtonShine radius={15} solid />
+                  <MiniCross size={16} color={CROSS_LIGHT} />
                 </View>
                 <View>
                   <GradientTitle title="Halo" color={theme.accentAmber} numberOfLines={1} style={styles.brand} />
@@ -885,7 +889,7 @@ const styles = StyleSheet.create({
   brand:     { fontSize: 22, fontFamily: Type.num, letterSpacing: 1.5 },
   brandSub:  { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginTop: -2 },
   closeBtn:  { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   bubble: {
     maxWidth: '86%',
     borderWidth: 0.5,

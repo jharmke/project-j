@@ -23,6 +23,8 @@ import { Type } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import BackgroundLayers from '../components/BackgroundLayers';
 import { CardWatermark } from '../components/GradientCard';
+import GradientNumber from '../components/GradientNumber';
+import PrimaryCTA from '../components/PrimaryCTA';
 
 function fmtMetricValue(id: MetricId, v: number | null): string {
   if (v === null) return '—';
@@ -123,7 +125,9 @@ export default function ChallengesScreen() {
                 </View>
               )}
             </View>
-            <Text style={{ fontSize: 18, fontFamily: Type.uiBold, color: theme.textSecondary, marginBottom: 12 }}>{challengeTitle(active, isMindful)}</Text>
+            <View style={{ marginBottom: 12 }}>
+              <GradientNumber value={challengeTitle(active, isMindful)} color={theme.textSecondary} style={{ fontSize: 18, fontFamily: Type.uiBold }} />
+            </View>
 
             {/* Type 1 beat */}
             {active.type === 'beat' && progress.rows && (
@@ -150,11 +154,11 @@ export default function ChallengesScreen() {
                       </View>
                       <View style={{ width: 88, alignItems: 'center' }}>
                         {r.beating && <View style={{ position: 'absolute', left: 4, top: '15%', width: 2, height: '70%', backgroundColor: accent, borderRadius: 1 }} />}
-                        <Text style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 1, color: youColor }}>{fmtMetricValue(r.metric, r.youAvg)}</Text>
+                        <GradientNumber value={fmtMetricValue(r.metric, r.youAvg)} color={youColor} style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 1 }} />
                         <Text style={{ fontSize: 8, fontFamily: Type.uiBold, letterSpacing: 1, textTransform: 'uppercase', color: youColor, opacity: 0.6 }}>{r.unit}</Text>
                       </View>
                       <View style={{ width: 88, alignItems: 'center' }}>
-                        <Text style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 1, color: benchColor }}>{fmtMetricValue(r.metric, r.benchmarkAvg)}</Text>
+                        <GradientNumber value={fmtMetricValue(r.metric, r.benchmarkAvg)} color={benchColor} style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 1 }} />
                         <Text style={{ fontSize: 8, fontFamily: Type.uiBold, letterSpacing: 1, textTransform: 'uppercase', color: benchColor, opacity: 0.6 }}>{r.unit}</Text>
                       </View>
                     </View>
@@ -171,9 +175,11 @@ export default function ChallengesScreen() {
             {/* Type 2 custom weight */}
             {active.type === 'custom' && progress.isWeight && (
               <View style={{ alignItems: 'center', paddingVertical: 12 }}>
-                <Text style={{ fontSize: 44, fontFamily: Type.num, letterSpacing: 1, color: progress.won ? accent : theme.textPrimary }}>
-                  {progress.weightChangeSoFar == null ? '—' : `${progress.weightChangeSoFar > 0 ? '+' : ''}${progress.weightChangeSoFar.toFixed(1)}`}
-                </Text>
+                <GradientNumber
+                  value={progress.weightChangeSoFar == null ? '—' : `${progress.weightChangeSoFar > 0 ? '+' : ''}${progress.weightChangeSoFar.toFixed(1)}`}
+                  color={progress.won ? accent : theme.textPrimary}
+                  style={{ fontSize: 44, fontFamily: Type.num, letterSpacing: 1 }}
+                />
                 <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiMedium }}>
                   of {Math.abs(active.target ?? 0)} lbs {(active.target ?? 0) < 0 ? 'to lose' : 'to gain'}
                 </Text>
@@ -191,11 +197,13 @@ export default function ChallengesScreen() {
                 <Text style={{ fontSize: 10, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', color: theme.textDim, marginBottom: 6 }}>
                   {progress.status === 'pending' ? 'Target' : 'Today'}
                 </Text>
-                <Text style={{ fontSize: 38, fontFamily: Type.num, letterSpacing: 1, color: theme.textPrimary }}>
-                  {progress.status === 'pending'
+                <GradientNumber
+                  value={progress.status === 'pending'
                     ? fmtMetricValue(progress.metric, progress.target ?? null)
                     : `${fmtMetricValue(progress.metric, progress.todayValue ?? null)} / ${fmtMetricValue(progress.metric, progress.target ?? null)}`}
-                </Text>
+                  color={theme.textPrimary}
+                  style={{ fontSize: 38, fontFamily: Type.num, letterSpacing: 1 }}
+                />
                 {progress.status !== 'pending' && (
                   <Text style={{ fontSize: 13, color: accent, fontFamily: Type.uiSemibold, marginTop: 8 }}>
                     Hit {progress.daysHit} of {progress.daysElapsed} days, {progress.daysRemaining > 0 ? `${progress.daysRemaining} left` : 'final day'}
@@ -219,17 +227,14 @@ export default function ChallengesScreen() {
             <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: `${accent}1A`, alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
               <Ionicons name="trophy-outline" size={26} color={accent} />
             </View>
-            <Text style={{ fontSize: 16, fontFamily: Type.uiBold, color: theme.textSecondary }}>No active challenge</Text>
+            <GradientNumber value="No active challenge" color={theme.textSecondary} style={{ fontSize: 16, fontFamily: Type.uiBold }} />
             <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textDim, marginTop: 6, textAlign: 'center', lineHeight: 19 }}>{isMindful ? 'Grow past a previous period or set a goal, and track it right here.' : 'Beat a past period or set a custom goal, and track it right here.'}</Text>
           </View>
         )}
 
         {/* ── New Challenge button (when none active) ── */}
         {!active && (
-          <TouchableOpacity activeOpacity={0.85} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); router.push('/challenge-create'); }}
-            style={{ backgroundColor: accent, borderRadius: 12, paddingVertical: 15, alignItems: 'center', marginTop: 14 }}>
-            <Text style={{ fontSize: 15, fontFamily: Type.uiBold, color: '#fff' }}>New Challenge</Text>
-          </TouchableOpacity>
+          <PrimaryCTA label="New Challenge" onPress={() => router.push('/challenge-create')} wrapperStyle={{ marginTop: 14 }} />
         )}
 
         {/* ── Past Challenges ── */}
@@ -239,7 +244,7 @@ export default function ChallengesScreen() {
             {history.map(past => (
               <View key={past.id} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderRadius: 12, padding: 14, marginBottom: 8, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.textPrimary }}>{challengeTitle(past, isMindful)}</Text>
+                  <GradientNumber value={challengeTitle(past, isMindful)} color={theme.textSecondary} style={{ fontSize: 14, fontFamily: Type.uiSemibold }} />
                   <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, marginTop: 2 }}>{past.startKey} → {past.endKey}</Text>
                 </View>
                 <TouchableOpacity onPress={() => runItBack(past)} style={{ backgroundColor: `${accent}1F`, borderWidth: 1, borderColor: `${accent}50`, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 12 }} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>

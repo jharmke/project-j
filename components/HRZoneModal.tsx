@@ -15,6 +15,7 @@ import TooltipIcon from './TooltipIcon';
 import { ZoneBound, fmtZoneTime, MaxHRSource, HRZoneModel, zoneDebrief } from '../utils/hrZones';
 import { Type } from '../typography';
 import ModalHeader from './ModalHeader';
+import GradientNumber from './GradientNumber';
 
 export interface HRZoneData {
   workoutName: string;
@@ -163,7 +164,7 @@ export default function HRZoneModal({ visible, loading, data, onClose }: Props) 
                       <View style={{ width: 96, paddingRight: 8 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                           <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: r.color }} />
-                          <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: theme.textSecondary }} numberOfLines={1}>{r.label}</Text>
+                          <GradientNumber value={r.label} color={theme.textSecondary} style={{ fontSize: 12, fontFamily: Type.uiSemibold }} numberOfLines={1} />
                         </View>
                         <Text style={{ fontSize: 9.5, fontFamily: Type.ui, color: theme.textMuted, marginLeft: 13 }}>{r.range}</Text>
                       </View>
@@ -175,7 +176,9 @@ export default function HRZoneModal({ visible, loading, data, onClose }: Props) 
                         }} />
                       </View>
                       <View style={{ width: 56, alignItems: 'flex-end', paddingLeft: 6 }}>
-                        <Text style={{ fontSize: 16, fontFamily: Type.num, letterSpacing: 0.5, color: r.sec > 0 ? theme.textPrimary : theme.textDim }}>{fmtZoneTime(r.sec)}</Text>
+                        {r.sec > 0
+                          ? <GradientNumber value={fmtZoneTime(r.sec)} color={theme.textSecondary} style={{ fontSize: 16, fontFamily: Type.num, letterSpacing: 0.5 }} />
+                          : <Text style={{ fontSize: 16, fontFamily: Type.num, letterSpacing: 0.5, color: theme.textDim }}>{fmtZoneTime(r.sec)}</Text>}
                         <Text style={{ fontSize: 10, fontFamily: Type.uiMedium, color: theme.textMuted }}>{pct}%</Text>
                       </View>
                     </View>
@@ -187,7 +190,7 @@ export default function HRZoneModal({ visible, loading, data, onClose }: Props) 
                   <View style={{ marginTop: 4, marginBottom: 2, padding: 12, borderRadius: 10, backgroundColor: DEBRIEF_STYLE[debrief.key].color + '14', borderWidth: 1, borderColor: DEBRIEF_STYLE[debrief.key].color + '30' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                       <Ionicons name={DEBRIEF_STYLE[debrief.key].icon as any} size={14} color={DEBRIEF_STYLE[debrief.key].color} />
-                      <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.textSecondary }}>{debrief.headline}</Text>
+                      <GradientNumber value={debrief.headline} color={DEBRIEF_STYLE[debrief.key].color} style={{ fontSize: 13, fontFamily: Type.uiBold }} />
                     </View>
                     <Text style={{ fontSize: 12, lineHeight: 18, fontFamily: Type.ui, color: theme.textMuted }}>{debrief.body}</Text>
                   </View>

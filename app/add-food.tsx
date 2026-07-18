@@ -356,7 +356,7 @@ export default function AddFoodScreen() {
 const [recentFoods, setRecentFoods] = useState<SearchResult[]>([]);
 const [favorites, setFavorites] = useState<MyFood[]>([]);
 const [recipes, setRecipes] = useState<any[]>([]);
-const { meal, date, selectMode, day, recipeMode, tutorialMode, tutorialTab } = useLocalSearchParams<{ meal: string; date: string; selectMode: string; day: string; recipeMode: string; tutorialMode: string; tutorialTab: string }>();
+const { meal, date, selectMode, day, recipeMode, tutorialMode, tutorialTab, openCreate, openScanner } = useLocalSearchParams<{ meal: string; date: string; selectMode: string; day: string; recipeMode: string; tutorialMode: string; tutorialTab: string; openCreate: string; openScanner: string }>();
 const isRecipeMode = recipeMode === 'true';
 const isTutorialMode = tutorialMode === 'true';
 const [isTutorialScanMode, setIsTutorialScanMode] = useState(false);
@@ -391,6 +391,7 @@ const fabScale = useRef(new Animated.Value(1)).current;
 const fabItem1Anim = useRef(new Animated.Value(0)).current;
 const fabItem2Anim = useRef(new Animated.Value(0)).current;
 const fabItem3Anim = useRef(new Animated.Value(0)).current;
+const fabItem4Anim = useRef(new Animated.Value(0)).current;
 const [mealSlots, setMealSlots] = useState<MealSlot[]>([]);
 const [slotNameCache, setSlotNameCache] = useState<Record<string, string>>({});
 const favoriteOpacities = useRef<Record<string, Animated.Value>>({}).current;
@@ -562,11 +563,13 @@ const saveEditFood = async () => {
     fabItem1Anim.setValue(0);
     fabItem2Anim.setValue(0);
     fabItem3Anim.setValue(0);
+    fabItem4Anim.setValue(0);
     setShowFabMenu(true);
     Animated.stagger(70, [
       Animated.spring(fabItem1Anim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 120 }),
       Animated.spring(fabItem2Anim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 120 }),
       Animated.spring(fabItem3Anim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 120 }),
+      Animated.spring(fabItem4Anim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 120 }),
     ]).start();
   };
 
@@ -575,6 +578,7 @@ const saveEditFood = async () => {
       Animated.timing(fabItem1Anim, { toValue: 0, duration: 130, useNativeDriver: true }),
       Animated.timing(fabItem2Anim, { toValue: 0, duration: 130, useNativeDriver: true }),
       Animated.timing(fabItem3Anim, { toValue: 0, duration: 130, useNativeDriver: true }),
+      Animated.timing(fabItem4Anim, { toValue: 0, duration: 130, useNativeDriver: true }),
     ]).start(() => setShowFabMenu(false));
   };
 
@@ -855,6 +859,13 @@ const saveEditFood = async () => {
     };
     registerTutorialAction('openCreatorForTutorial', openCreatorForTutorial);
     return () => unregisterTutorialAction('openCreatorForTutorial');
+  }, []);
+
+  // Deep-link entry points from the Log tab FAB: land on this screen already in the right mode
+  // instead of making the user open the Create Food modal or the scanner themselves.
+  useEffect(() => {
+    if (openCreate === '1') setShowCreateFood(true);
+    if (openScanner === '1') startScan();
   }, []);
 
   useEffect(() => {
@@ -2523,17 +2534,37 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
 
           {showFabMenu && (
             <View style={{ position: 'absolute', bottom: 90 + insets.bottom, right: 20, alignItems: 'flex-end', gap: 12 }}>
+              {/* Barcode - new top, animates fourth */}
+              <Animated.View style={{ opacity: fabItem4Anim, transform: [{ translateY: fabItem4Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <TouchableOpacity
+                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); startScan(); }}
+                    style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                    <ButtonShine radius={8} solid />
+                    <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Barcode</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); startScan(); }}
+                    style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                    <ButtonShine radius={22} solid />
+                    <Ionicons name="barcode-outline" size={20} color="#ffffff" />
+                  </TouchableOpacity>
+                </View>
+              </Animated.View>
+
               {/* AI Estimate - top, animates third */}
               <Animated.View style={{ opacity: fabItem3Anim, transform: [{ translateY: fabItem3Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                   <TouchableOpacity
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); router.push('/ai-meal-estimator'); }}
                     style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                    <ButtonShine radius={8} solid />
                     <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>AI Estimate</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); router.push('/ai-meal-estimator'); }}
                     style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                    <ButtonShine radius={22} solid />
                     <Ionicons name="sparkles" size={20} color="#ffffff" />
                   </TouchableOpacity>
                 </View>
@@ -2545,11 +2576,13 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                   <TouchableOpacity
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); router.push('/recipe-builder'); }}
                     style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                    <ButtonShine radius={8} solid />
                     <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Create Recipe</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); router.push('/recipe-builder'); }}
                     style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                    <ButtonShine radius={22} solid />
                     <Ionicons name="book-outline" size={20} color="#ffffff" />
                   </TouchableOpacity>
                 </View>
@@ -2561,11 +2594,13 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                   <TouchableOpacity
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); setShowCreateFood(true); }}
                     style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                    <ButtonShine radius={8} solid />
                     <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Create Food</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); setShowCreateFood(true); }}
                     style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                    <ButtonShine radius={22} solid />
                     <Ionicons name="restaurant-outline" size={20} color="#ffffff" />
                   </TouchableOpacity>
                 </View>

@@ -15,6 +15,8 @@ import { isOnboardingPreview } from '../../utils/onboardingPreview';
 import { Type, numLine } from '../../typography';
 import { mix } from '../../theme';
 import PrimaryCTA from '../../components/PrimaryCTA';
+import GradientTitle from '../../components/GradientTitle';
+import GradientNumber from '../../components/GradientNumber';
 import { BlurView } from 'expo-blur';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -203,9 +205,7 @@ function FaithCard({
           <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
             <View style={styles.titleRow}>
               <Diamond filled={selected} />
-              <Text style={[styles.cardTitle, { color: selected ? AMBER_LIGHT : 'rgba(240,184,48,0.7)' }]}>
-                {option.title}
-              </Text>
+              <GradientNumber value={option.title} color={selected ? AMBER_LIGHT : 'rgba(240,184,48,0.7)'} style={styles.cardTitle} />
             </View>
             {/* Unselected copy was 28% white -- under the floor even on black. */}
             <Text style={[styles.cardCopy, { color: selected ? 'rgba(255,255,255,0.86)' : 'rgba(255,255,255,0.5)' }]}>
@@ -355,14 +355,15 @@ export default function FaithJourneyScreen() {
 
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
           <Text style={[styles.screenLabel, { color: 'rgba(232,160,32,0.45)' }]}>STEP 4 OF 6</Text>
-          <Text style={[styles.title, {
-            color: AMBER,
-            textShadowColor:  'rgba(232,160,32,0.2)',
-            textShadowRadius: 40,
-            textShadowOffset: { width: 0, height: 0 },
-          }]}>
-            Your Faith{'\n'}Journey.
-          </Text>
+          <GradientTitle
+            title="Your Faith Journey"
+            color={AMBER}
+            style={[styles.title, {
+              textShadowColor:  'rgba(232,160,32,0.2)',
+              textShadowRadius: 40,
+              textShadowOffset: { width: 0, height: 0 },
+            }]}
+          />
           <Text style={[styles.subtitle, { color: 'rgba(255,255,255,0.66)' }]}>
             No wrong answer. This shapes how Project J walks with you.
           </Text>
@@ -409,9 +410,9 @@ const styles = StyleSheet.create({
   content:         { flex: 1, paddingHorizontal: 24 },
   // 9/ls3 -- matches every other step label in the flow.
   screenLabel:     { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 },
-  // 44, not 52. Two lines of display type was the single biggest block on the screen and the verse had to
-  // live somewhere. Still the loudest thing here by a mile.
-  title:           { fontSize: 44, fontFamily: Type.display, letterSpacing: 0.3, lineHeight: numLine(44), marginBottom: 10 },
+  // 36, matching every other step's title -- was 44 with a forced 2-line break, which gradiented as two
+  // independently-lit lines instead of one wash. One line at the house size instead.
+  title:           { fontSize: 36, fontFamily: Type.display, letterSpacing: 0.3, lineHeight: numLine(36), marginBottom: 10 },
   // VOICE, and readable. This is the app speaking at the most personal question in the flow; it was 13px
   // Onest at 38% white -- the interface face, whispering.
   subtitle:        { fontSize: 15, fontFamily: Type.voice, lineHeight: 21 },

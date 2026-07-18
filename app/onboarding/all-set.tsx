@@ -17,6 +17,8 @@ import BackgroundLayers from '../../components/BackgroundLayers';
 import PrimaryCTA from '../../components/PrimaryCTA';
 import { BlurView } from 'expo-blur';
 import { Type, numLine } from '../../typography';
+import GradientNumber from '../../components/GradientNumber';
+import GradientTitle from '../../components/GradientTitle';
 
 const theme = THEMES['light'];
 
@@ -53,9 +55,9 @@ const MINDFUL_VISIBLE: Record<string, boolean> = {
 };
 
 const MODE_LINES: Record<string, string> = {
-  discipline: "You came here for a reason. Let's make it count.",
-  balanced:   "You've got everything you need. Let's build something real.",
-  mindful:    "Every day is a new start. We're glad you're here.",
+  discipline: "Let's Make It Count.",
+  balanced:   "Let's Get To Work",
+  mindful:    "Glad You're Here.",
 };
 
 // MODE_ICON (barbell / leaf / heart) and its box are GONE 2026-07-16. The leaf was Balanced's badge and read
@@ -238,7 +240,7 @@ export default function AllSetScreen() {
       {/* Content */}
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + 78, paddingBottom: 24 }]}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + 72, paddingBottom: 24 }]}
         showsVerticalScrollIndicator={false}
       >
 
@@ -249,7 +251,7 @@ export default function AllSetScreen() {
 
         {/* Affirming line */}
         <Animated.View style={{ opacity: lineAnim, transform: [{ translateY: lineSlide }] }}>
-          <Text style={[styles.headline, { color: accentColor }]}>{modeLine}</Text>
+          <GradientTitle title={modeLine} color={accentColor} style={styles.headline} />
         </Animated.View>
 
         {/* Quick tips */}
@@ -270,7 +272,7 @@ export default function AllSetScreen() {
                   <Ionicons name={tip.icon as any} size={17} color={accentColor} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.tipLead, { color: theme.textPrimary }]}>{tip.lead}</Text>
+                  <GradientNumber value={tip.lead} color={theme.textSecondary} style={styles.tipLead} />
                   <Text style={[styles.tipBody, { color: theme.textSecondary }]}>{tip.body}</Text>
                 </View>
               </View>
@@ -334,8 +336,9 @@ const styles = StyleSheet.create({
 
   content:          { flexGrow: 1, paddingHorizontal: 28, alignItems: 'flex-start' },
 
+  // marginBottom 8, matches every other step label in the flow (was 12).
   screenLabel:      { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3,
-                      textTransform: 'uppercase', marginBottom: 12 },
+                      textTransform: 'uppercase', marginBottom: 8 },
 
   // No textShadow -- a drop shadow on a display title is a trick nothing else in the app uses.
   headline:         { fontSize: 36, fontFamily: Type.display, letterSpacing: 0.3,

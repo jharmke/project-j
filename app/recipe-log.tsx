@@ -17,6 +17,7 @@ import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import BackgroundLayers from '../components/BackgroundLayers';
 import ButtonShine from '../components/ButtonShine';
+import GradientNumber from '../components/GradientNumber';
 import PrimaryCTA from '../components/PrimaryCTA';
 import ModalHeader from '../components/ModalHeader';
 
@@ -213,27 +214,27 @@ export default function RecipeLogScreen() {
           </Text>
           <View style={styles.macroRow}>
             <View style={styles.macroStat}>
-              <Text style={[styles.macroVal, { color: theme.accentGreen }]}>
-                {isWholeBatch ? Math.round(recipe.totalCal) : Math.round(recipe.totalCal / servingCount)}
-              </Text>
+              <GradientNumber
+                value={String(isWholeBatch ? Math.round(recipe.totalCal) : Math.round(recipe.totalCal / servingCount))}
+                color={theme.accentGreen} style={styles.macroVal} />
               <Text style={styles.macroLabel}>{isWholeBatch ? 'total cal' : `cal/${recipe.servingName}`}</Text>
             </View>
             <View style={styles.macroStat}>
-              <Text style={[styles.macroVal, { color: theme.macroProtein }]}>
-                {isWholeBatch ? Math.round(recipe.totalProtein * 10) / 10 : Math.round(recipe.totalProtein / servingCount * 10) / 10}<Text style={styles.macroUnit}>g</Text>
-              </Text>
+              <GradientNumber
+                value={`${isWholeBatch ? Math.round(recipe.totalProtein * 10) / 10 : Math.round(recipe.totalProtein / servingCount * 10) / 10}g`}
+                color={theme.macroProtein} style={styles.macroVal} />
               <Text style={styles.macroLabel}>protein</Text>
             </View>
             <View style={styles.macroStat}>
-              <Text style={[styles.macroVal, { color: theme.macroCarbs }]}>
-                {isWholeBatch ? Math.round(recipe.totalCarbs * 10) / 10 : Math.round(recipe.totalCarbs / servingCount * 10) / 10}<Text style={styles.macroUnit}>g</Text>
-              </Text>
+              <GradientNumber
+                value={`${isWholeBatch ? Math.round(recipe.totalCarbs * 10) / 10 : Math.round(recipe.totalCarbs / servingCount * 10) / 10}g`}
+                color={theme.macroCarbs} style={styles.macroVal} />
               <Text style={styles.macroLabel}>carbs</Text>
             </View>
             <View style={styles.macroStat}>
-              <Text style={[styles.macroVal, { color: theme.macroFat }]}>
-                {isWholeBatch ? Math.round(recipe.totalFat * 10) / 10 : Math.round(recipe.totalFat / servingCount * 10) / 10}<Text style={styles.macroUnit}>g</Text>
-              </Text>
+              <GradientNumber
+                value={`${isWholeBatch ? Math.round(recipe.totalFat * 10) / 10 : Math.round(recipe.totalFat / servingCount * 10) / 10}g`}
+                color={theme.macroFat} style={styles.macroVal} />
               <Text style={styles.macroLabel}>fat</Text>
             </View>
           </View>
@@ -267,7 +268,7 @@ export default function RecipeLogScreen() {
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 14, paddingTop: 14, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
                 {exts.map(e => (
                   <View key={e.label} style={{ width: '25%', alignItems: 'center', marginBottom: 12 }}>
-                    <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.uiSemibold }}>{e.val}{e.unit}</Text>
+                    <GradientNumber value={`${e.val}${e.unit}`} color={theme.textSecondary} style={{ fontSize: 13, fontFamily: Type.uiSemibold }} />
                     <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.ui, letterSpacing: 1, marginTop: 2, textAlign: 'center' }}>{e.label}</Text>
                   </View>
                 ))}
@@ -284,24 +285,24 @@ export default function RecipeLogScreen() {
               // Last row drops its divider: inside a card a trailing rule reads as a broken edge.
               <View key={i} style={[styles.ingredientRow, i === recipe.ingredients.length - 1 && { borderBottomWidth: 0, paddingBottom: 0 }]}>
                 <View style={{ flex: 1, marginRight: 12 }}>
-                  <Text style={styles.ingredientName}>{ing.name} ({ing.amount}{ing.unit})</Text>
+                  <GradientNumber value={`${ing.name} (${ing.amount}${ing.unit})`} color={theme.textSecondary} style={styles.ingredientName} />
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                       <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.macroProtein }} />
-                      <Text style={styles.ingredientMacro}>{Number(ing.protein || 0).toFixed(1)}g</Text>
+                      <GradientNumber value={`${Number(ing.protein || 0).toFixed(1)}g`} color={theme.textMuted} style={styles.ingredientMacro} />
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                       <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.macroCarbs }} />
-                      <Text style={styles.ingredientMacro}>{Number(ing.carbs || 0).toFixed(1)}g</Text>
+                      <GradientNumber value={`${Number(ing.carbs || 0).toFixed(1)}g`} color={theme.textMuted} style={styles.ingredientMacro} />
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                       <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.macroFat }} />
-                      <Text style={styles.ingredientMacro}>{Number(ing.fat || 0).toFixed(1)}g</Text>
+                      <GradientNumber value={`${Number(ing.fat || 0).toFixed(1)}g`} color={theme.textMuted} style={styles.ingredientMacro} />
                     </View>
                   </View>
                 </View>
                 <View style={{ alignItems: 'flex-end', justifyContent: 'flex-start' }}>
-                  <Text style={{ fontSize: 18, color: theme.accentGreen, fontFamily: Type.num }}>{ing.cal}</Text>
+                  <GradientNumber value={String(ing.cal)} color={theme.accentGreen} style={{ fontSize: 18, fontFamily: Type.num }} />
                   <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.ui, letterSpacing: 1 }}>kcal</Text>
                 </View>
               </View>
@@ -359,19 +360,19 @@ export default function RecipeLogScreen() {
           </Text>
           <View style={styles.macroRow}>
             <View style={styles.macroStat}>
-              <Text style={[styles.macroVal, { color: theme.accentGreen, fontSize: 32 }]}>{calories}</Text>
+              <GradientNumber value={String(calories)} color={theme.accentGreen} style={[styles.macroVal, { fontSize: 32 }]} />
               <Text style={styles.macroLabel}>Calories</Text>
             </View>
             <View style={styles.macroStat}>
-              <Text style={[styles.macroVal, { color: theme.macroProtein }]}>{protein}<Text style={styles.macroUnit}>g</Text></Text>
+              <GradientNumber value={`${protein}g`} color={theme.macroProtein} style={styles.macroVal} />
               <Text style={styles.macroLabel}>Protein</Text>
             </View>
             <View style={styles.macroStat}>
-              <Text style={[styles.macroVal, { color: theme.macroCarbs }]}>{carbs}<Text style={styles.macroUnit}>g</Text></Text>
+              <GradientNumber value={`${carbs}g`} color={theme.macroCarbs} style={styles.macroVal} />
               <Text style={styles.macroLabel}>Carbs</Text>
             </View>
             <View style={styles.macroStat}>
-              <Text style={[styles.macroVal, { color: theme.macroFat }]}>{fat}<Text style={styles.macroUnit}>g</Text></Text>
+              <GradientNumber value={`${fat}g`} color={theme.macroFat} style={styles.macroVal} />
               <Text style={styles.macroLabel}>Fat</Text>
             </View>
           </View>
@@ -441,7 +442,6 @@ const useStyles = (theme: any) => StyleSheet.create({
   macroRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
   macroStat: { alignItems: 'center', flex: 1 },
   macroVal: { fontSize: 22, fontFamily: Type.num, letterSpacing: 1 },
-  macroUnit: { fontSize: 13, fontFamily: Type.ui, letterSpacing: 0 },
   macroLabel: { fontSize: 10, color: theme.textMuted, fontFamily: Type.ui, marginTop: 2, textAlign: 'center' },
   // Ingredients is a CARD now. It was naked content sitting between two cards, so the page read
   // card / nothing / card -- it looked like something had failed to load, and once the page gained a glow
@@ -449,7 +449,7 @@ const useStyles = (theme: any) => StyleSheet.create({
   section: { backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, borderRadius: 10, padding: 16, marginBottom: 16, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
   sectionLabel: { fontSize: 9, letterSpacing: 3, color: theme.textMuted, textTransform: 'uppercase', fontFamily: Type.uiMedium, marginBottom: 8 },
   ingredientRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle },
-  ingredientName: { fontSize: 13, color: theme.textPrimary, fontFamily: Type.uiMedium },
+  ingredientName: { fontSize: 13, color: theme.textSecondary, fontFamily: Type.uiSemibold },
   ingredientMacro: { fontSize: 11, color: theme.textMuted, fontFamily: Type.ui },
   toggleRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   toggleBtn: { flex: 1, padding: 10, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, alignItems: 'center' },

@@ -3400,10 +3400,16 @@ export default function HomeScreen() {
       return (
         <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: accentRaw }]}>
           <CardWatermark name="trophy" color={accentRaw} />
-          <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:14 }}>
-            <Ionicons name="trophy" size={11} color={theme.textMuted} />
-            <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Challenge</Text>
-            <TooltipIcon tooltipKey="challenge_system" />
+          <View style={{ flexDirection:'row', alignItems:'center', justifyContent: 'space-between', marginBottom:14 }}>
+            <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
+              <Ionicons name="trophy" size={11} color={theme.textMuted} />
+              <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Challenge</Text>
+              <TooltipIcon tooltipKey="challenge_system" />
+            </View>
+            {/* Was a dead end with history but nothing active -- the only route in was the CTA below,
+                which starts a NEW challenge, not a way to see Past Challenges. Whole card is tappable
+                into /challenges now (see the 'vs_yesterday' wrapper), this is just the visual affordance. */}
+            <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
           </View>
           <View style={{ alignItems:'center', paddingVertical:6, gap:8 }}>
             <Text style={{ color: accentRaw, fontSize:20, fontFamily:Type.num, letterSpacing:1, textAlign:'center' }}>
@@ -3747,8 +3753,9 @@ export default function HomeScreen() {
         return <ReadingPlansCard theme={theme} />;
       case 'vs_yesterday': {
         const cardContent = renderChallengeCard();
-        // Empty state owns its own CTA button -> don't make the whole card navigate.
-        if (!activeChallenge) return cardContent;
+        // Whole card navigates to /challenges, active or empty -- the empty state's own "Start a
+        // Challenge" button is a nested TouchableOpacity, so a tap on it still wins and goes to
+        // /challenge-create instead.
         const vsCardScale = new Animated.Value(1);
         const onPressIn = () => Animated.timing(vsCardScale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start();
         const onPressOut = () => Animated.timing(vsCardScale, { toValue: 1, duration: 150, useNativeDriver: true }).start();

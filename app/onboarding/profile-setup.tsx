@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from '../../utils/storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { THEMES, mix } from '../../theme';
+import { getModeAccentTints } from '../../utils/modeAccent';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,13 +19,16 @@ import { Type } from '../../typography';
 import BackgroundLayers from '../../components/BackgroundLayers';
 import PrimaryCTA from '../../components/PrimaryCTA';
 import ButtonShine from '../../components/ButtonShine';
+import GradientTitle from '../../components/GradientTitle';
 import { BlurView } from 'expo-blur';
 
 const theme = THEMES['light'];
-// The opaque accent tint for a SELECTED control. theme.accentBlueBgOpaque cannot be used here: this screen
-// reads the STATIC base theme (a new user has no accent yet), where that token is still its '#000000'
-// placeholder -- the provider is what computes it. Composed the same way the provider does.
-const ACCENT_SELECTED = mix(theme.accentBlueRaw, theme.bgInput, 0.16);
+// Steps 1-2 have no mode picked yet, so there's no REAL accent to show -- but the flow ends on Your
+// Style, which recolors live to the mode's actual accent (Balanced's navy #1a44c2 by default, since
+// that's the pre-quiz/no-answers starting recommendation). Steps 1-2 used to run the generic app blue
+// (theme.accentBlueRaw, #2563eb) instead, which visibly did not match the moment Your Style loaded --
+// Justin caught the mismatch on device. Pinned to Balanced here so the whole flow opens on one color.
+const { accent: ACCENT, selected: ACCENT_SELECTED, bg: ACCENT_BG, border: ACCENT_BORDER } = getModeAccentTints('balanced', theme);
 
 
 
@@ -135,7 +139,7 @@ export default function ProfileSetupScreen() {
 
   return (
     <LinearGradient colors={[theme.gradientEnd, theme.gradientEnd]} style={{ flex: 1 }}>
-      <BackgroundLayers glow={theme.accentBlueRaw} />
+      <BackgroundLayers glow={ACCENT} />
 
       {/* Progress bar. Frosted chrome, absolute, glued to the top -- content scrolls under it. It answers
           "how much more of this is there", the one thing worth permanent screen space here; the title and
@@ -146,12 +150,12 @@ export default function ProfileSetupScreen() {
           <TouchableOpacity
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); if (isOnboardingPreview()) setOnboardingPreview(false); router.back(); }}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            style={[styles.backBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+            style={[styles.backBtn, { backgroundColor: ACCENT_BG, borderColor: ACCENT_BORDER }]}
           >
-            <Ionicons name="chevron-back" size={20} color={theme.accentBlue} />
+            <Ionicons name="chevron-back" size={20} color={ACCENT} />
           </TouchableOpacity>
           <View style={[styles.progressTrack, { backgroundColor: theme.bgProgressTrack }]}>
-            <View style={[styles.progressFill, { backgroundColor: theme.accentBlueRaw, width: '17%' }]} />
+            <View style={[styles.progressFill, { backgroundColor: ACCENT, width: '17%' }]} />
             {/* 17% = 1/6. Two counting bugs died here. (1) The bar was drawn on a 7-step scale while every
                 label said "of 8" -- the 8 counted the sign-in screen, which has no bar and no label, so the
                 flow opened 14% full before you had done anything. (2) Commitment was Discipline-ONLY, so
@@ -171,7 +175,7 @@ export default function ProfileSetupScreen() {
           <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
 
             <Text style={[styles.screenLabel, { color: theme.textMuted }]}>STEP 1 OF 6</Text>
-            <Text style={[styles.title,       { color: theme.accentBlueRaw }]}>Let's get to know you</Text>
+            <GradientTitle title="Let's get to know you" color={ACCENT} style={styles.title} />
             <Text style={[styles.subtitle,    { color: theme.textSecondary }]}>
               Just the basics, so every number in the app is built around you.
             </Text>
@@ -281,7 +285,7 @@ export default function ProfileSetupScreen() {
                     <PrimaryCTA
                       label="Confirm"
                       compact
-                      fill={theme.accentBlueRaw}
+                      fill={ACCENT}
                       faceStyle={{ borderRadius: 10, height: 48, paddingVertical: 0 }}
                       onPress={() => { if (tempBirthday) setBirthday(tempBirthday); closePicker(); }}
                     />
@@ -303,14 +307,14 @@ export default function ProfileSetupScreen() {
                     { backgroundColor: theme.bgInput, borderColor: theme.borderInput },
                     // Opaque when selected: this row sits on the PAGE, and the page now glows accent -- a ~10%
                   // accent tint over accent light is the mud we hit on the faith pills and everywhere else.
-                  sex === o.key && { backgroundColor: ACCENT_SELECTED, borderColor: theme.accentBlueBorder },
+                  sex === o.key && { backgroundColor: ACCENT_SELECTED, borderColor: ACCENT_BORDER },
                   ]}
                 >
                   {sex === o.key ? <ButtonShine radius={10} /> : null}
                   <Text style={[
                     styles.segmentText,
                     { color: theme.textMuted },
-                    sex === o.key && { color: theme.accentBlue },
+                    sex === o.key && { color: ACCENT },
                   ]}>
                     {o.label}
                   </Text>
@@ -337,7 +341,7 @@ export default function ProfileSetupScreen() {
               dim state and the Medium haptic. */}
           <PrimaryCTA
             label="Continue"
-            fill={theme.accentBlueRaw}
+            fill={ACCENT}
             disabled={!canContinue}
             faceStyle={{ borderRadius: 14, paddingVertical: 18 }}
             onPress={handleContinue}

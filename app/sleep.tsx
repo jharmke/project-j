@@ -35,6 +35,7 @@ import { loadCoachTipCacheSleep, loadCoachTipCacheRecovery, CoachTipCache } from
 import { Type, numLine } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import BackgroundLayers from '../components/BackgroundLayers';
+import GradientNumber from '../components/GradientNumber';
 
 type SleepTab = 'sleep' | 'recovery';
 
@@ -1109,7 +1110,7 @@ export default function SleepHub() {
         <Text style={[cardLabel, { marginBottom: 14 }]}>Last Night</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <View style={{ flex: 1, alignItems: 'center' }}>
-            <Text style={{ fontSize: 38, color: scoreColor, fontFamily: Type.num, letterSpacing: 0.5, lineHeight: numLine(38) }}>{hrs}h {mins}m</Text>
+            <GradientNumber value={`${hrs}h ${mins}m`} color={scoreColor} style={{ fontSize: 38, fontFamily: Type.num, letterSpacing: 0.5, lineHeight: numLine(38) }} />
             <Text style={{ fontSize: 9, color: scoreLabel ? scoreColor : theme.textDim, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginTop: 3 }}>
               {scoreLabel ?? (isManual ? 'MANUAL' : 'HEALTHKIT')}
             </Text>
@@ -1118,7 +1119,7 @@ export default function SleepHub() {
             <>
               <View style={{ width: 1, height: 52, backgroundColor: theme.borderSubtle }} />
               <View style={{ flex: 1, alignItems: 'center' }}>
-                <Text style={{ fontSize: 38, color: scoreColor, fontFamily: Type.num, letterSpacing: 1, lineHeight: numLine(38) }}>{score}</Text>
+                <GradientNumber value={String(score)} color={scoreColor} style={{ fontSize: 38, fontFamily: Type.num, letterSpacing: 1, lineHeight: numLine(38) }} />
                 <Text style={{ fontSize: 8, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 4 }}>Sleep Score</Text>
               </View>
             </>
@@ -1157,9 +1158,9 @@ export default function SleepHub() {
                     <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: s.color }} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 1, textTransform: 'uppercase' }}>{s.label}</Text>
+                    <GradientNumber value={s.label} color={s.color} style={{ fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', fontFamily: Type.uiBold }} />
                     <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 3 }}>
-                      <Text style={{ fontSize: 19, color: s.color, fontFamily: Type.num, letterSpacing: 0.5 }}>{s.value}</Text>
+                      <GradientNumber value={s.value} color={s.color} style={{ fontSize: 19, fontFamily: Type.num, letterSpacing: 0.5 }} />
                       <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: Type.ui }}>{s.unit}</Text>
                     </View>
                   </View>
@@ -1244,7 +1245,7 @@ export default function SleepHub() {
             <Text style={[cardLabel, { marginBottom: 14 }]}>Today's Recovery</Text>
             <View style={{ alignItems: 'center', marginBottom: 16 }}>
               <Ionicons name="contrast" size={30} color={theme.accentBlueRaw} />
-              <Text style={{ fontSize: 26, color: theme.accentBlueRaw, fontFamily: Type.num, letterSpacing: 2, marginTop: 8 }}>{mindfulWord}</Text>
+              <GradientNumber value={mindfulWord} color={theme.accentBlueRaw} style={{ fontSize: 26, fontFamily: Type.num, letterSpacing: 2, marginTop: 8 }} />
               <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.ui, marginTop: 4, textAlign: 'center' }}>{mindfulLine}</Text>
             </View>
             <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, textAlign: 'center', marginBottom: 10 }}>
@@ -1258,7 +1259,7 @@ export default function SleepHub() {
                 return (
                   <TouchableOpacity key={key} activeOpacity={0.6} onPress={() => openDrill(dkey)} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 11, borderBottomWidth: isLast ? 0 : 0.5, borderBottomColor: theme.borderSubtle }}>
                     <View style={{ width: 88 }}>
-                      <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.uiMedium }} numberOfLines={1}>{key}</Text>
+                      <GradientNumber value={key} color={theme.textSecondary} style={{ fontSize: 13, fontFamily: Type.uiMedium }} numberOfLines={1} />
                       {bSub ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, marginTop: 1 }} numberOfLines={1}>{bSub}</Text> : null}
                     </View>
                     <View style={{ flex: 1, marginHorizontal: 10 }}>
@@ -1267,8 +1268,8 @@ export default function SleepHub() {
                         : <DivergentBar score={comp.score} theme={theme} tone={theme.accentBlueRaw} />}
                     </View>
                     <View style={{ width: 78, alignItems: 'flex-end' }}>
-                      <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiBold }}>{comp.value}</Text>
-                      {comp.delta ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.uiMedium, marginTop: 1 }}>{comp.delta}</Text> : null}
+                      <GradientNumber value={comp.value} color={theme.accentBlueRaw} style={{ fontSize: 14, fontFamily: Type.uiBold }} />
+                      {comp.delta ? <GradientNumber value={comp.delta} color={theme.accentBlueRaw} style={{ fontSize: 10, fontFamily: Type.uiMedium, marginTop: 1 }} /> : null}
                     </View>
                     <Ionicons name="chevron-forward" size={14} color={theme.textDim} style={{ marginLeft: 6 }} />
                   </TouchableOpacity>
@@ -1289,7 +1290,7 @@ export default function SleepHub() {
           <View style={{ alignItems: 'center', marginBottom: 16 }}>
             <ScoreRing value={heroScore ?? recoveryResult.score} color={recColor} theme={theme} celebrate="none" />
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
-              <Text style={{ fontSize: 22, color: recColor, fontFamily: Type.num, letterSpacing: 2 }}>{heroZoneInfo?.label}</Text>
+              {heroZoneInfo?.label ? <GradientNumber value={heroZoneInfo.label} color={recColor} style={{ fontSize: 22, fontFamily: Type.num, letterSpacing: 2 }} /> : null}
               {recoveryResult.isLimitedData && (
                 <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
                   <Text style={{ fontSize: 9, color: theme.accentBlueRaw, fontFamily: Type.uiBold, letterSpacing: 1, textTransform: 'uppercase' }}>Limited data</Text>
@@ -1310,7 +1311,7 @@ export default function SleepHub() {
               return (
                 <TouchableOpacity key={key} activeOpacity={0.6} onPress={() => openDrill(dkey)} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 11, borderBottomWidth: isLast ? 0 : 0.5, borderBottomColor: theme.borderSubtle }}>
                   <View style={{ width: 88 }}>
-                    <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.uiMedium }} numberOfLines={1}>{key}</Text>
+                    <GradientNumber value={key} color={theme.textSecondary} style={{ fontSize: 13, fontFamily: Type.uiMedium }} numberOfLines={1} />
                     {bSub ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, marginTop: 1 }} numberOfLines={1}>{bSub}</Text> : null}
                   </View>
                   <View style={{ flex: 1, marginHorizontal: 10 }}>
@@ -1319,9 +1320,9 @@ export default function SleepHub() {
                       : <DivergentBar score={comp.score} theme={theme} />}
                   </View>
                   <View style={{ width: 78, alignItems: 'flex-end' }}>
-                    <Text style={{ fontSize: 14, color: rc, fontFamily: Type.uiBold }}>{comp.value}</Text>
+                    <GradientNumber value={comp.value} color={rc} style={{ fontSize: 14, fontFamily: Type.uiBold }} />
                     {comp.delta && (
-                      <Text style={{ fontSize: 10, color: rc, fontFamily: Type.uiMedium, marginTop: 1 }}>{comp.delta}</Text>
+                      <GradientNumber value={comp.delta} color={rc} style={{ fontSize: 10, fontFamily: Type.uiMedium, marginTop: 1 }} />
                     )}
                   </View>
                   <Ionicons name="chevron-forward" size={14} color={theme.textDim} style={{ marginLeft: 6 }} />
@@ -1333,14 +1334,14 @@ export default function SleepHub() {
           {adjustedSignals?.todaySpO2 !== null && adjustedSignals?.todaySpO2 !== undefined && (
             <TouchableOpacity activeOpacity={0.6} onPress={() => openDrill('spo2')} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 11, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
               <View style={{ width: 88 }}>
-                <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.uiMedium }} numberOfLines={1}>Blood Oxygen</Text>
+                <GradientNumber value="Blood Oxygen" color={theme.textSecondary} style={{ fontSize: 13, fontFamily: Type.uiMedium }} numberOfLines={1} />
                 <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, marginTop: 1 }}>Healthy 95-100%</Text>
               </View>
               <View style={{ flex: 1, marginHorizontal: 10 }}>
                 <RangeBar value={adjustedSignals.todaySpO2} theme={theme} />
               </View>
               <View style={{ width: 78, alignItems: 'flex-end' }}>
-                <Text style={{ fontSize: 14, color: adjustedSignals.todaySpO2 >= 95 ? theme.statusGood : theme.statusWarn, fontFamily: Type.uiBold }}>{adjustedSignals.todaySpO2}%</Text>
+                <GradientNumber value={`${adjustedSignals.todaySpO2}%`} color={adjustedSignals.todaySpO2 >= 95 ? theme.statusGood : theme.statusWarn} style={{ fontSize: 14, fontFamily: Type.uiBold }} />
               </View>
               <Ionicons name="chevron-forward" size={14} color={theme.textDim} style={{ marginLeft: 6 }} />
             </TouchableOpacity>
@@ -1356,6 +1357,10 @@ export default function SleepHub() {
     // Trend card
     const trendCard = () => {
       const avg = recoveryTrend.length ? Math.round(recoveryTrend.reduce((a, d) => a + d.score, 0) / recoveryTrend.length) : null;
+      // Same thresholds as the hero score (recoveryZone: >=80 good, >=60 warn, else bad) -- was hardcoded
+      // to statusGood regardless of the actual average.
+      const avgZoneColor = avg !== null ? recoveryZone(avg).zoneColor : null;
+      const avgColor = avgZoneColor === 'good' ? theme.statusGood : avgZoneColor === 'warn' ? theme.statusWarn : theme.statusBad;
       return (
         <View style={[cardStyle, { borderLeftWidth: 0.5, borderLeftColor: theme.borderCard }]}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -1363,7 +1368,7 @@ export default function SleepHub() {
               <Text style={cardLabel}>Recovery Trend</Text>
               {avg !== null && (
                 <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 6 }}>
-                  <Text style={{ fontSize: 24, color: theme.statusGood, fontFamily: Type.num, letterSpacing: 0.5 }}>{avg}</Text>
+                  <GradientNumber value={String(avg)} color={avgColor} style={{ fontSize: 24, fontFamily: Type.num, letterSpacing: 0.5 }} />
                   <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.uiMedium }}>Avg over {recoveryTrend.length} {recoveryTrend.length === 1 ? 'day' : 'days'}</Text>
                 </View>
               )}
@@ -1475,7 +1480,7 @@ export default function SleepHub() {
             <Text style={cardLabel}>Sleep Score Trend</Text>
             {avg !== null && (
               <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 6 }}>
-                <Text style={{ fontSize: 24, color: theme.accentBlueRaw, fontFamily: Type.num, letterSpacing: 0.5 }}>{avg}</Text>
+                <GradientNumber value={String(avg)} color={theme.accentBlueRaw} style={{ fontSize: 24, fontFamily: Type.num, letterSpacing: 0.5 }} />
                 <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.uiMedium }}>Avg over {trendData.length} {trendData.length === 1 ? 'night' : 'nights'}</Text>
               </View>
             )}
@@ -1510,7 +1515,7 @@ export default function SleepHub() {
               {legend.map(l => (
                 <View key={l.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: l.color }} />
-                  <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.uiSemibold, letterSpacing: 0.5, textTransform: 'uppercase' }}>{l.label}</Text>
+                  <GradientNumber value={l.label} color={l.color} style={{ fontSize: 10, letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: Type.uiSemibold }} />
                 </View>
               ))}
             </View>
@@ -1541,12 +1546,12 @@ export default function SleepHub() {
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}>
                   <Ionicons name={r.icon} size={14} color={theme.textMuted} />
-                  <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.uiMedium }}>{r.label}</Text>
+                  <GradientNumber value={r.label} color={theme.textSecondary} style={{ fontSize: 13, fontFamily: Type.uiMedium }} />
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
-                    <Text style={{ fontSize: 17, color: r.valueColor, fontFamily: Type.uiBold }}>{r.value}</Text>
-                    {r.delta ? <Text style={{ fontSize: 11, color: r.deltaColor, fontFamily: Type.uiSemibold }}>{r.delta}</Text> : null}
+                    <GradientNumber value={r.value} color={r.valueColor} style={{ fontSize: 17, fontFamily: Type.uiBold }} />
+                    {r.delta ? <GradientNumber value={r.delta} color={r.deltaColor ?? theme.textMuted} style={{ fontSize: 11, fontFamily: Type.uiSemibold }} /> : null}
                   </View>
                   {tappable ? <Ionicons name="chevron-forward" size={14} color={theme.textDim} /> : null}
                 </View>

@@ -40,27 +40,29 @@ export default function GradientNumber({
   value,
   color,
   style,
+  numberOfLines,
 }: {
   value: string;
   color: string;            // the base colour the number would have had if it were flat
   style?: TextStyle;        // the number's normal text style (font, size, letterSpacing, lineHeight...)
+  numberOfLines?: number;   // pass through when the value sits in a width-constrained column and must not wrap
 }) {
   const rgb = parseHex(color);
 
   // A theme token that is not a plain hex (rgba(), a colour+alpha string) can't be lifted or sunk, so it
   // renders flat rather than wrong. No caller has to know or care.
-  if (!rgb) return <Text style={[style, { color }]}>{value}</Text>;
+  if (!rgb) return <Text style={[style, { color }]} numberOfLines={numberOfLines}>{value}</Text>;
 
   const stops: [string, string, string] = [lift(rgb, LIGHT), color, sink(rgb, DARK)];
 
   return (
     <MaskedView
-      maskElement={<Text style={[style, { color: '#000000' }]}>{value}</Text>}
+      maskElement={<Text style={[style, { color: '#000000' }]} numberOfLines={numberOfLines}>{value}</Text>}
     >
       <LinearGradient colors={stops} locations={[0, 0.52, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}>
         {/* An invisible copy of the number gives the gradient the exact size of the glyphs it is filling.
             Without it the gradient has no intrinsic height and the mask clips to nothing. */}
-        <Text style={[style, { opacity: 0 }]}>{value}</Text>
+        <Text style={[style, { opacity: 0 }]} numberOfLines={numberOfLines}>{value}</Text>
       </LinearGradient>
     </MaskedView>
   );

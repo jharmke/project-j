@@ -168,6 +168,7 @@ export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen,
           {Object.keys(IF_METHODS).map(m => (
             <TouchableOpacity key={m} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setIfMethod(m); }}
               style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, backgroundColor: ifMethod === m ? theme.bgSelected : theme.bgInput, borderWidth: 1, borderColor: ifMethod === m ? theme.accentBlueBorder : theme.borderInput }}>
+              {ifMethod === m && <ButtonShine radius={6} />}
               <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: ifMethod === m ? theme.accentBlue : theme.textMuted }}>{m}</Text>
             </TouchableOpacity>
           ))}

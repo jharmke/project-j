@@ -27,6 +27,7 @@ import FabDome from '../components/FabDome';
 import BackgroundLayers from '../components/BackgroundLayers';
 import ModalHeader from '../components/ModalHeader';
 import GradientTitle from '../components/GradientTitle';
+import GradientNumber from '../components/GradientNumber';
 import { BlurView } from 'expo-blur';
 
 type Category = 'verse' | 'prayer' | 'study' | 'personal' | 'gratitude' | 'fitness';
@@ -236,7 +237,7 @@ function SwipeableEntry({
                 <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={theme.textDim} />
               </View>
             </View>
-            <Text style={[styles.entryTitle, { color: theme.textPrimary }]}>{entry.title}</Text>
+            <GradientNumber value={entry.title} color={meta.color} style={styles.entryTitle} />
             {entry.verseRef && (
               <Text style={[styles.verseRef, { color: meta.color }]}>{entry.verseRef}</Text>
             )}
@@ -338,7 +339,7 @@ function SwipeableEntry({
                 </View>
               ) : (
                 entry.notes ? (
-                  <Text style={[styles.reflectionText, { color: theme.textPrimary }]}>{entry.notes}</Text>
+                  <Text style={[styles.reflectionText, { color: theme.textSecondary }]}>{entry.notes}</Text>
                 ) : (
                   <Text style={[styles.noReflection, { color: theme.textDim }]}>Nothing written. Tap edit to add.</Text>
                 )
@@ -656,6 +657,7 @@ export default function JournalScreen() {
             borderColor: !filterCategory ? theme.accentBlueBorder : theme.borderCard,
           }]}
         >
+          {!filterCategory && <ButtonShine radius={10} />}
           <Text style={[styles.filterPillText, { color: !filterCategory ? theme.accentBlue : theme.textMuted }]}>All</Text>
         </TouchableOpacity>
         {(Object.keys(CATEGORY_META) as Category[]).filter(c => !isRetired(c)).map(cat => {
@@ -670,6 +672,7 @@ export default function JournalScreen() {
                 borderColor: active ? meta.color + '55' : theme.borderCard,
               }]}
             >
+              {active && <ButtonShine radius={10} />}
               <Ionicons name={meta.icon as any} size={10} color={active ? meta.color : theme.textMuted} />
               <Text style={[styles.filterPillText, { color: active ? meta.color : theme.textMuted }]}>{meta.label}</Text>
             </TouchableOpacity>
@@ -791,7 +794,7 @@ export default function JournalScreen() {
                       <Ionicons name={meta.icon as any} size={20} color={meta.color} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.categoryRowLabel, { color: theme.textPrimary }]}>{meta.label}</Text>
+                      <GradientNumber value={meta.label} color={meta.color} style={styles.categoryRowLabel} />
                       <Text style={[styles.categoryRowDesc, { color: theme.textDim }]}>
                         {cat === 'prayer'    ? 'A prayer or conversation with God' :
                          cat === 'study'     ? 'Bible study notes with scripture reference' :

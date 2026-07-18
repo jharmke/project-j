@@ -10,6 +10,8 @@ import { useTheme } from '../theme';
 import { Type } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import BackgroundLayers from '../components/BackgroundLayers';
+import GradientNumber from '../components/GradientNumber';
+import ButtonShine from '../components/ButtonShine';
 
 const CATEGORIES = ['All', 'Nutrition', 'Fitness', 'Sleep & Recovery', 'Faith', 'Reports', 'Habits'] as const;
 
@@ -37,9 +39,7 @@ function DefinitionCard({ def, theme }: { def: TooltipDefinition; theme: any }) 
           <Text style={{ fontSize: 9, letterSpacing: 2, fontFamily: Type.uiBold, textTransform: 'uppercase', color: theme.accentBlue, marginBottom: 4 }}>
             {def.category}
           </Text>
-          <Text style={{ fontSize: 15, fontFamily: Type.uiSemibold, color: theme.textPrimary }}>
-            {def.title}
-          </Text>
+          <GradientNumber value={def.title} color={theme.textSecondary} style={{ fontSize: 15, fontFamily: Type.uiSemibold }} />
         </View>
         <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={14} color={theme.textMuted} />
       </View>
@@ -121,15 +121,16 @@ export default function DefinitionsScreen() {
                     paddingHorizontal: 14,
                     paddingVertical: 7,
                     borderRadius: 20,
-                    backgroundColor: active ? theme.accentBlue : theme.bgCard,
-                    borderWidth: 0.5,
-                    borderColor: active ? theme.accentBlue : theme.borderCard,
+                    backgroundColor: active ? theme.accentBlueBgOpaque : theme.bgCard,
+                    borderWidth: active ? 1 : 0.5,
+                    borderColor: active ? theme.accentBlueBorder : theme.borderCard,
                     minHeight: 34,
                     justifyContent: 'center',
                   }}
                   activeOpacity={0.7}
                 >
-                  <Text style={{ fontSize: 12, fontFamily: active ? Type.uiBold : Type.ui, color: active ? '#ffffff' : theme.textMuted }}>
+                  {active && <ButtonShine radius={20} />}
+                  <Text style={{ fontSize: 12, fontFamily: active ? Type.uiSemibold : Type.ui, color: active ? theme.accentBlue : theme.textMuted }}>
                     {cat}
                   </Text>
                 </TouchableOpacity>
@@ -140,7 +141,7 @@ export default function DefinitionsScreen() {
       } />
 
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 120 }}
         showsVerticalScrollIndicator={false}
       >
         {filtered.map(def => (

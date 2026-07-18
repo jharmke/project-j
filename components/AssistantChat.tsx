@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, runOnJS } from 'react-native-reanimated';
 import { GestureHandlerRootView, GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
+import ButtonShine from './ButtonShine';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic, triggerHapticNotification } from '@/utils/haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -236,6 +237,7 @@ const OTTO_AVATAR = 26;
 function OttoAvatar({ accent }: { accent: string }) {
   return (
     <View style={{ width: OTTO_AVATAR, height: OTTO_AVATAR, borderRadius: OTTO_AVATAR / 2, backgroundColor: accent, alignItems: 'center', justifyContent: 'center', marginTop: 1 }}>
+      <ButtonShine radius={OTTO_AVATAR / 2} solid />
       <Ionicons name="sparkles" size={13} color="#ffffff" />
     </View>
   );
@@ -604,6 +606,7 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
                 <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
                   <View style={styles.brandRow}>
                     <View style={[styles.brandDot, { backgroundColor: accent }]}>
+                      <ButtonShine radius={15} solid />
                       <Ionicons name="sparkles" size={15} color="#ffffff" />
                     </View>
                     <View>
@@ -809,7 +812,7 @@ const styles = StyleSheet.create({
   brand:     { fontSize: 22, fontFamily: Type.num, letterSpacing: 1.5 },
   brandSub:  { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginTop: -2 },
   closeBtn:  { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   bellDot:   { position: 'absolute', top: 6, right: 6, width: 9, height: 9, borderRadius: 5, borderWidth: 1.5 },
   bubble: {
     maxWidth: '86%',

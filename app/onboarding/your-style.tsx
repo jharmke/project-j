@@ -21,6 +21,8 @@ import BackgroundLayers from '../../components/BackgroundLayers';
 import PrimaryCTA from '../../components/PrimaryCTA';
 import ButtonShine from '../../components/ButtonShine';
 import TargetsDisclaimerModal from '../../components/TargetsDisclaimerModal';
+import GradientTitle from '../../components/GradientTitle';
+import GradientNumber from '../../components/GradientNumber';
 import { BlurView } from 'expo-blur';
 
 // Nine paces on ONE ladder, aggressive -> gradual -> maintain -> build. They used to live in a horizontal
@@ -169,7 +171,7 @@ function ProjectionGraph({ currentWeight, goalWeight, weightGoal, accent }: {
           <Text style={[styles.projHeaderLabel, { color: theme.textMuted }]}>
             {`${Math.round(gw)} LBS BY`}
           </Text>
-          <Text style={[styles.projHeaderDate, { color: accent }]}>{goalLabel}</Text>
+          <GradientNumber value={goalLabel} color={accent} style={styles.projHeaderDate} />
         </View>
         <View style={{ height: 0.5, backgroundColor: theme.borderCard }} />
         <Svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`}>
@@ -527,7 +529,7 @@ export default function YourStyleScreen() {
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
 
           <Text style={[styles.screenLabel, { color: theme.textMuted }]}>STEP 3 OF 6</Text>
-          <Text style={[styles.title, { color: accent }]}>Your Style</Text>
+          <GradientTitle title="Your Style" color={accent} style={styles.title} />
           <Text style={[styles.oneliner, { color: theme.textSecondary }]}>{oneliner}</Text>
 
           {/* Three style cards */}
@@ -549,9 +551,9 @@ export default function YourStyleScreen() {
                 {isSelected ? <ButtonShine radius={14} /> : null}
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
                   <View style={[styles.modeDot, { backgroundColor: isSelected ? copy.color : theme.borderInput }]} />
-                  <Text style={[styles.modeTitle, { color: isSelected ? copy.color : theme.textPrimary }]}>
-                    {copy.title}
-                  </Text>
+                  <View style={{ flex: 1 }}>
+                    <GradientTitle title={copy.title} color={isSelected ? copy.color : theme.textPrimary} style={styles.modeTitle} />
+                  </View>
                   {isRecommended && (
                     <View style={[styles.recommendedBadge, { backgroundColor: `${copy.color}18`, borderColor: `${copy.color}40` }]}>
                       <Text style={[styles.recommendedText, { color: copy.color }]}>RECOMMENDED</Text>
@@ -759,10 +761,11 @@ export default function YourStyleScreen() {
           {/* Live calorie estimate */}
           {suggestedCals && (
             <View style={{ marginTop: 20, borderWidth: 0.5, borderRadius: 14, padding: 16, alignItems: 'center', backgroundColor: theme.bgCard, borderColor: theme.borderCard, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 }}>
-              <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 8 }}>YOUR DAILY CALORIE TARGET</Text>
-              <Text style={{ fontSize: 48, fontFamily: Type.num, letterSpacing: 1, color: accent }}>
-                {suggestedCals} <Text style={{ fontSize: 14, color: theme.textMuted }}>kcal</Text>
-              </Text>
+              <GradientNumber value="YOUR DAILY CALORIE TARGET" color={theme.textMuted} style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 }} />
+              <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                <GradientNumber value={String(suggestedCals)} color={accent} style={{ fontSize: 48, fontFamily: Type.num, letterSpacing: 1 }} />
+                <Text style={{ fontSize: 14, color: theme.textMuted, marginLeft: 4 }}>kcal</Text>
+              </View>
               <Text style={{ fontSize: 12, fontFamily: Type.ui, textAlign: 'center', marginTop: 4, color: theme.textSecondary }}>
                 Based on your stats using Mifflin-St Jeor BMR.
               </Text>
@@ -883,16 +886,14 @@ export default function YourStyleScreen() {
                       ]}
                     >
                       {isSelected ? <ButtonShine radius={10} /> : null}
-                      <Text style={[styles.presetLabel, { color: isSelected ? accent : theme.textPrimary }]}>
-                        {preset.label}
-                      </Text>
-                      <Text style={styles.presetRatio}>
-                        <Text style={{ color: theme.accentGreen }}>{preset.p}P</Text>
-                        <Text style={{ color: theme.textDim }}> · </Text>
-                        <Text style={{ color: theme.accentAmber }}>{preset.c}C</Text>
-                        <Text style={{ color: theme.textDim }}> · </Text>
-                        <Text style={{ color: theme.accentRed }}>{preset.f}F</Text>
-                      </Text>
+                      <GradientNumber value={preset.label} color={isSelected ? accent : theme.textPrimary} style={styles.presetLabel} />
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <GradientNumber value={`${preset.p}P`} color={theme.accentGreen} style={styles.presetRatio} />
+                        <Text style={[styles.presetRatio, { color: theme.textDim }]}> · </Text>
+                        <GradientNumber value={`${preset.c}C`} color={theme.accentAmber} style={styles.presetRatio} />
+                        <Text style={[styles.presetRatio, { color: theme.textDim }]}> · </Text>
+                        <GradientNumber value={`${preset.f}F`} color={theme.accentRed} style={styles.presetRatio} />
+                      </View>
                     </TouchableOpacity>
                   );
                 })}

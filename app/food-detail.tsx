@@ -132,7 +132,7 @@ function MacroDonut({ protein, carbs, fat, calories, theme }: { protein: number;
           animatedProps={fatProps} strokeDashoffset={-((proteinPct + carbsPct) * circumference)} strokeLinecap="butt" />
       </Svg>
       <View style={{ position: 'absolute', alignItems: 'center' }}>
-        <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'Bebas_400Regular' }}>{Math.round(calories)}</Text>
+        <GradientNumber value={String(Math.round(calories))} color={theme.textSecondary} style={{ fontSize: 20, fontFamily: Type.numHero }} />
         <Text style={{ color: theme.textDim, fontSize: 8, fontFamily: Type.ui, letterSpacing: 1 }}>KCAL</Text>
       </View>
     </View>

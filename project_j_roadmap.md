@@ -28,6 +28,88 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-18 **Onboarding gradient pass, all 6 steps, device pending verify.** Every step title now
+  GradientTitle at one consistent 36px (was 36/36/36/44/40/40 -- Steps 4-6 also had a 6-16px stray gap
+  under the STEP X OF 6 eyebrow, now matched to 8 everywhere). Steps 1-2 were running the generic app blue
+  instead of the Balanced mode accent Your Style opens on -- repinned both to Balanced (#1a44c2) end to
+  end (background glow, progress bar, back button, pills, CTA). Steps 4-6 titles shortened to fit one
+  line instead of hard-wrapping (was producing a visible per-line gradient seam): "Your Faith Journey",
+  "Smarter Tracking", step 6 unchanged copy. All Set's mode headline shortened per mode (Discipline/
+  Balanced/Mindful) and its 78px top offset corrected to 72 to match Steps 1-3. List-row titles gradiented
+  grey/secondary throughout (Style survey questions, Your Style macro presets + card headers, Faith
+  Journey cards, Apple Health + Notifications item rows, All Set tips). This closes the onboarding piece
+  of the app-wide gradient rollout -- only Reports remains.
+- 2026-07-18 **Challenges + Challenge Create gradient pass, device pending verify.** GradientNumber on
+  the Stats tab Challenges card title + status line, the Challenges page's active-challenge title, both
+  hero comparison numbers (beat-type you/them rows, custom weight, custom per-day), "No active challenge,"
+  and Past Challenge titles. New Challenge button (challenges.tsx, was flat solid fill) now uses
+  PrimaryCTA. Challenge Create: type-card titles gradiented, and ButtonShine added to every selected pill
+  that was missing it (challenge type cards, metric pills, Compare Against, Duration incl. Custom, Start).
+- 2026-07-18 **Recipe Log gradient pass, device pending verify.** GradientNumber applied to ingredient
+  names, per-ingredient calories, extended nutrition facts, and both macro rows (top Recipe Info card +
+  bottom Amount/Nutrition card). Per-ingredient protein/carbs/fat badges under the name stay grey
+  (`theme.textMuted`), matching the rest of the app's per-row macro convention -- only the colored dots
+  next to them carry macro color. By-serving/by-weight toggle pill left untouched, no decision made yet.
+- 2026-07-18 **Recipe Builder: Total Finished Weight unit dropdown no longer opens off-screen.** Was
+  always anchored below the button with no bounds check, so low on the form it ran off the bottom edge
+  with no scroll. Now measures space below vs. the dropdown's fixed height and opens upward instead when
+  there isn't room.
+- 2026-07-18 **FAB icon/label shine, app-wide, device-verified.** Every FAB with a speed-dial expand
+  menu (found via a full-project grep on the shared style fingerprint, so nothing was missed) now has
+  ButtonShine on both the pill-label button and the circle-icon button, for every option: Log tab (new,
+  see below), Add Food's own FAB (+ a new 4th "Barcode" option, matching the Log tab one), Workout tab,
+  Workout Library, Stats tab, Bible/Faith auto-scroll speed picker.
+- 2026-07-18 **Log tab FAB, new.** Multiple entry points into logging (Create Food, Create Recipe, Barcode,
+  Add to Meal -- bottom to top, most-used closest to the thumb per Justin's call), same speed-dial pattern
+  as Workout Library / Add Food's own FAB. Create Food and Barcode deep-link into Add Food's existing
+  modal/scanner via two new params (`openCreate`, `openScanner`) using the same mount-effect pattern the
+  tutorial system already relies on. Add to Meal reuses the existing "Library" browse flow (`meal: 'browse'`)
+  verbatim -- no new code needed there.
+- 2026-07-18 **Otto + Halo icon touch-up, device-verified.** Header icon row spacing fixed on both (was
+  `gap: 2`, house standard confirmed at `gap: 8` off Profile/Stats headers). Both avatar circles (header
+  brand dot + the one next to every message bubble) got the shine treatment -- they were flat solid fills,
+  same fix as every other solid-fill circle this session. Halo's cross was rendering in a near-black tone
+  (`CROSS_DARK`) on both avatars; moved to the warm-white `#fff4dd` that Halo's own FAB already uses
+  (components/CompanionFAB.tsx), added as a new local `CROSS_LIGHT` const -- the send-button arrow still
+  correctly uses the dark tone, untouched.
+- 2026-07-18 **AI Meal Estimator gradient pass + Food Detail's donut calorie number + Journal's remaining
+  misses, device-verified.** AI Estimator: Log tab entry card retitled ("Eating out?" read as unintentionally
+  sexual, now "AI Meal Estimate" + a rewritten subtitle, sized to match meal-title headers), every food name
+  gradient (flagged rows, "What We Estimated," editable line items, Recent Estimates modal), "Recent
+  Estimates Today" trigger gradient, "Possibly Not Included" items capitalized (were all-lowercase), Portion
+  Size + Scale This Item pills get the shine treatment, WHAT WE ESTIMATED / PORTION SIZE labels bumped a
+  size (off-card labels, same treatment as Profile/Stats). Meal Name stays a flat editable TextInput,
+  matching the established can't-gradient-a-live-input rule. Food Detail: the calorie number inside the
+  macro ring was on the deprecated hardcoded Bebas font at 16px flat black -- now the real hero-number face,
+  bolder, gradient. Journal: entry titles + New Entry category rows now gradient (colored per-category,
+  matching the pill beside them), filter pills get shine, written reflection body text moved off pure black
+  onto textSecondary (prose, not a value, so no gradient). Also fixed the HR Zones modal (zone names +
+  durations gradient, kept grey per Justin's correction; debrief headline's tint left alone) and gave the
+  Workout tab's day scroller the same active-shine treatment as every other selector this session.
+  >> PROCESS NOTE (see [[feedback_never_default_to_accent_color]]): accent blue got defaulted onto new
+  gradient text THREE times this session before this rule stuck -- Sleep & Recovery labels, the AI
+  Estimator batch, and again on HR Zones' zone names/durations even after the second correction. Every
+  gradient color choice now defaults to textSecondary/grey unless Justin explicitly asks for something else.
+- 2026-07-18 **Sleep & Recovery gradient pass, device-verified.** Every colored value (hero duration/score,
+  Core/Deep/REM/Awake boxes, Sleep Score Trend avg, Sleep Metrics rows incl. deltas, Recovery hero status
+  word, Today's Recovery rows incl. Blood Oxygen, Recovery Trend avg) plus every category label (box labels,
+  Today's Recovery row labels, Sleep Stages legend, Sleep Metrics row labels) now gradient. Category-label
+  color went through a correction: first pass used accentBlueRaw, Justin found it didn't fit ("doesn't feel
+  right, make them grey"), moved to theme.textSecondary for all 4 row-label spots (Today's Recovery x2 modes,
+  Blood Oxygen, Sleep Metrics) -- the stage-colored labels (box labels, Sleep Stages legend) were correct
+  as-shipped and untouched. Mindful mode's Recovery hero explicitly brought to PARITY with the other coaching
+  modes per Justin's call -- it was rendering flat/neutral, which read as "Mindful = no color" but the actual
+  rule is "Mindful = no judgment color," so it now gets the identical gradient treatment using its existing
+  single-tone accent (never switches to red/amber/green). BUG FIX while in there: Recovery Trend's avg number
+  was hardcoded to always render in the "good" green regardless of the actual average -- now runs through the
+  same recoveryZone() thresholds as the main hero score. GradientNumber gained an optional `numberOfLines`
+  pass-through (needed once row labels went gradient, to stop long labels like "Prev. Activity" from wrapping
+  in a narrow column).
+  >> PROCESS NOTE: this entry got written to the roadmap once already, framed as "pending device verify,"
+  BEFORE Justin had actually looked at it -- and the label-color choice turned out wrong. Justin corrected:
+  don't write shipped/done entries ahead of his on-device confirmation, even hedged ones. Wait for the
+  explicit thumbs-up, then document.
+- 2026-07-18 **Profile gradient/number pass, device-verified (Light + Dark).** Weight/BMR/TDEE/Target/Projected/To Go all gradient now, shine added to Male/Female + Activity Level rows + Weight Pace pills, Activity Level selected-text color fixed to accent (was black), both "informational purposes" disclaimers darkened (textDim -> textMuted), Name/Height/Birthday bolder, section headers bumped a size. Same section-header size bump also applied to Stats' CollapsibleSection (13 -> 14px, no color change -- Stats already deliberately avoids accent on these labels because of the bottom glow, see the comment at stats.tsx CollapsibleSection).
 - 2026-07-18 **Halo + Otto chat redesign alignment.** Halo (Faith companion) was running the exact same code
   as Otto -- generic accent wash + hardcoded accentBlue user-bubble + black brand name + a hardcoded amber
   REPLY bubble -- with no real Faith branch anywhere. First pass used raw `theme.accentAmber` (full
@@ -700,23 +782,33 @@ are separate pre-submission checklists, NOT part of this menu.
 - [BUG] [found 2026-07-17, gradient pass on Stats At a Glance] **Weight Change on Stats > At a Glance shows "0 lbs" no matter which period (7D/30D/90D/180D/YTD) is selected.** Value never changes with the period toggle -- looks like `weightChange` calc is stuck/not recomputing per period. Not investigated yet, Justin deferred it.
 - [BUG] [found 2026-07-17] **Workout achievement trophies look like they're tracking TOTAL workout count, not workout DAYS.** Justin earned the "100 days" tier trophy today, but the app was only created ~2 months ago -- 100 distinct workout DAYS isn't possible yet, so the counter is likely summing something else (total workout entries logged, maybe counting multiple exercises/sets per day). Not investigated, look tomorrow.
 - [BUG] [found 2026-07-17] **Momentum streak achievements: "All In" (90 days) progress shows 0/90 despite already holding "Sixty Strong" (60 days).** Should be well past 0 if the streak is continuous. Justin's guess: may be an artifact of switching from TestFlight to an Expo dev build partway through (streak/count reset or split across install contexts) -- if that's the cause it's expected/fine, but needs confirming, not assumed. Not investigated, look tomorrow.
-- [QUICK WIN] [found 2026-07-18] **Halo/Otto chat header icon buttons (refresh/close/bell) feel slightly off.** Justin flagged it looking at Halo's on-device but couldn't pin down what specifically (color? size/shape? spacing?) on a first look and dropped it for now ("forget it its fine"). Worth a second look with fresh eyes -- maybe side by side against a real tab header for comparison.
 - [NOW] [TITLE/NUMBER GRADIENT ROLLOUT -- ACTIVE PUNCH LIST, 2026-07-18] Continuing the tab-by-tab
-  gradient/number pass (Home, Log, Workout+Library, Bible, Journal(first pass), Settings, Add Food, tooltip
-  system, Day Detail + Water/Weight/Macros modals, Faith tab, Stats tab, Feedback modal, Otto/Halo chat all
-  DONE). A `theme.textPrimary` grep across the whole app still shows ~180 hits in 30 files (not all bugs --
-  many are legit input/body text -- but it's the reliable smell for a missed title/value). PROCESS: Justin
-  scans a screen himself on-device and reports findings; Claude greps/reads that screen to verify nothing
-  was missed and flags anything ambiguous BEFORE coding; implement once aligned. Remaining screens, in
-  priority order:
-  1. Profile (9 hits) -- same category as Settings, just finished.
-  2. Sleep & Recovery (5 hits)
-  3. Food Detail (15 hits) -- high traffic, logged into constantly.
-  4. Journal (8 hits) -- flagged done earlier in the week but still has hits, re-check rather than trust the old note.
-  5. AI Meal Estimator (9 hits)
-  6. Lower-traffic batch, a few hits each: Mission, Tutorials, Head-to-Head, Recipe Builder, Recipe Log, Challenges/Challenge Create, Definitions.
-  7. Onboarding (6-7 screens) -- deliberately parked, Justin wants a plan first since it may change more than just the surface treatment.
-  8. Reports -- separately pinned by Justin (1118 lines, distinct block types, own future pass).
+  gradient/number pass (Home, Log, Workout+Library, Bible, Journal, Settings, Add Food, AI Meal Estimator,
+  tooltip system, Day Detail + Water/Weight/Macros modals, Faith tab, Stats tab, Feedback modal, Otto/Halo
+  chat, Profile, Food Detail all DONE). A `theme.textPrimary` grep across the whole app still shows hits in
+  the remaining files below (not all bugs -- many are legit input/body text -- but it's the reliable smell
+  for a missed title/value). PROCESS: Justin scans a screen himself on-device and reports findings; Claude
+  greps/reads that screen to verify nothing was missed and flags anything ambiguous BEFORE coding; implement
+  once aligned. Remaining screens, in priority order:
+  1. Lower-traffic batch: DONE 2026-07-18 except Tutorials (Recipe Builder, Recipe Log,
+     Challenges/Challenge Create, Definitions all done, pending device verify).
+  2. Onboarding (6 screens): DONE 2026-07-18, pending device verify. See RECENTLY SHIPPED.
+  3. Reports -- separately pinned by Justin (1118 lines, distinct block types, own future pass). Only
+     remaining piece of the gradient rollout.
+- [PARKED, 2026-07-18] **Tutorials gradient pass -- PIN/leave, Justin's call.** No shared tutorial-card
+  component exists; every tutorial's overlay card is hand-built per screen, so the all-caps-wrong-font
+  titles and untouched Next/Continue buttons Justin spotted would mean touching each tutorial
+  individually -- not a one-spot fix like everything else in this rollout. Justin: not worth brute-forcing
+  right now, current state isn't broken, just cosmetically behind. Revisit only if it starts to bother him
+  again or a shared tutorial-card component gets built for other reasons.
+- [PARKED, 2026-07-18] **Gear icon gradient -- PIN, not now.** A `GradientIcon` component now exists
+  (components/GradientIcon.tsx, consolidated out of two ad-hoc copies in settings.tsx and TooltipModal.tsx)
+  and got a one-spot trial on the Home Water card's gear icon. Justin's verdict: looked fine there
+  specifically because the Water card is already accent-heavy everywhere else, but not confident it reads
+  right on more neutral cards (Weight, Macros, etc. -- gear icons are scattered across the whole app) --
+  risk is a quiet settings affordance starting to look like a CTA. Reverted the Water trial back to flat
+  `theme.textMuted`. Revisit once the rest of the gradient rollout is done; test against a neutral card
+  (Weight) before deciding app-wide.
 - [QUICK WIN] [found on TestFlight 2026-07-17] **Effort vs Results LOADING SKELETONS have no gap.** The 3
   "Sharpening your read..." placeholder cards sit almost touching, no space between them -- surfaced by
   yesterday's shadow/aesthetic pass. Justin leaning yes on spacing them out, Claude agrees. NOT a blind

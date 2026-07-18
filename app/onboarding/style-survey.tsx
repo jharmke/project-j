@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEMES, mix } from '../../theme';
+import { getModeAccentTints } from '../../utils/modeAccent';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,12 +16,14 @@ import { Type } from '../../typography';
 import BackgroundLayers from '../../components/BackgroundLayers';
 import PrimaryCTA from '../../components/PrimaryCTA';
 import ButtonShine from '../../components/ButtonShine';
+import GradientTitle from '../../components/GradientTitle';
+import GradientNumber from '../../components/GradientNumber';
 import { BlurView } from 'expo-blur';
 
 const theme = THEMES['light'];
-// Opaque accent tint for a SELECTED row. theme.accentBlueBgOpaque is still its '#000000' placeholder in a
-// STATIC theme -- only the provider composes it -- so it cannot be used on the onboarding screens.
-const ACCENT_SELECTED = mix(theme.accentBlueRaw, theme.bgInput, 0.16);
+// Pinned to Balanced's accent, same as profile-setup -- see the note there. Keeps Steps 1-2 and the
+// no-answers state of Your Style on one consistent color instead of the generic app blue.
+const { accent: ACCENT, selected: ACCENT_SELECTED, bg: ACCENT_BG, border: ACCENT_BORDER } = getModeAccentTints('balanced', theme);
 
 const QUESTIONS = [
   {
@@ -129,7 +132,7 @@ export default function StyleSurveyScreen() {
 
   return (
     <LinearGradient colors={[theme.gradientEnd, theme.gradientEnd]} style={{ flex: 1 }}>
-      <BackgroundLayers glow={theme.accentBlueRaw} />
+      <BackgroundLayers glow={ACCENT} />
 
       {/* Progress bar. Frosted chrome, absolute, glued to the top -- content scrolls under it. It answers
           "how much more of this is there", the one thing worth permanent screen space here; the title and
@@ -140,12 +143,12 @@ export default function StyleSurveyScreen() {
         <TouchableOpacity
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          style={[styles.backBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+          style={[styles.backBtn, { backgroundColor: ACCENT_BG, borderColor: ACCENT_BORDER }]}
         >
-          <Ionicons name="chevron-back" size={20} color={theme.accentBlue} />
+          <Ionicons name="chevron-back" size={20} color={ACCENT} />
         </TouchableOpacity>
         <View style={[styles.progressTrack, { backgroundColor: theme.bgProgressTrack }]}>
-          <View style={[styles.progressFill, { backgroundColor: theme.accentBlueRaw, width: '33%' }]} />
+          <View style={[styles.progressFill, { backgroundColor: ACCENT, width: '33%' }]} />
         </View>
       </View>
 
@@ -154,7 +157,7 @@ export default function StyleSurveyScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Text style={[styles.screenLabel, { color: theme.textMuted }]}>STEP 2 OF 6</Text>
-        <Text style={[styles.title, { color: theme.accentBlueRaw }]}>Let's find your style</Text>
+        <GradientTitle title="Let's find your style" color={ACCENT} style={styles.title} />
         {/* "Five", not "Four" -- there are five questions, and this was the first thing the screen told you. */}
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
           Five questions. No wrong answers.
@@ -164,9 +167,7 @@ export default function StyleSurveyScreen() {
           const selected = answers[q.id];
           return (
             <View key={q.id} style={styles.questionBlock}>
-              <Text style={[styles.questionText, { color: theme.textPrimary }]}>
-                {qIdx + 1}. {q.text}
-              </Text>
+              <GradientNumber value={`${qIdx + 1}. ${q.text}`} color={theme.textSecondary} style={styles.questionText} />
               <View style={styles.answersCol}>
                 {q.answers.map((a, aIdx) => {
                   const isSelected = selected === a.points;
@@ -183,7 +184,7 @@ export default function StyleSurveyScreen() {
                             // the selected answer "blended in". The radio dot itself is fine and already
                             // established (Profile's Activity Level + Training Frequency rows use it).
                             backgroundColor: isSelected ? ACCENT_SELECTED : theme.bgInput,
-                            borderColor:     isSelected ? theme.accentBlueBorder : theme.borderInput,
+                            borderColor:     isSelected ? ACCENT_BORDER : theme.borderInput,
                           },
                         ]}
                       >
@@ -191,13 +192,13 @@ export default function StyleSurveyScreen() {
                         <View style={[
                           styles.answerDot,
                           {
-                            borderColor:     isSelected ? theme.accentBlueRaw : theme.borderInput,
-                            backgroundColor: isSelected ? theme.accentBlueRaw : 'transparent',
+                            borderColor:     isSelected ? ACCENT : theme.borderInput,
+                            backgroundColor: isSelected ? ACCENT : 'transparent',
                           }
                         ]} />
                         <Text style={[
                           styles.answerText,
-                          { color: isSelected ? theme.accentBlue : theme.textSecondary }
+                          { color: isSelected ? ACCENT : theme.textSecondary }
                         ]}>
                           {a.label}
                         </Text>
@@ -225,7 +226,7 @@ export default function StyleSurveyScreen() {
         )}
         <PrimaryCTA
           label="See My Style"
-          fill={theme.accentBlueRaw}
+          fill={ACCENT}
           disabled={!allAnswered}
           faceStyle={{ borderRadius: 14, paddingVertical: 18 }}
           onPress={handleContinue}

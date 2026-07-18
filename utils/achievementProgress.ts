@@ -1,13 +1,18 @@
 // utils/achievementProgress.ts
-// Shared "current progress toward each achievement" scanner. Extracted VERBATIM from
-// app/achievements.tsx so the Achievements screen's progress bars and Otto's answers read the exact same
-// numbers (honest-numbers rule -- one source of truth). Returns a map keyed by each AchievementDef.progressKey
-// (waterGoalDays, stepGoalDays, greenSleepDays, totalLost, workoutDays, nutritionGoalDays, ...), plus the
-// helper keys _startWeight / _goalWeight used to decide weight direction.
+// Shared "current progress toward each achievement" scanner. app/achievements.tsx and Otto's
+// companionAchievements.ts both call loadProgressValues() directly -- there is no separate inline copy
+// anywhere else to keep in sync with, so this IS the one source of truth (honest-numbers rule). Returns a
+// map keyed by each AchievementDef.progressKey (waterGoalDays, stepGoalDays, greenSleepDays, totalLost,
+// workoutDays, nutritionGoalDays, ...), plus the helper keys _startWeight / _goalWeight used to decide
+// weight direction.
 //
-// IMPORTANT: keep this a faithful copy of what the screen computes. Do NOT "fix" the date math (it uses UTC
-// toISOString keys on purpose) or the scan windows here without changing the screen in lockstep, or the two
-// will disagree and the numbers become dishonest.
+// logStreak fixed 2026-07-18: was building its date key with d.toISOString(), which converts to UTC
+// first -- in a US timezone in the evening that rolls the key into TOMORROW, which never has data yet,
+// so the streak broke on its first check and always read 0 (this is what made "All In" show 0/90 despite
+// already holding "Sixty Strong"). Now uses local date components, matching the unlock check in
+// checkMomentumAchievements (achievementData.ts). The OTHER toISOString spots below (waterGoalDays /
+// stepGoalDays / totalLost) were NOT touched -- same latent risk, not confirmed broken, out of scope for
+// this fix.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { evaluateCalorieGoalHit, paceTargetFromWeightGoal } from './goalHit';
@@ -112,11 +117,15 @@ export async function loadProgressValues(): Promise<Record<string, number>> {
     if (parsed.goalWeight) values['_goalWeight'] = parseFloat(parsed.goalWeight);
 
     // logStreak -- count consecutive days from today going back that have any data
+    // LOCAL date components, not toISOString() (which converts to UTC first): in a US timezone in the
+    // evening, toISOString() rolls the date into tomorrow, which never has data yet, so the streak broke
+    // on its very first check and always read 0. Matches the local-date key checkMomentumAchievements
+    // uses to unlock the SAME achievement, in achievementData.ts.
     let streak = 0;
     for (let i = 0; i < 365; i++) {
       const d  = new Date(today);
       d.setDate(d.getDate() - i);
-      const dk = d.toISOString().split('T')[0];
+      const dk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       try {
         const raw = await AsyncStorage.getItem(`pj_${dk}`);
         if (raw) {
@@ -158,10 +167,15 @@ export async function loadProgressValues(): Promise<Record<string, number>> {
     // workoutDays -- days with at least one exercise logged
     const workoutRaw = await AsyncStorage.getItem('pj_workout_state');
     const workoutState = workoutRaw ? JSON.parse(workoutRaw) : {};
-    const workoutPrograms: Record<string, { exercises?: unknown[] }> = workoutState.programs ?? {};
-    values['workoutDays'] = Object.keys(workoutPrograms).filter(
-      key => Array.isArray(workoutPrograms[key]?.exercises) && (workoutPrograms[key].exercises?.length ?? 0) > 0
-    ).length;
+    const workoutPrograms: Record<string, { exercises?: { id: string }[] }> = workoutState.programs ?? {};
+    const workoutChecks: Record<string, Record<string, boolean>> = workoutState.checks ?? {};
+    // Checks-based, matching the unlock check in achievementData.ts -- see the note there.
+    values['workoutDays'] = Object.keys(workoutPrograms).filter(key => {
+      const exs = workoutPrograms[key]?.exercises;
+      if (!Array.isArray(exs) || exs.length === 0) return false;
+      const dayChecks = workoutChecks[key] || {};
+      return exs.some(e => dayChecks[e.id]);
+    }).length;
 
     // nutritionGoalDays -- completed days that hit the calorie goal per the shared
     // evaluator (utils/goalHit). Way 1 (consumed vs static target) when active cals

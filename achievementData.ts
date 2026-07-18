@@ -1739,11 +1739,20 @@ export async function checkWorkoutAchievements(force = false): Promise<Achieveme
   try {
     const raw = await AsyncStorage.getItem('pj_workout_state');
     const state = raw ? JSON.parse(raw) : {};
-    const programs: Record<string, { exercises?: unknown[] }> = state.programs ?? {};
+    const programs: Record<string, { exercises?: { id: string }[] }> = state.programs ?? {};
+    const checks: Record<string, Record<string, boolean>> = state.checks ?? {};
 
-    const workoutDays = Object.keys(programs).filter(
-      key => Array.isArray(programs[key]?.exercises) && (programs[key].exercises?.length ?? 0) > 0
-    ).length;
+    // A day counts only if at least one exercise is actually CHECKED, not just assigned. A program can
+    // exist with no completion at all (auto-created by an Apple Health sync, or a template day nobody
+    // did) -- assignment alone was inflating this past real workout days. This also naturally excludes
+    // the old Settings > Import History backfill, which writes exercises but never sets checks, while
+    // still counting every real Apple Watch sync (the live daily sync DOES mark checks complete).
+    const workoutDays = Object.keys(programs).filter(key => {
+      const exs = programs[key]?.exercises;
+      if (!Array.isArray(exs) || exs.length === 0) return false;
+      const dayChecks = checks[key] || {};
+      return exs.some(e => dayChecks[e.id]);
+    }).length;
 
     if (workoutDays >= 1)   await unlock('workout_first');
     if (workoutDays >= 10)  await unlock('workout_10');

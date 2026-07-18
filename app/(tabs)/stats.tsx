@@ -1803,7 +1803,6 @@ export default function StatsScreen() {
     setTimeout(() => showToast('Graph added', undefined, 'success'), 300);
   };
 
-  // Derived from trendDataMap -- used for At a Glance weight change display
   const trendData = trendDataMap[trendPeriod] ?? EMPTY_TREND_DATA;
 
   const dayScoreMap = useMemo(() => {
@@ -1853,8 +1852,10 @@ export default function StatsScreen() {
     </View>
   );
 
-  const weightChange = trendData.weight.length >= 2
-    ? Math.round((trendData.weight[trendData.weight.length - 1].value - trendData.weight[0].value) * 10) / 10 : null;
+  // Scoped to the At-a-Glance period toggle (activePeriod), not the separate trend-graph period below --
+  // periodData.startWeight/endWeight already recompute correctly on every activePeriod change.
+  const weightChange = periodData.startWeight !== null && periodData.endWeight !== null
+    ? Math.round((periodData.endWeight - periodData.startWeight) * 10) / 10 : null;
 
 
   return (

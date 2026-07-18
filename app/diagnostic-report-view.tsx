@@ -420,7 +420,7 @@ function SkeletonFeedCard({ theme, shadowStyle, pulse }: { theme: any; shadowSty
     <Animated.View style={{ width: w, height: h, borderRadius: 5, marginBottom: mb, backgroundColor: t.textMuted, opacity: pulse }} />
   );
   return (
-    <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: 'rgba(255,255,255,0.1)', ...shadowStyle }]}>
+    <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: 'rgba(255,255,255,0.1)', ...shadowStyle, marginBottom: 12 }]}>
       {bar('72%', 14, 14)}
       {bar('42%', 18, 14)}
       {bar('100%', 10, 7)}

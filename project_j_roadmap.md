@@ -28,6 +28,15 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-18 **Four device-confirmed fixes:** Stats > At a Glance Weight Change was reading a totally
+  disconnected period variable (rewired to `periodData`, now moves correctly with 7D/30D/90D/180D/YTD);
+  workout achievement trophies (workout_first...365, both the unlock check and the progress-bar copy)
+  now require a checked exercise, not just an assigned one -- fixes the inflated count AND naturally
+  excludes Settings > Import Workout History backfills from ever counting, confirmed a fresh import
+  can't move a new or existing user's progress; momentum "All In" stuck at 0/90 was a real UTC-vs-local
+  date-key bug in the progress-display streak calc (same class as the 2026-07-03 fix, this spot was
+  missed) -- now reads correctly; EvR loading skeleton cards now carry the same `marginBottom: 12` gap
+  the real cards use.
 - 2026-07-18 **Reports gradient pass, device pending verify. Closes the gradient rollout.** Turned out to
   be ~14 shared renderer components behind the ~55 block library, not 55 bespoke designs -- gradiented all
   of them (row titles + values across TopFoods, FoodLog, Records, WorkoutHistory, CaloriesByMeal,
@@ -789,9 +798,6 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
-- [BUG] [found 2026-07-17, gradient pass on Stats At a Glance] **Weight Change on Stats > At a Glance shows "0 lbs" no matter which period (7D/30D/90D/180D/YTD) is selected.** Value never changes with the period toggle -- looks like `weightChange` calc is stuck/not recomputing per period. Not investigated yet, Justin deferred it.
-- [BUG] [found 2026-07-17] **Workout achievement trophies look like they're tracking TOTAL workout count, not workout DAYS.** Justin earned the "100 days" tier trophy today, but the app was only created ~2 months ago -- 100 distinct workout DAYS isn't possible yet, so the counter is likely summing something else (total workout entries logged, maybe counting multiple exercises/sets per day). Not investigated, look tomorrow.
-- [BUG] [found 2026-07-17] **Momentum streak achievements: "All In" (90 days) progress shows 0/90 despite already holding "Sixty Strong" (60 days).** Should be well past 0 if the streak is continuous. Justin's guess: may be an artifact of switching from TestFlight to an Expo dev build partway through (streak/count reset or split across install contexts) -- if that's the cause it's expected/fine, but needs confirming, not assumed. Not investigated, look tomorrow.
 - [DONE 2026-07-18, pending device verify] [TITLE/NUMBER GRADIENT ROLLOUT] The full tab-by-tab +
   screen-by-screen gradient/number pass is complete: every tab, Settings, Add Food, AI Meal Estimator,
   tooltip system, Day Detail + modals, Profile, Food Detail, Recipe Builder/Log, Challenges/Challenge

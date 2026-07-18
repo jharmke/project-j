@@ -172,7 +172,9 @@ export default function NotificationPanel({
       <View style={{ flex: 1, paddingRight: 6 }}>
         <View style={styles.titleRow}>
           {!n.read && <View style={[styles.unreadDot, { backgroundColor: theme.accentBlue }]} />}
-          <Text style={[styles.cardTitle, { color: theme.textPrimary, flex: 1 }]} numberOfLines={1}>{n.title}</Text>
+          <View style={{ flex: 1 }}>
+            <GradientTitle title={n.title} color={theme.textSecondary} numberOfLines={1} style={styles.cardTitle} />
+          </View>
         </View>
         {!!n.body && <Text style={[styles.cardBody, { color: theme.textSecondary }]} numberOfLines={2}>{n.body}</Text>}
         <Text style={[styles.cardTime, { color: theme.textDim }]}>{relTime(n.createdAt)}</Text>
@@ -241,7 +243,9 @@ export default function NotificationPanel({
           <View style={{ flex: 1, paddingRight: 6 }}>
             <View style={styles.titleRow}>
               {anyUnread && <View style={[styles.unreadDot, { backgroundColor: theme.accentBlue }]} />}
-              <Text style={[styles.cardTitle, { color: theme.textPrimary, flex: 1 }]} numberOfLines={1}>{CAT_LABEL[category] ?? 'Updates'}</Text>
+              <View style={{ flex: 1 }}>
+                <GradientTitle title={CAT_LABEL[category] ?? 'Updates'} color={theme.textSecondary} numberOfLines={1} style={styles.cardTitle} />
+              </View>
             </View>
             <Text style={[styles.cardBody, { color: theme.textSecondary }]} numberOfLines={1}>
               {top.title}{rest > 0 ? `  ·  +${rest} more` : ''}

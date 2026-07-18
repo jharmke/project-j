@@ -28,6 +28,13 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-18 **Send Feedback modal shine + BUG FIX: Settings > Goals floating save bar had no frost.** The
+  bar set `backgroundColor: chromeFill` directly with no BlurView underneath -- chromeFill is a translucent
+  frost meant to sit OVER a blur (per theme.tsx's own note), not stand alone, so on Light/Slate the bar read
+  as see-through with scroll content bleeding through (Justin screenshot, 2026-07-18). Fixed by copying
+  profile.tsx's proven BlurView + chromeFill-overlay recipe verbatim. Also: Send Feedback's 3 type pills +
+  Send button got ButtonShine, and the Otto notification panel's per-card titles (+ group category label)
+  are now gradient.
 - 2026-07-18 **Settings page gradient pass** (MembershipCard's "You're a Supporter"/"Support the Mission" --
   shared with Profile so both pages get it free; all 12 borderLeftWidth-accent-line sub-section titles
   across the page in one sweep: Fitness/Nutrition Goals, Coaching Mode, Faith Journey, Active Calorie

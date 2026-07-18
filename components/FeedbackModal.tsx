@@ -11,6 +11,7 @@ import { useTheme } from '../theme';
 import { useToast, ToastRenderer } from './Toast';
 import { Type } from '../typography';
 import ModalHeader from './ModalHeader';
+import ButtonShine from './ButtonShine';
 
 // Send Feedback. Opened from Settings > About. Collects a type + a description and hands off to
 // the user's mail app via a mailto link, addressed to the dev inbox. No backend (per spec). A
@@ -126,6 +127,7 @@ export default function FeedbackModal({ visible, onClose }: Props) {
                         borderColor: active ? theme.accentBlueBorder : theme.borderCard,
                       }}
                     >
+                      {active && <ButtonShine radius={10} />}
                       <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: active ? theme.accentBlue : theme.textSecondary }}>{t}</Text>
                     </TouchableOpacity>
                   );
@@ -169,6 +171,7 @@ export default function FeedbackModal({ visible, onClose }: Props) {
                   opacity: canSend ? 1 : 0.6,
                 }}
               >
+                {canSend && <ButtonShine radius={10} />}
                 <Text style={{ color: canSend ? theme.bgPrimary : theme.textMuted, fontSize: 17, fontFamily: Type.uiBold, letterSpacing: 0.2 }}>SEND</Text>
               </TouchableOpacity>
             </ScrollView>

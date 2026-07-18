@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
+import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -3875,9 +3876,20 @@ export default function SettingsScreen() {
         <Animated.View
           style={{
             paddingHorizontal: 16, paddingTop: 12, paddingBottom: (goalKeyboardHeight > 0 ? 12 : 16) + (goalKeyboardHeight > 0 ? 0 : insets.bottom),
-            backgroundColor: theme.chromeFill && theme.chromeFill !== 'transparent' ? theme.chromeFill : theme.bgSheet, borderTopWidth: 0.5, borderTopColor: theme.borderCard,
+            borderTopWidth: 0.5, borderTopColor: theme.borderCard, overflow: 'hidden',
             transform: [{ translateY: goalFloatAnim.interpolate({ inputRange: [0, 1], outputRange: [200, 0] }) }],
           }}>
+          {/* GLASS, matching every other floating bar (profile.tsx, the tab bar, the headers). This one had
+              neither the BlurView nor the chromeFill overlay -- just a flat chromeFill-or-bgSheet fill, which
+              is why it read as see-through: chromeFill is a translucent frost meant to sit OVER a blur, not
+              stand alone as a solid background. */}
+          <BlurView
+            intensity={theme.id === 'dark' ? 40 : 34}
+            tint={theme.id === 'dark' ? 'dark' : 'light'}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          />
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.chromeFill }]} pointerEvents="none" />
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <TouchableOpacity
               onPress={() => {

@@ -13,9 +13,15 @@ was caught: this spec and the roadmap had BOTH been claiming "~4 CTAs, ~13 remai
 REMAINING list for a day-plus after the work shipped. The 3-tier rules + the full do-not-relearn list live
 in project_j_roadmap_archive.md ("CHIP / ICON-BUTTON TOP SHINE + THE MOLDED-CTA ROLLOUT").
 
-STILL OPEN: the SURFACE pass (22 stack screens still top-lit), the VOICE pass, the Journal slide-up sheet,
-title gradient, card stagger, Warm + Blush getting the Light treatment, and a few non-modal number-face
-stragglers. (Roadmap NEXT UP has the ranked list.)
+CLOSED 2026-07-18: the SURFACE pass, the VOICE pass, card stagger, the Journal slide-up sheet, title
+gradient, the non-modal number-face stragglers, Warm + Blush (Justin ran through both on-device, felt
+fine), and card shadows on onboarding (all 7 screens verified -- either already shadowed, correctly have
+no card to shadow, or correctly skip it on faith-journey's hardcoded dark background). (Full detail in
+roadmap RECENTLY SHIPPED -- this top summary had gone stale on several of these, so the roadmap is the
+current source of truth, not the counts below in this file.)
+
+PARKED: card shadows on modals -- Justin's call, a shadow barely reads over a dimmed overlay, lowest-value
+corner. Full site list is in the roadmap if ever revisited.
 
 ---
 
@@ -368,23 +374,18 @@ The "if Ranade wins the Voice, Interface must move" rule is DROPPED -- Clash (di
 5. Glass cards + absolute glass tab bar and header + per-theme shadows + bgSelected. **[DONE]**
 6. Gradient number fill (masked-view). **[DONE]** -- needed the native rebuild, which is spent.
 7. **Font packaging patch.** **[DONE]** -- see the top of this file.
-8. **-> NEXT: the ~30 stack screens.** Settings, add-food, Bible reader, Effort vs Results, the reports,
-   onboarding, journal, prayer. Still on Bebas + DM Sans, so there is a visible seam the moment you leave
-   a tab. Mostly mechanical (the sweep script), but see "Rules the sweep taught us" -- it cannot judge
-   Bebas's three jobs for you.
-9. **The voice pass.** The judgement calls a script cannot make. Ranade currently lives on SIX lines, all
-   on Home (Coach Insight title + body, the readiness line, the Recovery and Sleep AI tips, one line on
-   the Weight card). EvR's insight copy, Otto's chat bubbles, the verses and devotionals are where the
-   voice actually earns its keep. Otto's bubbles are the single biggest win available: HIS bubbles are
-   voice, YOURS stay Interface -- that contrast is the point.
+8. The ~30 stack screens (Settings, add-food, Bible reader, Effort vs Results, the reports, onboarding,
+   journal, prayer, etc.). **[DONE]** -- verified 2026-07-18, zero files under app/ still reference Bebas
+   or DMSans_700Bold. Matches the top summary, which already claimed this; this line just hadn't been
+   updated to match.
+9. **The voice pass. [DONE/COVERED 2026-07-18, Justin's call.]**
 10. A single readability pass once the fonts are everywhere.
 11. Molded button rollout. **[DONE 2026-07-17]**
 12. Chip top-shine **[DONE 2026-07-17]** + **-> NEXT: title accent-gradient.**
-13. Card stagger (Reanimated `FadeInDown.delay(i*60).springify()`). **IN PROGRESS 2026-07-17** -- built
-    on Workout as the fix for the tab-mount-stutter bug (see roadmap NEXT UP), not built in isolation.
-    Stats + Profile still need their own pass -- Stats' section headers aren't cards, so stagger by
-    SECTION there, don't blind-copy the per-card wiring.
-14. Warm + Blush get the Light treatment once Light is signed off.
+13. Card stagger (Reanimated `FadeInDown.delay(i*60).springify()`). **DONE 2026-07-18** -- wired on all
+    6 tabs (34 instances), Stats staggered by SECTION as planned, not blind-copied per-card.
+14. Warm + Blush get the Light treatment once Light is signed off. **[DONE 2026-07-18]** -- Justin ran
+    through both on-device, felt fine.
 15. `bgSelected` sweep for modals and stack screens as they get converted.
 
 ## AUDIT GATE (every step)

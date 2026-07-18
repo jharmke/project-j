@@ -871,34 +871,33 @@ are separate pre-submission checklists, NOT part of this menu.
   flat white, same as every other solid CTA label). Workout's "mark complete" button doesn't exist
   anywhere on screen (dead, unused style) and "Add Exercise" already had the correct font/color -- both
   turned out to be stale roadmap notes, not real bugs.
-  >> STILL OPEN, see the dedicated items below: the SURFACE pass, the VOICE pass.
-- [BUG, app-wide. **ALL PAGES DONE 2026-07-16.** MODALS + ONBOARDING OPEN] **Card shadows.** Full root
-  cause + all five failure modes are in the RECENTLY SHIPPED entry.
+  >> SURFACE, VOICE, and CARD STAGGER all CLOSED 2026-07-18 -- audited against actual code, not assumed
+  from the (stale) spec doc. Surface: only day-detail.tsx (a sheet, correctly flat) and sign-in.tsx
+  (deliberate custom pre-auth treatment) lack the shared BackgroundLayers component -- both fine as-is,
+  Justin's call. Voice: covered. Card stagger: FadeInDown wired on all 6 tabs (34 instances) -- the spec's
+  "Stats + Profile still need their own pass" note was stale, that work already happened.
+  Warm + Blush also CLOSED 2026-07-18 -- Justin ran through both on-device, felt fine. Spec's build-order
+  item #8 (type sweep on the ~30 stack screens) was ALSO stale, confirmed done -- zero files under app/
+  still reference Bebas/DMSans_700Bold.
+  STILL OPEN: card shadows on modals, PARKED (dedicated item below). Onboarding closed, see there too.
+- [PARKED, 2026-07-18. Modals: Justin's call. Onboarding: DONE.] **Card shadows.** Full root cause + all
+  five failure modes are in the RECENTLY SHIPPED entry.
   **DONE: every card on every PAGE in the app** -- 6 tabs + ~30 stack screens, plus the component-file
-  cards they render (GratitudeStreakCard, MembershipCard, ReadingPlansCard, FaithTodayCard).
-  **STILL OPEN:**
-    1. MODALS -- excluded by Justin's call ("day detail is a modal, no? we arent touching modals right now.
-       way too messy. just full pages"). A modal floats over a dim overlay where a shadow does almost
-       nothing, so this is the lowest-value corner. Known sites with a shadow + overflow on the same view:
-       log.tsx jump-to-date (2293); workout.tsx Add/Edit Exercise + tag + Load Routine (2923 / 3034 / 3349 /
-       3462); workout-library.tsx x5 (3054 / 3273 / 3579 / 3753 / 3806); day-detail.tsx (385);
-       ai-meal-estimator.tsx (973); components/BodyMeasurementsCard.tsx picker (186).
-       Component-file modals never checked: AchievementToast, CustomFoodCreator, DaySummaryModal,
-       FeedbackModal, HRZoneModal, MeasureHowToModal, MetricDrilldownModal, NotificationPanel,
-       NutritionGearModal, NutrientDrilldownModal, RepeatMealModal, SummaryReadyModal, ToolkitSheet,
-       TooltipModal, VersePoolModal, WeightHistoryModal.
-    2. ONBOARDING (7 screens) -- see the surface-pass item; needs a plan first, not a sweep.
-       Steps 1 (profile-setup), 2 (style-survey) and 3 (your-style) DONE 2026-07-16, incl. the frosted top
-       bar. Remaining: faith-journey (=4), apple-health (=5), notifications (=6), all-set (full bar, no
-       label). Each still needs the frosted top bar + the per-screen recipe.
-       >> **COMMITMENT WAS CUT 2026-07-16.** Justin: "really corny" -- three vows all opening "I will",
-       which is the cadence of a wedding vow. It was also Discipline-ONLY, so Balanced and Mindful users
-       went step 3 -> 5 and never saw a step 4; the counter had been lying for two of three modes and
-       nobody caught it because the screen it belonged to was the weak one. Cutting it bought a uniform
-       6-step flow. The pre-commitment lever is real behavioural science and a one-line version was on the
-       table (a checkbox under the Discipline card) -- REJECTED: same theatre, less room to earn it, and
-       Discipline already means something via strict colour coding, full metrics and direct language. If
-       Discipline users drop off, revisit WITH DATA.
+  cards they render (GratitudeStreakCard, MembershipCard, ReadingPlansCard, FaithTodayCard). Also DONE,
+  verified 2026-07-18: all 7 onboarding screens -- your-style/apple-health/notifications/all-set already
+  have full shadows, profile-setup/style-survey have no card containers at all (inputs + pills only, so
+  correctly nothing to shadow), and faith-journey correctly has none (hardcoded dark ember background
+  regardless of theme, a shadow would be invisible there). Nothing left to do on onboarding.
+  **PARKED: MODALS** -- excluded by Justin's call ("day detail is a modal, no? we arent touching modals
+  right now. way too messy. just full pages"), reconfirmed 2026-07-18. A modal floats over a dim overlay
+  where a shadow does almost nothing, so this is the lowest-value corner -- "they're their own pop-out."
+  Known sites with a shadow + overflow on the same view, if ever revisited: log.tsx jump-to-date (2293);
+  workout.tsx Add/Edit Exercise + tag + Load Routine (2923 / 3034 / 3349 / 3462); workout-library.tsx x5
+  (3054 / 3273 / 3579 / 3753 / 3806); day-detail.tsx (385); ai-meal-estimator.tsx (973);
+  components/BodyMeasurementsCard.tsx picker (186). Component-file modals never checked: AchievementToast,
+  CustomFoodCreator, DaySummaryModal, FeedbackModal, HRZoneModal, MeasureHowToModal, MetricDrilldownModal,
+  NotificationPanel, NutritionGearModal, NutrientDrilldownModal, RepeatMealModal, SummaryReadyModal,
+  ToolkitSheet, TooltipModal, VersePoolModal, WeightHistoryModal.
   >> **THERE IS NO SEARCH THAT PROVES THIS IS FINISHED.** Failure mode #5 (the shadow was never written) is
   invisible to every grep -- nothing is broken, so nothing matches. Justin caught Gratitude, the earned
   badges, the log-measurements cards and Support's Promise card AFTER I called it done each time. Expect

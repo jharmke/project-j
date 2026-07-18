@@ -29,6 +29,8 @@ import { TUTORIAL_TRIGGERS, TUTORIAL_ROUTE_OVERLAP } from '../utils/companionTut
 import { useTutorial } from '../context/TutorialContext';
 import { TAB_TUTORIALS } from '../data/tutorials';
 import { ToastRenderer, useToast } from './Toast';
+import GradientTitle from './GradientTitle';
+import HeaderIconButton from './HeaderIconButton';
 import { useTheme } from '../theme';
 import NotificationPanel from './NotificationPanel';
 import TutorialOverlay from './TutorialOverlay';
@@ -605,21 +607,17 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
                       <Ionicons name="sparkles" size={15} color="#ffffff" />
                     </View>
                     <View>
-                      <Text style={[styles.brand, { color: theme.textPrimary }]}>Otto</Text>
+                      <GradientTitle title="Otto" color={accent} numberOfLines={1} style={styles.brand} />
                       <Text style={[styles.brandSub, { color: theme.textDim }]}>Wellness and app guide</Text>
                     </View>
                   </View>
                   <View style={styles.headerActions}>
-                    <Pressable ref={bellRef} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); Keyboard.dismiss(); setNotifOpen(true); }} hitSlop={12} style={styles.closeBtn}>
-                      <Ionicons name="notifications-outline" size={20} color={theme.textMuted} />
+                    <View ref={bellRef} collapsable={false}>
+                      <HeaderIconButton icon="notifications" onPress={() => { Keyboard.dismiss(); setNotifOpen(true); }} />
                       {unread > 0 && <View style={[styles.bellDot, { backgroundColor: theme.statusBad, borderColor: theme.bgSheet }]} />}
-                    </Pressable>
-                    <Pressable onPress={newChat} hitSlop={12} style={styles.closeBtn}>
-                      <Ionicons name="refresh" size={20} color={theme.textMuted} />
-                    </Pressable>
-                    <Pressable onPress={close} hitSlop={12} style={styles.closeBtn}>
-                      <Ionicons name="close" size={22} color={theme.textMuted} />
-                    </Pressable>
+                    </View>
+                    <HeaderIconButton icon="refresh" onPress={newChat} />
+                    <HeaderIconButton icon="close" onPress={close} />
                   </View>
                 </View>
               </View>

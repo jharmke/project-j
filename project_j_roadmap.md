@@ -28,6 +28,19 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-18 **Halo + Otto chat redesign alignment.** Halo (Faith companion) was running the exact same code
+  as Otto -- generic accent wash + hardcoded accentBlue user-bubble + black brand name + a hardcoded amber
+  REPLY bubble -- with no real Faith branch anywhere. First pass used raw `theme.accentAmber` (full
+  strength) for the wash at Otto's same 0.55 opacity, which came out as a solid orange slab (Justin
+  screenshot) since every other wash token, incl. Otto's, is a pre-muted pastel, not a raw accent; dropped
+  to 0.25 to compensate. Also found Halo's own reply bubble was hardcoded amber the whole time (predates
+  this pass) -- fine against the old barely-there background, but blended into the now-amber wash, so it's
+  now neutral gray matching Otto's `assistantBubble` exactly. Final state: muted-amber wash + amber user-
+  message bubble + amber gradient name, but Halo's OWN words render in the same neutral bubble Otto uses.
+  Otto unchanged aesthetically (confirmed good) but got the same gradient-name + `HeaderIconButton` treatment
+  on all 3 of his top-right icons (bell/refresh/close), incl. swapping the outline bell for solid per the
+  header-icon standard. Justin flagged the icon boxes still feel slightly off but couldn't pin down why on a
+  first look -- parked, not chased further this session.
 - 2026-07-18 **Send Feedback modal shine + BUG FIX: Settings > Goals floating save bar had no frost.** The
   bar set `backgroundColor: chromeFill` directly with no BlurView underneath -- chromeFill is a translucent
   frost meant to sit OVER a blur (per theme.tsx's own note), not stand alone, so on Light/Slate the bar read
@@ -687,6 +700,7 @@ are separate pre-submission checklists, NOT part of this menu.
 - [BUG] [found 2026-07-17, gradient pass on Stats At a Glance] **Weight Change on Stats > At a Glance shows "0 lbs" no matter which period (7D/30D/90D/180D/YTD) is selected.** Value never changes with the period toggle -- looks like `weightChange` calc is stuck/not recomputing per period. Not investigated yet, Justin deferred it.
 - [BUG] [found 2026-07-17] **Workout achievement trophies look like they're tracking TOTAL workout count, not workout DAYS.** Justin earned the "100 days" tier trophy today, but the app was only created ~2 months ago -- 100 distinct workout DAYS isn't possible yet, so the counter is likely summing something else (total workout entries logged, maybe counting multiple exercises/sets per day). Not investigated, look tomorrow.
 - [BUG] [found 2026-07-17] **Momentum streak achievements: "All In" (90 days) progress shows 0/90 despite already holding "Sixty Strong" (60 days).** Should be well past 0 if the streak is continuous. Justin's guess: may be an artifact of switching from TestFlight to an Expo dev build partway through (streak/count reset or split across install contexts) -- if that's the cause it's expected/fine, but needs confirming, not assumed. Not investigated, look tomorrow.
+- [QUICK WIN] [found 2026-07-18] **Halo/Otto chat header icon buttons (refresh/close/bell) feel slightly off.** Justin flagged it looking at Halo's on-device but couldn't pin down what specifically (color? size/shape? spacing?) on a first look and dropped it for now ("forget it its fine"). Worth a second look with fresh eyes -- maybe side by side against a real tab header for comparison.
 - [QUICK WIN] [found on TestFlight 2026-07-17] **Effort vs Results LOADING SKELETONS have no gap.** The 3
   "Sharpening your read..." placeholder cards sit almost touching, no space between them -- surfaced by
   yesterday's shadow/aesthetic pass. Justin leaning yes on spacing them out, Claude agrees. NOT a blind

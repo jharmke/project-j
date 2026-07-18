@@ -26,6 +26,8 @@ import { DEVOTIONALS } from '../data/devotionals';
 import { ToastRenderer, useToast } from './Toast';
 import { useTheme } from '../theme';
 import { Type } from '../typography';
+import GradientTitle from './GradientTitle';
+import HeaderIconButton from './HeaderIconButton';
 
 // Halo's chat overlay. A transparent Modal that fades in over the current faith screen
 // (the screen stays mounted behind it, so the user never loses their place). Never a
@@ -666,8 +668,13 @@ export default function CompanionChat({
           >
           {/* Theme gradient behind the whole chat, matching every other screen (the chat modal was the
               one flat surface). Reduced opacity over the sheet base so it's a gentle wash, not the
-              full-strength page gradient. Clipped by the panel's overflow:hidden rounded corners. */}
-          <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={[StyleSheet.absoluteFill, { opacity: 0.55 }]} pointerEvents="none" />
+              full-strength page gradient. Clipped by the panel's overflow:hidden rounded corners.
+              Halo is a Faith surface, so the wash runs amber, not the user's app-wide accent (2026-07-18). */}
+          {/* theme.gradientStart (used everywhere else, incl. Otto) is a pre-muted pastel version of
+              whatever accent it carries -- accentAmber is the raw, full-strength color, so at the same
+              0.55 it read as a solid orange wash instead of a tint. Lower opacity approximates the same
+              muting without needing a whole separate pastel-amber token. */}
+          <LinearGradient colors={[theme.accentAmber, theme.gradientEnd]} style={[StyleSheet.absoluteFill, { opacity: 0.25 }]} pointerEvents="none" />
           <View style={{ flex: 1, paddingBottom: kb }}>
             {/* Top strip: drag down to dismiss, tap the handle to close. */}
             <GestureDetector gesture={dragGesture}>
@@ -681,17 +688,13 @@ export default function CompanionChat({
                   <MiniCross size={16} color={CROSS_DARK} />
                 </View>
                 <View>
-                  <Text style={[styles.brand, { color: theme.textPrimary }]}>Halo</Text>
+                  <GradientTitle title="Halo" color={theme.accentAmber} numberOfLines={1} style={styles.brand} />
                   <Text style={[styles.brandSub, { color: theme.textDim }]}>Faith companion</Text>
                 </View>
               </View>
               <View style={styles.headerActions}>
-                <Pressable onPress={newChat} hitSlop={12} style={styles.closeBtn}>
-                  <Ionicons name="refresh" size={20} color={theme.textMuted} />
-                </Pressable>
-                <Pressable onPress={close} hitSlop={12} style={styles.closeBtn}>
-                  <Ionicons name="close" size={22} color={theme.textMuted} />
-                </Pressable>
+                <HeaderIconButton icon="refresh" onPress={newChat} color={theme.accentAmber} bg={theme.accentAmber + '26'} border={theme.accentAmber + '4D'} />
+                <HeaderIconButton icon="close" onPress={close} color={theme.accentAmber} bg={theme.accentAmber + '26'} border={theme.accentAmber + '4D'} />
               </View>
                 </View>
                 </View>
@@ -745,7 +748,7 @@ export default function CompanionChat({
                   if (m.role === 'user') {
                     return (
                       <MountFade key={i}>
-                        <View style={[styles.bubble, { alignSelf: 'flex-end', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
+                        <View style={[styles.bubble, { alignSelf: 'flex-end', backgroundColor: theme.accentAmber + '26', borderColor: theme.accentAmber + '4D' }]}>
                           {body}
                         </View>
                       </MountFade>
@@ -898,8 +901,10 @@ const styles = StyleSheet.create({
   },
   haloBubble: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(232,160,32,0.12)',
-    borderColor: 'rgba(232,160,32,0.32)',
+    // Neutral, matching Otto's assistantBubble exactly -- was hardcoded amber, which blended into
+    // Halo's now-amber background wash instead of standing out as its own surface (Justin, 2026-07-18).
+    backgroundColor: 'rgba(120,120,140,0.10)',
+    borderColor: 'rgba(120,120,140,0.22)',
   },
   bubbleText: { fontSize: 14, fontFamily: Type.ui, lineHeight: 20 },
   verseLink:  { color: GOLD, fontFamily: Type.uiSemibold, textDecorationLine: 'underline' },

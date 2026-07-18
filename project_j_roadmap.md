@@ -28,6 +28,15 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-18 **Visual Refresh track closed out.** Surface, Voice, and Card Stagger passes all confirmed done
+  app-wide; Warm + Blush reviewed on-device, no issues; card shadows done on every page + all onboarding
+  screens (modals stay parked, Justin's call); number-face stragglers (REST DAY heading, IFCard "LAST MEAL",
+  Profile save-bar) fixed; the slide-up-sheets item closed as not-a-bug (Journal category picker + Stats
+  graph creator's "Choose data type" step both stay bottom sheets on purpose). Full detail in the archive.
+- 2026-07-18 **Primary button rollout (PrimaryCTA sweep) confirmed done app-wide.**
+- 2026-07-07 **Custom Reports Slice 1 shipped** -- reports hub (list/new/delete), report screen (date-range
+  chips + block picker + 3 starter blocks: Weight trend, Nutrition headline, Macro split), live in Stats.
+  Beta-open to all testers. Remaining block-library growth/export/templates tracked in NEXT UP.
 - 2026-07-18 **Stats tab section-order flash fixed, device-confirmed.** Any section the user had dragged
   into a custom order (e.g. Body/Calendar) briefly rendered in the hardcoded DEFAULT order on every tab
   focus, then visibly snapped to the real saved order -- `loadStatsCards()` was buried at the tail of a
@@ -814,244 +823,52 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
-- [DONE 2026-07-18, pending device verify] [TITLE/NUMBER GRADIENT ROLLOUT] The full tab-by-tab +
-  screen-by-screen gradient/number pass is complete: every tab, Settings, Add Food, AI Meal Estimator,
-  tooltip system, Day Detail + modals, Profile, Food Detail, Recipe Builder/Log, Challenges/Challenge
-  Create, Definitions, all 6 Onboarding screens, and Reports (app/report.tsx + app/reports.tsx -- the
-  last piece, see RECENTLY SHIPPED) are all done. Tutorials is the one deliberate exception, PINNED (see
-  below) since there's no shared component to fix it in one spot.
-- [PARKED, 2026-07-18] **Tutorials gradient pass -- PIN/leave, Justin's call.** No shared tutorial-card
-  component exists; every tutorial's overlay card is hand-built per screen, so the all-caps-wrong-font
-  titles and untouched Next/Continue buttons Justin spotted would mean touching each tutorial
-  individually -- not a one-spot fix like everything else in this rollout. Justin: not worth brute-forcing
-  right now, current state isn't broken, just cosmetically behind. Revisit only if it starts to bother him
-  again or a shared tutorial-card component gets built for other reasons.
-- [NOW] [TRACK, DECIDED + SPECCED 2026-07-14 -> building] **VISUAL REFRESH.** Justin: the app "still looks
-  like a Claude/AI generated app -- a blank form page with data slapped on it." Diagnosis was NOT the headers
-  he first pointed at: (1) every card is the same width/weight so nothing leads, (2) every button is FLAT
-  PAINTED accent (the #1 machine-designed tell -- and `components/PrimaryCTA.tsx` already solves this and is
-  used in only 2 files), (3) the type has no voice (Bebas does every job at every size; DM Sans is the
-  AI-app default; Lora is loaded and only ever appears on scripture).
-  THE LOOK, one idea -- *light rising from below, dissolving as it climbs*: four-role type system
-  (Clash Display titles / Rajdhani numbers / Onest interface / Bitter voice), accent-GRADIENT title fill +
-  press, gradient-filled numbers, molded buttons everywhere, glass cards keeping the accent top edge,
-  bottom glow (medium, NEVER strong) + halftone rising from the bottom + subtle grain, frosted tab bar,
-  accent active tab icons, staggered card entrance.
-  Full detail, the ledger of every face tried + verdict, and the DO-NOT-RESURRECT list (topographic, mesh,
-  aurora, vignette, line/dot grid, deep-ink titles, a user-facing background picker) live in
-  **SPEC_visual_refresh.md**. Build order + status is in the spec.
-  >> SHIPPED 2026-07-14: the SURFACE (flat ground + bottom glow + halftone + grain via mixBlendMode,
-  glass cards, ABSOLUTE glass tab bar + header so content scrolls under both ends, per-theme card shadows,
-  new opaque bgSelected token), the four-role TYPE SYSTEM (typography.ts -- Clash Display / Rajdhani Bold /
-  Onest / Ranade, each a one-line swap), gradient hero numbers, molded PrimaryCTA on 4 CTAs, and the type
-  sweep across all 6 tabs + 42 components (406 font refs).
-  >> ⚠️ THE FONT BUG, 2026-07-14 (top of the spec, read it before touching any weight): Fontshare ships
-  Ranade and Clash as ONE FAMILY PER WEIGHT, iOS resolves fontFamily against a font's internal names, and a
-  miss falls back SILENTLY -- so every Ranade cut collapsed onto one face. THREE weight changes produced
-  zero pixels of difference and I burned an afternoon treating it as a taste problem. **A weight change
-  with no visible response is a BUG, not a design failure.** Six .ttf name tables patched (glyphs
-  untouched); an on-device 4-cut specimen with an Onest 400/700 CONTROL proved the ladder. Any future
-  Fontshare weight must be patched the same way. Google-Fonts-packaged faces (Onest, Rajdhani) were never
-  affected -- prefer them.
-  >> STACK SCREENS: type sweep DONE (43 files, 1408 refs).
-  >> HEADERS DONE 2026-07-14: two components now own EVERY header. **ScreenHeader** (pages: 28px Clash
-  accent mixed-case, LEFT, bare chevron, no eyebrow) on all 34 pushed screens. **ModalHeader** (modals:
-  20px Clash accent mixed-case, LEFT, centred handle pill + top-right X, optional subtitle/subRow/faith
-  amber) on every titled modal -- ~15 standalone components + the inline modals across workout-library and
-  all four tabs, plus the tag modals, drilldowns, prayer/faith modals, Otto Notifications, and Day Detail
-  (which is always a sheet, so it uses ModalHeader at 20px not the 28px page title). Rules in the spec.
-  >> BUTTON TEXTURE IS DONE 2026-07-17 -- both the molded-CTA rollout and the chip/icon shine. See RECENTLY
-  SHIPPED; the 3-tier rules + the do-not-relearn list are in the archive.
-  >> TITLE ACCENT-GRADIENT FILL SHIPPED 2026-07-17 -- see RECENTLY SHIPPED. The header "?" icon (missed
-  that round) plus every (i) icon and gear icon app-wide SHIPPED 2026-07-18, see RECENTLY SHIPPED.
-  >> JOURNAL slide-up sheet DONE 2026-07-17 (full touch-up + the handle-doesn't-close bug fixed).
-  >> NUMBER-FACE STRAGGLERS DONE 2026-07-18: Profile save-bar Cancel/Save Profile were already fixed
-  (stale roadmap note, confirmed in code + on device). REST DAY heading (Workout empty state) moved off
-  the numeric font onto a heading font + gradiented. IFCard's "LAST MEAL" button font-face fixed (stays
-  flat white, same as every other solid CTA label). Workout's "mark complete" button doesn't exist
-  anywhere on screen (dead, unused style) and "Add Exercise" already had the correct font/color -- both
-  turned out to be stale roadmap notes, not real bugs.
-  >> SURFACE, VOICE, and CARD STAGGER all CLOSED 2026-07-18 -- audited against actual code, not assumed
-  from the (stale) spec doc. Surface: only day-detail.tsx (a sheet, correctly flat) and sign-in.tsx
-  (deliberate custom pre-auth treatment) lack the shared BackgroundLayers component -- both fine as-is,
-  Justin's call. Voice: covered. Card stagger: FadeInDown wired on all 6 tabs (34 instances) -- the spec's
-  "Stats + Profile still need their own pass" note was stale, that work already happened.
-  Warm + Blush also CLOSED 2026-07-18 -- Justin ran through both on-device, felt fine. Spec's build-order
-  item #8 (type sweep on the ~30 stack screens) was ALSO stale, confirmed done -- zero files under app/
-  still reference Bebas/DMSans_700Bold.
-  STILL OPEN: card shadows on modals, PARKED (dedicated item below). Onboarding closed, see there too.
-- [PARKED, 2026-07-18. Modals: Justin's call. Onboarding: DONE.] **Card shadows.** Full root cause + all
-  five failure modes are in the RECENTLY SHIPPED entry.
-  **DONE: every card on every PAGE in the app** -- 6 tabs + ~30 stack screens, plus the component-file
-  cards they render (GratitudeStreakCard, MembershipCard, ReadingPlansCard, FaithTodayCard). Also DONE,
-  verified 2026-07-18: all 7 onboarding screens -- your-style/apple-health/notifications/all-set already
-  have full shadows, profile-setup/style-survey have no card containers at all (inputs + pills only, so
-  correctly nothing to shadow), and faith-journey correctly has none (hardcoded dark ember background
-  regardless of theme, a shadow would be invisible there). Nothing left to do on onboarding.
-  **PARKED: MODALS** -- excluded by Justin's call ("day detail is a modal, no? we arent touching modals
-  right now. way too messy. just full pages"), reconfirmed 2026-07-18. A modal floats over a dim overlay
-  where a shadow does almost nothing, so this is the lowest-value corner -- "they're their own pop-out."
-  Known sites with a shadow + overflow on the same view, if ever revisited: log.tsx jump-to-date (2293);
-  workout.tsx Add/Edit Exercise + tag + Load Routine (2923 / 3034 / 3349 / 3462); workout-library.tsx x5
-  (3054 / 3273 / 3579 / 3753 / 3806); day-detail.tsx (385); ai-meal-estimator.tsx (973);
-  components/BodyMeasurementsCard.tsx picker (186). Component-file modals never checked: AchievementToast,
-  CustomFoodCreator, DaySummaryModal, FeedbackModal, HRZoneModal, MeasureHowToModal, MetricDrilldownModal,
-  NotificationPanel, NutritionGearModal, NutrientDrilldownModal, RepeatMealModal, SummaryReadyModal,
-  ToolkitSheet, TooltipModal, VersePoolModal, WeightHistoryModal.
-  >> **THERE IS NO SEARCH THAT PROVES THIS IS FINISHED.** Failure mode #5 (the shadow was never written) is
-  invisible to every grep -- nothing is broken, so nothing matches. Justin caught Gratitude, the earned
-  badges, the log-measurements cards and Support's Promise card AFTER I called it done each time. Expect
-  more. The only check that works is opening a screen and asking "does every card here have a theme shadow?"
-  ALSO FIXED 2026-07-16 (2nd sweep): plans (hardcoded black), synced-workouts (NO shadow), support +
-  whats-new (right wrapper pattern, but 0.12 black = a third of a card), add-food's result rows (a PRIVATE
-  per-theme opacity map duplicating cardShadowOpacity, next to a hardcoded '#000'), recipe-builder (0.12),
-  food-detail's nutritionCard (NO shadow), ai-meal-estimator (4 inline cards, NO shadow), achievements
-  (locked badges on black; EARNED badges could not lift because their shadow is their TIER colour and a
-  light colour darkens nothing -- the lift moved to the pulse wrapper they already had), body-measurement-log
-  (NO shadow), journal (see below), sleep (0.12 = a third strength).
-  STILL BROKEN, KNOWN: support.tsx's `missionCard` (The Promise) -- overflow:'hidden' + NO shadow, needs the
-  wrapper like its neighbours. Named `missionCard`, so the `card:` search never saw it.
-  CHECKED AND INNOCENT (do not re-litigate): profile.tsx (its only overflow is the save bar's blur clip, no
-  shadow); HRZonesStatsCard (progress track); IFCard (already correctly wrappered); log.tsx mealRow (has no
-  shadow at all -- a separate design question, not this bug).
-  >> ⚠️ THAT "INNOCENT" LIST IS WEAKER THAN IT LOOKS. It was built by checking whether the overflow view had
-  a shadow ON IT. Journal proved that is not enough: its card's shadow was one level BELOW the clip (the
-  clip hides the swipe-to-delete button), and **a parent that clips also clips its children's shadows**. No
-  "shadow + overflow on the same line" search can find that. Re-check the innocent list for the child case.
-  METHOD (proven): for each hit ask WHY the overflow is there. Only clipping a corner watermark -> use
-  `CardWatermark` and DELETE the overflow (no wrapper, no closing-tag surgery -- this covered 11 of Home's
-  13). Clipping something structural (carousel, collapse animation, a tint layer, a 2.5px edge strip that
-  cannot self-clip) -> move the shadow to a plain wrapper (`styles.sectionShadow` in settings.tsx, or
-  IFCard's `s.cardShadow`) and leave overflow on the face.
-  >> SEARCH PROPERLY. A single-line regex (shadow + overflow on the same line) MISSES the StyleSheet cases
-  and multi-line style objects -- it missed GratitudeStreakCard and Faith entirely, and Justin caught both.
-  Also: grepping a SCREEN is not enough; cards live in component files that the screen only renders
-  (Gratitude was the miss). List every `overflow: 'hidden'` (137 hits / 66 files) and check each for a shadow.
-  >> DARK IS NOT FIXABLE and does not need to be -- black shadow on a near-black page. Do not "fix" it by
-  raising cardShadowOpacity; nothing will happen. If Dark ever wants depth the tool is a light TOP rim.
-- [NOW] [VISUAL REFRESH -> SURFACE PASS] The last structural piece of the refresh. **22 stack screens
-  still paint the OLD top-down gradient** while the 6 tabs are lit from BELOW (flat ground + bottom glow +
-  halftone), so the app changes its lighting every time you leave a tab. Swap each screen's LinearGradient
-  wrapper for the flat ground + BackgroundLayers, exactly as the tabs got. Mechanical + low-risk (proven 6x
-  on the tabs); do it in batches. ALSO in this pass: the Profile **Supporter card** is translucent so the
-  page glow/halftone shows straight through it -- needs an opaque fill like the other cards.
-  >> ✅ **DONE 2026-07-16. Every page in the app is lit from below** -- all 6 tabs + ~30 stack screens. The
-  app no longer changes its lighting when you leave a tab. Verified: zero screens use `gradientStart` (it
-  survives ONLY as the wash behind Otto's + Halo's chat panels -- it no longer means "the top of a page"),
-  and every `flex: 1, backgroundColor: bgPrimary` screen now has a `<BackgroundLayers />`.
-  >> ⚠️ THE FINISH LINE WAS WRONG THE FIRST TIME, and the lesson generalises: I converted the 11 screens
-  using the OLD gradient, found `gradientStart = 0`, and called the pass complete. But **17 more screens
-  painted a flat `bgPrimary` and stopped** -- right ground colour, NO glow, NO halftone. A screen that never
-  had a gradient does not show up in a search for gradients. Justin caught it by asking "are you not adding
-  the gradient to any of these?". SEARCHING FOR THE BROKEN VERSION OF A THING NEVER FINDS THE MISSING
-  VERSION OF IT. (Two of them -- diagnostic-report + diagnostic-report-view -- also aliased the theme as
-  `t.bgPrimary`, so even the corrected search missed them.)
-  >> ONBOARDING (7 screens) is the ONLY thing left, deliberately: it is a separate flow and Justin wants a
-  plan before it is touched -- it may be a chance to change more than the surface.
-  >> The conversion is 2 lines: a `<BackgroundLayers />` under the container + the import. (On a screen that
-  still had the old gradient it was also `gradientStart` -> `gradientEnd`, i.e. the same colour twice = the
-  flat ground.)
-  >> FAITH SCREENS PASS AMBER (confirmed 2026-07-15): the Faith TAB already does
-  `<BackgroundLayers glow={theme.accentAmber} />`, and prayer/plans/devotional/bible/journal are ALL still
-  on the old LinearGradient -- they have no glow to be the wrong colour yet. When this pass reaches them,
-  faith screens pass accentAmber, everything else passes the accent. Justin asked about this directly; it
-  is not a separate decision, just a note for whoever runs the pass.
-  >> WATCH: cards are NOT opaque. bgCardGlass runs 0.62-0.82 (Light is the MOST opaque at 0.82; Dark/Slate/
-  Warm/Blush sit ~0.62-0.66), so a third more glow bleeds through their cards. Every tinted button shined
-  on 2026-07-15 was judged on LIGHT, the friendliest case. If they wash out on Slate/Dark, the fix is the
-  new `accentBlueBgOpaque` token (added for Stats' VIEW ALL ACHIEVEMENTS, which sits on the PAGE not a card
-  and vanished into the accent-coloured bottom glow).
-- [NOW] [VISUAL REFRESH -> VOICE PASS] Ranade (the voice face) is on ~6 lines, all on Home (Coach Insight,
-  the readiness line, the Recovery/Sleep AI tips, one Weight line). The judgement calls a script can't
-  make: Otto's chat bubbles (HIS = voice, YOURS = interface -- that contrast is the point), Effort vs
-  Results insight copy, verses, devotionals. Weight ladder is locked (Regular body / Medium / Bold title).
-- [NOW] [BUG, found 2026-07-14] **THE SLIDE-UP BOTTOM SHEETS.** Both violate the standing centered-modals-
-  only rule and both are STRUCTURAL conversions (bottom sheet -> centered card), not header swaps -- which
-  is why they were parked through the whole modal-header sweep. Grouped because they are the same job:
-    1. **Journal "New Entry"** (journal.tsx). Slide-up sheet (translateY + handle); the handle pill is
-       decorative. "New Entry" copy is fine; the SHEET is the problem.
-    2. **Stats graph creator, the "Choose data type" step** (found 2026-07-16). Same slide-up sheet, and
-       Justin's note on top of the conversion: that step is "all white and needs some oooomph somehow" --
-       i.e. it needs a real design pass, not just a container swap. Do the structure first, then the look.
-  >> Both are MODALS, so they sit outside the 2026-07-16 glow/shadow sweep (which is pages only, by
-  Justin's call -- modals float over a dim overlay where a shadow does almost nothing).
-- [QUICK WIN] [found 2026-07-14] **Non-modal number-face stragglers.** The modal + page header sweeps are
-  done, but a scan still finds Type.num (the NUMBER face) on a few NON-modal things: Profile's save-bar
-  buttons (CANCEL / SAVE PROFILE), a "REST DAY" workout-tab heading, and some IFCard / cardio button labels.
-  Same class as the PrimaryCTA fix -> button labels go to Interface, the REST DAY heading to Clash. Also
-  optional: two info-modal titles (CalorieFloor, MeasureHowTo) sit on bold INTERFACE rather than Clash --
-  not a bug (no number-face, no caps, no black), Justin's call whether to unify them.
+- [NOW, do today/tomorrow] STARTER CHALLENGE -> theme unlocks (Slate / Warm / Blush). The 3 non-default
+  themes are meant to be EARNED by completing a short starter challenge (per CLAUDE.md theme system), but
+  the unlock mechanic needs building/verifying. FIRST STEP = state-check what already exists (are the
+  themes actually gated? does any challenge exist?) before building, so we don't assume. Keep the "no theme
+  is EVER paid" rule intact -- these are earned, never bought (distinct from the monetization track).
+  Surfaced 2026-07-11.
+- [NOW, do today/tomorrow] [QUICK WIN, found 2026-07-15] **Progress-bar treatment pass.** The bars
+  (calories, water, steps, macros, etc.) are flat solid-fill on a flat track -- plain. Give the fill a
+  subtle gradient and/or a soft top sheen (Whoop/Oura style), maybe a faint glow at the leading edge. Every
+  bar animates already, so just the fill styling.
 - [found 2026-07-16] **Centralize the card shadow (stop the drift at its source).** Purely preventive --
   ZERO visual change -- so it is ranked below anything a user can see. But it is the thing that ends the
-  bug class: every card hand-rolls 5 shadow props, and that produced FOUR different failures in one day
-  (hardcoded black x3, wrong opacity, missing offset/radius, clipped by overflow). Smallest useful version:
-  export ONE `cardShadow(theme)` from GradientCard and have every hand-rolled card spread it -- then "make
-  cards deeper" is one number, not a 40-site hunt. The FULL fix is migrating cards to `<GradientCard>`, but
-  that needs GradientCard's OWN hardcoded '#000' @0.12 shadow fixed first or every card gets worse, and
-  each card passes different props, so it is a real refactor. NOTE: this does NOT prevent someone re-adding
-  overflow:'hidden'; what helps there is that `CardWatermark` now removes the reason anyone did.
-- [QUICK WIN] [found 2026-07-16] **`bgInset` tiles with no border.** Profile's estimate tiles + Projected
+  bug class: every card hand-rolls 5 shadow props, and that produced FOUR different failures in one sweep
+  (hardcoded black x3, wrong opacity, missing offset/radius, clipped by overflow -- full history in the
+  archive). Smallest useful version: export ONE `cardShadow(theme)` from GradientCard and have every
+  hand-rolled card spread it -- then "make cards deeper" is one number, not a 40-site hunt. The FULL fix is
+  migrating cards to `<GradientCard>`, but that needs GradientCard's OWN hardcoded '#000' @0.12 shadow
+  fixed first or every card gets worse, and each card passes different props, so it is a real refactor.
+- [QUICK WIN, found 2026-07-16] **`bgInset` tiles with no border.** Profile's estimate tiles + Projected
   box were fill-only (no outline) and vanished once Light's ground brightened; both fixed. The same
   "bgInset fill, no border" pattern almost certainly exists on other screens -- sweep for it.
-- [QUICK WIN] [found 2026-07-15] **Progress-bar treatment pass.** The bars (calories, water, steps, macros,
-  etc.) are flat solid-fill on a flat track -- plain. Give the fill a subtle gradient and/or a soft top sheen
-  (Whoop/Oura style), maybe a faint glow at the leading edge. Own mini-treatment, part of the visual refresh
-  button/surface family. Every bar animates already, so just the fill styling. Justin flagged 2026-07-15.
-- [QUICK WIN] [found 2026-07-15] **Otto (+ Halo?) FAB placement audit.** The floating companion FAB sits
-  bottom-left on many stack screens and OVERLAPS the last card's content when the page has no bottom padding
-  (confirmed on Sleep & Recovery > Recovery: the FAB covers the Recovery Coach text). Sweep every screen that
-  renders the FAB, confirm each scroll view has enough bottom contentInset/padding so nothing sits under the
-  FAB, and decide whether Halo needs the same pass. Systematic, low-risk padding fix.
-  >> PARTIAL 2026-07-16: the two Justin flagged from the gym are FIXED -- sleep.tsx + achievements.tsx scroll
-  paddingBottom bumped to `insets.bottom + 96` (clears the 56px disc sitting at bottom+20..bottom+76).
-  achievements was worse: a flat `40` that never even added the safe-area inset. STILL OPEN: the FULL sweep of
-  every other Otto-FAB screen (day-detail, day-summary, settings, etc.) for the same clearance.
-  workout.tsx CHECKED 2026-07-17 -- Otto clears fine at rest (scrolled to the bottom); Claude misread a
-  mid-scroll frame from a screen recording as a resting-state overlap. Not a bug, no action needed.
-  add-food.tsx FIXED 2026-07-17: the food list FlatList had NO contentContainerStyle at all (zero bottom
-  padding), same `insets.bottom + 96` fix. One screen, not two -- it's titled "Food Library" in browse mode
-  and "Add to [Meal]" when logging to a slot, so this closes both the general sweep item and the TestFlight
-  sighting at once.
+- [QUICK WIN, found 2026-07-15, PARTIAL] **Otto (+ Halo?) FAB placement audit.** The floating companion FAB
+  sits bottom-left on many stack screens and can overlap the last card's content when the page has no
+  bottom padding. FIXED so far: sleep.tsx + achievements.tsx (paddingBottom bumped to `insets.bottom + 96`),
+  add-food.tsx (FlatList had zero bottom padding, same fix -- covers both "Food Library" and "Add to
+  [Meal]" modes). workout.tsx CHECKED, clears fine at rest, not a bug. STILL OPEN: full sweep of every
+  other Otto-FAB screen (day-detail, day-summary, settings, etc.) for the same clearance, and whether Halo
+  needs the same pass.
 - [VISUAL REFRESH -> OWN DESIGN PASS] **Bible's Reflect bar does DOUBLE DUTY.** One tinted strip is
   simultaneously (a) a BUTTON -- the left flex:1 region is a tap target opening the reflection modal, or the
   journal once reflected -- and (b) a TOOLBAR holding four unrelated icon buttons (sun / star / share /
   Halo). The tint says "I am one thing you press" while four parts of it do four different things and only
-  the left half does what the label says. That is why it reads off, and why it was REFUSED shine on 07-15:
-  a gloss across the whole strip doubles down on the lie, and it is the widest surface in the app so it
-  would go plastic anyway (see shine-scales-with-area). Flat is correct FOR NOW (tier-3 passive) but it is
-  treating the symptom. FIX = split the double duty: "Reflect" becomes a real tinted pill that shines like
-  any other action button, the four icons go on a flat strip or the page itself. Needs its own screenshots.
-  NOT free: the sun + star icons are TUTORIAL TARGETS.
-  >> RULE CORRECTED 2026-07-15, same day it was written: I logged "SHINE SCALES WITH AREA" off Justin's
-  "plastic-y" on the 190px Repeat pills, and predicted full-width buttons would need a weaker gloss. WRONG --
-  workout-library's FULL-WIDTH Load Program/Load Routine took the default 0.52 unchanged and Justin liked
-  them. "Plastic" came from REPETITION (2 pills x 8 slots), not width; it was DON'T-OVER-GLAZE in disguise.
-  A wide button alone is fine. Count how many are on screen before blaming the gloss. Detail in the spec.
-- [VISUAL REFRESH -> what's actually left of it] The button-texture threads are CLOSED (see RECENTLY
-  SHIPPED 2026-07-17). **Title accent-GRADIENT fill SHIPPED 2026-07-17** (see RECENTLY SHIPPED) -- every
-  page title, modal title, and tab header now has the masked lift/sink gradient, tuned across several
-  device rounds (vertical not diagonal, three-stop not two, brightness-adaptive so Yellow doesn't blow out
-  or brown out). STILL OPEN from that same spec line, MISSED this round: the header "?" help icon was
-  supposed to get the SAME masked accent-gradient fill as the titles (it's a bare icon, not the
-  square-shine treatment the other header icon-buttons got) -- do this next, it's the same GradientTitle-
-  style masked technique applied to an icon glyph instead of text. Also still open: Warm + Blush getting
-  the Light treatment. Card stagger on mount is IN PROGRESS -- see the tab-mount-stutter item above (built
-  on Workout 2026-07-17 as the fix for a real bug, Stats + Profile still need their own pass).
-- [TRACK, VISION LOCKED + SPECCED 2026-07-07 -> ready to build] Custom Reports (Pro). Model: report =
-  date range (week/month/3mo/6mo/1yr/custom) + chapters, each a PICKER into a library of ~55 pre-designed
-  blocks the user assembles freely; templates = pre-filled block sets; exportable (PDF/share); Pro-gated
-  (free = no access; faith DATA still free elsewhere); Mindful + faith-tier aware; wearable-gated blocks.
-  Premium is protected because WE design every block (user picks WHAT, never HOW it looks -- not a build-
-  your-own chart tool). Phase 2 = AI prompt that ASSEMBLES blocks from plain language (blocks are the
-  foundation it needs). Full detail + tiered block catalog: SPEC_custom_reports.md. Live light-theme/cyan
-  mockup built this session. NEXT: rank blocks Core vs Wave 2, pick launch templates, storage + export tech.
-  >> SLICE 1 BUILT 2026-07-07 (foundation, testable end-to-end, pure JS no rebuild): utils/reports.ts
-     (pj_reports store, additive) + utils/reportBlocks.ts (block registry + 7-chapter taxonomy) + app/
-     reports.tsx (hub: list/new/delete, beta-open to all) + app/report.tsx (report screen: range chips +
-     block picker + 3 purpose-built renderers -- gradient SVG line trend, stat tiles, macro bar, all live
-     from fetchTrendData) + Stats > Reports entry card. 3 starter blocks: Weight trend, Nutrition headline,
-     Macro split. REMAINING: more blocks (grow the ~55), custom date range UI, export (PDF/share),
-     templates, per-chapter faith-tier/wearable gating in the picker, tooltip + Otto KB. Device-verify pending.
+  the left half does what the label says. FIX = split the double duty: "Reflect" becomes a real tinted pill
+  that shines like any other action button, the four icons go on a flat strip or the page itself. Needs its
+  own screenshots. NOT free: the sun + star icons are TUTORIAL TARGETS. (Rule-correction history on
+  shine-scales-with-area is in the archive/spec -- short version: a wide button alone is fine, repetition
+  is what read as plastic, not width.)
+- [TRACK, VISION LOCKED + SPECCED 2026-07-07, SLICE 1 SHIPPED -- see RECENTLY SHIPPED] Custom Reports
+  (Pro) remaining work. Model: report = date range (week/month/3mo/6mo/1yr/custom) + chapters, each a
+  PICKER into a library of ~55 pre-designed blocks the user assembles freely; templates = pre-filled block
+  sets; exportable (PDF/share); Pro-gated (free = no access; faith DATA still free elsewhere); Mindful +
+  faith-tier aware; wearable-gated blocks. Premium is protected because WE design every block (user picks
+  WHAT, never HOW it looks). Phase 2 = AI prompt that ASSEMBLES blocks from plain language. Full detail +
+  tiered block catalog: SPEC_custom_reports.md. REMAINING: grow the block library toward ~55, custom date
+  range UI, export (PDF/share), templates, per-chapter faith-tier/wearable gating in the picker, tooltip +
+  Otto KB entries.
 - [FOLLOW-ON TO DISCUSS, from Repeat a Meal which SHIPPED 2026-07-10] "SAVE AS A MEAL" = save a group of
   distinct foods as a named, reusable one-tapper (Justin curious). Differs from a Recipe: a recipe BLENDS
   ingredients into ONE food line (single entry, loses the items); a meal keeps the foods as SEPARATE
@@ -1067,12 +884,6 @@ are separate pre-submission checklists, NOT part of this menu.
   the restore lands. Optional belt-and-suspenders: backfill unlockedAt from goal-day history for count-
   based badges. Touches the sync/restore/achievement flow -> do deliberately + verify with a device
   reinstall. (Surfaced via the Custom Reports "Achievements earned" block 2026-07-07.)
-- [ ] STARTER CHALLENGE -> theme unlocks (Slate / Warm / Blush). The 3 non-default themes are meant to be EARNED
-  by completing a short starter challenge (per CLAUDE.md theme system), but the unlock mechanic needs building /
-  verifying. FIRST STEP = state-check what already exists (are the themes actually gated? does any challenge
-  exist?) before building, so we don't assume. Keep the "no theme is EVER paid" rule intact -- these are earned,
-  never bought (distinct from the monetization track). Surfaced 2026-07-11 (Justin flagged it during the
-  monetization thread so it would not get forgotten).
 - [PARKED 2026-07-12, known limitation, do not keep prompt-tweaking] EvR ranked diagnostic card INSIGHT (the middle
   "why" sentence) occasionally comes out rambling/circular -- e.g. the sleep->workout card kept landing on "...the
   session you planned simply does not happen," which just restates the claim+proof and reads weird. INVESTIGATED:
@@ -1087,16 +898,6 @@ are separate pre-submission checklists, NOT part of this menu.
   bad patterns (whack-a-mole), or (b) DROP the insight sentence on these cards entirely (claim+proof+lever already
   stand strong) -- trade-off is losing the occasional good insight. Not a copy-string audit; it's an AI-output
   problem. Files: utils/coachAI.ts (FEED_VOICE_RULEBOOK, voiceDiagnosticCards, sanitizeVoicedLine).
-- [QUICK-ISH WIN, raised 2026-07-13, Justin loved the result] PRIMARY BUTTON ROLLOUT. The Support screen's
-  "Become a Supporter" CTA was rebuilt and is now the app's button standard, extracted to components/
-  PrimaryCTA.tsx: a MOLDED look (true vertical light->dark gradient overlay, so it works with every accent
-  with no color math -- the old "sheen" was a translucent band across the top half, which read as a two-tone
-  slab with a seam), an ACCENT-tinted glow instead of a black shadow, Bebas caps type (DMSans bold = the same
-  weight as body copy, so labels read as plain text on a colored rectangle), press-scale + a built-in busy
-  spinner. RULE: solid fill = the ONE primary action on a screen; secondary actions keep the house tinted
-  recipe. TASK = sweep the app for primary CTAs and swap them to <PrimaryCTA> (Justin: "I kind of want to go
-  through the app and find buttons to change to this style"). Deliberately NOT swept yet -- do it as its own
-  pass so each screen's primary-vs-secondary call is made deliberately, not bulk-replaced.
 - [EXPLORE, unspecced -- raised 2026-07-13 from the gym. Do AFTER the monetization/Support track closes.]
   Four raw ideas, ranked by how real they are. NONE are specced; each needs a design pass before any code.
   1. [MOST REAL] GOAL WEIGHT + GOAL DATE ("by when"). Today the user picks a PACE and the app derives the date.
@@ -1217,7 +1018,6 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 - Daily Intention card for Not Right Now users -- Today's Message morphs for NRN. Low priority.
 
 ### Home / UX
-- Primary button audit -- all primary CTAs to full accent fill; transparent bordered = secondary only.
 - Day detail BMR row -- add estimated BMR to the calorie breakdown (Consumed/Burned/Net).
 - Exclusions polish -- first-use callout on calendar dot; help article; excluded-list view (view + un-exclude); three entry points.
 - Day Summary card enhancements -- configurable surface time, earlier-access home card option, richer multi-day context. Design session first.

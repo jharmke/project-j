@@ -11,6 +11,122 @@
 
 ---
 
+## 🌤️ VISUAL REFRESH CLOSEOUT: SURFACE, VOICE, STAGGER, WARM+BLUSH, CARD SHADOWS, NUMBER-FACE, SLIDE-UP SHEETS (CLOSED 2026-07-18)
+This closes out the VISUAL REFRESH track (SPEC_visual_refresh.md). Everything below was audited against
+LIVE CODE on 2026-07-18, not assumed from the spec doc, which had gone stale in several places.
+
+**SURFACE PASS** -- shipped 2026-07-14, confirmed complete 2026-07-18. Every screen in the app is lit from
+below (flat ground + bottom glow + halftone via mixBlendMode + grain, glass cards, ABSOLUTE glass tab bar +
+header so content scrolls under both ends, per-theme card shadows, new opaque `bgSelected` token). Only
+day-detail.tsx (a sheet, correctly flat) and sign-in.tsx (deliberate custom pre-auth treatment) lack
+`<BackgroundLayers />` -- both fine as-is, Justin's call. Onboarding: 6 of 7 screens carry BackgroundLayers;
+faith-journey.tsx correctly has none (hardcoded dark ember background regardless of theme, so glow/halftone
+would be invisible there anyway).
+>> ⚠️ THE FINISH LINE WAS WRONG THE FIRST TIME (2026-07-16), and the lesson generalises: converting the 11
+screens still using the OLD top-down gradient and finding `gradientStart = 0` was called "done," but 17 MORE
+screens painted a flat `bgPrimary` and stopped -- right ground colour, no glow, no halftone. A screen that
+never had a gradient does not show up in a search for gradients. Justin caught it by asking "are you not
+adding the gradient to any of these?" SEARCHING FOR THE BROKEN VERSION OF A THING NEVER FINDS THE MISSING
+VERSION OF IT. (Two screens -- diagnostic-report + diagnostic-report-view -- also aliased the theme as
+`t.bgPrimary`, so even the corrected search missed them.)
+>> ⚠️ THE FONT BUG (2026-07-14): Fontshare ships Ranade and Clash as ONE FAMILY PER WEIGHT, iOS resolves
+`fontFamily` against a font's internal names, and a miss falls back SILENTLY -- so every Ranade weight
+change collapsed onto one face. THREE weight changes produced zero pixels of difference before this was
+caught; it burned an afternoon being treated as a taste problem. **A weight change with no visible response
+is a BUG, not a design failure.** Fix: six .ttf name tables patched (glyphs untouched), proven with an
+on-device 4-cut specimen against an Onest 400/700 control. Any future Fontshare weight change needs the same
+patch. Google-Fonts-packaged faces (Onest, Rajdhani) were never affected -- prefer them going forward.
+>> TYPE SYSTEM: four-role type system shipped (typography.ts -- Clash Display / Rajdhani Bold / Onest /
+Ranade, each a one-line swap). Type sweep confirmed complete across all 6 tabs + ~43 stack screens (1408+
+refs); zero files under app/ still reference Bebas/DMSans_700Bold.
+>> HEADERS (shipped 2026-07-14): two components now own every header app-wide. **ScreenHeader** (pages: 28px
+Clash accent mixed-case, left-aligned, bare chevron, no eyebrow) on all 34 pushed screens. **ModalHeader**
+(modals: 20px Clash accent mixed-case, left-aligned, centred handle pill + top-right X, optional
+subtitle/subRow/faith-amber) on every titled modal -- ~15 standalone components plus the inline modals
+across workout-library, all four tabs, tag modals, drilldowns, prayer/faith modals, Otto Notifications, and
+Day Detail (always a sheet, so 20px not 28px).
+
+**VOICE PASS** -- CLOSED 2026-07-18. Ranade (the voice face) coverage confirmed across Home (Coach Insight,
+readiness line, Recovery/Sleep AI tips, one Weight line), Otto's chat bubbles (his = voice, yours = interface
+-- that contrast is the point), Effort vs Results insight copy, verses, and devotionals. Weight ladder locked
+as Regular body / Medium / Bold title.
+
+**CARD STAGGER** -- CLOSED 2026-07-18. FadeInDown wired on all 6 tabs (34 instances). The spec's "Stats +
+Profile still need their own pass" note was stale; that work had already happened.
+
+**WARM + BLUSH THEMES** -- CLOSED 2026-07-18. Justin ran both on-device, felt fine. The spec's build-order
+item #8 (type sweep on the ~30 stack screens) was also stale, confirmed done.
+
+**BUTTON TEXTURE** -- both the molded-CTA rollout and the chip/icon shine, closed 2026-07-17 (own archive
+section below, "CHIP / ICON-BUTTON TOP SHINE").
+
+**TITLE ACCENT-GRADIENT FILL** -- shipped 2026-07-17 (own archive section below). The header "?" help icon
+plus every (i) icon and gear icon app-wide got the same masked-gradient treatment 2026-07-18 (gear icon
+COLORS deliberately left as-is -- grey stays grey, amber stays amber -- only the wash was added, sidestepping
+the earlier "a quiet settings affordance starting to look like a CTA" concern that had it parked).
+
+**CARD SHADOWS** -- DONE on every card on every PAGE (6 tabs + ~30 stack screens, plus component-file cards:
+GratitudeStreakCard, MembershipCard, ReadingPlansCard, FaithTodayCard) and all 7 onboarding screens
+(your-style/apple-health/notifications/all-set have full shadows; profile-setup/style-survey have no card
+containers at all, correctly nothing to shadow; faith-journey correctly has none, same hardcoded-background
+reason as the surface pass). MODALS ARE PARKED -- excluded by Justin's call ("day detail is a modal, no? we
+arent touching modals right now. way too messy. just full pages"), reconfirmed 2026-07-18. A modal floats
+over a dim overlay where a shadow does almost nothing, so this is the lowest-value corner. Known sites with a
+shadow + overflow on the same view, if ever revisited: log.tsx jump-to-date (2293); workout.tsx Add/Edit
+Exercise + tag + Load Routine (2923 / 3034 / 3349 / 3462); workout-library.tsx x5 (3054 / 3273 / 3579 / 3753 /
+3806); day-detail.tsx (385); ai-meal-estimator.tsx (973); components/BodyMeasurementsCard.tsx picker (186).
+Component-file modals never checked: AchievementToast, CustomFoodCreator, DaySummaryModal, FeedbackModal,
+HRZoneModal, MeasureHowToModal, MetricDrilldownModal, NotificationPanel, NutritionGearModal,
+NutrientDrilldownModal, RepeatMealModal, SummaryReadyModal, ToolkitSheet, TooltipModal, VersePoolModal,
+WeightHistoryModal.
+>> **THERE IS NO SEARCH THAT PROVES A SHADOW SWEEP IS FINISHED.** The failure mode where a shadow was simply
+never written is invisible to every grep -- nothing is broken, so nothing matches. Justin caught Gratitude,
+the earned badges, the log-measurements cards, and Support's Promise card AFTER each was called done. The
+only check that works is opening a screen and asking "does every card here have a theme shadow?"
+>> A PARENT THAT CLIPS ALSO CLIPS ITS CHILDREN'S SHADOWS. Journal's card shadow was one level BELOW its
+overflow-hidden clip (the clip hides the swipe-to-delete button) -- no "shadow + overflow on the same line"
+search can find that; the shadow and the clip were on different elements entirely.
+>> METHOD (proven): for each `overflow:'hidden'` hit (137 hits / 66 files, checked all), ask WHY the overflow
+is there. Only clipping a corner watermark -> use `CardWatermark` and delete the overflow entirely (covered
+11 of Home's 13 cases). Clipping something structural (carousel, collapse animation, a tint layer, a thin
+edge strip that can't self-clip) -> move the shadow to a plain wrapper (`styles.sectionShadow` in
+settings.tsx, or IFCard's `s.cardShadow`) and leave the overflow on the face.
+>> DARK IS NOT FIXABLE and doesn't need to be -- black shadow on a near-black page. Raising
+cardShadowOpacity won't do anything visible. If Dark ever wants depth, the tool is a light TOP rim, not more
+shadow.
+>> Fixed across two sweeps (2026-07-16, 2026-07-18): plans.tsx (hardcoded black), synced-workouts (no
+shadow), support + whats-new (right wrapper pattern but 0.12 black = a third of a card), add-food's result
+rows (a private per-theme opacity map duplicating cardShadowOpacity, next to a hardcoded '#000'),
+recipe-builder (0.12), food-detail's nutritionCard (no shadow), ai-meal-estimator (4 inline cards, no
+shadow), achievements (locked badges on black; earned badges couldn't lift because their shadow was their
+TIER colour and a light colour darkens nothing -- lift moved to the pulse wrapper), body-measurement-log (no
+shadow), journal (see above), sleep (0.12 = a third strength), support.tsx's `missionCard`/The Promise
+(overflow:hidden + no shadow, named oddly so the `card:` search never saw it).
+>> Preventive follow-on filed separately in NEXT UP: centralize the shadow into one `cardShadow(theme)`
+export so this bug class can't recur from hand-rolled shadow props drifting.
+
+**NUMBER-FACE STRAGGLERS** -- CLOSED 2026-07-18. Profile save-bar Cancel/Save Profile were already correct
+(stale roadmap note, confirmed in code + on device). REST DAY heading (Workout empty state) moved off the
+numeric font onto a heading font + gradiented. IFCard's "LAST MEAL" button font-face fixed (stays flat white,
+same as every other solid CTA label). Workout's "mark complete" button doesn't exist anywhere on screen (dead
+unused style) and "Add Exercise" already had the correct font/color -- both were stale roadmap notes, not
+real bugs.
+
+**THE SLIDE-UP BOTTOM SHEETS** -- CLOSED 2026-07-18, not bugs. Originally flagged as violating the
+standing centered-modals-only rule: (1) Journal's FAB → category picker ("New Entry" title, choose
+Prayer/Study/Personal/etc.), and (2) Stats graph creator's "Choose data type" step. Both confirmed by Justin
+to stay as bottom sheets on purpose -- not oversights. Journal's actual entry-WRITING form (the modal that
+opens after picking a category) is separately already a centered ModalHeader + fade card, so the flow is:
+bottom-sheet picker -> centered writing modal, and that split is fine as designed.
+
+**TUTORIALS GRADIENT PASS** -- left PINNED (Justin's call, see backlog). No shared tutorial-card component
+exists; every tutorial's overlay card is hand-built per screen, so the all-caps-wrong-font titles and
+untouched Next/Continue buttons would mean touching each tutorial individually -- not a one-spot fix like
+everything else in this rollout. Not worth brute-forcing; revisit only if it starts to bother Justin again or
+a shared tutorial-card component gets built for other reasons.
+
+---
+
 ## 🌈 TOOLTIP + FULL TITLE/MODAL GRADIENT SWEEP, THEN LOG TAB NUMBERS PASS (CLOSED 2026-07-17)
 Follow-on to the Title Accent-Gradient Fill entry below: that pass covered ScreenHeader/ModalHeader and
 the 6 tab headers, but a search proved most of what Justin would call "a modal" in this app never routes

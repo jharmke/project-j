@@ -28,6 +28,16 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-18 **Reports gradient pass, device pending verify. Closes the gradient rollout.** Turned out to
+  be ~14 shared renderer components behind the ~55 block library, not 55 bespoke designs -- gradiented all
+  of them (row titles + values across TopFoods, FoodLog, Records, WorkoutHistory, CaloriesByMeal,
+  DayExtremes, ExerciseFrequency, SleepStages, BodyMeasurements, AchievementsEarned, ChallengeHistory,
+  StatTiles, MacroSplit, BlockCard's header value) plus Report/Template names and "Start from a template."
+  LineTrend's chart axis labels are SVG text, not RN Text, so they're excluded -- different rendering path,
+  not worth a one-off build. Also: Duration pills and the block-library "+ Add" buttons got the active/
+  shine touch-up, and a real bug got fixed -- the header pencil (rename) focused a TextInput that only
+  existed once a report had its first block, so it silently did nothing on every brand-new report. Added
+  an always-visible name field for the empty state, same ref/handlers.
 - 2026-07-18 **Onboarding gradient pass, all 6 steps, device pending verify.** Every step title now
   GradientTitle at one consistent 36px (was 36/36/36/44/40/40 -- Steps 4-6 also had a 6-16px stray gap
   under the STEP X OF 6 eyebrow, now matched to 8 everywhere). Steps 1-2 were running the generic app blue
@@ -782,19 +792,12 @@ are separate pre-submission checklists, NOT part of this menu.
 - [BUG] [found 2026-07-17, gradient pass on Stats At a Glance] **Weight Change on Stats > At a Glance shows "0 lbs" no matter which period (7D/30D/90D/180D/YTD) is selected.** Value never changes with the period toggle -- looks like `weightChange` calc is stuck/not recomputing per period. Not investigated yet, Justin deferred it.
 - [BUG] [found 2026-07-17] **Workout achievement trophies look like they're tracking TOTAL workout count, not workout DAYS.** Justin earned the "100 days" tier trophy today, but the app was only created ~2 months ago -- 100 distinct workout DAYS isn't possible yet, so the counter is likely summing something else (total workout entries logged, maybe counting multiple exercises/sets per day). Not investigated, look tomorrow.
 - [BUG] [found 2026-07-17] **Momentum streak achievements: "All In" (90 days) progress shows 0/90 despite already holding "Sixty Strong" (60 days).** Should be well past 0 if the streak is continuous. Justin's guess: may be an artifact of switching from TestFlight to an Expo dev build partway through (streak/count reset or split across install contexts) -- if that's the cause it's expected/fine, but needs confirming, not assumed. Not investigated, look tomorrow.
-- [NOW] [TITLE/NUMBER GRADIENT ROLLOUT -- ACTIVE PUNCH LIST, 2026-07-18] Continuing the tab-by-tab
-  gradient/number pass (Home, Log, Workout+Library, Bible, Journal, Settings, Add Food, AI Meal Estimator,
-  tooltip system, Day Detail + Water/Weight/Macros modals, Faith tab, Stats tab, Feedback modal, Otto/Halo
-  chat, Profile, Food Detail all DONE). A `theme.textPrimary` grep across the whole app still shows hits in
-  the remaining files below (not all bugs -- many are legit input/body text -- but it's the reliable smell
-  for a missed title/value). PROCESS: Justin scans a screen himself on-device and reports findings; Claude
-  greps/reads that screen to verify nothing was missed and flags anything ambiguous BEFORE coding; implement
-  once aligned. Remaining screens, in priority order:
-  1. Lower-traffic batch: DONE 2026-07-18 except Tutorials (Recipe Builder, Recipe Log,
-     Challenges/Challenge Create, Definitions all done, pending device verify).
-  2. Onboarding (6 screens): DONE 2026-07-18, pending device verify. See RECENTLY SHIPPED.
-  3. Reports -- separately pinned by Justin (1118 lines, distinct block types, own future pass). Only
-     remaining piece of the gradient rollout.
+- [DONE 2026-07-18, pending device verify] [TITLE/NUMBER GRADIENT ROLLOUT] The full tab-by-tab +
+  screen-by-screen gradient/number pass is complete: every tab, Settings, Add Food, AI Meal Estimator,
+  tooltip system, Day Detail + modals, Profile, Food Detail, Recipe Builder/Log, Challenges/Challenge
+  Create, Definitions, all 6 Onboarding screens, and Reports (app/report.tsx + app/reports.tsx -- the
+  last piece, see RECENTLY SHIPPED) are all done. Tutorials is the one deliberate exception, PINNED (see
+  below) since there's no shared component to fix it in one spot.
 - [PARKED, 2026-07-18] **Tutorials gradient pass -- PIN/leave, Justin's call.** No shared tutorial-card
   component exists; every tutorial's overlay card is hand-built per screen, so the all-caps-wrong-font
   titles and untouched Next/Continue buttons Justin spotted would mean touching each tutorial

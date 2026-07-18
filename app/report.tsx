@@ -13,6 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import ButtonShine from '../components/ButtonShine';
+import GradientNumber from '../components/GradientNumber';
 import BackgroundLayers from '../components/BackgroundLayers';
 import PrimaryCTA from '../components/PrimaryCTA';
 import { useTheme } from '../theme';
@@ -224,12 +225,23 @@ export default function ReportScreen() {
             const sel = report.range.preset === p;
             return (
               <TouchableOpacity key={p} onPress={() => setRange(p)}
-                style={{ backgroundColor: sel ? theme.accentBlueBg : theme.bgCard, borderWidth: 1, borderColor: sel ? theme.accentBlueBorder : theme.borderCard, borderRadius: 16, paddingHorizontal: 13, paddingVertical: 6 }}>
+                style={{ backgroundColor: sel ? theme.accentBlueBgOpaque : theme.bgCard, borderWidth: 1, borderColor: sel ? theme.accentBlueBorder : theme.borderCard, borderRadius: 16, paddingHorizontal: 13, paddingVertical: 6 }}>
+                {sel && <ButtonShine radius={16} />}
                 <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: sel ? theme.accentBlue : theme.textMuted }}>{RANGE_LABELS[p]}</Text>
               </TouchableOpacity>
             );
           })}
         </View>
+
+        {/* Name field, empty-report state ONLY. The pencil up top focuses nameRef, but the real name input
+            normally lives inside the exportable document card below -- which does not exist yet until the
+            report has at least one block. Without this, the pencil was a dead button on every report from
+            the moment "New Report" was tapped until the first block landed. Same ref, same handlers as the
+            document-card input -- only one of the two is ever mounted at once. */}
+        {activeBlocks.length === 0 && (
+          <TextInput ref={nameRef} value={report.name} onChangeText={rename} onBlur={commitName} placeholder="Report name" placeholderTextColor={theme.textDim}
+            style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3, color: theme.textSecondary, padding: 0, marginTop: 10, marginBottom: 4 }} />
+        )}
 
         {/* Live indicator -- a report re-renders from current data, so numbers move as you keep logging. */}
         {activeBlocks.length > 0 && (
@@ -305,6 +317,7 @@ export default function ReportScreen() {
                           </View>
                           <TouchableOpacity onPress={() => toggleBlock(b.id)}
                             style={{ borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: added ? 'transparent' : theme.accentBlue, borderWidth: added ? 1 : 0, borderColor: theme.accentBlueBorder }}>
+                            {!added && <ButtonShine radius={999} />}
                             <Text style={{ fontSize: 11.5, fontFamily: Type.uiBold, color: added ? theme.accentBlue : '#fff' }}>{added ? '✓ Added' : '+ Add'}</Text>
                           </TouchableOpacity>
                         </View>
@@ -383,7 +396,7 @@ function BlockCard({ block, data, prior, foodDays, workoutState, mealSlots, slot
             </TouchableOpacity>
           </View>
         ) : trendLatest != null ? (
-          <Text style={{ fontSize: 14, fontFamily: Type.uiBold, color: theme.accentBlue }}>{fmtAxis(trendLatest)}</Text>
+          <GradientNumber value={fmtAxis(trendLatest)} color={theme.accentBlue} style={{ fontSize: 14, fontFamily: Type.uiBold }} />
         ) : null}
       </View>
       {!collapsed && (
@@ -415,7 +428,7 @@ const emptyList = (theme: any, msg: string) => <Text style={{ fontSize: 13, colo
 function TemplateChooser({ onPick, onCustom, theme }: { onPick: (t: ReportTemplate) => void; onCustom: () => void; theme: any }) {
   return (
     <View style={{ marginTop: 18 }}>
-      <Text style={{ fontSize: 15, fontFamily: Type.uiBold, color: theme.textSecondary, marginBottom: 3 }}>Start from a template</Text>
+      <GradientNumber value="Start from a template" color={theme.textSecondary} style={{ fontSize: 15, fontFamily: Type.uiBold, marginBottom: 3 }} />
       <Text style={{ fontSize: 12.5, fontFamily: Type.ui, color: theme.textMuted, marginBottom: 14 }}>Pick a ready-made report, or build your own from scratch.</Text>
       <View style={{ gap: 10 }}>
         {REPORT_TEMPLATES.map(t => (
@@ -425,7 +438,7 @@ function TemplateChooser({ onPick, onCustom, theme }: { onPick: (t: ReportTempla
               <Ionicons name={t.icon as any} size={21} color={theme.accentBlue} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 14.5, fontFamily: Type.uiBold, color: theme.textSecondary }}>{t.name}</Text>
+              <GradientNumber value={t.name} color={theme.textSecondary} style={{ fontSize: 14.5, fontFamily: Type.uiBold }} />
               <Text numberOfLines={1} style={{ fontSize: 11.5, fontFamily: Type.ui, color: theme.textMuted, marginTop: 2 }}>{t.desc}</Text>
             </View>
             <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: theme.textDim }}>{t.blockIds.length} blocks</Text>
@@ -437,7 +450,7 @@ function TemplateChooser({ onPick, onCustom, theme }: { onPick: (t: ReportTempla
             <Ionicons name="add" size={22} color={theme.textMuted} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 14.5, fontFamily: Type.uiBold, color: theme.textSecondary }}>Build your own</Text>
+            <GradientNumber value="Build your own" color={theme.textSecondary} style={{ fontSize: 14.5, fontFamily: Type.uiBold }} />
             <Text style={{ fontSize: 11.5, fontFamily: Type.ui, color: theme.textMuted, marginTop: 2 }}>Start blank and pick blocks yourself</Text>
           </View>
         </TouchableOpacity>
@@ -468,13 +481,13 @@ function TopFoods({ foodDays, theme }: { foodDays: FoodDay[]; theme: any }) {
         <View key={r.name} style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
           <Text style={{ width: 16, fontSize: 12, fontFamily: Type.uiBold, color: theme.textDim, textAlign: 'right' }}>{i + 1}</Text>
           <View style={{ flex: 1 }}>
-            <Text numberOfLines={1} style={{ fontSize: 13.5, fontFamily: Type.uiSemibold, color: theme.textSecondary, marginBottom: 4 }}>{r.name}</Text>
+            <GradientNumber value={r.name} color={theme.textSecondary} style={{ fontSize: 13.5, fontFamily: Type.uiSemibold, marginBottom: 4 }} numberOfLines={1} />
             <View style={{ height: 5, borderRadius: 3, backgroundColor: theme.bgInset, overflow: 'hidden' }}>
               <View style={{ height: '100%', borderRadius: 3, backgroundColor: theme.accentBlue, width: `${Math.max(6, (r.count / maxCount) * 100)}%` }} />
             </View>
           </View>
           <View style={{ alignItems: 'flex-end', minWidth: 58 }}>
-            <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.textSecondary }}>×{r.count}</Text>
+            <GradientNumber value={`×${r.count}`} color={theme.textSecondary} style={{ fontSize: 13, fontFamily: Type.uiBold }} />
             <Text style={{ fontSize: 10.5, fontFamily: Type.uiMedium, color: theme.textMuted }}>{r.cal.toLocaleString('en-US')} cal</Text>
           </View>
         </View>
@@ -504,7 +517,7 @@ function FoodLog({ foodDays, theme }: { foodDays: FoodDay[]; theme: any }) {
               <Ionicons name={isOpen ? 'chevron-down' : 'chevron-forward'} size={14} color={theme.textMuted} />
               <Text style={{ flex: 1, fontSize: 12.5, fontFamily: Type.uiBold, color: theme.textSecondary }}>{FULL_DATE(d.date)}</Text>
               <Text style={{ fontSize: 10.5, fontFamily: Type.uiMedium, color: theme.textMuted }}>{d.entries.length} item{d.entries.length === 1 ? '' : 's'}</Text>
-              <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: theme.accentBlue }}>{total.toLocaleString('en-US')} cal</Text>
+              <GradientNumber value={`${total.toLocaleString('en-US')} cal`} color={theme.accentBlue} style={{ fontSize: 12, fontFamily: Type.uiBold }} />
             </TouchableOpacity>
             {isOpen && (
               <View style={{ gap: 5, paddingHorizontal: 12, paddingBottom: 12 }}>
@@ -553,15 +566,15 @@ function Records({ workoutState, theme }: { workoutState: any; theme: any }) {
       {rows.map((r: any, i: number) => (
         <View key={r.name + i} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, borderTopWidth: i === 0 ? 0 : 0.5, borderTopColor: theme.borderCard, paddingTop: i === 0 ? 0 : 9 }}>
           <View style={{ flex: 1 }}>
-            <Text numberOfLines={1} style={{ fontSize: 13.5, fontFamily: Type.uiBold, color: theme.textSecondary }}>{r.name}</Text>
+            <GradientNumber value={r.name} color={theme.textSecondary} style={{ fontSize: 13.5, fontFamily: Type.uiBold }} numberOfLines={1} />
             {r.date ? <Text style={{ fontSize: 10.5, fontFamily: Type.uiMedium, color: theme.textMuted, marginTop: 1 }}>{FULL_DATE(r.date)}</Text> : null}
           </View>
           <View style={{ alignItems: 'flex-end' }}>
             {r.bd && !r.bw ? (
-              <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.textSecondary }}>{formatHold(r.bd.value)}{r.bd.weight != null && r.bd.weight > 0 ? ` · ${r.bd.weight} ${weightUnitLabel(r.bd.unit)}` : ''}</Text>
+              <GradientNumber value={`${formatHold(r.bd.value)}${r.bd.weight != null && r.bd.weight > 0 ? ` · ${r.bd.weight} ${weightUnitLabel(r.bd.unit)}` : ''}`} color={theme.textSecondary} style={{ fontSize: 13, fontFamily: Type.uiBold }} />
             ) : (
               <>
-                <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.textSecondary }}>{r.bw ? `${r.bw.value} ${weightUnitLabel(r.bw.unit)} × ${r.bw.reps}` : '—'}</Text>
+                <GradientNumber value={r.bw ? `${r.bw.value} ${weightUnitLabel(r.bw.unit)} × ${r.bw.reps}` : '—'} color={theme.textSecondary} style={{ fontSize: 13, fontFamily: Type.uiBold }} />
                 {r.e1 ? <Text style={{ fontSize: 10.5, fontFamily: Type.uiMedium, color: theme.textMuted }}>Est. 1RM {r.e1.value} {weightUnitLabel(r.e1.unit)}</Text> : null}
               </>
             )}
@@ -632,10 +645,10 @@ function WorkoutHistory({ workoutState, startKey, endKey, theme }: { workoutStat
               {d.prCount > 0 && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(212,134,10,0.14)', borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2 }}>
                   <Ionicons name="trophy" size={10} color={theme.accentAmber} />
-                  <Text style={{ fontSize: 10.5, fontFamily: Type.uiBold, color: theme.accentAmber }}>{d.prCount}</Text>
+                  <GradientNumber value={String(d.prCount)} color={theme.accentAmber} style={{ fontSize: 10.5, fontFamily: Type.uiBold }} />
                 </View>
               )}
-              {(d.volLb > 0 || d.volKg > 0) && <Text style={{ fontSize: 11.5, fontFamily: Type.uiBold, color: theme.accentBlue }}>{[d.volLb > 0 ? `${d.volLb.toLocaleString('en-US')} lb` : null, d.volKg > 0 ? `${d.volKg.toLocaleString('en-US')} kg` : null].filter(Boolean).join(' · ')}</Text>}
+              {(d.volLb > 0 || d.volKg > 0) && <GradientNumber value={[d.volLb > 0 ? `${d.volLb.toLocaleString('en-US')} lb` : null, d.volKg > 0 ? `${d.volKg.toLocaleString('en-US')} kg` : null].filter(Boolean).join(' · ')} color={theme.accentBlue} style={{ fontSize: 11.5, fontFamily: Type.uiBold }} />}
             </TouchableOpacity>
             {isOpen && (
               <View style={{ gap: 5, paddingHorizontal: 12, paddingBottom: 12 }}>
@@ -684,7 +697,7 @@ function CaloriesByMeal({ foodDays, mealSlots, slotCache, theme }: { foodDays: F
               </View>
             </View>
             <View style={{ alignItems: 'flex-end', minWidth: 64 }}>
-              <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.textSecondary }}>{pct}%</Text>
+              <GradientNumber value={`${pct}%`} color={theme.textSecondary} style={{ fontSize: 13, fontFamily: Type.uiBold }} />
               <Text style={{ fontSize: 10.5, fontFamily: Type.uiMedium, color: theme.textMuted }}>~{Math.round(r.cal / nDays).toLocaleString('en-US')}/day</Text>
             </View>
           </View>
@@ -703,7 +716,7 @@ function DayExtremes({ foodDays, theme }: { foodDays: FoodDay[]; theme: any }) {
   const row = (d: { date: string; cal: number }) => (
     <View key={d.date} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 5 }}>
       <Text style={{ fontSize: 12.5, fontFamily: Type.uiMedium, color: theme.textSecondary }}>{FULL_DATE(d.date)}</Text>
-      <Text style={{ fontSize: 12.5, fontFamily: Type.uiBold, color: theme.textSecondary }}>{d.cal.toLocaleString('en-US')} cal</Text>
+      <GradientNumber value={`${d.cal.toLocaleString('en-US')} cal`} color={theme.textSecondary} style={{ fontSize: 12.5, fontFamily: Type.uiBold }} />
     </View>
   );
   const label = (t: string) => <Text style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textMuted, marginBottom: 3 }}>{t}</Text>;
@@ -744,12 +757,12 @@ function ExerciseFrequency({ workoutState, startKey, endKey, theme }: { workoutS
         <View key={r.name} style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
           <Text style={{ width: 16, fontSize: 12, fontFamily: Type.uiBold, color: theme.textDim, textAlign: 'right' }}>{i + 1}</Text>
           <View style={{ flex: 1 }}>
-            <Text numberOfLines={1} style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textSecondary, marginBottom: 4 }}>{r.name}</Text>
+            <GradientNumber value={r.name} color={theme.textSecondary} style={{ fontSize: 13, fontFamily: Type.uiSemibold, marginBottom: 4 }} numberOfLines={1} />
             <View style={{ height: 5, borderRadius: 3, backgroundColor: theme.bgInset, overflow: 'hidden' }}>
               <View style={{ height: '100%', borderRadius: 3, backgroundColor: theme.accentBlue, width: `${Math.max(6, (r.count / maxCount) * 100)}%` }} />
             </View>
           </View>
-          <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: theme.textSecondary, minWidth: 30, textAlign: 'right' }}>×{r.count}</Text>
+          <GradientNumber value={`×${r.count}`} color={theme.textSecondary} style={{ fontSize: 13, fontFamily: Type.uiBold, minWidth: 30, textAlign: 'right' }} />
         </View>
       ))}
     </View>
@@ -776,7 +789,7 @@ function SleepStages({ data, theme }: { data: TrendData; theme: any }) {
           <View key={name} style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
             <View style={{ width: 11, height: 11, borderRadius: 3.5, backgroundColor: COL[name] }} />
             <View>
-              <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: theme.textSecondary }}>{name} {Math.round((v / total) * 100)}%</Text>
+              <GradientNumber value={`${name} ${Math.round((v / total) * 100)}%`} color={theme.textSecondary} style={{ fontSize: 12, fontFamily: Type.uiBold }} />
               <Text style={{ fontSize: 11, fontFamily: Type.uiMedium, color: theme.textMuted }}>{fmtMin(v)}/night</Text>
             </View>
           </View>
@@ -808,7 +821,7 @@ function BodyMeasurements({ entries, unit, startKey, endKey, theme }: { entries:
               <Ionicons name={isOpen ? 'chevron-down' : 'chevron-forward'} size={14} color={theme.textMuted} />
               <Text style={{ flex: 1, fontSize: 12.5, fontFamily: Type.uiBold, color: theme.textSecondary }}>{FULL_DATE(s.date)}</Text>
               <Text style={{ fontSize: 10.5, fontFamily: Type.uiMedium, color: theme.textMuted }}>{fields.length} field{fields.length === 1 ? '' : 's'}</Text>
-              {typeof s.bodyFat === 'number' && <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: theme.accentBlue }}>{s.bodyFat}% BF</Text>}
+              {typeof s.bodyFat === 'number' && <GradientNumber value={`${s.bodyFat}% BF`} color={theme.accentBlue} style={{ fontSize: 12, fontFamily: Type.uiBold }} />}
             </TouchableOpacity>
             {isOpen && (
               <View style={{ gap: 5, paddingHorizontal: 12, paddingBottom: 12 }}>
@@ -867,7 +880,7 @@ function AchievementsEarned({ store, startKey, endKey, theme }: { store: Achieve
             <Ionicons name={(r.icon as any) || 'trophy'} size={15} color={r.tint} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text numberOfLines={1} style={{ fontSize: 13.5, fontFamily: Type.uiBold, color: theme.textSecondary }}>{r.name}</Text>
+            <GradientNumber value={r.name} color={theme.textSecondary} style={{ fontSize: 13.5, fontFamily: Type.uiBold }} numberOfLines={1} />
             <Text style={{ fontSize: 10.5, fontFamily: Type.uiMedium, color: theme.textMuted, marginTop: 1, textTransform: 'capitalize' }}>{r.category}</Text>
           </View>
           <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: theme.textDim }}>{FULL_DATE(r.date)}</Text>
@@ -896,10 +909,10 @@ function ChallengeHistory({ rows, startKey, endKey, theme }: { rows: { id: strin
               <Ionicons name={m.icon} size={15} color={m.color} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text numberOfLines={1} style={{ fontSize: 13.5, fontFamily: Type.uiBold, color: theme.textSecondary }}>{r.title}</Text>
+              <GradientNumber value={r.title} color={theme.textSecondary} style={{ fontSize: 13.5, fontFamily: Type.uiBold }} numberOfLines={1} />
               <Text style={{ fontSize: 10.5, fontFamily: Type.uiMedium, color: theme.textMuted, marginTop: 1 }}>{fmtDateKey(r.startKey)} – {fmtDateKey(r.endKey)}</Text>
             </View>
-            <Text style={{ fontSize: 11.5, fontFamily: Type.uiBold, color: m.color }}>{m.label}</Text>
+            <GradientNumber value={m.label} color={m.color} style={{ fontSize: 11.5, fontFamily: Type.uiBold }} />
           </View>
         );
       })}
@@ -997,7 +1010,7 @@ function StatTiles({ blockId, data, prior, theme }: { blockId: string; data: Tre
         return (
           <View key={spec.label} style={{ width: '47.6%', flexGrow: 1, backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, paddingVertical: 11, paddingHorizontal: 12 }}>
             <Text style={{ fontSize: 8.5, letterSpacing: 1.3, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textMuted, marginBottom: 5 }}>{spec.label}</Text>
-            <Text style={{ fontSize: 20, fontFamily: Type.uiBold, color: theme.textSecondary }}>{cur != null ? spec.fmt(cur) : '—'}</Text>
+            <GradientNumber value={cur != null ? spec.fmt(cur) : '—'} color={theme.textSecondary} style={{ fontSize: 20, fontFamily: Type.uiBold }} />
             {cur != null && prev != null && <DeltaChip cur={cur} prev={prev} better={spec.better} theme={theme} />}
           </View>
         );
@@ -1028,7 +1041,7 @@ function MacroSplit({ data, theme }: { data: TrendData; theme: any }) {
           <View key={name} style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
             <View style={{ width: 11, height: 11, borderRadius: 3.5, backgroundColor: col }} />
             <View>
-              <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: theme.textSecondary }}>{name} {percent}%</Text>
+              <GradientNumber value={`${name} ${percent}%`} color={theme.textSecondary} style={{ fontSize: 12, fontFamily: Type.uiBold }} />
               <Text style={{ fontSize: 11, fontFamily: Type.uiMedium, color: theme.textMuted }}>{g} g/day</Text>
             </View>
           </View>

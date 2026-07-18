@@ -23,6 +23,7 @@ import { Type } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import BackgroundLayers from '../components/BackgroundLayers';
 import PrimaryCTA from '../components/PrimaryCTA';
+import GradientNumber from '../components/GradientNumber';
 
 // 🚧 BETA HACK (revert before App Store launch): Reports is a Pro feature, but every TestFlight user gets
 // full access during beta. Flip to false (or gate on the real subscription) before public release.
@@ -113,7 +114,7 @@ export default function ReportsHub() {
                   <Ionicons name="document-text" size={20} color={theme.accentBlue} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text numberOfLines={1} style={{ fontSize: 15, fontFamily: Type.uiBold, color: theme.textSecondary }}>{r.name}</Text>
+                  <GradientNumber value={r.name} color={theme.textSecondary} style={{ fontSize: 15, fontFamily: Type.uiBold }} numberOfLines={1} />
                   <Text style={{ fontSize: 12, fontFamily: Type.uiMedium, color: theme.textMuted, marginTop: 2 }}>
                     {RANGE_LABELS[r.range.preset]} · {r.blockIds.length} block{r.blockIds.length === 1 ? '' : 's'}
                   </Text>

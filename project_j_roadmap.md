@@ -860,21 +860,20 @@ are separate pre-submission checklists, NOT part of this menu.
   redraw count. PARKED: EAS build credit hit 80% of the period's limit, true "instant" on a real slide
   transition isn't realistic anyway, and further digging was diminishing-returns. Revisit only with a
   specific new lead, not another blind sweep.
-- [NOW, IN PROGRESS, surfaced 2026-07-19] **Rewrite devotional reflections so they don't directly quote
-  KJV wording.** The WEB translation feature is otherwise fully shipped (see RECENTLY SHIPPED). This is
-  the one remaining piece: `data/devotionals.ts`'s written reflections (our own commentary, 58 total
-  across the devotional library) quote scripture directly in KJV-style phrasing in a bunch of spots, so
-  under WEB the passage above reads modern but the commentary below it suddenly reads 1611 English.
+- [NOW, PENDING JUSTIN'S REVIEW, surfaced 2026-07-19] **Rewrite devotional reflections so they don't
+  directly quote KJV wording -- full pass complete, needs a read-through before closing out.** The WEB
+  translation feature is otherwise fully shipped (see RECENTLY SHIPPED). `data/devotionals.ts`'s written
+  reflections (our own commentary) quoted scripture directly in KJV-style phrasing in a lot of spots, so
+  under WEB the passage above read modern but the commentary below it suddenly read 1611 English.
   APPROVED APPROACH (Justin signed off): paraphrase the idea in plain original voice instead of quoting
-  either translation's specific wording -- same technique already demonstrated and approved on the Isaiah
-  41:10 example. RESUME HERE: a keyword search (thee/thou/thy/hath/saith/etc.) found 14 confirmed spots,
-  but a manual read of just the first 4 of ~11-12 devotionals turned up ~8 MORE that quote scripture
-  closely without any archaic tell (e.g. "there is now no condemnation for those who are in Christ Jesus,"
-  "fell on his neck, and kissed him") -- real count is probably 25-30, not 14. Justin's last instruction:
-  stop counting/estimating up front, just go through devotionals.ts in order and fix each real quote as
-  found, no separate approval step needed per-line (already approved the approach and said "just do them
-  all" once shown examples). Nothing has been rewritten in the actual file yet -- start from day 1 of the
-  first devotional (`data/devotionals.ts`) and work forward.
+  either translation's specific wording -- same technique demonstrated on the Isaiah 41:10 example.
+  DONE THIS SESSION: went through all 15 devotionals in the file top to bottom (the 11 multi-day ones plus
+  the 4 single-day "Need a Word Right Now" ones) and rewrote every direct or near-direct scripture quote
+  found in the commentary -- real count landed at 57 individual spots, well above the original 14-quote
+  keyword-search estimate, confirming Justin's read that a manual pass would catch a lot more than
+  thee/thou/thy/hath/saith-style keyword hits alone. File type-checks clean in isolation. NOT marked
+  shipped yet -- needs Justin to actually read through some of the rewritten reflections in-app (or in the
+  file) and confirm the paraphrases still land right before this closes out.
 - [surfaced 2026-07-19, discuss next -- these were queued behind the Bible translation work] Still open
   from the original batch logged this session: **(2) Coach Insight card's EvR link with no eligibility
   check** (see next item below, already detailed), **(4) nudging Exploring/NRN users toward growth**

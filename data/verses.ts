@@ -211,13 +211,17 @@ export function getActiveVerses(pool: VersePool): Array<{ key: string; verse: Da
  * fresh verse immediately. Throws on corrupt data so the caller can fall back. `todayStr` must be
  * the local YYYY-MM-DD key both tabs already use.
  */
-// Presets (keys starting "p:") follow the selected translation, live-fetched; custom verses (keys
-// starting "c:") stay exactly as the user saved them for now -- whether those should also follow the
-// translation setting is a real product decision, not yet made, so left untouched rather than guessed.
+// Every verse -- preset or custom -- follows the selected translation, live-fetched (Justin's call:
+// whatever translation is selected should change literally everything, no exceptions). Presets have a
+// verified-accurate KJV text baked in, so KJV skips the fetch for those (fast path, zero risk). Customs
+// don't get that shortcut: their saved `.text` is frozen at whatever translation was active the moment
+// they were added, which is NOT necessarily KJV, so it can't be trusted as "the KJV wording" -- always
+// fetched live for customs, in whichever translation is currently selected. Either way, if the live fetch
+// genuinely fails (offline, bad reference), falls back to the saved text so the card is never blank.
 async function withTranslation(key: string, verse: DailyVerse, translation: BibleTranslation): Promise<DailyVerse> {
-  if (translation === 'kjv' || !key.startsWith('p:')) return verse;
-  const webText = await fetchVerseText(verse.reference, 'web');
-  return webText ? { text: webText, reference: verse.reference } : verse;
+  if (translation === 'kjv' && key.startsWith('p:')) return verse;
+  const liveText = await fetchVerseText(verse.reference, translation);
+  return liveText ? { text: liveText, reference: verse.reference } : verse;
 }
 
 export async function resolveDailyVerse(todayStr: string, translation: BibleTranslation = 'kjv'): Promise<DailyVerse> {

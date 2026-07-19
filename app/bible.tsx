@@ -22,7 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastRenderer, useToast } from '../components/Toast';
 import { storageSet } from '../utils/storage';
 import { BIBLE_BOOKS, BibleTranslation, Book, Chapter, Verse, fetchChapter, parseReference } from '../data/bible-web';
-import { loadVersePool, addCustomVerse, removeCustomVerseByRef, activeVerseCount } from '../data/verses';
+import { loadVersePool, addCustomVerse, removeCustomVerseByRef, activeVerseCount, fetchVerseText } from '../data/verses';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import TooltipIcon from '../components/TooltipIcon';
@@ -47,6 +47,34 @@ interface BibleFavorite {
   chapter: number;
   verse: number;
   savedAt: number;
+}
+
+// A saved favorite's `.text` is frozen at whatever translation was active when it was starred, which is
+// not necessarily the one currently selected -- this live-fetches the real wording in the CURRENT
+// translation per row (same self-contained pattern as GratitudeStreakCard), falling back to the frozen
+// text only while the fetch is in flight or if it genuinely fails.
+function FavoriteRow({ fav, translation, theme, onPress, onRemove }: {
+  fav: BibleFavorite; translation: BibleTranslation; theme: any; onPress: () => void; onRemove: () => void;
+}) {
+  const [liveText, setLiveText] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    setLiveText(null);
+    fetchVerseText(fav.ref, translation).then(text => { if (alive && text) setLiveText(text); }).catch(() => {});
+    return () => { alive = false; };
+  }, [fav.ref, translation]);
+
+  return (
+    <TouchableOpacity onPress={onPress} style={[styles.favRow, { borderBottomColor: theme.borderSubtle }]}>
+      <View style={{ flex: 1 }}>
+        <GradientTitle title={fav.ref} color={theme.accentAmber} style={{ fontSize: 12, fontFamily: Type.uiBold, marginBottom: 2 }} />
+        <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textSecondary }} numberOfLines={2}>{liveText ?? fav.text}</Text>
+      </View>
+      <TouchableOpacity onPress={onRemove} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <Ionicons name="trash-outline" size={16} color={theme.statusBad} />
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
 }
 
 type ScrollSpeed = 'slow' | 'medium' | 'fast';
@@ -1044,15 +1072,14 @@ export default function BibleScreen() {
               ) : (
                 <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={false}>
                   {sortedFavorites.map(fav => (
-                    <TouchableOpacity key={fav.ref} onPress={() => navigateToFavorite(fav)} style={[styles.favRow, { borderBottomColor: theme.borderSubtle }]}>
-                      <View style={{ flex: 1 }}>
-                        <GradientTitle title={fav.ref} color={theme.accentAmber} style={{ fontSize: 12, fontFamily: Type.uiBold, marginBottom: 2 }} />
-                        <Text style={{ fontSize: 12, fontFamily: Type.ui, color: theme.textSecondary }} numberOfLines={2}>{fav.text}</Text>
-                      </View>
-                      <TouchableOpacity onPress={() => removeFavorite(fav.ref)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                        <Ionicons name="trash-outline" size={16} color={theme.statusBad} />
-                      </TouchableOpacity>
-                    </TouchableOpacity>
+                    <FavoriteRow
+                      key={fav.ref}
+                      fav={fav}
+                      translation={bibleTranslation}
+                      theme={theme}
+                      onPress={() => navigateToFavorite(fav)}
+                      onRemove={() => removeFavorite(fav.ref)}
+                    />
                   ))}
                 </ScrollView>
               )}

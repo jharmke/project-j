@@ -2,17 +2,34 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../theme';
 import { useToast, ToastRenderer } from './Toast';
 import ToggleSwitch from './ToggleSwitch';
 import {
   VERSES, customKey, loadVersePool, saveVersePool, getAllVerses, resolveDailyVerse,
-  activeVerseCount, DEFAULT_POOL, type VersePool, type CustomVerse, type DailyVerse,
+  activeVerseCount, fetchVerseText, DEFAULT_POOL, type VersePool, type CustomVerse, type DailyVerse,
 } from '../data/verses';
+import type { BibleTranslation } from '../data/bible-web';
 import { Type } from '../typography';
 import ModalHeader from './ModalHeader';
+
+// A row's `.text` (preset or custom) may not match the currently selected translation -- this live-
+// fetches the real wording in whichever translation is active, falling back to the passed-in text while
+// the fetch is in flight or if it fails. Same self-contained pattern as GratitudeStreakCard / FavoriteRow.
+function LiveVerseText({ reference, fallbackText, translation, numberOfLines, style }: {
+  reference: string; fallbackText: string; translation: BibleTranslation; numberOfLines?: number; style?: any;
+}) {
+  const [liveText, setLiveText] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    setLiveText(null);
+    fetchVerseText(reference, translation).then(t => { if (alive && t) setLiveText(t); }).catch(() => {});
+    return () => { alive = false; };
+  }, [reference, translation]);
+  return <Text numberOfLines={numberOfLines} style={style}>{liveText ?? fallbackText}</Text>;
+}
 
 // Manage the Today's Message pool. Opened from the gear on the Today's Message card (both the
 // Home faith hub card and the Faith tab card). Centered floating card per the modal standard:
@@ -47,6 +64,7 @@ export default function VersePoolModal({ visible, onClose, onChanged }: Props) {
   const [pool, setPool] = useState<VersePool>({ ...DEFAULT_POOL });
   const [expanded, setExpanded] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState<CustomVerse | null>(null);
+  const [bibleTranslation, setBibleTranslation] = useState<BibleTranslation>('web');
   const initialSig = useRef('');
 
   const open = () => {
@@ -55,6 +73,9 @@ export default function VersePoolModal({ visible, onClose, onChanged }: Props) {
     loadVersePool()
       .then(p => { setPool(p); initialSig.current = sigOf(p); })
       .catch(() => { setPool({ ...DEFAULT_POOL }); initialSig.current = sigOf(DEFAULT_POOL); });
+    AsyncStorage.getItem('pj_settings')
+      .then(raw => setBibleTranslation(raw ? (JSON.parse(raw).bibleTranslation ?? 'web') : 'web'))
+      .catch(() => {});
     scaleAnim.setValue(0.92);
     opacityAnim.setValue(0);
     Animated.parallel([
@@ -237,7 +258,7 @@ export default function VersePoolModal({ visible, onClose, onChanged }: Props) {
                       return (
                         <View key={v.reference} style={[styles.verseRow, { borderColor: theme.borderSubtle }]}>
                           <View style={{ flex: 1, paddingRight: 12 }}>
-                            <Text numberOfLines={2} style={{ fontSize: 13, fontFamily: 'Lora_500Medium', color: theme.textSecondary, lineHeight: 18 }}>{v.text}</Text>
+                            <LiveVerseText reference={v.reference} fallbackText={v.text} translation={bibleTranslation} numberOfLines={2} style={{ fontSize: 13, fontFamily: 'Lora_500Medium', color: theme.textSecondary, lineHeight: 18 }} />
                             <Text style={{ fontSize: 10, fontFamily: Type.uiBold, color: theme.accentAmber, letterSpacing: 1, marginTop: 3, textTransform: 'uppercase' }}>{v.reference}</Text>
                           </View>
                           <ToggleSwitch value={on} onValueChange={() => togglePreset(v.reference, on)} accent={theme.accentAmber} />
@@ -253,7 +274,7 @@ export default function VersePoolModal({ visible, onClose, onChanged }: Props) {
                   pool.customVerses.map(c => (
                     <View key={c.id} style={[styles.verseRow, { borderColor: theme.borderSubtle }]}>
                       <View style={{ flex: 1, paddingRight: 12 }}>
-                        <Text numberOfLines={3} style={{ fontSize: 13, fontFamily: 'Lora_500Medium', color: theme.textSecondary, lineHeight: 18 }}>{c.text}</Text>
+                        <LiveVerseText reference={c.reference} fallbackText={c.text} translation={bibleTranslation} numberOfLines={3} style={{ fontSize: 13, fontFamily: 'Lora_500Medium', color: theme.textSecondary, lineHeight: 18 }} />
                         <Text style={{ fontSize: 10, fontFamily: Type.uiBold, color: theme.accentAmber, letterSpacing: 1, marginTop: 3, textTransform: 'uppercase' }}>{c.reference}</Text>
                       </View>
                       <TouchableOpacity onPress={() => askRemove(c)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ padding: 6 }}>
@@ -288,7 +309,7 @@ export default function VersePoolModal({ visible, onClose, onChanged }: Props) {
                       }]}
                     >
                       <View style={{ flex: 1, paddingRight: 12 }}>
-                        <Text numberOfLines={2} style={{ fontSize: 13, fontFamily: 'Lora_500Medium', color: theme.textSecondary, lineHeight: 18 }}>{verse.text}</Text>
+                        <LiveVerseText reference={verse.reference} fallbackText={verse.text} translation={bibleTranslation} numberOfLines={2} style={{ fontSize: 13, fontFamily: 'Lora_500Medium', color: theme.textSecondary, lineHeight: 18 }} />
                         <Text style={{ fontSize: 10, fontFamily: Type.uiBold, color: theme.accentAmber, letterSpacing: 1, marginTop: 3, textTransform: 'uppercase' }}>{verse.reference}</Text>
                       </View>
                       <Ionicons name={selected ? 'radio-button-on' : 'radio-button-off'} size={20} color={selected ? theme.accentAmber : theme.textMuted} />

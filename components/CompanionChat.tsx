@@ -194,10 +194,14 @@ function buildSegments(original: string, results: VerifyResult[]): { text: strin
   return { text, segments: merged.length ? merged : [{ type: 'text', value: text }] };
 }
 
-// Verify Halo's Scripture before it renders so nothing fabricated or misquoted is ever shown.
+// Verify Halo's Scripture before it renders so nothing fabricated or misquoted is ever shown. The real
+// wording is fetched in whichever translation the user has selected -- fetchChapter defaults to KJV when
+// called with no translation, so this is the one spot that has to explicitly pass the selection through.
 async function buildVerifiedReply(reply: string): Promise<{ text: string; segments: Segment[] }> {
   try {
-    const results = await verifyReferencesInText(reply, fetchChapter);
+    const settingsRaw = await AsyncStorage.getItem('pj_settings');
+    const translation = settingsRaw ? (JSON.parse(settingsRaw).bibleTranslation ?? 'web') : 'web';
+    const results = await verifyReferencesInText(reply, (book, chapter) => fetchChapter(book, chapter, translation));
     return buildSegments(reply, results);
   } catch {
     // Defensive offline fallback: still strip fabricated books/chapters (no network needed),

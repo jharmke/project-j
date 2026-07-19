@@ -16,6 +16,12 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-19 **Otto (Companion FAB) now glides instead of teleporting** between his tab-bar and pushed-
+  screen resting spots -- device-confirmed.
+- 2026-07-19 **Navigation haptic delay fixed, device-confirmed on TestFlight** -- buzz now fires instantly
+  on tap everywhere instead of waiting on the destination screen. Also batched 4 screens' day-by-day history
+  scans (Achievements/Settings/Add Food/Profile) into single reads. Broader "why do some screens still feel
+  slow" investigation PARKED -- see NEXT UP.
 - 2026-07-18 **Progress-bar gradient treatment, device-confirmed.** New `utils/barGradient.ts` (same
   molded lift/sink recipe as GradientTitle/GradientNumber, tuned stronger since bars are only 6-8px tall)
   wired into every flat-fill bar: Home's water/steps/macro bars + calorie/macro bars on the Log tab.
@@ -828,31 +834,14 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
-- [NOW, TACKLE FIRST, surfaced 2026-07-19] **Navigation-wide haptic/animation delay.** Every full-page nav
-  (not modals) -- settings, profile avatar, back chevrons, library, journal, achievements, sleep/recovery
-  card, top-right icons, tab bar switches, stats -> journal/custom-reports/EvR analysis, faith -> prayer --
-  feels delayed ~0.5-1s; the haptic lands right when the destination screen's slide-in starts, not on the
-  tap itself. CONFIRMED ON TESTFLIGHT (dev-build JS/Metro overhead ruled out). DIAGNOSIS SO FAR: every
-  onPress site checked fires the haptic synchronously BEFORE navigating (not a misplaced mount-side
-  trigger) -- so it's the destination screen taking a beat to become ready, and the buzz/slide riding
-  behind that instead of firing instantly on tap. TWO layers found: (1) a UNIVERSAL small delay on every
-  single full-page nav, even a screen that loads its data the right way (confirmed via Workout Library,
-  which has no loading bug and still hitches identically) -- true root cause of this layer still open. (2)
-  an EXTRA avoidable delay stacked on top for 4 screens confirmed doing "read one day at a time in a loop"
-  instead of one batched read: Achievements (365-day loop), Settings (30-day), Add Food/food library
-  (30-day), Profile (30-day). Workout Library confirmed CLEAN of this pattern. PLAN: fix (1) buzz should
-  fire instantly on tap no matter what the destination is doing, and (2) batch those 4 day-loops into single
-  reads -- both are plain JS changes, no native rebuild needed, testable live in the existing dev build via
-  Metro (per the reload-is-the-check rule) since we're removing real wait time, not chasing frame-rate
-  polish. Do NOT wait on a fresh TestFlight build just to confirm the delay itself is gone.
-- [surfaced 2026-07-19, tackle right after the haptic delay above] **Otto (Companion FAB) teleports instead
-  of sliding between its two vertical positions.** Otto sits above the tab bar on tab screens and near the
-  bottom on pushed screens (no tab bar). Moving between the two (Workout <-> Library, Log <-> Library
-  confirmed) snaps/teleports instead of animating, and it's inconsistent -- sometimes hovers over the tab
-  bar for a beat before popping to its real spot, sometimes lands correctly right away. Likely a plain
-  position value that isn't animated (no slide transition wired up), separate bug from the haptic delay
-  above (that one is a TIMING/wait issue, this one is a MISSING animation), but same neighborhood of code
-  (AssistantOverlay, fires on every nav) so worth a look in the same pass rather than a separate one.
+- [PARKED 2026-07-19 -- shipped parts in RECENTLY SHIPPED, full story in the archive] **Some screens still
+  feel slow to open, cause unidentified.** Haptic delay is fixed and 4 screens' data loading is batched (see
+  RECENTLY SHIPPED), but Settings and Achievements feel IDENTICALLY slow on TestFlight despite Achievements
+  getting a far bigger backend fix -- proves the remaining feel isn't primarily about data loading or
+  redraw count. PARKED: EAS build credit hit 80% of the period's limit, true "instant" on a real slide
+  transition isn't realistic anyway, and further digging was diminishing-returns. Revisit only with a
+  specific new lead, not another blind sweep.
+- [surfaced 2026-07-19, tackle after the haptic delay above] **Bible translation options (KJV-only).**
   Explore whether an easier-to-read translation (NIV/NLT/ESV etc.) can supplement/replace KJV -- if an
   easier option is realistically available and we still ship KJV-only, Justin considers that a real miss.
   Overlaps two already-parked items (Bible translation selector, bundle full KJV offline -- see backlog/

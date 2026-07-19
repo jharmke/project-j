@@ -103,8 +103,15 @@ export default function AssistantOverlay() {
   // navigator already insets that content above the tab bar (64 + safe-area). This overlay lives
   // ABOVE the tab bar, so to land at the same spot we add the tab-bar height + safe-area + that
   // same 18 gap. Pushed screens (no tab bar) match Halo's 20 + safe-area (as on the Bible reader).
-  const restingGap = isTab ? 18 : 20;
-  const bottom = (isTab ? TAB_BAR_HEIGHT + insets.bottom : insets.bottom) + restingGap;
+  //
+  // `bottom` itself is now the FIXED pushed-screen resting position -- it only moves with insets.bottom
+  // (stable per device/session), never per navigation, so it can never teleport. The tab-bar difference is
+  // `tabLift`, an ANIMATED offset applied inside AssistantFAB the same way the floating-save-bar lift
+  // already is, instead of being baked into `bottom` directly. That baked-in jump was why Otto used to
+  // snap/teleport between his tab and pushed-screen spots instead of gliding.
+  const restingGap = 20; // matches Halo's pushed-screen gap; `bottom` always uses this now (see above)
+  const bottom = insets.bottom + restingGap;
+  const tabLift = isTab ? TAB_BAR_HEIGHT - 2 : 0;
 
   // How far to lift Otto above an active floating save bar. floatingBarHeight is the bar's raw
   // content height (no insets baked in); `bottom` above already spends `restingGap` clearing the
@@ -123,13 +130,13 @@ export default function AssistantOverlay() {
       {showCallout && (
         <Pressable
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openChat(); }}
-          style={[styles.callout, { bottom: bottom + barLift + FAB_DISC + 10, backgroundColor: theme.bgSheet, borderColor: theme.accentBlueBorder }]}
+          style={[styles.callout, { bottom: bottom + tabLift + barLift + FAB_DISC + 10, backgroundColor: theme.bgSheet, borderColor: theme.accentBlueBorder }]}
         >
           <Text style={[styles.calloutTitle, { color: theme.textPrimary }]}>Hey, I'm Otto</Text>
           <Text style={[styles.calloutText, { color: theme.textSecondary }]}>Ask me how to do anything in the app, or how you're tracking. Tap to start.</Text>
         </Pressable>
       )}
-      <AssistantFAB bottom={bottom} lift={barLift} onPress={openChat} suppressed={suppressed} showBadge={unread > 0} />
+      <AssistantFAB bottom={bottom} lift={barLift} tabLift={tabLift} onPress={openChat} suppressed={suppressed} showBadge={unread > 0} />
       <AssistantChat visible={open} onClose={() => setOpen(false)} />
     </>
   );

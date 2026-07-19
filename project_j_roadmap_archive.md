@@ -11,6 +11,64 @@
 
 ---
 
+## 🐢 NAVIGATION DELAY INVESTIGATION + OTTO TELEPORT FIX (2026-07-19)
+
+**Navigation haptic/animation delay -- SHIPPED + CONFIRMED, investigation PARKED.** Justin flagged every
+full-page nav (not modals) feeling delayed ~0.5-1s: settings, profile avatar, back chevrons, library,
+journal, achievements, sleep/recovery card, top-right icons, tab bar switches, stats -> journal/custom-
+reports/EvR, faith -> prayer. Confirmed on TestFlight first (ruled out dev-build/Metro JS overhead as the
+cause before investigating).
+
+Root-caused via live device timing: the haptic (`utils/haptics.ts`) waited on an async AsyncStorage read
+(the haptics-enabled setting check) before firing, so if a navigation's JS work landed in that same window,
+the buzz got queued behind it and felt tied to the destination screen's readiness instead of the tap. FIX:
+cache the setting in memory, fire the native haptic call synchronously off the cached value, refresh the
+cache in the background after. CONFIRMED on TestFlight: buzz is now instant on every tap, no delay.
+
+Separately found 4 screens reading their own history ONE DAY AT A TIME in a loop instead of one batched
+read: Achievements (`utils/achievementProgress.ts`) had THREE separate 365-day loops plus an uncapped
+all-time loop for nutritionGoalDays (the worst offender for a long-time user); Settings, Add Food, and
+Profile each had their own 30-day loop hunting for the most recent weight/recents entry. All 4 replaced
+with `AsyncStorage.multiGet()` batches -- identical output, same logic, just fetched in one round trip
+instead of dozens/hundreds. Confirmed via on-device timing logs (temporary `[NAV TIMING]` console.logs in
+`ScreenHeader.tsx` + `haptics.ts`, removed before the TestFlight build): Achievements went from what would
+have been 1000+ sequential reads down to 2 screen redraws / ~396ms.
+
+Also found (and partially fixed) a second, distinct mechanism: screens redrawing themselves many times
+after mount because each independent piece of data they load updates the screen the moment IT personally
+resolves, uncoordinated with the others. Settings measured 16 redraws / 1,175ms; Workout Library (Exercise
+Library) measured 15-17 redraws / 1.6-1.8s despite having NONE of the day-loop bug -- proving this redraw-
+storm mechanism, not data-loading time, is the dominant remaining cost on at least some screens. Partially
+fixed on Workout Library: folded a duplicate `pj_workout_state` read into an existing effect and batched 3
+independent loads (my programs / my routines / workout tags) into one. Repeated on-device trials (back to
+back, same session, to rule out dev-build noise) confirmed a real, consistent improvement: 15-17 redraws /
+1.6-1.8s down to a steady 14 redraws / ~1.4s. Confirmed on TestFlight as "feels slightly better."
+
+**PARKED, not solved:** on TestFlight, Settings and Achievements feel IDENTICALLY slow to Justin despite
+Achievements having gotten a far bigger backend fix than Settings (which was never touched for the redraw-
+storm issue). This proves the remaining felt delay on those two isn't primarily about data loading or
+redraw count -- something else, common to both, is still unidentified. Parked because (a) EAS build credit
+hit 80% of the period's plan limit, (b) true "instant" on a real native slide transition isn't realistic to
+begin with, and further blind digging was diminishing-returns "chasing our tails" (Justin's words). Revisit
+only with a specific new lead, not another blind sweep -- see the NEXT UP entry in the active roadmap for
+the parked summary.
+
+**Otto (Companion FAB) teleport fix -- SHIPPED + CONFIRMED.** Otto sits above the tab bar on tab screens and
+near the bottom on pushed screens (no tab bar); moving between the two snapped/teleported instead of
+animating, inconsistently (sometimes hovered over the tab bar for a beat before popping into place).
+Root cause: `AssistantOverlay.tsx` computed `bottom` as a single raw number that differed by
+`TAB_BAR_HEIGHT` between the two states and passed it straight through to `AssistantFAB.tsx` as a plain,
+non-animated style value -- only the OTHER offset (the floating-save-bar lift) was already animated, via
+its own `Animated.Value` + spring. FIX: `bottom` is now a fixed anchor (`insets.bottom + 20`, the pushed-
+screen resting position, which only changes with device safe-area, never per navigation) and the tab-bar
+difference became a new animated `tabLift` offset (`TAB_BAR_HEIGHT - 2` when on a tab), springing via the
+same technique already used for the save-bar lift, combined into one `translateY` transform. Both resting
+positions verified mathematically identical to the old values (bottom + tabLift on a tab screen = old
+tab-screen bottom; bottom alone on a pushed screen = old pushed-screen bottom) -- only the transition
+between them changed, from an instant snap to a spring glide. Confirmed working by Justin.
+
+---
+
 ## 🌤️ VISUAL REFRESH CLOSEOUT: SURFACE, VOICE, STAGGER, WARM+BLUSH, CARD SHADOWS, NUMBER-FACE, SLIDE-UP SHEETS (CLOSED 2026-07-18)
 This closes out the VISUAL REFRESH track (SPEC_visual_refresh.md). Everything below was audited against
 LIVE CODE on 2026-07-18, not assumed from the spec doc, which had gone stale in several places.

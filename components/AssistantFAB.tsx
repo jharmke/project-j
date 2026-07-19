@@ -25,17 +25,25 @@ const GLOW = 84;
 // `suppressed` keeps the FAB MOUNTED (so its tutorial-target ref stays measurable) but invisible +
 // untappable. Used during other tutorials so it steps aside, then lights back up on its own step
 // without a remount flicker that could mis-place the spotlight.
-export default function AssistantFAB({ onPress, bottom = 18, lift = 0, suppressed = false, showBadge = false }: { onPress?: () => void; bottom?: number; lift?: number; suppressed?: boolean; showBadge?: boolean }) {
+export default function AssistantFAB({ onPress, bottom = 18, lift = 0, tabLift = 0, suppressed = false, showBadge = false }: { onPress?: () => void; bottom?: number; lift?: number; tabLift?: number; suppressed?: boolean; showBadge?: boolean }) {
   const { theme } = useTheme();
   const fabRef = useTutorialTarget('meta_otto_fab'); // spotlight target for the meta tutorial's Otto step
   const breath = useRef(new Animated.Value(0)).current;
   const press = useRef(new Animated.Value(1)).current;
   const liftAnim = useRef(new Animated.Value(lift)).current;
+  const tabLiftAnim = useRef(new Animated.Value(tabLift)).current;
 
   // Glide up/down when a screen's floating save bar shows/hides, instead of snapping instantly.
   useEffect(() => {
     Animated.spring(liftAnim, { toValue: lift, useNativeDriver: true, tension: 65, friction: 11 }).start();
   }, [lift]);
+
+  // Glide between the tab-bar and pushed-screen resting spots instead of teleporting. Same technique as
+  // the save-bar lift above -- `bottom` (the style prop) is now a fixed anchor, so this animated offset is
+  // the only thing that moves Otto between the two positions.
+  useEffect(() => {
+    Animated.spring(tabLiftAnim, { toValue: tabLift, useNativeDriver: true, tension: 65, friction: 11 }).start();
+  }, [tabLift]);
 
   // Subtle breath: a gentle swell, settle, then a long calm gap before the next one.
   useEffect(() => {
@@ -70,7 +78,7 @@ export default function AssistantFAB({ onPress, bottom = 18, lift = 0, suppresse
     <Animated.View
       ref={fabRef}
       pointerEvents={suppressed ? 'none' : 'box-none'}
-      style={[styles.wrap, { bottom, opacity: suppressed ? 0 : 1, transform: [{ translateY: Animated.multiply(liftAnim, -1) }] }]}
+      style={[styles.wrap, { bottom, opacity: suppressed ? 0 : 1, transform: [{ translateY: Animated.multiply(Animated.add(liftAnim, tabLiftAnim), -1) }] }]}
     >
       {/* Faint accent glow, tight around the disc, fades in and out with the breath. */}
       <Animated.View pointerEvents="none" style={[styles.glow, { opacity: glowOpacity }]}>

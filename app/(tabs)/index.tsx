@@ -1668,22 +1668,33 @@ export default function HomeScreen() {
         console.log('Load error', e);
       } finally {
         setLoaded(true);
-        try {
-          const todayStr = todayKey;
-          const settingsRaw = await AsyncStorage.getItem('pj_settings');
-          const bibleTranslation = settingsRaw ? (JSON.parse(settingsRaw).bibleTranslation ?? 'web') : 'web';
-          const resolved = await resolveDailyVerse(todayStr, bibleTranslation);
-          setDailyVerse(resolved);
-          setRefreshKey(k => k + 1);
-        } catch {
-          // Corrupted or stale rotation data -- nuke and fall back to random
-          await AsyncStorage.removeItem('pj_verse_rotation');
-          setDailyVerse(VERSES[Math.floor(Math.random() * VERSES.length)]);
-        }
       }
     };
     loadData();
   }, []);
+
+  // Daily verse, resolved on every focus (not just first mount) so switching Bible translation in the
+  // reader shows up here the next time you land on Home, instead of staying frozen at whatever resolved
+  // on the very first app launch this session -- Home stays mounted as a tab for the whole session, so a
+  // mount-only effect would never see the change otherwise.
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      (async () => {
+        try {
+          const settingsRaw = await AsyncStorage.getItem('pj_settings');
+          const bibleTranslation = settingsRaw ? (JSON.parse(settingsRaw).bibleTranslation ?? 'web') : 'web';
+          const resolved = await resolveDailyVerse(todayKey, bibleTranslation);
+          if (alive) { setDailyVerse(resolved); setRefreshKey(k => k + 1); }
+        } catch {
+          // Corrupted or stale rotation data -- nuke and fall back to random
+          await AsyncStorage.removeItem('pj_verse_rotation');
+          if (alive) setDailyVerse(VERSES[Math.floor(Math.random() * VERSES.length)]);
+        }
+      })();
+      return () => { alive = false; };
+    }, [todayKey])
+  );
 
   // ── Meta-tutorial: fires once on first real home focus ───────────────────────
   // Checks both 'meta' and 'meta_mindful' so Mindful users who completed meta_mindful

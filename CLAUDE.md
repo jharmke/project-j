@@ -64,10 +64,24 @@ failure, same as a bug. Flagged hard 2026-07-16 after a FAB styling task burned 
 - Read the part of a big file you need (offset/limit or Grep), not the whole thing.
 
 ## EAS Build
-Command: eas build --profile development --platform ios
-If git errors: run $env:EAS_NO_VCS=1 first, then the build command
-New native packages or new HealthKit permissions require a new build
-Pure JS changes never need a rebuild
+Three profiles in eas.json. Do not mix them up -- this caused a real mistake on 2026-07-18 (submitted the
+wrong profile, it doesn't produce a store-type artifact, `eas submit` couldn't find it).
+- **development**: `eas build --profile development --platform ios` -- dev-client build for Justin's OWN
+  device only. Installed via QR/direct link (internal distribution), connects to Metro for live JS reload.
+  Use this to test code changes on-device during a session. Cannot be submitted to TestFlight.
+- **production**: `eas build --profile production --platform ios` -- store-distributable build (no dev
+  client, no Metro dependency). This is the ONLY profile `eas submit` can upload to App Store Connect.
+  Use this specifically when pushing a build to the TestFlight test group.
+- **preview**: exists in eas.json (internal distribution, no dev client) but isn't part of the normal
+  workflow above -- confirm with Justin before using it for anything.
+
+PUSHING TO TESTFLIGHT = two commands, in this order:
+1. `eas build --profile production --platform ios`
+2. `eas submit --platform ios` (matches the `submit.production` profile already in eas.json)
+
+If git errors on a build: run $env:EAS_NO_VCS=1 first, then retry the build command.
+New native packages or new HealthKit permissions require a new DEVELOPMENT build to test on-device.
+Pure JS changes never need a rebuild -- Metro/live reload picks them up on the existing dev-client build.
 
 ## Tech Stack
 React Native + Expo (EAS dev build, NOT Expo Go)

@@ -1371,11 +1371,14 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
       // Pull last 30 days of entries and get unique foods
       const recent: {name: string, cal: number, protein?: number, carbs?: number, fat?: number, brand?: string, calPer100g?: number, proteinPer100g?: number, carbsPer100g?: number, fatPer100g?: number, foodNutrients?: any[], fsId?: string | null, myFoodId?: string | null, isMyFood?: boolean}[] = [];
       const seen = new Set<string>();
-      for (let i = 0; i < 30; i++) {
+      // One batched read instead of 30 sequential ones
+      const recentKeys30 = Array.from({ length: 30 }, (_, i) => {
         const d = new Date();
         d.setDate(d.getDate() - i);
-        const dk = d.toISOString().split('T')[0];
-        const saved = await AsyncStorage.getItem(`pj_${dk}`);
+        return `pj_${d.toISOString().split('T')[0]}`;
+      });
+      const recentPairs30 = await AsyncStorage.multiGet(recentKeys30);
+      for (const [, saved] of recentPairs30) {
         if (saved) {
           const data = JSON.parse(saved);
           if (data.entries) {

@@ -908,11 +908,13 @@ export default function SettingsScreen() {
     useCallback(() => {
       const loadGoals = async () => {
         try {
-          // Load current weight (most recent 30 days)
-          for (let i = 0; i < 30; i++) {
+          // Load current weight (most recent 30 days) -- one batched read instead of 30 sequential ones
+          const weightKeys30 = Array.from({ length: 30 }, (_, i) => {
             const d = new Date(); d.setDate(d.getDate() - i);
-            const dk = d.toISOString().split('T')[0];
-            const s = await AsyncStorage.getItem(`pj_${dk}`);
+            return `pj_${d.toISOString().split('T')[0]}`;
+          });
+          const weightPairs30 = await AsyncStorage.multiGet(weightKeys30);
+          for (const [, s] of weightPairs30) {
             if (s) { const data = JSON.parse(s); if (data.weight) { setGoalCurrentWeight(data.weight); break; } }
           }
           if (!hasGoalChangesRef.current) {

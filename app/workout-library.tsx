@@ -2064,6 +2064,9 @@ export default function WorkoutLibraryScreen() {
       setWSetLogs(st.setLogs || {});
       setWPrograms(st.programs || {});
       setWTemplate(st.weeklyTemplate || {});
+      // Folded in from a separate loadProgramState that used to live in the other useFocusEffect below --
+      // same key, was being read from storage twice on every focus for no reason.
+      setActiveProgramName(st.activeProgramName || null);
     } catch {}
   }, []);
   useFocusEffect(useCallback(() => { loadWorkoutState(); }, [loadWorkoutState]));
@@ -2201,20 +2204,18 @@ export default function WorkoutLibraryScreen() {
   }, []);
 
   useFocusEffect(useCallback(() => {
-    const loadProgramState = async () => {
+    // These 3 used to each read storage and update the screen independently the moment THEY finished --
+    // now they're fetched together and applied in one pass, so this is one redraw instead of three.
+    const loadRest = async () => {
+      const [programsRaw, routinesRaw, settingsRaw] = await Promise.all([
+        AsyncStorage.getItem('pj_my_programs'),
+        AsyncStorage.getItem('pj_routines'),
+        AsyncStorage.getItem('pj_settings'),
+      ]);
+
       try {
-        const raw = await AsyncStorage.getItem('pj_workout_state');
-        if (raw) {
-          const state = JSON.parse(raw);
-          setActiveProgramName(state.activeProgramName || null);
-        }
-      } catch (e) {}
-    };
-    const loadMyPrograms = async () => {
-      try {
-        const raw = await AsyncStorage.getItem('pj_my_programs');
-        if (raw) {
-          const parsed = JSON.parse(raw);
+        if (programsRaw) {
+          const parsed = JSON.parse(programsRaw);
           setMyPrograms(Array.isArray(parsed) ? parsed : []);
         } else {
           const seeded: CustomProgram[] = PRESET_PROGRAMS.map(p => ({ ...p, createdAt: 0 }));
@@ -2226,27 +2227,20 @@ export default function WorkoutLibraryScreen() {
         setMyPrograms(seeded);
         try { await storageSet('pj_my_programs', JSON.stringify(seeded)); } catch {}
       }
-    };
-    const loadTags = async () => {
+
       try {
-        const raw = await AsyncStorage.getItem('pj_settings');
-        const settings = raw ? JSON.parse(raw) : {};
+        setMyRoutines(routinesRaw ? JSON.parse(routinesRaw) : []);
+      } catch (e) {}
+
+      try {
+        const settings = settingsRaw ? JSON.parse(settingsRaw) : {};
         const saved: WorkoutTag[] = settings.workoutTags || [];
         const merged = [...DEFAULT_TAGS];
         for (const t of saved) { if (!merged.find(m => m.id === t.id)) merged.push(t); }
         setLibTags(merged);
       } catch (e) {}
     };
-    const loadMyRoutines = async () => {
-      try {
-        const raw = await AsyncStorage.getItem('pj_routines');
-        setMyRoutines(raw ? JSON.parse(raw) : []);
-      } catch (e) {}
-    };
-    loadProgramState();
-    loadMyPrograms();
-    loadMyRoutines();
-    loadTags();
+    loadRest();
     return () => {
       setSortOption('az');
       setFilterTags([]);

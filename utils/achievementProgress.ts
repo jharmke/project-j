@@ -42,43 +42,52 @@ export async function loadProgressValues(): Promise<Record<string, number>> {
     const FEEL_BONUS: Record<number, number> = { 1: 0, 2: 10, 3: 20, 4: 30, 5: 40 };
 
     const today = new Date();
+
+    // Batch-fetch the last 365 days in ONE round trip instead of 365 sequential ones -- the totalLost
+    // scan just below reuses this same fetch since it's the identical UTC-based key list.
+    const utcKeys: string[] = [];
     for (let i = 0; i < 365; i++) {
-      const d  = new Date(today);
+      const d = new Date(today);
       d.setDate(d.getDate() - i);
-      const dk = d.toISOString().split('T')[0];
-      try {
-        const raw = await AsyncStorage.getItem(`pj_${dk}`);
-        if (raw) {
-          const day = JSON.parse(raw);
-          const dayWaterGoal = day.waterGoal ? parseInt(day.waterGoal) : profileWaterGoal;
-          if ((day.water ?? 0) >= dayWaterGoal) waterDays++;
-          if ((day.steps ?? 0) >= stepGoal)    stepDays++;
-          // Active-calorie + exercise-minute goal days -- same thresholds the Home screen uses to fire the
-          // daily-goal celebration, so the Daily Goals card can show an accurate recount instead of its
-          // lossy live tally. Active cals fall back to caloriesBurned (matches statsData); exercise minutes
-          // blend Apple Health + manual timer via effectiveExerciseMinutes.
-          const activeCals = day.activeCalories ?? day.caloriesBurned ?? 0;
-          if (activeCalGoal > 0 && activeCals >= activeCalGoal) activeCalDays++;
-          if (exerciseMinsGoal > 0 && effectiveExerciseMinutes(day) >= exerciseMinsGoal) exerciseMinDays++;
-          const sleepHrs = day.sleepOverride ?? day.sleepHours ?? null;
-          if (sleepHrs && sleepHrs > 0) {
-            sleepAnyDays++;
-            const stages = day.sleepStages ?? null;
-            const feel   = day.sleepFeelRating ?? null;
-            let score: number | null = null;
-            if (stages && stages.totalMs > 0) {
-              const durPts  = Math.min(40, Math.pow(sleepHrs / sleepGoalNum, 3) * 40);
-              const deepPts = Math.min(30, ((stages.deep / stages.totalMs) / 0.20) * 30);
-              const remPts  = Math.min(30, ((stages.rem  / stages.totalMs) / 0.22) * 30);
-              score = Math.round(Math.min(100, durPts + deepPts + remPts));
-            } else if (feel) {
-              const durPts = Math.min(60, (sleepHrs / sleepGoalNum) * 60);
-              score = Math.round(Math.min(100, durPts + (FEEL_BONUS[feel] ?? 0)));
-            }
-            if (score !== null && score >= 85) greenSleepDays++;
-          }
+      utcKeys.push(`pj_${d.toISOString().split('T')[0]}`);
+    }
+    const utcPairs = await AsyncStorage.multiGet(utcKeys);
+    const utcDayByKey = new Map<string, any>();
+    for (const [key, raw] of utcPairs) {
+      if (!raw) continue;
+      try { utcDayByKey.set(key, JSON.parse(raw)); } catch { /* skip corrupted day */ }
+    }
+
+    for (const key of utcKeys) {
+      const day = utcDayByKey.get(key);
+      if (!day) continue;
+      const dayWaterGoal = day.waterGoal ? parseInt(day.waterGoal) : profileWaterGoal;
+      if ((day.water ?? 0) >= dayWaterGoal) waterDays++;
+      if ((day.steps ?? 0) >= stepGoal)    stepDays++;
+      // Active-calorie + exercise-minute goal days -- same thresholds the Home screen uses to fire the
+      // daily-goal celebration, so the Daily Goals card can show an accurate recount instead of its
+      // lossy live tally. Active cals fall back to caloriesBurned (matches statsData); exercise minutes
+      // blend Apple Health + manual timer via effectiveExerciseMinutes.
+      const activeCals = day.activeCalories ?? day.caloriesBurned ?? 0;
+      if (activeCalGoal > 0 && activeCals >= activeCalGoal) activeCalDays++;
+      if (exerciseMinsGoal > 0 && effectiveExerciseMinutes(day) >= exerciseMinsGoal) exerciseMinDays++;
+      const sleepHrs = day.sleepOverride ?? day.sleepHours ?? null;
+      if (sleepHrs && sleepHrs > 0) {
+        sleepAnyDays++;
+        const stages = day.sleepStages ?? null;
+        const feel   = day.sleepFeelRating ?? null;
+        let score: number | null = null;
+        if (stages && stages.totalMs > 0) {
+          const durPts  = Math.min(40, Math.pow(sleepHrs / sleepGoalNum, 3) * 40);
+          const deepPts = Math.min(30, ((stages.deep / stages.totalMs) / 0.20) * 30);
+          const remPts  = Math.min(30, ((stages.rem  / stages.totalMs) / 0.22) * 30);
+          score = Math.round(Math.min(100, durPts + deepPts + remPts));
+        } else if (feel) {
+          const durPts = Math.min(60, (sleepHrs / sleepGoalNum) * 60);
+          score = Math.round(Math.min(100, durPts + (FEEL_BONUS[feel] ?? 0)));
         }
-      } catch { /* skip */ }
+        if (score !== null && score >= 85) greenSleepDays++;
+      }
     }
 
     values['waterGoalDays']       = waterDays;
@@ -88,23 +97,15 @@ export async function loadProgressValues(): Promise<Record<string, number>> {
     values['sleepAnyDays']   = sleepAnyDays;
     values['greenSleepDays'] = greenSleepDays;
 
-    // totalLost -- earliest vs most recent weight
+    // totalLost -- earliest vs most recent weight (same 365-day batch fetched above, walked oldest -> newest)
     let earliestWeight: number | null = null;
     let mostRecentWeight: number | null = null;
-    for (let i = 364; i >= 0; i--) {
-      const d  = new Date(today);
-      d.setDate(d.getDate() - i);
-      const dk = d.toISOString().split('T')[0];
-      try {
-        const raw = await AsyncStorage.getItem(`pj_${dk}`);
-        if (raw) {
-          const day = JSON.parse(raw);
-          if (day.weight) {
-            if (!earliestWeight) earliestWeight = day.weight;
-            mostRecentWeight = day.weight;
-          }
-        }
-      } catch { /* skip */ }
+    for (let i = utcKeys.length - 1; i >= 0; i--) {
+      const day = utcDayByKey.get(utcKeys[i]);
+      if (day && day.weight) {
+        if (!earliestWeight) earliestWeight = day.weight;
+        mostRecentWeight = day.weight;
+      }
     }
     if (earliestWeight && mostRecentWeight) {
       values['totalLost']   = Math.max(0, earliestWeight - mostRecentWeight);
@@ -121,19 +122,18 @@ export async function loadProgressValues(): Promise<Record<string, number>> {
     // evening, toISOString() rolls the date into tomorrow, which never has data yet, so the streak broke
     // on its very first check and always read 0. Matches the local-date key checkMomentumAchievements
     // uses to unlock the SAME achievement, in achievementData.ts.
-    let streak = 0;
+    // Different key format than the UTC scan above (local date components), so it needs its own batch --
+    // still one round trip instead of up to 365 sequential ones.
+    const localKeys: string[] = [];
     for (let i = 0; i < 365; i++) {
-      const d  = new Date(today);
+      const d = new Date(today);
       d.setDate(d.getDate() - i);
-      const dk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      try {
-        const raw = await AsyncStorage.getItem(`pj_${dk}`);
-        if (raw) {
-          streak++;
-        } else {
-          break;
-        }
-      } catch { break; }
+      localKeys.push(`pj_${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+    }
+    const localPairs = await AsyncStorage.multiGet(localKeys);
+    let streak = 0;
+    for (const [, raw] of localPairs) {
+      if (raw) streak++; else break;
     }
     values['logStreak'] = streak;
 
@@ -202,9 +202,11 @@ export async function loadProgressValues(): Promise<Record<string, number>> {
         k => /^pj_\d{4}-\d{2}-\d{2}$/.test(k) && k !== `pj_${today}`
       );
       const bmrMap = await buildDailyBmrMap(dailyKeys.map(k => k.slice(3)));
-      for (const key of dailyKeys) {
+      // Batch-fetch every matching day in ONE round trip instead of one getItem per key -- this list has
+      // no 365-day cap, so for a long-time user it was the worst offender of all four loops in this file.
+      const dailyPairs = await AsyncStorage.multiGet(dailyKeys);
+      for (const [key, raw] of dailyPairs) {
         try {
-          const raw = await AsyncStorage.getItem(key);
           if (!raw) continue;
           const day     = JSON.parse(raw);
           const entries = Array.isArray(day.entries) ? day.entries.filter(Boolean) : [];

@@ -828,6 +828,61 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
+- [NOW, TACKLE FIRST, surfaced 2026-07-19] **Navigation-wide haptic/animation delay.** Every full-page nav
+  (not modals) -- settings, profile avatar, back chevrons, library, journal, achievements, sleep/recovery
+  card, top-right icons, tab bar switches, stats -> journal/custom-reports/EvR analysis, faith -> prayer --
+  feels delayed ~0.5-1s; the haptic lands right when the destination screen's slide-in starts, not on the
+  tap itself. CONFIRMED ON TESTFLIGHT (dev-build JS/Metro overhead ruled out). DIAGNOSIS SO FAR: every
+  onPress site checked fires the haptic synchronously BEFORE navigating (not a misplaced mount-side
+  trigger) -- so it's the destination screen taking a beat to become ready, and the buzz/slide riding
+  behind that instead of firing instantly on tap. TWO layers found: (1) a UNIVERSAL small delay on every
+  single full-page nav, even a screen that loads its data the right way (confirmed via Workout Library,
+  which has no loading bug and still hitches identically) -- true root cause of this layer still open. (2)
+  an EXTRA avoidable delay stacked on top for 4 screens confirmed doing "read one day at a time in a loop"
+  instead of one batched read: Achievements (365-day loop), Settings (30-day), Add Food/food library
+  (30-day), Profile (30-day). Workout Library confirmed CLEAN of this pattern. PLAN: fix (1) buzz should
+  fire instantly on tap no matter what the destination is doing, and (2) batch those 4 day-loops into single
+  reads -- both are plain JS changes, no native rebuild needed, testable live in the existing dev build via
+  Metro (per the reload-is-the-check rule) since we're removing real wait time, not chasing frame-rate
+  polish. Do NOT wait on a fresh TestFlight build just to confirm the delay itself is gone.
+- [surfaced 2026-07-19, tackle right after the haptic delay above] **Otto (Companion FAB) teleports instead
+  of sliding between its two vertical positions.** Otto sits above the tab bar on tab screens and near the
+  bottom on pushed screens (no tab bar). Moving between the two (Workout <-> Library, Log <-> Library
+  confirmed) snaps/teleports instead of animating, and it's inconsistent -- sometimes hovers over the tab
+  bar for a beat before popping to its real spot, sometimes lands correctly right away. Likely a plain
+  position value that isn't animated (no slide transition wired up), separate bug from the haptic delay
+  above (that one is a TIMING/wait issue, this one is a MISSING animation), but same neighborhood of code
+  (AssistantOverlay, fires on every nav) so worth a look in the same pass rather than a separate one.
+  Explore whether an easier-to-read translation (NIV/NLT/ESV etc.) can supplement/replace KJV -- if an
+  easier option is realistically available and we still ship KJV-only, Justin considers that a real miss.
+  Overlaps two already-parked items (Bible translation selector, bundle full KJV offline -- see backlog/
+  audit) but adds a new piece: real research into licensed Bible API providers (API.Bible, ESV API, Bible
+  Gateway, YouVersion's own developer program) -- terms, cost, reliability -- needed before any build call,
+  since KJV's public-domain status is WHY it was free to bundle and modern translations are not.
+- [surfaced 2026-07-19] **Coach Insight card links to EvR report with no eligibility check.** The Home
+  card's "View in Effort vs Results" link always shows, even when the user hasn't hit the 7-day minimum to
+  generate a report (confirmed on Megan's account: 1/14 days logged, card still links out). The report
+  screen itself already has a correct gate (`minDaysForWindow` / `insufficientData` in
+  diagnostic-report.tsx, shows a real "Not Enough Data Yet" state) -- the Home card just never checks it,
+  so new users hit a confusing dead-end. Justin: bad first impression, wants this discussed before build.
+- [surfaced 2026-07-19, faith] **Gratitude card shown to NRN users as-is.** Confirmed in code:
+  GratitudeStreakCard has no faith-journey gating and no faith content built into it, so NRN sees the exact
+  same card as everyone else. Justin flagged as a gap worth a real discussion -- fine as-is since it's
+  already secular, or does it need its own explicit NRN treatment/copy.
+- [surfaced 2026-07-19, faith, needs discussion] **Nudging Exploring/NRN users toward growth without
+  breaking NRN's "hidden, no judgment" rule.** Open question, no direction yet. Only existing mechanism
+  today is the dismissable 30-day "faith settings can be changed" reminder. Needs real discussion before
+  any concrete idea gets proposed -- easy to accidentally violate the opt-out.
+- [surfaced 2026-07-19, faith, needs discussion] **More Reading Plans / Devotionals?** Open-ended, no
+  specific gap identified yet -- discuss whether the current plan/devotional library is thin somewhere
+  specific before treating as a scoped task.
+- [surfaced 2026-07-19, discuss after the 3 items above] **Default home card order vs. watch ownership.**
+  Sleep/Recovery and other wearable-dependent cards sit high in every mode's default order, but for
+  non-watch-wearers (or inconsistent wearers) those cards may be a near-permanent empty-state eyesore. No
+  clean way to know at onboarding who's a watch-wearer without adding friction, though the existing
+  HealthKit opt-in step (declined / no sleep data granted) could double as a signal for default ordering.
+  Needs its own design session.
+
 - [NOW, do today/tomorrow] STARTER CHALLENGE -> theme unlocks (Slate / Warm / Blush). The 3 non-default
   themes are meant to be EARNED by completing a short starter challenge (per CLAUDE.md theme system), but
   the unlock mechanic needs building/verifying. FIRST STEP = state-check what already exists (are the

@@ -58,10 +58,12 @@ function webFileName(bookName: string): string {
   return bookName.toLowerCase().replace(/\s+/g, '');
 }
 
-// WEB's source is a FLAT list of paragraph events, not pre-grouped by verse like KJV's source is --
-// most verses are one "paragraph text" event, but a verse split across a paragraph/dialogue break (e.g.
-// John 1:21 style) comes as several events sharing the same chapter+verse with an increasing
-// sectionNumber, which have to be re-joined in order to get the verse's full text.
+// WEB's source is a FLAT list of paragraph/poetry events, not pre-grouped by verse like KJV's source is.
+// Two event types carry actual verse text: "paragraph text" (prose) and "line text" (poetry -- most of
+// Isaiah, Psalms, Proverbs, and large chunks of the prophets are formatted this way). Everything else
+// ("paragraph start/end", "stanza start/end", "line break") is a pure structural marker with no text, so
+// it's skipped. A verse split across a paragraph/dialogue break or multiple poetic lines comes as several
+// events sharing the same chapter+verse with an increasing sectionNumber, re-joined in order below.
 interface WebParagraphEvent {
   type: string;
   chapterNumber?: number;
@@ -79,7 +81,7 @@ async function fetchWebChapterFromSource(bookName: string, chapterNum: number): 
 
   const byChapter = new Map<number, Map<number, { sectionNumber: number; value: string }[]>>();
   for (const entry of data) {
-    if (entry.type !== 'paragraph text') continue;
+    if (entry.type !== 'paragraph text' && entry.type !== 'line text') continue;
     if (entry.chapterNumber == null || entry.verseNumber == null || !entry.value) continue;
     let versesInChapter = byChapter.get(entry.chapterNumber);
     if (!versesInChapter) { versesInChapter = new Map(); byChapter.set(entry.chapterNumber, versesInChapter); }

@@ -846,12 +846,17 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
-- [surfaced 2026-07-19, discuss after the Bible translation work below wraps] **Scan a nutrition facts
-  panel to autofill a food's macros.** In the create/edit food screen, scan the actual Nutrition Facts
-  chart on a box/package (camera + OCR) and have it autofill the fields, instead of typing every number by
-  hand. Motivation: a lot of FatSecret's database entries are only ~80% right -- calories usually correct,
-  macros slightly off -- so this would be a quick way to CORRECT specific fields against the real label
-  instead of re-entering or rebuilding the whole food from scratch.
+- [surfaced 2026-07-19, discussion in progress, sooner rather than later per Justin] **Scan a nutrition
+  facts panel to autofill a food's macros.** Full discussion and locked decisions in
+  `SPEC_nutrition_label_scan.md` -- read that before touching this. Short version: on-device OCR (not AI
+  vision), pull every field the label prints, never overwrite a field the label did not print, never
+  auto-save, per-field confidence flags on uncertain OCR reads, one whole-label scan (not per-field), and
+  the review flow matches the existing AI Meal Estimator pattern (scanned values populate the real edit
+  form directly, existing Save button is the confirmation, no new dedicated review screen). Entry points:
+  CustomFoodCreator, food-detail's copy-to-edit flow, and the barcode-override flow. Still open and needing
+  their own dedicated discussion: serving size handling (label's own serving size vs the food's existing
+  serving unit), per-serving vs per-container dual-column labels, and how much label-format variance v1
+  needs to handle. Nothing built yet, this is discussion only so far.
 
 - [PARKED 2026-07-19 -- shipped parts in RECENTLY SHIPPED, full story in the archive] **Some screens still
   feel slow to open, cause unidentified.** Haptic delay is fixed and 4 screens' data loading is batched (see

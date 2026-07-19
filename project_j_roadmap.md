@@ -16,6 +16,18 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-19 **WEB (World English Bible) added as a second translation, WEB is now primary/default, KJV
+  secondary.** Reader, Today's Message, Gratitude card, Favorites, custom saved verses, the verse-pool
+  manager, and Halo's scripture citations all now live-fetch the real wording in whichever translation is
+  selected -- device-confirmed by Justin, "whatever's selected should change literally everything" is the
+  locked standard. Fixed 3 real bugs found along the way: WEB's parser was silently dropping every poetic
+  passage (most of Isaiah/Psalms/Proverbs/the prophets -- was only a paragraph-text vs line-text type
+  check); Home's daily verse only ever resolved once per app session so a translation switch never reached
+  it; the notification scheduler's "today's verse" was reading a stale rotation format and silently always
+  null. Also replaced 3 onboarding verses that turned out to be an unverified paraphrase (one read close
+  enough to NIV's copyrighted phrasing to be a real risk) with verified WEB text. STILL OPEN: devotional
+  reflections directly quote KJV-style wording in the written commentary -- see NEXT UP, this is the
+  active in-progress item.
 - 2026-07-19 **Otto (Companion FAB) now glides instead of teleporting** between his tab-bar and pushed-
   screen resting spots -- device-confirmed.
 - 2026-07-19 **Navigation haptic delay fixed, device-confirmed on TestFlight** -- buzz now fires instantly
@@ -848,13 +860,28 @@ are separate pre-submission checklists, NOT part of this menu.
   redraw count. PARKED: EAS build credit hit 80% of the period's limit, true "instant" on a real slide
   transition isn't realistic anyway, and further digging was diminishing-returns. Revisit only with a
   specific new lead, not another blind sweep.
-- [surfaced 2026-07-19, tackle after the haptic delay above] **Bible translation options (KJV-only).**
-  Explore whether an easier-to-read translation (NIV/NLT/ESV etc.) can supplement/replace KJV -- if an
-  easier option is realistically available and we still ship KJV-only, Justin considers that a real miss.
-  Overlaps two already-parked items (Bible translation selector, bundle full KJV offline -- see backlog/
-  audit) but adds a new piece: real research into licensed Bible API providers (API.Bible, ESV API, Bible
-  Gateway, YouVersion's own developer program) -- terms, cost, reliability -- needed before any build call,
-  since KJV's public-domain status is WHY it was free to bundle and modern translations are not.
+- [NOW, IN PROGRESS, surfaced 2026-07-19] **Rewrite devotional reflections so they don't directly quote
+  KJV wording.** The WEB translation feature is otherwise fully shipped (see RECENTLY SHIPPED). This is
+  the one remaining piece: `data/devotionals.ts`'s written reflections (our own commentary, 58 total
+  across the devotional library) quote scripture directly in KJV-style phrasing in a bunch of spots, so
+  under WEB the passage above reads modern but the commentary below it suddenly reads 1611 English.
+  APPROVED APPROACH (Justin signed off): paraphrase the idea in plain original voice instead of quoting
+  either translation's specific wording -- same technique already demonstrated and approved on the Isaiah
+  41:10 example. RESUME HERE: a keyword search (thee/thou/thy/hath/saith/etc.) found 14 confirmed spots,
+  but a manual read of just the first 4 of ~11-12 devotionals turned up ~8 MORE that quote scripture
+  closely without any archaic tell (e.g. "there is now no condemnation for those who are in Christ Jesus,"
+  "fell on his neck, and kissed him") -- real count is probably 25-30, not 14. Justin's last instruction:
+  stop counting/estimating up front, just go through devotionals.ts in order and fix each real quote as
+  found, no separate approval step needed per-line (already approved the approach and said "just do them
+  all" once shown examples). Nothing has been rewritten in the actual file yet -- start from day 1 of the
+  first devotional (`data/devotionals.ts`) and work forward.
+- [surfaced 2026-07-19, discuss next -- these were queued behind the Bible translation work] Still open
+  from the original batch logged this session: **(2) Coach Insight card's EvR link with no eligibility
+  check** (see next item below, already detailed), **(4) nudging Exploring/NRN users toward growth**
+  (needs real discussion, easy to violate the NRN opt-out), **(5) Gratitude card has no NRN-specific
+  version** (confirmed fine as-is per discussion, may just need a final decision to close), **(6) more
+  Reading Plans/Devotionals?** (open-ended, no specific gap named yet), **(7) default home card order vs.
+  watch ownership** (discuss last, per Justin's own ordering).
 - [surfaced 2026-07-19] **Coach Insight card links to EvR report with no eligibility check.** The Home
   card's "View in Effort vs Results" link always shows, even when the user hasn't hit the 7-day minimum to
   generate a report (confirmed on Megan's account: 1/14 days logged, card still links out). The report

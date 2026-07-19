@@ -47,6 +47,63 @@ const BOOK_FILE_NAMES: Record<string, string> = {
 
 const BASE_URL = 'https://raw.githubusercontent.com/aruljohn/Bible-kjv/master';
 
+export type BibleTranslation = 'kjv' | 'web';
+
+// ── WEB (World English Bible) source ────────────────────────────────────────
+// Public domain, free for any use (unlike KJV's source, this repo's own file names come pre-lowercased
+// with spaces stripped, e.g. "1 Samuel" -> "1samuel.json").
+const WEB_BASE_URL = 'https://raw.githubusercontent.com/TehShrike/world-english-bible/master/json';
+
+function webFileName(bookName: string): string {
+  return bookName.toLowerCase().replace(/\s+/g, '');
+}
+
+// WEB's source is a FLAT list of paragraph events, not pre-grouped by verse like KJV's source is --
+// most verses are one "paragraph text" event, but a verse split across a paragraph/dialogue break (e.g.
+// John 1:21 style) comes as several events sharing the same chapter+verse with an increasing
+// sectionNumber, which have to be re-joined in order to get the verse's full text.
+interface WebParagraphEvent {
+  type: string;
+  chapterNumber?: number;
+  verseNumber?: number;
+  sectionNumber?: number;
+  value?: string;
+}
+
+async function fetchWebChapterFromSource(bookName: string, chapterNum: number): Promise<Verse[]> {
+  const fileName = webFileName(bookName);
+  const url = `${WEB_BASE_URL}/${fileName}.json`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const data: WebParagraphEvent[] = await response.json();
+
+  const byChapter = new Map<number, Map<number, { sectionNumber: number; value: string }[]>>();
+  for (const entry of data) {
+    if (entry.type !== 'paragraph text') continue;
+    if (entry.chapterNumber == null || entry.verseNumber == null || !entry.value) continue;
+    let versesInChapter = byChapter.get(entry.chapterNumber);
+    if (!versesInChapter) { versesInChapter = new Map(); byChapter.set(entry.chapterNumber, versesInChapter); }
+    let parts = versesInChapter.get(entry.verseNumber);
+    if (!parts) { parts = []; versesInChapter.set(entry.verseNumber, parts); }
+    parts.push({ sectionNumber: entry.sectionNumber ?? 0, value: entry.value });
+  }
+
+  // Cache every chapter from this book so future taps in the same book are instant, same as KJV.
+  let result: Verse[] = [];
+  for (const [chNum, verseMap] of byChapter) {
+    const verses: Verse[] = Array.from(verseMap.entries())
+      .map(([verseNum, parts]) => ({
+        verse: verseNum,
+        text: parts.sort((a, b) => a.sectionNumber - b.sectionNumber).map(p => p.value.trim()).join(' ').trim(),
+      }))
+      .sort((a, b) => a.verse - b.verse);
+    const chCacheKey = `pj_bible_web_${bookName.replace(/\s/g, '_')}_${chNum}`;
+    await AsyncStorage.setItem(chCacheKey, JSON.stringify(verses));
+    if (chNum === chapterNum) result = verses;
+  }
+  return result;
+}
+
 function makeChapters(count: number): Chapter[] {
   return Array.from({ length: count }, (_, i) => ({ chapter: i + 1, verses: [] }));
 }
@@ -122,8 +179,23 @@ export const BIBLE_BOOKS: Book[] = [
   { name: 'Revelation',       shortName: 'Rev',    testament: 'NT', chapters: makeChapters(22) },
 ];
 
-// ── Fetch + cache a chapter from KJV repo ──────────────────────────────────
-export async function fetchChapter(bookName: string, chapterNum: number): Promise<Verse[]> {
+// ── Fetch + cache a chapter, KJV or WEB ─────────────────────────────────────
+// `translation` defaults to 'kjv' so every existing call site (nothing passes it yet) behaves EXACTLY
+// as before -- same cache keys, same source, zero change. WEB gets its own namespaced cache key
+// (pj_bible_web_...) so the two translations' cached chapters never collide with or overwrite each other.
+export async function fetchChapter(bookName: string, chapterNum: number, translation: BibleTranslation = 'kjv'): Promise<Verse[]> {
+  if (translation === 'web') {
+    const cacheKey = `pj_bible_web_${bookName.replace(/\s/g, '_')}_${chapterNum}`;
+    try {
+      const cached = await AsyncStorage.getItem(cacheKey);
+      if (cached) return JSON.parse(cached) as Verse[];
+      return await fetchWebChapterFromSource(bookName, chapterNum);
+    } catch (e) {
+      console.log('fetchChapter (web) error', bookName, chapterNum, e);
+      return [];
+    }
+  }
+
   const cacheKey = `pj_bible_${bookName.replace(/\s/g, '_')}_${chapterNum}`;
   try {
     // Cache first

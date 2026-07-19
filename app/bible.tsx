@@ -21,7 +21,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastRenderer, useToast } from '../components/Toast';
 import { storageSet } from '../utils/storage';
-import { BIBLE_BOOKS, Book, Chapter, Verse, fetchChapter, parseReference } from '../data/bible-web';
+import { BIBLE_BOOKS, BibleTranslation, Book, Chapter, Verse, fetchChapter, parseReference } from '../data/bible-web';
 import { loadVersePool, addCustomVerse, removeCustomVerseByRef, activeVerseCount } from '../data/verses';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
@@ -72,7 +72,10 @@ const FONT_OPTIONS = [
 // px per millisecond -- delta-time based so speed is frame-rate independent
 const SPEED_PX_PER_MS: Record<ScrollSpeed, number> = { slow: 0.015, medium: 0.04, fast: 0.09 };
 
-const PREVIEW_TEXT = '"For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life."';
+const PREVIEW_TEXT: Record<BibleTranslation, string> = {
+  web: '"For God so loved the world, that he gave his one and only Son, that whoever believes in him should not perish, but have eternal life."',
+  kjv: '"For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life."',
+};
 const PREVIEW_REF = 'John 3:16';
 
 // HALO_GOLD now comes from CompanionFAB (imported above). It used to be a hand-copied '#e8a020' right here,
@@ -138,9 +141,13 @@ export default function BibleScreen() {
   // Explicit string: Type.ui is a literal, so useState would narrow the state to that ONE family and
   // reject Georgia/Palatino coming back out of pj_settings.
   const [bibleFontFamily, setBibleFontFamily] = useState<string>(Type.ui);
+  // WEB is the default/primary translation (Justin's call); KJV is the secondary option. Unset
+  // pj_settings (new install, or an existing install before this shipped) reads as WEB.
+  const [bibleTranslation, setBibleTranslation] = useState<BibleTranslation>('web');
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [draftTextSize, setDraftTextSize] = useState(16);
   const [draftFontFamily, setDraftFontFamily] = useState<string>(Type.ui);
+  const [draftTranslation, setDraftTranslation] = useState<BibleTranslation>('web');
 
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const [showSpeedPicker, setShowSpeedPicker] = useState(false);
@@ -214,6 +221,7 @@ export default function BibleScreen() {
       const s = JSON.parse(raw);
       if (s.bibleTextSize)     { setBibleTextSize(s.bibleTextSize); setDraftTextSize(s.bibleTextSize); }
       if (s.bibleFontFamily)   { setBibleFontFamily(s.bibleFontFamily); setDraftFontFamily(s.bibleFontFamily); }
+      if (s.bibleTranslation) { setBibleTranslation(s.bibleTranslation); setDraftTranslation(s.bibleTranslation); }
       if (s.autoScrollSpeed)   setAutoScrollSpeed(s.autoScrollSpeed);
       if (s.bibleFavoritesSort) setFavoritesSort(s.bibleFavoritesSort);
     });
@@ -229,11 +237,11 @@ export default function BibleScreen() {
     setChapterLoading(true);
     setChapterVerses([]);
     verseYPositions.current = {};
-    fetchChapter(selectedBook.name, selectedChapter.chapter).then(verses => {
+    fetchChapter(selectedBook.name, selectedChapter.chapter, bibleTranslation).then(verses => {
       if (!cancelled) { setChapterVerses(verses); setChapterLoading(false); }
     });
     return () => { cancelled = true; };
-  }, [selectedBook.name, selectedChapter.chapter]);
+  }, [selectedBook.name, selectedChapter.chapter, bibleTranslation]);
 
   // Auto-center after chapter loads
   useEffect(() => {
@@ -501,6 +509,7 @@ export default function BibleScreen() {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     setDraftTextSize(bibleTextSize);
     setDraftFontFamily(bibleFontFamily);
+    setDraftTranslation(bibleTranslation);
     setShowSettingsModal(true);
   };
 
@@ -508,10 +517,11 @@ export default function BibleScreen() {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     setBibleTextSize(draftTextSize);
     setBibleFontFamily(draftFontFamily);
+    setBibleTranslation(draftTranslation);
     try {
       const raw = await AsyncStorage.getItem('pj_settings');
       const s = raw ? JSON.parse(raw) : {};
-      await storageSet('pj_settings', JSON.stringify({ ...s, bibleTextSize: draftTextSize, bibleFontFamily: draftFontFamily }));
+      await storageSet('pj_settings', JSON.stringify({ ...s, bibleTextSize: draftTextSize, bibleFontFamily: draftFontFamily, bibleTranslation: draftTranslation }));
     } catch (e) {}
     setShowSettingsModal(false);
     showToast('Reading settings saved', undefined, 'success');
@@ -1067,9 +1077,21 @@ export default function BibleScreen() {
                 {/* Live preview -- fixed height so modal doesn't resize */}
                 <View style={{ backgroundColor: theme.bgInput, borderRadius: 8, borderWidth: 1, borderColor: theme.borderInput, padding: 14, marginBottom: 20, height: 130, overflow: 'hidden' }}>
                   <Text style={{ fontFamily: draftFontFamily, fontSize: draftTextSize, lineHeight: draftLineHeight, color: theme.textPrimary, marginBottom: 6 }} numberOfLines={4}>
-                    {PREVIEW_TEXT}
+                    {PREVIEW_TEXT[draftTranslation]}
                   </Text>
                   <Text style={{ fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, color: theme.textMuted, textTransform: 'uppercase' }}>{PREVIEW_REF}</Text>
+                </View>
+
+                {/* Translation */}
+                <Text style={[styles.settingLabel, { color: theme.textMuted }]}>TRANSLATION</Text>
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+                  {([{ id: 'web', label: 'WEB' }, { id: 'kjv', label: 'KJV' }] as { id: BibleTranslation; label: string }[]).map(opt => (
+                    <TouchableOpacity key={opt.id} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setDraftTranslation(opt.id); }}
+                      style={[styles.settingPill, { flex: 1, backgroundColor: draftTranslation === opt.id ? theme.accentAmber + '1A' : theme.bgInput, borderColor: draftTranslation === opt.id ? theme.accentAmber + '4D' : theme.borderInput }]}
+                    >
+                      <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: draftTranslation === opt.id ? theme.accentAmber : theme.textMuted }}>{opt.label}</Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
 
                 {/* Text size */}

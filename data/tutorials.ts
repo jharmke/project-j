@@ -2176,8 +2176,8 @@ export const TUTORIALS: Tutorial[] = [
         noDimOverlay: true,
         title: 'THE BIBLE',
         body: {
-          discipline: 'The full King James Bible, offline and yours. Here is how to move through it and put it to work.',
-          balanced: 'This is the Bible reader, the whole King James text in your pocket. Quick tour of what it can do.',
+          discipline: 'The full Bible, offline and yours. Here is how to move through it and put it to work.',
+          balanced: 'This is the Bible reader, the whole Bible in your pocket. Quick tour of what it can do.',
           mindful: 'Welcome to the Bible reader. No rush here. Let me show you a few gentle ways to make it your own.',
         },
       },

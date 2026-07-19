@@ -581,7 +581,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     tutorialId: 'bible',
     category: 'Faith',
     title: 'The Bible',
-    body: 'The full King James Bible, offline and always with you. Tap the book name up top to go anywhere, and tap any verse to highlight it. A highlighted verse opens a small action bar: reflect on it, save it, share it, talk it over with Halo, or add it to your daily message.\n\nNew here? Take the tour below for a quick walkthrough.',
+    body: 'Your whole Bible, offline and always with you, in whichever translation you pick (WEB or KJV, set from the gear icon). Tap the book name up top to go anywhere, and tap any verse to highlight it. A highlighted verse opens a small action bar: reflect on it, save it, share it, talk it over with Halo, or add it to your daily message.\n\nNew here? Take the tour below for a quick walkthrough.',
     definitions: [
       { term: 'Highlight a verse', explanation: 'Tap any verse to highlight it. That opens an action bar with everything you can do, and keeps your place.' },
       { term: "Add to Today's Message", explanation: 'The sun on the action bar adds a verse to your daily rotation, so it can show up as your verse of the day. Tap it again to remove it.' },

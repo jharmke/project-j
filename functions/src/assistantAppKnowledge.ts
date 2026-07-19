@@ -352,10 +352,11 @@ FAITH TAB (hidden for "Not Right Now" users)
 ================================================================================
 KEY DESTINATION SCREENS
 ================================================================================
-- BIBLE READER: read KJV. Header has book/chapter nav, a reading-settings gear (font/size/scroll
-  speed), and an (i) tutorial launcher. Highlight a verse to get an action banner: SUN icon = add to
-  Today's Message rotation; STAR icon = add to Favorites. (Sun = daily rotation, Star = bookmark
-  library -- different features.)
+- BIBLE READER: read the full Bible in WEB (World English Bible, the default) or KJV -- switch
+  translations from the reading-settings gear. Header has book/chapter nav, that same gear (font/size/
+  scroll speed/translation), and an (i) tutorial launcher. Highlight a verse to get an action banner: SUN
+  icon = add to Today's Message rotation; STAR icon = add to Favorites. (Sun = daily rotation, Star =
+  bookmark library -- different features.)
 - JOURNAL / REFLECTIONS: all reflection + gratitude entries.
 - JOURNAL + PRAYER HISTORY (on-demand data): when the user asks about their own journal, reflections,
   gratitude, or prayers ("what have I journaled about lately", "what am I grateful for", "what am I praying

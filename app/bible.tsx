@@ -72,6 +72,10 @@ const FONT_OPTIONS = [
 // px per millisecond -- delta-time based so speed is frame-rate independent
 const SPEED_PX_PER_MS: Record<ScrollSpeed, number> = { slow: 0.015, medium: 0.04, fast: 0.09 };
 
+const TRANSLATION_LABELS: Record<BibleTranslation, string> = {
+  web: 'World English Bible (WEB)',
+  kjv: 'King James Version (KJV)',
+};
 const PREVIEW_TEXT: Record<BibleTranslation, string> = {
   web: '"For God so loved the world, that he gave his one and only Son, that whoever believes in him should not perish, but have eternal life."',
   kjv: '"For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life."',
@@ -410,7 +414,8 @@ export default function BibleScreen() {
   const shareVerse = () => {
     if (!highlightedVerseRef || !highlightedVerseText) return;
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-    Share.share({ message: `"${highlightedVerseText}" ${highlightedVerseRef} (KJV)` }).catch(() => {});
+    const shortLabel = bibleTranslation === 'web' ? 'WEB' : 'KJV';
+    Share.share({ message: `"${highlightedVerseText}" ${highlightedVerseRef} (${shortLabel})` }).catch(() => {});
   };
 
   // Bring the highlighted verse to Halo: open the companion with the verse attached as context.
@@ -852,7 +857,7 @@ export default function BibleScreen() {
             </TouchableOpacity>
           );
         })}
-        <Text style={[styles.partialNote, { color: theme.textMuted }]}>King James Version (KJV)</Text>
+        <Text style={[styles.partialNote, { color: theme.textMuted }]}>{TRANSLATION_LABELS[bibleTranslation]}</Text>
       </Reanimated.ScrollView>
 
       {/* FAB backdrop */}

@@ -834,6 +834,13 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
+- [surfaced 2026-07-19, discuss after the Bible translation work below wraps] **Scan a nutrition facts
+  panel to autofill a food's macros.** In the create/edit food screen, scan the actual Nutrition Facts
+  chart on a box/package (camera + OCR) and have it autofill the fields, instead of typing every number by
+  hand. Motivation: a lot of FatSecret's database entries are only ~80% right -- calories usually correct,
+  macros slightly off -- so this would be a quick way to CORRECT specific fields against the real label
+  instead of re-entering or rebuilding the whole food from scratch.
+
 - [PARKED 2026-07-19 -- shipped parts in RECENTLY SHIPPED, full story in the archive] **Some screens still
   feel slow to open, cause unidentified.** Haptic delay is fixed and 4 screens' data loading is batched (see
   RECENTLY SHIPPED), but Settings and Achievements feel IDENTICALLY slow on TestFlight despite Achievements

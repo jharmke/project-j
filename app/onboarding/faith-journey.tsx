@@ -54,18 +54,20 @@ const FAITH_OPTIONS = [
   },
 ];
 
-// Correct KJV verses per card
+// Verified WEB (World English Bible) wording, matching data/bible-web.ts's WEB source exactly --
+// these were previously an unverified paraphrase (mislabeled "KJV" here) that matched neither KJV nor
+// WEB word-for-word; one of them read close enough to NIV's well-known phrasing to be a licensing risk.
 const VERSES: Record<string, { text: string; ref: string }> = {
   rooted: {
-    text: '"Rooted and built up in him, strengthened in the faith as you were taught, and overflowing with thankfulness."',
+    text: '"Rooted and built up in him, and established in the faith, even as you were taught, abounding in it in thanksgiving."',
     ref:  'Colossians 2:7',
   },
   exploring: {
-    text: '"You will seek me and find me, when you seek me with all your heart."',
+    text: '"You shall seek me and find me, when you search for me with all your heart."',
     ref:  'Jeremiah 29:13',
   },
   notrightnow: {
-    text: '"Therefore, if anyone is in Christ, he is a new creation. The old has passed away; behold, the new has come."',
+    text: '"Therefore if anyone is in Christ, he is a new creation. The old things have passed away. Behold, all things have become new."',
     ref:  '2 Corinthians 5:17',
   },
 };

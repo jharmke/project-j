@@ -28,6 +28,9 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-18 **What's New Patch 4 drafted** (data/whatsNew.ts): GoodForge rename, the visual refresh look,
+  and a 10-item fixes list led with the real one -- editing a food from a logged entry could silently blank
+  extended nutrition fields (fiber/sodium/vitamins) on save. Copy locked with Justin; device-verify pending.
 - 2026-07-18 **App renamed to GoodForge.** Verified available (App Store search + App Store Connect name-field
   save), full code + legal-doc rename pass done, 8 Cloud Functions redeployed. See the LAUNCH BLOCKERS entry
   for exactly what changed vs. what's deliberately left as the old identifier (bundle ID, Firebase project).

@@ -30,6 +30,39 @@ export interface WhatsNewRelease {
 // Newest patch FIRST. WHATS_NEW (below) tracks index 0.
 export const WHATS_NEW_RELEASES: WhatsNewRelease[] = [
   {
+    releaseId: '2026-07-18',
+    version: 'Patch 4',
+    date: 'July 18, 2026',
+    highlights: [
+      {
+        icon: 'sparkles',
+        title: 'GoodForge',
+        body: "The app has a new name. Nothing else has changed: your account, your history, and your data are all exactly where you left them. Same app, now wearing its real name.",
+      },
+      {
+        icon: 'color-palette',
+        title: 'A Sharper Look',
+        body: "Titles and numbers now catch a subtle shine instead of sitting flat, every card has real depth and shadow, and the whole app glows just a touch warmer. Same experience, considerably more polished.",
+      },
+      {
+        icon: 'construct',
+        title: 'Fixes & Improvements',
+        bullets: [
+          'Editing a food from a logged entry no longer silently blanks fiber, sodium, and other extended nutrition fields on save',
+          'The Log tab now has its own quick-add button for creating food, creating a recipe, scanning a barcode, or adding to a meal',
+          'Renaming a brand-new report now actually works',
+          "Stats' Weight Change now updates correctly when you switch time periods",
+          'Workout achievement trophies no longer over-count from imported Apple Health history',
+          'Momentum no longer breaks around midnight',
+          "The Recipe Builder's unit dropdown no longer opens off-screen",
+          'Stats sections no longer flash into the wrong order when you switch tabs',
+          'The floating save bar on Settings > Goals no longer looks see-through on Light and Slate themes',
+          "Otto's floating button no longer covers the bottom of your food list when adding food",
+        ],
+      },
+    ],
+  },
+  {
     releaseId: '2026-07-13',
     version: 'Patch 3',
     date: 'July 13, 2026',

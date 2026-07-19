@@ -19,6 +19,7 @@ import {
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import MaskedView from '@react-native-masked-view/masked-view';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { app, auth } from '../firebaseConfig';
@@ -35,6 +36,11 @@ const TERMS_URL = 'https://projectj-5d024.web.app/terms';
 const PRIVACY_URL = 'https://projectj-5d024.web.app/privacy';
 const BG = '#0d0d0f';
 const SCREEN_W = Dimensions.get('window').width;
+
+// Chrome-match wordmark: mirrors the logo's own facet shading (bright highlight -> mid silver ->
+// shadowed edge) instead of the app's accent colour, since this screen deliberately sits outside the
+// theme system. The bottom stop stays a mid slate, not near-black, so it doesn't vanish against BG.
+const WORDMARK_GRADIENT: [string, string, string] = ['#d8dade', '#9a9da5', '#3f4249'];
 
 const generateNonce = (): string =>
   Array.from({ length: 32 }, () =>
@@ -74,8 +80,11 @@ export default function SignInScreen() {
       Animated.timing(fadeAnim, { toValue: 1, duration: 900, useNativeDriver: true }),
       Animated.delay(100),
       Animated.parallel([
-        Animated.timing(nameAnim,  { toValue: 1, duration: 500, useNativeDriver: true }),
-        Animated.timing(nameY,     { toValue: 0, duration: 500, useNativeDriver: true }),
+        // JS-driven, not native: MaskedView's layer mask doesn't reliably composite when its
+        // ancestor is animated by the native driver (confirmed absent everywhere else GradientTitle
+        // is used -- this is the first place it's ever been wrapped in an animated parent).
+        Animated.timing(nameAnim,  { toValue: 1, duration: 500, useNativeDriver: false }),
+        Animated.timing(nameY,     { toValue: 0, duration: 500, useNativeDriver: false }),
       ]),
       Animated.delay(150),
       Animated.parallel([
@@ -210,10 +219,16 @@ export default function SignInScreen() {
         <LinearGradient colors={['transparent', BG]} style={styles.gradBottom} />
       </Animated.View>
 
-      {/* Wordmark */}
-      <Animated.Text style={[styles.wordmark, { opacity: nameAnim, transform: [{ translateY: nameY }] }]}>
-        GOODFORGE
-      </Animated.Text>
+      {/* Wordmark -- chrome gradient, same MaskedView+LinearGradient technique as GradientTitle, but a
+          bespoke local build (not the shared component, which is reserved for ScreenHeader/ModalHeader)
+          since this needs the logo's own metallic stops, not a theme accent colour. */}
+      <Animated.View style={{ opacity: nameAnim, transform: [{ translateY: nameY }], marginTop: -40 }}>
+        <MaskedView maskElement={<Text style={styles.wordmark}>GoodForge</Text>}>
+          <LinearGradient colors={WORDMARK_GRADIENT} locations={[0, 0.5, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}>
+            <Text style={[styles.wordmark, { opacity: 0 }]}>GoodForge</Text>
+          </LinearGradient>
+        </MaskedView>
+      </Animated.View>
 
       {/* Button area -- Stage 1 and Stage 2 overlap in the same space */}
       <Animated.View style={[styles.buttonsContainer, { bottom: insets.bottom + 16, opacity: buttonAnim, transform: [{ translateY: buttonY }] }]}>
@@ -334,8 +349,7 @@ const styles = StyleSheet.create({
     fontFamily: Type.display,
     fontSize: 24,
     letterSpacing: 0.30,
-    color: 'rgba(255,255,255,0.28)',
-    marginTop: 8,
+    color: '#000000', // mask shape only -- actual fill comes from WORDMARK_GRADIENT
   },
   buttonsContainer: {
     position: 'absolute',

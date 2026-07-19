@@ -302,16 +302,12 @@ const isTutorialMode = tutorialMode === 'true';
   const [foodStats, setFoodStats] = useState<{ count: number; lastDate: string | null; avgGrams: number } | null>(null);
   const [isFav, setIsFav] = useState(false);
   const [showSaveAsCopy, setShowSaveAsCopy] = useState(false);
-  const [showEllipsisMenu, setShowEllipsisMenu] = useState(false);
   const [carbsOpen, setCarbsOpen] = useState(true);
   const [fatsOpen, setFatsOpen] = useState(true);
   const [otherOpen, setOtherOpen] = useState(true);
   const [vitaminsOpen, setVitaminsOpen] = useState(false);
   const [bVitaminsOpen, setBVitaminsOpen] = useState(false);
   const [mineralsOpen, setMineralsOpen] = useState(false);
-  const [menuPos, setMenuPos] = useState({ top: 60, right: 16 });
-  const ellipsisRef = useRef<TouchableOpacity>(null);
-  const menuAnim = useRef(new Animated.Value(0)).current;
   const starScale = useRef(new Animated.Value(1)).current;
   const [showServingPicker, setShowServingPicker] = useState(false);
   // AI-estimated meals have no real gram serving, so treat them like serving-only recipes: the
@@ -1188,19 +1184,12 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             </TouchableOpacity>
           ) : food?.fsId ? (
             <TouchableOpacity
-              ref={ellipsisRef}
               onPress={() => {
                 triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-                (ellipsisRef.current as any)?.measure((_x: number, _y: number, w: number, h: number, px: number, py: number) => {
-                  const screenWidth = Dimensions.get('window').width;
-                  setMenuPos({ top: py + h + 6, right: screenWidth - px - w });
-                  menuAnim.setValue(0);
-                  setShowEllipsisMenu(true);
-                  Animated.timing(menuAnim, { toValue: 1, duration: 180, useNativeDriver: true }).start();
-                });
+                setShowSaveAsCopy(true);
               }}
               style={{ width: 30, height: 30, alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name="ellipsis-horizontal" size={22} color={theme.textDim} />
+              <Ionicons name="copy-outline" size={22} color={theme.textDim} />
             </TouchableOpacity>
           ) : null}
           <TouchableOpacity onPress={toggleFav} style={{ width: 30, height: 30, alignItems: 'center', justifyContent: 'center' }}>
@@ -1754,37 +1743,6 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           />
         </TouchableOpacity>
       </ScrollView>
-
-      {/* Ellipsis dropdown */}
-      <Modal visible={showEllipsisMenu} transparent animationType="none">
-        <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setShowEllipsisMenu(false)}>
-          <Animated.View style={{
-            position: 'absolute',
-            top: menuPos.top,
-            right: menuPos.right,
-            backgroundColor: theme.bgSheet,
-            borderRadius: 10,
-            borderWidth: 1,
-            borderColor: theme.borderCard,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.22,
-            shadowRadius: 10,
-            elevation: 8,
-            minWidth: 160,
-            overflow: 'hidden',
-            opacity: menuAnim,
-            transform: [{ translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [-8, 0] }) }],
-          }}>
-            <TouchableOpacity
-              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowEllipsisMenu(false); setTimeout(() => setShowSaveAsCopy(true), 50); }}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 14 }}>
-              <Ionicons name="copy-outline" size={17} color={theme.accentBlue} />
-              <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: Type.uiMedium }}>Save as Copy</Text>
-            </TouchableOpacity>
-          </Animated.View>
-        </TouchableOpacity>
-      </Modal>
 
       {/* Save as Copy */}
       <CustomFoodCreator

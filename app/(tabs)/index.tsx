@@ -24,6 +24,7 @@ import { showAchievementToast, showDailyGoalToast } from '../../components/Achie
 import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, weightEntryIsPlausible, getWeightMilestonesCrossed, isGoalWeightHit, handleDailyGoalHit, checkMomentumAchievements, checkSleepAchievements, getCelebTier } from '../../achievementData';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
+import { barFillGradient } from '../../utils/barGradient';
 import { runAfterLaunchSplash } from '../../utils/launchSplashGate';
 import { maybeRunAdaptiveTdee } from '../../utils/adaptiveTdee';
 import { isSyncReady } from '../../services/syncService';
@@ -466,7 +467,9 @@ function AnimatedProgressBar({ pct, color, trackColor, refreshKey, ready, overGo
 
   return (
     <View style={[styles.progressBarBg, { backgroundColor: trackColor ?? '#1e1e2e' }]}>
-      <ReAnimated.View style={[styles.progressBarFill, { backgroundColor: color }, animStyle]} />
+      <ReAnimated.View style={[styles.progressBarFill, { overflow: 'hidden' }, animStyle]}>
+        <LinearGradient colors={barFillGradient(color)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }} />
+      </ReAnimated.View>
       {overGoal && (
         <ReAnimated.View style={[{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 80 }, shimmerStyle]}>
           <LinearGradient
@@ -493,7 +496,9 @@ function MacroBar({ val, goal, color, trackColor, refreshKey }: { val: number; g
   const animStyle = useAnimatedStyle(() => ({ width: `${width.value}%` as any }));
   return (
     <View style={{ height:6, backgroundColor: trackColor ?? '#1e1e2e', borderRadius:6, overflow:'hidden' }}>
-      <ReAnimated.View style={[{ height:'100%', borderRadius:6, backgroundColor: color }, animStyle]} />
+      <ReAnimated.View style={[{ height:'100%', borderRadius:6, overflow:'hidden' }, animStyle]}>
+        <LinearGradient colors={barFillGradient(color)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }} />
+      </ReAnimated.View>
     </View>
   );
 }

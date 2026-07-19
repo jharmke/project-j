@@ -16,6 +16,10 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-18 **Progress-bar gradient treatment, device-confirmed.** New `utils/barGradient.ts` (same
+  molded lift/sink recipe as GradientTitle/GradientNumber, tuned stronger since bars are only 6-8px tall)
+  wired into every flat-fill bar: Home's water/steps/macro bars + calorie/macro bars on the Log tab.
+  Ring/donut version filed as its own follow-on in NEXT UP, not bundled into this pass.
 - 2026-07-18 **Anthropic API key rotated, exposure closed.** The pre-07-01 client-bundled key (live since
   07-01 with no confirmed abuse, $50/mo cap) is fully revoked -- both legacy keys ("ProjectJ" and
   "projectj-faith") deleted from the Anthropic console after confirming Otto, Halo, and the AI meal
@@ -830,10 +834,16 @@ are separate pre-submission checklists, NOT part of this menu.
   themes actually gated? does any challenge exist?) before building, so we don't assume. Keep the "no theme
   is EVER paid" rule intact -- these are earned, never bought (distinct from the monetization track).
   Surfaced 2026-07-11.
-- [NOW, do today/tomorrow] [QUICK WIN, found 2026-07-15] **Progress-bar treatment pass.** The bars
-  (calories, water, steps, macros, etc.) are flat solid-fill on a flat track -- plain. Give the fill a
-  subtle gradient and/or a soft top sheen (Whoop/Oura style), maybe a faint glow at the leading edge. Every
-  bar animates already, so just the fill styling.
+- [found 2026-07-18, follow-on to the bar gradient above] **Ring/donut gradient pass.** Same molded
+  3-stop recipe (`utils/barGradient.ts`), applied to SVG stroke arcs instead of flat View fills. 6 real
+  files have actual progress-ring arcs (not just decorative circles), confirmed via `strokeDasharray`
+  grep: app/(tabs)/index.tsx (calorie/recovery ScoreRing), components/SleepDonut.tsx (shared, 2 places),
+  app/food-detail.tsx, components/DaySummaryModal.tsx, components/StatsGraphCard.tsx,
+  app/onboarding/your-style.tsx -- likely 8-10+ ring instances total once counted inside each file.
+  Same technique as the bars (SVG `<Defs><LinearGradient><Stop>`, `stroke="url(#id)"` instead of a flat
+  colour), but each ring needs a UNIQUE gradient id so multiple simultaneous rings on one screen (e.g.
+  calorie + recovery both visible on Home) don't collide -- more moving parts than the bars, hence its
+  own pass rather than bundled in. Justin's call to hold off same night as the bar treatment shipped.
 - [found 2026-07-16] **Centralize the card shadow (stop the drift at its source).** Purely preventive --
   ZERO visual change -- so it is ranked below anything a user can see. But it is the thing that ends the
   bug class: every card hand-rolls 5 shadow props, and that produced FOUR different failures in one sweep

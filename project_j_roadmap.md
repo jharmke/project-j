@@ -11,23 +11,17 @@
 ---
 
 ## 🔴 DO THIS NEXT (time-boxed, do not let it slide)
-- [ ] **ROTATE THE ANTHROPIC API KEY. Target: ~2026-07-18 (5 days after the 2026-07-13 TestFlight push).**
-  The key was bundled client-side in every build before 2026-07-01. The CODE is fixed (all calls go through the
-  aiProxy Cloud Function) but **the exposed key is still live** -- anyone holding an old build can extract it and
-  spend Justin's money. Checked 2026-07-13: Anthropic usage shows NO abuse (the spikes line up exactly with
-  Justin's own dev sessions), and the $50/mo cap bounds the damage. But it has been open since 2026-07-01.
-  WHY IT WASN'T DONE IMMEDIATELY: testers on OLD builds still use that key, so rotating breaks their Otto, Halo,
-  and meal estimator. The 2026-07-13 TestFlight build (which routes through the proxy) went out on that date with
-  "please install this week, AI stops working on the old build" in the release notes.
-  DO NOT WAIT FOR 100% OF TESTERS. Check App Store Connect > TestFlight > the build for the install count, give it
-  ~5 days, then rotate regardless. Anyone still on an old build simply loses AI until they update -- which is the
-  nudge. Nothing else breaks for them.
-  STEPS: regenerate the key in the Anthropic console -> `firebase functions:secrets:set ANTHROPIC_API_KEY` ->
-  redeploy the functions that use it (aiProxy, appCompanion, faithCompanion) -> REVOKE the old key.
+- Nothing time-boxed right now. Anthropic key rotation (below) just closed this out 2026-07-18.
 
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-18 **Anthropic API key rotated, exposure closed.** The pre-07-01 client-bundled key (live since
+  07-01 with no confirmed abuse, $50/mo cap) is fully revoked -- both legacy keys ("ProjectJ" and
+  "projectj-faith") deleted from the Anthropic console after confirming Otto, Halo, and the AI meal
+  estimator all work on the new key. New key is `goodforge-prod`, 1-year expiration, set via
+  `firebase functions:secrets:set ANTHROPIC_API_KEY` + redeployed to aiProxy/appCompanion/faithCompanion.
+  Next rotation reminder filed under Infrastructure backlog (~2027-07-18).
 - 2026-07-18 **What's New Patch 4 drafted** (data/whatsNew.ts): GoodForge rename, the visual refresh look,
   and a 10-item fixes list led with the real one -- editing a food from a logged entry could silently blank
   extended nutrition fields (fiber/sodium/vitamins) on save. Copy locked with Justin; device-verify pending.
@@ -1129,6 +1123,10 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 - Sign-in logo entrance animation -- logo pops instead of fading. Verify on TestFlight first.
 
 ### Infrastructure
+- [DATED REMINDER] Anthropic API key (`goodforge-prod`) expires ~2027-07-18 (1-year expiration set
+  2026-07-18 during the post-exposure rotation). Rotate proactively before then -- regenerate, set via
+  `firebase functions:secrets:set ANTHROPIC_API_KEY`, redeploy aiProxy/appCompanion/faithCompanion, verify
+  Otto+Halo+estimator, revoke old key. Same steps as this rotation, just not urgent this time.
 - [DRIFT CLEANUP] GOAL_DEFICITS is duplicated across 6 files (calorieTarget, profile, index, goalHit, settings, onboarding/your-style). Centralize into ONE exported source (calorieTarget already exports it) so pace/deficit changes can't drift. Surfaced 2026-07-08 adding pace granularity -- had to hand-edit 5 copies. (Justin flagged drift as a standing concern.)
 - Firestore migration -- move primary data from AsyncStorage to Firestore (auth already done). Big item.
 - State restoration on launch -- save active tab + scroll position, restore on cold launch.

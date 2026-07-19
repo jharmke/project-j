@@ -179,20 +179,17 @@ export const runDailyNotificationScheduler = async () => {
     }
 
     // ── Today's verse text ─────────────────────────────────────────────────
+    // Goes through the same resolveDailyVerse everything else uses (Home/Faith/pool modal) instead of
+    // re-reading pj_verse_rotation by hand -- that hand-rolled version was reading a stale rotation shape
+    // (rotation.currentIndex + numeric order array) that no longer matches what resolveDailyVerse actually
+    // writes (rotation.index + string keys like "p:Philippians 4:13"), so todayVerseText/todayVerseRef were
+    // silently always null. One source of truth fixes that and picks up the selected translation for free.
     let todayVerseText: string | null = null;
     let todayVerseRef: string | null = null;
     try {
-      const versesRaw = await AsyncStorage.getItem('pj_verse_rotation');
-      if (versesRaw) {
-        const rotation = JSON.parse(versesRaw);
-        const idx = rotation.currentIndex ?? 0;
-        const order: number[] = rotation.order ?? [];
-        if (order.length > 0) {
-          const { VERSES } = require('../data/verses');
-          const verse = VERSES[order[idx % order.length]];
-          if (verse?.text) { todayVerseText = verse.text; todayVerseRef = verse.reference ?? null; }
-        }
-      }
+      const { resolveDailyVerse } = require('../data/verses');
+      const verse = await resolveDailyVerse(todayKey, settings.bibleTranslation ?? 'web');
+      if (verse?.text) { todayVerseText = verse.text; todayVerseRef = verse.reference ?? null; }
     } catch {}
 
     // ── Run scheduler ──────────────────────────────────────────────────────

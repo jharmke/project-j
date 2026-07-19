@@ -15,6 +15,7 @@ import ButtonShine from './ButtonShine';
 import AnimatedNumber from './AnimatedNumber';
 import GradientNumber from './GradientNumber';
 import { CardWash, CardWatermark } from './GradientCard';
+import { fetchVerseText } from '../data/verses';
 import { Type, numLine } from '../typography';
 
 // Same lift/sink recipe as GradientNumber -- an icon glyph is roughly square like a number glyph, not
@@ -85,7 +86,10 @@ const dayKeyMinus = (key: string, n: number) => {
 const dayDiff = (fromKey: string, toKey: string) =>
   Math.round((new Date(toKey + 'T00:00:00').getTime() - new Date(fromKey + 'T00:00:00').getTime()) / 86400000);
 
-// ─── Verses (KJV) ────────────────────────────────────────────────────────────
+// ─── Verses ───────────────────────────────────────────────────────────────────
+// Baked KJV text, shown directly when KJV is selected. When WEB is selected, the same reference is
+// live-fetched for the real WEB wording (see webVerseText state below) -- this array is never shown
+// as-is under WEB, just used for its `ref` field and as a fallback if the live fetch hasn't landed yet.
 
 const GRATITUDE_VERSES = [
   { text: 'In every thing give thanks: for this is the will of God in Christ Jesus concerning you.', ref: '1 Thessalonians 5:18' },
@@ -131,6 +135,21 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
   const [streak, setStreak] = useState<GratitudeStreak>(DEFAULT_STREAKS.gratitude);
   const [savers, setSavers] = useState<StreakSavers>(DEFAULT_STREAKS.savers);
   const [weeklyLogs, setWeeklyLogs] = useState<boolean[]>(new Array(7).fill(false));
+  // Live WEB wording for today's gratitude verse, when WEB is selected. null = not fetched yet /
+  // translation is KJV, in which case the baked KJV text below is used directly (matches the same
+  // baked-vs-live split used for Today's Message).
+  const [webVerseText, setWebVerseText] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    setWebVerseText(null);
+    AsyncStorage.getItem('pj_settings').then(raw => {
+      const translation = raw ? (JSON.parse(raw).bibleTranslation ?? 'web') : 'web';
+      if (translation !== 'web') return;
+      const ref = getDailyVerse(todayKey).ref;
+      fetchVerseText(ref, 'web').then(text => { if (alive && text) setWebVerseText(text); }).catch(() => {});
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, [todayKey]);
 
   const saverCap = styleMode === 'discipline' ? 1 : styleMode === 'balanced' ? 2 : 0;
   const isMindful = styleMode === 'mindful';
@@ -514,7 +533,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
             '#4a4a6a' -- a cool navy. It also now MATCHES the prayer previews on the Faith tab, which sat on
             the dark headline ink and read heavy. Verses and prayers are the same job: text you read. */}
         <Text style={{ fontFamily: faith ? 'Lora_500Medium' : Type.ui, fontSize: faith ? 14 : 12, color: inkBody, fontStyle: faith ? 'normal' : 'italic', lineHeight: faith ? 21 : 18, textAlign: faith ? 'center' : 'left' }}>
-          "{verse.text}"
+          "{webVerseText ?? verse.text}"
         </Text>
         <Text style={{ fontFamily: Type.uiSemibold, fontSize: 10, color: t.accentAmber, marginTop: 4, letterSpacing: 0.5, textAlign: faith ? 'center' : 'left' }}>
           {verse.ref}

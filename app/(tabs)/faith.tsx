@@ -132,7 +132,8 @@ export default function FaithScreen() {
         .catch(() => {});
       // Same verse as Home (shared rotation in data/verses.ts). Fall back to a random verse
       // on a read error, but do not nuke the rotation here, Home owns that recovery.
-      resolveDailyVerse(getDateKey(new Date()))
+      AsyncStorage.getItem('pj_settings')
+        .then(raw => resolveDailyVerse(getDateKey(new Date()), raw ? (JSON.parse(raw).bibleTranslation ?? 'web') : 'web'))
         .then(v => { if (alive) setDailyVerse(v); })
         .catch(() => { if (alive) setDailyVerse(VERSES[Math.floor(Math.random() * VERSES.length)]); });
       return () => { alive = false; };

@@ -8,8 +8,26 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from '../utils/storage';
+import { fetchChapter, parseReference, type BibleTranslation } from './bible-web';
 
 export type DailyVerse = { text: string; reference: string };
+
+// Live-fetch a reference's real text in a given translation (handles ranges like "Hebrews 12:1-2" by
+// joining the verses with a space). Returns null on anything unparseable/unavailable so the caller can
+// fall back to the baked KJV text rather than show nothing.
+export async function fetchVerseText(reference: string, translation: BibleTranslation): Promise<string | null> {
+  const parsed = parseReference(reference);
+  if (!parsed) return null;
+  const verses = await fetchChapter(parsed.book, parsed.chapter, translation);
+  const end = parsed.verseEnd ?? parsed.verseStart;
+  const parts: string[] = [];
+  for (let v = parsed.verseStart; v <= end; v++) {
+    const hit = verses.find(x => x.verse === v);
+    if (!hit) return null;
+    parts.push(hit.text);
+  }
+  return parts.join(' ');
+}
 
 export const VERSES: DailyVerse[] = [
   // Strength & Perseverance
@@ -193,7 +211,16 @@ export function getActiveVerses(pool: VersePool): Array<{ key: string; verse: Da
  * fresh verse immediately. Throws on corrupt data so the caller can fall back. `todayStr` must be
  * the local YYYY-MM-DD key both tabs already use.
  */
-export async function resolveDailyVerse(todayStr: string): Promise<DailyVerse> {
+// Presets (keys starting "p:") follow the selected translation, live-fetched; custom verses (keys
+// starting "c:") stay exactly as the user saved them for now -- whether those should also follow the
+// translation setting is a real product decision, not yet made, so left untouched rather than guessed.
+async function withTranslation(key: string, verse: DailyVerse, translation: BibleTranslation): Promise<DailyVerse> {
+  if (translation === 'kjv' || !key.startsWith('p:')) return verse;
+  const webText = await fetchVerseText(verse.reference, 'web');
+  return webText ? { text: webText, reference: verse.reference } : verse;
+}
+
+export async function resolveDailyVerse(todayStr: string, translation: BibleTranslation = 'kjv'): Promise<DailyVerse> {
   const pool = await loadVersePool();
   const active = getActiveVerses(pool);
   const byKey = new Map(active.map(a => [a.key, a.verse]));
@@ -203,7 +230,7 @@ export async function resolveDailyVerse(todayStr: string): Promise<DailyVerse> {
   // fall through to the cycle so the card still shows something.
   if (pool.mode === 'static' && pool.pinnedKey) {
     const all = new Map(getAllVerses(pool).map(a => [a.key, a.verse]));
-    if (all.has(pool.pinnedKey)) return all.get(pool.pinnedKey)!;
+    if (all.has(pool.pinnedKey)) return withTranslation(pool.pinnedKey, all.get(pool.pinnedKey)!, translation);
   }
 
   const activeKeys = active.map(a => a.key);
@@ -228,7 +255,8 @@ export async function resolveDailyVerse(todayStr: string): Promise<DailyVerse> {
     await storageSet('pj_verse_rotation', JSON.stringify(rotation));
   }
 
-  const resolved = byKey.get(rotation.order[rotation.index]);
+  const resolvedKey = rotation.order[rotation.index];
+  const resolved = byKey.get(resolvedKey);
   if (!resolved) throw new Error('bad verse key');
-  return resolved;
+  return withTranslation(resolvedKey, resolved, translation);
 }

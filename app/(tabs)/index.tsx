@@ -1670,7 +1670,9 @@ export default function HomeScreen() {
         setLoaded(true);
         try {
           const todayStr = todayKey;
-          const resolved = await resolveDailyVerse(todayStr);
+          const settingsRaw = await AsyncStorage.getItem('pj_settings');
+          const bibleTranslation = settingsRaw ? (JSON.parse(settingsRaw).bibleTranslation ?? 'web') : 'web';
+          const resolved = await resolveDailyVerse(todayStr, bibleTranslation);
           setDailyVerse(resolved);
           setRefreshKey(k => k + 1);
         } catch {

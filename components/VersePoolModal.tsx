@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useRef, useState } from 'react';
@@ -64,7 +65,10 @@ export default function VersePoolModal({ visible, onClose, onChanged }: Props) {
 
   const close = () => {
     if (sigOf(pool) !== initialSig.current) {
-      resolveDailyVerse(dateKey(new Date())).then(v => onChanged?.(v)).catch(() => {});
+      AsyncStorage.getItem('pj_settings')
+        .then(raw => resolveDailyVerse(dateKey(new Date()), raw ? (JSON.parse(raw).bibleTranslation ?? 'web') : 'web'))
+        .then(v => onChanged?.(v))
+        .catch(() => {});
     }
     Animated.parallel([
       Animated.timing(scaleAnim, { toValue: 0.94, duration: 160, useNativeDriver: true }),

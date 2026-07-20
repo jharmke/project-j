@@ -853,8 +853,8 @@ are separate pre-submission checklists, NOT part of this menu.
   or tested for iPad -- likely cause is either the iPad's system text-size (accessibility "Larger Text")
   setting being bigger than the phone's, or simply no iPad-specific layout existing at all, but this is a
   guess, not confirmed by reading code yet. Needs its own look.
-- [surfaced 2026-07-20, data-integrity, CRITICAL, CONFIRMED REAL VIA DEVICE TEST -- not just theory,
-  investigate root cause before fixing] **Restore gate fails to pull real data on a real account-switch on
+- [surfaced 2026-07-20, data-integrity, FIXED + DEVICE-TESTED, root cause was smaller than first feared]
+  **Restore gate fails to pull real data on a real account-switch on
   a device that previously onboarded a DIFFERENT account -- confirmed on Justin's iPad, current TestFlight
   build.** Sequence that reproduced it: iPad had previously been signed into a different (empty) Google
   account, onboarded (so `pj_onboarding_complete` was stamped 'true' locally for THAT account). Signed out,
@@ -893,15 +893,15 @@ are separate pre-submission checklists, NOT part of this menu.
   until a full manual app relaunch. Much lower severity than originally feared: never a data problem, purely
   a "screen doesn't know to refresh itself" problem.
 
-  FIX WRITTEN (2026-07-20, not yet build-tested): `app/_layout.tsx` -- added a `remountKey` state value,
-  applied as `key={remountKey}` on the root `<Stack>`. When `runRestoreGate()` resolves specifically with
-  `'restored'` (a genuine account-switch just replaced local data), `remountKey` bumps, which forces React to
-  fully unmount/remount the entire screen stack so every screen re-reads the now-correct local data
-  immediately -- automating exactly what Justin did manually tonight (force-close + reopen). Pure JS, no new
-  native dependency, type-checks clean. NOT YET VERIFIED ON DEVICE -- needs a new build (the iPad is on
-  TestFlight, which can't hot-reload root-layout changes) and a repeat of tonight's exact test: sign into the
-  backup account first (stamps a different account's onboarding-complete locally), sign out, sign back in as
-  jtharmke via Google, and confirm real data now shows up IMMEDIATELY without a manual force-close.
+  FIX WRITTEN + DEVICE-TESTED (2026-07-20): `app/_layout.tsx` -- first tried a `remountKey` trick (forcing
+  the whole screen stack to unmount/remount via a changing `key`), but on reflection that made unverifiable
+  assumptions about expo-router's internal navigation state, so it was REPLACED before ever shipping with a
+  simpler, guaranteed-correct fix: when `runRestoreGate()` resolves with `'restored'` (a genuine account
+  switch just replaced local data), show a plain alert -- "Account Restored -- please close and reopen the
+  app to see it." This is mechanically identical to the manual close-and-reopen Justin already proved safe
+  tonight, just prompted automatically instead of guessed at. CONFIRMED on Justin's phone: reproduced the
+  scenario (switched to a different real account, then back), saw the new popup, closed/reopened, real data
+  was there. Pure JS, no new native dependency, type-checks clean.
 
 - [surfaced 2026-07-20, data-integrity, BUILT + DEVICE-TESTED on Justin's phone, ship-ready] **Firebase auth
   identity edge cases could cause real data loss / lockout.** Firestore is keyed by
@@ -959,10 +959,18 @@ are separate pre-submission checklists, NOT part of this menu.
      confirmation is fine as-is for Remove -- it matches the existing pattern already used by Sign Out and
      Delete Account in this same section, so a custom centered modal here would actually be LESS consistent,
      not more.
-  Still open: the sign-in-time handling (#1) and the "same email, different provider" scenario have not yet
-  been device-tested for real (see TEST PLAN #1/#3 below) -- what's been tested so far is the Connected
-  Accounts linking/unlinking flow specifically, not the original account-exists-with-different-credential
-  error path.
+  CONFIRMED VIA REAL DEVICE TEST (2026-07-20): scenario 1 (same email, different provider, same device) --
+  removed Google in Connected Accounts, signed out, signed back in with Google using the same email. Result:
+  Firebase silently auto-linked back to the SAME real account, zero error shown, real data intact. This means
+  Firebase's project-level linking setting appears to auto-resolve this case on its own in practice -- the
+  sign-in-time error-handling code (#1 in the build plan above) remains a real, correct safety net, but its
+  actual trigger conditions in this project's live configuration are still not fully proven; it may rarely or
+  never fire for a normal matching-verified-email case.
+
+  PREFERRED CONTACT EMAIL -- BUILT (2026-07-20). Lives in `pj_profile` (already cloud-synced). Settings ->
+  Account only shows the picker when linked providers actually have DIFFERENT emails -- for Justin's own
+  account (both jtharmke@gmail.com) it correctly shows nothing, so this hasn't been visually confirmed on a
+  real diverging-email account yet, just type-checked clean.
 
   DECIDED, OUT OF SCOPE FOR NOW: no automated "forgot which account I used" recovery system. If a user only
   ever used ONE provider and has multiple accounts under it (e.g. two Gmail addresses) and forgets which,
@@ -970,27 +978,19 @@ are separate pre-submission checklists, NOT part of this menu.
   is a manual support-contact path (email support, Justin looks the account up in the Firebase console using
   whatever details the user can provide). Revisit only if this becomes a real recurring burden at scale.
 
-  NEW FOLLOW-ON IDEA (surfaced during this discussion, not yet scoped): once Connected Accounts exists, a
-  user could have two different emails on file (one per linked provider) -- a small "preferred contact
-  email" setting would let them pick which one actually gets used for real communication (ties into the
-  Supporter thank-you-email plan already in SPEC_monetization.md). Not urgent, just don't lose the idea.
-
-  TEST PLAN (5 scenarios -- CONFIRMED assets available 2026-07-20: Justin's own account, a backup Gmail, a
-  dev-account Gmail, his wife's separate Apple ID + Google account, and a spare iPad as a second device --
-  enough to cover all 5, run for real once built, none tested yet):
-  1. Same email, different provider (Apple then Google, same device) -- confirm the new sign-in-time
-     handling correctly tells the user to use their original provider instead of the generic failure alert.
-  2. New device, same provider, same email (Apple -> Apple) -- expected fully safe (same sub, same UID),
-     confirm the restore gate actually pulls everything down on a real fresh-device test.
-  3. New device, different provider, same email (Apple -> Google) -- same as #1 but on a brand new device
-     with zero local AsyncStorage fallback -- confirm the handling kicks in here too, not just same-device.
-  4. New device, different provider, different email -- confirmed separate account, separate UID, empty
-     locker, nothing carries over. Original data untouched. Not a bug, by design.
-  5. New device, same provider, different email -- same as #4, different account entirely, nothing carries
-     over, original data untouched.
-  Plus: once Connected Accounts is built, test linking Apple + a DIFFERENT-email Google account together on
-  purpose, confirm both sign you into the same account afterward, and confirm unlink correctly blocks
-  removing the last remaining method.
+  TEST PLAN STATUS (2026-07-20) -- CONFIRMED assets available: Justin's own account, a backup Gmail, a
+  dev-account Gmail, his wife's separate Apple ID + Google account, and a spare iPad as a second device:
+  1. Same email, different provider, same device -- CONFIRMED tonight (see above, auto-links cleanly).
+  2. New device, same provider, same email (Apple -> Apple) -- STILL OPEN, Justin's call 2026-07-20 to leave
+     this pinned here rather than backlog it, just not doing it right now.
+  3. New device, different provider, same email -- CONFIRMED tonight via the iPad testing (this is the
+     scenario that surfaced the stale-screen bug, now fixed and confirmed working).
+  4. New device, different provider, different email -- CONFIRMED repeatedly tonight (justin.harmke stayed
+     separate/empty throughout all testing). Not a bug, by design.
+  5. New device, same provider, different email -- STILL OPEN, same as #2, left pinned here on purpose.
+  Plus: Connected Accounts link/unlink -- CONFIRMED tonight, including linking a never-before-used credential,
+  correctly failing to link a credential already used by a different account, and the "can't remove your
+  last method" guard.
 - [surfaced 2026-07-20, QUICK WIN] **Add a WEB/KJV translation toggle to Today's Message modal's gear
   icon.** Direct follow-on to the WEB translation feature (shipped 2026-07-19, see RECENTLY SHIPPED) --
   should be an easy add.

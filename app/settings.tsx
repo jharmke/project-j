@@ -484,6 +484,30 @@ export default function SettingsScreen() {
     () => user?.providerData?.map(p => ({ providerId: p.providerId, email: p.email })) || []
   );
   const [linkingProvider, setLinkingProvider] = useState<'apple' | 'google' | null>(null);
+  // Only matters when linked providers carry DIFFERENT emails (e.g. Apple + a different Google
+  // account) -- lets the user pick which one is used for real contact (Supporter thank-yous etc).
+  // Lives in pj_profile since that already syncs to the cloud, where it's actually looked up from.
+  const [preferredContactEmail, setPreferredContactEmail] = useState<string | null>(null);
+  useEffect(() => {
+    AsyncStorage.getItem('pj_profile').then(raw => {
+      if (!raw) return;
+      try { setPreferredContactEmail(JSON.parse(raw)?.preferredContactEmail ?? null); } catch {}
+    });
+  }, []);
+  const handleSetPreferredEmail = async (email: string) => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      const current = await AsyncStorage.getItem('pj_profile');
+      const base = current ? JSON.parse(current) : {};
+      const merged = { ...base, preferredContactEmail: email };
+      await storageSet('pj_profile', JSON.stringify(merged));
+      await saveToFirebase('profile', 'data', merged);
+      setPreferredContactEmail(email);
+      showToast('Preferred contact email updated', undefined, 'success');
+    } catch {
+      Alert.alert('Error', 'Could not save your preference. Please try again.');
+    }
+  };
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
   const [adaptiveTdeeAuto, setAdaptiveTdeeAuto] = useState(false);
   const [showNetCarbs, setShowNetCarbs] = useState(false);
@@ -2427,6 +2451,47 @@ export default function SettingsScreen() {
                     </TouchableOpacity>
                   )}
                 </View>
+                {(() => {
+                  const distinctEmails = Array.from(
+                    new Set([appleEntry?.email, googleEntry?.email].filter((e): e is string => !!e))
+                  );
+                  if (distinctEmails.length <= 1) return null;
+                  const effective = preferredContactEmail && distinctEmails.includes(preferredContactEmail)
+                    ? preferredContactEmail
+                    : (user?.email ?? distinctEmails[0]);
+                  return (
+                    <View style={[styles.row, { borderTopColor: theme.borderCard, flexDirection: 'column', alignItems: 'stretch' }]}>
+                      <Text style={[styles.rowTitle, { color: theme.textSecondary, marginBottom: 8 }]}>
+                        Preferred Contact Email
+                      </Text>
+                      <Text style={[styles.rowSub, { color: theme.textMuted, marginBottom: 10 }]}>
+                        Your connected methods use different emails. Pick which one we should contact you at.
+                      </Text>
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                        {distinctEmails.map(email => {
+                          const selected = email === effective;
+                          return (
+                            <TouchableOpacity
+                              key={email}
+                              onPress={() => handleSetPreferredEmail(email)}
+                              style={{
+                                paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6,
+                                backgroundColor: selected ? theme.bgSelected : 'transparent',
+                                borderWidth: 1,
+                                borderColor: selected ? theme.accentBlue : theme.borderCard,
+                              }}
+                            >
+                              {selected && <ButtonShine radius={6} />}
+                              <Text style={{ fontSize: 12, color: selected ? theme.accentBlue : theme.textMuted, fontFamily: Type.uiSemibold }} numberOfLines={1}>
+                                {email}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  );
+                })()}
               </>
             );
           })()}

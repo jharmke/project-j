@@ -29,8 +29,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { Type } from '../typography';
 import PrimaryCTA from '../components/PrimaryCTA';
-
-const IOS_CLIENT_ID = '841973180275-obscsfo4ad9ibir9dtpcago5fuptojlg.apps.googleusercontent.com';
+import { GOOGLE_IOS_CLIENT_ID } from '../config';
 
 const TERMS_URL = 'https://projectj-5d024.web.app/terms';
 const PRIVACY_URL = 'https://projectj-5d024.web.app/privacy';
@@ -97,7 +96,7 @@ export default function SignInScreen() {
 
   useEffect(() => {
     AppleAuthentication.isAvailableAsync().then(setAppleAvailable);
-    GoogleSignin.configure({ iosClientId: IOS_CLIENT_ID });
+    GoogleSignin.configure({ iosClientId: GOOGLE_IOS_CLIENT_ID });
   }, []);
 
   // Staggered entrance: logo → wordmark → buttons

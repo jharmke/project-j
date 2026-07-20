@@ -903,8 +903,8 @@ are separate pre-submission checklists, NOT part of this menu.
   backup account first (stamps a different account's onboarding-complete locally), sign out, sign back in as
   jtharmke via Google, and confirm real data now shows up IMMEDIATELY without a manual force-close.
 
-- [surfaced 2026-07-20, data-integrity, TOP PRIORITY, INVESTIGATION DONE -- build plan locked, not built
-  yet] **Firebase auth identity edge cases could cause real data loss / lockout.** Firestore is keyed by
+- [surfaced 2026-07-20, data-integrity, BUILT + DEVICE-TESTED on Justin's phone, ship-ready] **Firebase auth
+  identity edge cases could cause real data loss / lockout.** Firestore is keyed by
   Firebase UID (the stable `sub` claim from the Apple/Google identity token), not email. Confirmed SAFE:
   user changes their Apple ID or Gmail email address (same underlying account) -> same sub, same UID, data
   restores fine.
@@ -938,25 +938,31 @@ are separate pre-submission checklists, NOT part of this menu.
   his wife's Apple ID uses Hide My Email, so the planned test devices validate the normal case correctly,
   not this specific gap.
 
-  DECIDED BUILD PLAN (2026-07-20, full version chosen over a minimal error-message-only fix):
-  1. **Sign-in-time handling**: catch `account-exists-with-different-credential` in both Apple and Google
-     catch blocks in sign-in.tsx, tell the user which method to use, offer to complete the link once they
-     re-auth with their original provider.
-  2. **Connected Accounts (Settings, proactive, self-service)** -- the main piece, and the one that actually
-     makes it "just work" like big apps do: while already logged in (identity already proven, no email-
-     matching needed), let the user explicitly link an ADDITIONAL sign-in method to their account -- this
-     works even if the two providers have completely different emails, since we already know who they are.
-     Also closes the Hide My Email gap proactively (though not retroactively/automatically). Must show which
-     methods are currently connected.
-  3. **Unlink support in the same screen** (Justin confirmed 2026-07-20 he wants this included) -- Firebase
-     supports removing a connected sign-in method directly (`unlink`). Hard rule: never allow unlinking the
-     LAST remaining method -- must always leave at least one way back in.
-  4. **"Smooth" is a real design requirement, not just copy** -- sign-in.tsx currently uses plain native
-     `Alert.alert` for errors; this needs an on-brand centered-modal experience (per CLAUDE.md's Centered
-     Modals Only standard), not a jarring popup, to actually feel like the seamless X/Twitter-style
-     experience Justin's picturing.
-  Needs its own device/testing pass with real accounts before shipping (Firebase/OAuth behavior can't be
-  faked cleanly in a simulator) -- see TEST PLAN below.
+  BUILD PLAN, ALL 4 PIECES DONE (2026-07-20):
+  1. **Sign-in-time handling -- BUILT.** `app/sign-in.tsx` catches `account-exists-with-different-credential`
+     in both Apple and Google catch blocks (`handleAccountExistsError`), looks up which provider the email
+     really belongs to via `fetchSignInMethodsForEmail` (falls back to a generic-but-still-helpful message if
+     that lookup comes back empty), and tells the user which method to use instead of the old generic
+     failure alert.
+  2. **Connected Accounts -- BUILT + DEVICE-TESTED.** New section in Settings -> Account, right below the
+     email row. Shows Apple/Google each with "Connect" (not yet linked) or "Remove" (linked). "Connect" calls
+     `linkWithCredential` on the already-authenticated user -- no email-matching needed, works even across
+     different emails. Confirmed on-device: linking a never-before-used credential succeeds cleanly and
+     ties it to the current account permanently (a later fresh sign-in with that credential logs back into
+     the SAME account, not a new one); attempting to link a credential that already belongs to a DIFFERENT
+     existing account correctly fails with "Already Connected" (Firebase refuses it, neither account is
+     touched). Shared `GOOGLE_IOS_CLIENT_ID` moved to config.ts so sign-in.tsx and settings.tsx can't drift.
+  3. **Unlink support -- BUILT + DEVICE-TESTED.** Same screen, "Remove" next to each connected method.
+     Confirmed on-device: removing one method works and shows a toast; the "never remove your last method"
+     guard correctly blocks removal and shows "Cannot Remove" when only one would be left.
+  4. **"Smooth" -- RESOLVED, no change needed.** Justin's call (2026-07-20): the plain native `Alert.alert`
+     confirmation is fine as-is for Remove -- it matches the existing pattern already used by Sign Out and
+     Delete Account in this same section, so a custom centered modal here would actually be LESS consistent,
+     not more.
+  Still open: the sign-in-time handling (#1) and the "same email, different provider" scenario have not yet
+  been device-tested for real (see TEST PLAN #1/#3 below) -- what's been tested so far is the Connected
+  Accounts linking/unlinking flow specifically, not the original account-exists-with-different-credential
+  error path.
 
   DECIDED, OUT OF SCOPE FOR NOW: no automated "forgot which account I used" recovery system. If a user only
   ever used ONE provider and has multiple accounts under it (e.g. two Gmail addresses) and forgets which,

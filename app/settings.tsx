@@ -22,6 +22,11 @@ import { ACHIEVEMENTS, loadAchievements, checkAndUnlock, loadGoalHitCounts, chec
 import { collection, getDocs } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app, auth, db, saveToFirebase } from '../firebaseConfig';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { GoogleAuthProvider, OAuthProvider, linkWithCredential, unlink } from 'firebase/auth';
+import CryptoJS from 'crypto-js';
+import { GOOGLE_IOS_CLIENT_ID } from '../config';
 import { shouldSync, uploadAllLocal, resetRestoreGate, verifyBackup, isSyncReady } from '../services/syncService';
 import { backfillAllPhotos } from '../utils/foodPhotos';
 import { storageSet } from '../utils/storage';
@@ -472,6 +477,13 @@ export default function SettingsScreen() {
   const { theme, themeId, accentId, setTheme, setAccent } = useTheme();
   const { user, signOut } = useAuth();
   const { showToast } = useToast();
+  // Mirrors auth.currentUser.providerData locally -- linking/unlinking a provider doesn't
+  // reliably re-fire onAuthStateChanged (the uid never changes), so AuthContext's `user`
+  // can go stale. Refreshed explicitly after every link/unlink so the UI is always correct.
+  const [linkedProviderIds, setLinkedProviderIds] = useState<string[]>(
+    () => user?.providerData?.map(p => p.providerId) || []
+  );
+  const [linkingProvider, setLinkingProvider] = useState<'apple' | 'google' | null>(null);
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
   const [adaptiveTdeeAuto, setAdaptiveTdeeAuto] = useState(false);
   const [showNetCarbs, setShowNetCarbs] = useState(false);
@@ -767,6 +779,103 @@ export default function SettingsScreen() {
       setDeletingAccount(false);
       Alert.alert('Error', 'Something went wrong deleting your account. Please try again.');
     }
+  };
+
+  const refreshLinkedProviders = async () => {
+    try { await auth.currentUser?.reload(); } catch {}
+    setLinkedProviderIds(auth.currentUser?.providerData?.map(p => p.providerId) || []);
+  };
+
+  const generateNonce = (): string =>
+    Array.from({ length: 32 }, () =>
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[
+        Math.floor(Math.random() * 62)
+      ]
+    ).join('');
+
+  const handleLinkApple = async () => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    if (!auth.currentUser) return;
+    try {
+      setLinkingProvider('apple');
+      const rawNonce = generateNonce();
+      const hashedNonce = CryptoJS.SHA256(rawNonce).toString(CryptoJS.enc.Hex);
+      const appleCredential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+        nonce: hashedNonce,
+      });
+      if (!appleCredential.identityToken) throw new Error('No identity token');
+      const provider = new OAuthProvider('apple.com');
+      const credential = provider.credential({ idToken: appleCredential.identityToken, rawNonce });
+      await linkWithCredential(auth.currentUser, credential);
+      await refreshLinkedProviders();
+      showToast('Apple connected', 'You can now sign in with either method.', 'success');
+    } catch (e: any) {
+      if (e.code === 'auth/credential-already-in-use') {
+        Alert.alert('Already Connected', 'This Apple ID is already linked to a different account.');
+      } else if (e.code !== 'ERR_REQUEST_CANCELED') {
+        Alert.alert('Connection Failed', 'Something went wrong. Please try again.');
+      }
+    } finally {
+      setLinkingProvider(null);
+    }
+  };
+
+  const handleLinkGoogle = async () => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    if (!auth.currentUser) return;
+    try {
+      setLinkingProvider('google');
+      GoogleSignin.configure({ iosClientId: GOOGLE_IOS_CLIENT_ID });
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      const idToken = (userInfo as any)?.data?.idToken ?? (userInfo as any)?.idToken;
+      if (!idToken) throw new Error('No ID token from Google');
+      const credential = GoogleAuthProvider.credential(idToken);
+      await linkWithCredential(auth.currentUser, credential);
+      await refreshLinkedProviders();
+      showToast('Google connected', 'You can now sign in with either method.', 'success');
+    } catch (e: any) {
+      if (e.code === 'auth/credential-already-in-use') {
+        Alert.alert('Already Connected', 'This Google account is already linked to a different account.');
+      } else {
+        const cancelled = e.code === 'SIGN_IN_CANCELLED' || e.code === '-5' || e.code === '12501';
+        if (!cancelled) Alert.alert('Connection Failed', 'Something went wrong. Please try again.');
+      }
+    } finally {
+      setLinkingProvider(null);
+    }
+  };
+
+  const handleUnlink = (providerId: 'apple.com' | 'google.com', label: string) => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    if (linkedProviderIds.length <= 1) {
+      Alert.alert('Cannot Remove', 'You need at least one way to sign in. Connect another method first before removing this one.');
+      return;
+    }
+    Alert.alert(
+      `Remove ${label}?`,
+      `You will no longer be able to sign in with ${label}.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove', style: 'destructive', onPress: async () => {
+            triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+            if (!auth.currentUser) return;
+            try {
+              await unlink(auth.currentUser, providerId);
+              await refreshLinkedProviders();
+              showToast(`${label} removed`, undefined, 'success');
+            } catch {
+              Alert.alert('Error', 'Could not remove this sign-in method. Please try again.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleDeleteAccount = () => {
@@ -1250,7 +1359,7 @@ export default function SettingsScreen() {
         }
       />
 
-      <ScrollView ref={scrollViewRef} contentContainerStyle={styles.content} automaticallyAdjustKeyboardInsets={true} onScroll={e => { goalScrollOffset.current = e.nativeEvent.contentOffset.y; }} scrollEventThrottle={16}>
+      <ScrollView ref={scrollViewRef} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 96 }]} automaticallyAdjustKeyboardInsets={true} onScroll={e => { goalScrollOffset.current = e.nativeEvent.contentOffset.y; }} scrollEventThrottle={16}>
 
         {/* ── Appearance ── */}
         <CollapsibleSection label="Appearance" subtitle="Theme · Accent · Haptics" defaultOpen={deepLinkSection === 'appearance'} theme={theme}>
@@ -2270,18 +2379,45 @@ export default function SettingsScreen() {
             <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
               <Ionicons name="person-circle-outline" size={18} color={theme.textMuted} style={{ marginRight: 10 }} />
               <Text style={[styles.rowTitle, { color: theme.textSecondary, flex: 1 }]} numberOfLines={1}>{user.email}</Text>
-              {(() => {
-                const providerId = user.providerData?.[0]?.providerId;
-                const label = providerId === 'apple.com' ? 'Apple' : providerId === 'google.com' ? 'Google' : null;
-                if (!label) return null;
-                return (
-                  <View style={{ backgroundColor: theme.bgInput, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, marginLeft: 8 }}>
-                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.uiSemibold }}>{label}</Text>
-                  </View>
-                );
-              })()}
             </View>
           ) : null}
+          <Text style={[styles.rowTitle, { color: theme.textMuted, fontSize: 12, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 4 }]}>
+            Connected Accounts
+          </Text>
+          <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
+            <Ionicons name="logo-apple" size={18} color={theme.textMuted} style={{ marginRight: 10 }} />
+            <Text style={[styles.rowTitle, { color: theme.textSecondary, flex: 1 }]}>Apple</Text>
+            {linkedProviderIds.includes('apple.com') ? (
+              <TouchableOpacity onPress={() => handleUnlink('apple.com', 'Apple')} style={{ paddingVertical: 4, paddingHorizontal: 8 }}>
+                <Text style={{ fontSize: 12, color: theme.statusBad, fontFamily: Type.uiSemibold }}>Remove</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity onPress={handleLinkApple} disabled={linkingProvider !== null} style={{ paddingVertical: 4, paddingHorizontal: 8 }}>
+                {linkingProvider === 'apple' ? (
+                  <ActivityIndicator size="small" color={theme.accentBlue} />
+                ) : (
+                  <Text style={{ fontSize: 12, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Connect</Text>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
+          <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
+            <Ionicons name="logo-google" size={18} color={theme.textMuted} style={{ marginRight: 10 }} />
+            <Text style={[styles.rowTitle, { color: theme.textSecondary, flex: 1 }]}>Google</Text>
+            {linkedProviderIds.includes('google.com') ? (
+              <TouchableOpacity onPress={() => handleUnlink('google.com', 'Google')} style={{ paddingVertical: 4, paddingHorizontal: 8 }}>
+                <Text style={{ fontSize: 12, color: theme.statusBad, fontFamily: Type.uiSemibold }}>Remove</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity onPress={handleLinkGoogle} disabled={linkingProvider !== null} style={{ paddingVertical: 4, paddingHorizontal: 8 }}>
+                {linkingProvider === 'google' ? (
+                  <ActivityIndicator size="small" color={theme.accentBlue} />
+                ) : (
+                  <Text style={{ fontSize: 12, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Connect</Text>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
           <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
             <TouchableOpacity
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); Alert.alert('Sign Out', 'Are you sure you want to sign out?', [

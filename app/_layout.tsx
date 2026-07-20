@@ -76,6 +76,11 @@ function RootLayoutNav() {
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const [showSplash, setShowSplash] = useState(false);
+  // Bumped only when the restore gate just replaced this device's local data with a
+  // DIFFERENT account's real cloud data (an account switch). Changing this key forces the
+  // whole screen stack to unmount/remount so every screen re-reads the now-correct local
+  // data, instead of continuing to show whatever it already had loaded before the switch.
+  const [remountKey, setRemountKey] = useState(0);
   // Only route to /sign-in once per app session -- prevents re-navigation when
   // the user signs in while already on the sign-in screen (kills the animation).
   const hasInitialRouted = useRef(false);
@@ -147,7 +152,10 @@ function RootLayoutNav() {
       // Existing install (onboarding already complete locally). The restore gate confirms
       // this, unlocks sync, and returns instantly without overwriting local. (Fresh-install
       // restore happens earlier, in sign-in.tsx, before onboarding can write.)
-      runRestoreGate().finally(() => {
+      runRestoreGate().then((result) => {
+        // A real account switch just replaced local data -- force every screen to
+        // re-read it fresh instead of showing whatever was already loaded.
+        if (result === 'restored') setRemountKey((k) => k + 1);
         // Sync is unlocked now: apply any active vacation (stamp elapsed in-range days,
         // auto-expire a finished one) so the cloud mirror lands too.
         applyVacation().catch(() => {});
@@ -172,7 +180,7 @@ function RootLayoutNav() {
 
   return (
     <>
-      <Stack>
+      <Stack key={remountKey}>
         <Stack.Screen name="sign-in" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding/welcome" options={{ headerShown: false, animation: 'fade' }} />

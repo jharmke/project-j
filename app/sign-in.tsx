@@ -3,7 +3,7 @@ import { AntDesign } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CryptoJS from 'crypto-js';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { GoogleAuthProvider, OAuthProvider, signInWithCredential } from 'firebase/auth';
+import { GoogleAuthProvider, OAuthProvider, fetchSignInMethodsForEmail, signInWithCredential } from 'firebase/auth';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -41,6 +41,33 @@ const SCREEN_W = Dimensions.get('window').width;
 // shadowed edge) instead of the app's accent colour, since this screen deliberately sits outside the
 // theme system. The bottom stop stays a mid slate, not near-black, so it doesn't vanish against BG.
 const WORDMARK_GRADIENT: [string, string, string] = ['#d8dade', '#9a9da5', '#3f4249'];
+
+// Firebase throws this when the email is already tied to a different provider (the project's
+// "link accounts by email" setting blocks the sign-in rather than silently making a second
+// account). fetchSignInMethodsForEmail can come back empty if Firebase's email-enumeration
+// protection is on for this project -- falls back to a still-helpful generic message either way.
+const handleAccountExistsError = async (e: any) => {
+  const email = e?.customData?.email;
+  let methods: string[] = [];
+  if (email) {
+    try {
+      methods = await fetchSignInMethodsForEmail(auth, email);
+    } catch {
+      // lookup failed -- fall back to the generic message below
+    }
+  }
+  const providerName = methods.includes('apple.com')
+    ? 'Apple'
+    : methods.includes('google.com')
+    ? 'Google'
+    : null;
+  Alert.alert(
+    'Account Already Exists',
+    providerName
+      ? `You already have an account with this email using ${providerName}. Please sign in with ${providerName} instead.`
+      : 'You already have an account with this email using a different sign-in method. Please try the other sign-in option.'
+  );
+};
 
 const generateNonce = (): string =>
   Array.from({ length: 32 }, () =>
@@ -174,7 +201,9 @@ export default function SignInScreen() {
       // useEffect([user]) fires next and handles the transition
     } catch (e: any) {
       justSignedIn.current = false;
-      if (e.code !== 'ERR_REQUEST_CANCELED') {
+      if (e.code === 'auth/account-exists-with-different-credential') {
+        await handleAccountExistsError(e);
+      } else if (e.code !== 'ERR_REQUEST_CANCELED') {
         Alert.alert('Sign In Failed', 'Something went wrong. Please try again.');
       }
     } finally {
@@ -197,9 +226,13 @@ export default function SignInScreen() {
       // useEffect([user]) fires next and handles the transition
     } catch (e: any) {
       justSignedIn.current = false;
-      const cancelled = e.code === 'SIGN_IN_CANCELLED' || e.code === '-5' || e.code === '12501';
-      if (!cancelled) {
-        Alert.alert('Sign In Failed', 'Something went wrong. Please try again.');
+      if (e.code === 'auth/account-exists-with-different-credential') {
+        await handleAccountExistsError(e);
+      } else {
+        const cancelled = e.code === 'SIGN_IN_CANCELLED' || e.code === '-5' || e.code === '12501';
+        if (!cancelled) {
+          Alert.alert('Sign In Failed', 'Something went wrong. Please try again.');
+        }
       }
     } finally {
       setLoading(false);

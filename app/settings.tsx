@@ -22,7 +22,7 @@ import { ACHIEVEMENTS, loadAchievements, checkAndUnlock, loadGoalHitCounts, chec
 import { collection, getDocs } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app, auth, db, saveToFirebase } from '../firebaseConfig';
-import { shouldSync, uploadAllLocal, resetRestoreGate, verifyBackup } from '../services/syncService';
+import { shouldSync, uploadAllLocal, resetRestoreGate, verifyBackup, isSyncReady } from '../services/syncService';
 import { backfillAllPhotos } from '../utils/foodPhotos';
 import { storageSet } from '../utils/storage';
 import { saveWeightForDate, deleteWeightForDate, gatherWeightHistory, startingWeighIn, validateWeight } from '../utils/weightHistory';
@@ -3524,6 +3524,8 @@ export default function SettingsScreen() {
               try {
                 const uid = auth.currentUser?.uid;
                 const email = auth.currentUser?.email || '(none)';
+                const linkedMethods = auth.currentUser?.providerData?.map(p => p.providerId).join(', ') || '(none)';
+                const syncReadyNow = isSyncReady();
                 if (!uid) { Alert.alert('Cloud Audit', 'Not signed in.'); return; }
                 const snap = await getDocs(collection(db, 'users', uid, 'store'));
                 const cloud: Record<string, string> = {};
@@ -3540,7 +3542,9 @@ export default function SettingsScreen() {
                 const reflections = (() => { try { return cloud['pj_bible_reflections'] ? JSON.parse(cloud['pj_bible_reflections']).length : 0; } catch { return '?'; } })();
                 Alert.alert(
                   'Cloud Audit (read-only)',
-                  `Account: ${email}\nUID: ${uid.slice(0, 8)}...\n\n` +
+                  `Account: ${email}\nUID: ${uid.slice(0, 8)}...\n` +
+                  `Linked methods: ${linkedMethods}\n` +
+                  `Sync ready (upload allowed): ${syncReadyNow ? 'YES' : 'NO'}\n\n` +
                   `Total cloud docs: ${keys.length}\n` +
                   `Profile name: ${profileName}\n\n` +
                   `Daily entries: ${dayKeys.length}\n` +

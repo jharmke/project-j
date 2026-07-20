@@ -886,10 +886,22 @@ are separate pre-submission checklists, NOT part of this menu.
   correct restore eventually succeeds there, since the account-switch path always clears local before
   writing the fetched cloud data -- never a risk to the real account itself.
 
-  NEXT STEP (not started): trace the actual reason the cloud fetch/restore didn't complete on the iPad
-  before proposing a fix -- this is a confirmed, real, reproducible bug (not the same thing as the original
-  linking/UX gap below, though found while testing it), and deserves its own careful root-cause pass rather
-  than a fast patch, given how high-stakes a wrong fix here would be.
+  ROOT CAUSE CONFIRMED (2026-07-20, retested): NOT a restore failure. Justin fully closed and reopened the
+  iPad app (already-established-safe action) and his real jtharmke data was there, fully correct. So the
+  cloud fetch/restore was actually succeeding the whole time -- the bug is that the already-rendered screens
+  never knew to re-read the newly-restored local data, so they kept showing the stale pre-restore state
+  until a full manual app relaunch. Much lower severity than originally feared: never a data problem, purely
+  a "screen doesn't know to refresh itself" problem.
+
+  FIX WRITTEN (2026-07-20, not yet build-tested): `app/_layout.tsx` -- added a `remountKey` state value,
+  applied as `key={remountKey}` on the root `<Stack>`. When `runRestoreGate()` resolves specifically with
+  `'restored'` (a genuine account-switch just replaced local data), `remountKey` bumps, which forces React to
+  fully unmount/remount the entire screen stack so every screen re-reads the now-correct local data
+  immediately -- automating exactly what Justin did manually tonight (force-close + reopen). Pure JS, no new
+  native dependency, type-checks clean. NOT YET VERIFIED ON DEVICE -- needs a new build (the iPad is on
+  TestFlight, which can't hot-reload root-layout changes) and a repeat of tonight's exact test: sign into the
+  backup account first (stamps a different account's onboarding-complete locally), sign out, sign back in as
+  jtharmke via Google, and confirm real data now shows up IMMEDIATELY without a manual force-close.
 
 - [surfaced 2026-07-20, data-integrity, TOP PRIORITY, INVESTIGATION DONE -- build plan locked, not built
   yet] **Firebase auth identity edge cases could cause real data loss / lockout.** Firestore is keyed by

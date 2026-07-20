@@ -167,6 +167,14 @@ components/ReadingPlansCard.tsx -- Bible reading plans card
 components/EditSheetContext.tsx -- Edit sheet context provider
 data/bible-web.ts -- Full KJV Bible, all 66 books
 useHealthKit.ts -- HealthKit hook
+(KNOWN LIMITATION, accepted 2026-07-20, not fixable -- do not chase: HealthKit data is scoped to the DEVICE,
+ not to any GoodForge account, since Apple Health has no concept of "which app account" a workout/step/etc.
+ belongs to. If multiple real GoodForge accounts ever share one physical device, achievements can fire
+ based on whichever account happens to be signed in when real Health data syncs, even attributing another
+ account's workout to the wrong one. A cooldown/grace-period on account-switch was considered and rejected
+ -- it only delays the same collision, it doesn't resolve the underlying ambiguity. Impact is minor and
+ self-correcting (never a security/data-loss issue, resolves itself once each account is back on its own
+ device) and only relevant when a device is genuinely shared, which is not the normal single-user pattern.)
 useTooltip.ts -- AsyncStorage-backed hook, returns seen + markSeen + reset per tooltip key
 tooltipRegistry.ts -- Central tooltip definitions. Settings > Help auto-populates from this.
 utils/mealSlots.ts -- Meal slot system (MealSlot interface, DEFAULT_MEAL_SLOTS, loadMealSlots, saveMealSlots, getMealDisplayName, findSlotForMeal)

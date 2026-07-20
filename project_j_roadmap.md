@@ -846,6 +846,51 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
+- [surfaced 2026-07-20, found during iPad auth testing] **iPad layout looks broken -- wrapped date, oversized
+  text.** On Justin's iPad (not previously tested on this app), Home's "MONDAY, JULY 20" date wraps to a
+  second line under the greeting, and Otto's chat header ("Wellness and App Guide" subtitle) renders visibly
+  larger/squished compared to the same screens on Justin's phone. App has never been specifically designed
+  or tested for iPad -- likely cause is either the iPad's system text-size (accessibility "Larger Text")
+  setting being bigger than the phone's, or simply no iPad-specific layout existing at all, but this is a
+  guess, not confirmed by reading code yet. Needs its own look.
+- [surfaced 2026-07-20, data-integrity, CRITICAL, CONFIRMED REAL VIA DEVICE TEST -- not just theory,
+  investigate root cause before fixing] **Restore gate fails to pull real data on a real account-switch on
+  a device that previously onboarded a DIFFERENT account -- confirmed on Justin's iPad, current TestFlight
+  build.** Sequence that reproduced it: iPad had previously been signed into a different (empty) Google
+  account, onboarded (so `pj_onboarding_complete` was stamped 'true' locally for THAT account). Signed out,
+  signed back in via Google using jtharmke@gmail.com -- which Firebase correctly resolved to Justin's REAL,
+  already-linked account (confirmed via Cloud Audit: same account, `apple.com, google.com` both listed) --
+  but the app kept showing all-zero data instead of pulling down the real account's real cloud data.
+
+  ROOT CAUSE, PARTIALLY DIAGNOSED: two SEPARATE places decide whether to run the restore gate on a fresh
+  sign-in -- `app/sign-in.tsx`'s own useEffect, and `app/_layout.tsx`'s root effect. `sign-in.tsx` only calls
+  `runRestoreGate()` if the LOCAL `pj_onboarding_complete` flag is not already 'true' -- but that flag is
+  device-level, not account-scoped, so it can already read 'true' from a PREVIOUS different account's
+  session, causing sign-in.tsx to skip the restore check entirely and route straight into the app on stale
+  local data. `_layout.tsx`'s separate effect does NOT have this same flawed skip -- it calls
+  `runRestoreGate()` unconditionally when `onboardingComplete` is true, which should have caught this. NOT
+  YET CONFIRMED: why the restore still failed to complete even via `_layout.tsx`'s path (likely candidates:
+  a race between the two effects both hitting the memoized `runRestoreGate()` around the same time, or the
+  cloud fetch itself failing/timing out) -- needs real tracing, not a guess, before any fix is written.
+
+  CONFIRMED SAFE (verified two independent ways, not just reasoning about the code): (1) Justin's phone
+  showed all real data intact and untouched throughout. (2) Justin checked the Firebase console directly
+  (Firestore -> users -> his real UID -> store subcollection) and confirmed every real day entry and profile
+  data is present and untouched. The reason nothing was ever at risk: `uploadAllLocal()`
+  (services/syncService.ts) is the ONLY function that ever pushes local data to Firestore, and it hard-gates
+  on an in-memory `syncReady` flag (`if (!syncReady) return 0`) that only ever gets set true INSIDE a
+  successful `_runRestoreGate()` completion. Since the restore never completed on the iPad, that flag never
+  flipped true, so backgrounding/closing/relaunching the app, or even logging new entries locally on the
+  broken device, could not and cannot push anything to Justin's real cloud account. Worst case for anything
+  typed locally on the iPad during the broken window: it would get cleared out LOCALLY (iPad-only) once a
+  correct restore eventually succeeds there, since the account-switch path always clears local before
+  writing the fetched cloud data -- never a risk to the real account itself.
+
+  NEXT STEP (not started): trace the actual reason the cloud fetch/restore didn't complete on the iPad
+  before proposing a fix -- this is a confirmed, real, reproducible bug (not the same thing as the original
+  linking/UX gap below, though found while testing it), and deserves its own careful root-cause pass rather
+  than a fast patch, given how high-stakes a wrong fix here would be.
+
 - [surfaced 2026-07-20, data-integrity, TOP PRIORITY, INVESTIGATION DONE -- build plan locked, not built
   yet] **Firebase auth identity edge cases could cause real data loss / lockout.** Firestore is keyed by
   Firebase UID (the stable `sub` claim from the Apple/Google identity token), not email. Confirmed SAFE:

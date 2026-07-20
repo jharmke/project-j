@@ -846,33 +846,88 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
-- [surfaced 2026-07-20, data-integrity, TOP PRIORITY -- investigate before deciding anything] **Firebase
-  auth identity edge cases could cause real data loss.** Firestore is keyed by Firebase UID (the stable
-  `sub` claim from the Apple/Google identity token), not email. Confirmed SAFE: user changes their Apple ID
-  or Gmail email address (same underlying account) -> same sub, same UID, data restores fine. Confirmed
-  RISK: (1) user fully deletes the Google/Gmail account itself -> that sub ceases to exist, they can never
-  re-auth as that identity, and their Firestore data under the old UID becomes permanently orphaned (local
-  AsyncStorage on the original device still has it until reinstall, but no cloud restore to a new device is
-  possible). (2) User signs in with Apple initially, then later Google (or vice versa) on a new device/
-  reinstall without account linking configured -> Firebase treats it as a brand new UID, looks and feels
-  like total data loss even though nothing was actually deleted. OPEN QUESTIONS to answer when we
-  investigate: is account linking (Apple <-> Google) implemented in sign-in.tsx/AuthContext? Does the
-  Firebase console have "one account per email" or "one account per provider" set? Does sign-in.tsx handle
-  `account-exists-with-different-credential` in either the Apple or Google catch block, or does it just
-  show a generic "Sign In Failed, try again"? TEST PLAN (5 scenarios, run for real before assuming any
-  outcome, none tested yet):
-  1. Same email, different provider (Apple then Google, same device) -- does Firebase auto-link or block
-     with a clear error telling the user to use their original provider?
+- [surfaced 2026-07-20, data-integrity, TOP PRIORITY, INVESTIGATION DONE -- build plan locked, not built
+  yet] **Firebase auth identity edge cases could cause real data loss / lockout.** Firestore is keyed by
+  Firebase UID (the stable `sub` claim from the Apple/Google identity token), not email. Confirmed SAFE:
+  user changes their Apple ID or Gmail email address (same underlying account) -> same sub, same UID, data
+  restores fine.
+
+  CONFIRMED BY READING CODE (2026-07-20): `app/sign-in.tsx`'s `handleAppleSignIn` / `handleGoogleSignIn`
+  both call `signInWithCredential` directly with no linking logic and no specific handling of Firebase's
+  `account-exists-with-different-credential` error -- both just fall into a generic catch that shows "Sign
+  In Failed, Something went wrong. Please try again." `AuthContext.tsx` has no linking code either. The
+  existing `pj_data_owner_uid` restore-gate mechanism (services/syncService.ts) is a SEPARATE, ALREADY-
+  WORKING safety net -- it protects against a genuinely different person's data getting clobbered/uploaded
+  wrong on a shared device, but it does nothing for the identity-linking problem below; it only runs after
+  Firebase has already decided who "this person" is.
+
+  CONFIRMED VIA FIREBASE CONSOLE (Authentication -> Settings -> User account linking, checked by Justin
+  2026-07-20): project is set to **"Link accounts that use the same email"** (not "create separate accounts
+  for each provider"). What this setting actually does: it does NOT auto-merge silently. When someone tries
+  a NEW provider (e.g. Google) with an email that already has an account under a DIFFERENT provider (e.g.
+  Apple), Firebase REFUSES that sign-in and throws `account-exists-with-different-credential` -- it's on
+  the app to catch that and guide the user to sign in with their original method, then call
+  `linkWithCredential` to attach the new one. Since sign-in.tsx doesn't catch it, the real-world result today
+  is NOT silent data loss for this case -- it's a **dead-end**: the user just sees the generic failure alert
+  every time, with no idea the fix is "tap the other button." True on both same-device and new-device
+  attempts (Firebase's linking rule is project-wide, not device-specific).
+
+  CONFIRMED REAL GAP THAT CANNOT BE CODE-FIXED: Apple's "Hide My Email" gives Firebase a private relay
+  address (e.g. `xyz@privaterelay.appleid.com`) instead of the real email. If a user signed up via Apple
+  with Hide My Email on, then later tries Google with their real Gmail, Firebase sees no matching email on
+  file and silently creates a genuinely separate, empty account -- no error, nothing to catch. This is Apple
+  deliberately preventing cross-app email correlation (a privacy feature working as intended), not a bug.
+  Reactive email-matching can never close this gap by design. Justin confirmed (2026-07-20) neither his nor
+  his wife's Apple ID uses Hide My Email, so the planned test devices validate the normal case correctly,
+  not this specific gap.
+
+  DECIDED BUILD PLAN (2026-07-20, full version chosen over a minimal error-message-only fix):
+  1. **Sign-in-time handling**: catch `account-exists-with-different-credential` in both Apple and Google
+     catch blocks in sign-in.tsx, tell the user which method to use, offer to complete the link once they
+     re-auth with their original provider.
+  2. **Connected Accounts (Settings, proactive, self-service)** -- the main piece, and the one that actually
+     makes it "just work" like big apps do: while already logged in (identity already proven, no email-
+     matching needed), let the user explicitly link an ADDITIONAL sign-in method to their account -- this
+     works even if the two providers have completely different emails, since we already know who they are.
+     Also closes the Hide My Email gap proactively (though not retroactively/automatically). Must show which
+     methods are currently connected.
+  3. **Unlink support in the same screen** (Justin confirmed 2026-07-20 he wants this included) -- Firebase
+     supports removing a connected sign-in method directly (`unlink`). Hard rule: never allow unlinking the
+     LAST remaining method -- must always leave at least one way back in.
+  4. **"Smooth" is a real design requirement, not just copy** -- sign-in.tsx currently uses plain native
+     `Alert.alert` for errors; this needs an on-brand centered-modal experience (per CLAUDE.md's Centered
+     Modals Only standard), not a jarring popup, to actually feel like the seamless X/Twitter-style
+     experience Justin's picturing.
+  Needs its own device/testing pass with real accounts before shipping (Firebase/OAuth behavior can't be
+  faked cleanly in a simulator) -- see TEST PLAN below.
+
+  DECIDED, OUT OF SCOPE FOR NOW: no automated "forgot which account I used" recovery system. If a user only
+  ever used ONE provider and has multiple accounts under it (e.g. two Gmail addresses) and forgets which,
+  Connected Accounts doesn't help (nothing to link, they never used a second method) -- the answer for now
+  is a manual support-contact path (email support, Justin looks the account up in the Firebase console using
+  whatever details the user can provide). Revisit only if this becomes a real recurring burden at scale.
+
+  NEW FOLLOW-ON IDEA (surfaced during this discussion, not yet scoped): once Connected Accounts exists, a
+  user could have two different emails on file (one per linked provider) -- a small "preferred contact
+  email" setting would let them pick which one actually gets used for real communication (ties into the
+  Supporter thank-you-email plan already in SPEC_monetization.md). Not urgent, just don't lose the idea.
+
+  TEST PLAN (5 scenarios -- CONFIRMED assets available 2026-07-20: Justin's own account, a backup Gmail, a
+  dev-account Gmail, his wife's separate Apple ID + Google account, and a spare iPad as a second device --
+  enough to cover all 5, run for real once built, none tested yet):
+  1. Same email, different provider (Apple then Google, same device) -- confirm the new sign-in-time
+     handling correctly tells the user to use their original provider instead of the generic failure alert.
   2. New device, same provider, same email (Apple -> Apple) -- expected fully safe (same sub, same UID),
-     but confirm the restore gate actually pulls everything down on a real fresh-device test.
-  3. New device, different provider, same email (Apple -> Google) -- same open question as #1 but on a
-     brand new device with zero local AsyncStorage fallback; if it doesn't link, the user lands in a fully
-     empty account with nothing visible anywhere on that device.
+     confirm the restore gate actually pulls everything down on a real fresh-device test.
+  3. New device, different provider, same email (Apple -> Google) -- same as #1 but on a brand new device
+     with zero local AsyncStorage fallback -- confirm the handling kicks in here too, not just same-device.
   4. New device, different provider, different email -- confirmed separate account, separate UID, empty
      locker, nothing carries over. Original data untouched. Not a bug, by design.
   5. New device, same provider, different email -- same as #4, different account entirely, nothing carries
      over, original data untouched.
-  Nothing built or tested yet -- pure investigation. Do not assume either outcome without a real test.
+  Plus: once Connected Accounts is built, test linking Apple + a DIFFERENT-email Google account together on
+  purpose, confirm both sign you into the same account afterward, and confirm unlink correctly blocks
+  removing the last remaining method.
 - [surfaced 2026-07-20, QUICK WIN] **Add a WEB/KJV translation toggle to Today's Message modal's gear
   icon.** Direct follow-on to the WEB translation feature (shipped 2026-07-19, see RECENTLY SHIPPED) --
   should be an easy add.

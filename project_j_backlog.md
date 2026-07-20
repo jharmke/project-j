@@ -11,7 +11,6 @@
 
 ## FOOD INTELLIGENCE
 
-- Food health score -- per-item score based on how well food fits current goals at that moment.
 - "Why did you eat" / "How did it feel" / Hunger level -- quick tags on food entries (Hungry/Tired/Cravings/Bored/Social) + post-meal feel tags + 1-5 hunger scale before eating.
 - Protein timing badge -- hit protein within 2 hours post-workout. Simple yes/no badge.
 - Food group pattern detection -- gentle tip if user logs zero whole foods for X consecutive days. Mode-aware tone.
@@ -113,11 +112,14 @@
 - iOS home screen widget.
 - Animated app icon -- iOS 18 feature.
 - Android -- React Native core reusable. HealthKit = iOS only; Android uses Health Connect. V2 after iOS is solid.
+- Client Portfolio Management (surfaced 2026-07-20, far off) -- if the user is a trainer, give them a dashboard inside the premium tier to build, distribute, and track meal plans for up to 5 clients. Real buildable feature, genuinely multi-quarter-away on an app that hasn't shipped v1 yet.
+- Corporate Wellness Leagues (surfaced 2026-07-20, far off) -- multi-user dashboarding for corporate teams to run friendly nutrition challenges (e.g. hydration streaks) without exposing private weight data. Real buildable feature, genuinely multi-quarter-away.
 
 ---
 
 ## MARKETING
 
+- Partner Integrations (surfaced 2026-07-20, far off) -- partner with brands to give premium users exclusive perks (discounts on healthy meal kit deliveries, supplements, or wearables). Pure bizdev, no engineering task exists until an actual deal is negotiated -- needs an audience/user base first, premature pre-launch.
 - TikTok strategy -- anonymous account, interactive series format, crowd-sourced decisions, meme formats. Rebrand to app name when locked.
 - Side-by-side screen recordings vs MFP -- same task in both apps, no commentary, let the UI speak. MFP's UI is 2015-era.
 - AI scanner bashing content -- memes/comparison posts. "Scanner apps guess, Project J tracks."

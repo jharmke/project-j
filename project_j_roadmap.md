@@ -846,13 +846,94 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
+- [surfaced 2026-07-20, data-integrity, TOP PRIORITY -- investigate before deciding anything] **Firebase
+  auth identity edge cases could cause real data loss.** Firestore is keyed by Firebase UID (the stable
+  `sub` claim from the Apple/Google identity token), not email. Confirmed SAFE: user changes their Apple ID
+  or Gmail email address (same underlying account) -> same sub, same UID, data restores fine. Confirmed
+  RISK: (1) user fully deletes the Google/Gmail account itself -> that sub ceases to exist, they can never
+  re-auth as that identity, and their Firestore data under the old UID becomes permanently orphaned (local
+  AsyncStorage on the original device still has it until reinstall, but no cloud restore to a new device is
+  possible). (2) User signs in with Apple initially, then later Google (or vice versa) on a new device/
+  reinstall without account linking configured -> Firebase treats it as a brand new UID, looks and feels
+  like total data loss even though nothing was actually deleted. OPEN QUESTIONS to answer when we
+  investigate: is account linking (Apple <-> Google) implemented in sign-in.tsx/AuthContext? Does the
+  Firebase console have "one account per email" or "one account per provider" set? Does sign-in.tsx handle
+  `account-exists-with-different-credential` in either the Apple or Google catch block, or does it just
+  show a generic "Sign In Failed, try again"? TEST PLAN (5 scenarios, run for real before assuming any
+  outcome, none tested yet):
+  1. Same email, different provider (Apple then Google, same device) -- does Firebase auto-link or block
+     with a clear error telling the user to use their original provider?
+  2. New device, same provider, same email (Apple -> Apple) -- expected fully safe (same sub, same UID),
+     but confirm the restore gate actually pulls everything down on a real fresh-device test.
+  3. New device, different provider, same email (Apple -> Google) -- same open question as #1 but on a
+     brand new device with zero local AsyncStorage fallback; if it doesn't link, the user lands in a fully
+     empty account with nothing visible anywhere on that device.
+  4. New device, different provider, different email -- confirmed separate account, separate UID, empty
+     locker, nothing carries over. Original data untouched. Not a bug, by design.
+  5. New device, same provider, different email -- same as #4, different account entirely, nothing carries
+     over, original data untouched.
+  Nothing built or tested yet -- pure investigation. Do not assume either outcome without a real test.
+- [surfaced 2026-07-20, QUICK WIN] **Add a WEB/KJV translation toggle to Today's Message modal's gear
+  icon.** Direct follow-on to the WEB translation feature (shipped 2026-07-19, see RECENTLY SHIPPED) --
+  should be an easy add.
+- [surfaced 2026-07-20, faith, needs scoping discussion] **Smart keyword search for Reading Plans /
+  Devotionals.** Idea: searching a term like "masturbation" or "lust" should surface relevant devotionals
+  even when the actual title (e.g. "Sexual Integrity") doesn't contain the literal search word. This is a
+  synonym/keyword-mapping problem, not a plain text search -- needs a real scoping discussion (hand-built
+  keyword map vs. something AI-assisted) before treating as a scoped task.
+- [surfaced 2026-07-20, needs scoping discussion] **Food Insights / Nutrition Coach** (was "Food health
+  score"). Scores individual foods/meals on two axes: (1) fit to the user's current goals (macros/calories
+  at that moment -- the original idea), and (2) general nutritional quality/satiety value, independent of
+  today's goals. Follows the Sleep/Recovery Coach's locked hybrid pattern (deterministic engine computes the
+  real finding, AI phrases the tip at runtime) rather than being a bespoke system. OPEN, discuss before
+  building: the app already has a lot of scoring/insight surfaces (Day Score, Sleep Score, EvR report,
+  Custom Reports, Smart Tips) -- need to decide whether this is a standalone new card or plugs into one of
+  those (a Custom Reports block, a Smart Tips category, a food-detail section) before scoping further.
+  Related: HRV/recovery-food correlation (surfaced 2026-07-20) -- correlating recovery score (not narrowly
+  HRV, too noisy day to day) with dietary patterns/timing. Real data pipes already exist (HealthKit +
+  FatSecret logs), but needs a real minimum-sample-size confidence gate before surfacing any correlation
+  claim (same spirit as EvR's 7-day minimum) -- otherwise it risks presenting coincidence as insight, which
+  conflicts with the app's honest-numbers standard. This is really a Recovery Coach feature that consumes
+  food data more than a Nutrition Coach feature, same hybrid architecture, different home domain -- house it
+  wherever the Recovery Coach insights end up living.
+- [surfaced 2026-07-20] **AI Recipe Assistant (consolidated).** One AI recipe-generation engine with three
+  entry points, not three separate features: (1) generate from macro targets using existing profile data,
+  (2) generate from an ad-hoc typed ingredient list ("what's on hand today" -- no persistent fridge
+  inventory, that idea was explicitly cut since few people would maintain it), (3) reverse-construct a
+  recipe hitting an exact macro number. All three output into the existing Recipe Builder form (reuse, not
+  new UI). Grocery list export is a downstream add-on -- only makes sense once a real multi-item plan exists
+  to export from, don't forget it when building whichever entry point ships first. Recipe Importer
+  (screenshot/Instagram/website link -> autofill ingredients/instructions/nutrition) is a SEPARATE build
+  from this engine -- different tech (parsing/extraction, not generation), lower AI-quality risk since real
+  data already exists to extract, likely the best one to build first if this cluster gets picked up. No
+  build order decided -- just captured so nothing gets lost. Monetization TBD for all of it, decide
+  per-piece when actually built.
+- [surfaced 2026-07-20, Pro perk, CONFIRMED keep] **Custom App Icon Colors.** Manual icon color/theme picker
+  for members, matching existing theme palette (Slate/Warm/Blush etc), NOT auto-tied to the accent selector
+  -- picked separately. Needs a new native module (expo-alternate-app-icons or manual config) and a new
+  build -- Justin: build cost is a non-issue, he's on the Expo starter plan with a monthly allowance.
+  Process: one simple design session playing with different theme/color options, Justin green-lights the
+  final set, then build.
+- [surfaced 2026-07-20, Pro perk, CONFIRMED keep] **Profile Header Frame/Border.** Subtle accent-colored
+  ring/frame around the avatar in the profile header, for members. Exact style still needs a dedicated
+  design discussion before building.
+- [surfaced 2026-07-20, CONFIRMED keep, free] **Visual Portion Size Guide.** Real-world comparisons ("size
+  of a deck of cards," "size of a fist") shown during logging to help estimate portions without a scale.
+  Static content (illustrations + comparison text), zero ongoing cost -- no AI/API calls, nothing to gate or
+  meter. Won't fit every food type equally well (intuitive for meat/protein/grains/veggies, not for liquids
+  or mixed/packaged dishes), so scope is "optional assist on common single-ingredient foods," not a promise
+  of precision everywhere. STILL OPEN: exact placement (add-food, CustomFoodCreator, food-detail serving
+  entry) and design details -- figure out when we get to it.
 - [surfaced 2026-07-19, discussion in progress, sooner rather than later per Justin] **Scan a nutrition
   facts panel to autofill a food's macros.** Full discussion and locked decisions in
   `SPEC_nutrition_label_scan.md` -- read that before touching this. Short version: on-device OCR (not AI
   vision), pull every field the label prints, never overwrite a field the label did not print, never
   auto-save, per-field confidence flags on uncertain OCR reads, one whole-label scan (not per-field), and
   the review flow matches the existing AI Meal Estimator pattern (scanned values populate the real edit
-  form directly, existing Save button is the confirmation, no new dedicated review screen). Entry points:
+  form directly, existing Save button is the confirmation, no new dedicated review screen). MONETIZATION:
+  TBD, Justin leaning free (~80%) -- unlike the AI Meal Estimator/Otto, this runs on-device Vision OCR with
+  no per-call API cost, so the "costs me money to run" justification for a Supporter gate doesn't apply
+  here. Not locked, revisit before shipping. Entry points:
   CustomFoodCreator, food-detail's copy-to-edit flow, and the barcode-override flow. Still open and needing
   their own dedicated discussion: serving size handling (label's own serving size vs the food's existing
   serving unit), per-serving vs per-container dual-column labels, and how much label-format variance v1

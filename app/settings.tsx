@@ -480,8 +480,8 @@ export default function SettingsScreen() {
   // Mirrors auth.currentUser.providerData locally -- linking/unlinking a provider doesn't
   // reliably re-fire onAuthStateChanged (the uid never changes), so AuthContext's `user`
   // can go stale. Refreshed explicitly after every link/unlink so the UI is always correct.
-  const [linkedProviderIds, setLinkedProviderIds] = useState<string[]>(
-    () => user?.providerData?.map(p => p.providerId) || []
+  const [linkedProviders, setLinkedProviders] = useState<{ providerId: string; email: string | null }[]>(
+    () => user?.providerData?.map(p => ({ providerId: p.providerId, email: p.email })) || []
   );
   const [linkingProvider, setLinkingProvider] = useState<'apple' | 'google' | null>(null);
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
@@ -783,7 +783,7 @@ export default function SettingsScreen() {
 
   const refreshLinkedProviders = async () => {
     try { await auth.currentUser?.reload(); } catch {}
-    setLinkedProviderIds(auth.currentUser?.providerData?.map(p => p.providerId) || []);
+    setLinkedProviders(auth.currentUser?.providerData?.map(p => ({ providerId: p.providerId, email: p.email })) || []);
   };
 
   const generateNonce = (): string =>
@@ -852,7 +852,7 @@ export default function SettingsScreen() {
 
   const handleUnlink = (providerId: 'apple.com' | 'google.com', label: string) => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-    if (linkedProviderIds.length <= 1) {
+    if (linkedProviders.length <= 1) {
       Alert.alert('Cannot Remove', 'You need at least one way to sign in. Connect another method first before removing this one.');
       return;
     }
@@ -2375,49 +2375,61 @@ export default function SettingsScreen() {
 
         {/* ── Account ── */}
         <CollapsibleSection label="Account" defaultOpen={false} theme={theme}>
-          {user?.email ? (
-            <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
-              <Ionicons name="person-circle-outline" size={18} color={theme.textMuted} style={{ marginRight: 10 }} />
-              <Text style={[styles.rowTitle, { color: theme.textSecondary, flex: 1 }]} numberOfLines={1}>{user.email}</Text>
-            </View>
-          ) : null}
           <Text style={[styles.rowTitle, { color: theme.textMuted, fontSize: 12, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 4 }]}>
             Connected Accounts
           </Text>
-          <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
-            <Ionicons name="logo-apple" size={18} color={theme.textMuted} style={{ marginRight: 10 }} />
-            <Text style={[styles.rowTitle, { color: theme.textSecondary, flex: 1 }]}>Apple</Text>
-            {linkedProviderIds.includes('apple.com') ? (
-              <TouchableOpacity onPress={() => handleUnlink('apple.com', 'Apple')} style={{ paddingVertical: 4, paddingHorizontal: 8 }}>
-                <Text style={{ fontSize: 12, color: theme.statusBad, fontFamily: Type.uiSemibold }}>Remove</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity onPress={handleLinkApple} disabled={linkingProvider !== null} style={{ paddingVertical: 4, paddingHorizontal: 8 }}>
-                {linkingProvider === 'apple' ? (
-                  <ActivityIndicator size="small" color={theme.accentBlue} />
-                ) : (
-                  <Text style={{ fontSize: 12, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Connect</Text>
-                )}
-              </TouchableOpacity>
-            )}
-          </View>
-          <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
-            <Ionicons name="logo-google" size={18} color={theme.textMuted} style={{ marginRight: 10 }} />
-            <Text style={[styles.rowTitle, { color: theme.textSecondary, flex: 1 }]}>Google</Text>
-            {linkedProviderIds.includes('google.com') ? (
-              <TouchableOpacity onPress={() => handleUnlink('google.com', 'Google')} style={{ paddingVertical: 4, paddingHorizontal: 8 }}>
-                <Text style={{ fontSize: 12, color: theme.statusBad, fontFamily: Type.uiSemibold }}>Remove</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity onPress={handleLinkGoogle} disabled={linkingProvider !== null} style={{ paddingVertical: 4, paddingHorizontal: 8 }}>
-                {linkingProvider === 'google' ? (
-                  <ActivityIndicator size="small" color={theme.accentBlue} />
-                ) : (
-                  <Text style={{ fontSize: 12, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Connect</Text>
-                )}
-              </TouchableOpacity>
-            )}
-          </View>
+          {(() => {
+            const appleEntry = linkedProviders.find(p => p.providerId === 'apple.com');
+            const googleEntry = linkedProviders.find(p => p.providerId === 'google.com');
+            return (
+              <>
+                <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
+                  <Ionicons name="logo-apple" size={18} color={theme.textMuted} style={{ marginRight: 10 }} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.rowTitle, { color: theme.textSecondary }]}>Apple</Text>
+                    {appleEntry?.email ? (
+                      <Text style={[styles.rowSub, { color: theme.textMuted }]} numberOfLines={1}>{appleEntry.email}</Text>
+                    ) : null}
+                  </View>
+                  {appleEntry ? (
+                    <TouchableOpacity onPress={() => handleUnlink('apple.com', 'Apple')} style={{ paddingVertical: 4, paddingHorizontal: 8 }}>
+                      <Text style={{ fontSize: 12, color: theme.statusBad, fontFamily: Type.uiSemibold }}>Remove</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity onPress={handleLinkApple} disabled={linkingProvider !== null} style={{ paddingVertical: 4, paddingHorizontal: 8 }}>
+                      {linkingProvider === 'apple' ? (
+                        <ActivityIndicator size="small" color={theme.accentBlue} />
+                      ) : (
+                        <Text style={{ fontSize: 12, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Connect</Text>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </View>
+                <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
+                  <Ionicons name="logo-google" size={18} color={theme.textMuted} style={{ marginRight: 10 }} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.rowTitle, { color: theme.textSecondary }]}>Google</Text>
+                    {googleEntry?.email ? (
+                      <Text style={[styles.rowSub, { color: theme.textMuted }]} numberOfLines={1}>{googleEntry.email}</Text>
+                    ) : null}
+                  </View>
+                  {googleEntry ? (
+                    <TouchableOpacity onPress={() => handleUnlink('google.com', 'Google')} style={{ paddingVertical: 4, paddingHorizontal: 8 }}>
+                      <Text style={{ fontSize: 12, color: theme.statusBad, fontFamily: Type.uiSemibold }}>Remove</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity onPress={handleLinkGoogle} disabled={linkingProvider !== null} style={{ paddingVertical: 4, paddingHorizontal: 8 }}>
+                      {linkingProvider === 'google' ? (
+                        <ActivityIndicator size="small" color={theme.accentBlue} />
+                      ) : (
+                        <Text style={{ fontSize: 12, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Connect</Text>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </>
+            );
+          })()}
           <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
             <TouchableOpacity
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); Alert.alert('Sign Out', 'Are you sure you want to sign out?', [

@@ -19,7 +19,7 @@ import { Stack, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
-import { AppState, LogBox } from 'react-native';
+import { Alert, AppState, LogBox } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { runRestoreGate, uploadAllLocal, isSyncReady } from '../services/syncService';
@@ -76,11 +76,6 @@ function RootLayoutNav() {
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const [showSplash, setShowSplash] = useState(false);
-  // Bumped only when the restore gate just replaced this device's local data with a
-  // DIFFERENT account's real cloud data (an account switch). Changing this key forces the
-  // whole screen stack to unmount/remount so every screen re-reads the now-correct local
-  // data, instead of continuing to show whatever it already had loaded before the switch.
-  const [remountKey, setRemountKey] = useState(0);
   // Only route to /sign-in once per app session -- prevents re-navigation when
   // the user signs in while already on the sign-in screen (kills the animation).
   const hasInitialRouted = useRef(false);
@@ -153,9 +148,15 @@ function RootLayoutNav() {
       // this, unlocks sync, and returns instantly without overwriting local. (Fresh-install
       // restore happens earlier, in sign-in.tsx, before onboarding can write.)
       runRestoreGate().then((result) => {
-        // A real account switch just replaced local data -- force every screen to
-        // re-read it fresh instead of showing whatever was already loaded.
-        if (result === 'restored') setRemountKey((k) => k + 1);
+        // A real account switch just replaced local data. Already-mounted screens won't
+        // know to re-read it, so rather than risk a clever automatic fix, just tell the
+        // user to do the one thing already proven safe: close and reopen the app.
+        if (result === 'restored') {
+          Alert.alert(
+            'Account Restored',
+            'Your account data has been restored. Please close and reopen the app to see it.',
+          );
+        }
         // Sync is unlocked now: apply any active vacation (stamp elapsed in-range days,
         // auto-expire a finished one) so the cloud mirror lands too.
         applyVacation().catch(() => {});
@@ -180,7 +181,7 @@ function RootLayoutNav() {
 
   return (
     <>
-      <Stack key={remountKey}>
+      <Stack>
         <Stack.Screen name="sign-in" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding/welcome" options={{ headerShown: false, animation: 'fade' }} />

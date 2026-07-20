@@ -991,6 +991,19 @@ are separate pre-submission checklists, NOT part of this menu.
   Plus: once Connected Accounts is built, test linking Apple + a DIFFERENT-email Google account together on
   purpose, confirm both sign you into the same account afterward, and confirm unlink correctly blocks
   removing the last remaining method.
+- [surfaced 2026-07-20, DOCUMENTED LIMITATION, no fix planned -- do not chase this] **HealthKit data is
+  device-scoped, not account-scoped, so achievements can fire "wrong" when multiple real GoodForge accounts
+  share one physical device.** Found while testing the auth work: briefly signing into a near-empty test
+  account on Justin's phone (which has real Apple Watch history) caused a batch of workout/fitness
+  achievements to unlock on that account, because Apple Health has no concept of "which app account" a
+  workout belongs to -- it belongs to the device. Any account signed into that device sees the same real
+  steps/workouts/etc. CONSIDERED a cooldown/grace-period guard on account-switch, REJECTED (Justin's call,
+  2026-07-20): a cooldown only delays the same collision, it doesn't resolve the underlying ambiguity, since
+  there is no correct answer to "which account owns this workout" when two real accounts share one device's
+  Health data. IMPACT is genuinely minor: never a security/data-loss issue, self-corrects the moment each
+  account is back on its own real device, only relevant when a device is genuinely shared (Justin's own test
+  workflow, or a real family sharing one device/tablet) -- not a normal single-user pattern. Logged here for
+  visibility only, not queued as a task.
 - [surfaced 2026-07-20, QUICK WIN] **Add a WEB/KJV translation toggle to Today's Message modal's gear
   icon.** Direct follow-on to the WEB translation feature (shipped 2026-07-19, see RECENTLY SHIPPED) --
   should be an easy add.

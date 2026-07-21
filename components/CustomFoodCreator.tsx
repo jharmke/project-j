@@ -9,7 +9,9 @@ import {
   Animated,
   Dimensions,
   Image,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -680,7 +682,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
               <NutrientFieldsGrid
                 sections={[
                   {
-                    key: 'macros', title: 'Macros', collapsible: false, columns: 3,
+                    key: 'macros', title: 'Macros', columns: 3,
                     fields: [
                       { key: 'protein', label: 'Protein', unit: 'g', value: protein, onChange: setProtein, dotColor: '#0d9268' },
                       { key: 'carbs',   label: 'Carbs',   unit: 'g', value: carbs,   onChange: setCarbs,   dotColor: '#c47d1a' },
@@ -785,7 +787,9 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
           },
         ]}
       >
-        {cardContent}
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%', alignItems: 'center' }} pointerEvents="box-none">
+          {cardContent}
+        </KeyboardAvoidingView>
       </Animated.View>
     );
   }
@@ -795,7 +799,13 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
     <Modal visible={visible} transparent animationType="none" onRequestClose={handleClose}>
       <Animated.View style={[s.overlay, { opacity: overlayOpacity }]}>
         <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleClose(); }} />
-        {cardContent}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ width: '100%', alignItems: 'center' }}
+          pointerEvents="box-none"
+        >
+          {cardContent}
+        </KeyboardAvoidingView>
       </Animated.View>
     </Modal>
   );
@@ -811,7 +821,7 @@ const styles = (theme: any) => StyleSheet.create({
     borderTopWidth: 1.5,
     borderTopColor: theme.accentBlueRaw,
     width: '100%',
-    height: 600,
+    maxHeight: '85%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,

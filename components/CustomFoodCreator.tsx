@@ -642,7 +642,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
             target near the top, so its spotlight bubble doesn't drop off-screen the way it
             would if anchored to the full, taller section) without touching tutorials.ts. */}
         <View ref={macrosSectionRef as any}>
-          <View ref={optionalToggleRef as any} />
+          <View ref={optionalToggleRef as any} style={{ height: 1, width: '100%' }} />
           <NutrientFieldsGrid
                 sections={[
                   {

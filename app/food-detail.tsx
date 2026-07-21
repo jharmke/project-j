@@ -30,6 +30,7 @@ import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { TUTORIAL_CHICKEN_BREAST } from '../data/tutorialFood';
 import { Type, PAGE_TITLE } from '../typography';
+import NutrientFieldsGrid from '../components/NutrientFieldsGrid';
 import ScreenHeader from '../components/ScreenHeader';
 import ButtonShine from '../components/ButtonShine';
 import BackgroundLayers from '../components/BackgroundLayers';
@@ -1884,155 +1885,79 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                     />
                   </View>
                 ))}
-                {/* Macronutrients -- 3 column */}
                 <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Macronutrients</Text>
-                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
-                  {([
-                    { label: 'PROTEIN (g)', key: 'protein', dot: '#0d9268' },
-                    { label: 'CARBS (g)', key: 'carbs', dot: '#c47d1a' },
-                    { label: 'FAT (g)', key: 'fat', dot: '#a83232' },
-                  ] as { label: string; key: string; dot: string }[]).map(f => (
-                    <View key={f.key} style={{ flex: 1 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: f.dot, marginRight: 4 }} />
-                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2 }}>{f.label}</Text>
-                      </View>
-                      <TextInput
-                        style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: Type.ui, textAlign: 'center' }}
-                        value={editFoodData?.[f.key] || ''}
-                        onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: filterDecimal(v) } : null)}
-                        keyboardType="decimal-pad"
-                        placeholderTextColor={theme.textDim}
-                        selectTextOnFocus
-                      />
-                    </View>
-                  ))}
-                </View>
-                {/* Extended Nutrition -- 2 column pairs */}
-                <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Extended Nutrition</Text>
-                {[
-                  [{ label: 'FIBER (g)',           key: 'fiber' },             { label: 'SUGAR (g)',          key: 'sugar' }],
-                  [{ label: 'SUGAR ALCOHOLS (g)',   key: 'sugarAlcohols' },     { label: 'SODIUM (mg)',        key: 'sodium' }],
-                  [{ label: 'CHOLESTEROL (mg)',     key: 'cholesterol' },       { label: 'POTASSIUM (mg)',     key: 'potassium' }],
-                  [{ label: 'SATURATED FAT (g)',    key: 'saturatedFat' },      { label: 'POLY FAT (g)',       key: 'polyunsaturatedFat' }],
-                  [{ label: 'MONO FAT (g)',         key: 'monounsaturatedFat' }, { label: 'CALCIUM (mg)',       key: 'calcium' }],
-                  [{ label: 'IRON (mg)',            key: 'iron' },              { label: 'ADDED SUGARS (g)',   key: 'addedSugars' }],
-                  [{ label: 'TRANS FAT (g)',        key: 'transFat' },          null],
-                ].map((row, ri) => (
-                  <View key={ri} style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
-                    {row.map((f, fi) => f ? (
-                      <View key={f.key} style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, marginBottom: 4 }}>{f.label}</Text>
-                        <TextInput
-                          style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: Type.ui }}
-                          value={editFoodData?.[f.key] || ''}
-                          onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: filterDecimal(v) } : null)}
-                          keyboardType="decimal-pad"
-                          placeholder="--"
-                          placeholderTextColor={theme.textDim}
-                          selectTextOnFocus
-                        />
-                      </View>
-                    ) : <View key={fi} style={{ flex: 1 }} />)}
-                  </View>
-                ))}
-                {/* Vitamins D/E/K + B Vitamins + Minerals + Other */}
-                <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Vitamins</Text>
-                {[
-                  [{ label: 'VITAMIN A (mcg)', key: 'vitaminA' }, { label: 'VITAMIN C (mg)', key: 'vitaminC' }],
-                  [{ label: 'VITAMIN D (mcg)', key: 'vitaminD' }, { label: 'VITAMIN E (mg)', key: 'vitaminE' }],
-                  [{ label: 'VITAMIN K (mcg)', key: 'vitaminK' }, null],
-                ].map((row, ri) => (
-                  <View key={ri} style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
-                    {row.map((f, fi) => f ? (
-                      <View key={f.key} style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, marginBottom: 4 }}>{f.label}</Text>
-                        <TextInput
-                          style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: Type.ui }}
-                          value={editFoodData?.[f.key] || ''}
-                          onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: filterDecimal(v) } : null)}
-                          keyboardType="decimal-pad"
-                          placeholder="--"
-                          placeholderTextColor={theme.textDim}
-                          selectTextOnFocus
-                        />
-                      </View>
-                    ) : <View key={fi} style={{ flex: 1 }} />)}
-                  </View>
-                ))}
-                <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>B Vitamins</Text>
-                {[
-                  [{ label: 'B6 (mg)', key: 'vitaminB6' }, { label: 'FOLATE (mcg)', key: 'folate' }],
-                  [{ label: 'B12 (mcg)', key: 'vitaminB12' }, { label: 'BIOTIN (mcg)', key: 'biotin' }],
-                  [{ label: 'THIAMIN (mg)', key: 'thiamin' }, { label: 'RIBOFLAVIN (mg)', key: 'riboflavin' }],
-                  [{ label: 'NIACIN (mg)', key: 'niacin' }, { label: 'CHOLINE (mg)', key: 'choline' }],
-                ].map((row, ri) => (
-                  <View key={ri} style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
-                    {row.map((f, fi) => f ? (
-                      <View key={f.key} style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, marginBottom: 4 }}>{f.label}</Text>
-                        <TextInput
-                          style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: Type.ui }}
-                          value={editFoodData?.[f.key] || ''}
-                          onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: filterDecimal(v) } : null)}
-                          keyboardType="decimal-pad"
-                          placeholder="--"
-                          placeholderTextColor={theme.textDim}
-                          selectTextOnFocus
-                        />
-                      </View>
-                    ) : <View key={fi} style={{ flex: 1 }} />)}
-                  </View>
-                ))}
-                <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Minerals</Text>
-                {[
-                  [{ label: 'MAGNESIUM (mg)', key: 'magnesium' }, { label: 'ZINC (mg)', key: 'zinc' }],
-                  [{ label: 'COPPER (mg)', key: 'copper' }, null],
-                ].map((row, ri) => (
-                  <View key={ri} style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
-                    {row.map((f, fi) => f ? (
-                      <View key={f.key} style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, marginBottom: 4 }}>{f.label}</Text>
-                        <TextInput
-                          style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: Type.ui }}
-                          value={editFoodData?.[f.key] || ''}
-                          onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: filterDecimal(v) } : null)}
-                          keyboardType="decimal-pad"
-                          placeholder="--"
-                          placeholderTextColor={theme.textDim}
-                          selectTextOnFocus
-                        />
-                      </View>
-                    ) : <View key={fi} style={{ flex: 1 }} />)}
-                  </View>
-                ))}
-                <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Other</Text>
-                {[
-                  [{ label: 'CAFFEINE (mg)', key: 'caffeine' }, null],
-                ].map((row, ri) => (
-                  <View key={ri} style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
-                    {row.map((f, fi) => f ? (
-                      <View key={f.key} style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, marginBottom: 4 }}>{f.label}</Text>
-                        <TextInput
-                          style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: Type.ui }}
-                          value={editFoodData?.[f.key] || ''}
-                          onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: filterDecimal(v) } : null)}
-                          keyboardType="decimal-pad"
-                          placeholder="--"
-                          placeholderTextColor={theme.textDim}
-                          selectTextOnFocus
-                        />
-                      </View>
-                    ) : <View key={fi} style={{ flex: 1 }} />)}
-                  </View>
-                ))}
+                <NutrientFieldsGrid
+                  sections={[
+                    {
+                      key: 'macros', title: 'Macros', columns: 3,
+                      fields: [
+                        { key: 'protein', label: 'Protein', unit: 'g', value: editFoodData?.protein || '', onChange: v => setEditFoodData((p: any) => p ? { ...p, protein: filterDecimal(v) } : null), dotColor: '#0d9268' },
+                        { key: 'carbs',   label: 'Carbs',   unit: 'g', value: editFoodData?.carbs || '',   onChange: v => setEditFoodData((p: any) => p ? { ...p, carbs: filterDecimal(v) } : null),   dotColor: '#c47d1a' },
+                        { key: 'fat',     label: 'Fat',     unit: 'g', value: editFoodData?.fat || '',     onChange: v => setEditFoodData((p: any) => p ? { ...p, fat: filterDecimal(v) } : null),     dotColor: '#a83232' },
+                      ],
+                    },
+                    {
+                      key: 'extendedFats', title: 'Extended Fats', columns: 2,
+                      fields: [
+                        { key: 'saturatedFat',       label: 'Sat. Fat',  unit: 'g', value: editFoodData?.saturatedFat || '',       onChange: v => setEditFoodData((p: any) => p ? { ...p, saturatedFat: filterDecimal(v) } : null) },
+                        { key: 'polyunsaturatedFat', label: 'Poly Fat',  unit: 'g', value: editFoodData?.polyunsaturatedFat || '', onChange: v => setEditFoodData((p: any) => p ? { ...p, polyunsaturatedFat: filterDecimal(v) } : null) },
+                        { key: 'monounsaturatedFat', label: 'Mono Fat',  unit: 'g', value: editFoodData?.monounsaturatedFat || '', onChange: v => setEditFoodData((p: any) => p ? { ...p, monounsaturatedFat: filterDecimal(v) } : null) },
+                        { key: 'transFat',           label: 'Trans Fat', unit: 'g', value: editFoodData?.transFat || '',           onChange: v => setEditFoodData((p: any) => p ? { ...p, transFat: filterDecimal(v) } : null) },
+                      ],
+                    },
+                    {
+                      key: 'otherNutrients', title: 'Other Nutrients', columns: 2,
+                      fields: [
+                        { key: 'fiber',         label: 'Fiber',        unit: 'g',  value: editFoodData?.fiber || '',         onChange: v => setEditFoodData((p: any) => p ? { ...p, fiber: filterDecimal(v) } : null) },
+                        { key: 'sugar',         label: 'Sugar',        unit: 'g',  value: editFoodData?.sugar || '',         onChange: v => setEditFoodData((p: any) => p ? { ...p, sugar: filterDecimal(v) } : null) },
+                        { key: 'sugarAlcohols', label: 'Sugar Alc.',   unit: 'g',  value: editFoodData?.sugarAlcohols || '', onChange: v => setEditFoodData((p: any) => p ? { ...p, sugarAlcohols: filterDecimal(v) } : null) },
+                        { key: 'addedSugars',   label: 'Added Sugars', unit: 'g',  value: editFoodData?.addedSugars || '',   onChange: v => setEditFoodData((p: any) => p ? { ...p, addedSugars: filterDecimal(v) } : null) },
+                        { key: 'sodium',        label: 'Sodium',       unit: 'mg', value: editFoodData?.sodium || '',        onChange: v => setEditFoodData((p: any) => p ? { ...p, sodium: filterDecimal(v) } : null) },
+                        { key: 'cholesterol',   label: 'Chol.',        unit: 'mg', value: editFoodData?.cholesterol || '',   onChange: v => setEditFoodData((p: any) => p ? { ...p, cholesterol: filterDecimal(v) } : null) },
+                        { key: 'potassium',     label: 'Potassium',    unit: 'mg', value: editFoodData?.potassium || '',     onChange: v => setEditFoodData((p: any) => p ? { ...p, potassium: filterDecimal(v) } : null) },
+                      ],
+                    },
+                    {
+                      key: 'vitamins', title: 'Vitamins', columns: 2,
+                      fields: [
+                        { key: 'vitaminA', label: 'Vitamin A', unit: 'mcg', value: editFoodData?.vitaminA || '', onChange: v => setEditFoodData((p: any) => p ? { ...p, vitaminA: filterDecimal(v) } : null) },
+                        { key: 'vitaminC', label: 'Vitamin C', unit: 'mg',  value: editFoodData?.vitaminC || '', onChange: v => setEditFoodData((p: any) => p ? { ...p, vitaminC: filterDecimal(v) } : null) },
+                        { key: 'vitaminD', label: 'Vitamin D', unit: 'mcg', value: editFoodData?.vitaminD || '', onChange: v => setEditFoodData((p: any) => p ? { ...p, vitaminD: filterDecimal(v) } : null) },
+                        { key: 'vitaminE', label: 'Vitamin E', unit: 'mg',  value: editFoodData?.vitaminE || '', onChange: v => setEditFoodData((p: any) => p ? { ...p, vitaminE: filterDecimal(v) } : null) },
+                        { key: 'vitaminK', label: 'Vitamin K', unit: 'mcg', value: editFoodData?.vitaminK || '', onChange: v => setEditFoodData((p: any) => p ? { ...p, vitaminK: filterDecimal(v) } : null) },
+                      ],
+                    },
+                    {
+                      key: 'bVitamins', title: 'B Vitamins', columns: 2,
+                      fields: [
+                        { key: 'vitaminB6',  label: 'B6',         unit: 'mg',  value: editFoodData?.vitaminB6 || '',  onChange: v => setEditFoodData((p: any) => p ? { ...p, vitaminB6: filterDecimal(v) } : null) },
+                        { key: 'folate',     label: 'Folate',     unit: 'mcg', value: editFoodData?.folate || '',     onChange: v => setEditFoodData((p: any) => p ? { ...p, folate: filterDecimal(v) } : null) },
+                        { key: 'vitaminB12', label: 'B12',        unit: 'mcg', value: editFoodData?.vitaminB12 || '', onChange: v => setEditFoodData((p: any) => p ? { ...p, vitaminB12: filterDecimal(v) } : null) },
+                        { key: 'biotin',     label: 'Biotin',     unit: 'mcg', value: editFoodData?.biotin || '',     onChange: v => setEditFoodData((p: any) => p ? { ...p, biotin: filterDecimal(v) } : null) },
+                        { key: 'thiamin',    label: 'Thiamin',    unit: 'mg',  value: editFoodData?.thiamin || '',    onChange: v => setEditFoodData((p: any) => p ? { ...p, thiamin: filterDecimal(v) } : null) },
+                        { key: 'riboflavin', label: 'Riboflavin', unit: 'mg',  value: editFoodData?.riboflavin || '', onChange: v => setEditFoodData((p: any) => p ? { ...p, riboflavin: filterDecimal(v) } : null) },
+                        { key: 'niacin',     label: 'Niacin',     unit: 'mg',  value: editFoodData?.niacin || '',     onChange: v => setEditFoodData((p: any) => p ? { ...p, niacin: filterDecimal(v) } : null) },
+                        { key: 'choline',    label: 'Choline',    unit: 'mg',  value: editFoodData?.choline || '',    onChange: v => setEditFoodData((p: any) => p ? { ...p, choline: filterDecimal(v) } : null) },
+                      ],
+                    },
+                    {
+                      key: 'minerals', title: 'Minerals', columns: 2,
+                      fields: [
+                        { key: 'calcium',   label: 'Calcium',   unit: 'mg', value: editFoodData?.calcium || '',   onChange: v => setEditFoodData((p: any) => p ? { ...p, calcium: filterDecimal(v) } : null) },
+                        { key: 'iron',      label: 'Iron',      unit: 'mg', value: editFoodData?.iron || '',      onChange: v => setEditFoodData((p: any) => p ? { ...p, iron: filterDecimal(v) } : null) },
+                        { key: 'magnesium', label: 'Magnesium', unit: 'mg', value: editFoodData?.magnesium || '', onChange: v => setEditFoodData((p: any) => p ? { ...p, magnesium: filterDecimal(v) } : null) },
+                        { key: 'zinc',      label: 'Zinc',      unit: 'mg', value: editFoodData?.zinc || '',      onChange: v => setEditFoodData((p: any) => p ? { ...p, zinc: filterDecimal(v) } : null) },
+                        { key: 'copper',    label: 'Copper',    unit: 'mg', value: editFoodData?.copper || '',    onChange: v => setEditFoodData((p: any) => p ? { ...p, copper: filterDecimal(v) } : null) },
+                      ],
+                    },
+                    {
+                      key: 'other', title: 'Other', columns: 2,
+                      fields: [
+                        { key: 'caffeine', label: 'Caffeine', unit: 'mg', value: editFoodData?.caffeine || '', onChange: v => setEditFoodData((p: any) => p ? { ...p, caffeine: filterDecimal(v) } : null) },
+                      ],
+                    },
+                  ]}
+                />
                 {/* Serving */}
                 <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
                 <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Serving</Text>

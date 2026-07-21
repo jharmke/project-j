@@ -5,7 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActionSheetIOS, Alert, Animated, Dimensions, Image, KeyboardAvoidingView, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActionSheetIOS, Alert, Animated, Dimensions, Image, Linking, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import Reanimated, { useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -30,7 +30,7 @@ import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { TUTORIAL_CHICKEN_BREAST } from '../data/tutorialFood';
 import { Type, PAGE_TITLE } from '../typography';
-import NutrientFieldsGrid from '../components/NutrientFieldsGrid';
+import EditFoodModal from '../components/EditFoodModal';
 import ScreenHeader from '../components/ScreenHeader';
 import ButtonShine from '../components/ButtonShine';
 import BackgroundLayers from '../components/BackgroundLayers';
@@ -643,8 +643,6 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
   }, []);
   const [showEditFoodModal, setShowEditFoodModal] = useState(false);
   const [editFoodData, setEditFoodData] = useState<any>(null);
-  const editOverlayAnim = useRef(new Animated.Value(0)).current;
-  const editCardAnim = useRef(new Animated.Value(0)).current;
   const mealDropdownAnim = useRef(new Animated.Value(0)).current;
   const timePickerAnim = useRef(new Animated.Value(0)).current;
   const servingPickerAnim = useRef(new Animated.Value(0)).current;
@@ -936,13 +934,6 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
     }
   };
 
-  const filterDecimal = (v: string) => {
-    const stripped = v.replace(/[^0-9.]/g, '');
-    const dot = stripped.indexOf('.');
-    if (dot === -1) return stripped;
-    return stripped.slice(0, dot + 1) + stripped.slice(dot + 1).replace(/\./g, '').slice(0, 1);
-  };
-
   const openEditFoodModal = () => {
     const src = food;
     // `?? resolvedMyFood` is the fix: on the Edit Entry route myFoodData is never attached (only add-food
@@ -998,12 +989,6 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
       type: mf?.type || 'food',
     });
     setShowEditFoodModal(true);
-    editOverlayAnim.setValue(0);
-    editCardAnim.setValue(0);
-    Animated.parallel([
-      Animated.timing(editOverlayAnim, { toValue: 1, duration: 180, useNativeDriver: true }),
-      Animated.spring(editCardAnim, { toValue: 1, useNativeDriver: true, damping: 20, stiffness: 300 }),
-    ]).start();
   };
 
   const closeMealPicker = () => {
@@ -1015,13 +1000,8 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
   };
 
   const closeEditFoodModal = () => {
-    Animated.parallel([
-      Animated.timing(editOverlayAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
-      Animated.timing(editCardAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
-    ]).start(() => {
-      setShowEditFoodModal(false);
-      setEditFoodData(null);
-    });
+    setShowEditFoodModal(false);
+    setEditFoodData(null);
   };
 
   const saveEditFoodFromDetail = async () => {
@@ -1824,244 +1804,13 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
         </Animated.View>
       </Modal>
 
-      {/* Edit My Food Modal */}
-      <Modal visible={showEditFoodModal} transparent animationType="none">
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-          <Animated.View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', opacity: editOverlayAnim }}>
-            <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeEditFoodModal} />
-            <Animated.View style={{
-              width: '92%',
-              backgroundColor: theme.bgSheet,
-              borderRadius: 16,
-              borderWidth: 1,
-              borderColor: theme.borderCard,
-              borderTopWidth: 1.5,
-              borderTopColor: theme.accentBlueRaw,
-              shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16,
-              transform: [{ scale: editCardAnim.interpolate({ inputRange: [0, 1], outputRange: [0.88, 1] }) }],
-            }}>
-              {/* NOTE: there are TWO "Edit Food" modals -- this one (reached from Edit Entry > Edit) and
-                  another in add-food.tsx (Food Library > My Foods > Edit). They are near-identical. If you
-                  change one, change the other. Same trap as the two Add Exercise modals.
-                  The subtitle names the scroll: this form has 26 extended fields inside a maxHeight 580
-                  ScrollView with the buttons pinned BELOW it, so it cut off mid-list at Sugar Alcohols and
-                  read as if that was the whole form (Justin, 2026-07-15 -- he reported it as missing data).
-                  It was never missing; it just never said it was scrollable. */}
-              <ModalHeader title="Edit Food" subtitle="Scroll for all nutrients" onClose={closeEditFoodModal} />
-              <ScrollView style={{ maxHeight: 580 }} contentContainerStyle={{ padding: 16, paddingTop: 8 }} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets={true}>
-                {/* Type selector */}
-                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
-                  <TouchableOpacity
-                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditFoodData((p: any) => p ? { ...p, type: 'food' } : null); }}
-                    style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, backgroundColor: editFoodData?.type !== 'supplement' ? theme.accentBlueBg : theme.bgInput, borderColor: editFoodData?.type !== 'supplement' ? theme.accentBlueBorder : theme.borderInput }}
-                  >
-                    <Ionicons name="nutrition" size={16} color={editFoodData?.type !== 'supplement' ? theme.accentBlue : theme.textMuted} />
-                    <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, marginTop: 3, color: editFoodData?.type !== 'supplement' ? theme.accentBlue : theme.textMuted }}>Food</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditFoodData((p: any) => p ? { ...p, type: 'supplement' } : null); }}
-                    style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, backgroundColor: editFoodData?.type === 'supplement' ? theme.accentBlueBg : theme.bgInput, borderColor: editFoodData?.type === 'supplement' ? theme.accentBlueBorder : theme.borderInput }}
-                  >
-                    <Ionicons name="medical" size={16} color={editFoodData?.type === 'supplement' ? theme.accentBlue : theme.textMuted} />
-                    <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, marginTop: 3, color: editFoodData?.type === 'supplement' ? theme.accentBlue : theme.textMuted }}>Supplement</Text>
-                  </TouchableOpacity>
-                </View>
-                {/* Basic Info */}
-                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Basic Info</Text>
-                {([
-                  { label: 'Food Name', key: 'name', keyboard: 'default' as const },
-                  { label: 'Brand (optional)', key: 'brand', keyboard: 'default' as const },
-                  { label: 'Calories (kcal)', key: 'cal', keyboard: 'decimal-pad' as const },
-                ] as { label: string; key: string; keyboard: 'default' | 'decimal-pad' }[]).map(f => (
-                  <View key={f.key} style={{ marginBottom: 10 }}>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4 }}>{f.label}</Text>
-                    <TextInput
-                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 15, fontFamily: Type.ui }}
-                      value={editFoodData?.[f.key] || ''}
-                      onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: f.keyboard === 'decimal-pad' ? filterDecimal(v) : v } : null)}
-                      keyboardType={f.keyboard}
-                      placeholderTextColor={theme.textDim}
-                      selectTextOnFocus
-                    />
-                  </View>
-                ))}
-                <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-                <NutrientFieldsGrid
-                  sections={[
-                    {
-                      key: 'macros', title: 'Macros', columns: 3,
-                      fields: [
-                        { key: 'protein', label: 'Protein', unit: 'g', value: editFoodData?.protein || '', onChange: v => setEditFoodData((p: any) => p ? { ...p, protein: filterDecimal(v) } : null), dotColor: '#0d9268' },
-                        { key: 'carbs',   label: 'Carbs',   unit: 'g', value: editFoodData?.carbs || '',   onChange: v => setEditFoodData((p: any) => p ? { ...p, carbs: filterDecimal(v) } : null),   dotColor: '#c47d1a' },
-                        { key: 'fat',     label: 'Fat',     unit: 'g', value: editFoodData?.fat || '',     onChange: v => setEditFoodData((p: any) => p ? { ...p, fat: filterDecimal(v) } : null),     dotColor: '#a83232' },
-                      ],
-                    },
-                    {
-                      key: 'extendedFats', title: 'Extended Fats', columns: 2,
-                      fields: [
-                        { key: 'saturatedFat',       label: 'Sat. Fat',  unit: 'g', value: editFoodData?.saturatedFat || '',       onChange: v => setEditFoodData((p: any) => p ? { ...p, saturatedFat: filterDecimal(v) } : null) },
-                        { key: 'polyunsaturatedFat', label: 'Poly Fat',  unit: 'g', value: editFoodData?.polyunsaturatedFat || '', onChange: v => setEditFoodData((p: any) => p ? { ...p, polyunsaturatedFat: filterDecimal(v) } : null) },
-                        { key: 'monounsaturatedFat', label: 'Mono Fat',  unit: 'g', value: editFoodData?.monounsaturatedFat || '', onChange: v => setEditFoodData((p: any) => p ? { ...p, monounsaturatedFat: filterDecimal(v) } : null) },
-                        { key: 'transFat',           label: 'Trans Fat', unit: 'g', value: editFoodData?.transFat || '',           onChange: v => setEditFoodData((p: any) => p ? { ...p, transFat: filterDecimal(v) } : null) },
-                      ],
-                    },
-                    {
-                      key: 'otherNutrients', title: 'Other Nutrients', columns: 2,
-                      fields: [
-                        { key: 'fiber',         label: 'Fiber',        unit: 'g',  value: editFoodData?.fiber || '',         onChange: v => setEditFoodData((p: any) => p ? { ...p, fiber: filterDecimal(v) } : null) },
-                        { key: 'sugar',         label: 'Sugar',        unit: 'g',  value: editFoodData?.sugar || '',         onChange: v => setEditFoodData((p: any) => p ? { ...p, sugar: filterDecimal(v) } : null) },
-                        { key: 'sugarAlcohols', label: 'Sugar Alc.',   unit: 'g',  value: editFoodData?.sugarAlcohols || '', onChange: v => setEditFoodData((p: any) => p ? { ...p, sugarAlcohols: filterDecimal(v) } : null) },
-                        { key: 'addedSugars',   label: 'Added Sugars', unit: 'g',  value: editFoodData?.addedSugars || '',   onChange: v => setEditFoodData((p: any) => p ? { ...p, addedSugars: filterDecimal(v) } : null) },
-                        { key: 'sodium',        label: 'Sodium',       unit: 'mg', value: editFoodData?.sodium || '',        onChange: v => setEditFoodData((p: any) => p ? { ...p, sodium: filterDecimal(v) } : null) },
-                        { key: 'cholesterol',   label: 'Chol.',        unit: 'mg', value: editFoodData?.cholesterol || '',   onChange: v => setEditFoodData((p: any) => p ? { ...p, cholesterol: filterDecimal(v) } : null) },
-                        { key: 'potassium',     label: 'Potassium',    unit: 'mg', value: editFoodData?.potassium || '',     onChange: v => setEditFoodData((p: any) => p ? { ...p, potassium: filterDecimal(v) } : null) },
-                      ],
-                    },
-                    {
-                      key: 'vitamins', title: 'Vitamins', columns: 2,
-                      fields: [
-                        { key: 'vitaminA', label: 'Vitamin A', unit: 'mcg', value: editFoodData?.vitaminA || '', onChange: v => setEditFoodData((p: any) => p ? { ...p, vitaminA: filterDecimal(v) } : null) },
-                        { key: 'vitaminC', label: 'Vitamin C', unit: 'mg',  value: editFoodData?.vitaminC || '', onChange: v => setEditFoodData((p: any) => p ? { ...p, vitaminC: filterDecimal(v) } : null) },
-                        { key: 'vitaminD', label: 'Vitamin D', unit: 'mcg', value: editFoodData?.vitaminD || '', onChange: v => setEditFoodData((p: any) => p ? { ...p, vitaminD: filterDecimal(v) } : null) },
-                        { key: 'vitaminE', label: 'Vitamin E', unit: 'mg',  value: editFoodData?.vitaminE || '', onChange: v => setEditFoodData((p: any) => p ? { ...p, vitaminE: filterDecimal(v) } : null) },
-                        { key: 'vitaminK', label: 'Vitamin K', unit: 'mcg', value: editFoodData?.vitaminK || '', onChange: v => setEditFoodData((p: any) => p ? { ...p, vitaminK: filterDecimal(v) } : null) },
-                      ],
-                    },
-                    {
-                      key: 'bVitamins', title: 'B Vitamins', columns: 2,
-                      fields: [
-                        { key: 'vitaminB6',  label: 'B6',         unit: 'mg',  value: editFoodData?.vitaminB6 || '',  onChange: v => setEditFoodData((p: any) => p ? { ...p, vitaminB6: filterDecimal(v) } : null) },
-                        { key: 'folate',     label: 'Folate',     unit: 'mcg', value: editFoodData?.folate || '',     onChange: v => setEditFoodData((p: any) => p ? { ...p, folate: filterDecimal(v) } : null) },
-                        { key: 'vitaminB12', label: 'B12',        unit: 'mcg', value: editFoodData?.vitaminB12 || '', onChange: v => setEditFoodData((p: any) => p ? { ...p, vitaminB12: filterDecimal(v) } : null) },
-                        { key: 'biotin',     label: 'Biotin',     unit: 'mcg', value: editFoodData?.biotin || '',     onChange: v => setEditFoodData((p: any) => p ? { ...p, biotin: filterDecimal(v) } : null) },
-                        { key: 'thiamin',    label: 'Thiamin',    unit: 'mg',  value: editFoodData?.thiamin || '',    onChange: v => setEditFoodData((p: any) => p ? { ...p, thiamin: filterDecimal(v) } : null) },
-                        { key: 'riboflavin', label: 'Riboflavin', unit: 'mg',  value: editFoodData?.riboflavin || '', onChange: v => setEditFoodData((p: any) => p ? { ...p, riboflavin: filterDecimal(v) } : null) },
-                        { key: 'niacin',     label: 'Niacin',     unit: 'mg',  value: editFoodData?.niacin || '',     onChange: v => setEditFoodData((p: any) => p ? { ...p, niacin: filterDecimal(v) } : null) },
-                        { key: 'choline',    label: 'Choline',    unit: 'mg',  value: editFoodData?.choline || '',    onChange: v => setEditFoodData((p: any) => p ? { ...p, choline: filterDecimal(v) } : null) },
-                      ],
-                    },
-                    {
-                      key: 'minerals', title: 'Minerals', columns: 2,
-                      fields: [
-                        { key: 'calcium',   label: 'Calcium',   unit: 'mg', value: editFoodData?.calcium || '',   onChange: v => setEditFoodData((p: any) => p ? { ...p, calcium: filterDecimal(v) } : null) },
-                        { key: 'iron',      label: 'Iron',      unit: 'mg', value: editFoodData?.iron || '',      onChange: v => setEditFoodData((p: any) => p ? { ...p, iron: filterDecimal(v) } : null) },
-                        { key: 'magnesium', label: 'Magnesium', unit: 'mg', value: editFoodData?.magnesium || '', onChange: v => setEditFoodData((p: any) => p ? { ...p, magnesium: filterDecimal(v) } : null) },
-                        { key: 'zinc',      label: 'Zinc',      unit: 'mg', value: editFoodData?.zinc || '',      onChange: v => setEditFoodData((p: any) => p ? { ...p, zinc: filterDecimal(v) } : null) },
-                        { key: 'copper',    label: 'Copper',    unit: 'mg', value: editFoodData?.copper || '',    onChange: v => setEditFoodData((p: any) => p ? { ...p, copper: filterDecimal(v) } : null) },
-                      ],
-                    },
-                    {
-                      key: 'other', title: 'Other', columns: 2,
-                      fields: [
-                        { key: 'caffeine', label: 'Caffeine', unit: 'mg', value: editFoodData?.caffeine || '', onChange: v => setEditFoodData((p: any) => p ? { ...p, caffeine: filterDecimal(v) } : null) },
-                      ],
-                    },
-                  ]}
-                />
-                {/* Serving */}
-                <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Serving</Text>
-                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, marginBottom: 4 }}>AMOUNT ({editFoodData?.servingUnitType || 'g'})</Text>
-                    <TextInput
-                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: Type.ui }}
-                      value={editFoodData?.servingGrams || ''}
-                      onChangeText={v => setEditFoodData((p: any) => p ? { ...p, servingGrams: filterDecimal(v) } : null)}
-                      keyboardType="decimal-pad"
-                      placeholderTextColor={theme.textDim}
-                      selectTextOnFocus
-                    />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, marginBottom: 4 }}>LABEL (OPTIONAL)</Text>
-                    <TextInput
-                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: Type.ui }}
-                      value={editFoodData?.servingLabel || ''}
-                      onChangeText={v => setEditFoodData((p: any) => p ? { ...p, servingLabel: v } : null)}
-                      placeholderTextColor={theme.textDim}
-                    />
-                  </View>
-                </View>
-                <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, marginBottom: 8 }}>UNIT</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingRight: 4, marginBottom: 10 }}>
-                  {['g', 'ml', 'fl oz', 'oz', 'container', 'serving', 'tbsp', 'tsp', 'cup'].map(u => (
-                    <TouchableOpacity
-                      key={u}
-                      onPress={() => setEditFoodData((p: any) => p ? { ...p, servingUnitType: u } : null)}
-                      style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, borderWidth: 1, backgroundColor: editFoodData?.servingUnitType === u ? theme.accentBlueBg : 'transparent', borderColor: editFoodData?.servingUnitType === u ? theme.accentBlueBorder : theme.borderInput }}>
-                      <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: editFoodData?.servingUnitType === u ? theme.accentBlue : theme.textMuted }}>{u}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-                {/* Additional Servings */}
-                <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                  <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase' }}>Additional Servings</Text>
-                  <TouchableOpacity
-                    onPress={() => setEditFoodData((p: any) => p ? { ...p, additionalServings: [...(p.additionalServings || []), { id: `as_${Date.now()}`, label: '', grams: '' }] } : null)}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
-                    <ButtonShine radius={6} />
-                    <Ionicons name="add" size={12} color={theme.accentBlue} />
-                    <Text style={{ fontSize: 11, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Add</Text>
-                  </TouchableOpacity>
-                </View>
-                {(editFoodData?.additionalServings || []).map((s: any, i: number) => (
-                  <View key={s.id} style={{ flexDirection: 'row', gap: 6, marginBottom: 8, alignItems: 'center' }}>
-                    <TextInput
-                      style={{ flex: 1.4, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 8, paddingHorizontal: 10, fontSize: 13, fontFamily: Type.ui }}
-                      placeholder="Label (e.g. 1 link)"
-                      placeholderTextColor={theme.textDim}
-                      value={s.label}
-                      onChangeText={v => setEditFoodData((p: any) => {
-                        if (!p) return null;
-                        const updated = [...(p.additionalServings || [])];
-                        updated[i] = { ...updated[i], label: v };
-                        return { ...p, additionalServings: updated };
-                      })}
-                    />
-                    <TextInput
-                      style={{ flex: 0.8, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 8, paddingHorizontal: 10, fontSize: 13, fontFamily: Type.ui }}
-                      placeholder="g"
-                      placeholderTextColor={theme.textDim}
-                      keyboardType="decimal-pad"
-                      value={s.grams}
-                      onChangeText={v => setEditFoodData((p: any) => {
-                        if (!p) return null;
-                        const updated = [...(p.additionalServings || [])];
-                        updated[i] = { ...updated[i], grams: filterDecimal(v) };
-                        return { ...p, additionalServings: updated };
-                      })}
-                    />
-                    <TouchableOpacity
-                      onPress={() => setEditFoodData((p: any) => p ? { ...p, additionalServings: (p.additionalServings || []).filter((_: any, j: number) => j !== i) } : null)}
-                      style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                      <Ionicons name="close-circle" size={18} color={theme.textDim} />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-                {(editFoodData?.additionalServings || []).length === 0 && (
-                  <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, marginBottom: 10 }}>Tap Add to define extra serving sizes (e.g. 1 link, 6 pieces)</Text>
-                )}
-              </ScrollView>
-              <View style={{ flexDirection: 'row', gap: 10, padding: 16, paddingTop: 12 }}>
-                <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeEditFoodModal(); }} style={{ flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, alignItems: 'center' }}>
-                  <Text style={{ color: theme.textMuted, fontFamily: Type.uiMedium, fontSize: 14 }}>Cancel</Text>
-                </TouchableOpacity>
-                {/* faceStyle matches the Cancel beside it (padding 12 / radius 8). */}
-                <PrimaryCTA
-                  wrapperStyle={{ flex: 2 }}
-                  faceStyle={{ paddingVertical: 12, borderRadius: 8 }}
-                  label="Save"
-                  onPress={saveEditFoodFromDetail}
-                  disabled={!editFoodData?.name?.trim() || !editFoodData?.cal}
-                />
-              </View>
-            </Animated.View>
-          </Animated.View>
-        </KeyboardAvoidingView>
-      </Modal>
+      <EditFoodModal
+        visible={showEditFoodModal}
+        editFoodData={editFoodData}
+        setEditFoodData={setEditFoodData}
+        onSave={saveEditFoodFromDetail}
+        onClose={closeEditFoodModal}
+      />
 
       {/* Photo Full-Screen Modal */}
       <Modal visible={showPhotoFullscreen} transparent animationType="fade">

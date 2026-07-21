@@ -216,7 +216,11 @@ export const ADVANCED_NUTRIENTS: AdvancedNutrient[] = [
   { key: 'sodium',         nutrientName: 'Sodium, Na',                        label: 'Sodium',          unit: 'mg',  category: 'Core',     defaultColor: '#f97316' },
   // Vitamins
   { key: 'biotin',         nutrientName: 'Biotin',                            label: 'Biotin',          unit: 'mcg', category: 'Vitamins', defaultColor: '#a3e635' },
+  { key: 'choline',        nutrientName: 'Choline',                          label: 'Choline',         unit: 'mg',  category: 'Vitamins', defaultColor: '#c084fc' },
   { key: 'folate',         nutrientName: 'Folate',                            label: 'Folate',          unit: 'mcg', category: 'Vitamins', defaultColor: '#34d399' },
+  { key: 'niacin',         nutrientName: 'Niacin',                           label: 'Niacin',          unit: 'mg',  category: 'Vitamins', defaultColor: '#f472b6' },
+  { key: 'riboflavin',     nutrientName: 'Riboflavin',                       label: 'Riboflavin',      unit: 'mg',  category: 'Vitamins', defaultColor: '#22d3ee' },
+  { key: 'thiamin',        nutrientName: 'Thiamin',                          label: 'Thiamin',         unit: 'mg',  category: 'Vitamins', defaultColor: '#fde047' },
   { key: 'vitaminA',       nutrientName: 'Vitamin A',                         label: 'Vitamin A',       unit: 'mcg', category: 'Vitamins', defaultColor: '#fbbf24' },
   { key: 'vitaminB6',      nutrientName: 'Vitamin B6',                        label: 'Vitamin B6',      unit: 'mg',  category: 'Vitamins', defaultColor: '#60a5fa' },
   { key: 'vitaminB12',     nutrientName: 'Vitamin B12',                       label: 'Vitamin B12',     unit: 'mcg', category: 'Vitamins', defaultColor: '#818cf8' },

@@ -45,6 +45,10 @@ interface Ingredient {
   folate?: number;
   vitaminB12?: number;
   biotin?: number;
+  thiamin?: number;
+  riboflavin?: number;
+  niacin?: number;
+  choline?: number;
   magnesium?: number;
   zinc?: number;
   copper?: number;
@@ -83,6 +87,10 @@ interface Recipe {
   totalFolate?: number;
   totalVitaminB12?: number;
   totalBiotin?: number;
+  totalThiamin?: number;
+  totalRiboflavin?: number;
+  totalNiacin?: number;
+  totalCholine?: number;
   totalMagnesium?: number;
   totalZinc?: number;
   totalCopper?: number;
@@ -302,6 +310,10 @@ export default function RecipeBuilderScreen() {
       ...(food.folate              ? { folate:              food.folate              } : {}),
       ...(food.vitaminB12          ? { vitaminB12:          food.vitaminB12          } : {}),
       ...(food.biotin              ? { biotin:              food.biotin              } : {}),
+      ...(food.thiamin             ? { thiamin:             food.thiamin             } : {}),
+      ...(food.riboflavin          ? { riboflavin:          food.riboflavin          } : {}),
+      ...(food.niacin              ? { niacin:              food.niacin              } : {}),
+      ...(food.choline             ? { choline:             food.choline             } : {}),
       ...(food.magnesium           ? { magnesium:           food.magnesium           } : {}),
       ...(food.zinc                ? { zinc:                food.zinc                } : {}),
       ...(food.copper              ? { copper:              food.copper              } : {}),
@@ -349,6 +361,10 @@ export default function RecipeBuilderScreen() {
   const totalFolate     = Math.round(ingredients.reduce((s, i) => s + (i.folate || 0), 0));
   const totalVitaminB12 = Math.round(ingredients.reduce((s, i) => s + (i.vitaminB12 || 0), 0) * 10) / 10;
   const totalBiotin     = Math.round(ingredients.reduce((s, i) => s + (i.biotin || 0), 0));
+  const totalThiamin    = Math.round(ingredients.reduce((s, i) => s + (i.thiamin || 0), 0) * 10) / 10;
+  const totalRiboflavin = Math.round(ingredients.reduce((s, i) => s + (i.riboflavin || 0), 0) * 10) / 10;
+  const totalNiacin     = Math.round(ingredients.reduce((s, i) => s + (i.niacin || 0), 0) * 10) / 10;
+  const totalCholine    = Math.round(ingredients.reduce((s, i) => s + (i.choline || 0), 0) * 10) / 10;
   const totalMagnesium  = Math.round(ingredients.reduce((s, i) => s + (i.magnesium || 0), 0));
   const totalZinc       = Math.round(ingredients.reduce((s, i) => s + (i.zinc || 0), 0) * 10) / 10;
   const totalCopper     = Math.round(ingredients.reduce((s, i) => s + (i.copper || 0), 0) * 10) / 10;
@@ -389,6 +405,10 @@ export default function RecipeBuilderScreen() {
       { val: f(totalFolate), unit: 'mcg', label: 'Folate' },
       { val: f(totalVitaminB12), unit: 'mcg', label: 'B12' },
       { val: f(totalBiotin), unit: 'mcg', label: 'Biotin' },
+      { val: f(totalThiamin), unit: 'mg', label: 'Thiamin' },
+      { val: f(totalRiboflavin), unit: 'mg', label: 'Riboflavin' },
+      { val: f(totalNiacin), unit: 'mg', label: 'Niacin' },
+      { val: f(totalCholine), unit: 'mg', label: 'Choline' },
       { val: f(totalMagnesium), unit: 'mg', label: 'Magnesium' },
       { val: f(totalZinc), unit: 'mg', label: 'Zinc' },
       { val: f(totalCopper), unit: 'mg', label: 'Copper' },
@@ -444,6 +464,10 @@ export default function RecipeBuilderScreen() {
         totalFolate,
         totalVitaminB12,
         totalBiotin,
+        totalThiamin,
+        totalRiboflavin,
+        totalNiacin,
+        totalCholine,
         totalMagnesium,
         totalZinc,
         totalCopper,

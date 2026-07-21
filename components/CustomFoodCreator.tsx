@@ -26,6 +26,7 @@ import { useToast } from './Toast';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { Type } from '../typography';
+import NutrientFieldsGrid from './NutrientFieldsGrid';
 import ButtonShine from './ButtonShine';
 import PrimaryCTA from './PrimaryCTA';
 import ModalHeader from './ModalHeader';
@@ -65,6 +66,10 @@ interface CustomFoodCreatorProps {
     folate?: number;
     vitaminB12?: number;
     biotin?: number;
+    thiamin?: number;
+    riboflavin?: number;
+    niacin?: number;
+    choline?: number;
     magnesium?: number;
     zinc?: number;
     copper?: number;
@@ -129,6 +134,10 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
   const [folate, setFolate] = useState('');
   const [vitaminB12, setVitaminB12] = useState('');
   const [biotin, setBiotin] = useState('');
+  const [thiamin, setThiamin] = useState('');
+  const [riboflavin, setRiboflavin] = useState('');
+  const [niacin, setNiacin] = useState('');
+  const [choline, setCholine] = useState('');
   const [magnesium, setMagnesium] = useState('');
   const [zinc, setZinc] = useState('');
   const [copper, setCopper] = useState('');
@@ -221,6 +230,10 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
         setFolate(prefill.folate?.toString() || '');
         setVitaminB12(prefill.vitaminB12?.toString() || '');
         setBiotin(prefill.biotin?.toString() || '');
+        setThiamin(prefill.thiamin?.toString() || '');
+        setRiboflavin(prefill.riboflavin?.toString() || '');
+        setNiacin(prefill.niacin?.toString() || '');
+        setCholine(prefill.choline?.toString() || '');
         setMagnesium(prefill.magnesium?.toString() || '');
         setZinc(prefill.zinc?.toString() || '');
         setCopper(prefill.copper?.toString() || '');
@@ -267,6 +280,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
     setAddedSugars(''); setTransFat(''); setVitaminD('');
     setVitaminE(''); setVitaminK(''); setVitaminB6('');
     setFolate(''); setVitaminB12(''); setBiotin('');
+    setThiamin(''); setRiboflavin(''); setNiacin(''); setCholine('');
     setMagnesium(''); setZinc(''); setCopper(''); setCaffeine('');
     setServingGrams(''); setServingLabel(''); setServingUnitType('g');
     setAdditionalServings([]);
@@ -357,6 +371,10 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
         ...(folate ? { folate: parseFloat(folate) } : {}),
         ...(vitaminB12 ? { vitaminB12: parseFloat(vitaminB12) } : {}),
         ...(biotin ? { biotin: parseFloat(biotin) } : {}),
+        ...(thiamin ? { thiamin: parseFloat(thiamin) } : {}),
+        ...(riboflavin ? { riboflavin: parseFloat(riboflavin) } : {}),
+        ...(niacin ? { niacin: parseFloat(niacin) } : {}),
+        ...(choline ? { choline: parseFloat(choline) } : {}),
         ...(magnesium ? { magnesium: parseFloat(magnesium) } : {}),
         ...(zinc ? { zinc: parseFloat(zinc) } : {}),
         ...(copper ? { copper: parseFloat(copper) } : {}),
@@ -400,6 +418,10 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
           { nutrientName: 'Folate',                       unitName: 'MCG', value: parseFloat(folate) || 0 },
           { nutrientName: 'Vitamin B12',                  unitName: 'MCG', value: parseFloat(vitaminB12) || 0 },
           { nutrientName: 'Biotin',                       unitName: 'MCG', value: parseFloat(biotin) || 0 },
+          { nutrientName: 'Thiamin',                      unitName: 'MG',  value: parseFloat(thiamin) || 0 },
+          { nutrientName: 'Riboflavin',                   unitName: 'MG',  value: parseFloat(riboflavin) || 0 },
+          { nutrientName: 'Niacin',                       unitName: 'MG',  value: parseFloat(niacin) || 0 },
+          { nutrientName: 'Choline',                      unitName: 'MG',  value: parseFloat(choline) || 0 },
           { nutrientName: 'Magnesium, Mg',                unitName: 'MG',  value: parseFloat(magnesium) || 0 },
           { nutrientName: 'Zinc, Zn',                     unitName: 'MG',  value: parseFloat(zinc) || 0 },
           { nutrientName: 'Copper, Cu',                   unitName: 'MG',  value: parseFloat(copper) || 0 },
@@ -655,162 +677,78 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
               }}
               style={{ position: showOptional ? 'relative' : 'absolute', opacity: showOptional ? 1 : 0 }}
             >
-              <Text style={[s.sectionLabel, { marginTop: 12 }]}>MACROS</Text>
-              <View style={s.twoCol}>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Protein <Text style={s.unitText}>g</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={protein} onChangeText={setProtein} keyboardType="decimal-pad" />
-                </View>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Carbs <Text style={s.unitText}>g</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={carbs} onChangeText={setCarbs} keyboardType="decimal-pad" />
-                </View>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Fat <Text style={s.unitText}>g</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={fat} onChangeText={setFat} keyboardType="decimal-pad" />
-                </View>
-              </View>
-              <Text style={[s.sectionLabel, { marginTop: 12 }]}>EXTENDED FATS</Text>
-              <View style={s.twoCol}>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Sat. Fat <Text style={s.unitText}>g</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={saturatedFat} onChangeText={setSaturatedFat} keyboardType="decimal-pad" />
-                </View>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Poly Fat <Text style={s.unitText}>g</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={polyunsaturatedFat} onChangeText={setPolyunsaturatedFat} keyboardType="decimal-pad" />
-                </View>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Mono Fat <Text style={s.unitText}>g</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={monounsaturatedFat} onChangeText={setMonounsaturatedFat} keyboardType="decimal-pad" />
-                </View>
-              </View>
-              <Text style={[s.sectionLabel, { marginTop: 12 }]}>OTHER NUTRIENTS</Text>
-              {/* Row 1: Fiber / Sugar / Sugar Alc. */}
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Fiber <Text style={s.unitText}>g</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={fiber} onChangeText={setFiber} keyboardType="decimal-pad" />
-                </View>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Sugar <Text style={s.unitText}>g</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={sugar} onChangeText={setSugar} keyboardType="decimal-pad" />
-                </View>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Sugar Alc. <Text style={s.unitText}>g</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={sugarAlcohols} onChangeText={setSugarAlcohols} keyboardType="decimal-pad" />
-                </View>
-              </View>
-              {/* Row 2: Sodium / Cholesterol / Potassium */}
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Sodium <Text style={s.unitText}>mg</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={sodium} onChangeText={setSodium} keyboardType="decimal-pad" />
-                </View>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Chol. <Text style={s.unitText}>mg</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={cholesterol} onChangeText={setCholesterol} keyboardType="decimal-pad" />
-                </View>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Potassium <Text style={s.unitText}>mg</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={potassium} onChangeText={setPotassium} keyboardType="decimal-pad" />
-                </View>
-              </View>
-              <Text style={[s.sectionLabel, { marginTop: 12 }]}>VITAMINS & MINERALS</Text>
-              {/* Row 1: Vitamin A / Vitamin C */}
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Vitamin A <Text style={s.unitText}>mcg</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={vitaminA} onChangeText={setVitaminA} keyboardType="decimal-pad" />
-                </View>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Vitamin C <Text style={s.unitText}>mg</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={vitaminC} onChangeText={setVitaminC} keyboardType="decimal-pad" />
-                </View>
-              </View>
-              {/* Row 2: Calcium / Iron */}
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Calcium <Text style={s.unitText}>mg</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={calcium} onChangeText={setCalcium} keyboardType="decimal-pad" />
-                </View>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Iron <Text style={s.unitText}>mg</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={iron} onChangeText={setIron} keyboardType="decimal-pad" />
-                </View>
-              </View>
-              {/* Row 3: Added Sugars / Trans Fat */}
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Added Sugars <Text style={s.unitText}>g</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={addedSugars} onChangeText={setAddedSugars} keyboardType="decimal-pad" />
-                </View>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Trans Fat <Text style={s.unitText}>g</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={transFat} onChangeText={setTransFat} keyboardType="decimal-pad" />
-                </View>
-              </View>
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Vitamin D <Text style={s.unitText}>mcg</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={vitaminD} onChangeText={setVitaminD} keyboardType="decimal-pad" />
-                </View>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Vitamin E <Text style={s.unitText}>mg</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={vitaminE} onChangeText={setVitaminE} keyboardType="decimal-pad" />
-                </View>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Vitamin K <Text style={s.unitText}>mcg</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={vitaminK} onChangeText={setVitaminK} keyboardType="decimal-pad" />
-                </View>
-              </View>
-              <Text style={[s.sectionLabel, { marginTop: 12 }]}>B VITAMINS</Text>
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>B6 <Text style={s.unitText}>mg</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={vitaminB6} onChangeText={setVitaminB6} keyboardType="decimal-pad" />
-                </View>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Folate <Text style={s.unitText}>mcg</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={folate} onChangeText={setFolate} keyboardType="decimal-pad" />
-                </View>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>B12 <Text style={s.unitText}>mcg</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={vitaminB12} onChangeText={setVitaminB12} keyboardType="decimal-pad" />
-                </View>
-              </View>
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Biotin <Text style={s.unitText}>mcg</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={biotin} onChangeText={setBiotin} keyboardType="decimal-pad" />
-                </View>
-                <View style={[s.fieldRow, { flex: 1 }]} />
-                <View style={[s.fieldRow, { flex: 1 }]} />
-              </View>
-              <Text style={[s.sectionLabel, { marginTop: 12 }]}>MINERALS</Text>
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Magnesium <Text style={s.unitText}>mg</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={magnesium} onChangeText={setMagnesium} keyboardType="decimal-pad" />
-                </View>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Zinc <Text style={s.unitText}>mg</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={zinc} onChangeText={setZinc} keyboardType="decimal-pad" />
-                </View>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Copper <Text style={s.unitText}>mg</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={copper} onChangeText={setCopper} keyboardType="decimal-pad" />
-                </View>
-              </View>
-              <Text style={[s.sectionLabel, { marginTop: 12 }]}>OTHER</Text>
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Caffeine <Text style={s.unitText}>mg</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={caffeine} onChangeText={setCaffeine} keyboardType="decimal-pad" />
-                </View>
-                <View style={[s.fieldRow, { flex: 1 }]} />
-                <View style={[s.fieldRow, { flex: 1 }]} />
-              </View>
+              <NutrientFieldsGrid
+                sections={[
+                  {
+                    key: 'macros', title: 'Macros', collapsible: false, columns: 3,
+                    fields: [
+                      { key: 'protein', label: 'Protein', unit: 'g', value: protein, onChange: setProtein, dotColor: '#0d9268' },
+                      { key: 'carbs',   label: 'Carbs',   unit: 'g', value: carbs,   onChange: setCarbs,   dotColor: '#c47d1a' },
+                      { key: 'fat',     label: 'Fat',     unit: 'g', value: fat,     onChange: setFat,     dotColor: '#a83232' },
+                    ],
+                  },
+                  {
+                    key: 'extendedFats', title: 'Extended Fats', columns: 2,
+                    fields: [
+                      { key: 'saturatedFat',       label: 'Sat. Fat',  unit: 'g', value: saturatedFat,       onChange: setSaturatedFat },
+                      { key: 'polyunsaturatedFat', label: 'Poly Fat',  unit: 'g', value: polyunsaturatedFat, onChange: setPolyunsaturatedFat },
+                      { key: 'monounsaturatedFat', label: 'Mono Fat',  unit: 'g', value: monounsaturatedFat, onChange: setMonounsaturatedFat },
+                      { key: 'transFat',           label: 'Trans Fat', unit: 'g', value: transFat,           onChange: setTransFat },
+                    ],
+                  },
+                  {
+                    key: 'otherNutrients', title: 'Other Nutrients', columns: 2,
+                    fields: [
+                      { key: 'fiber',         label: 'Fiber',         unit: 'g',  value: fiber,         onChange: setFiber },
+                      { key: 'sugar',         label: 'Sugar',         unit: 'g',  value: sugar,         onChange: setSugar },
+                      { key: 'sugarAlcohols', label: 'Sugar Alc.',    unit: 'g',  value: sugarAlcohols, onChange: setSugarAlcohols },
+                      { key: 'addedSugars',   label: 'Added Sugars',  unit: 'g',  value: addedSugars,   onChange: setAddedSugars },
+                      { key: 'sodium',        label: 'Sodium',        unit: 'mg', value: sodium,        onChange: setSodium },
+                      { key: 'cholesterol',   label: 'Chol.',         unit: 'mg', value: cholesterol,   onChange: setCholesterol },
+                      { key: 'potassium',     label: 'Potassium',     unit: 'mg', value: potassium,     onChange: setPotassium },
+                    ],
+                  },
+                  {
+                    key: 'vitamins', title: 'Vitamins', columns: 2,
+                    fields: [
+                      { key: 'vitaminA', label: 'Vitamin A', unit: 'mcg', value: vitaminA, onChange: setVitaminA },
+                      { key: 'vitaminC', label: 'Vitamin C', unit: 'mg',  value: vitaminC, onChange: setVitaminC },
+                      { key: 'vitaminD', label: 'Vitamin D', unit: 'mcg', value: vitaminD, onChange: setVitaminD },
+                      { key: 'vitaminE', label: 'Vitamin E', unit: 'mg',  value: vitaminE, onChange: setVitaminE },
+                      { key: 'vitaminK', label: 'Vitamin K', unit: 'mcg', value: vitaminK, onChange: setVitaminK },
+                    ],
+                  },
+                  {
+                    key: 'bVitamins', title: 'B Vitamins', columns: 2,
+                    fields: [
+                      { key: 'vitaminB6',  label: 'B6',         unit: 'mg',  value: vitaminB6,  onChange: setVitaminB6 },
+                      { key: 'folate',     label: 'Folate',     unit: 'mcg', value: folate,     onChange: setFolate },
+                      { key: 'vitaminB12', label: 'B12',        unit: 'mcg', value: vitaminB12, onChange: setVitaminB12 },
+                      { key: 'biotin',     label: 'Biotin',     unit: 'mcg', value: biotin,     onChange: setBiotin },
+                      { key: 'thiamin',    label: 'Thiamin',    unit: 'mg',  value: thiamin,    onChange: setThiamin },
+                      { key: 'riboflavin', label: 'Riboflavin', unit: 'mg',  value: riboflavin, onChange: setRiboflavin },
+                      { key: 'niacin',     label: 'Niacin',     unit: 'mg',  value: niacin,     onChange: setNiacin },
+                      { key: 'choline',    label: 'Choline',    unit: 'mg',  value: choline,    onChange: setCholine },
+                    ],
+                  },
+                  {
+                    key: 'minerals', title: 'Minerals', columns: 2,
+                    fields: [
+                      { key: 'calcium',   label: 'Calcium',   unit: 'mg', value: calcium,   onChange: setCalcium },
+                      { key: 'iron',      label: 'Iron',      unit: 'mg', value: iron,      onChange: setIron },
+                      { key: 'magnesium', label: 'Magnesium', unit: 'mg', value: magnesium, onChange: setMagnesium },
+                      { key: 'zinc',      label: 'Zinc',      unit: 'mg', value: zinc,      onChange: setZinc },
+                      { key: 'copper',    label: 'Copper',    unit: 'mg', value: copper,    onChange: setCopper },
+                    ],
+                  },
+                  {
+                    key: 'other', title: 'Other', columns: 2,
+                    fields: [
+                      { key: 'caffeine', label: 'Caffeine', unit: 'mg', value: caffeine, onChange: setCaffeine },
+                    ],
+                  },
+                ]}
+              />
             </View>
           </Animated.View>
         </View>

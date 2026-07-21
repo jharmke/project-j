@@ -54,6 +54,7 @@ export interface NutritionGoals {
   cholesterol: number | null; sodium: number | null; potassium: number | null; caffeine: number | null;
   vitaminA: number | null; vitaminC: number | null; vitaminD: number | null; vitaminE: number | null; vitaminK: number | null;
   vitaminB6: number | null; folate: number | null; vitaminB12: number | null; biotin: number | null;
+  thiamin: number | null; riboflavin: number | null; niacin: number | null; choline: number | null;
   calcium: number | null; iron: number | null; magnesium: number | null; zinc: number | null; copper: number | null;
 }
 
@@ -64,6 +65,7 @@ export const NUTRITION_PRESETS: Record<string, NutritionGoals> = {
     cholesterol: 300, sodium: 2300, potassium: 4700, caffeine: 400,
     vitaminA: 900, vitaminC: 90, vitaminD: 20, vitaminE: 15, vitaminK: 120,
     vitaminB6: 1.7, folate: 400, vitaminB12: 2.4, biotin: 30,
+    thiamin: 1.2, riboflavin: 1.3, niacin: 16, choline: 550,
     calcium: 1300, iron: 18, magnesium: 420, zinc: 11, copper: 0.9,
   },
   keto: {
@@ -72,6 +74,7 @@ export const NUTRITION_PRESETS: Record<string, NutritionGoals> = {
     cholesterol: 300, sodium: 3000, potassium: 4700, caffeine: 400,
     vitaminA: 900, vitaminC: 90, vitaminD: 20, vitaminE: 15, vitaminK: 120,
     vitaminB6: 1.7, folate: 400, vitaminB12: 2.4, biotin: 30,
+    thiamin: 1.2, riboflavin: 1.3, niacin: 16, choline: 550,
     calcium: 1300, iron: 18, magnesium: 420, zinc: 11, copper: 0.9,
   },
   heart: {
@@ -80,6 +83,7 @@ export const NUTRITION_PRESETS: Record<string, NutritionGoals> = {
     cholesterol: 300, sodium: 1500, potassium: 4700, caffeine: 400,
     vitaminA: 900, vitaminC: 90, vitaminD: 20, vitaminE: 15, vitaminK: 120,
     vitaminB6: 1.7, folate: 400, vitaminB12: 2.4, biotin: 30,
+    thiamin: 1.2, riboflavin: 1.3, niacin: 16, choline: 550,
     calcium: 1300, iron: 18, magnesium: 420, zinc: 11, copper: 0.9,
   },
   fiber: {
@@ -88,6 +92,7 @@ export const NUTRITION_PRESETS: Record<string, NutritionGoals> = {
     cholesterol: 300, sodium: 2300, potassium: 4700, caffeine: 400,
     vitaminA: 900, vitaminC: 90, vitaminD: 20, vitaminE: 15, vitaminK: 120,
     vitaminB6: 1.7, folate: 400, vitaminB12: 2.4, biotin: 30,
+    thiamin: 1.2, riboflavin: 1.3, niacin: 16, choline: 550,
     calcium: 1300, iron: 18, magnesium: 420, zinc: 11, copper: 0.9,
   },
   athletic: {
@@ -96,6 +101,7 @@ export const NUTRITION_PRESETS: Record<string, NutritionGoals> = {
     cholesterol: 300, sodium: 3000, potassium: 4700, caffeine: 400,
     vitaminA: 900, vitaminC: 120, vitaminD: 25, vitaminE: 15, vitaminK: 120,
     vitaminB6: 2.0, folate: 400, vitaminB12: 2.4, biotin: 30,
+    thiamin: 1.2, riboflavin: 1.3, niacin: 16, choline: 550,
     calcium: 1300, iron: 18, magnesium: 500, zinc: 14, copper: 0.9,
   },
 };
@@ -151,6 +157,10 @@ const GOAL_GROUPS = [
       { key: 'folate',     label: 'Folate', unit: 'mcg' },
       { key: 'vitaminB12', label: 'B12',    unit: 'mcg' },
       { key: 'biotin',     label: 'Biotin', unit: 'mcg' },
+      { key: 'thiamin',    label: 'Thiamin',    unit: 'mg' },
+      { key: 'riboflavin', label: 'Riboflavin', unit: 'mg' },
+      { key: 'niacin',     label: 'Niacin',     unit: 'mg' },
+      { key: 'choline',    label: 'Choline',    unit: 'mg' },
     ],
   },
   {

@@ -207,6 +207,10 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
   const totalFolate        = Math.round(getEntryNutrient('Folate', 1));
   const totalVitaminB12    = getEntryNutrient('Vitamin B12');
   const totalBiotin        = Math.round(getEntryNutrient('Biotin', 1));
+  const totalThiamin       = getEntryNutrient('Thiamin');
+  const totalRiboflavin    = getEntryNutrient('Riboflavin');
+  const totalNiacin        = getEntryNutrient('Niacin');
+  const totalCholine       = getEntryNutrient('Choline');
   const totalMagnesium     = Math.round(getEntryNutrient('Magnesium, Mg', 1));
   const totalZinc          = getEntryNutrient('Zinc, Zn');
   const totalCopper        = getEntryNutrient('Copper, Cu');
@@ -781,7 +785,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                 )}
 
                 {/* B Vitamins */}
-                {(totalVitaminB6 > 0 || totalFolate > 0 || totalVitaminB12 > 0 || totalBiotin > 0) && (
+                {(totalVitaminB6 > 0 || totalFolate > 0 || totalVitaminB12 > 0 || totalBiotin > 0 || totalThiamin > 0 || totalRiboflavin > 0 || totalNiacin > 0 || totalCholine > 0) && (
                   <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, marginBottom: 12 }}>
                     <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>B Vitamins</Text>
                     {[
@@ -789,6 +793,10 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                       { label: 'Folate',     value: totalFolate,     unit: 'mcg' },
                       { label: 'Vitamin B12', value: totalVitaminB12, unit: 'mcg' },
                       { label: 'Biotin',     value: totalBiotin,     unit: 'mcg' },
+                      { label: 'Thiamin',    value: totalThiamin,    unit: 'mg'  },
+                      { label: 'Riboflavin', value: totalRiboflavin, unit: 'mg'  },
+                      { label: 'Niacin',     value: totalNiacin,     unit: 'mg'  },
+                      { label: 'Choline',    value: totalCholine,    unit: 'mg'  },
                     ].filter(n => n.value > 0).map((n, i, arr) => (
                       <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
                         <Text style={styles.sectionLabel}>{n.label}</Text>

@@ -2752,8 +2752,8 @@ export default function SettingsScreen() {
                 const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.9 });
                 if (result.canceled || !result.assets?.[0]?.uri) return;
                 const ocr = await ocrRecognizeText(result.assets[0].uri);
-                const blockLines = ocr.blocks.slice(0, 12).map((b, i) =>
-                  `${i + 1}. "${b.text}" @ (${Math.round(b.boundingBox.x)},${Math.round(b.boundingBox.y)}) ${Math.round(b.boundingBox.width)}x${Math.round(b.boundingBox.height)}`
+                const blockLines = ocr.blocks.slice(0, 20).map((b, i) =>
+                  `${i + 1}. "${b.text}" (${Math.round((b.confidence ?? 0) * 100)}%) @ (${Math.round(b.boundingBox.x)},${Math.round(b.boundingBox.y)}) ${Math.round(b.boundingBox.width)}x${Math.round(b.boundingBox.height)}`
                 ).join('\n');
                 console.log('[OCR TEST] full result', JSON.stringify(ocr, null, 2));
                 Alert.alert(`OCR Test — ${ocr.blocks.length} blocks`, blockLines || 'No text blocks recognized.');

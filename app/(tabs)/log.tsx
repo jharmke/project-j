@@ -609,6 +609,10 @@ export default function LogScreen() {
   const totalFolate       = getAdvancedNutrient('Folate');
   const totalVitaminB12   = getAdvancedNutrient('Vitamin B12');
   const totalBiotin       = getAdvancedNutrient('Biotin');
+  const totalThiamin      = getAdvancedNutrient('Thiamin');
+  const totalRiboflavin   = getAdvancedNutrient('Riboflavin');
+  const totalNiacin       = getAdvancedNutrient('Niacin');
+  const totalCholine      = getAdvancedNutrient('Choline');
   const totalMagnesium    = getAdvancedNutrient('Magnesium, Mg');
   const totalZinc         = getAdvancedNutrient('Zinc, Zn');
   const totalCopper       = getAdvancedNutrient('Copper, Cu');
@@ -1470,6 +1474,10 @@ export default function LogScreen() {
               { label: 'Folate', value: totalFolate,     unit: 'mcg', dir: 'want-more', goal: g.folate,     nutrientKey: 'Folate' },
               { label: 'B12',    value: totalVitaminB12, unit: 'mcg', dir: 'want-more', goal: g.vitaminB12, nutrientKey: 'Vitamin B12' },
               { label: 'Biotin', value: totalBiotin,     unit: 'mcg', dir: 'want-more', goal: g.biotin,     nutrientKey: 'Biotin' },
+              { label: 'Thiamin',    value: totalThiamin,    unit: 'mg', dir: 'want-more', goal: g.thiamin,    nutrientKey: 'Thiamin' },
+              { label: 'Riboflavin', value: totalRiboflavin, unit: 'mg', dir: 'want-more', goal: g.riboflavin, nutrientKey: 'Riboflavin' },
+              { label: 'Niacin',     value: totalNiacin,     unit: 'mg', dir: 'want-more', goal: g.niacin,     nutrientKey: 'Niacin' },
+              { label: 'Choline',    value: totalCholine,    unit: 'mg', dir: 'want-more', goal: g.choline,    nutrientKey: 'Choline' },
             ],
           },
           {
@@ -1819,7 +1827,7 @@ export default function LogScreen() {
                             // Filtered so only present fields ride along; harmless for regular foods
                             // (their foodNutrients path takes priority over the flat fallback).
                             ...Object.fromEntries(
-                              ['fiber','sugar','sodium','cholesterol','saturatedFat','polyunsaturatedFat','monounsaturatedFat','addedSugars','transFat','sugarAlcohols','potassium','calcium','iron','vitaminA','vitaminC','vitaminD','vitaminE','vitaminK','vitaminB6','folate','vitaminB12','biotin','magnesium','zinc','copper','caffeine']
+                              ['fiber','sugar','sodium','cholesterol','saturatedFat','polyunsaturatedFat','monounsaturatedFat','addedSugars','transFat','sugarAlcohols','potassium','calcium','iron','vitaminA','vitaminC','vitaminD','vitaminE','vitaminK','vitaminB6','folate','vitaminB12','biotin','thiamin','riboflavin','niacin','choline','magnesium','zinc','copper','caffeine']
                                 .filter(k => (entry as any)[k] != null)
                                 .map(k => [k, (entry as any)[k]])
                             ),

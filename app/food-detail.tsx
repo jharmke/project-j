@@ -978,6 +978,10 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
       folate: mf?.folate?.toString() || '',
       vitaminB12: mf?.vitaminB12?.toString() || '',
       biotin: mf?.biotin?.toString() || '',
+      thiamin: mf?.thiamin?.toString() || '',
+      riboflavin: mf?.riboflavin?.toString() || '',
+      niacin: mf?.niacin?.toString() || '',
+      choline: mf?.choline?.toString() || '',
       magnesium: mf?.magnesium?.toString() || '',
       zinc: mf?.zinc?.toString() || '',
       copper: mf?.copper?.toString() || '',
@@ -1067,6 +1071,10 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           folate: parseFloat(editFoodData.folate) || 0,
           vitaminB12: parseFloat(editFoodData.vitaminB12) || 0,
           biotin: parseFloat(editFoodData.biotin) || 0,
+          thiamin: parseFloat(editFoodData.thiamin) || 0,
+          riboflavin: parseFloat(editFoodData.riboflavin) || 0,
+          niacin: parseFloat(editFoodData.niacin) || 0,
+          choline: parseFloat(editFoodData.choline) || 0,
           magnesium: parseFloat(editFoodData.magnesium) || 0,
           zinc: parseFloat(editFoodData.zinc) || 0,
           copper: parseFloat(editFoodData.copper) || 0,
@@ -1511,11 +1519,19 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             const folate = computeExtended('folate',     'Folate');
             const b12    = computeExtended('vitaminB12', 'Vitamin B12');
             const biotin = computeExtended('biotin',     'Biotin');
+            const thiamin    = computeExtended('thiamin',    'Thiamin');
+            const riboflavin = computeExtended('riboflavin', 'Riboflavin');
+            const niacin     = computeExtended('niacin',     'Niacin');
+            const choline    = computeExtended('choline',    'Choline');
             const rows = [
               { label: 'Vitamin B6', val: b6,     unit: 'mg'  },
               { label: 'Folate',     val: folate,  unit: 'mcg' },
               { label: 'Vitamin B12', val: b12,   unit: 'mcg' },
               { label: 'Biotin',     val: biotin,  unit: 'mcg' },
+              { label: 'Thiamin',    val: thiamin,    unit: 'mg'  },
+              { label: 'Riboflavin', val: riboflavin, unit: 'mg'  },
+              { label: 'Niacin',     val: niacin,     unit: 'mg'  },
+              { label: 'Choline',    val: choline,    unit: 'mg'  },
             ].filter(r => r.val !== null && r.val !== 0);
             if (rows.length === 0) return null;
             return (
@@ -1952,6 +1968,8 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                 {[
                   [{ label: 'B6 (mg)', key: 'vitaminB6' }, { label: 'FOLATE (mcg)', key: 'folate' }],
                   [{ label: 'B12 (mcg)', key: 'vitaminB12' }, { label: 'BIOTIN (mcg)', key: 'biotin' }],
+                  [{ label: 'THIAMIN (mg)', key: 'thiamin' }, { label: 'RIBOFLAVIN (mg)', key: 'riboflavin' }],
+                  [{ label: 'NIACIN (mg)', key: 'niacin' }, { label: 'CHOLINE (mg)', key: 'choline' }],
                 ].map((row, ri) => (
                   <View key={ri} style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
                     {row.map((f, fi) => f ? (

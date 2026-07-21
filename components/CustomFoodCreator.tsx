@@ -9,9 +9,7 @@ import {
   Animated,
   Dimensions,
   Image,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -154,6 +152,13 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
   const optionalMeasured = useRef(0);
   const prefillExpanded = useRef(false);
   const [saving, setSaving] = useState(false);
+  // Measured (not assumed) header + scroll-content heights, so the card can be given an
+  // explicit height that actually shrinks when sections collapse -- maxHeight/flexGrow tricks
+  // on the ScrollView itself didn't work (a ScrollView's job is "let content scroll inside a
+  // fixed window," not "shrink my own window to match content"), so this measures the real
+  // rendered size directly instead of hoping a layout property resolves the way CSS would.
+  const [headerHeight, setHeaderHeight] = useState(60);
+  const [contentHeight, setContentHeight] = useState(500);
   const [pendingPhotoUri, setPendingPhotoUri] = useState<string | null>(null);
 
   // Register the creator's ScrollView so the tutorial engine can scrollToTarget
@@ -466,9 +471,16 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
   const s = styles(theme);
 
   // ── Shared card content (same JSX for both Modal and inline paths) ────────
+  const cardMaxHeight = Dimensions.get('window').height * 0.78;
+  // +44 = scrollContent's own padding (top 20 + bottom 24), which onLayout on the content
+  // wrapper doesn't include since that's the PARENT ScrollView's padding, not the child's own size.
+  const cardHeight = Math.min(headerHeight + contentHeight + 44, cardMaxHeight);
+
   const cardContent = (
-    <Animated.View ref={cardRef as any} style={[s.card, { transform: [{ scale: cardScale }] }]}>
-      <ModalHeader title={title || 'Create Food'} onClose={handleClose} />
+    <Animated.View ref={cardRef as any} style={[s.card, { height: cardHeight, transform: [{ scale: cardScale }] }]}>
+      <View onLayout={e => setHeaderHeight(e.nativeEvent.layout.height)}>
+        <ModalHeader title={title || 'Create Food'} onClose={handleClose} />
+      </View>
       <ScrollView
         ref={scrollViewRef}
         style={s.scroll}
@@ -477,6 +489,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
         showsVerticalScrollIndicator={false}
         automaticallyAdjustKeyboardInsets={true}
       >
+        <View onLayout={e => setContentHeight(e.nativeEvent.layout.height)}>
         <Text style={s.requiredNote}>* Required</Text>
 
         {/* Type selector */}
@@ -674,6 +687,11 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
                   if (prefillExpanded.current) {
                     optionalHeight.setValue(h);
                     prefillExpanded.current = false;
+                  } else if (showOptional) {
+                    // Content height changes whenever a section inside NutrientFieldsGrid is
+                    // collapsed/expanded -- re-sync the outer wrapper to match instead of
+                    // leaving it frozen at whatever it measured the very first time.
+                    Animated.timing(optionalHeight, { toValue: h, duration: 200, useNativeDriver: false }).start();
                   }
                 }
               }}
@@ -767,6 +785,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
             disabled={!canSave}
           />
         </View>
+        </View>
       </ScrollView>
     </Animated.View>
   );
@@ -787,9 +806,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
           },
         ]}
       >
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%', alignItems: 'center' }} pointerEvents="box-none">
-          {cardContent}
-        </KeyboardAvoidingView>
+        {cardContent}
       </Animated.View>
     );
   }
@@ -799,13 +816,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
     <Modal visible={visible} transparent animationType="none" onRequestClose={handleClose}>
       <Animated.View style={[s.overlay, { opacity: overlayOpacity }]}>
         <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleClose(); }} />
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ width: '100%', alignItems: 'center' }}
-          pointerEvents="box-none"
-        >
-          {cardContent}
-        </KeyboardAvoidingView>
+        {cardContent}
       </Animated.View>
     </Modal>
   );
@@ -821,7 +832,8 @@ const styles = (theme: any) => StyleSheet.create({
     borderTopWidth: 1.5,
     borderTopColor: theme.accentBlueRaw,
     width: '100%',
-    maxHeight: '85%',
+    maxHeight: Dimensions.get('window').height * 0.78,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
@@ -834,8 +846,8 @@ const styles = (theme: any) => StyleSheet.create({
   },
   title: { fontSize: 19, color: theme.accentBlueRaw, fontFamily: Type.display, letterSpacing: -0.2 },
   closeBtn: { padding: 4 },
-  scroll: { flex: 1 },
-  scrollContent: { padding: 20, paddingBottom: 24 },
+  scroll: {},
+  scrollContent: { padding: 20, paddingBottom: 24, flexGrow: 0 },
   sectionLabel: { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, fontFamily: Type.uiBold, marginBottom: 10 },
   fieldRow: { marginBottom: 12 },
   fieldLabel: { fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiMedium, marginBottom: 5 },

@@ -157,6 +157,25 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
   const [contentHeight, setContentHeight] = useState(500);
   const [pendingPhotoUri, setPendingPhotoUri] = useState<string | null>(null);
 
+  // Floating Save Bar -- matches the house pattern from profile.tsx exactly (Cancel+Save
+  // together, hidden until something actually differs from the last-saved snapshot, spring
+  // up/away). savedSnapshotRef holds a JSON string of every field's value at the moment the
+  // modal opened (after prefill); snapshotReadyRef guards against a false "changed" reading
+  // on the very first render, before that baseline has been captured.
+  const [hasChanges, setHasChanges] = useState(false);
+  const floatAnim = useRef(new Animated.Value(0)).current;
+  const savedSnapshotRef = useRef('');
+  const snapshotReadyRef = useRef(false);
+
+  const getFormSnapshot = () => JSON.stringify({
+    name, brand, calories, protein, carbs, fat, fiber, sugar, sodium, cholesterol,
+    saturatedFat, polyunsaturatedFat, monounsaturatedFat, potassium, vitaminA, vitaminC,
+    calcium, iron, sugarAlcohols, addedSugars, transFat, vitaminD, vitaminE, vitaminK,
+    vitaminB6, folate, vitaminB12, biotin, thiamin, riboflavin, niacin, choline, magnesium,
+    zinc, copper, caffeine, servingGrams, servingLabel, servingUnitType, additionalServings,
+    isSupplementType, pendingPhotoUri,
+  });
+
   // Register the creator's ScrollView so the tutorial engine can scrollToTarget
   // when the save button is near or below the visible area.
   useEffect(() => {
@@ -243,6 +262,15 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
         Animated.timing(overlayOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
         Animated.spring(cardScale, { toValue: 1, useNativeDriver: true, friction: 8, tension: 100 }),
       ]).start();
+      setHasChanges(false);
+      floatAnim.setValue(0);
+      snapshotReadyRef.current = false;
+      // Wait one tick for the setters above to actually flush before capturing the baseline --
+      // reading state synchronously here would still see the PREVIOUS render's values.
+      setTimeout(() => {
+        savedSnapshotRef.current = getFormSnapshot();
+        snapshotReadyRef.current = true;
+      }, 0);
     } else {
       // visible became false (e.g. closeCreatorAfterTutorial called directly) --
       // unmount the inline view. If handleClose ran first, inlineMounted is
@@ -250,6 +278,25 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
       if (tutorialMode) setInlineMounted(false);
     }
   }, [visible]);
+
+  useEffect(() => {
+    if (!snapshotReadyRef.current) return;
+    const changed = getFormSnapshot() !== savedSnapshotRef.current;
+    if (changed && !hasChanges) {
+      setHasChanges(true);
+      Animated.spring(floatAnim, { toValue: 1, useNativeDriver: true, tension: 65, friction: 11 }).start();
+    } else if (!changed && hasChanges) {
+      setHasChanges(false);
+      Animated.timing(floatAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start();
+    }
+  }, [
+    name, brand, calories, protein, carbs, fat, fiber, sugar, sodium, cholesterol,
+    saturatedFat, polyunsaturatedFat, monounsaturatedFat, potassium, vitaminA, vitaminC,
+    calcium, iron, sugarAlcohols, addedSugars, transFat, vitaminD, vitaminE, vitaminK,
+    vitaminB6, folate, vitaminB12, biotin, thiamin, riboflavin, niacin, choline, magnesium,
+    zinc, copper, caffeine, servingGrams, servingLabel, servingUnitType, additionalServings,
+    isSupplementType, pendingPhotoUri,
+  ]);
 
   const handleClose = () => {
     Animated.parallel([
@@ -729,11 +776,36 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
               />
         </View>
 
-        {/* Save button -- spotlit by tutorial. MOLDED + ACCENT (was a flat accentGreen slab): green means
-            SUCCESS/goal-hit in this app, and saving a food is an action, not an outcome. PrimaryCTA also
-            owns the busy state, so the hand-rolled "SAVING..." label is now a real spinner, and it owns the
-            disabled dim, so s.saveBtnDim goes. The ref is a TUTORIAL target -> wrapper View. */}
-        <View ref={saveBtnRef as any} collapsable={false} style={{ marginTop: 16 }}>
+        {/* Reserved space so the floating Cancel/Save bar below never covers the last real
+            field, whether or not the bar is currently showing -- keeps the card's own height
+            calculation independent of hasChanges. */}
+        <View style={{ height: 90 }} />
+        </View>
+      </ScrollView>
+
+      {/* Floating Save Bar -- matches profile.tsx's house pattern exactly: invisible on a clean
+          load, springs up the instant anything differs from the last-saved snapshot, away on
+          save/cancel. The ref is a TUTORIAL target (step 5 spotlights Save) -- tutorial demo data
+          goes through the same setters this effect watches, so hasChanges should flip true
+          organically as the walkthrough fills fields in, same as a real user typing. */}
+      <Animated.View
+        pointerEvents={hasChanges ? 'auto' : 'none'}
+        style={{
+          position: 'absolute', left: 0, right: 0, bottom: 0,
+          paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16,
+          borderTopWidth: 0.5, borderTopColor: theme.borderCard,
+          backgroundColor: theme.bgSheet,
+          flexDirection: 'row', gap: 10,
+          transform: [{ translateY: floatAnim.interpolate({ inputRange: [0, 1], outputRange: [100, 0] }) }],
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleClose(); }}
+          style={{ backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput, borderRadius: 13, paddingVertical: 16, paddingHorizontal: 20, alignItems: 'center' }}
+        >
+          <Text numberOfLines={1} style={{ fontSize: 15, fontFamily: Type.uiBold, letterSpacing: 0.2, color: theme.textMuted }}>Cancel</Text>
+        </TouchableOpacity>
+        <View ref={saveBtnRef as any} collapsable={false} style={{ flex: 1 }}>
           <PrimaryCTA
             label="Save Food"
             onPress={handleSave}
@@ -741,8 +813,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
             disabled={!canSave}
           />
         </View>
-        </View>
-      </ScrollView>
+      </Animated.View>
     </Animated.View>
   );
 

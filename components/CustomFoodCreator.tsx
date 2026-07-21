@@ -29,6 +29,8 @@ import { Type } from '../typography';
 import NutrientFieldsGrid from './NutrientFieldsGrid';
 import ButtonShine from './ButtonShine';
 import PrimaryCTA from './PrimaryCTA';
+import GradientIcon from './GradientIcon';
+import GradientNumber from './GradientNumber';
 import ModalHeader from './ModalHeader';
 
 interface CustomFoodCreatorProps {
@@ -471,15 +473,15 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setIsSupplementType(false); }}
             style={{ flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 10, borderWidth: 1.5, backgroundColor: !isSupplementType ? theme.accentBlueBg : theme.bgInput, borderColor: !isSupplementType ? theme.accentBlueBorder : theme.borderInput }}
           >
-            <Ionicons name="nutrition" size={18} color={!isSupplementType ? theme.accentBlue : theme.textMuted} />
-            <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, marginTop: 4, color: !isSupplementType ? theme.accentBlue : theme.textMuted }}>Food</Text>
+            <GradientIcon name="nutrition" size={18} color={!isSupplementType ? theme.accentBlue : theme.textMuted} />
+            <GradientNumber value="Food" color={!isSupplementType ? theme.accentBlue : theme.textMuted} style={{ fontSize: 13, fontFamily: Type.uiSemibold, marginTop: 4 }} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setIsSupplementType(true); }}
             style={{ flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 10, borderWidth: 1.5, backgroundColor: isSupplementType ? theme.accentBlueBg : theme.bgInput, borderColor: isSupplementType ? theme.accentBlueBorder : theme.borderInput }}
           >
-            <Ionicons name="medical" size={18} color={isSupplementType ? theme.accentBlue : theme.textMuted} />
-            <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, marginTop: 4, color: isSupplementType ? theme.accentBlue : theme.textMuted }}>Supplement</Text>
+            <GradientIcon name="medical" size={18} color={isSupplementType ? theme.accentBlue : theme.textMuted} />
+            <GradientNumber value="Supplement" color={isSupplementType ? theme.accentBlue : theme.textMuted} style={{ fontSize: 13, fontFamily: Type.uiSemibold, marginTop: 4 }} />
           </TouchableOpacity>
         </View>
 

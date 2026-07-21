@@ -9,6 +9,8 @@ import ModalHeader from './ModalHeader';
 import PrimaryCTA from './PrimaryCTA';
 import ButtonShine from './ButtonShine';
 import NutrientFieldsGrid from './NutrientFieldsGrid';
+import GradientIcon from './GradientIcon';
+import GradientNumber from './GradientNumber';
 
 const EDIT_SERVING_UNITS = ['g', 'ml', 'fl oz', 'oz', 'container', 'serving', 'tbsp', 'tsp', 'cup', 'pill', 'capsule', 'tablet', 'softgel', 'gummy'];
 
@@ -76,15 +78,15 @@ export default function EditFoodModal({ visible, editFoodData, setEditFoodData, 
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); set('type', 'food'); }}
                 style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, backgroundColor: editFoodData?.type !== 'supplement' ? theme.accentBlueBg : theme.bgInput, borderColor: editFoodData?.type !== 'supplement' ? theme.accentBlueBorder : theme.borderInput }}
               >
-                <Ionicons name="nutrition" size={16} color={editFoodData?.type !== 'supplement' ? theme.accentBlue : theme.textMuted} />
-                <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, marginTop: 3, color: editFoodData?.type !== 'supplement' ? theme.accentBlue : theme.textMuted }}>Food</Text>
+                <GradientIcon name="nutrition" size={16} color={editFoodData?.type !== 'supplement' ? theme.accentBlue : theme.textMuted} />
+                <GradientNumber value="Food" color={editFoodData?.type !== 'supplement' ? theme.accentBlue : theme.textMuted} style={{ fontSize: 12, fontFamily: Type.uiSemibold, marginTop: 3 }} />
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); set('type', 'supplement'); }}
                 style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, backgroundColor: editFoodData?.type === 'supplement' ? theme.accentBlueBg : theme.bgInput, borderColor: editFoodData?.type === 'supplement' ? theme.accentBlueBorder : theme.borderInput }}
               >
-                <Ionicons name="medical" size={16} color={editFoodData?.type === 'supplement' ? theme.accentBlue : theme.textMuted} />
-                <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, marginTop: 3, color: editFoodData?.type === 'supplement' ? theme.accentBlue : theme.textMuted }}>Supplement</Text>
+                <GradientIcon name="medical" size={16} color={editFoodData?.type === 'supplement' ? theme.accentBlue : theme.textMuted} />
+                <GradientNumber value="Supplement" color={editFoodData?.type === 'supplement' ? theme.accentBlue : theme.textMuted} style={{ fontSize: 12, fontFamily: Type.uiSemibold, marginTop: 3 }} />
               </TouchableOpacity>
             </View>
 

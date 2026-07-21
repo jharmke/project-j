@@ -1069,20 +1069,23 @@ are separate pre-submission checklists, NOT part of this menu.
   or mixed/packaged dishes), so scope is "optional assist on common single-ingredient foods," not a promise
   of precision everywhere. STILL OPEN: exact placement (add-food, CustomFoodCreator, food-detail serving
   entry) and design details -- figure out when we get to it.
-- [surfaced 2026-07-19, discussion in progress, sooner rather than later per Justin] **Scan a nutrition
-  facts panel to autofill a food's macros.** Full discussion and locked decisions in
-  `SPEC_nutrition_label_scan.md` -- read that before touching this. Short version: on-device OCR (not AI
-  vision), pull every field the label prints, never overwrite a field the label did not print, never
-  auto-save, per-field confidence flags on uncertain OCR reads, one whole-label scan (not per-field), and
-  the review flow matches the existing AI Meal Estimator pattern (scanned values populate the real edit
-  form directly, existing Save button is the confirmation, no new dedicated review screen). MONETIZATION:
-  TBD, Justin leaning free (~80%) -- unlike the AI Meal Estimator/Otto, this runs on-device Vision OCR with
-  no per-call API cost, so the "costs me money to run" justification for a Supporter gate doesn't apply
-  here. Not locked, revisit before shipping. Entry points:
-  CustomFoodCreator, food-detail's copy-to-edit flow, and the barcode-override flow. Still open and needing
-  their own dedicated discussion: serving size handling (label's own serving size vs the food's existing
-  serving unit), per-serving vs per-container dual-column labels, and how much label-format variance v1
-  needs to handle. Nothing built yet, this is discussion only so far.
+- [surfaced 2026-07-19, FULLY LOCKED 2026-07-21, ready to build] **Scan a nutrition facts panel to autofill
+  a food's macros.** Full spec in `SPEC_nutrition_label_scan.md` -- read that before touching this. Short
+  version: on-device OCR via `expo-ocr-kit` (Apple Vision/ML Kit, bounding boxes per field, confirmed via
+  real docs), pull every field the label prints, never overwrite a field the label did not print, never
+  auto-save, one whole-label scan (not per-field). Review flow: compact EDITABLE centered modal shows every
+  scanned field flat (confidence flags carry over), user can fix obvious bad reads right there, "Looks Good"
+  populates the real edit form, existing Save button is the real confirmation. Dual-column labels produce
+  "1 serving" (defaults into the form) + "1 container" (alternate option in the existing FatSecret-style
+  serving picker, appended not replacing any existing servings). New this session: value/%DV live-link for
+  every field with a real FDA DV reference (not calories), a shared non-blocking "double-check before
+  saving" banner triggered by a missing core field (Calories/Fat/Carbs/Protein) or 3+ low-confidence flags.
+  Entry points: CustomFoodCreator, food-detail's copy-to-edit flow, and the barcode-override flow (confirmed
+  `pj_barcode_overrides` has no structural blocker, just needs the scanned object shaped like the existing
+  serving-picker item). MONETIZATION: TBD, Justin leaning free (~80%) -- unlike the AI Meal Estimator/Otto,
+  this runs on-device OCR with no per-call API cost, so the "costs me money to run" Supporter-gate
+  justification doesn't apply here. Revisit before shipping. No open questions remain; one full build, no
+  v1/v2 phasing.
 
 - [PARKED 2026-07-19 -- shipped parts in RECENTLY SHIPPED, full story in the archive] **Some screens still
   feel slow to open, cause unidentified.** Haptic delay is fixed and 4 screens' data loading is batched (see

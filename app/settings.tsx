@@ -54,6 +54,8 @@ function vacFmtNice(key: string): string {
   const d = new Date(key + 'T00:00:00');
   return `${VAC_DOW3[d.getDay()]} ${VAC_MONTHS[d.getMonth()].slice(0, 3)} ${d.getDate()}`;
 }
+import * as ImagePicker from 'expo-image-picker';
+import { recognizeText as ocrRecognizeText } from 'expo-ocr-kit';
 import { voiceDiagnosticCards, getLastVoiceDebug } from '../utils/coachAI';
 import { dumpHomeCoachCandidates, dumpEvrRecoveryDebug, dumpWearableSim } from '../utils/smartTipsEngine';
 import { addNotification } from '../utils/notifications';
@@ -2740,6 +2742,30 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Simulates a no-watch / partial-watch user on a COPY of your real data and shows which coaching rules fire. Writes nothing. Activity/recovery rules in the no-watch list = the bug.</Text>
               </View>
               <Ionicons name="watch-outline" size={18} color={theme.accentGreen} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              try {
+                const perm = await ImagePicker.requestCameraPermissionsAsync();
+                if (!perm.granted) { Alert.alert('Camera access needed', 'Enable camera access to run this test.'); return; }
+                const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.9 });
+                if (result.canceled || !result.assets?.[0]?.uri) return;
+                const ocr = await ocrRecognizeText(result.assets[0].uri);
+                const blockLines = ocr.blocks.slice(0, 12).map((b, i) =>
+                  `${i + 1}. "${b.text}" @ (${Math.round(b.boundingBox.x)},${Math.round(b.boundingBox.y)}) ${Math.round(b.boundingBox.width)}x${Math.round(b.boundingBox.height)}`
+                ).join('\n');
+                console.log('[OCR TEST] full result', JSON.stringify(ocr, null, 2));
+                Alert.alert(`OCR Test — ${ocr.blocks.length} blocks`, blockLines || 'No text blocks recognized.');
+              } catch (e) {
+                Alert.alert('OCR test failed', String(e));
+              }
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentGreen }]}>OCR Test (temp — nutrition label scan)</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Take a photo, runs it through expo-ocr-kit, shows the first 12 recognized text blocks with their bounding boxes. Throwaway diagnostic, remove once the real scan flow is built.</Text>
+              </View>
+              <Ionicons name="scan-outline" size={18} color={theme.accentGreen} />
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {

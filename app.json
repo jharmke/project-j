@@ -60,6 +60,7 @@
       "expo-font",
       "@react-native-community/datetimepicker",
       ["expo-camera", { "cameraPermission": "GoodForge uses your camera to scan food barcodes for nutritional information." }],
+      "expo-ocr-kit",
       [
         "@kingstinct/react-native-healthkit",
         {

@@ -83,7 +83,9 @@ interface CustomFoodCreatorProps {
   };
 }
 
-const SERVING_UNITS = ['g', 'ml', 'fl oz', 'oz', 'container', 'serving', 'tbsp', 'tsp', 'cup', 'pill', 'capsule', 'tablet', 'softgel', 'gummy'];
+const FOOD_SERVING_UNITS = ['g', 'ml', 'fl oz', 'oz', 'container', 'serving', 'tbsp', 'tsp', 'cup'];
+const SUPPLEMENT_ONLY_UNITS = ['pill', 'capsule', 'tablet', 'softgel', 'gummy'];
+const SERVING_UNITS = [...FOOD_SERVING_UNITS, ...SUPPLEMENT_ONLY_UNITS];
 
 export default function CustomFoodCreator({ visible, onClose, onSaved, title, tutorialMode, prefill }: CustomFoodCreatorProps) {
   const { theme } = useTheme();
@@ -470,7 +472,14 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
         {/* Type selector */}
         <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
           <TouchableOpacity
-            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setIsSupplementType(false); }}
+            onPress={() => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              setIsSupplementType(false);
+              // A supplement-only unit (capsule, pill, etc.) no longer has a home in Food's
+              // shorter list -- reset to the default rather than leave a "selected" unit that
+              // isn't even shown anymore.
+              if (SUPPLEMENT_ONLY_UNITS.includes(servingUnitType)) setServingUnitType('g');
+            }}
             style={{ flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 10, borderWidth: 1.5, backgroundColor: !isSupplementType ? theme.accentBlueBg : theme.bgInput, borderColor: !isSupplementType ? theme.accentBlueBorder : theme.borderInput }}
           >
             <GradientIcon name="nutrition" size={18} color={!isSupplementType ? theme.accentBlue : theme.textMuted} />
@@ -561,7 +570,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
           <View style={[s.fieldRow, { marginBottom: 14 }]}>
             <Text style={[s.fieldLabel, { marginBottom: 8 }]}>Serving Unit</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingRight: 4 }}>
-              {SERVING_UNITS.map(u => (
+              {(isSupplementType ? SERVING_UNITS : FOOD_SERVING_UNITS).map(u => (
                 <TouchableOpacity
                   key={u}
                   onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setServingUnitType(u); }}

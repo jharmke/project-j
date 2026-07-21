@@ -12,7 +12,9 @@ import NutrientFieldsGrid from './NutrientFieldsGrid';
 import GradientIcon from './GradientIcon';
 import GradientNumber from './GradientNumber';
 
-const EDIT_SERVING_UNITS = ['g', 'ml', 'fl oz', 'oz', 'container', 'serving', 'tbsp', 'tsp', 'cup', 'pill', 'capsule', 'tablet', 'softgel', 'gummy'];
+const FOOD_SERVING_UNITS = ['g', 'ml', 'fl oz', 'oz', 'container', 'serving', 'tbsp', 'tsp', 'cup'];
+const SUPPLEMENT_ONLY_UNITS = ['pill', 'capsule', 'tablet', 'softgel', 'gummy'];
+const EDIT_SERVING_UNITS = [...FOOD_SERVING_UNITS, ...SUPPLEMENT_ONLY_UNITS];
 
 const filterDecimal = (v: string) => {
   const stripped = v.replace(/[^0-9.]/g, '');
@@ -75,7 +77,14 @@ export default function EditFoodModal({ visible, editFoodData, setEditFoodData, 
             {/* Type selector */}
             <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
               <TouchableOpacity
-                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); set('type', 'food'); }}
+                onPress={() => {
+                  triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+                  set('type', 'food');
+                  // A supplement-only unit (capsule, pill, etc.) no longer has a home in Food's
+                  // shorter list -- reset to the default rather than leave a "selected" unit
+                  // that isn't even shown anymore.
+                  if (SUPPLEMENT_ONLY_UNITS.includes(editFoodData?.servingUnitType)) set('servingUnitType', 'g');
+                }}
                 style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, backgroundColor: editFoodData?.type !== 'supplement' ? theme.accentBlueBg : theme.bgInput, borderColor: editFoodData?.type !== 'supplement' ? theme.accentBlueBorder : theme.borderInput }}
               >
                 <GradientIcon name="nutrition" size={16} color={editFoodData?.type !== 'supplement' ? theme.accentBlue : theme.textMuted} />
@@ -212,7 +221,7 @@ export default function EditFoodModal({ visible, editFoodData, setEditFoodData, 
             </View>
             <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, marginBottom: 8 }}>UNIT</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingRight: 4, marginBottom: 10 }}>
-              {EDIT_SERVING_UNITS.map(u => (
+              {(editFoodData?.type === 'supplement' ? EDIT_SERVING_UNITS : FOOD_SERVING_UNITS).map(u => (
                 <TouchableOpacity
                   key={u}
                   onPress={() => set('servingUnitType', u)}

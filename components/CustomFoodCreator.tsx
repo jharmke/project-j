@@ -607,6 +607,13 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
                   Give this food a few more ways to measure — 3 links, 1 slice, however it's sold.
                 </Text>
               )}
+              {additionalServings.length > 0 && (
+                <View style={{ flexDirection: 'row', gap: 6, marginBottom: 4 }}>
+                  <Text style={[s.fieldLabel, { flex: 1.4, marginBottom: 0 }]}>Label</Text>
+                  <Text style={[s.fieldLabel, { flex: 0.8, marginBottom: 0 }]}>Grams</Text>
+                  <View style={{ width: 32 }} />
+                </View>
+              )}
               {additionalServings.map((sv, i) => (
                 <View key={sv.id} style={{ flexDirection: 'row', gap: 6, marginBottom: 8, alignItems: 'center' }}>
                   <TextInput

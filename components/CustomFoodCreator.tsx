@@ -483,46 +483,51 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
           </TouchableOpacity>
         </View>
 
-        {/* Food Name */}
-        <View style={s.fieldRow}>
-          <Text style={s.fieldLabel}>Food Name <Text style={s.requiredStar}>*</Text></Text>
-          <TextInput
-            ref={nameInputRef as any}
-            style={s.input}
-            placeholder="e.g. Chicken Breast"
-            placeholderTextColor={theme.textPlaceholder}
-            value={name}
-            onChangeText={setName}
-            autoCapitalize="words"
-          />
-        </View>
-
-        {/* Brand + Photo */}
-        <View style={s.fieldRow}>
-          <Text style={s.fieldLabel}>Brand</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        {/* Basic Info box */}
+        <View style={{ backgroundColor: theme.bgCard, borderRadius: 12, borderWidth: 0.5, borderColor: theme.borderCard, padding: 14, marginBottom: 10 }}>
+          <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.textPrimary, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Basic Info</Text>
+          {/* Food Name */}
+          <View style={s.fieldRow}>
+            <Text style={s.fieldLabel}>Food Name <Text style={s.requiredStar}>*</Text></Text>
             <TextInput
-              style={[s.input, { flex: 1 }]}
-              placeholder="e.g. Tyson"
+              ref={nameInputRef as any}
+              style={s.input}
+              placeholder="e.g. Chicken Breast"
               placeholderTextColor={theme.textPlaceholder}
-              value={brand}
-              onChangeText={setBrand}
+              value={name}
+              onChangeText={setName}
               autoCapitalize="words"
             />
-            <TouchableOpacity onPress={handlePhotoAdd} style={{ width: 64, height: 64 }} activeOpacity={0.8}>
-              {pendingPhotoUri ? (
-                <Image source={{ uri: pendingPhotoUri }} style={{ width: 64, height: 64, borderRadius: 10 }} resizeMode="cover" />
-              ) : (
-                <View style={{ width: 64, height: 64, borderRadius: 10, borderWidth: 1.5, borderStyle: 'dashed', borderColor: theme.textDim, alignItems: 'center', justifyContent: 'center' }}>
-                  <Ionicons name="camera-outline" size={24} color={theme.textDim} />
-                </View>
-              )}
-            </TouchableOpacity>
+          </View>
+
+          {/* Brand + Photo */}
+          <View style={[s.fieldRow, { marginBottom: 0 }]}>
+            <Text style={s.fieldLabel}>Brand</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <TextInput
+                style={[s.input, { flex: 1 }]}
+                placeholder="e.g. Tyson"
+                placeholderTextColor={theme.textPlaceholder}
+                value={brand}
+                onChangeText={setBrand}
+                autoCapitalize="words"
+              />
+              <TouchableOpacity onPress={handlePhotoAdd} style={{ width: 64, height: 64 }} activeOpacity={0.8}>
+                {pendingPhotoUri ? (
+                  <Image source={{ uri: pendingPhotoUri }} style={{ width: 64, height: 64, borderRadius: 10 }} resizeMode="cover" />
+                ) : (
+                  <View style={{ width: 64, height: 64, borderRadius: 10, borderWidth: 1.5, borderStyle: 'dashed', borderColor: theme.textDim, alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name="camera-outline" size={24} color={theme.textDim} />
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
-        {/* Calories section wrapper -- spotlit as one unit by tutorial step 3 */}
-        <View ref={caloriesSectionRef as any}>
+        {/* Serving box -- Calories lives here too, spotlit as one unit by tutorial step 3 */}
+        <View ref={caloriesSectionRef as any} style={{ backgroundColor: theme.bgCard, borderRadius: 12, borderWidth: 0.5, borderColor: theme.borderCard, padding: 14, marginBottom: 10 }}>
+          <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.textPrimary, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Serving</Text>
           {/* Calories + Serving (2-col) */}
           <View style={s.twoCol}>
             <View style={[s.fieldRow, { flex: 1 }]}>
@@ -576,64 +581,64 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
             <Text style={s.fieldLabel}>Serving Label <Text style={s.unitText}>(optional)</Text></Text>
             <TextInput
               style={s.input}
-              placeholder="e.g. 1 scoop, 1 container"
+              placeholder="e.g. 1 scoop, 3 tbsp, 250 mL"
               placeholderTextColor={theme.textPlaceholder}
               value={servingLabel}
               onChangeText={setServingLabel}
             />
           </View>
-        </View>
 
-        {/* Additional Servings -- hidden in tutorialMode to keep save button visible */}
-        {!tutorialMode && (
-          <>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, marginTop: 4 }}>
-              <Text style={[s.sectionLabel, { marginTop: 0, marginBottom: 0 }]}>Additional Servings</Text>
-              <TouchableOpacity
-                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setAdditionalServings(prev => [...prev, { id: `as_${Date.now()}`, label: '', grams: '' }]); }}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}
-              >
-                <ButtonShine radius={6} />
-                <Ionicons name="add" size={12} color={theme.accentBlue} />
-                <Text style={{ fontSize: 11, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Add</Text>
-              </TouchableOpacity>
-            </View>
-            {additionalServings.length === 0 && (
-              <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, marginBottom: 12 }}>
-                Optional. Add extra serving sizes like "1 link" or "6 pieces".
-              </Text>
-            )}
-            {additionalServings.map((sv, i) => (
-              <View key={sv.id} style={{ flexDirection: 'row', gap: 6, marginBottom: 8, alignItems: 'center' }}>
-                <TextInput
-                  style={[s.input, { flex: 1.4, paddingVertical: 8 }]}
-                  placeholder="Label (e.g. 1 link)"
-                  placeholderTextColor={theme.textPlaceholder}
-                  value={sv.label}
-                  onChangeText={v => setAdditionalServings(prev => prev.map((x, j) => j === i ? { ...x, label: v } : x))}
-                />
-                <TextInput
-                  style={[s.input, { flex: 0.8, paddingVertical: 8 }]}
-                  placeholder="g"
-                  placeholderTextColor={theme.textPlaceholder}
-                  keyboardType="decimal-pad"
-                  value={sv.grams}
-                  onChangeText={v => {
-                    const stripped = v.replace(/[^0-9.]/g, '');
-                    setAdditionalServings(prev => prev.map((x, j) => j === i ? { ...x, grams: stripped } : x));
-                  }}
-                />
+          {/* Additional Servings -- hidden in tutorialMode to keep save button visible */}
+          {!tutorialMode && (
+            <>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, marginTop: 14 }}>
+                <Text style={[s.sectionLabel, { marginTop: 0, marginBottom: 0 }]}>Additional Servings</Text>
                 <TouchableOpacity
-                  onPress={() => setAdditionalServings(prev => prev.filter((_, j) => j !== i))}
-                  style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setAdditionalServings(prev => [...prev, { id: `as_${Date.now()}`, label: '', grams: '' }]); }}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}
                 >
-                  <Ionicons name="close-circle" size={18} color={theme.textDim} />
+                  <ButtonShine radius={6} />
+                  <Ionicons name="add" size={12} color={theme.accentBlue} />
+                  <Text style={{ fontSize: 11, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Add</Text>
                 </TouchableOpacity>
               </View>
-            ))}
-          </>
-        )}
+              {additionalServings.length === 0 && (
+                <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, marginBottom: 0 }}>
+                  Give this food a few more ways to measure — 3 links, 1 slice, however it's sold.
+                </Text>
+              )}
+              {additionalServings.map((sv, i) => (
+                <View key={sv.id} style={{ flexDirection: 'row', gap: 6, marginBottom: 8, alignItems: 'center' }}>
+                  <TextInput
+                    style={[s.input, { flex: 1.4, paddingVertical: 8 }]}
+                    placeholder="Label (e.g. 1 link)"
+                    placeholderTextColor={theme.textPlaceholder}
+                    value={sv.label}
+                    onChangeText={v => setAdditionalServings(prev => prev.map((x, j) => j === i ? { ...x, label: v } : x))}
+                  />
+                  <TextInput
+                    style={[s.input, { flex: 0.8, paddingVertical: 8 }]}
+                    placeholder="g"
+                    placeholderTextColor={theme.textPlaceholder}
+                    keyboardType="decimal-pad"
+                    value={sv.grams}
+                    onChangeText={v => {
+                      const stripped = v.replace(/[^0-9.]/g, '');
+                      setAdditionalServings(prev => prev.map((x, j) => j === i ? { ...x, grams: stripped } : x));
+                    }}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setAdditionalServings(prev => prev.filter((_, j) => j !== i))}
+                    style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Ionicons name="close-circle" size={18} color={theme.textDim} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </>
+          )}
+        </View>
 
         {/* Macros section wrapper -- spotlit as one unit by tutorial step 4. Sections show
             directly now (no reveal-toggle -- it only ever gated visibility, and

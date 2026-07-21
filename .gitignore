@@ -51,6 +51,9 @@ google-services.json
 # Weight-history test build output (npm run test:weight)
 .weight-test/
 
+# Nutrition label parser test build output (npm run test:label)
+.label-test/
+
 app-example
 
 # generated native folders

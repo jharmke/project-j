@@ -1,0 +1,27 @@
+diff --git a/node_modules/expo-ocr-kit/build/ExpoOcrKit.types.d.ts b/node_modules/expo-ocr-kit/build/ExpoOcrKit.types.d.ts
+--- a/node_modules/expo-ocr-kit/build/ExpoOcrKit.types.d.ts
++++ b/node_modules/expo-ocr-kit/build/ExpoOcrKit.types.d.ts
+@@ -6,7 +6,8 @@ export type OcrBoundingBox = {
+     height: number;
+ };
+ export type OcrBlock = {
+     text: string;
++    confidence: number;
+     boundingBox: OcrBoundingBox;
+ };
+ export type OcrResult = {
+diff --git a/node_modules/expo-ocr-kit/ios/ExpoOcrKitModule.swift b/node_modules/expo-ocr-kit/ios/ExpoOcrKitModule.swift
+--- a/node_modules/expo-ocr-kit/ios/ExpoOcrKitModule.swift
++++ b/node_modules/expo-ocr-kit/ios/ExpoOcrKitModule.swift
+@@ -49,10 +49,11 @@ public class ExpoOcrKitModule: Module {
+     let blocks: [[String: Any]] = observations.compactMap { observation in
+       guard let candidate = observation.topCandidates(1).first else {
+         return nil
+       }
+ 
+       return [
+         "text": candidate.string,
++        "confidence": Double(candidate.confidence),
+         "boundingBox": boundingBoxMap(for: observation.boundingBox, imageSize: imageSize)
+       ]
+     }

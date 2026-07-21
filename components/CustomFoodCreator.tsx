@@ -609,8 +609,8 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
               )}
               {additionalServings.length > 0 && (
                 <View style={{ flexDirection: 'row', gap: 6, marginBottom: 4 }}>
-                  <Text style={[s.fieldLabel, { flex: 1.4, marginBottom: 0 }]}>Label</Text>
-                  <Text style={[s.fieldLabel, { flex: 0.8, marginBottom: 0 }]}>Grams</Text>
+                  <Text style={[s.fieldLabel, { flex: 1.4, marginBottom: 0 }]}>Serving Label</Text>
+                  <Text style={[s.fieldLabel, { flex: 0.8, marginBottom: 0 }]}>Serving (g)</Text>
                   <View style={{ width: 32 }} />
                 </View>
               )}

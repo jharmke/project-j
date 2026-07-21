@@ -37,12 +37,12 @@ export interface ParsedLabel {
 
 // FDA Daily Value reference (mirrors components/NutritionGearModal.tsx's 'standard' preset --
 // this is the FIXED reference a label's own %DV column is calculated against, never the user's
-// personal/dynamic goal). Fields with no real published DV (calories, and the fields covered by
-// [[serving_unit_redesign_plan]]-adjacent Poly/Mono Fat, Sugar Alcohols) are omitted on purpose --
-// deriving a fake number for them would be worse than leaving the field un-derivable.
-const DV_REFERENCE: Record<string, number> = {
+// personal/dynamic goal). Fields with no real published DV (calories, Poly/Mono Fat, Sugar
+// Alcohols) are omitted on purpose -- deriving a fake number for them would be worse than
+// leaving the field un-derivable.
+export const DV_REFERENCE: Record<string, number> = {
   fat: 78, saturatedFat: 20, cholesterol: 300, sodium: 2300, carbs: 275, fiber: 28,
-  addedSugars: 50, protein: 50, potassium: 4700,
+  addedSugars: 50, potassium: 4700,
   vitaminA: 900, vitaminC: 90, vitaminD: 20, vitaminE: 15, vitaminK: 120,
   vitaminB6: 1.7, folate: 400, vitaminB12: 2.4, biotin: 30,
   thiamin: 1.2, riboflavin: 1.3, niacin: 16, choline: 550,

@@ -31,6 +31,9 @@ import ButtonShine from './ButtonShine';
 import PrimaryCTA from './PrimaryCTA';
 import GradientIcon from './GradientIcon';
 import GradientNumber from './GradientNumber';
+import { recognizeText as ocrRecognizeText } from 'expo-ocr-kit';
+import { parseNutritionLabel, ParsedLabel } from '../utils/nutritionLabelParser';
+import LabelScanReviewModal, { ScanRowResult } from './LabelScanReviewModal';
 import ModalHeader from './ModalHeader';
 
 interface CustomFoodCreatorProps {
@@ -160,6 +163,9 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
   const [headerHeight, setHeaderHeight] = useState(60);
   const [contentHeight, setContentHeight] = useState(500);
   const [pendingPhotoUri, setPendingPhotoUri] = useState<string | null>(null);
+  const [scannedLabel, setScannedLabel] = useState<ParsedLabel | null>(null);
+  const [showScanReview, setShowScanReview] = useState(false);
+  const [scanningLabel, setScanningLabel] = useState(false);
 
   // Register the creator's ScrollView so the tutorial engine can scrollToTarget
   // when the save button is near or below the visible area.
@@ -310,6 +316,49 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
         })();
       }
     );
+  };
+
+  const handleScanLabel = async () => {
+    try {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) {
+        showToast('Camera access needed', 'Enable camera access to scan a nutrition label', 'error');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.9 });
+      if (result.canceled || !result.assets?.[0]?.uri) return;
+      setScanningLabel(true);
+      const ocr = await ocrRecognizeText(result.assets[0].uri);
+      const parsed = parseNutritionLabel(ocr);
+      setScannedLabel(parsed);
+      setShowScanReview(true);
+    } catch (e) {
+      showToast('Scan failed', String(e), 'error');
+    } finally {
+      setScanningLabel(false);
+    }
+  };
+
+  // Maps the review modal's confirmed values onto this form's individual field setters --
+  // never touches a field the label didn't print anything for (rows only contains fields the
+  // parser actually found), matching the "never overwrite a field the label didn't have" rule.
+  const handleScanConfirm = (fields: Record<string, ScanRowResult>, serving: ParsedLabel['serving']) => {
+    const setters: Record<string, (v: string) => void> = {
+      calories: setCalories, fat: setFat, saturatedFat: setSaturatedFat, transFat: setTransFat,
+      cholesterol: setCholesterol, sodium: setSodium, carbs: setCarbs, fiber: setFiber,
+      sugar: setSugar, addedSugars: setAddedSugars, protein: setProtein,
+      vitaminA: setVitaminA, vitaminC: setVitaminC, vitaminD: setVitaminD, vitaminE: setVitaminE, vitaminK: setVitaminK,
+      vitaminB6: setVitaminB6, folate: setFolate, vitaminB12: setVitaminB12, biotin: setBiotin,
+      thiamin: setThiamin, riboflavin: setRiboflavin, niacin: setNiacin, choline: setCholine,
+      calcium: setCalcium, iron: setIron, potassium: setPotassium,
+      magnesium: setMagnesium, zinc: setZinc, copper: setCopper,
+    };
+    for (const [key, row] of Object.entries(fields)) {
+      if (row.value !== null && setters[key]) setters[key](String(row.value));
+    }
+    if (serving.grams !== null) setServingGrams(String(serving.grams));
+    if (serving.description) setServingLabel(serving.description);
+    showToast('Label scanned', 'Review the fields and save when ready', 'success');
   };
 
   const canSave = name.trim().length > 0 && calories.trim().length > 0 && parseInt(calories) > 0;
@@ -535,6 +584,17 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
             </View>
           </View>
         </View>
+
+        {/* Scan a real Nutrition Facts panel to autofill the fields below -- fast path to correct
+            a FatSecret entry that's slightly off, or skip typing everything from a box by hand. */}
+        <TouchableOpacity
+          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleScanLabel(); }}
+          disabled={scanningLabel}
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 10, paddingVertical: 12, marginBottom: 10, opacity: scanningLabel ? 0.6 : 1 }}
+        >
+          <Ionicons name="scan-outline" size={18} color={theme.accentBlue} />
+          <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>{scanningLabel ? 'Reading Label...' : 'Scan Nutrition Label'}</Text>
+        </TouchableOpacity>
 
         {/* Serving box -- Calories lives here too, spotlit as one unit by tutorial step 3 */}
         <View ref={caloriesSectionRef as any} style={{ backgroundColor: theme.bgCard, borderRadius: 12, borderWidth: 0.5, borderColor: theme.borderCard, padding: 14, marginBottom: 10 }}>
@@ -800,11 +860,27 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
   }
 
   // ── Normal Modal render ───────────────────────────────────────────────────
+  // The scan review screen renders INSIDE this same Modal (swapped in place of cardContent)
+  // rather than as a second stacked Modal -- two native Modals open at once caused a stuck,
+  // invisible layer on iOS that silently ate touches on the screen underneath once closed.
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={handleClose}>
       <Animated.View style={[s.overlay, { opacity: overlayOpacity }]}>
-        <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleClose(); }} />
-        {cardContent}
+        <TouchableOpacity
+          style={StyleSheet.absoluteFillObject}
+          activeOpacity={1}
+          onPress={() => {
+            triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+            if (showScanReview) setShowScanReview(false); else handleClose();
+          }}
+        />
+        {showScanReview && scannedLabel ? (
+          <LabelScanReviewModal
+            parsed={scannedLabel}
+            onConfirm={handleScanConfirm}
+            onClose={() => setShowScanReview(false)}
+          />
+        ) : cardContent}
       </Animated.View>
     </Modal>
   );

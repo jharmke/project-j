@@ -1086,6 +1086,16 @@ are separate pre-submission checklists, NOT part of this menu.
   this runs on-device OCR with no per-call API cost, so the "costs me money to run" Supporter-gate
   justification doesn't apply here. Revisit before shipping. No open questions remain; one full build, no
   v1/v2 phasing.
+  BUILD PROGRESS (2026-07-21): parser (`utils/nutritionLabelParser.ts`) + review modal
+  (`components/LabelScanReviewModal.tsx`) built and device-confirmed working end to end through
+  CustomFoodCreator -- real granola-bar-label scan populated the form correctly, saved clean. Fixed along the
+  way: two Modals stacked at once (camera scan review as its OWN Modal) caused a stuck invisible layer that
+  froze the screen underneath once closed -- review now renders inside the SAME Modal as the form, swapped in
+  place of it, never a second stacked Modal. Also fixed: protein was wrongly given a fabricated %DV (real
+  labels never print one for protein) -- removed from `DV_REFERENCE`. STILL OPEN: "1 container" isn't wired
+  into Additional Servings yet (parsed, shown in review, but not applied on confirm), scan button not yet in
+  `EditFoodModal.tsx` or the barcode-override flow, dual-column parsing not started, Otto/tutorial/tooltip
+  pass not done, temp "OCR Test" row in Settings dev tools still needs removing once the flow is fully solid.
 
 - [PARKED 2026-07-19 -- shipped parts in RECENTLY SHIPPED, full story in the archive] **Some screens still
   feel slow to open, cause unidentified.** Haptic delay is fixed and 4 screens' data loading is batched (see

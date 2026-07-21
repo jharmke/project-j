@@ -6,7 +6,8 @@ Status: DISCUSSION IN PROGRESS. NOT BEING BUILT YET. Tonight's session (2026-07-
 the serving-size and unit-conversion questions and Justin is aligned in principle on the direction below --
 but this is still TBD, not officially locked. Tomorrow is a dedicated session to OFFICIALLY nail everything
 down and start building/fixing. Nothing in this doc should be treated as final until that session confirms
-it. No double dashes anywhere (project rule). No "Session NN" tags.
+it. Double dashes are fine in this doc (project rule only restricts double dashes in user-facing app
+strings, not specs/docs). No "Session NN" tags.
 
 ---
 
@@ -172,5 +173,10 @@ not skipped):**
 - Which OCR library/package (Apple Vision wrapper availability for Expo, or a custom native module)
 - Exact UI trigger placement for "scan" within the edit form
 - Whether `pj_barcode_overrides` supports multiple servings today (item 4 above)
+- **Which serving entry defaults into the edit form on a dual-column scan.** The original Option A review
+  flow assumed one scan produces one entry that directly populates the form. Now a dual-column scan can
+  produce TWO entries (per serving + per container) -- never discussed which one (if either) should be the
+  one that actively fills the form immediately after scanning, versus just sitting as a second option in the
+  picker. Not decided, not guessed at -- needs an actual answer tomorrow.
 - Nothing has been built. This is discussion only. Tomorrow's dedicated session is where the direction above
   gets officially confirmed (or changed) and the actual build flow gets figured out.

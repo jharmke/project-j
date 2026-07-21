@@ -147,10 +147,6 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
   const [servingUnitType, setServingUnitType] = useState('g');
   const [additionalServings, setAdditionalServings] = useState<Array<{ id: string; label: string; grams: string }>>([]);
   const [isSupplementType, setIsSupplementType] = useState(false);
-  const [showOptional, setShowOptional] = useState(false);
-  const optionalHeight = useRef(new Animated.Value(0)).current;
-  const optionalMeasured = useRef(0);
-  const prefillExpanded = useRef(false);
   const [saving, setSaving] = useState(false);
   // Measured (not assumed) header + scroll-content heights, so the card can be given an
   // explicit height that actually shrinks when sections collapse -- maxHeight/flexGrow tricks
@@ -169,26 +165,19 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
     return () => unregisterScrollView('create_food_scroll');
   }, [tutorialMode]);
 
-  // Register expandOptionalSection action -- fired on NEXT from the calories step
-  // so the macros section is already open when the macros step shows.
+  // Register expandOptionalSection action -- fired on NEXT from the calories step. Nutrient
+  // sections are always visible now (no reveal-toggle to expand), so this just scrolls the
+  // Macros section into a tutorial-friendly position: park the zero-size anchor marker (where
+  // the old toggle used to sit) in the lower-middle of the screen so the macros step's tip
+  // card lands up top, above the box, with the fields visible below it.
   useEffect(() => {
     if (!tutorialMode) return;
     const expandOptionalSection = async () => {
-      setShowOptional(true);
-      // Small delay so React re-renders and onLayout fires to populate optionalMeasured.
-      await new Promise<void>(r => setTimeout(r, 60));
-      const h = optionalMeasured.current || 320; // fallback if layout hasn't fired yet
-      Animated.timing(optionalHeight, { toValue: h, duration: 250, useNativeDriver: false }).start();
-      // Wait for animation to complete before tutorial advances to macros step.
-      await new Promise<void>(r => setTimeout(r, 280));
-      // Park the blue "Macros & Extended Nutrition" toggle in the lower-middle of the
-      // screen so the macros step's tip card lands up top, above the box, with the
-      // fields visible below it (the tip copy references those fields).
       const sv = scrollViewRef.current as any;
-      const toggle = optionalToggleRef.current as any;
-      if (sv && toggle) {
+      const anchor = optionalToggleRef.current as any;
+      if (sv && anchor) {
         await new Promise<void>(resolve => {
-          toggle.measureLayout(
+          anchor.measureLayout(
             sv,
             (_x: number, y: number) => {
               const SH = Dimensions.get('window').height;
@@ -249,12 +238,6 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
         setServingLabel(prefill.servingLabel || '');
         setServingUnitType(prefill.servingUnitType || 'g');
         setIsSupplementType(prefill.type === 'supplement');
-        const hasOptional = !!(prefill.protein || prefill.carbs || prefill.fat || prefill.fiber || prefill.sugar || prefill.sodium || prefill.servingGrams);
-        if (hasOptional) {
-          setShowOptional(true);
-          optionalHeight.setValue(9999);
-          prefillExpanded.current = true;
-        }
       }
       Animated.parallel([
         Animated.timing(overlayOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
@@ -293,17 +276,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
     setAdditionalServings([]);
     setIsSupplementType(false);
     setPendingPhotoUri(null);
-    setShowOptional(false);
-    optionalHeight.setValue(0);
-    optionalMeasured.current = 0;
-    prefillExpanded.current = false;
     cardScale.setValue(0.95);
-  };
-
-  const toggleOptional = () => {
-    const toValue = showOptional ? 0 : optionalMeasured.current;
-    Animated.timing(optionalHeight, { toValue, duration: 250, useNativeDriver: false }).start();
-    setShowOptional(v => !v);
   };
 
   const handlePhotoAdd = () => {
@@ -662,42 +635,15 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
           </>
         )}
 
-        {/* Macros section wrapper -- spotlit as one unit by tutorial step 4.
-            Contains the toggle button + the animated expanding content. */}
+        {/* Macros section wrapper -- spotlit as one unit by tutorial step 4. Sections show
+            directly now (no reveal-toggle -- it only ever gated visibility, and
+            NutrientFieldsGrid's own per-section collapse already covers that need). The
+            zero-size marker below keeps the tutorial's existing anchor point (a compact
+            target near the top, so its spotlight bubble doesn't drop off-screen the way it
+            would if anchored to the full, taller section) without touching tutorials.ts. */}
         <View ref={macrosSectionRef as any}>
-          {/* Optional toggle */}
-          <TouchableOpacity
-            ref={optionalToggleRef as any}
-            style={s.optionalToggle}
-            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); toggleOptional(); }}
-          >
-            {/* An EXPANDER, not a selector: it has one look and reveals the optional fields, so it is a real
-                tinted button and takes the shine. Selectors (a fill that marks which of N is chosen) do not. */}
-            <ButtonShine radius={8} />
-            <Text style={s.optionalToggleText}>Macros &amp; Extended Nutrition</Text>
-            <Ionicons name={showOptional ? 'chevron-up' : 'chevron-down'} size={14} color={theme.accentBlue} />
-          </TouchableOpacity>
-
-          <Animated.View style={{ overflow: 'hidden', height: optionalHeight }}>
-            <View
-              onLayout={e => {
-                const h = e.nativeEvent.layout.height;
-                if (h > 0) {
-                  optionalMeasured.current = h;
-                  if (prefillExpanded.current) {
-                    optionalHeight.setValue(h);
-                    prefillExpanded.current = false;
-                  } else if (showOptional) {
-                    // Content height changes whenever a section inside NutrientFieldsGrid is
-                    // collapsed/expanded -- re-sync the outer wrapper to match instead of
-                    // leaving it frozen at whatever it measured the very first time.
-                    Animated.timing(optionalHeight, { toValue: h, duration: 200, useNativeDriver: false }).start();
-                  }
-                }
-              }}
-              style={{ position: showOptional ? 'relative' : 'absolute', opacity: showOptional ? 1 : 0 }}
-            >
-              <NutrientFieldsGrid
+          <View ref={optionalToggleRef as any} />
+          <NutrientFieldsGrid
                 sections={[
                   {
                     key: 'macros', title: 'Macros', columns: 3,
@@ -769,8 +715,6 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
                   },
                 ]}
               />
-            </View>
-          </Animated.View>
         </View>
 
         {/* Save button -- spotlit by tutorial. MOLDED + ACCENT (was a flat accentGreen slab): green means
@@ -856,8 +800,6 @@ const styles = (theme: any) => StyleSheet.create({
   requiredNote: { fontSize: 10, color: theme.accentRed || '#cc3333', fontFamily: Type.ui, marginBottom: 12 },
   input: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: Type.ui },
   twoCol: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  optionalToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 4 },
-  optionalToggleText: { fontSize: 13, color: theme.accentBlue, fontFamily: Type.uiSemibold },
   // saveBtn / saveBtnDim / saveBtnText removed 2026-07-15: Save Food is PrimaryCTA now, which owns the
   // fill, mould, label face, disabled dim and busy spinner.
 });

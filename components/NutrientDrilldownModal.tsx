@@ -3,9 +3,13 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useRef, useMemo } from 'react';
 import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../theme';
 import { Type } from '../typography';
 import ModalHeader from './ModalHeader';
+import GradientNumber from './GradientNumber';
+import ButtonShine from './ButtonShine';
+import { barFillGradient } from '../utils/barGradient';
 
 // Recipe-logged entries store extended nutrients as FLAT fields (e.fiber, e.sodium, ...),
 // already scaled to the logged portion, NOT inside foodNutrients. Map readable names to those
@@ -180,6 +184,8 @@ export default function NutrientDrilldownModal({ visible, onClose, item, entries
           borderRadius: 20,
           borderWidth: 0.5,
           borderColor: theme.borderCard,
+          borderTopWidth: 2,
+          borderTopColor: color,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 10 },
           shadowOpacity: 0.45,
@@ -197,9 +203,11 @@ export default function NutrientDrilldownModal({ visible, onClose, item, entries
           {/* Stat readout */}
           <View style={{ paddingHorizontal: 20, paddingBottom: 14, paddingTop: 2, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: 6 }}>
-              <Text style={{ fontSize: 28, color, fontFamily: Type.num, letterSpacing: 1 }}>
-                {displayTotal}{item?.unit ?? ''}
-              </Text>
+              <GradientNumber
+                value={`${displayTotal}${item?.unit ?? ''}`}
+                color={color}
+                style={{ fontSize: 28, fontFamily: Type.num, letterSpacing: 1 }}
+              />
               {item?.goal !== null && item?.goal !== undefined && (
                 <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui }}>
                   / {item.goal}{item.unit} goal
@@ -208,7 +216,9 @@ export default function NutrientDrilldownModal({ visible, onClose, item, entries
             </View>
             {item?.goal !== null && item?.goal !== undefined && (
               <View style={{ height: 3, backgroundColor: theme.bgProgressTrack, borderRadius: 2, marginTop: 8, overflow: 'hidden' }}>
-                <View style={{ width: `${goalPct}%`, height: '100%', backgroundColor: color, borderRadius: 2 }} />
+                <View style={{ width: `${goalPct}%`, height: '100%', borderRadius: 2, overflow: 'hidden' }}>
+                  <LinearGradient colors={barFillGradient(color)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }} />
+                </View>
               </View>
             )}
             {item?.hasNetToggle && (
@@ -217,22 +227,24 @@ export default function NutrientDrilldownModal({ visible, onClose, item, entries
                   onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setLocalNet(false); }}
                   style={{
                     paddingHorizontal: 10, paddingVertical: 4, borderRadius: 4,
-                    backgroundColor: !localNet ? theme.accentBlueBg : 'transparent',
+                    backgroundColor: !localNet ? theme.bgSelected : 'transparent',
                     borderWidth: 1,
-                    borderColor: !localNet ? theme.accentBlueBorder : theme.borderCard,
+                    borderColor: !localNet ? theme.accentBlue : theme.borderCard,
                   }}
                 >
+                  {!localNet && <ButtonShine radius={4} />}
                   <Text style={{ fontSize: 10, color: !localNet ? theme.accentBlue : theme.textDim, fontFamily: Type.uiBold, letterSpacing: 1.5 }}>TOTAL</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setLocalNet(true); }}
                   style={{
                     paddingHorizontal: 10, paddingVertical: 4, borderRadius: 4,
-                    backgroundColor: localNet ? theme.accentBlueBg : 'transparent',
+                    backgroundColor: localNet ? theme.bgSelected : 'transparent',
                     borderWidth: 1,
-                    borderColor: localNet ? theme.accentBlueBorder : theme.borderCard,
+                    borderColor: localNet ? theme.accentBlue : theme.borderCard,
                   }}
                 >
+                  {localNet && <ButtonShine radius={4} />}
                   <Text style={{ fontSize: 10, color: localNet ? theme.accentBlue : theme.textDim, fontFamily: Type.uiBold, letterSpacing: 1.5 }}>NET</Text>
                 </TouchableOpacity>
               </View>
@@ -261,9 +273,11 @@ export default function NutrientDrilldownModal({ visible, onClose, item, entries
                     >
                       {c.name}
                     </Text>
-                    <Text style={{ fontSize: 13, color, fontFamily: Type.uiBold, flexShrink: 0 }}>
-                      {c.value}{item?.unit}
-                    </Text>
+                    <GradientNumber
+                      value={`${c.value}${item?.unit ?? ''}`}
+                      color={color}
+                      style={{ fontSize: 13, fontFamily: Type.uiBold, flexShrink: 0 }}
+                    />
                     <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginLeft: 6, width: 34, textAlign: 'right', flexShrink: 0 }}>
                       {c.pct}%
                     </Text>
@@ -272,10 +286,12 @@ export default function NutrientDrilldownModal({ visible, onClose, item, entries
                     <View style={{
                       width: `${Math.round((c.value / maxValue) * 100)}%`,
                       height: '100%',
-                      backgroundColor: color,
                       borderRadius: 2,
+                      overflow: 'hidden',
                       opacity: 0.55 + (c.value / maxValue) * 0.45,
-                    }} />
+                    }}>
+                      <LinearGradient colors={barFillGradient(color)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }} />
+                    </View>
                   </View>
                 </View>
               ))

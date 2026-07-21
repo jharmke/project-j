@@ -991,9 +991,36 @@ are separate pre-submission checklists, NOT part of this menu.
   Plus: Connected Accounts link/unlink -- CONFIRMED tonight, including linking a never-before-used credential,
   correctly failing to link a credential already used by a different account, and the "can't remove your
   last method" guard.
-- [surfaced 2026-07-20, QUICK WIN] **Add a WEB/KJV translation toggle to Today's Message modal's gear
-  icon.** Direct follow-on to the WEB translation feature (shipped 2026-07-19, see RECENTLY SHIPPED) --
-  should be an easy add.
+- [surfaced 2026-07-20, QUICK WIN, BUILT tonight -- pending Justin's on-device confirm] **Add a WEB/KJV
+  translation toggle to Today's Message modal's gear icon.** Direct follow-on to the WEB translation feature
+  (shipped 2026-07-19, see RECENTLY SHIPPED). Built inside the shared `VersePoolModal.tsx` (both Home's Faith
+  Today card and the Faith tab's card open this same modal, so one change covers both automatically). Not
+  yet confirmed working on Justin's device.
+- [surfaced 2026-07-20, ties into the nutrition label scan work, needs its own build] **Universal weight-unit
+  conversion (g / oz / lbs) for every food, custom or FatSecret-sourced.** Surfaced comparing to Cronometer's
+  serving-size UX. CONFIRMED BY READING CODE (2026-07-20): FatSecret-sourced foods already have a real
+  working serving picker (`food-detail.tsx`'s `fetchFatSecretServings` + the serving-picker modal) that pulls
+  FatSecret's own full list of alternate servings per food (100g, 1 cup, 1 medium, etc, each with real macro
+  numbers) -- this is functioning infrastructure, not something to build from scratch, just limited by
+  however complete FatSecret's own data is for a given food. CONFIRMED GAP: custom/My Foods have NO such
+  picker -- `CustomFoodCreator.tsx`'s "Additional Servings" feature hardcodes `grams: string`, no unit choice
+  at all. THE ACTUAL BUILDABLE WIN: weight-to-weight conversion (g/oz/lbs) is pure fixed math (1oz = 28.35g,
+  always, for any food) -- unlike volume (a cup of flour vs honey) or count-based units (medium vs large
+  banana) which genuinely need per-food data Cronometer has and FatSecret may not. Build universal weight
+  conversion as a system-wide layer for every food regardless of source, and fix the Additional Servings
+  unit-lock on custom foods to at least match what FatSecret-sourced foods already get. Directly relevant to
+  the nutrition label scanner (SPEC_nutrition_label_scan.md) since labels sometimes print oz-only servings
+  with no gram equivalent.
+- [surfaced 2026-07-20] **Nutrient "Function" and "Sources" info, like Cronometer's nutrient detail
+  screens.** Cronometer's per-nutrient drill-down shows a plain-language "Function" blurb (what this nutrient
+  actually does in the body) and a "Sources" list (common foods that provide it), alongside the
+  consumed-vs-RDA bar. Our NutrientDrilldownModal currently only shows the user's own logged sources, no
+  general educational content. Not scoped yet, just captured so it isn't lost.
+- [surfaced 2026-07-20, needs discussion] **Show Total Calories Burned (BMR + Active) somewhere.** Confirmed
+  by reading code: Home already computes both `runningBmr` and active calories internally for the net-calorie
+  math ((tabs)/index.tsx), but there is no standalone display of the combined total anywhere -- it only ever
+  exists as an internal intermediate value. Justin: feels like a nice, obviously useful number to just show.
+  Not scoped -- where it lives (Home card? Stats?) and how it should behave per coaching mode need discussion.
 - [surfaced 2026-07-20, faith, needs scoping discussion] **Smart keyword search for Reading Plans /
   Devotionals.** Idea: searching a term like "masturbation" or "lust" should surface relevant devotionals
   even when the actual title (e.g. "Sexual Integrity") doesn't contain the literal search word. This is a

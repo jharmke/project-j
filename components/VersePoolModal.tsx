@@ -5,6 +5,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../theme';
+import { storageSet } from '../utils/storage';
 import { useToast, ToastRenderer } from './Toast';
 import ToggleSwitch from './ToggleSwitch';
 import {
@@ -176,6 +177,17 @@ export default function VersePoolModal({ visible, onClose, onChanged }: Props) {
     commit({ ...pool, pinnedKey: key });
   };
 
+  const setTranslation = async (next: BibleTranslation) => {
+    if (next === bibleTranslation) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    setBibleTranslation(next);
+    try {
+      const raw = await AsyncStorage.getItem('pj_settings');
+      const s = raw ? JSON.parse(raw) : {};
+      await storageSet('pj_settings', JSON.stringify({ ...s, bibleTranslation: next }));
+    } catch {}
+  };
+
   const amberBg = 'rgba(212,134,10,0.15)';
   const amberBorder = 'rgba(212,134,10,0.40)';
 
@@ -230,6 +242,28 @@ export default function VersePoolModal({ visible, onClose, onChanged }: Props) {
             <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, textAlign: 'center', marginBottom: 18, lineHeight: 17 }}>
               {pool.mode === 'cycle' ? 'A new verse each day from your rotation.' : 'Show one verse every day until you change it.'}
             </Text>
+
+            {/* Translation -- same pill pattern as the Bible reader's own settings modal */}
+            <Text style={[styles.sectionLabel, { color: theme.textMuted, marginTop: 0 }]}>TRANSLATION</Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 18 }}>
+              {([{ id: 'web', label: 'WEB' }, { id: 'kjv', label: 'KJV' }] as { id: BibleTranslation; label: string }[]).map(opt => {
+                const active = bibleTranslation === opt.id;
+                return (
+                  <TouchableOpacity
+                    key={opt.id}
+                    onPress={() => setTranslation(opt.id)}
+                    style={{
+                      flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', minHeight: 44, justifyContent: 'center',
+                      backgroundColor: active ? amberBg : theme.bgCard,
+                      borderWidth: active ? 1.5 : 1,
+                      borderColor: active ? amberBorder : theme.borderCard,
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: active ? theme.accentAmber : theme.textMuted }}>{opt.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
 
             {pool.mode === 'cycle' ? (
               <>

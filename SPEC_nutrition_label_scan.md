@@ -66,20 +66,30 @@ and the existing Save action is the confirmation. No new dedicated review screen
 
 ---
 
-## Open questions (TBD, needs its own dedicated discussion)
+## Open questions
 
-**Serving size handling.** Labels print their own serving size, which may not match the serving size already
-on the food entry. When the label includes a weight/volume equivalent (e.g. "1 cup (240g)"), the math to
-convert is straightforward linear scaling. When it does not (e.g. "1 cookie" with no gram weight), there is
-no reliable way to convert. Leaning toward: let the scanned label define its own serving size rather than
-force-fitting onto whatever serving unit already exists on the food, treating serving size + macros as one
-matched pair from the scan. Not fully settled. Justin wants to discuss this fully in its own pass, not
-folded into a general spec discussion.
+**Serving size handling -- SUBSTANTIALLY RESOLVED (2026-07-20).** Labels print their own serving size, which
+may not match whatever serving unit already exists on the food entry. LOCKED: the scanned label defines its
+own serving size and macros as one matched pair -- it REPLACES the food's serving definition with exactly
+what the label says, rather than force-converting the label's numbers to fit a pre-existing unit. This works
+whether or not the label gives a gram equivalent, because it ties into a second locked decision: universal
+weight-unit conversion (g/oz/lbs, pure fixed math, no per-food data needed) is being built as a system-wide
+feature (see NEXT UP), so a user who physically weighs their real portion (e.g. label says "3 oz," they
+weigh it and get 86g) can directly correct/refine the serving's true weight using the same unit-picker
+infrastructure, without needing to force a conversion themselves. Distinct from logging a DIFFERENT quantity
+of the food (e.g. eating 2x the label's serving) -- that is a separate, already-existing quantity/multiplier
+mechanism at log time, not something the scan feature itself needs to handle.
 
-**Per-serving vs per-container, and dual-column labels.** Some labels show two columns (per serving, per
-container). Two distinct sub-problems live here: (1) parsing a dual-column layout at all, and (2) how the
-app's food model would even represent "per container" data, since it is currently built around a single
-serving definition. Both genuinely unsolved. TBD.
+**Per-serving vs per-container, dual-column labels -- MECHANISM UNDERSTOOD (2026-07-20), not built.** Real
+FDA dual-column labels literally print "Per serving" / "Per container" as column headers directly above the
+two columns of numbers -- this is real printed text, not something to infer. Apple's on-device OCR returns
+each recognized text block's position (bounding box), not just its content, so the parser can locate those
+header labels' horizontal positions and match every nutrient row's numbers to whichever column they align
+with -- the same basic column-matching technique already needed to tell an amount apart from its %DV on a
+single-column label, just extended to more columns. Justin confirmed (2026-07-20): full parsing, not skipping
+this case. Still needs: real implementation and testing across actual label photos, and deciding how the
+app's food model represents "per container" data (it is currently built around a single serving definition) --
+that data-model question is still open.
 
 **Label format variance beyond the above.** Older FDA label formats vs the current one, unusual layouts.
 Not yet discussed how much variance v1 needs to handle gracefully versus flag as low-confidence.

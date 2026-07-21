@@ -204,11 +204,28 @@ function MacroStackedBar({ protein, carbs, fat, proteinGoal, carbsGoal, fatGoal,
 }
 
 function WaterBar({ pct, color, trackColor, refreshKey, overGoal }: { pct: number; color: string; trackColor?: string; refreshKey?: number; overGoal?: boolean }) {
-  const width = useSharedValue(pct);
+  const width = useSharedValue(0);
+  const hasFired = useRef(false);
   const shimmerX = useSharedValue(-80);
+  // Latest pct, so the delayed reveal timeouts animate to the CURRENT value, not the one
+  // captured in their closure. Matches Home's AnimatedProgressBar exactly.
+  const pctRef = useRef(pct);
+  pctRef.current = pct;
+
   useEffect(() => {
+    hasFired.current = false;
+    width.value = 0;
+    setTimeout(() => {
+      width.value = withTiming(Math.min(100, pctRef.current), { duration: 1200 });
+      hasFired.current = true;
+    }, 800);
+  }, [refreshKey]);
+
+  useEffect(() => {
+    if (!hasFired.current) return;
     width.value = withTiming(Math.min(100, pct), { duration: 600 });
   }, [pct]);
+
   useEffect(() => {
     if (overGoal) {
       shimmerX.value = -80;
@@ -222,7 +239,9 @@ function WaterBar({ pct, color, trackColor, refreshKey, overGoal }: { pct: numbe
   const shimmerStyle = useAnimatedStyle(() => ({ transform: [{ translateX: shimmerX.value }] }));
   return (
     <View style={[{ height: 6, borderRadius: 6, overflow: 'hidden', marginBottom: 12 }, { backgroundColor: trackColor ?? '#1e1e2e' }]}>
-      <ReAnimated.View style={[{ height: '100%', borderRadius: 6, backgroundColor: color }, animStyle]} />
+      <ReAnimated.View style={[{ height: '100%', borderRadius: 6, overflow: 'hidden' }, animStyle]}>
+        <LinearGradient colors={barFillGradient(color)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }} />
+      </ReAnimated.View>
       {overGoal && (
         <ReAnimated.View style={[{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 80 }, shimmerStyle]}>
           <LinearGradient
@@ -1436,7 +1455,7 @@ export default function LogScreen() {
               { label: 'Added Sugars', value: totalAddedSugars,   unit: 'g',  dir: 'want-less', goal: g.addedSugars,         nutrientKey: 'Added Sugars' },
               { label: 'Fiber',        value: totalFiber,         unit: 'g',  dir: 'want-more', goal: g.fiber,               nutrientKey: 'Fiber, total dietary' },
               { label: 'Sugar',        value: totalSugar,         unit: 'g',  dir: 'want-less', goal: g.sugar,               nutrientKey: 'Sugars, total including NLEA' },
-              { label: 'Sugar Alc.',   value: totalSugarAlcohols, unit: 'g',  dir: 'neutral',   goal: null as number | null, nutrientKey: 'Sugar Alcohols' },
+              { label: 'Sugar Alc.',   value: totalSugarAlcohols, unit: 'g',  dir: 'neutral',   goal: g.sugarAlcohols, nutrientKey: 'Sugar Alcohols' },
             ],
           },
           {
@@ -1444,8 +1463,8 @@ export default function LogScreen() {
             items: [
               { label: 'Sat. Fat',   value: totalSatFat,   unit: 'g', dir: 'want-less', goal: g.saturatedFat, nutrientKey: 'Fatty acids, total saturated' },
               { label: 'Trans Fat',  value: totalTransFat, unit: 'g', dir: 'want-less', goal: g.transFat,     nutrientKey: 'Trans Fat' },
-              { label: 'Poly Fat',   value: totalPolyFat,  unit: 'g', dir: 'neutral',   goal: null as number | null, nutrientKey: 'Polyunsaturated Fat' },
-              { label: 'Mono Fat',   value: totalMonoFat,  unit: 'g', dir: 'neutral',   goal: null as number | null, nutrientKey: 'Monounsaturated Fat' },
+              { label: 'Poly Fat',   value: totalPolyFat,  unit: 'g', dir: 'neutral',   goal: g.polyunsaturatedFat, nutrientKey: 'Polyunsaturated Fat' },
+              { label: 'Mono Fat',   value: totalMonoFat,  unit: 'g', dir: 'neutral',   goal: g.monounsaturatedFat, nutrientKey: 'Monounsaturated Fat' },
             ],
           },
           {
@@ -1965,10 +1984,11 @@ export default function LogScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Ionicons name="water-outline" size={11} color={theme.textMuted} />
-            <Text style={[styles.cardLabel, { marginBottom: 0, color: theme.textMuted }]}>
-              {'Water · '}
-              <Text style={{ textTransform: 'none' }}>{water}oz / {waterGoal}oz</Text>
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={[styles.cardLabel, { marginBottom: 0, color: theme.textMuted }]}>Water · </Text>
+              <AnimatedNumber value={water} style={[styles.cardLabel, { marginBottom: 0, color: theme.textMuted, textTransform: 'none' }]} />
+              <Text style={[styles.cardLabel, { marginBottom: 0, color: theme.textMuted, textTransform: 'none' }]}>{`oz / ${waterGoal}oz`}</Text>
+            </View>
           </View>
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openWaterDetailModal(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <GradientIcon name="settings" size={16} color={theme.textMuted} />
@@ -1978,10 +1998,12 @@ export default function LogScreen() {
         <View style={styles.waterBtns}>
           {waterPresets.map((oz, i) => (
             <PressableButton key={i} style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => updateWater(oz)}>
+              <ButtonShine radius={6} />
               <Text style={[styles.waterBtnText, { color: theme.accentBlue }]}>+{oz} oz</Text>
             </PressableButton>
           ))}
           <PressableButton style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => openWaterCustomModal('add')}>
+            <ButtonShine radius={6} />
             <View style={{ alignItems: 'center', justifyContent: 'center', width: 20, height: 20 }}>
               <Ionicons name="water-outline" size={18} color={theme.accentBlue} />
               <Text style={{ color: theme.accentBlue, fontSize: 9, fontFamily: Type.uiBold, position: 'absolute', bottom: -2, right: -4 }}>+</Text>
@@ -1991,10 +2013,12 @@ export default function LogScreen() {
         <View style={[styles.waterBtns, { marginTop: 8 }]}>
           {waterPresets.map((oz, i) => (
             <PressableButton key={i} style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => updateWater(-oz)}>
+              <ButtonShine radius={6} />
               <Text style={[styles.waterBtnRedText, { color: theme.accentRed }]}>-{oz} oz</Text>
             </PressableButton>
           ))}
           <PressableButton style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => openWaterCustomModal('subtract')}>
+            <ButtonShine radius={6} />
             <View style={{ alignItems: 'center', justifyContent: 'center', width: 20, height: 20 }}>
               <Ionicons name="water-outline" size={18} color={theme.accentRed} />
               <Text style={{ color: theme.accentRed, fontSize: 9, fontFamily: Type.uiBold, position: 'absolute', bottom: -2, right: -4 }}>-</Text>
@@ -2595,9 +2619,9 @@ const styles = StyleSheet.create({
   foodEntryDeleteText:{ fontSize: 18 },
   emptyMealText:      { fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic', paddingVertical: 8 },
   waterBtns:          { flexDirection: 'row', gap: 8 },
-  waterBtn:           { flex: 1, padding: 10, borderWidth: 0.5, borderRadius: 8, alignItems: 'center' },
+  waterBtn:           { flex: 1, padding: 10, borderWidth: 1, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
   // INTERFACE, not the number face: "+12 oz" is a button LABEL. Type.num is Rajdhani (condensed, tabular).
-  waterBtnText:       { fontFamily: Type.uiBold, fontSize: 15 },
-  waterBtnRed:        { flex: 1, padding: 10, borderWidth: 0.5, borderRadius: 8, alignItems: 'center' },
-  waterBtnRedText:    { fontFamily: Type.uiBold, fontSize: 15 },
+  waterBtnText:       { fontFamily: Type.num, fontSize: 15, letterSpacing: 1 },
+  waterBtnRed:        { flex: 1, padding: 10, borderWidth: 1, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
+  waterBtnRedText:    { fontFamily: Type.num, fontSize: 15, letterSpacing: 1 },
 });

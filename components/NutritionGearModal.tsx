@@ -49,8 +49,8 @@ function GradientPresetIcon({ name, size, color }: { name: keyof typeof Ionicons
 export type NutritionPreset = 'standard' | 'keto' | 'heart' | 'fiber' | 'athletic' | 'custom';
 
 export interface NutritionGoals {
-  addedSugars: number | null; fiber: number | null; sugar: number | null;
-  saturatedFat: number | null; transFat: number | null;
+  addedSugars: number | null; fiber: number | null; sugar: number | null; sugarAlcohols: number | null;
+  saturatedFat: number | null; transFat: number | null; polyunsaturatedFat: number | null; monounsaturatedFat: number | null;
   cholesterol: number | null; sodium: number | null; potassium: number | null; caffeine: number | null;
   vitaminA: number | null; vitaminC: number | null; vitaminD: number | null; vitaminE: number | null; vitaminK: number | null;
   vitaminB6: number | null; folate: number | null; vitaminB12: number | null; biotin: number | null;
@@ -60,8 +60,8 @@ export interface NutritionGoals {
 
 export const NUTRITION_PRESETS: Record<string, NutritionGoals> = {
   standard: {
-    addedSugars: 50, fiber: 28, sugar: 50,
-    saturatedFat: 20, transFat: 2,
+    addedSugars: 50, fiber: 28, sugar: 50, sugarAlcohols: null,
+    saturatedFat: 20, transFat: 2, polyunsaturatedFat: null, monounsaturatedFat: null,
     cholesterol: 300, sodium: 2300, potassium: 4700, caffeine: 400,
     vitaminA: 900, vitaminC: 90, vitaminD: 20, vitaminE: 15, vitaminK: 120,
     vitaminB6: 1.7, folate: 400, vitaminB12: 2.4, biotin: 30,
@@ -69,8 +69,8 @@ export const NUTRITION_PRESETS: Record<string, NutritionGoals> = {
     calcium: 1300, iron: 18, magnesium: 420, zinc: 11, copper: 0.9,
   },
   keto: {
-    addedSugars: 5, fiber: 25, sugar: 5,
-    saturatedFat: 50, transFat: 2,
+    addedSugars: 5, fiber: 25, sugar: 5, sugarAlcohols: null,
+    saturatedFat: 50, transFat: 2, polyunsaturatedFat: null, monounsaturatedFat: null,
     cholesterol: 300, sodium: 3000, potassium: 4700, caffeine: 400,
     vitaminA: 900, vitaminC: 90, vitaminD: 20, vitaminE: 15, vitaminK: 120,
     vitaminB6: 1.7, folate: 400, vitaminB12: 2.4, biotin: 30,
@@ -78,8 +78,8 @@ export const NUTRITION_PRESETS: Record<string, NutritionGoals> = {
     calcium: 1300, iron: 18, magnesium: 420, zinc: 11, copper: 0.9,
   },
   heart: {
-    addedSugars: 25, fiber: 30, sugar: 25,
-    saturatedFat: 13, transFat: 0,
+    addedSugars: 25, fiber: 30, sugar: 25, sugarAlcohols: null,
+    saturatedFat: 13, transFat: 0, polyunsaturatedFat: null, monounsaturatedFat: null,
     cholesterol: 300, sodium: 1500, potassium: 4700, caffeine: 400,
     vitaminA: 900, vitaminC: 90, vitaminD: 20, vitaminE: 15, vitaminK: 120,
     vitaminB6: 1.7, folate: 400, vitaminB12: 2.4, biotin: 30,
@@ -87,8 +87,8 @@ export const NUTRITION_PRESETS: Record<string, NutritionGoals> = {
     calcium: 1300, iron: 18, magnesium: 420, zinc: 11, copper: 0.9,
   },
   fiber: {
-    addedSugars: 25, fiber: 40, sugar: 30,
-    saturatedFat: 20, transFat: 2,
+    addedSugars: 25, fiber: 40, sugar: 30, sugarAlcohols: null,
+    saturatedFat: 20, transFat: 2, polyunsaturatedFat: null, monounsaturatedFat: null,
     cholesterol: 300, sodium: 2300, potassium: 4700, caffeine: 400,
     vitaminA: 900, vitaminC: 90, vitaminD: 20, vitaminE: 15, vitaminK: 120,
     vitaminB6: 1.7, folate: 400, vitaminB12: 2.4, biotin: 30,
@@ -96,8 +96,8 @@ export const NUTRITION_PRESETS: Record<string, NutritionGoals> = {
     calcium: 1300, iron: 18, magnesium: 420, zinc: 11, copper: 0.9,
   },
   athletic: {
-    addedSugars: 50, fiber: 32, sugar: 50,
-    saturatedFat: 20, transFat: 2,
+    addedSugars: 50, fiber: 32, sugar: 50, sugarAlcohols: null,
+    saturatedFat: 20, transFat: 2, polyunsaturatedFat: null, monounsaturatedFat: null,
     cholesterol: 300, sodium: 3000, potassium: 4700, caffeine: 400,
     vitaminA: 900, vitaminC: 120, vitaminD: 25, vitaminE: 15, vitaminK: 120,
     vitaminB6: 2.0, folate: 400, vitaminB12: 2.4, biotin: 30,
@@ -119,16 +119,19 @@ const GOAL_GROUPS = [
   {
     name: 'CARBS',
     fields: [
-      { key: 'addedSugars', label: 'Added Sugars', unit: 'g' },
-      { key: 'fiber',       label: 'Fiber',        unit: 'g' },
-      { key: 'sugar',       label: 'Sugar',        unit: 'g' },
+      { key: 'addedSugars',   label: 'Added Sugars', unit: 'g' },
+      { key: 'fiber',         label: 'Fiber',        unit: 'g' },
+      { key: 'sugar',         label: 'Sugar',        unit: 'g' },
+      { key: 'sugarAlcohols', label: 'Sugar Alc.',   unit: 'g' },
     ],
   },
   {
     name: 'FATS',
     fields: [
-      { key: 'saturatedFat', label: 'Sat. Fat',  unit: 'g' },
-      { key: 'transFat',     label: 'Trans Fat', unit: 'g' },
+      { key: 'saturatedFat',       label: 'Sat. Fat',  unit: 'g' },
+      { key: 'transFat',           label: 'Trans Fat', unit: 'g' },
+      { key: 'polyunsaturatedFat', label: 'Poly Fat',  unit: 'g' },
+      { key: 'monounsaturatedFat', label: 'Mono Fat',  unit: 'g' },
     ],
   },
   {

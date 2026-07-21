@@ -6,7 +6,7 @@ import { triggerHaptic, triggerHapticNotification } from '@/utils/haptics';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { doc, getDoc } from 'firebase/firestore';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, FlatList, Image, KeyboardAvoidingView, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, FlatList, Image, Linking, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Reanimated, { Easing as ReEasing, runOnJS, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { Svg, Path, G } from 'react-native-svg';
@@ -33,6 +33,7 @@ import FabDome from '../components/FabDome';
 import BackgroundLayers from '../components/BackgroundLayers';
 import PrimaryCTA from '../components/PrimaryCTA';
 import ModalHeader from '../components/ModalHeader';
+import EditFoodModal from '../components/EditFoodModal';
 
 
 
@@ -376,8 +377,6 @@ const { registerTarget, unregisterTarget, registerTutorialAction, unregisterTuto
 const [showEditMyFood, setShowEditMyFood] = useState(false);
 const [showSavedFoodsSection, setShowSavedFoodsSection] = useState(false);
 const [editFoodData, setEditFoodData] = useState<any>(null);
-const editOverlayAnim = useRef(new Animated.Value(0)).current;
-const editCardAnim = useRef(new Animated.Value(0)).current;
 const [sortOption, setSortOption] = useState<'az' | 'za' | 'cal-hl' | 'cal-lh' | 'protein-hl'>('az');
 const [showSortModal, setShowSortModal] = useState(false);
 const sortOverlay = useSharedValue(0);
@@ -399,15 +398,6 @@ const getFavOpacity = (name: string) => {
   if (!favoriteOpacities[name]) favoriteOpacities[name] = new Animated.Value(1);
   return favoriteOpacities[name];
 };
-
-const filterDecimal = (v: string) => {
-  const stripped = v.replace(/[^0-9.]/g, '');
-  const dot = stripped.indexOf('.');
-  if (dot === -1) return stripped;
-  return stripped.slice(0, dot + 1) + stripped.slice(dot + 1).replace(/\./g, '').slice(0, 1);
-};
-
-const EDIT_SERVING_UNITS = ['g', 'ml', 'fl oz', 'oz', 'container', 'serving', 'tbsp', 'tsp', 'cup', 'pill', 'capsule', 'tablet', 'softgel', 'gummy'];
 
 const openEditModal = (food: any) => {
   setEditFoodData({
@@ -459,22 +449,11 @@ const openEditModal = (food: any) => {
     })),
   });
   setShowEditMyFood(true);
-  editOverlayAnim.setValue(0);
-  editCardAnim.setValue(0);
-  Animated.parallel([
-    Animated.timing(editOverlayAnim, { toValue: 1, duration: 180, useNativeDriver: true }),
-    Animated.spring(editCardAnim, { toValue: 1, useNativeDriver: true, damping: 20, stiffness: 300 }),
-  ]).start();
 };
 
 const closeEditModal = () => {
-  Animated.parallel([
-    Animated.timing(editOverlayAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
-    Animated.timing(editCardAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
-  ]).start(() => {
-    setShowEditMyFood(false);
-    setEditFoodData(null);
-  });
+  setShowEditMyFood(false);
+  setEditFoodData(null);
 };
 
 const saveEditFood = async () => {
@@ -2167,256 +2146,13 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         }}
       />
 
-      {/* Edit My Food Modal */}
-      <Modal visible={showEditMyFood} transparent animationType="none">
-        <Animated.View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', opacity: editOverlayAnim }} />
-        <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeEditModal} />
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="box-none">
-            <Animated.View style={{
-              width: '92%',
-              backgroundColor: theme.bgSheet,
-              borderRadius: 16,
-              borderWidth: 1,
-              borderColor: theme.borderCard,
-              borderTopWidth: 1.5,
-              borderTopColor: theme.accentBlueRaw,
-              shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16,
-              transform: [{ scale: editCardAnim.interpolate({ inputRange: [0, 1], outputRange: [0.88, 1] }) }],
-            }}>
-              {/* ModalHeader. This modal missed the header sweep entirely -- add-food.tsx had ZERO
-                  ModalHeader usages -- so it kept a hand-rolled handle pill and a CENTRED, ALL-CAPS title
-                  with no X. ModalHeader is the house standard: LEFT-aligned mixed-case title, centred handle
-                  pill AND a top-right X, all in one component. */}
-              <ModalHeader title="Edit Food" onClose={closeEditModal} />
-              <ScrollView style={{ maxHeight: 600 }} contentContainerStyle={{ padding: 16, paddingTop: 8 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets={true}>
-                {/* Type selector */}
-                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
-                  <TouchableOpacity
-                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditFoodData((p: any) => p ? { ...p, type: 'food' } : null); }}
-                    style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, backgroundColor: editFoodData?.type !== 'supplement' ? theme.accentBlueBg : theme.bgInput, borderColor: editFoodData?.type !== 'supplement' ? theme.accentBlueBorder : theme.borderInput }}
-                  >
-                    <Ionicons name="nutrition" size={16} color={editFoodData?.type !== 'supplement' ? theme.accentBlue : theme.textMuted} />
-                    <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, marginTop: 3, color: editFoodData?.type !== 'supplement' ? theme.accentBlue : theme.textMuted }}>Food</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditFoodData((p: any) => p ? { ...p, type: 'supplement' } : null); }}
-                    style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, backgroundColor: editFoodData?.type === 'supplement' ? theme.accentBlueBg : theme.bgInput, borderColor: editFoodData?.type === 'supplement' ? theme.accentBlueBorder : theme.borderInput }}
-                  >
-                    <Ionicons name="medical" size={16} color={editFoodData?.type === 'supplement' ? theme.accentBlue : theme.textMuted} />
-                    <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, marginTop: 3, color: editFoodData?.type === 'supplement' ? theme.accentBlue : theme.textMuted }}>Supplement</Text>
-                  </TouchableOpacity>
-                </View>
-                {/* Basic Info */}
-                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Basic Info</Text>
-                {([
-                  { label: 'Food Name', key: 'name', keyboard: 'default' as const },
-                  { label: 'Brand (optional)', key: 'brand', keyboard: 'default' as const },
-                  { label: 'Calories (kcal)', key: 'cal', keyboard: 'decimal-pad' as const },
-                ] as { label: string; key: string; keyboard: 'default' | 'decimal-pad' }[]).map(f => (
-                  <View key={f.key} style={{ marginBottom: 10 }}>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4 }}>{f.label}</Text>
-                    <TextInput
-                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 15, fontFamily: Type.ui }}
-                      value={editFoodData?.[f.key] || ''}
-                      onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: f.keyboard === 'decimal-pad' ? filterDecimal(v) : v } : null)}
-                      keyboardType={f.keyboard}
-                      placeholderTextColor={theme.textDim}
-                      selectTextOnFocus
-                    />
-                  </View>
-                ))}
-                {/* Macronutrients -- 3 column */}
-                <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Macronutrients</Text>
-                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
-                  {([
-                    { label: 'PROTEIN (g)', key: 'protein', dot: '#0d9268' },
-                    { label: 'CARBS (g)', key: 'carbs', dot: '#c47d1a' },
-                    { label: 'FAT (g)', key: 'fat', dot: '#a83232' },
-                  ] as { label: string; key: string; dot: string }[]).map(f => (
-                    <View key={f.key} style={{ flex: 1 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: f.dot, marginRight: 4 }} />
-                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2 }}>{f.label}</Text>
-                      </View>
-                      <TextInput
-                        style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: Type.ui, textAlign: 'center' }}
-                        value={editFoodData?.[f.key] || ''}
-                        onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: filterDecimal(v) } : null)}
-                        keyboardType="decimal-pad"
-                        placeholderTextColor={theme.textDim}
-                        selectTextOnFocus
-                      />
-                    </View>
-                  ))}
-                </View>
-                {/* Extended Nutrition -- organized sections */}
-                {(
-                  [
-                    { header: 'Carbs & Sugars', prefix: 'cs', rows: [
-                      [{ label: 'FIBER (g)', key: 'fiber' }, { label: 'SUGAR (g)', key: 'sugar' }],
-                      [{ label: 'SUGAR ALCOHOLS (g)', key: 'sugarAlcohols' }, { label: 'ADDED SUGARS (g)', key: 'addedSugars' }],
-                    ]},
-                    { header: 'Fats', prefix: 'fa', rows: [
-                      [{ label: 'SATURATED FAT (g)', key: 'saturatedFat' }, { label: 'POLY FAT (g)', key: 'polyunsaturatedFat' }],
-                      [{ label: 'MONO FAT (g)', key: 'monounsaturatedFat' }, { label: 'TRANS FAT (g)', key: 'transFat' }],
-                    ]},
-                    { header: 'Other Nutrients', prefix: 'on', rows: [
-                      [{ label: 'SODIUM (mg)', key: 'sodium' }, { label: 'CHOLESTEROL (mg)', key: 'cholesterol' }],
-                      [{ label: 'POTASSIUM (mg)', key: 'potassium' }, null],
-                    ]},
-                    { header: 'Vitamins', prefix: 'va', rows: [
-                      [{ label: 'VITAMIN A (mcg)', key: 'vitaminA' }, { label: 'VITAMIN C (mg)', key: 'vitaminC' }],
-                      [{ label: 'VITAMIN D (mcg)', key: 'vitaminD' }, { label: 'VITAMIN E (mg)', key: 'vitaminE' }],
-                      [{ label: 'VITAMIN K (mcg)', key: 'vitaminK' }, null],
-                    ]},
-                    { header: 'B Vitamins', prefix: 'bv', rows: [
-                      [{ label: 'B6 (mg)', key: 'vitaminB6' }, { label: 'FOLATE (mcg)', key: 'folate' }],
-                      [{ label: 'B12 (mcg)', key: 'vitaminB12' }, { label: 'BIOTIN (mcg)', key: 'biotin' }],
-                      [{ label: 'THIAMIN (mg)', key: 'thiamin' }, { label: 'RIBOFLAVIN (mg)', key: 'riboflavin' }],
-                      [{ label: 'NIACIN (mg)', key: 'niacin' }, { label: 'CHOLINE (mg)', key: 'choline' }],
-                    ]},
-                    { header: 'Minerals', prefix: 'mn', rows: [
-                      [{ label: 'CALCIUM (mg)', key: 'calcium' }, { label: 'IRON (mg)', key: 'iron' }],
-                      [{ label: 'MAGNESIUM (mg)', key: 'magnesium' }, { label: 'ZINC (mg)', key: 'zinc' }],
-                      [{ label: 'COPPER (mg)', key: 'copper' }, null],
-                    ]},
-                    { header: 'Other', prefix: 'ot', rows: [
-                      [{ label: 'CAFFEINE (mg)', key: 'caffeine' }, null],
-                    ]},
-                  ] as { header: string; prefix: string; rows: (({ label: string; key: string } | null)[])[] }[]
-                ).map(section => (
-                  <View key={section.prefix}>
-                    <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-                    <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>{section.header}</Text>
-                    {section.rows.map((row, ri) => (
-                      <View key={`${section.prefix}${ri}`} style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
-                        {row.map((f, fi) => f ? (
-                          <View key={f.key} style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, marginBottom: 4 }}>{f.label}</Text>
-                            <TextInput
-                              style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: Type.ui }}
-                              value={editFoodData?.[f.key] || ''}
-                              onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: filterDecimal(v) } : null)}
-                              keyboardType="decimal-pad"
-                              placeholder="--"
-                              placeholderTextColor={theme.textDim}
-                              selectTextOnFocus
-                            />
-                          </View>
-                        ) : <View key={fi} style={{ flex: 1 }} />)}
-                      </View>
-                    ))}
-                  </View>
-                ))}
-                {/* Serving */}
-                <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Serving</Text>
-                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4 }}>AMOUNT</Text>
-                    <TextInput
-                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: Type.ui }}
-                      value={editFoodData?.servingGrams || ''}
-                      onChangeText={v => setEditFoodData((p: any) => p ? { ...p, servingGrams: filterDecimal(v) } : null)}
-                      keyboardType="decimal-pad"
-                      placeholderTextColor={theme.textDim}
-                      selectTextOnFocus
-                    />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4 }}>LABEL (optional)</Text>
-                    <TextInput
-                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: Type.ui }}
-                      value={editFoodData?.servingLabel || ''}
-                      onChangeText={v => setEditFoodData((p: any) => p ? { ...p, servingLabel: v } : null)}
-                      placeholderTextColor={theme.textDim}
-                      placeholder="e.g. 1 scoop"
-                    />
-                  </View>
-                </View>
-                <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 }}>UNIT</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingBottom: 12, paddingRight: 4 }}>
-                  {EDIT_SERVING_UNITS.map(u => (
-                    <TouchableOpacity
-                      key={u}
-                      onPress={() => setEditFoodData((p: any) => p ? { ...p, servingUnitType: u } : null)}
-                      style={{
-                        paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, borderWidth: 1,
-                        backgroundColor: editFoodData?.servingUnitType === u ? theme.accentBlueBg : 'transparent',
-                        borderColor: editFoodData?.servingUnitType === u ? theme.accentBlueBorder : theme.borderInput,
-                      }}>
-                      <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: editFoodData?.servingUnitType === u ? theme.accentBlue : theme.textMuted }}>{u}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-                {/* Additional Servings */}
-                <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                  <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase' }}>Additional Servings</Text>
-                  <TouchableOpacity
-                    onPress={() => setEditFoodData((p: any) => p ? { ...p, additionalServings: [...(p.additionalServings || []), { id: `as_${Date.now()}`, label: '', grams: '' }] } : null)}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
-                    <ButtonShine radius={6} />
-                    <Ionicons name="add" size={12} color={theme.accentBlue} />
-                    <Text style={{ fontSize: 11, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Add</Text>
-                  </TouchableOpacity>
-                </View>
-                {(editFoodData?.additionalServings || []).map((s: any, i: number) => (
-                  <View key={s.id} style={{ flexDirection: 'row', gap: 6, marginBottom: 8, alignItems: 'center' }}>
-                    <TextInput
-                      style={{ flex: 1.4, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 8, paddingHorizontal: 10, fontSize: 13, fontFamily: Type.ui }}
-                      placeholder="Label (e.g. 1 link)"
-                      placeholderTextColor={theme.textDim}
-                      value={s.label}
-                      onChangeText={v => setEditFoodData((p: any) => {
-                        if (!p) return null;
-                        const updated = [...(p.additionalServings || [])];
-                        updated[i] = { ...updated[i], label: v };
-                        return { ...p, additionalServings: updated };
-                      })}
-                    />
-                    <TextInput
-                      style={{ flex: 0.8, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 8, paddingHorizontal: 10, fontSize: 13, fontFamily: Type.ui }}
-                      placeholder="g"
-                      placeholderTextColor={theme.textDim}
-                      keyboardType="decimal-pad"
-                      value={s.grams}
-                      onChangeText={v => setEditFoodData((p: any) => {
-                        if (!p) return null;
-                        const updated = [...(p.additionalServings || [])];
-                        updated[i] = { ...updated[i], grams: filterDecimal(v) };
-                        return { ...p, additionalServings: updated };
-                      })}
-                    />
-                    <TouchableOpacity
-                      onPress={() => setEditFoodData((p: any) => p ? { ...p, additionalServings: (p.additionalServings || []).filter((_: any, j: number) => j !== i) } : null)}
-                      style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                      <Ionicons name="close-circle" size={18} color={theme.textDim} />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-                {(editFoodData?.additionalServings || []).length === 0 && (
-                  <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, marginBottom: 10 }}>Tap Add to define extra serving sizes (e.g. 1 link, 6 pieces)</Text>
-                )}
-              </ScrollView>
-              <View style={{ flexDirection: 'row', gap: 10, padding: 16, paddingTop: 12 }}>
-                <TouchableOpacity onPress={closeEditModal} style={{ flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, alignItems: 'center' }}>
-                  <Text style={{ color: theme.textMuted, fontFamily: Type.uiMedium, fontSize: 14 }}>Cancel</Text>
-                </TouchableOpacity>
-                {/* faceStyle matches the Cancel beside it (padding 12 / radius 8). */}
-                <PrimaryCTA
-                  wrapperStyle={{ flex: 2 }}
-                  faceStyle={{ paddingVertical: 12, borderRadius: 8 }}
-                  label="Save"
-                  onPress={saveEditFood}
-                  disabled={!editFoodData?.name?.trim() || !editFoodData?.cal}
-                />
-              </View>
-            </Animated.View>
-        </View>
-      </Modal>
+      <EditFoodModal
+        visible={showEditMyFood}
+        editFoodData={editFoodData}
+        setEditFoodData={setEditFoodData}
+        onSave={saveEditFood}
+        onClose={closeEditModal}
+      />
 
       {/* Camera */}
       {scanning && (

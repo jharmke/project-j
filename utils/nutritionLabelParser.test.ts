@@ -117,5 +117,83 @@ console.log('\nnutrition label parser\n');
   check('3 fields under the 0.5 threshold trips the low-confidence count', result.lowConfidenceCount === 3, result.lowConfidenceCount);
 }
 
+// ── 4. Name and value split into separate blocks (real device scans, 2026-07-21) ──────────────────
+// Confirmed via the OCR Test diagnostic on two real boxes: Vision read "Calories" and its number
+// as two disconnected blocks, both at 100% confidence, not a low-confidence misread. Exact text/
+// position pulled from the real dumps (Krusteaz pancake mix, Campbell's canned chicken).
+{
+  const blocks: OcrBlockLike[] = [
+    b('Nutrition Facts', 1037, 163, 1067, 165),
+    b('About 11 servings per container', 1031, 375, 961, 135),
+    b('Serving size 1/3 cup mix (40g)', 1031, 516, 1072, 129),
+    b('Amount per serving', 1037, 762, 486, 89),
+    b('Calories', 1043, 900, 587, 162),
+    b('140', 1758, 844, 346, 223),
+    b('% Daily Value*', 1705, 1106, 405, 97),
+    b('Total Fat 1g', 1043, 1225, 410, 106),
+    b('1%', 1975, 1225, 129, 105),
+    b('Total Carbohydrate 31g', 1054, 1892, 500, 108),
+    b('Protein 2g', 1043, 2200, 350, 85),
+  ];
+  const result = parseNutritionLabel({ text: '', blocks });
+  check('calories = 140 despite name/value in separate blocks (pancake box)', result.fields.calories.value === 140, result.fields.calories.value);
+  check('calories confidence still set (not nulled by the split)', result.fields.calories.confidence !== null, result.fields.calories.confidence);
+}
+{
+  const blocks: OcrBlockLike[] = [
+    b('Nutrition Facts', 955, 571, 1085, 195),
+    b('About 4.5 servings per package', 955, 790, 1078, 130),
+    b('Serving size', 949, 908, 364, 136),
+    b('3 oz. drained (85g)', 1400, 901, 657, 144),
+    b('Amount per serving', 955, 1157, 458, 88),
+    b('Calories', 955, 1242, 504, 158),
+    b('80', 1793, 1201, 240, 223),
+    b('Total Fat 1.5g', 955, 1576, 393, 107),
+  ];
+  const result = parseNutritionLabel({ text: '', blocks });
+  check('calories = 80 despite name/value in separate blocks (canned chicken)', result.fields.calories.value === 80, result.fields.calories.value);
+}
+
+// ── 5. Serving size merged into ONE block (real pancake box scan) ─────────────────────────────────
+// Same product's earlier scan had "Serving size" and "1/3 cup mix (40g)" as separate blocks; this
+// scan merged them into one -- both shapes have to work since Vision isn't consistent scan to scan.
+{
+  const blocks: OcrBlockLike[] = [
+    b('Nutrition Facts', 1037, 163, 1067, 165),
+    b('Serving size 1/3 cup mix (40g)', 1031, 516, 1072, 129),
+    b('Calories', 1043, 900, 587, 162),
+    b('140', 1758, 844, 346, 223),
+  ];
+  const result = parseNutritionLabel({ text: '', blocks });
+  check('serving description parsed out of a MERGED label+value block', result.serving.description === '1/3 cup mix (40g)', result.serving.description);
+  check('serving grams parsed out of the merged block = 40', result.serving.grams === 40, result.serving.grams);
+}
+
+// ── 6. "Servings per package" instead of "per container" (real canned chicken scan) ────────────────
+{
+  const blocks: OcrBlockLike[] = [
+    b('Nutrition Facts', 955, 571, 1085, 195),
+    b('About 4.5 servings per package', 955, 790, 1078, 130),
+  ];
+  const result = parseNutritionLabel({ text: '', blocks });
+  check('servings per container = 4.5 despite label saying "per package"', result.servingsPerContainer.value === 4.5, result.servingsPerContainer.value);
+}
+
+// ── 7. Row tolerance scales with text size (synthetic, isolates the exact mechanism) ───────────────
+// Simulates a farther-away photo: rows compressed to 20px apart, row height only 34px (vs ~85px
+// up close). A fixed-pixel tolerance would treat these as the same row and grab the WRONG %DV
+// (confirmed happening on real device scans -- cholesterol grabbed sodium's %DV on a farther-away
+// shot); a tolerance proportional to the row's own height correctly keeps them separate.
+{
+  const blocks: OcrBlockLike[] = [
+    b('Iron 2mg', 100, 600, 200, 34),          // no inline %DV -- must derive or cross-match
+    b('Potassium 200mg', 100, 620, 300, 34),   // a DIFFERENT row, only 20px lower
+    b('80%', 400, 620, 80, 34),                // potassium's own %DV, NOT iron's
+  ];
+  const result = parseNutritionLabel({ text: '', blocks });
+  check("iron does not steal potassium's %DV from a compressed neighboring row", result.fields.iron.percentDV !== 80, result.fields.iron.percentDV);
+  check('iron %DV instead derives correctly from its own value (2/18 DV = 11%)', result.fields.iron.percentDV === 11, result.fields.iron.percentDV);
+}
+
 console.log(`\n${passed} passed, ${failed} failed\n`);
 if (failed > 0) { console.log('Failed:', fails.join(', ')); process.exit(1); }

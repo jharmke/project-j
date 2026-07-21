@@ -325,7 +325,11 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
         showToast('Camera access needed', 'Enable camera access to scan a nutrition label', 'error');
         return;
       }
-      const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.9 });
+      // allowsEditing gives a crop step before OCR ever sees the photo -- lets the user frame
+      // just the label, cutting out background clutter that otherwise pollutes the OCR block
+      // list (confirmed during testing: a busy background produces stray text blocks that can
+      // interfere with the same-row matching the parser uses).
+      const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.9, allowsEditing: true });
       if (result.canceled || !result.assets?.[0]?.uri) return;
       setScanningLabel(true);
       const ocr = await ocrRecognizeText(result.assets[0].uri);
@@ -595,6 +599,9 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
           <Ionicons name="scan-outline" size={18} color={theme.accentBlue} />
           <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>{scanningLabel ? 'Reading Label...' : 'Scan Nutrition Label'}</Text>
         </TouchableOpacity>
+        <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, marginBottom: 10, textAlign: 'center' }}>
+          Tip: get as close as you can while keeping the whole label in frame.
+        </Text>
 
         {/* Serving box -- Calories lives here too, spotlit as one unit by tutorial step 3 */}
         <View ref={caloriesSectionRef as any} style={{ backgroundColor: theme.bgCard, borderRadius: 12, borderWidth: 0.5, borderColor: theme.borderCard, padding: 14, marginBottom: 10 }}>

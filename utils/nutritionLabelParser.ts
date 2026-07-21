@@ -105,12 +105,22 @@ const BARE_NAME_PATTERNS: Record<string, RegExp> = Object.fromEntries(
 );
 
 const LONE_PERCENT = /^\s*(\d+(?:\.\d+)?)\s*%\s*$/;
-const ROW_TOLERANCE_PX = 40; // vertical-center tolerance for "same row" column matching
+// A block that's JUST a number, optionally with a unit -- deliberately does NOT allow a trailing
+// "%" so this can never collide with LONE_PERCENT above; the two patterns are mutually exclusive
+// by construction, one finds a raw value, the other finds a %DV, never the same block.
+const BARE_VALUE = /^\s*(\d+(?:\.\d+)?)\s*(?:g|mg|mcg)?\s*$/i;
+// "Same row" tolerance scales with the text's own size instead of a fixed pixel count -- a fixed
+// number only holds up at one specific distance from the label. Confirmed on real device scans:
+// a farther-away photo shrinks every row proportionally, so a fixed tolerance that was safely
+// tight up close starts reaching into the NEXT row's numbers once everything gets smaller. Using
+// a fraction of the row's actual height keeps the same relative safety margin at any distance.
+const ROW_TOLERANCE_RATIO = 0.45;
 
 function rowsOverlap(a: OcrBlockLike, b: OcrBlockLike): boolean {
   const centerA = a.boundingBox.y + a.boundingBox.height / 2;
   const centerB = b.boundingBox.y + b.boundingBox.height / 2;
-  return Math.abs(centerA - centerB) <= ROW_TOLERANCE_PX;
+  const tolerance = Math.min(a.boundingBox.height, b.boundingBox.height) * ROW_TOLERANCE_RATIO;
+  return Math.abs(centerA - centerB) <= tolerance;
 }
 
 /** Finds a standalone "NN%" block on the same row and to the right of `anchor`, if any. */
@@ -119,6 +129,24 @@ function findRowPercent(anchor: OcrBlockLike, blocks: OcrBlockLike[]): OcrBlockL
   for (const b of blocks) {
     if (b === anchor) continue;
     if (!LONE_PERCENT.test(b.text)) continue;
+    if (b.boundingBox.x <= anchor.boundingBox.x) continue;
+    if (!rowsOverlap(anchor, b)) continue;
+    if (!best || b.boundingBox.x < best.boundingBox.x) best = b;
+  }
+  return best;
+}
+
+// Same technique as findRowPercent, pointed at the raw VALUE instead -- Vision sometimes reads a
+// field's name and its number as two separate blocks (confirmed on real photos: "Calories" and
+// "140" recognized as disconnected chunks at 100% confidence each, not a low-confidence misread).
+// Only ever consulted when Pass 1/2 above found the field's NAME but no inline number, so this
+// can't invent a field that was never printed, and BARE_VALUE's %-exclusion keeps it from ever
+// grabbing a %DV number instead of the real value.
+function findRowValue(anchor: OcrBlockLike, blocks: OcrBlockLike[]): OcrBlockLike | null {
+  let best: OcrBlockLike | null = null;
+  for (const b of blocks) {
+    if (b === anchor) continue;
+    if (!BARE_VALUE.test(b.text)) continue;
     if (b.boundingBox.x <= anchor.boundingBox.x) continue;
     if (!rowsOverlap(anchor, b)) continue;
     if (!best || b.boundingBox.x < best.boundingBox.x) best = b;
@@ -172,6 +200,16 @@ export function parseNutritionLabel(ocr: OcrResultLike): ParsedLabel {
       continue;
     }
 
+    // Value still missing -- name was found but not an inline number (see findRowValue above for
+    // why this happens on real photos). Look for a bare number on the same row, to the right.
+    if (value === null) {
+      const rowValue = findRowValue(anchorBlock, blocks);
+      if (rowValue) {
+        value = parseFloat(BARE_VALUE.exec(rowValue.text)![1]);
+        confidence = Math.min(confidence ?? 1, rowValue.confidence);
+      }
+    }
+
     // Percent still missing -- look for a separate "NN%" block on the same row, to the right
     // (the real dual-column-style layout Vision's bounding boxes make possible to detect).
     if (percentDV === null) {
@@ -201,28 +239,46 @@ export function parseNutritionLabel(ocr: OcrResultLike): ParsedLabel {
     fields[def.key] = { value, percentDV, confidence };
   }
 
-  // Serving size: "Serving size" label + its value sitting to the right on the same row.
+  // Serving size: "Serving size" and its value can land in ONE merged block ("Serving size 1/3
+  // cup mix (40g)") or TWO separate blocks ("Serving size" / "1 Bar (37g)") -- confirmed both
+  // happen on real photos of the exact same product across different scans, same lesson as the
+  // calories fix above: check the same block first, only search a neighboring block as a fallback.
   let serving: ParsedServing = { description: null, grams: null, confidence: null };
   const servingLabelBlock = blocks.find(b => /serving size/i.test(b.text));
   if (servingLabelBlock) {
-    const candidates = blocks
-      .filter(b => b !== servingLabelBlock && b.boundingBox.x > servingLabelBlock.boundingBox.x && rowsOverlap(servingLabelBlock, b) && b.text.trim().length > 0)
-      .sort((a, b) => a.boundingBox.x - b.boundingBox.x);
-    const valueBlock = candidates[0] ?? null;
-    if (valueBlock) {
-      const gramsMatch = /\(?(\d+(?:\.\d+)?)\s*g\)?/i.exec(valueBlock.text);
+    const inlineMatch = /serving size\s*[:\-]?\s*(.+)/i.exec(servingLabelBlock.text);
+    const inlineDescription = inlineMatch ? inlineMatch[1].trim() : '';
+
+    if (inlineDescription.length > 0) {
+      const gramsMatch = /\(?(\d+(?:\.\d+)?)\s*g\)?/i.exec(inlineDescription);
       serving = {
-        description: valueBlock.text.trim(),
+        description: inlineDescription,
         grams: gramsMatch ? parseFloat(gramsMatch[1]) : null,
-        confidence: Math.min(servingLabelBlock.confidence, valueBlock.confidence),
+        confidence: servingLabelBlock.confidence,
       };
+    } else {
+      const candidates = blocks
+        .filter(b => b !== servingLabelBlock && b.boundingBox.x > servingLabelBlock.boundingBox.x && rowsOverlap(servingLabelBlock, b) && b.text.trim().length > 0)
+        .sort((a, b) => a.boundingBox.x - b.boundingBox.x);
+      const valueBlock = candidates[0] ?? null;
+      if (valueBlock) {
+        const gramsMatch = /\(?(\d+(?:\.\d+)?)\s*g\)?/i.exec(valueBlock.text);
+        serving = {
+          description: valueBlock.text.trim(),
+          grams: gramsMatch ? parseFloat(gramsMatch[1]) : null,
+          confidence: Math.min(servingLabelBlock.confidence, valueBlock.confidence),
+        };
+      }
     }
   }
 
-  // "X servings per container" -- always printed as one self-contained block.
+  // "X servings per container/package/box/etc." -- the fixed, regulated part is "[number]
+  // serving(s) per," the noun after it varies by manufacturer (confirmed real: one can printed
+  // "per package" instead of "per container"). Matching any trailing word instead of a specific
+  // list avoids chasing every possible noun one at a time.
   let servingsPerContainer: { value: number | null; confidence: number | null } = { value: null, confidence: null };
   for (const b of blocks) {
-    const m = /(\d+(?:\.\d+)?)\s+servings?\s+per\s+container/i.exec(b.text);
+    const m = /(\d+(?:\.\d+)?)\s+servings?\s+per\s+\w+/i.exec(b.text);
     if (m) {
       servingsPerContainer = { value: parseFloat(m[1]), confidence: b.confidence };
       break;

@@ -132,7 +132,7 @@ export default function LabelScanReviewModal({ parsed, onConfirm, onClose }: Lab
             <View style={{ marginHorizontal: 16, marginTop: 8, backgroundColor: 'rgba(212,134,10,0.12)', borderWidth: 1, borderColor: 'rgba(212,134,10,0.4)', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12 }}>
               <Text style={{ fontSize: 12, color: '#d4860a', fontFamily: Type.uiMedium }}>
                 {parsed.missingCoreField
-                  ? `Couldn't find ${parsed.missingCoreField} -- try retaking with the full label in frame.`
+                  ? `Couldn't find ${parsed.missingCoreField}. Try retaking with the full label in frame.`
                   : `Some of this scan is unclear, double-check before saving.`}
               </Text>
             </View>

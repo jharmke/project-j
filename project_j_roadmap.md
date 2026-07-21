@@ -1096,6 +1096,24 @@ are separate pre-submission checklists, NOT part of this menu.
   into Additional Servings yet (parsed, shown in review, but not applied on confirm), scan button not yet in
   `EditFoodModal.tsx` or the barcode-override flow, dual-column parsing not started, Otto/tutorial/tooltip
   pass not done, temp "OCR Test" row in Settings dev tools still needs removing once the flow is fully solid.
+  MORE FIXES same session, from testing real boxes (pancake mix, canned chicken, bilingual chip bag):
+  calories/serving-size/servings-per-container all had "name and number can land in one OCR block OR two
+  separate blocks, inconsistently scan to scan" bugs -- fixed with same-row bounding-box fallbacks mirroring
+  the existing %DV technique. addedSugars regex only matched the abbreviated "Incl." wording, not the more
+  common "Includes" -- STILL OPEN, not yet fixed. servings-per-container regex only matched literally "per
+  container" -- broadened to match any trailing word after "servings per," not an enumerated list. Row-match
+  "same row" tolerance was a fixed pixel count -- broke on farther-away photos where the whole label shrinks
+  proportionally (confirmed: caused %DV to bleed across adjacent rows); now scales with the row's own text
+  size instead. Re-added the photo crop step (`allowsEditing`) removed earlier by mistake -- lets users frame
+  out background clutter, which was confirmed tripping up OCR. Added a standing caption under the Scan button:
+  "Tip: get as close as you can while keeping the whole label in frame." KNOWN NOT FIXED, real limits not bugs:
+  bilingual (English/Spanish) labels still fail broadly (name+value regex distance assumption breaks when a
+  translation sits between them -- needs the bounding-box technique extended to values across the board, not
+  yet done); physically warped/dented label surfaces cause real geometric distortion no amount of tolerance
+  tuning can fully solve (amber flags are the mitigation, not a fix). PINNED, not built, not urgent per Justin
+  2026-07-21: replacing the system camera picker with a custom live-camera screen (viewfinder box + "align
+  label in frame" text, same pattern as the barcode scanner) instead of the system photo picker -- real,
+  non-trivial rebuild, deliberately deferred in favor of the free text-hint above for now.
 
 - [PARKED 2026-07-19 -- shipped parts in RECENTLY SHIPPED, full story in the archive] **Some screens still
   feel slow to open, cause unidentified.** Haptic delay is fixed and 4 screens' data loading is batched (see

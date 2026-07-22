@@ -16,6 +16,8 @@ import GradientNumber from './GradientNumber';
 import { useToast } from './Toast';
 import { parseNutritionLabel, ParsedLabel } from '../utils/nutritionLabelParser';
 import LabelScanReviewModal, { ScanRowResult } from './LabelScanReviewModal';
+import { convertUnit, convertibleUnitsFor } from '../utils/unitConversion';
+import UnitPickerButton from './UnitPickerButton';
 
 const FOOD_SERVING_UNITS = ['g', 'ml', 'fl oz', 'oz', 'container', 'serving', 'tbsp', 'tsp', 'cup'];
 const SUPPLEMENT_ONLY_UNITS = ['pill', 'capsule', 'tablet', 'softgel', 'gummy'];
@@ -44,6 +46,11 @@ export default function EditFoodModal({ visible, editFoodData, setEditFoodData, 
   const [scannedLabel, setScannedLabel] = useState<ParsedLabel | null>(null);
   const [showScanReview, setShowScanReview] = useState(false);
   const [scanningLabel, setScanningLabel] = useState(false);
+  // Per-row entry unit for Additional Servings, same mechanism as Create Food -- lets someone
+  // type an alternate serving in oz/cup/etc. and have it convert into the primary serving's
+  // unit automatically. Draft holds raw in-progress text so mid-typing isn't reformatted.
+  const [additionalServingUnits, setAdditionalServingUnits] = useState<Record<string, string>>({});
+  const [additionalServingDrafts, setAdditionalServingDrafts] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (visible) {
@@ -327,7 +334,16 @@ export default function EditFoodModal({ visible, editFoodData, setEditFoodData, 
                 <Text style={{ fontSize: 11, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Add</Text>
               </TouchableOpacity>
             </View>
-            {(editFoodData?.additionalServings || []).map((s: any, i: number) => (
+            {(editFoodData?.additionalServings || []).map((s: any, i: number) => {
+              const primaryUnit = editFoodData?.servingUnitType || 'g';
+              const convertibleUnits = convertibleUnitsFor(primaryUnit);
+              const rowUnit = additionalServingUnits[s.id] || primaryUnit;
+              const isConverting = rowUnit !== primaryUnit;
+              const draft = additionalServingDrafts[s.id];
+              const displayValue = isConverting
+                ? (draft !== undefined ? draft : (s.grams ? String(Math.round(((convertUnit(parseFloat(s.grams), primaryUnit, rowUnit) ?? 0)) * 100) / 100) : ''))
+                : s.grams;
+              return (
               <View key={s.id} style={{ flexDirection: 'row', gap: 6, marginBottom: 8, alignItems: 'center' }}>
                 <TextInput
                   style={{ flex: 1.4, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 8, paddingHorizontal: 10, fontSize: 13, fontFamily: Type.ui }}
@@ -343,25 +359,62 @@ export default function EditFoodModal({ visible, editFoodData, setEditFoodData, 
                 />
                 <TextInput
                   style={{ flex: 0.8, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 8, paddingHorizontal: 10, fontSize: 13, fontFamily: Type.ui }}
-                  placeholder="g"
+                  placeholder={rowUnit}
                   placeholderTextColor={theme.textDim}
                   keyboardType="decimal-pad"
-                  value={s.grams}
-                  onChangeText={v => setEditFoodData((p: any) => {
-                    if (!p) return null;
-                    const updated = [...(p.additionalServings || [])];
-                    updated[i] = { ...updated[i], grams: filterDecimal(v) };
-                    return { ...p, additionalServings: updated };
-                  })}
+                  value={displayValue}
+                  onChangeText={v => {
+                    const stripped = filterDecimal(v);
+                    if (isConverting) {
+                      setAdditionalServingDrafts(prev => ({ ...prev, [s.id]: stripped }));
+                    } else {
+                      setEditFoodData((p: any) => {
+                        if (!p) return null;
+                        const updated = [...(p.additionalServings || [])];
+                        updated[i] = { ...updated[i], grams: stripped };
+                        return { ...p, additionalServings: updated };
+                      });
+                    }
+                  }}
+                  onBlur={() => {
+                    if (!isConverting || draft === undefined) return;
+                    const typed = parseFloat(draft);
+                    const canonical = !isNaN(typed) ? convertUnit(typed, rowUnit, primaryUnit) : null;
+                    if (canonical !== null) {
+                      setEditFoodData((p: any) => {
+                        if (!p) return null;
+                        const updated = [...(p.additionalServings || [])];
+                        updated[i] = { ...updated[i], grams: String(Math.round(canonical * 100) / 100) };
+                        return { ...p, additionalServings: updated };
+                      });
+                    }
+                    setAdditionalServingDrafts(prev => { const next = { ...prev }; delete next[s.id]; return next; });
+                  }}
                 />
+                {convertibleUnits.length > 0 && (
+                  <UnitPickerButton
+                    value={rowUnit}
+                    options={convertibleUnits}
+                    minWidth={44}
+                    onChange={u => {
+                      setAdditionalServingUnits(prev => ({ ...prev, [s.id]: u }));
+                      setAdditionalServingDrafts(prev => { const next = { ...prev }; delete next[s.id]; return next; });
+                    }}
+                  />
+                )}
                 <TouchableOpacity
-                  onPress={() => setEditFoodData((p: any) => p ? { ...p, additionalServings: (p.additionalServings || []).filter((_: any, j: number) => j !== i) } : null)}
+                  onPress={() => {
+                    setEditFoodData((p: any) => p ? { ...p, additionalServings: (p.additionalServings || []).filter((_: any, j: number) => j !== i) } : null);
+                    setAdditionalServingUnits(prev => { const next = { ...prev }; delete next[s.id]; return next; });
+                    setAdditionalServingDrafts(prev => { const next = { ...prev }; delete next[s.id]; return next; });
+                  }}
                   style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                   <Ionicons name="close-circle" size={18} color={theme.textDim} />
                 </TouchableOpacity>
               </View>
-            ))}
+              );
+            })}
             {(editFoodData?.additionalServings || []).length === 0 && (
               <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, marginBottom: 10 }}>Tap Add to define extra serving sizes (e.g. 1 link, 6 pieces)</Text>
             )}

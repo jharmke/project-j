@@ -846,6 +846,12 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
+- [NOW, surfaced 2026-07-21] **UnitPickerButton (`components/UnitPickerButton.tsx`) always opens downward,
+  cuts off when the button is low on screen.** Used for the Serving Amount unit picker and Additional
+  Servings unit picker in both CustomFoodCreator and EditFoodModal. Needs to detect available space (measure
+  the button's position, e.g. via `onLayout`/`measure`) and open upward instead of downward when there isn't
+  room below it, same as any well-behaved dropdown. Confirmed real, not a one-off -- flag before touching
+  anything else in either of those two files.
 - [surfaced 2026-07-20, found during iPad auth testing] **iPad layout looks broken -- wrapped date, oversized
   text.** On Justin's iPad (not previously tested on this app), Home's "MONDAY, JULY 20" date wraps to a
   second line under the greeting, and Otto's chat header ("Wellness and App Guide" subtitle) renders visibly
@@ -1011,6 +1017,18 @@ are separate pre-submission checklists, NOT part of this menu.
   unit-lock on custom foods to at least match what FatSecret-sourced foods already get. Directly relevant to
   the nutrition label scanner (SPEC_nutrition_label_scan.md) since labels sometimes print oz-only servings
   with no gram equivalent.
+  BUILT 2026-07-21: `utils/unitConversion.ts` -- fixed-math conversion within the weight group
+  (g/kg/oz/lb) and volume group (mL/L/cup/tbsp/tsp/fl oz), cross-group (weight<->volume) deliberately
+  returns null, never guesses. Wired into Additional Servings in both CustomFoodCreator and EditFoodModal:
+  each row gets a small unit button (only shown when the primary serving's unit is actually convertible --
+  hidden for container/serving/pill-type units) that lets you type an alternate serving in a different unit
+  from the SAME group and has it convert into the primary unit automatically. The STORED number never
+  changes shape (still a plain number in the primary unit, same as before), so nothing downstream (logging,
+  the serving picker, Food Detail) needed to change at all. 24 tests passing. KNOWN pre-existing edge case,
+  not introduced by this build: changing the PRIMARY serving unit after Additional Servings already have
+  values doesn't retroactively re-convert those stored numbers -- this was already true before unit choice
+  existed (they were always "in whatever unit primary happens to be"), just now more visible. Not fixed,
+  not blocking, noted for later.
 - [surfaced 2026-07-20] **Nutrient "Function" and "Sources" info, like Cronometer's nutrient detail
   screens.** Cronometer's per-nutrient drill-down shows a plain-language "Function" blurb (what this nutrient
   actually does in the body) and a "Sources" list (common foods that provide it), alongside the

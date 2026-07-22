@@ -32,6 +32,8 @@ import PrimaryCTA from './PrimaryCTA';
 import GradientIcon from './GradientIcon';
 import GradientNumber from './GradientNumber';
 import { recognizeText as ocrRecognizeText } from 'expo-ocr-kit';
+import { convertUnit, convertibleUnitsFor } from '../utils/unitConversion';
+import UnitPickerButton from './UnitPickerButton';
 import { parseNutritionLabel, ParsedLabel } from '../utils/nutritionLabelParser';
 import LabelScanReviewModal, { ScanRowResult } from './LabelScanReviewModal';
 import ModalHeader from './ModalHeader';
@@ -86,9 +88,10 @@ interface CustomFoodCreatorProps {
   };
 }
 
-const FOOD_SERVING_UNITS = ['g', 'ml', 'fl oz', 'oz', 'container', 'serving', 'tbsp', 'tsp', 'cup'];
 const SUPPLEMENT_ONLY_UNITS = ['pill', 'capsule', 'tablet', 'softgel', 'gummy'];
-const SERVING_UNITS = [...FOOD_SERVING_UNITS, ...SUPPLEMENT_ONLY_UNITS];
+// 'ml' covers liquid supplements (tinctures, drops, liquid extracts) that aren't a count-based
+// unit at all -- flagged as a real gap after pill/capsule/etc-only left no option for those.
+const SUPPLEMENT_UNIT_OPTIONS = [...SUPPLEMENT_ONLY_UNITS, 'ml', 'g'];
 
 export default function CustomFoodCreator({ visible, onClose, onSaved, title, tutorialMode, prefill }: CustomFoodCreatorProps) {
   const { theme } = useTheme();
@@ -153,6 +156,21 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
   const [servingLabel, setServingLabel] = useState('');
   const [servingUnitType, setServingUnitType] = useState('g');
   const [additionalServings, setAdditionalServings] = useState<Array<{ id: string; label: string; grams: string }>>([]);
+  // Per-row entry unit -- lets someone type an alternate serving in oz/cup/etc. and have it
+  // convert into the primary serving's unit automatically, WITHOUT changing what's actually
+  // stored (still a plain number in the primary unit, same as before this feature existed).
+  // Draft holds the raw in-progress text while converting, so mid-typing (e.g. "2.") doesn't
+  // get silently reformatted on every keystroke -- conversion only commits on blur.
+  const [additionalServingUnits, setAdditionalServingUnits] = useState<Record<string, string>>({});
+  const [additionalServingDrafts, setAdditionalServingDrafts] = useState<Record<string, string>>({});
+  // Primary Serving Amount unit -- purely a typing convenience, same mechanism as Additional
+  // Servings above. servingGrams stays canonical grams always for Food-type items; this is never
+  // persisted, just resets to 'g' display each time (per the locked serving-unit-redesign-plan:
+  // "Grams stays the one canonical stored number always, regardless of which unit was used to
+  // type it in -- the dropdown is a typing convenience, never a second source of truth.")
+  const [servingEntryUnit, setServingEntryUnit] = useState('g');
+  const [servingDraft, setServingDraft] = useState<string | undefined>(undefined);
+  const WEIGHT_ENTRY_UNITS = ['g', 'kg', 'oz', 'lb'];
   const [isSupplementType, setIsSupplementType] = useState(false);
   const [saving, setSaving] = useState(false);
   // Measured (not assumed) header + scroll-content heights, so the card can be given an
@@ -634,42 +652,55 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
               />
             </View>
             <View style={[s.fieldRow, { flex: 1 }]}>
-              <Text style={s.fieldLabel}>Serving <Text style={s.unitText}>{servingUnitType}</Text></Text>
-              <TextInput
-                style={s.input}
-                placeholder="100"
-                placeholderTextColor={theme.textPlaceholder}
-                value={servingGrams}
-                onChangeText={setServingGrams}
-                keyboardType="decimal-pad"
-              />
+              <Text style={s.fieldLabel}>Serving</Text>
+              {isSupplementType ? (
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  <TextInput
+                    style={[s.input, { flex: 1 }]}
+                    placeholder="100"
+                    placeholderTextColor={theme.textPlaceholder}
+                    value={servingGrams}
+                    onChangeText={setServingGrams}
+                    keyboardType="decimal-pad"
+                  />
+                  <UnitPickerButton value={servingUnitType} options={SUPPLEMENT_UNIT_OPTIONS} onChange={setServingUnitType} minWidth={60} />
+                </View>
+              ) : (
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  <TextInput
+                    style={[s.input, { flex: 1 }]}
+                    placeholder="100"
+                    placeholderTextColor={theme.textPlaceholder}
+                    value={servingEntryUnit === 'g' ? servingGrams : (servingDraft !== undefined ? servingDraft : (servingGrams ? String(Math.round(((convertUnit(parseFloat(servingGrams), 'g', servingEntryUnit) ?? 0)) * 100) / 100) : ''))}
+                    onChangeText={v => {
+                      const stripped = v.replace(/[^0-9.]/g, '');
+                      if (servingEntryUnit === 'g') setServingGrams(stripped);
+                      else setServingDraft(stripped);
+                    }}
+                    onBlur={() => {
+                      if (servingEntryUnit === 'g' || servingDraft === undefined) return;
+                      const typed = parseFloat(servingDraft);
+                      const grams = !isNaN(typed) ? convertUnit(typed, servingEntryUnit, 'g') : null;
+                      if (grams !== null) setServingGrams(String(Math.round(grams * 100) / 100));
+                      setServingDraft(undefined);
+                    }}
+                    keyboardType="decimal-pad"
+                  />
+                  <UnitPickerButton
+                    value={servingEntryUnit}
+                    options={WEIGHT_ENTRY_UNITS}
+                    onChange={u => { setServingEntryUnit(u); setServingDraft(undefined); }}
+                  />
+                </View>
+              )}
             </View>
           </View>
 
-          {/* Serving Unit picker */}
-          <View style={[s.fieldRow, { marginBottom: 14 }]}>
-            <Text style={[s.fieldLabel, { marginBottom: 8 }]}>Serving Unit</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingRight: 4 }}>
-              {(isSupplementType ? SERVING_UNITS : FOOD_SERVING_UNITS).map(u => (
-                <TouchableOpacity
-                  key={u}
-                  onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setServingUnitType(u); }}
-                  style={{
-                    paddingHorizontal: 10, paddingVertical: 5,
-                    borderRadius: 6, borderWidth: 1,
-                    backgroundColor: servingUnitType === u ? theme.accentBlueBg : 'transparent',
-                    borderColor: servingUnitType === u ? theme.accentBlueBorder : theme.borderInput,
-                  }}
-                >
-                  <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: servingUnitType === u ? theme.accentBlue : theme.textMuted }}>{u}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-
-          {/* Serving Label */}
+          {/* Serving Name -- one free-text field instead of a separate unit picker + label.
+              Purely descriptive (never parsed for math); the Amount field above is always the
+              real number, in grams, regardless of what unit was used to type it in. */}
           <View style={s.fieldRow}>
-            <Text style={s.fieldLabel}>Serving Label <Text style={s.unitText}>(optional)</Text></Text>
+            <Text style={s.fieldLabel}>Serving Name <Text style={s.unitText}>(optional)</Text></Text>
             <TextInput
               style={s.input}
               placeholder="e.g. 1 scoop, 3 tbsp, 250 mL"
@@ -701,11 +732,19 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
               {additionalServings.length > 0 && (
                 <View style={{ flexDirection: 'row', gap: 6, marginBottom: 4 }}>
                   <Text style={[s.fieldLabel, { flex: 1.4, marginBottom: 0 }]}>Serving Label</Text>
-                  <Text style={[s.fieldLabel, { flex: 0.8, marginBottom: 0 }]}>Serving (g)</Text>
+                  <Text style={[s.fieldLabel, { flex: 0.8, marginBottom: 0 }]}>Serving ({servingUnitType})</Text>
                   <View style={{ width: 32 }} />
                 </View>
               )}
-              {additionalServings.map((sv, i) => (
+              {additionalServings.map((sv, i) => {
+                const convertibleUnits = convertibleUnitsFor(servingUnitType);
+                const rowUnit = additionalServingUnits[sv.id] || servingUnitType;
+                const isConverting = rowUnit !== servingUnitType;
+                const draft = additionalServingDrafts[sv.id];
+                const displayValue = isConverting
+                  ? (draft !== undefined ? draft : (sv.grams ? String(Math.round(((convertUnit(parseFloat(sv.grams), servingUnitType, rowUnit) ?? 0)) * 100) / 100) : ''))
+                  : sv.grams;
+                return (
                 <View key={sv.id} style={{ flexDirection: 'row', gap: 6, marginBottom: 8, alignItems: 'center' }}>
                   <TextInput
                     style={[s.input, { flex: 1.4, paddingVertical: 8 }]}
@@ -716,24 +755,53 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
                   />
                   <TextInput
                     style={[s.input, { flex: 0.8, paddingVertical: 8 }]}
-                    placeholder="g"
+                    placeholder={rowUnit}
                     placeholderTextColor={theme.textPlaceholder}
                     keyboardType="decimal-pad"
-                    value={sv.grams}
+                    value={displayValue}
                     onChangeText={v => {
                       const stripped = v.replace(/[^0-9.]/g, '');
-                      setAdditionalServings(prev => prev.map((x, j) => j === i ? { ...x, grams: stripped } : x));
+                      if (isConverting) {
+                        setAdditionalServingDrafts(prev => ({ ...prev, [sv.id]: stripped }));
+                      } else {
+                        setAdditionalServings(prev => prev.map((x, j) => j === i ? { ...x, grams: stripped } : x));
+                      }
+                    }}
+                    onBlur={() => {
+                      if (!isConverting || draft === undefined) return;
+                      const typed = parseFloat(draft);
+                      const canonical = !isNaN(typed) ? convertUnit(typed, rowUnit, servingUnitType) : null;
+                      if (canonical !== null) {
+                        setAdditionalServings(prev => prev.map((x, j) => j === i ? { ...x, grams: String(Math.round(canonical * 100) / 100) } : x));
+                      }
+                      setAdditionalServingDrafts(prev => { const next = { ...prev }; delete next[sv.id]; return next; });
                     }}
                   />
+                  {convertibleUnits.length > 0 && (
+                    <UnitPickerButton
+                      value={rowUnit}
+                      options={convertibleUnits}
+                      minWidth={44}
+                      onChange={u => {
+                        setAdditionalServingUnits(prev => ({ ...prev, [sv.id]: u }));
+                        setAdditionalServingDrafts(prev => { const next = { ...prev }; delete next[sv.id]; return next; });
+                      }}
+                    />
+                  )}
                   <TouchableOpacity
-                    onPress={() => setAdditionalServings(prev => prev.filter((_, j) => j !== i))}
+                    onPress={() => {
+                      setAdditionalServings(prev => prev.filter((_, j) => j !== i));
+                      setAdditionalServingUnits(prev => { const next = { ...prev }; delete next[sv.id]; return next; });
+                      setAdditionalServingDrafts(prev => { const next = { ...prev }; delete next[sv.id]; return next; });
+                    }}
                     style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
                     <Ionicons name="close-circle" size={18} color={theme.textDim} />
                   </TouchableOpacity>
                 </View>
-              ))}
+                );
+              })}
             </>
           )}
         </View>

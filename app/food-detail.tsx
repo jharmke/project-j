@@ -889,7 +889,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
       const newEntry = {
   // Serving-only recipe entries rebuild the name in servings (amount tracks the serving count), so an
   // edited count is reflected; everything else rebuilds from the edited amount + unit.
-  name: isServingOnlyRecipe ? `${food.description} (${amount} ${amount === '1' ? 'serving' : 'servings'})` : `${food.description} (${nameAmount}${unit})`,
+  name: isServingOnlyRecipe ? `${food.description} (${amount} ${amount === '1' ? 'serving' : 'servings'})` : `${food.description} (${nameAmount}${amountBaseUnit})`,
   cal: calories,
   meal: currentMeal,
   protein,
@@ -904,7 +904,10 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
   labelCarbs: selectedServing?.carbs || effectiveServing?.carbs || defaultFsServing?.carbs || carbsPer100g,
   labelFat: selectedServing?.fat || effectiveServing?.fat || defaultFsServing?.fat || fatPer100g,
   loggedAmount: amount,
-  loggedUnit: unit,
+  loggedUnit: amountBaseUnit,
+  // Preserve the food's serving NAME ("1 Cup", "1 scoop") so re-opening the entry shows it under
+  // Servings instead of falling back to the raw amount+unit.
+  servingLabelText: food.servingUnit || null,
   displayUnit: amtShowUnit ? amountEntryUnit : null,
   displayAmount: amtShowUnit ? amtDisplayAmount : null,
   servingGrams: effectiveServing?.grams,

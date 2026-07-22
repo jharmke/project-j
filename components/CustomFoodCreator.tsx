@@ -32,7 +32,7 @@ import PrimaryCTA from './PrimaryCTA';
 import GradientIcon from './GradientIcon';
 import GradientNumber from './GradientNumber';
 import { recognizeText as ocrRecognizeText } from 'expo-ocr-kit';
-import { convertUnit, convertibleUnitsFor } from '../utils/unitConversion';
+import { convertUnit, convertibleUnitsFor, unitGroup } from '../utils/unitConversion';
 import UnitPickerButton from './UnitPickerButton';
 import { parseNutritionLabel, ParsedLabel } from '../utils/nutritionLabelParser';
 import LabelScanReviewModal, { ScanRowResult } from './LabelScanReviewModal';
@@ -171,6 +171,8 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
   const [servingEntryUnit, setServingEntryUnit] = useState('g');
   const [servingDraft, setServingDraft] = useState<string | undefined>(undefined);
   const WEIGHT_ENTRY_UNITS = ['g', 'kg', 'oz', 'lb'];
+  const VOLUME_ENTRY_UNITS = ['ml', 'l', 'cup', 'tbsp', 'tsp', 'fl oz'];
+  const ALL_ENTRY_UNITS = [...WEIGHT_ENTRY_UNITS, ...VOLUME_ENTRY_UNITS];
   const [isSupplementType, setIsSupplementType] = useState(false);
   const [saving, setSaving] = useState(false);
   // Measured (not assumed) header + scroll-content heights, so the card can be given an
@@ -265,6 +267,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
         setServingGrams(prefill.servingGrams?.toString() || '');
         setServingLabel(prefill.servingLabel || '');
         setServingUnitType(prefill.servingUnitType || 'g');
+        setServingEntryUnit(prefill.servingUnitType || 'g');
         setIsSupplementType(prefill.type === 'supplement');
       }
       Animated.parallel([
@@ -559,10 +562,12 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
             onPress={() => {
               triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
               setIsSupplementType(false);
-              // A supplement-only unit (capsule, pill, etc.) no longer has a home in Food's
-              // shorter list -- reset to the default rather than leave a "selected" unit that
-              // isn't even shown anymore.
-              if (SUPPLEMENT_ONLY_UNITS.includes(servingUnitType)) setServingUnitType('g');
+              // A supplement-only unit (capsule, pill, etc.) has no home in Food's weight/volume
+              // picker -- fall back to grams; keep the entry display unit in sync with the base.
+              const foodBase = SUPPLEMENT_ONLY_UNITS.includes(servingUnitType) ? 'g' : servingUnitType;
+              setServingUnitType(foodBase);
+              setServingEntryUnit(foodBase);
+              setServingDraft(undefined);
             }}
             style={{ flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 10, borderWidth: 1.5, backgroundColor: !isSupplementType ? theme.accentBlueBg : theme.bgInput, borderColor: !isSupplementType ? theme.accentBlueBorder : theme.borderInput }}
           >
@@ -671,25 +676,40 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
                     style={[s.input, { flex: 1 }]}
                     placeholder="100"
                     placeholderTextColor={theme.textPlaceholder}
-                    value={servingEntryUnit === 'g' ? servingGrams : (servingDraft !== undefined ? servingDraft : (servingGrams ? String(Math.round(((convertUnit(parseFloat(servingGrams), 'g', servingEntryUnit) ?? 0)) * 100) / 100) : ''))}
+                    value={servingEntryUnit === servingUnitType ? servingGrams : (servingDraft !== undefined ? servingDraft : (servingGrams ? String(Math.round(((convertUnit(parseFloat(servingGrams), servingUnitType, servingEntryUnit) ?? 0)) * 100) / 100) : ''))}
                     onChangeText={v => {
                       const stripped = v.replace(/[^0-9.]/g, '');
-                      if (servingEntryUnit === 'g') setServingGrams(stripped);
+                      if (servingEntryUnit === servingUnitType) setServingGrams(stripped);
                       else setServingDraft(stripped);
                     }}
                     onBlur={() => {
-                      if (servingEntryUnit === 'g' || servingDraft === undefined) return;
+                      if (servingEntryUnit === servingUnitType || servingDraft === undefined) return;
                       const typed = parseFloat(servingDraft);
-                      const grams = !isNaN(typed) ? convertUnit(typed, servingEntryUnit, 'g') : null;
-                      if (grams !== null) setServingGrams(String(Math.round(grams * 100) / 100));
+                      const canonical = !isNaN(typed) ? convertUnit(typed, servingEntryUnit, servingUnitType) : null;
+                      if (canonical !== null) setServingGrams(String(Math.round(canonical * 100) / 100));
                       setServingDraft(undefined);
                     }}
                     keyboardType="decimal-pad"
                   />
                   <UnitPickerButton
                     value={servingEntryUnit}
-                    options={WEIGHT_ENTRY_UNITS}
-                    onChange={u => { setServingEntryUnit(u); setServingDraft(undefined); }}
+                    options={ALL_ENTRY_UNITS}
+                    twoColumn
+                    onChange={u => {
+                      const newBase = unitGroup(u) === 'volume' ? 'ml' : 'g';
+                      if (newBase === servingUnitType) { setServingEntryUnit(u); setServingDraft(undefined); return; }
+                      // Cross-family switch (weight <-> volume): can't convert without density -- keep the
+                      // number shown and reinterpret it in the newly picked unit, flipping the canonical base.
+                      const shown = servingEntryUnit === servingUnitType
+                        ? servingGrams
+                        : (servingDraft !== undefined ? servingDraft : (servingGrams ? String(Math.round(((convertUnit(parseFloat(servingGrams), servingUnitType, servingEntryUnit) ?? 0)) * 100) / 100) : ''));
+                      const num = parseFloat(shown);
+                      const canonical = !isNaN(num) ? convertUnit(num, u, newBase) : null;
+                      setServingUnitType(newBase);
+                      setServingGrams(canonical !== null ? String(Math.round(canonical * 100) / 100) : (shown || ''));
+                      setServingEntryUnit(u);
+                      setServingDraft(undefined);
+                    }}
                   />
                 </View>
               )}

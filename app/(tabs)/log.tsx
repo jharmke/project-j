@@ -1865,13 +1865,16 @@ export default function LogScreen() {
                             existingUnit: editUnit,
                             existingDisplayUnit: e.displayUnit || undefined,
                             existingDisplayAmount: e.displayAmount != null ? String(e.displayAmount) : undefined,
+                            // Carry the entry's real base unit so the edit screen resolves mL/g correctly
+                            // (was falling back to grams and colliding with a restored mL display unit).
+                            servingUnitType: e.loggedUnit || undefined,
                             timestamp: entry.timestamp || Date.now(),
                             fsId: (entry as any).fsId || null,
                             myFoodId: (entry as any).myFoodId || null,
                             isMyFood: (entry as any).isMyFood || false,
                             brand: (entry as any).brand || null,
                             servingGrams: (entry as any).servingGrams || undefined,
-                            servingUnit: (entry as any).loggedUnit || undefined,
+                            servingUnit: (entry as any).servingLabelText || undefined,
                             aiEstimated: (entry as any).aiEstimated || false,
                             servingOnly,
                             isRecipe: looksLikeRecipe,

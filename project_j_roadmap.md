@@ -875,7 +875,7 @@ are separate pre-submission checklists, NOT part of this menu.
   (4c) DONE 2026-07-22 -- log-time conversion on the recipe log screen. See RECENTLY SHIPPED. (The
       "recipes should remember a display unit" half of this item was a bad read on my part: recipes have
       no canonical base under them, so their stored unit already IS what's displayed. Nothing to build.)
-  (5) OPEN -- legacy/downstream audit: confirm new + legacy non-gram foods behave; legacy My Foods/cloned
+  (5) PINNED 2026-07-22 by Justin (parked, not dropped) -- legacy/downstream audit: confirm new + legacy non-gram foods behave; legacy My Foods/cloned
       foods degrade gracefully (worst case a few need re-checking, never corrupt). Optional rollout polish:
       a one-time "What's New" heads-up that older custom foods may need a quick re-check.
   Migration risk is scoped to My Foods + cloned foods only (FatSecret results are always fresh from the API).
@@ -1127,6 +1127,12 @@ are separate pre-submission checklists, NOT part of this menu.
   serving picker, appended not replacing any existing servings). New this session: value/%DV live-link for
   every field with a real FDA DV reference (not calories), a shared non-blocking "double-check before
   saving" banner triggered by a missing core field (Calories/Fat/Carbs/Protein) or 3+ low-confidence flags.
+  STALE CLAIMS CORRECTED 2026-07-22 (verified in code, do not re-add them to the open list): the scan
+  button IS in EditFoodModal.tsx, and "1 Container" IS wired into Additional Servings on confirm in BOTH
+  CustomFoodCreator and EditFoodModal (re-scanning replaces the prior auto-added container row, manual
+  rows untouched). Real remaining limit there: the container row is built by multiplying serving grams x
+  servings-per-container, so a label whose serving is volume-only with no gram equivalent ("1 Can (16 fl
+  oz)") produces no container row at all.
   Entry points: CustomFoodCreator, food-detail's copy-to-edit flow, and the barcode-override flow (confirmed
   `pj_barcode_overrides` has no structural blocker, just needs the scanned object shaped like the existing
   serving-picker item). MONETIZATION: TBD, Justin leaning free (~80%) -- unlike the AI Meal Estimator/Otto,

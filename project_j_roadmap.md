@@ -16,6 +16,7 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-22 **Serving-unit redesign Piece 3b: volume support in EditFoodModal + foods now remember the unit they were built in.** Edit Food's primary Amount got the same 2-column Weight/Volume picker as Create Food and stopped hardcoding grams (a mL food now opens as mL, not a number mislabeled "g"); within-family converts, cross-family flips the canonical base, and legacy non-measurement units ("container"/"serving") fall back to grams for display and flip to a real base only when the user deliberately picks a unit. NEW `servingDisplayUnit` field (display only, never math, ignored if it leaves the base's family): a juice built as "1 Cup" is greeted as 1 Cup on food detail, logging, and Edit instead of 236.59 mL, with per-entry displayUnit still winning when editing an existing log. Also swept lowercase "ml"/"l" leaks through unitLabel (row placeholders, Create Food's "Serving (mL)" header, food-detail Amount label + avg readout, auto-generated serving labels, diary entry names). Device-confirmed by Justin. STILL OPEN: recipe builder picker; legacy audit.
 - 2026-07-22 **Serving-unit redesign Piece 3a: volume support in Create Food + 2-column Weight/Volume picker.** Create Food's primary Amount now offers weight (g/kg/oz/lb) AND volume (mL/L/cup/tbsp/tsp/fl oz) in one 2-column picker (headers "Weight"/"Volume"); within-family converts live, cross-family keeps the number and flips the canonical base (g<->ml). Diary entries now store their true base unit + serving name, fixing edit-entry of a volume (mL) food (was showing amount 0 / "240g", now shows "240 mL" and the "1 Cup" serving name). cup kept at 236.6 mL (Justin: whatever's easiest). Device-confirmed by Justin. STILL OPEN: same volume picker in EditFoodModal (the food modal, currently weight-only); recipe builder; legacy audit.
 - 2026-07-22 **Serving-unit redesign Piece 2: family-aware weight/volume dropdown on the diary logging screen (food-detail).** Amount field now has a g/kg/oz/lb (or mL/L/cup/tbsp/tsp/fl oz for volume foods) picker merged into one unified box; logs remember the unit entered or the food's native unit (displayUnit/displayAmount) so the meal card + edit reopen read "11 oz"/"240 mL", grams stays canonical for all math/totals; switching a logged entry's unit undims Update Entry and switching back to g clears it; mL/L capitalization via unitLabel; EditFoodModal Save now guards against an empty Amount (fixes the empty-amount garbage-macros bug). Device-confirmed by Justin. Recipe builder still on its own follow-up.
 - 2026-07-22 **Serving-unit redesign Piece 1: EditFoodModal now mirrors Create Food** (boxed Basic Info + Serving sections, Serving/Calories moved up above the nutrient grid, merged "Serving Name" free-text field, g/kg/oz/lb weight dropdown on Amount converting to canonical grams). Non-destructive: no legacy food's numbers/units rewritten. Device-confirmed by Justin. Photo button intentionally not added (kept existing entry points). Pieces 2 (logging-screen weight dropdown) + 3 (legacy migration) still open.
@@ -858,10 +859,11 @@ are separate pre-submission checklists, NOT part of this menu.
   (2) DONE 2026-07-22 -- family-aware weight/volume dropdown on the food-detail logging Amount, unified
       box, logs remember the unit, empty-amount guard (see RECENTLY SHIPPED). Grew beyond the original
       weight-only plan to also cover volume (mL/cup) foods, since FatSecret liquids come in mL.
-  (3) CREATE FOOD DONE 2026-07-22 (see RECENTLY SHIPPED, Piece 3a) -- 2-column weight/volume picker,
-      cup kept at 236.6mL. **STILL OPEN: apply the SAME change to EditFoodModal's primary Amount** (the
-      food-definition modal -- still weight-only; this is the immediate next task). Pattern is a straight
-      mirror of what's now in CustomFoodCreator.tsx.
+  (3) DONE 2026-07-22 -- Create Food (3a) AND EditFoodModal (3b) both have the 2-column weight/volume
+      picker; cup kept at 236.6mL. 3b also added `servingDisplayUnit` (display-only preferred unit, so a
+      food built in Cups is greeted in Cups everywhere) and swept lowercase ml/l leaks. See RECENTLY
+      SHIPPED. Legacy "container"/"serving" foods display as grams and only flip to a real base when the
+      user deliberately picks a unit -- deliberate, revisit in (5) if it ever bites.
   (4) OPEN -- extend the same dropdown to the RECIPE builder's amount entry (its own surface).
   (5) OPEN -- legacy/downstream audit: confirm new + legacy non-gram foods behave; legacy My Foods/cloned
       foods degrade gracefully (worst case a few need re-checking, never corrupt). Optional rollout polish:

@@ -19,6 +19,7 @@ import { storageSet } from '../utils/storage';
 import { purgeFoodPhoto } from '../utils/foodPhotos';
 import { getMealDisplayName, MealSlot, loadMealSlots } from '../utils/mealSlots';
 import { setCameraActive } from '../utils/assistantFab';
+import { unitLabel } from '../utils/unitConversion';
 import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
@@ -441,6 +442,7 @@ const openEditModal = (food: any) => {
     type: food.type || 'food',
     servingGrams: food.servingSize?.toString() || '100',
     servingUnitType: food.servingUnitType || 'g',
+    servingDisplayUnit: food.servingDisplayUnit,
     servingLabel: food.servingUnit || '',
     additionalServings: (food.additionalServings || []).map((s: any, i: number) => ({
       id: `as_${i}`,
@@ -465,7 +467,7 @@ const saveEditFood = async () => {
     const calNum = parseInt(editFoodData.cal) || 0;
     const servingGrams = parseFloat(editFoodData.servingGrams) || src?.servingSize || 100;
     const servingUnitType = editFoodData.servingUnitType || 'g';
-    const servingLabel = editFoodData.servingLabel?.trim() || `${servingGrams}${servingUnitType}`;
+    const servingLabel = editFoodData.servingLabel?.trim() || `${servingGrams}${unitLabel(servingUnitType)}`;
     const updated = foods.map((f: any) =>
       (src?.id ? f.id === src.id : f.name === src.name) ? {
         ...f,
@@ -508,6 +510,8 @@ const saveEditFood = async () => {
         type: editFoodData.type || 'food',
         servingSize: servingGrams,
         servingUnitType,
+        // Display-only preference: the unit this food is greeted in. Never used for math.
+        servingDisplayUnit: editFoodData.servingDisplayUnit || f.servingDisplayUnit,
         servingUnit: servingLabel,
         calPer100g: Math.round((calNum / servingGrams) * 100),
         proteinPer100g: Math.round((parseFloat(editFoodData.protein) || 0) / servingGrams * 100 * 10) / 10,
@@ -1067,6 +1071,7 @@ const openFoodDetail = async (food: SearchResult) => {
               fatPer100g: (myFoodMatch as any).fatPer100g || 0,
               foodNutrients: (myFoodMatch as any).foodNutrients || food.foodNutrients || [],
               servingUnitType: (myFoodMatch as any).servingUnitType || 'g',
+              servingDisplayUnit: (myFoodMatch as any).servingDisplayUnit,
               servingUnit: (myFoodMatch as any).servingUnit || '',
               existingAmount: ((myFoodMatch as any).servingSize || 100).toString(),
               myFoodData: myFoodMatch,
@@ -1159,6 +1164,7 @@ const openFoodDetail = async (food: SearchResult) => {
             fatPer100g: (myFoodMatch as any).fatPer100g || 0,
             foodNutrients: (myFoodMatch as any).foodNutrients || food.foodNutrients || [],
           servingUnitType: (myFoodMatch as any).servingUnitType || 'g',
+          servingDisplayUnit: (myFoodMatch as any).servingDisplayUnit,
           servingUnit: (myFoodMatch as any).servingUnit || '',
           existingAmount: existingAmount || ((myFoodMatch as any).servingSize || 100).toString(),
           } : {}),

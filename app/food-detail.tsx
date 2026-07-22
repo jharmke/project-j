@@ -11,7 +11,7 @@ import Svg, { Circle } from 'react-native-svg';
 import Reanimated, { useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
 import CustomFoodCreator from '../components/CustomFoodCreator';
 import UnitPickerButton from '../components/UnitPickerButton';
-import { convertUnit, convertibleUnitsFor } from '../utils/unitConversion';
+import { convertUnit, convertibleUnitsFor, unitGroup, unitLabel } from '../utils/unitConversion';
 import { ToastRenderer, useToast } from '../components/Toast';
 import GradientNumber from '../components/GradientNumber';
 import GradientTitle from '../components/GradientTitle';
@@ -239,7 +239,7 @@ const isTutorialMode = tutorialMode === 'true';
   const customServings = (food?.isCustom && myFoodAdditionalServings.length > 0 && (food?.calPer100g ?? 0) > 0)
     ? [
         {
-          label: food.servingUnit || `${baseServingSize}${food.servingUnitType || 'g'}`,
+          label: food.servingUnit || `${baseServingSize}${unitLabel(food.servingUnitType || 'g')}`,
           calories: Math.round((food.calPer100g || 0) * baseServingSize / 100),
           protein: Math.round(((food.proteinPer100g || 0) * baseServingSize / 100) * 10) / 10,
           carbs: Math.round(((food.carbsPer100g || 0) * baseServingSize / 100) * 10) / 10,
@@ -339,7 +339,7 @@ const isTutorialMode = tutorialMode === 'true';
       fat: Math.round((food.existingFat || 0) * ratio * 10) / 10,
       grams: baseGrams,
       unit: isServingOnly ? 'serving' : (food.servingUnitType || 'g'),
-      label: isServingOnly ? 'serving' : ((food.servingUnit && /\d/.test(food.servingUnit)) ? food.servingUnit : `${baseGrams}${food.servingUnitType || 'g'}`),
+      label: isServingOnly ? 'serving' : ((food.servingUnit && /\d/.test(food.servingUnit)) ? food.servingUnit : `${baseGrams}${unitLabel(food.servingUnitType || 'g')}`),
       fiber: 0, sugar: 0, sodium: 0, cholesterol: 0, saturatedFat: 0,
       polyunsaturatedFat: 0, monounsaturatedFat: 0, potassium: 0,
       vitaminA: 0, vitaminC: 0, calcium: 0, iron: 0, sugarAlcohols: 0,
@@ -633,16 +633,22 @@ const [showTimePicker, setShowTimePicker] = useState(false);
   // dropdown just lets you type in a sibling unit (oz, cup, etc.) and converts back on blur.
   const amountBaseUnit = effectiveServing?.unit || food?.servingUnitType || 'g';
   const amountFamily = convertibleUnitsFor(amountBaseUnit);
+  // The unit this food is greeted in: the one it was built in (servingDisplayUnit) when that still
+  // belongs to the base unit's family, otherwise the base itself. A juice built as "1 Cup" opens as
+  // 1 Cup instead of 236.59 mL -- display only, the canonical number never moves.
+  const preferredDisplayUnit = (food?.servingDisplayUnit && unitGroup(food.servingDisplayUnit) === unitGroup(amountBaseUnit))
+    ? food.servingDisplayUnit
+    : amountBaseUnit;
   // On edit, restore the unit the entry was logged in (persisted as displayUnit); fresh logs start
-  // in the food's base unit. The displayed value derives from the canonical grams via conversion.
-  const [amountEntryUnit, setAmountEntryUnit] = useState<string>(food?.existingDisplayUnit || amountBaseUnit);
+  // in the food's preferred unit. The displayed value derives from the canonical amount via conversion.
+  const [amountEntryUnit, setAmountEntryUnit] = useState<string>(food?.existingDisplayUnit || preferredDisplayUnit);
   const [amountDraft, setAmountDraft] = useState<string | undefined>(undefined);
   // Reset the entry unit to the base unit ONLY when the base actually changes (e.g. switching
   // servings), never on mount -- mounting would otherwise clobber a restored displayUnit above.
   const amountBaseMountRef = useRef(true);
   useEffect(() => {
     if (amountBaseMountRef.current) { amountBaseMountRef.current = false; return; }
-    setAmountEntryUnit(amountBaseUnit);
+    setAmountEntryUnit(preferredDisplayUnit);
     setAmountDraft(undefined);
   }, [amountBaseUnit]);
   const [servingCountTouched, setServingCountTouched] = useState(false);
@@ -889,7 +895,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
       const newEntry = {
   // Serving-only recipe entries rebuild the name in servings (amount tracks the serving count), so an
   // edited count is reflected; everything else rebuilds from the edited amount + unit.
-  name: isServingOnlyRecipe ? `${food.description} (${amount} ${amount === '1' ? 'serving' : 'servings'})` : `${food.description} (${nameAmount}${amountBaseUnit})`,
+  name: isServingOnlyRecipe ? `${food.description} (${amount} ${amount === '1' ? 'serving' : 'servings'})` : `${food.description} (${nameAmount}${unitLabel(amountBaseUnit)})`,
   cal: calories,
   meal: currentMeal,
   protein,
@@ -1012,6 +1018,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
       caffeine: mf?.caffeine?.toString() || '',
       servingGrams: (mf?.servingSize ?? src.servingSize)?.toString() || '100',
       servingUnitType: mf?.servingUnitType || src.servingUnitType || 'g',
+      servingDisplayUnit: mf?.servingDisplayUnit || src.servingDisplayUnit,
       servingLabel: mf?.servingUnit || src.servingUnit || '',
       additionalServings: (mf?.additionalServings || src.additionalServings || []).map((s: any, i: number) => ({
         id: `as_${i}`,
@@ -1052,7 +1059,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
       const calNum = parseInt(editFoodData.cal) || 0;
       const servingGrams = parseFloat(editFoodData.servingGrams) || src?.servingSize || 100;
       const servingUnitType = editFoodData.servingUnitType || 'g';
-      const servingLabel = editFoodData.servingLabel?.trim() || `${servingGrams}${servingUnitType}`;
+      const servingLabel = editFoodData.servingLabel?.trim() || `${servingGrams}${unitLabel(servingUnitType)}`;
       const updated = foods.map((f: any) =>
         (src?.id ? f.id === src.id : f.name === (src?.name || src?.description)) ? {
           ...f,
@@ -1094,6 +1101,8 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           caffeine: parseFloat(editFoodData.caffeine) || 0,
           servingSize: servingGrams,
           servingUnitType,
+          // Display-only preference: the unit this food is greeted in. Never used for math.
+          servingDisplayUnit: editFoodData.servingDisplayUnit || f.servingDisplayUnit,
           servingUnit: servingLabel,
           calPer100g: Math.round((calNum / servingGrams) * 100),
           proteinPer100g: Math.round((parseFloat(editFoodData.protein) || 0) / servingGrams * 100 * 10) / 10,
@@ -1359,7 +1368,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             entries (no gram basis) so they don't show a bogus "Amount (g): 100". */}
         {!isServingOnlyRecipe && (
         <View ref={amountRowRef} style={styles.amountRow}>
-          <Text style={styles.amountLabel}>{amountFamily.length > 0 ? 'Amount' : `Amount (${amountBaseUnit})`}</Text>
+          <Text style={styles.amountLabel}>{amountFamily.length > 0 ? 'Amount' : `Amount (${unitLabel(amountBaseUnit)})`}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8 }}>
             <TextInput
               style={{ color: theme.textSecondary, paddingVertical: 12, paddingHorizontal: 12, fontSize: 24, fontFamily: Type.num, width: amountFamily.length > 0 ? 96 : 120, textAlign: 'center' }}
@@ -1634,7 +1643,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                   color={theme.textSecondary}
                   style={{ fontSize: 18, fontFamily: Type.num }}
                 />
-                {foodStats.avgGrams > 0 && <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiMedium, marginLeft: 1 }}>{effectiveServing?.unit || food?.servingUnitType || 'g'}</Text>}
+                {foodStats.avgGrams > 0 && <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiMedium, marginLeft: 1 }}>{unitLabel(effectiveServing?.unit || food?.servingUnitType || 'g')}</Text>}
               </View>
             </View>
           </View>

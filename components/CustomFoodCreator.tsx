@@ -32,7 +32,7 @@ import PrimaryCTA from './PrimaryCTA';
 import GradientIcon from './GradientIcon';
 import GradientNumber from './GradientNumber';
 import { recognizeText as ocrRecognizeText } from 'expo-ocr-kit';
-import { convertUnit, convertibleUnitsFor, unitGroup } from '../utils/unitConversion';
+import { convertUnit, convertibleUnitsFor, unitGroup, unitLabel } from '../utils/unitConversion';
 import UnitPickerButton from './UnitPickerButton';
 import { parseNutritionLabel, ParsedLabel } from '../utils/nutritionLabelParser';
 import LabelScanReviewModal, { ScanRowResult } from './LabelScanReviewModal';
@@ -452,7 +452,11 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
         ...(caffeine ? { caffeine: parseFloat(caffeine) } : {}),
         servingSize: grams,
         servingUnitType: servingUnitType,
-        servingUnit: servingLabel.trim() || `${grams}${servingUnitType}`,
+        // The unit this food was BUILT in -- display only, never math. Someone who typed "1 cup" gets
+        // greeted with "1 Cup" everywhere instead of the canonical 236.59 mL. Only stored when it's a
+        // real unit in the same family as the base, so it can never disagree with the stored number.
+        ...(unitGroup(servingEntryUnit) === unitGroup(servingUnitType) ? { servingDisplayUnit: servingEntryUnit } : {}),
+        servingUnit: servingLabel.trim() || `${grams}${unitLabel(servingUnitType)}`,
         additionalServings: additionalServings
           .filter(s => s.label.trim() && parseFloat(s.grams) > 0)
           .map(s => ({ label: s.label.trim(), grams: parseFloat(s.grams) })),
@@ -752,7 +756,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
               {additionalServings.length > 0 && (
                 <View style={{ flexDirection: 'row', gap: 6, marginBottom: 4 }}>
                   <Text style={[s.fieldLabel, { flex: 1.4, marginBottom: 0 }]}>Serving Label</Text>
-                  <Text style={[s.fieldLabel, { flex: 0.8, marginBottom: 0 }]}>Serving ({servingUnitType})</Text>
+                  <Text style={[s.fieldLabel, { flex: 0.8, marginBottom: 0 }]}>Serving ({unitLabel(servingUnitType)})</Text>
                   <View style={{ width: 32 }} />
                 </View>
               )}
@@ -775,7 +779,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
                   />
                   <TextInput
                     style={[s.input, { flex: 0.8, paddingVertical: 8 }]}
-                    placeholder={rowUnit}
+                    placeholder={unitLabel(rowUnit)}
                     placeholderTextColor={theme.textPlaceholder}
                     keyboardType="decimal-pad"
                     value={displayValue}

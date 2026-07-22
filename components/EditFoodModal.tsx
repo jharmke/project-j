@@ -16,14 +16,18 @@ import GradientNumber from './GradientNumber';
 import { useToast } from './Toast';
 import { parseNutritionLabel, ParsedLabel } from '../utils/nutritionLabelParser';
 import LabelScanReviewModal, { ScanRowResult } from './LabelScanReviewModal';
-import { convertUnit, convertibleUnitsFor } from '../utils/unitConversion';
+import { convertUnit, convertibleUnitsFor, unitGroup, unitLabel } from '../utils/unitConversion';
 import UnitPickerButton from './UnitPickerButton';
 
-const FOOD_SERVING_UNITS = ['g', 'ml', 'fl oz', 'oz', 'container', 'serving', 'tbsp', 'tsp', 'cup'];
 const SUPPLEMENT_ONLY_UNITS = ['pill', 'capsule', 'tablet', 'softgel', 'gummy'];
-const EDIT_SERVING_UNITS = [...FOOD_SERVING_UNITS, ...SUPPLEMENT_ONLY_UNITS];
 const SUPPLEMENT_UNIT_OPTIONS = [...SUPPLEMENT_ONLY_UNITS, 'ml', 'g'];
 const WEIGHT_ENTRY_UNITS = ['g', 'kg', 'oz', 'lb'];
+const VOLUME_ENTRY_UNITS = ['ml', 'l', 'cup', 'tbsp', 'tsp', 'fl oz'];
+const ALL_ENTRY_UNITS = [...WEIGHT_ENTRY_UNITS, ...VOLUME_ENTRY_UNITS];
+// Legacy foods can carry a unit that isn't a real measurement ("container", "serving") -- those can't
+// act as a math base, so fall back to grams for display. Picking any unit from the dropdown flips the
+// food onto a real base (see the picker's onChange) rather than leaving number and label disagreeing.
+const entryBaseFor = (u?: string) => (u && unitGroup(u) ? u : 'g');
 
 const filterDecimal = (v: string) => {
   const stripped = v.replace(/[^0-9.]/g, '');
@@ -53,8 +57,9 @@ export default function EditFoodModal({ visible, editFoodData, setEditFoodData, 
   // unit automatically. Draft holds raw in-progress text so mid-typing isn't reformatted.
   const [additionalServingUnits, setAdditionalServingUnits] = useState<Record<string, string>>({});
   const [additionalServingDrafts, setAdditionalServingDrafts] = useState<Record<string, string>>({});
-  // Weight-unit entry convenience on the primary Serving amount (food type only). servingGrams stays
-  // canonical grams always; servingEntryUnit/servingDraft are transient typing state, never persisted.
+  // Weight/volume entry convenience on the primary Serving amount (food type only). servingGrams stays
+  // canonical in the food's own base unit (servingUnitType -- g for weight foods, ml for volume ones);
+  // servingEntryUnit/servingDraft are transient typing state, never persisted.
   const [servingEntryUnit, setServingEntryUnit] = useState('g');
   const [servingDraft, setServingDraft] = useState<string | undefined>(undefined);
 
@@ -62,7 +67,6 @@ export default function EditFoodModal({ visible, editFoodData, setEditFoodData, 
     if (visible) {
       overlayAnim.setValue(0);
       cardAnim.setValue(0);
-      setServingEntryUnit('g');
       setServingDraft(undefined);
       Animated.parallel([
         Animated.timing(overlayAnim, { toValue: 1, duration: 180, useNativeDriver: true }),
@@ -70,6 +74,22 @@ export default function EditFoodModal({ visible, editFoodData, setEditFoodData, 
       ]).start();
     }
   }, [visible]);
+
+  // Sync the Amount unit button to the food's real base unit on open -- a volume food must open showing
+  // mL, not be silently read as grams. Fires on the first render where the modal is open AND the food
+  // data has landed (they don't always arrive on the same render), then stays put until the next open.
+  const unitSyncedRef = useRef(false);
+  useEffect(() => {
+    if (!visible) { unitSyncedRef.current = false; return; }
+    if (unitSyncedRef.current || !editFoodData) return;
+    unitSyncedRef.current = true;
+    const base = entryBaseFor(editFoodData.servingUnitType);
+    // Open in the unit the food was built in when there is one (a juice entered as "1 Cup" opens as
+    // 1 Cup, not 236.59 mL) -- but only if it still belongs to the same family as the stored number.
+    const preferred = editFoodData.servingDisplayUnit;
+    setServingEntryUnit(preferred && unitGroup(preferred) === unitGroup(base) ? preferred : base);
+    setServingDraft(undefined);
+  }, [visible, editFoodData]);
 
   const handleClose = () => {
     Animated.parallel([
@@ -80,6 +100,8 @@ export default function EditFoodModal({ visible, editFoodData, setEditFoodData, 
 
   const set = (key: string, v: any) => setEditFoodData((p: any) => p ? { ...p, [key]: v } : null);
   const setNum = (key: string) => (v: string) => set(key, filterDecimal(v));
+  // The food's canonical unit -- servingGrams is stored in THIS unit, not necessarily grams.
+  const foodBase = entryBaseFor(editFoodData?.servingUnitType);
 
   const handleScanLabel = async () => {
     try {
@@ -170,7 +192,14 @@ export default function EditFoodModal({ visible, editFoodData, setEditFoodData, 
                   // A supplement-only unit (capsule, pill, etc.) no longer has a home in Food's
                   // shorter list -- reset to the default rather than leave a "selected" unit
                   // that isn't even shown anymore.
-                  if (SUPPLEMENT_ONLY_UNITS.includes(editFoodData?.servingUnitType)) set('servingUnitType', 'g');
+                  if (SUPPLEMENT_ONLY_UNITS.includes(editFoodData?.servingUnitType)) {
+                    set('servingUnitType', 'g');
+                    set('servingDisplayUnit', 'g');
+                    setServingEntryUnit('g');
+                  } else {
+                    setServingEntryUnit(entryBaseFor(editFoodData?.servingUnitType));
+                  }
+                  setServingDraft(undefined);
                 }}
                 style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, backgroundColor: editFoodData?.type !== 'supplement' ? theme.accentBlueBg : theme.bgInput, borderColor: editFoodData?.type !== 'supplement' ? theme.accentBlueBorder : theme.borderInput }}
               >
@@ -262,17 +291,17 @@ export default function EditFoodModal({ visible, editFoodData, setEditFoodData, 
                     <View style={{ flexDirection: 'row', gap: 6 }}>
                       <TextInput
                         style={{ flex: 1, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: Type.ui }}
-                        value={servingEntryUnit === 'g' ? (editFoodData?.servingGrams || '') : (servingDraft !== undefined ? servingDraft : (editFoodData?.servingGrams ? String(Math.round(((convertUnit(parseFloat(editFoodData.servingGrams), 'g', servingEntryUnit) ?? 0)) * 100) / 100) : ''))}
+                        value={servingEntryUnit === foodBase ? (editFoodData?.servingGrams || '') : (servingDraft !== undefined ? servingDraft : (editFoodData?.servingGrams ? String(Math.round(((convertUnit(parseFloat(editFoodData.servingGrams), foodBase, servingEntryUnit) ?? 0)) * 100) / 100) : ''))}
                         onChangeText={v => {
                           const stripped = filterDecimal(v);
-                          if (servingEntryUnit === 'g') set('servingGrams', stripped);
+                          if (servingEntryUnit === foodBase) set('servingGrams', stripped);
                           else setServingDraft(stripped);
                         }}
                         onBlur={() => {
-                          if (servingEntryUnit === 'g' || servingDraft === undefined) return;
+                          if (servingEntryUnit === foodBase || servingDraft === undefined) return;
                           const typed = parseFloat(servingDraft);
-                          const grams = !isNaN(typed) ? convertUnit(typed, servingEntryUnit, 'g') : null;
-                          if (grams !== null) set('servingGrams', String(Math.round(grams * 100) / 100));
+                          const canonical = !isNaN(typed) ? convertUnit(typed, servingEntryUnit, foodBase) : null;
+                          if (canonical !== null) set('servingGrams', String(Math.round(canonical * 100) / 100));
                           setServingDraft(undefined);
                         }}
                         keyboardType="decimal-pad"
@@ -280,13 +309,39 @@ export default function EditFoodModal({ visible, editFoodData, setEditFoodData, 
                         placeholderTextColor={theme.textDim}
                         selectTextOnFocus
                       />
-                      <UnitPickerButton value={servingEntryUnit} options={WEIGHT_ENTRY_UNITS} onChange={u => { setServingEntryUnit(u); setServingDraft(undefined); }} />
+                      <UnitPickerButton
+                        value={servingEntryUnit}
+                        options={ALL_ENTRY_UNITS}
+                        twoColumn
+                        onChange={u => {
+                          const newBase = unitGroup(u) === 'volume' ? 'ml' : 'g';
+                          // Same family (and the food's stored unit is a real measurement) -- pure display
+                          // conversion, the food's own base unit is left exactly as it is. Legacy foods
+                          // based on cup/oz/etc. keep that base rather than being rewritten to g/ml.
+                          const sameFamily = unitGroup(u) === unitGroup(foodBase) && unitGroup(editFoodData?.servingUnitType) !== null;
+                          if (sameFamily) { set('servingDisplayUnit', u); setServingEntryUnit(u); setServingDraft(undefined); return; }
+                          // Cross-family switch (weight <-> volume), or a legacy food whose stored unit
+                          // isn't a real measurement: can't convert without density -- keep the number
+                          // shown, reinterpret it in the picked unit, and flip the canonical base so the
+                          // number and the food's unit never disagree.
+                          const shown = servingEntryUnit === foodBase
+                            ? (editFoodData?.servingGrams || '')
+                            : (servingDraft !== undefined ? servingDraft : (editFoodData?.servingGrams ? String(Math.round(((convertUnit(parseFloat(editFoodData.servingGrams), foodBase, servingEntryUnit) ?? 0)) * 100) / 100) : ''));
+                          const num = parseFloat(shown);
+                          const canonical = !isNaN(num) ? convertUnit(num, u, newBase) : null;
+                          set('servingUnitType', newBase);
+                          set('servingDisplayUnit', u);
+                          set('servingGrams', canonical !== null ? String(Math.round(canonical * 100) / 100) : (shown || ''));
+                          setServingEntryUnit(u);
+                          setServingDraft(undefined);
+                        }}
+                      />
                     </View>
                   )}
                 </View>
               </View>
               {/* Serving Name -- one free-text field, replaces the old Label box + unit scroller.
-                  Purely descriptive; the Amount above is always the real number, in grams. */}
+                  Purely descriptive; the Amount above is always the real number, in the food's own unit. */}
               <View style={{ marginTop: 12 }}>
                 <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiMedium, marginBottom: 5 }}>Serving Name <Text style={{ color: theme.textDim }}>(optional)</Text></Text>
                 <TextInput
@@ -335,7 +390,7 @@ export default function EditFoodModal({ visible, editFoodData, setEditFoodData, 
                 />
                 <TextInput
                   style={{ flex: 0.8, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 8, paddingHorizontal: 10, fontSize: 13, fontFamily: Type.ui }}
-                  placeholder={rowUnit}
+                  placeholder={unitLabel(rowUnit)}
                   placeholderTextColor={theme.textDim}
                   keyboardType="decimal-pad"
                   value={displayValue}

@@ -97,19 +97,22 @@ const CORE_FIELD_KEYS = ['calories', 'fat', 'carbs', 'protein'];
 const FIELD_DEFS: FieldDef[] = [
   { key: 'calories',    unit: 'kcal', namePattern: /calories\D{0,3}(\d+(?:\.\d+)?)/i, inlinePercentPattern: /calories.*?(\d+(?:\.\d+)?)\s*%/i },
   { key: 'fat',          unit: 'g',   namePattern: /total fat\D{0,3}(\d+(?:\.\d+)?)\s*g/i,          inlinePercentPattern: /total fat.*?(\d+(?:\.\d+)?)\s*%/i },
-  { key: 'saturatedFat', unit: 'g',   namePattern: /saturated fat\D{0,3}(\d+(?:\.\d+)?)\s*g/i,       inlinePercentPattern: /saturated fat.*?(\d+(?:\.\d+)?)\s*%/i },
-  { key: 'transFat',     unit: 'g',   namePattern: /trans fat\D{0,3}(\d+(?:\.\d+)?)\s*g/i,           inlinePercentPattern: /trans fat.*?(\d+(?:\.\d+)?)\s*%/i },
-  { key: 'cholesterol',  unit: 'mg',  namePattern: /cholesterol\D{0,3}(\d+(?:\.\d+)?)\s*mg/i,        inlinePercentPattern: /cholesterol.*?(\d+(?:\.\d+)?)\s*%/i },
+  { key: 'saturatedFat', unit: 'g',   namePattern: /sat(?:urated)?\.?\s*fat\D{0,3}(\d+(?:\.\d+)?)\s*g/i, inlinePercentPattern: /sat(?:urated)?\.?\s*fat.*?(\d+(?:\.\d+)?)\s*%/i },
+  { key: 'transFat',     unit: 'g',   namePattern: /trans[\s-]*fat\D{0,3}(\d+(?:\.\d+)?)\s*g/i,      inlinePercentPattern: /trans[\s-]*fat.*?(\d+(?:\.\d+)?)\s*%/i },
+  { key: 'cholesterol',  unit: 'mg',  namePattern: /cholest(?:erol)?\.?\D{0,3}(\d+(?:\.\d+)?)\s*mg/i, inlinePercentPattern: /cholest(?:erol)?\.?.*?(\d+(?:\.\d+)?)\s*%/i },
   { key: 'sodium',       unit: 'mg',  namePattern: /sodium\D{0,3}(\d+(?:\.\d+)?)\s*mg/i,             inlinePercentPattern: /sodium.*?(\d+(?:\.\d+)?)\s*%/i },
-  { key: 'carbs',        unit: 'g',   namePattern: /total carbohydrate\D{0,3}(\d+(?:\.\d+)?)\s*g/i, inlinePercentPattern: /total carbohydrate.*?(\d+(?:\.\d+)?)\s*%/i },
-  { key: 'fiber',        unit: 'g',   namePattern: /dietary fiber\D{0,3}(\d+(?:\.\d+)?)\s*g/i,       inlinePercentPattern: /dietary fiber.*?(\d+(?:\.\d+)?)\s*%/i },
-  { key: 'sugar',        unit: 'g',   namePattern: /total sugars\D{0,3}(\d+(?:\.\d+)?)\s*g/i,        inlinePercentPattern: /total sugars.*?(\d+(?:\.\d+)?)\s*%/i },
+  // "Total Carb." is as common as the spelled-out form (confirmed on a real pint of ice cream
+  // 2026-07-22, where carbs were dropped on every scan). "total" stays REQUIRED: dropping it would
+  // let front-of-pack marketing like "15 NET CARBS" match.
+  { key: 'carbs',        unit: 'g',   namePattern: /total carb(?:ohydrates?|s)?\.?\D{0,3}(\d+(?:\.\d+)?)\s*g/i, inlinePercentPattern: /total carb(?:ohydrates?|s)?\.?.*?(\d+(?:\.\d+)?)\s*%/i },
+  { key: 'fiber',        unit: 'g',   namePattern: /(?:dietary|total)?\s*fiber\D{0,3}(\d+(?:\.\d+)?)\s*g/i,     inlinePercentPattern: /fiber.*?(\d+(?:\.\d+)?)\s*%/i },
+  { key: 'sugar',        unit: 'g',   namePattern: /total sugars?\D{0,3}(\d+(?:\.\d+)?)\s*g/i,       inlinePercentPattern: /total sugars?.*?(\d+(?:\.\d+)?)\s*%/i },
   // "Incl. 11g Added Sugars" -- the ONE field on a real FDA label where the number comes BEFORE
   // the name instead of after. Handled as its own pattern rather than forcing it into the
   // name-then-number shape every other field uses.
-  { key: 'addedSugars',  unit: 'g',   namePattern: /incl\.?\s+(\d+(?:\.\d+)?)\s*g\s+added sugars/i,  inlinePercentPattern: /added sugars.*?(\d+(?:\.\d+)?)\s*%/i },
+  { key: 'addedSugars',  unit: 'g',   namePattern: /(?:incl\.?|includes?|including)\s+(\d+(?:\.\d+)?)\s*g\s+added sugars/i,  inlinePercentPattern: /added sugars.*?(\d+(?:\.\d+)?)\s*%/i },
   { key: 'protein',      unit: 'g',   namePattern: /protein\D{0,3}(\d+(?:\.\d+)?)\s*g/i,             inlinePercentPattern: /protein.*?(\d+(?:\.\d+)?)\s*%/i },
-  { key: 'vitaminD',     unit: 'mcg', namePattern: /vitamin d\D{0,3}(\d+(?:\.\d+)?)\s*mcg/i,          inlinePercentPattern: /vitamin d.*?(\d+(?:\.\d+)?)\s*%/i },
+  { key: 'vitaminD',     unit: 'mcg', namePattern: /vit(?:amin)?\.?\s*d\D{0,3}(\d+(?:\.\d+)?)\s*mcg/i, inlinePercentPattern: /vit(?:amin)?\.?\s*d.*?(\d+(?:\.\d+)?)\s*%/i },
   { key: 'calcium',      unit: 'mg',  namePattern: /calcium\D{0,3}(\d+(?:\.\d+)?)\s*mg/i,            inlinePercentPattern: /calcium.*?(\d+(?:\.\d+)?)\s*%/i },
   { key: 'iron',         unit: 'mg',  namePattern: /iron\D{0,3}(\d+(?:\.\d+)?)\s*mg/i,                inlinePercentPattern: /iron.*?(\d+(?:\.\d+)?)\s*%/i },
   { key: 'potassium',    unit: 'mg',  namePattern: /potassium\D{0,3}(\d+(?:\.\d+)?)\s*mg/i,           inlinePercentPattern: /potassium.*?(\d+(?:\.\d+)?)\s*%/i },
@@ -256,8 +259,101 @@ const NOT_SIGNIFICANT_KEYWORDS: Record<string, RegExp> = {
   potassium:    /potassium/i,
 };
 
+// ── Dual-column labels ────────────────────────────────────────────────────────────────────────
+// Some labels print TWO number columns per row: "Per serving | Per container" (the second is just
+// the first times the serving count) or "As Packaged | As Prepared" (the second is a different food
+// entirely -- the mix plus the milk and egg you add). Either way only the FIRST column describes
+// what's in the package, and reading across the boundary is how "Total Fat 8g" ended up carrying
+// the container column's 30% DV on a real pint of ice cream, 2026-07-22.
+//
+// Everything at or right of the cut is off limits for nutrient rows. When no second column can be
+// found, the cut is null and every lookup behaves exactly as it did before.
+const SECONDARY_COLUMN_HEADER = /(?:per|each)\s+(?:container|package|pkg|pint|bottle|can)\b|as prepared|as packaged|prepared\b|with\s+[^.]{0,24}\b(?:milk|water|juice)\b/i;
+
+function detectColumnCut(blocks: OcrBlockLike[]): number | null {
+  if (blocks.length === 0) return null;
+  const minX = Math.min(...blocks.map(b => b.boundingBox.x));
+  const maxX = Math.max(...blocks.map(b => b.boundingBox.x + b.boundingBox.width));
+  const width = maxX - minX;
+  // A real second column lives in the right half of the label. Position is the guard that text
+  // matching can't provide: OCR chunks "3 servings per container" differently scan to scan, and a
+  // stray "per container" fragment at the LEFT margin was being read as a column header, putting the
+  // cut at the edge and blanking every nutrient row (Justin, intermittently, 2026-07-22).
+  const rightHalf = minX + width * 0.45;
+
+  // 1. The column's own header, when the label prints one.
+  const header = blocks
+    .filter(b => SECONDARY_COLUMN_HEADER.test(b.text) && !/servings?\s+per/i.test(b.text) && b.boundingBox.x >= rightHalf)
+    .sort((a, b) => a.boundingBox.x - b.boundingBox.x)[0];
+  if (header) return guardCut(header.boundingBox.x, blocks);
+
+  // 2. No readable header -- fall back to the shape of the %DV numbers themselves. A single-column
+  //    label stacks them in one vertical band; a dual-column label makes two bands with a wide gap.
+  const percents = blocks.filter(b => LONE_PERCENT.test(b.text));
+  if (percents.length >= 4) {
+    const bands = bandsOf(percents);
+    if (bands.length === 2) return guardCut((bands[0].max + bands[1].min) / 2, blocks);
+  }
+
+  // 3. Last resort: the shape of EVERY number on the label. That tiny grey "Per container" header
+  //    and its faint %DV column both fail to OCR on a glossy pint, but the VALUES still read. A
+  //    single-column label makes two bands (values, then %DVs); a dual-column label makes four.
+  //    Three bands is ambiguous -- refuse rather than guess, because a wrong cut loses real data.
+  const numbers = blocks.filter(b => NUMERIC_CELL.test(b.text));
+  if (numbers.length >= 6) {
+    const bands = bandsOf(numbers);
+    if (bands.length >= 4) return guardCut((bands[1].max + bands[2].min) / 2, blocks);
+  }
+  return null;
+}
+
+// A block that is nothing but a number, with or without a nutrition unit or a percent sign.
+const NUMERIC_CELL = /^\s*\d+(?:\.\d+)?\s*(?:g|mg|mcg|%)?\s*$/i;
+
+// Groups blocks into vertical bands by x position: a new band starts wherever the horizontal gap
+// exceeds ~1.5 typical cell widths, which is far wider than the spacing inside one column.
+function bandsOf(blocks: OcrBlockLike[]): { min: number; max: number }[] {
+  const sorted = [...blocks].sort((a, b) => a.boundingBox.x - b.boundingBox.x);
+  const widths = sorted.map(b => b.boundingBox.width).sort((a, b) => a - b);
+  const medianWidth = widths[Math.floor(widths.length / 2)] || 1;
+  const bands: { min: number; max: number }[] = [];
+  for (const blk of sorted) {
+    const x = blk.boundingBox.x;
+    const right = x + blk.boundingBox.width;
+    const last = bands[bands.length - 1];
+    if (last && x - last.max <= medianWidth * 1.5) last.max = Math.max(last.max, right);
+    else bands.push({ min: x, max: right });
+  }
+  return bands;
+}
+
+// Last line of defence: a cut that would throw away most of the label is not a column boundary, it's
+// a misdetection. Refusing it means the worst case is "behaves like it did before," never "loses
+// every number on the label."
+function guardCut(cut: number | null, blocks: OcrBlockLike[]): number | null {
+  if (cut === null) return null;
+  const kept = blocks.filter(b => b.boundingBox.x < cut).length;
+  return kept >= blocks.length * 0.6 ? cut : null;
+}
+
+// OCR reads a zero as a capital O constantly, and a nutrition label's zeros are exactly the rows
+// people notice getting mangled: "Vitamin D 0mcg" came back as "Omcg", stopped looking like a
+// number, and the parser walked right past it into the next column's value (real ice cream pint,
+// 2026-07-22). Only rewritten when the O is immediately followed by a nutrition unit or a percent
+// sign, so ordinary words ("Organic") are untouched.
+function fixOcrZeros(text: string): string {
+  return text
+    // A zero standing alone before a unit: "Omcg" -> "0mcg"
+    .replace(/\bO(?=\s*(?:g|mg|mcg|%)\b)/g, '0')
+    // ...and one wedged inside a number: "1Og" -> "10g" (a missing Protein 10g, 2026-07-22)
+    .replace(/(\d)O(?=\s*(?:g|mg|mcg|%)?\b)/g, '$10');
+}
+
 export function parseNutritionLabel(ocr: OcrResultLike): ParsedLabel {
-  const allBlocks = ocr.blocks;
+  const allBlocks = ocr.blocks.map(b => {
+    const fixed = fixOcrZeros(b.text);
+    return fixed === b.text ? b : { ...b, text: fixed };
+  });
 
   // Everything from the INGREDIENTS list down (ingredients, supplement-facts panels, marketing
   // copy) is not Nutrition Facts data. Matching into it is how a can with "Alpha-Glyceryl
@@ -289,6 +385,12 @@ export function parseNutritionLabel(ocr: OcrResultLike): ParsedLabel {
     ? blocks.filter(b => b.text.trim().length > 3 && notSignificantText.includes(b.text.trim()))
     : [];
   const matchBlocks = blocks.filter(b => !footnoteBlocks.includes(b));
+
+  // Nutrient rows never read past the first number column (see detectColumnCut). The serving-size
+  // line is deliberately NOT cut: it spans the full label width above the columns, so its value can
+  // legitimately sit further right than any column boundary.
+  const columnCut = detectColumnCut(matchBlocks);
+  const rowBlocks = columnCut === null ? matchBlocks : matchBlocks.filter(b => b.boundingBox.x < columnCut);
 
   const fields: Record<string, ParsedField> = {};
 
@@ -343,7 +445,7 @@ export function parseNutritionLabel(ocr: OcrResultLike): ParsedLabel {
     // Value still missing -- name was found but not an inline number (see findRowValue above for
     // why this happens on real photos). Look for a bare number on the same row, to the right.
     if (value === null) {
-      const rowValue = findRowValue(anchorBlock, matchBlocks);
+      const rowValue = findRowValue(anchorBlock, rowBlocks);
       if (rowValue) {
         value = parseFloat(BARE_VALUE.exec(rowValue.text)![1]);
         confidence = Math.min(confidence ?? 1, rowValue.confidence);
@@ -353,7 +455,7 @@ export function parseNutritionLabel(ocr: OcrResultLike): ParsedLabel {
     // Percent still missing -- look for a separate "NN%" block on the same row, to the right
     // (the real dual-column-style layout Vision's bounding boxes make possible to detect).
     if (percentDV === null) {
-      const rowPercent = findRowPercent(anchorBlock, matchBlocks);
+      const rowPercent = findRowPercent(anchorBlock, rowBlocks);
       if (rowPercent) {
         percentDV = parseFloat(LONE_PERCENT.exec(rowPercent.text)![1]);
         confidence = Math.min(confidence ?? 1, rowPercent.confidence);

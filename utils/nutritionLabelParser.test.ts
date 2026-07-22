@@ -195,5 +195,124 @@ console.log('\nnutrition label parser\n');
   check('iron %DV instead derives correctly from its own value (2/18 DV = 11%)', result.fields.iron.percentDV === 11, result.fields.iron.percentDV);
 }
 
+// ── 8. Dual-column label: never read across into the second column ────────────────────────────────
+// Shape of a real "Per serving | Per container" pint (Justin's protein ice cream, 2026-07-22), where
+// Total Fat 8g was coming back carrying the CONTAINER column's 30% DV.
+{
+  const blocks: OcrBlockLike[] = [
+    b('3 servings per container', 100, 100, 500, 40),
+    b('Serving size', 100, 150, 300, 40),
+    b('2/3 cup (90g)', 900, 150, 300, 40),
+    b('Per serving', 700, 220, 220, 40),
+    b('Per container', 1000, 220, 260, 40),
+    b('Calories', 100, 280, 300, 60),
+    b('140', 700, 280, 140, 60),
+    b('420', 1000, 280, 140, 60),
+    b('Total Fat', 100, 360, 250, 40),
+    b('8g', 700, 360, 70, 40),
+    b('10%', 830, 360, 90, 40),
+    b('24g', 1000, 360, 80, 40),
+    b('30%', 1150, 360, 90, 40),
+    b('Total Carb.', 100, 420, 280, 40),
+    b('17g', 700, 420, 80, 40),
+    b('6%', 830, 420, 80, 40),
+    b('51g', 1000, 420, 80, 40),
+    b('18%', 1150, 420, 90, 40),
+  ];
+  const result = parseNutritionLabel({ text: '', blocks });
+  check('dual column: calories takes the per-serving column (140, not 420)', result.fields.calories.value === 140, result.fields.calories.value);
+  check('dual column: fat value from the per-serving column', result.fields.fat.value === 8, result.fields.fat.value);
+  check("dual column: fat %DV does NOT come from the container column", result.fields.fat.percentDV === 10, result.fields.fat.percentDV);
+  check('"Total Carb." abbreviation is recognised', result.fields.carbs.value === 17, result.fields.carbs.value);
+  check('dual column: carbs %DV from the per-serving column', result.fields.carbs.percentDV === 6, result.fields.carbs.percentDV);
+  check('dual column: serving size still read despite sitting right of the cut', result.serving.grams === 90, result.serving.grams);
+}
+
+// ── 9. Wording variants that real boxes print ─────────────────────────────────────────────────────
+{
+  const blocks: OcrBlockLike[] = [
+    b('Sat. Fat 4g', 100, 100, 300, 40),
+    b('Includes 9g Added Sugars', 100, 160, 500, 40),
+    b('Cholest. 47mg', 100, 220, 300, 40),
+    b('Total Carbs 19g', 100, 280, 300, 40),
+  ];
+  const result = parseNutritionLabel({ text: '', blocks });
+  check('"Sat. Fat" abbreviation', result.fields.saturatedFat.value === 4, result.fields.saturatedFat.value);
+  check('"Includes ... Added Sugars" long form', result.fields.addedSugars.value === 9, result.fields.addedSugars.value);
+  check('"Cholest." abbreviation', result.fields.cholesterol.value === 47, result.fields.cholesterol.value);
+  check('"Total Carbs" plural form', result.fields.carbs.value === 19, result.fields.carbs.value);
+}
+
+// ── 10. A stray "per container" fragment must NOT be read as a column header ──────────────────────
+// OCR splits "3 servings per container" unpredictably; when the "per container" half arrived as its
+// own left-margin block it was mistaken for the second column's header, the cut landed at the label's
+// left edge, and EVERY nutrient row fell outside it (intermittent total-wipeout, 2026-07-22).
+{
+  const blocks: OcrBlockLike[] = [
+    b('3 servings', 100, 100, 200, 40),
+    b('per container', 320, 100, 260, 40),   // left margin, NOT a column header
+    b('Total Fat 8g', 100, 200, 300, 40),
+    b('10%', 830, 200, 90, 40),
+    b('Protein 10g', 100, 260, 300, 40),
+  ];
+  const result = parseNutritionLabel({ text: '', blocks });
+  check('stray "per container" fragment does not blank the label', result.fields.fat.value === 8, result.fields.fat.value);
+  check('...and the rest of the rows survive too', result.fields.protein.value === 10, result.fields.protein.value);
+}
+
+// ── 11. OCR reading a zero as the letter O ────────────────────────────────────────────────────────
+// Real failure: "Vitamin D 0mcg" came back as "Omcg", so the parser skipped it and took the NEXT
+// number on the row -- which on a dual-column label is the container column's value.
+{
+  const blocks: OcrBlockLike[] = [
+    b('Per serving', 700, 50, 220, 40),
+    b('Per container', 1000, 50, 260, 40),
+    b('Vitamin D', 100, 200, 250, 40),
+    b('Omcg', 700, 200, 90, 40),            // OCR's letter-O zero
+    b('0%', 830, 200, 70, 40),
+    b('2mcg', 1000, 200, 90, 40),
+    b('10%', 1150, 200, 90, 40),
+  ];
+  const result = parseNutritionLabel({ text: '', blocks });
+  check('letter-O zero is read as 0, not skipped into the next column', result.fields.vitaminD.value === 0, result.fields.vitaminD.value);
+}
+
+// ── 12. Column cut found from the VALUES when headers and %DVs are unreadable ─────────────────────
+// A glossy pint's "Per container" header and its faint %DV column both fail to OCR, but the values
+// still read. Four vertical bands of numbers means two columns; two bands means one.
+{
+  const blocks: OcrBlockLike[] = [
+    b('Total Fat', 100, 200, 250, 40),
+    b('8g', 700, 200, 70, 40),   b('10%', 830, 200, 90, 40),
+    b('24g', 1000, 200, 80, 40), b('30%', 1150, 200, 90, 40),
+    b('Iron', 100, 260, 200, 40),
+    b('0mg', 700, 260, 80, 40),  b('0%', 830, 260, 70, 40),
+    b('2mg', 1000, 260, 80, 40), b('10%', 1150, 260, 90, 40),
+  ];
+  const result = parseNutritionLabel({ text: '', blocks });
+  check('value-band cut: iron takes 0mg, not the container column 2mg', result.fields.iron.value === 0, result.fields.iron.value);
+}
+
+// ── 13. A single-column label must NOT be split between its values and its %DVs ────────────────────
+// The dangerous inverse of the test above: two bands (values, %DVs) is ONE column. Cutting there
+// would throw away every %DV on every normal label.
+{
+  const blocks: OcrBlockLike[] = [
+    b('Total Fat', 100, 200, 250, 40), b('8g', 700, 200, 70, 40),  b('10%', 900, 200, 90, 40),
+    b('Sodium', 100, 260, 250, 40),    b('35mg', 700, 260, 90, 40), b('2%', 900, 260, 70, 40),
+    b('Protein', 100, 320, 250, 40),   b('3g', 700, 320, 70, 40),   b('6%', 900, 320, 70, 40),
+  ];
+  const result = parseNutritionLabel({ text: '', blocks });
+  check('single column keeps its %DV (no false split)', result.fields.fat.percentDV === 10, result.fields.fat.percentDV);
+  check('single column values still read', result.fields.sodium.value === 35, result.fields.sodium.value);
+}
+
+// ── 14. OCR letter-O inside a number ──────────────────────────────────────────────────────────────
+{
+  const blocks: OcrBlockLike[] = [b('Protein 1Og', 100, 100, 300, 40)];
+  const result = parseNutritionLabel({ text: '', blocks });
+  check('"1Og" is read as 10g', result.fields.protein.value === 10, result.fields.protein.value);
+}
+
 console.log(`\n${passed} passed, ${failed} failed\n`);
 if (failed > 0) { console.log('Failed:', fails.join(', ')); process.exit(1); }

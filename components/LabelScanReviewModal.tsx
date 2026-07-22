@@ -182,6 +182,16 @@ export default function LabelScanReviewModal({ parsed, onConfirm, onClose, onRet
     });
   };
 
+  // Which fields currently want a human look. Shared by the row borders, the section dots and the
+  // running count in the header, so the three can never disagree with each other.
+  const isFlagged = (key: string) => {
+    const row = rows[key];
+    if (!row) return false;
+    const lowConfidence = row.confidence !== null && row.confidence < LOW_CONFIDENCE_THRESHOLD;
+    return lowConfidence || (CORE_FIELDS.includes(key) && row.value === '');
+  };
+  const flaggedKeys = Object.keys(FIELD_META).filter(isFlagged);
+
   const renderRow = (key: string) => {
     const meta = FIELD_META[key];
     const row = rows[key];
@@ -233,7 +243,20 @@ export default function LabelScanReviewModal({ parsed, onConfirm, onClose, onRet
     );
   };
 
-  const showBanner = !!parsed.missingCoreField || parsed.lowConfidenceCount >= 3;
+  // Jump-to-problem plumbing. With every section expanded the card runs long, so an amber field ten
+  // rows down is invisible from the top -- the count is only useful if it can take you there.
+  const scrollRef = useRef<ScrollView>(null);
+  const sectionOffsets = useRef<Record<string, number>>({});
+  const jumpToFirstFlagged = () => {
+    const key = flaggedKeys[0];
+    if (!key) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    const section = SECTIONS.find(s => s.fields.includes(key));
+    if (!section) return;
+    if (section.alwaysOpen !== true) setOpenMap(p => ({ ...p, [section.key]: true }));
+    const y = sectionOffsets.current[section.key];
+    if (y !== undefined) scrollRef.current?.scrollTo({ y: Math.max(0, y - 8), animated: true });
+  };
 
   const confirm = () => {
     const out: Record<string, ScanRowResult> = {};
@@ -284,17 +307,27 @@ export default function LabelScanReviewModal({ parsed, onConfirm, onClose, onRet
             ) : undefined}
           />
 
-          {showBanner && (
-            <View style={{ marginHorizontal: 16, marginTop: 8, backgroundColor: 'rgba(212,134,10,0.12)', borderWidth: 1, borderColor: 'rgba(212,134,10,0.4)', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12 }}>
-              <Text style={{ fontSize: 12, color: '#d4860a', fontFamily: Type.uiMedium }}>
-                {parsed.missingCoreField
-                  ? `Couldn't find ${parsed.missingCoreField}. Try retaking with the full label in frame.`
-                  : `Some of this scan is unclear, double-check before saving.`}
-              </Text>
-            </View>
+          {flaggedKeys.length > 0 && (
+            <TouchableOpacity
+              onPress={jumpToFirstFlagged}
+              activeOpacity={0.7}
+              style={{ marginHorizontal: 16, marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(212,134,10,0.12)', borderWidth: 1, borderColor: 'rgba(212,134,10,0.4)', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12 }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 13, color: '#d4860a', fontFamily: Type.uiSemibold }}>
+                  {flaggedKeys.length === 1 ? '1 field needs a look' : `${flaggedKeys.length} fields need a look`}
+                </Text>
+                <Text style={{ fontSize: 11, color: '#d4860a', fontFamily: Type.ui, marginTop: 2 }}>
+                  {parsed.missingCoreField
+                    ? `Couldn't find ${parsed.missingCoreField}. Tap to jump, or Retake with the whole label in frame.`
+                    : 'Tap to jump to the first one.'}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color="#d4860a" />
+            </TouchableOpacity>
           )}
 
-          <ScrollView contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets={true}>
+          <ScrollView ref={scrollRef} contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets={true}>
             {/* Serving: editable, mirroring Create Food's own Serving Name + Amount + unit. */}
             <View style={{ backgroundColor: theme.bgCard, borderRadius: 12, borderWidth: 0.5, borderColor: theme.borderCard, padding: 14, marginBottom: 10 }}>
               <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.textPrimary, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Serving</Text>
@@ -345,19 +378,18 @@ export default function LabelScanReviewModal({ parsed, onConfirm, onClose, onRet
             {SECTIONS.map(section => {
               const isOpen = section.alwaysOpen === true || openMap[section.key] !== false;
               const foundCount = section.fields.filter(k => rows[k]?.value !== '' && rows[k]?.value != null).length;
-              const sectionFlagged = section.fields.some(k => {
-                const r = rows[k];
-                if (!r) return false;
-                return (r.confidence !== null && r.confidence < LOW_CONFIDENCE_THRESHOLD)
-                  || (CORE_FIELDS.includes(k) && r.value === '');
-              });
+              const sectionFlagged = section.fields.some(isFlagged);
               const body = (
                 <View>
                   {section.fields.map(key => renderRow(key))}
                 </View>
               );
               return (
-                <View key={section.key} style={{ backgroundColor: theme.bgCard, borderRadius: 12, borderWidth: 0.5, borderColor: theme.borderCard, padding: 14, marginBottom: 10 }}>
+                <View
+                  key={section.key}
+                  onLayout={e => { sectionOffsets.current[section.key] = e.nativeEvent.layout.y; }}
+                  style={{ backgroundColor: theme.bgCard, borderRadius: 12, borderWidth: 0.5, borderColor: theme.borderCard, padding: 14, marginBottom: 10 }}
+                >
                   <TouchableOpacity
                     disabled={section.alwaysOpen === true}
                     onPress={() => {

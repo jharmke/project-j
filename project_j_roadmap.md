@@ -16,6 +16,7 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-22 **UnitPickerButton dropdown now flips upward when there's no room below (measures own screen position, 175px bottom inset clears the Cancel/Save Food bar) and cascades options in on open; added hairline dividers between rows.** Component-only fix, applies everywhere the unit picker is used. Device-confirmed by Justin.
 - 2026-07-19 **WEB (World English Bible) added as a second translation, WEB is now primary/default, KJV
   secondary.** Reader, Today's Message, Gratitude card, Favorites, custom saved verses, the verse-pool
   manager, and Halo's scripture citations all now live-fetch the real wording in whichever translation is
@@ -846,12 +847,6 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
-- [NOW, surfaced 2026-07-21] **UnitPickerButton (`components/UnitPickerButton.tsx`) always opens downward,
-  cuts off when the button is low on screen.** Used for the Serving Amount unit picker and Additional
-  Servings unit picker in both CustomFoodCreator and EditFoodModal. Needs to detect available space (measure
-  the button's position, e.g. via `onLayout`/`measure`) and open upward instead of downward when there isn't
-  room below it, same as any well-behaved dropdown. Confirmed real, not a one-off -- flag before touching
-  anything else in either of those two files.
 - [surfaced 2026-07-20, found during iPad auth testing] **iPad layout looks broken -- wrapped date, oversized
   text.** On Justin's iPad (not previously tested on this app), Home's "MONDAY, JULY 20" date wraps to a
   second line under the greeting, and Otto's chat header ("Wellness and App Guide" subtitle) renders visibly

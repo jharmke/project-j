@@ -102,7 +102,8 @@
       "PowerShell(Select-String -Path \"C:\\\\Users\\\\jthar\\\\ProjectJ\\\\utils\\\\smartTipsEngine.ts\" -Pattern \"computeCoachPacketRecovery|future surface|computeCoachPacketEvr|recoveryScore\" | Select-Object LineNumber, Line | Format-Table -AutoSize -Wrap; \"----- coachAI -----\"; Select-String -Path \"C:\\\\Users\\\\jthar\\\\ProjectJ\\\\utils\\\\coachAI.ts\" -Pattern \"refreshCoachTipRecovery|surface === 'recovery'|'recovery'\" | Select-Object LineNumber, Line | Format-Table -AutoSize -Wrap)",
       "PowerShell(\"=== WEEKLY StatRows ===\"; Select-String -Path \"app\\\\weekly-summary.tsx\" -Pattern \"StatRow label\" | ForEach-Object { \\($_.Line -replace '\\\\s+',' '\\).Trim\\(\\) } | Select-Object -First 40; \"=== MONTHLY ===\"; Select-String -Path \"app\\\\monthly-summary.tsx\" -Pattern \"SectionCard label|StatRow label\" | ForEach-Object { \\($_.Line -replace '\\\\s+',' '\\).Trim\\(\\) } | Select-Object -First 40)",
       "WebFetch(domain:help.macrofactorapp.com)",
-      "WebFetch(domain:macrofactor.com)"
+      "WebFetch(domain:macrofactor.com)",
+      "Bash(awk '/NEXT UP/{f=1} f{print; c++} c>40{exit}' \"C:\\\\Users\\\\jthar\\\\ProjectJ\\\\project_j_roadmap.md\")"
     ]
   }
 }

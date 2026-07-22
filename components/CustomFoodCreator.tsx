@@ -346,7 +346,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
   // Maps the review modal's confirmed values onto this form's individual field setters --
   // never touches a field the label didn't print anything for (rows only contains fields the
   // parser actually found), matching the "never overwrite a field the label didn't have" rule.
-  const handleScanConfirm = (fields: Record<string, ScanRowResult>, serving: ParsedLabel['serving']) => {
+  const handleScanConfirm = (fields: Record<string, ScanRowResult>, serving: ParsedLabel['serving'], servingsPerContainer: number | null) => {
     const setters: Record<string, (v: string) => void> = {
       calories: setCalories, fat: setFat, saturatedFat: setSaturatedFat, transFat: setTransFat,
       cholesterol: setCholesterol, sodium: setSodium, carbs: setCarbs, fiber: setFiber,
@@ -362,6 +362,19 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
     }
     if (serving.grams !== null) setServingGrams(String(serving.grams));
     if (serving.description) setServingLabel(serving.description);
+
+    // "1 Container" auto-added as an Additional Serving using the label's own printed
+    // servings-per-container count -- skipped at exactly 1 (identical to the primary serving
+    // already filling the form, nothing new to offer). Re-scanning replaces the prior auto-added
+    // container row instead of stacking a duplicate, while leaving any manually-added rows alone.
+    if (servingsPerContainer !== null && servingsPerContainer > 1 && serving.grams !== null) {
+      const containerGrams = Math.round(serving.grams * servingsPerContainer * 10) / 10;
+      setAdditionalServings(prev => [
+        ...prev.filter(s => !s.id.startsWith('as_container_')),
+        { id: `as_container_${Date.now()}`, label: '1 Container', grams: String(containerGrams) },
+      ]);
+    }
+
     showToast('Label scanned', 'Review the fields and save when ready', 'success');
   };
 

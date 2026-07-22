@@ -1077,6 +1077,11 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
       saveToFirebase('my_foods', 'foods', updated).catch(() => {});
       showToast('Food saved', editFoodData.name.trim(), 'success');
       closeEditFoodModal();
+      // This screen's `food` is parsed once from a route param, not live state -- there's no
+      // way to refresh it in place after a save, so leave the screen entirely rather than sit on
+      // stale numbers. Goes back to wherever the user actually came from (My Foods, a logged
+      // entry's Edit Entry, etc.), same as the regular back button, never a hardcoded destination.
+      if (router.canGoBack()) router.back();
     } catch (e) {
       console.log('Edit food error', e);
     }

@@ -1,8 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { recognizeText as ocrRecognizeText } from 'expo-ocr-kit';
 import { useTheme } from '../theme';
 import { Type } from '../typography';
 import ModalHeader from './ModalHeader';
@@ -11,6 +13,9 @@ import ButtonShine from './ButtonShine';
 import NutrientFieldsGrid from './NutrientFieldsGrid';
 import GradientIcon from './GradientIcon';
 import GradientNumber from './GradientNumber';
+import { useToast } from './Toast';
+import { parseNutritionLabel, ParsedLabel } from '../utils/nutritionLabelParser';
+import LabelScanReviewModal, { ScanRowResult } from './LabelScanReviewModal';
 
 const FOOD_SERVING_UNITS = ['g', 'ml', 'fl oz', 'oz', 'container', 'serving', 'tbsp', 'tsp', 'cup'];
 const SUPPLEMENT_ONLY_UNITS = ['pill', 'capsule', 'tablet', 'softgel', 'gummy'];
@@ -33,8 +38,12 @@ interface EditFoodModalProps {
 
 export default function EditFoodModal({ visible, editFoodData, setEditFoodData, onSave, onClose }: EditFoodModalProps) {
   const { theme } = useTheme();
+  const { showToast } = useToast();
   const overlayAnim = useRef(new Animated.Value(0)).current;
   const cardAnim = useRef(new Animated.Value(0)).current;
+  const [scannedLabel, setScannedLabel] = useState<ParsedLabel | null>(null);
+  const [showScanReview, setShowScanReview] = useState(false);
+  const [scanningLabel, setScanningLabel] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -57,10 +66,73 @@ export default function EditFoodModal({ visible, editFoodData, setEditFoodData, 
   const set = (key: string, v: any) => setEditFoodData((p: any) => p ? { ...p, [key]: v } : null);
   const setNum = (key: string) => (v: string) => set(key, filterDecimal(v));
 
+  const handleScanLabel = async () => {
+    try {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) {
+        showToast('Camera access needed', 'Enable camera access to scan a nutrition label', 'error');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.9, allowsEditing: true });
+      if (result.canceled || !result.assets?.[0]?.uri) return;
+      setScanningLabel(true);
+      const ocr = await ocrRecognizeText(result.assets[0].uri);
+      const parsed = parseNutritionLabel(ocr);
+      setScannedLabel(parsed);
+      setShowScanReview(true);
+    } catch (e) {
+      showToast('Scan failed', String(e), 'error');
+    } finally {
+      setScanningLabel(false);
+    }
+  };
+
+  // Maps the review modal's confirmed values onto editFoodData's field names -- note some of these
+  // differ from the parser's own keys (e.g. "cal" here vs "calories" in the parser), matched by hand
+  // below. Never touches a field the label didn't print anything for, same rule as Create Food.
+  const handleScanConfirm = (fields: Record<string, ScanRowResult>, serving: ParsedLabel['serving'], servingsPerContainer: number | null) => {
+    const keyMap: Record<string, string> = { calories: 'cal' };
+    setEditFoodData((p: any) => {
+      if (!p) return null;
+      const updated = { ...p };
+      for (const [key, row] of Object.entries(fields)) {
+        if (row.value !== null) updated[keyMap[key] || key] = String(row.value);
+      }
+      if (serving.grams !== null) updated.servingGrams = String(serving.grams);
+      if (serving.description) updated.servingLabel = serving.description;
+      // "1 Container" auto-added as an Additional Serving, same as Create Food -- skipped at
+      // exactly 1 (identical to the primary serving), replaces a prior auto-added container row
+      // on re-scan instead of stacking a duplicate.
+      if (servingsPerContainer !== null && servingsPerContainer > 1 && serving.grams !== null) {
+        const containerGrams = Math.round(serving.grams * servingsPerContainer * 10) / 10;
+        updated.additionalServings = [
+          ...(p.additionalServings || []).filter((s: any) => !s.id.startsWith('as_container_')),
+          { id: `as_container_${Date.now()}`, label: '1 Container', grams: String(containerGrams) },
+        ];
+      }
+      return updated;
+    });
+    showToast('Label scanned', 'Review the fields and save when ready', 'success');
+  };
+
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={handleClose}>
       <Animated.View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', opacity: overlayAnim }}>
-        <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleClose(); }} />
+        <TouchableOpacity
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          activeOpacity={1}
+          onPress={() => {
+            triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+            if (showScanReview) setShowScanReview(false); else handleClose();
+          }}
+        />
+        {showScanReview && scannedLabel ? (
+          <LabelScanReviewModal
+            parsed={scannedLabel}
+            onConfirm={handleScanConfirm}
+            onClose={() => setShowScanReview(false)}
+          />
+        ) : (
         <Animated.View style={{
           width: '92%',
           backgroundColor: theme.bgSheet,
@@ -118,6 +190,18 @@ export default function EditFoodModal({ visible, editFoodData, setEditFoodData, 
                 />
               </View>
             ))}
+
+            <TouchableOpacity
+              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleScanLabel(); }}
+              disabled={scanningLabel}
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 10, paddingVertical: 12, marginBottom: 4, opacity: scanningLabel ? 0.6 : 1 }}
+            >
+              <Ionicons name="scan-outline" size={18} color={theme.accentBlue} />
+              <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>{scanningLabel ? 'Reading Label...' : 'Scan Nutrition Label'}</Text>
+            </TouchableOpacity>
+            <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, marginBottom: 14, textAlign: 'center' }}>
+              Tip: get as close as you can while keeping the whole label in frame.
+            </Text>
 
             <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
             <NutrientFieldsGrid
@@ -295,6 +379,7 @@ export default function EditFoodModal({ visible, editFoodData, setEditFoodData, 
             />
           </View>
         </Animated.View>
+        )}
       </Animated.View>
     </Modal>
   );

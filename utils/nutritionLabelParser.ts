@@ -25,6 +25,39 @@ export interface ParsedServing {
   description: string | null; // e.g. "1 Bar (37g)"
   grams: number | null;       // e.g. 37, parsed out of the description if present
   confidence: number | null;
+  // The measured part split off from the description, so the review screen can offer it as an
+  // editable amount + unit instead of one dead string: "1 Can (16 fl oz)" -> name "1 Can",
+  // amount 16, unit "fl oz". Volume labels are why `grams` alone was never enough.
+  name: string | null;
+  amount: number | null;
+  unit: string | null;
+}
+
+// Units a serving size is actually printed in. mg is deliberately absent: it appears all over a
+// label as a nutrient unit and never as a serving size.
+const SERVING_UNIT_PATTERN = 'fl\\s*oz|kg|g|oz|lb|ml|l|cup|tbsp|tsp';
+
+// Splits "1 Can (16 fl oz)" / "1/3 cup mix (40g)" / "16 fl oz" into a name and a measured amount.
+// Prefers the parenthetical (that's where the regulated measure lives), falls back to a trailing
+// bare measure. Anything it can't split stays whole in the name so nothing is silently dropped.
+function splitServingDescription(description: string): { name: string; amount: number | null; unit: string | null } {
+  const paren = new RegExp(`\\((\\d+(?:\\.\\d+)?)\\s*(${SERVING_UNIT_PATTERN})\\b[^)]*\\)`, 'i').exec(description);
+  if (paren) {
+    return {
+      name: description.replace(paren[0], '').trim().replace(/[,\s]+$/, ''),
+      amount: parseFloat(paren[1]),
+      unit: paren[2].toLowerCase().replace(/\s+/g, ' '),
+    };
+  }
+  const bare = new RegExp(`(\\d+(?:\\.\\d+)?)\\s*(${SERVING_UNIT_PATTERN})\\b\\s*$`, 'i').exec(description);
+  if (bare) {
+    return {
+      name: description.replace(bare[0], '').trim().replace(/[,\s]+$/, ''),
+      amount: parseFloat(bare[1]),
+      unit: bare[2].toLowerCase().replace(/\s+/g, ' '),
+    };
+  }
+  return { name: description.trim(), amount: null, unit: null };
 }
 
 export interface ParsedLabel {
@@ -100,8 +133,10 @@ const FIELD_DEFS: FieldDef[] = [
 // A field's NAME can appear in a block with no adjacent value at all (e.g. a bare "Thiamin"
 // label sitting to the left of its own %DV in a separate block) -- this catches that case so the
 // cross-block %DV lookup below still has something to anchor to.
+// Anchored with a word boundary: without it, "choline" matched inside "Alpha-Glyceryl Phosphoryl
+// Choline" in an ingredients list and then grabbed the nearest number as a value (2026-07-22).
 const BARE_NAME_PATTERNS: Record<string, RegExp> = Object.fromEntries(
-  FIELD_DEFS.map(f => [f.key, new RegExp(f.namePattern.source.split('\\D')[0], 'i')])
+  FIELD_DEFS.map(f => [f.key, new RegExp('\\b' + f.namePattern.source.split('\\D')[0], 'i')])
 );
 
 const LONE_PERCENT = /^\s*(\d+(?:\.\d+)?)\s*%\s*$/;
@@ -123,17 +158,60 @@ function rowsOverlap(a: OcrBlockLike, b: OcrBlockLike): boolean {
   return Math.abs(centerA - centerB) <= tolerance;
 }
 
+// A CAN is a cylinder: the label wraps away from the camera, so the farther apart two blocks are
+// horizontally, the more their baselines drift vertically. A label name hard-left and its number
+// hard-right (Calories/10, Serving Size/1 Can) drift enough to fail the flat test above, which is
+// exactly what a real Ghost Energy can did on 2026-07-22 while a flat pancake box read fine.
+//
+// This is deliberately a SECOND PASS, only consulted when the strict test found nothing: any label
+// that already reads correctly takes the identical path it always did and cannot change. The extra
+// drift grows with horizontal distance and is capped below one full row height, so it can never
+// reach the next row's center -- the %DV-bleeding-across-rows bug is not coming back.
+const CURVE_DRIFT_PER_WIDTH = 0.5;  // extra tolerance per one row-height of horizontal distance
+const CURVE_DRIFT_CAP = 0.9;        // never more than 0.9 of a row height, total
+function rowsOverlapCurved(a: OcrBlockLike, b: OcrBlockLike): boolean {
+  const rowH = Math.min(a.boundingBox.height, b.boundingBox.height);
+  if (rowH <= 0) return false;
+  const centerA = a.boundingBox.y + a.boundingBox.height / 2;
+  const centerB = b.boundingBox.y + b.boundingBox.height / 2;
+  const gapX = Math.max(0, b.boundingBox.x - (a.boundingBox.x + a.boundingBox.width));
+  const extra = Math.min((gapX / rowH) * CURVE_DRIFT_PER_WIDTH, CURVE_DRIFT_CAP - ROW_TOLERANCE_RATIO);
+  const tolerance = rowH * (ROW_TOLERANCE_RATIO + Math.max(0, extra));
+  return Math.abs(centerA - centerB) <= tolerance;
+}
+
+// The loosened tolerance alone is not enough: on a tightly compressed label it can reach a value
+// that belongs to the NEXT row (caught by the iron/potassium regression test). A value belongs to
+// whichever row label sits nearest to it vertically, so the curved pass additionally refuses any
+// candidate that some other label to its left owns more closely than we do.
+function ownsRow(anchor: OcrBlockLike, candidate: OcrBlockLike, blocks: OcrBlockLike[]): boolean {
+  const centerOf = (x: OcrBlockLike) => x.boundingBox.y + x.boundingBox.height / 2;
+  const candidateCenter = centerOf(candidate);
+  const ourDistance = Math.abs(centerOf(anchor) - candidateCenter);
+  for (const b of blocks) {
+    if (b === anchor || b === candidate) continue;
+    if (b.boundingBox.x >= candidate.boundingBox.x) continue; // only things to its LEFT can be its label
+    if (!/[a-z]/i.test(b.text)) continue;                     // a row label has letters; a number doesn't
+    if (Math.abs(centerOf(b) - candidateCenter) < ourDistance) return false;
+  }
+  return true;
+}
+
 /** Finds a standalone "NN%" block on the same row and to the right of `anchor`, if any. */
 function findRowPercent(anchor: OcrBlockLike, blocks: OcrBlockLike[]): OcrBlockLike | null {
-  let best: OcrBlockLike | null = null;
-  for (const b of blocks) {
-    if (b === anchor) continue;
-    if (!LONE_PERCENT.test(b.text)) continue;
-    if (b.boundingBox.x <= anchor.boundingBox.x) continue;
-    if (!rowsOverlap(anchor, b)) continue;
-    if (!best || b.boundingBox.x < best.boundingBox.x) best = b;
-  }
-  return best;
+  const pick = (sameRow: (a: OcrBlockLike, b: OcrBlockLike) => boolean, curved: boolean) => {
+    let best: OcrBlockLike | null = null;
+    for (const b of blocks) {
+      if (b === anchor) continue;
+      if (!LONE_PERCENT.test(b.text)) continue;
+      if (b.boundingBox.x <= anchor.boundingBox.x) continue;
+      if (!sameRow(anchor, b)) continue;
+      if (curved && !ownsRow(anchor, b, blocks)) continue;
+      if (!best || b.boundingBox.x < best.boundingBox.x) best = b;
+    }
+    return best;
+  };
+  return pick(rowsOverlap, false) ?? pick(rowsOverlapCurved, true);
 }
 
 // Same technique as findRowPercent, pointed at the raw VALUE instead -- Vision sometimes reads a
@@ -143,19 +221,75 @@ function findRowPercent(anchor: OcrBlockLike, blocks: OcrBlockLike[]): OcrBlockL
 // can't invent a field that was never printed, and BARE_VALUE's %-exclusion keeps it from ever
 // grabbing a %DV number instead of the real value.
 function findRowValue(anchor: OcrBlockLike, blocks: OcrBlockLike[]): OcrBlockLike | null {
-  let best: OcrBlockLike | null = null;
-  for (const b of blocks) {
-    if (b === anchor) continue;
-    if (!BARE_VALUE.test(b.text)) continue;
-    if (b.boundingBox.x <= anchor.boundingBox.x) continue;
-    if (!rowsOverlap(anchor, b)) continue;
-    if (!best || b.boundingBox.x < best.boundingBox.x) best = b;
-  }
-  return best;
+  const pick = (sameRow: (a: OcrBlockLike, b: OcrBlockLike) => boolean, curved: boolean) => {
+    let best: OcrBlockLike | null = null;
+    for (const b of blocks) {
+      if (b === anchor) continue;
+      if (!BARE_VALUE.test(b.text)) continue;
+      if (b.boundingBox.x <= anchor.boundingBox.x) continue;
+      if (!sameRow(anchor, b)) continue;
+      if (curved && !ownsRow(anchor, b, blocks)) continue;
+      if (!best || b.boundingBox.x < best.boundingBox.x) best = b;
+    }
+    return best;
+  };
+  return pick(rowsOverlap, false) ?? pick(rowsOverlapCurved, true);
 }
 
+// "Not a significant source of saturated fat, trans fat, dietary fiber, vitamin D, calcium, iron
+// and potassium." is a regulated FDA footnote meaning those nutrients are below the labeling
+// threshold -- i.e. zero for our purposes. It is REAL data, not noise: read it as 0 rather than
+// letting the nutrient names inside it look like findings with no numbers attached.
+const NOT_SIGNIFICANT_KEYWORDS: Record<string, RegExp> = {
+  saturatedFat: /saturated fat/i,
+  transFat:     /trans fat/i,
+  fiber:        /dietary fiber|fiber/i,
+  sugar:        /total sugars|sugars/i,
+  addedSugars:  /added sugars/i,
+  cholesterol:  /cholesterol/i,
+  protein:      /protein/i,
+  vitaminA:     /vitamin a/i,
+  vitaminC:     /vitamin c/i,
+  vitaminD:     /vitamin d/i,
+  calcium:      /calcium/i,
+  iron:         /iron/i,
+  potassium:    /potassium/i,
+};
+
 export function parseNutritionLabel(ocr: OcrResultLike): ParsedLabel {
-  const blocks = ocr.blocks;
+  const allBlocks = ocr.blocks;
+
+  // Everything from the INGREDIENTS list down (ingredients, supplement-facts panels, marketing
+  // copy) is not Nutrition Facts data. Matching into it is how a can with "Alpha-Glyceryl
+  // Phosphoryl Choline" in its ingredients produced a phantom 100mg of choline on 2026-07-22.
+  const ingredientsBlock = allBlocks.find(b => /^\s*ingredients\s*:/i.test(b.text) || /\bingredients\s*:/i.test(b.text));
+  const cutoffY = ingredientsBlock ? ingredientsBlock.boundingBox.y : Infinity;
+  const blocks = allBlocks.filter(b => b.boundingBox.y < cutoffY);
+
+  // The "not a significant source of ..." footnote, if the label prints one. It wraps across OCR
+  // blocks unpredictably, so it's identified by TEXT rather than geometry: stitch the label back
+  // together in reading order and take the sentence. A geometric window around the first block
+  // missed the continuation line on a real can (2026-07-22) and let "calcium, iron" in that
+  // sentence read as found-but-numberless fields.
+  const orderedText = [...blocks]
+    .sort((a, b) => a.boundingBox.y - b.boundingBox.y)
+    .map(b => b.text.trim())
+    .join(' ');
+  const footnoteStart = orderedText.search(/not a significant source/i);
+  let notSignificantText = '';
+  if (footnoteStart >= 0) {
+    const rest = orderedText.slice(footnoteStart);
+    const end = rest.indexOf('.');
+    notSignificantText = end > 0 ? rest.slice(0, end) : rest;
+  }
+  const notSignificantAnchor = blocks.find(b => /not a significant source/i.test(b.text)) ?? null;
+  const notSignificantConfidence = notSignificantAnchor?.confidence ?? null;
+  // Any block whose text is part of that sentence is prose, not a nutrition row.
+  const footnoteBlocks = notSignificantText
+    ? blocks.filter(b => b.text.trim().length > 3 && notSignificantText.includes(b.text.trim()))
+    : [];
+  const matchBlocks = blocks.filter(b => !footnoteBlocks.includes(b));
+
   const fields: Record<string, ParsedField> = {};
 
   for (const def of FIELD_DEFS) {
@@ -165,7 +299,7 @@ export function parseNutritionLabel(ocr: OcrResultLike): ParsedLabel {
     let anchorBlock: OcrBlockLike | null = null;
 
     // Pass 1: find the block that names this field, pulling an inline value if present.
-    for (const b of blocks) {
+    for (const b of matchBlocks) {
       const m = def.namePattern.exec(b.text);
       if (m) {
         value = parseFloat(m[1]);
@@ -181,7 +315,7 @@ export function parseNutritionLabel(ocr: OcrResultLike): ParsedLabel {
     // e.g. "Thiamin 10%" as one block or "Thiamin" / "10%" as two separate blocks).
     if (!anchorBlock) {
       const bare = BARE_NAME_PATTERNS[def.key];
-      for (const b of blocks) {
+      for (const b of matchBlocks) {
         if (bare.test(b.text)) {
           anchorBlock = b;
           confidence = b.confidence;
@@ -196,6 +330,12 @@ export function parseNutritionLabel(ocr: OcrResultLike): ParsedLabel {
     // "never overwrite a field the label didn't print" rule. Zero and absent are NOT the same;
     // this only fires when the name genuinely never matched, not when a real "0" was read.
     if (!anchorBlock) {
+      // ...unless the label explicitly declared it insignificant, which means zero.
+      const kw = NOT_SIGNIFICANT_KEYWORDS[def.key];
+      if (notSignificantText && kw && kw.test(notSignificantText)) {
+        fields[def.key] = { value: 0, percentDV: 0, confidence: notSignificantConfidence };
+        continue;
+      }
       fields[def.key] = { value: null, percentDV: null, confidence: null };
       continue;
     }
@@ -203,7 +343,7 @@ export function parseNutritionLabel(ocr: OcrResultLike): ParsedLabel {
     // Value still missing -- name was found but not an inline number (see findRowValue above for
     // why this happens on real photos). Look for a bare number on the same row, to the right.
     if (value === null) {
-      const rowValue = findRowValue(anchorBlock, blocks);
+      const rowValue = findRowValue(anchorBlock, matchBlocks);
       if (rowValue) {
         value = parseFloat(BARE_VALUE.exec(rowValue.text)![1]);
         confidence = Math.min(confidence ?? 1, rowValue.confidence);
@@ -213,10 +353,21 @@ export function parseNutritionLabel(ocr: OcrResultLike): ParsedLabel {
     // Percent still missing -- look for a separate "NN%" block on the same row, to the right
     // (the real dual-column-style layout Vision's bounding boxes make possible to detect).
     if (percentDV === null) {
-      const rowPercent = findRowPercent(anchorBlock, blocks);
+      const rowPercent = findRowPercent(anchorBlock, matchBlocks);
       if (rowPercent) {
         percentDV = parseFloat(LONE_PERCENT.exec(rowPercent.text)![1]);
         confidence = Math.min(confidence ?? 1, rowPercent.confidence);
+      }
+    }
+
+    // Named on the label but with no number anywhere -- if the "not a significant source" footnote
+    // names it, that IS its number: zero. Checked here rather than only in the never-matched branch
+    // above, because the name often matches inside the footnote sentence itself.
+    if (value === null && percentDV === null) {
+      const kw = NOT_SIGNIFICANT_KEYWORDS[def.key];
+      if (notSignificantText && kw && kw.test(notSignificantText)) {
+        fields[def.key] = { value: 0, percentDV: 0, confidence: notSignificantConfidence };
+        continue;
       }
     }
 
@@ -243,31 +394,41 @@ export function parseNutritionLabel(ocr: OcrResultLike): ParsedLabel {
   // cup mix (40g)") or TWO separate blocks ("Serving size" / "1 Bar (37g)") -- confirmed both
   // happen on real photos of the exact same product across different scans, same lesson as the
   // calories fix above: check the same block first, only search a neighboring block as a fallback.
-  let serving: ParsedServing = { description: null, grams: null, confidence: null };
+  let serving: ParsedServing = { description: null, grams: null, confidence: null, name: null, amount: null, unit: null };
   const servingLabelBlock = blocks.find(b => /serving size/i.test(b.text));
+  const buildServing = (description: string, confidence: number): ParsedServing => {
+    const gramsMatch = /\(?(\d+(?:\.\d+)?)\s*g\)?/i.exec(description);
+    const split = splitServingDescription(description);
+    return {
+      description,
+      grams: gramsMatch ? parseFloat(gramsMatch[1]) : null,
+      confidence,
+      name: split.name || null,
+      amount: split.amount,
+      unit: split.unit,
+    };
+  };
   if (servingLabelBlock) {
     const inlineMatch = /serving size\s*[:\-]?\s*(.+)/i.exec(servingLabelBlock.text);
     const inlineDescription = inlineMatch ? inlineMatch[1].trim() : '';
+    // A capture of pure punctuation (a stray ":" from "Serving Size:") is NOT a serving size --
+    // accepting it used to short-circuit the same-row search below, losing values printed off to
+    // the right of the label ("1 Can (16 fl oz)"). Confirmed on a real can 2026-07-22.
+    const inlineIsReal = /[a-z0-9]/i.test(inlineDescription);
 
-    if (inlineDescription.length > 0) {
-      const gramsMatch = /\(?(\d+(?:\.\d+)?)\s*g\)?/i.exec(inlineDescription);
-      serving = {
-        description: inlineDescription,
-        grams: gramsMatch ? parseFloat(gramsMatch[1]) : null,
-        confidence: servingLabelBlock.confidence,
-      };
+    if (inlineIsReal) {
+      serving = buildServing(inlineDescription, servingLabelBlock.confidence);
     } else {
-      const candidates = blocks
-        .filter(b => b !== servingLabelBlock && b.boundingBox.x > servingLabelBlock.boundingBox.x && rowsOverlap(servingLabelBlock, b) && b.text.trim().length > 0)
+      // Strict same-row first, then the curved-surface pass -- on a can the serving value sits hard
+      // right of "Serving Size:" and drifts vertically exactly like the Calories number does.
+      const sameRow = (test: (a: OcrBlockLike, b: OcrBlockLike) => boolean) => blocks
+        .filter(b => b !== servingLabelBlock && b.boundingBox.x > servingLabelBlock.boundingBox.x && test(servingLabelBlock, b) && /[a-z0-9]/i.test(b.text))
         .sort((a, b) => a.boundingBox.x - b.boundingBox.x);
-      const valueBlock = candidates[0] ?? null;
+      const valueBlock = sameRow(rowsOverlap)[0]
+        ?? sameRow(rowsOverlapCurved).find(b => ownsRow(servingLabelBlock, b, blocks))
+        ?? null;
       if (valueBlock) {
-        const gramsMatch = /\(?(\d+(?:\.\d+)?)\s*g\)?/i.exec(valueBlock.text);
-        serving = {
-          description: valueBlock.text.trim(),
-          grams: gramsMatch ? parseFloat(gramsMatch[1]) : null,
-          confidence: Math.min(servingLabelBlock.confidence, valueBlock.confidence),
-        };
+        serving = buildServing(valueBlock.text.trim(), Math.min(servingLabelBlock.confidence, valueBlock.confidence));
       }
     }
   }

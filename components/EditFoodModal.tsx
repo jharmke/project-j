@@ -15,7 +15,7 @@ import GradientIcon from './GradientIcon';
 import GradientNumber from './GradientNumber';
 import { useToast } from './Toast';
 import { parseNutritionLabel, ParsedLabel } from '../utils/nutritionLabelParser';
-import LabelScanReviewModal, { ScanRowResult } from './LabelScanReviewModal';
+import LabelScanReviewModal, { ScanRowResult, ScanServingResult } from './LabelScanReviewModal';
 import { convertUnit, convertibleUnitsFor, unitGroup, unitLabel } from '../utils/unitConversion';
 import UnitPickerButton from './UnitPickerButton';
 
@@ -127,28 +127,40 @@ export default function EditFoodModal({ visible, editFoodData, setEditFoodData, 
   // Maps the review modal's confirmed values onto editFoodData's field names -- note some of these
   // differ from the parser's own keys (e.g. "cal" here vs "calories" in the parser), matched by hand
   // below. Never touches a field the label didn't print anything for, same rule as Create Food.
-  const handleScanConfirm = (fields: Record<string, ScanRowResult>, serving: ParsedLabel['serving'], servingsPerContainer: number | null) => {
+  const handleScanConfirm = (fields: Record<string, ScanRowResult>, serving: ScanServingResult, servingsPerContainer: number | null) => {
     const keyMap: Record<string, string> = { calories: 'cal' };
+    // The serving comes back in whatever unit the user confirmed (fl oz, cup, g...). Convert it to
+    // that family's canonical base, which is what every nutrition calculation runs on, and keep the
+    // confirmed unit as the display preference so the food is shown the way the label reads.
+    const base = unitGroup(serving.unit || 'g') === 'volume' ? 'ml' : 'g';
+    const canonical = serving.amount != null
+      ? (convertUnit(serving.amount, serving.unit || base, base) ?? serving.amount)
+      : null;
     setEditFoodData((p: any) => {
       if (!p) return null;
       const updated = { ...p };
       for (const [key, row] of Object.entries(fields)) {
         if (row.value !== null) updated[keyMap[key] || key] = String(row.value);
       }
-      if (serving.grams !== null) updated.servingGrams = String(serving.grams);
-      if (serving.description) updated.servingLabel = serving.description;
+      if (canonical !== null) {
+        updated.servingGrams = String(Math.round(canonical * 100) / 100);
+        updated.servingUnitType = base;
+        if (serving.unit) updated.servingDisplayUnit = serving.unit;
+      }
+      if (serving.name) updated.servingLabel = serving.name;
       // "1 Container" auto-added as an Additional Serving, same as Create Food -- skipped at
       // exactly 1 (identical to the primary serving), replaces a prior auto-added container row
       // on re-scan instead of stacking a duplicate.
-      if (servingsPerContainer !== null && servingsPerContainer > 1 && serving.grams !== null) {
-        const containerGrams = Math.round(serving.grams * servingsPerContainer * 10) / 10;
+      if (servingsPerContainer !== null && servingsPerContainer > 1 && canonical !== null) {
+        const containerAmount = Math.round(canonical * servingsPerContainer * 10) / 10;
         updated.additionalServings = [
           ...(p.additionalServings || []).filter((s: any) => !s.id.startsWith('as_container_')),
-          { id: `as_container_${Date.now()}`, label: '1 Container', grams: String(containerGrams) },
+          { id: `as_container_${Date.now()}`, label: '1 Container', grams: String(containerAmount) },
         ];
       }
       return updated;
     });
+    setServingEntryUnit(serving.unit && unitGroup(serving.unit) ? serving.unit : base);
     showToast('Label scanned', 'Review the fields and save when ready', 'success');
   };
 
@@ -168,6 +180,7 @@ export default function EditFoodModal({ visible, editFoodData, setEditFoodData, 
             parsed={scannedLabel}
             onConfirm={handleScanConfirm}
             onClose={() => setShowScanReview(false)}
+            onRetake={() => { setShowScanReview(false); handleScanLabel(); }}
           />
         ) : (
         <Animated.View style={{

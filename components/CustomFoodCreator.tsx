@@ -35,7 +35,7 @@ import { recognizeText as ocrRecognizeText } from 'expo-ocr-kit';
 import { convertUnit, convertibleUnitsFor, unitGroup, unitLabel } from '../utils/unitConversion';
 import UnitPickerButton from './UnitPickerButton';
 import { parseNutritionLabel, ParsedLabel } from '../utils/nutritionLabelParser';
-import LabelScanReviewModal, { ScanRowResult } from './LabelScanReviewModal';
+import LabelScanReviewModal, { ScanRowResult, ScanServingResult } from './LabelScanReviewModal';
 import ModalHeader from './ModalHeader';
 
 interface CustomFoodCreatorProps {
@@ -367,7 +367,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
   // Maps the review modal's confirmed values onto this form's individual field setters --
   // never touches a field the label didn't print anything for (rows only contains fields the
   // parser actually found), matching the "never overwrite a field the label didn't have" rule.
-  const handleScanConfirm = (fields: Record<string, ScanRowResult>, serving: ParsedLabel['serving'], servingsPerContainer: number | null) => {
+  const handleScanConfirm = (fields: Record<string, ScanRowResult>, serving: ScanServingResult, servingsPerContainer: number | null) => {
     const setters: Record<string, (v: string) => void> = {
       calories: setCalories, fat: setFat, saturatedFat: setSaturatedFat, transFat: setTransFat,
       cholesterol: setCholesterol, sodium: setSodium, carbs: setCarbs, fiber: setFiber,
@@ -381,18 +381,29 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
     for (const [key, row] of Object.entries(fields)) {
       if (row.value !== null && setters[key]) setters[key](String(row.value));
     }
-    if (serving.grams !== null) setServingGrams(String(serving.grams));
-    if (serving.description) setServingLabel(serving.description);
+    // The serving comes back in whatever unit the user confirmed (fl oz, cup, g...). Convert to that
+    // family's canonical base -- what all nutrition math runs on -- and keep the confirmed unit as the
+    // display preference, so a "16 fl oz" label stays a 16 fl oz food instead of becoming 473 mL.
+    const base = unitGroup(serving.unit || 'g') === 'volume' ? 'ml' : 'g';
+    const canonical = serving.amount != null
+      ? (convertUnit(serving.amount, serving.unit || base, base) ?? serving.amount)
+      : null;
+    if (canonical !== null) {
+      setServingGrams(String(Math.round(canonical * 100) / 100));
+      setServingUnitType(base);
+      setServingEntryUnit(serving.unit && unitGroup(serving.unit) ? serving.unit : base);
+    }
+    if (serving.name) setServingLabel(serving.name);
 
     // "1 Container" auto-added as an Additional Serving using the label's own printed
     // servings-per-container count -- skipped at exactly 1 (identical to the primary serving
     // already filling the form, nothing new to offer). Re-scanning replaces the prior auto-added
     // container row instead of stacking a duplicate, while leaving any manually-added rows alone.
-    if (servingsPerContainer !== null && servingsPerContainer > 1 && serving.grams !== null) {
-      const containerGrams = Math.round(serving.grams * servingsPerContainer * 10) / 10;
+    if (servingsPerContainer !== null && servingsPerContainer > 1 && canonical !== null) {
+      const containerAmount = Math.round(canonical * servingsPerContainer * 10) / 10;
       setAdditionalServings(prev => [
         ...prev.filter(s => !s.id.startsWith('as_container_')),
-        { id: `as_container_${Date.now()}`, label: '1 Container', grams: String(containerGrams) },
+        { id: `as_container_${Date.now()}`, label: '1 Container', grams: String(containerAmount) },
       ]);
     }
 
@@ -991,6 +1002,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
             parsed={scannedLabel}
             onConfirm={handleScanConfirm}
             onClose={() => setShowScanReview(false)}
+            onRetake={() => { setShowScanReview(false); handleScanLabel(); }}
           />
         ) : cardContent}
       </Animated.View>

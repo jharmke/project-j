@@ -23,7 +23,9 @@ export interface NutrientSection {
   columns?: 2 | 3;
 }
 
-function CollapsibleBody({ open, children }: { open: boolean; children: React.ReactNode }) {
+// Exported so the label-scan review card animates its sections identically (measured height, never
+// maxHeight) instead of growing a second implementation of the same thing.
+export function CollapsibleBody({ open, children }: { open: boolean; children: React.ReactNode }) {
   const [measuredHeight, setMeasuredHeight] = useState<number | null>(null);
   const heightAnim = useRef(new Animated.Value(open ? 1 : 0)).current;
   const opacityAnim = useRef(new Animated.Value(open ? 1 : 0)).current;

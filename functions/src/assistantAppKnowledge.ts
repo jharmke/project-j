@@ -242,6 +242,10 @@ LOG TAB (FOOD DIARY)
   and a unit dropdown offering that ingredient's own family (a grams ingredient offers g/kg/oz/lb, a mL
   one offers the volume units). Calories and every macro rescale exactly with the amount. The recipe's
   Total Finished Weight has the same weight/volume dropdown.
+  LOG A PORTION IN A DIFFERENT UNIT: on the recipe's log screen tap "By weight" and use the dropdown next
+  to the amount. A recipe defined in pounds can be logged as 8 oz; the app converts back to the recipe's
+  own unit, so logging never redefines the recipe. Same-family units only (weight with weight, volume
+  with volume). The diary entry shows the unit the user actually typed.
 - REPEAT A MEAL: fast way to re-log a meal you eat often (e.g. the same breakfast daily). When a meal
   slot is EMPTY and there's matching history in the last 14 days, that slot reads "Expand to repeat a
   meal" under its name. The controls are NOT on the collapsed row: the user must EXPAND the slot (tap the

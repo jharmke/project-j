@@ -10,6 +10,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import Reanimated, { useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
 import CustomFoodCreator from '../components/CustomFoodCreator';
+import UnitPickerButton from '../components/UnitPickerButton';
+import { convertUnit, convertibleUnitsFor } from '../utils/unitConversion';
 import { ToastRenderer, useToast } from '../components/Toast';
 import GradientNumber from '../components/GradientNumber';
 import GradientTitle from '../components/GradientTitle';
@@ -626,6 +628,23 @@ const [showTimePicker, setShowTimePicker] = useState(false);
       : '100');
   const [amount, setAmount] = useState(originalAmount);
   const [amountChanged, setAmountChanged] = useState(false);
+  // Weight/volume entry-unit convenience on the logged Amount. `amount` stays in the food's base
+  // unit (grams for weight foods, mL for volume foods) so all nutrition math is untouched; the
+  // dropdown just lets you type in a sibling unit (oz, cup, etc.) and converts back on blur.
+  const amountBaseUnit = effectiveServing?.unit || food?.servingUnitType || 'g';
+  const amountFamily = convertibleUnitsFor(amountBaseUnit);
+  // On edit, restore the unit the entry was logged in (persisted as displayUnit); fresh logs start
+  // in the food's base unit. The displayed value derives from the canonical grams via conversion.
+  const [amountEntryUnit, setAmountEntryUnit] = useState<string>(food?.existingDisplayUnit || amountBaseUnit);
+  const [amountDraft, setAmountDraft] = useState<string | undefined>(undefined);
+  // Reset the entry unit to the base unit ONLY when the base actually changes (e.g. switching
+  // servings), never on mount -- mounting would otherwise clobber a restored displayUnit above.
+  const amountBaseMountRef = useRef(true);
+  useEffect(() => {
+    if (amountBaseMountRef.current) { amountBaseMountRef.current = false; return; }
+    setAmountEntryUnit(amountBaseUnit);
+    setAmountDraft(undefined);
+  }, [amountBaseUnit]);
   const [servingCountTouched, setServingCountTouched] = useState(false);
   const initialServingCount = resolvedServingGrams > 0 && food?.existingAmount
     ? Math.max(1, parseFloat(food.existingAmount) / resolvedServingGrams)
@@ -859,6 +878,14 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
       // a float artifact into the stored name (e.g. 1.3333 servings -> "113.33304999999999g"). Display-only:
       // loggedAmount below keeps the precise value, so edit math is unaffected.
       const nameAmount = (() => { const n = parseFloat(amount); return isFinite(n) ? String(Math.round(n * 10) / 10) : amount; })();
+      // #9: remember the unit the user logged in whenever it isn't plain grams -- covers foods whose
+      // native unit is already oz/mL (logged with no switch) AND portions switched to a sibling unit.
+      // Grams stays canonical (loggedAmount/calPer100g/totals unchanged); these display-only fields
+      // drive the meal card + Edit reopen so it reads "11 oz"/"240 mL" instead of a stale "11g".
+      const amtShowUnit = amountFamily.length > 0 && amountEntryUnit !== 'g';
+      const amtDisplayAmount = amountEntryUnit === amountBaseUnit
+        ? nameAmount
+        : String(Math.round(((convertUnit(parseFloat(amount), amountBaseUnit, amountEntryUnit) ?? 0)) * 100) / 100);
       const newEntry = {
   // Serving-only recipe entries rebuild the name in servings (amount tracks the serving count), so an
   // edited count is reflected; everything else rebuilds from the edited amount + unit.
@@ -878,6 +905,8 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
   labelFat: selectedServing?.fat || effectiveServing?.fat || defaultFsServing?.fat || fatPer100g,
   loggedAmount: amount,
   loggedUnit: unit,
+  displayUnit: amtShowUnit ? amountEntryUnit : null,
+  displayAmount: amtShowUnit ? amtDisplayAmount : null,
   servingGrams: effectiveServing?.grams,
   foodNutrients: baseNutrients,
   timestamp: entryTime.getTime(),
@@ -1327,24 +1356,36 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             entries (no gram basis) so they don't show a bogus "Amount (g): 100". */}
         {!isServingOnlyRecipe && (
         <View ref={amountRowRef} style={styles.amountRow}>
-          <Text style={styles.amountLabel}>Amount ({effectiveServing?.unit || food?.servingUnitType || 'g'})</Text>
-          <TextInput
-            style={styles.amountInput}
-            value={amount}
-            onChangeText={v => {
-              const stripped = v.replace(/[^0-9.]/g, '');
-              const dot = stripped.indexOf('.');
-              if (dot === -1) {
-                setAmount(stripped); setAmountChanged(true); setServingCount(1); setHasChanges(true);
-              } else {
-                const before = stripped.slice(0, dot);
-                const after = stripped.slice(dot + 1).replace(/\./g, '').slice(0, 1);
-                setAmount(before + '.' + after); setAmountChanged(true); setServingCount(1); setHasChanges(true);
-              }
-            }}
-            keyboardType="decimal-pad"
-            selectTextOnFocus
-          />
+          <Text style={styles.amountLabel}>{amountFamily.length > 0 ? 'Amount' : `Amount (${amountBaseUnit})`}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8 }}>
+            <TextInput
+              style={{ color: theme.textSecondary, paddingVertical: 12, paddingHorizontal: 12, fontSize: 24, fontFamily: Type.num, width: amountFamily.length > 0 ? 96 : 120, textAlign: 'center' }}
+              value={amountEntryUnit === amountBaseUnit ? amount : (amountDraft !== undefined ? amountDraft : (amount ? String(Math.round(((convertUnit(parseFloat(amount), amountBaseUnit, amountEntryUnit) ?? 0)) * 100) / 100) : ''))}
+              onChangeText={v => {
+                const stripped = v.replace(/[^0-9.]/g, '');
+                const dot = stripped.indexOf('.');
+                const clean = dot === -1 ? stripped : stripped.slice(0, dot + 1) + stripped.slice(dot + 1).replace(/\./g, '').slice(0, 1);
+                if (amountEntryUnit === amountBaseUnit) setAmount(clean);
+                else setAmountDraft(clean);
+                setAmountChanged(true); setServingCount(1); setHasChanges(true);
+              }}
+              onBlur={() => {
+                if (amountEntryUnit === amountBaseUnit || amountDraft === undefined) return;
+                const typed = parseFloat(amountDraft);
+                const base = !isNaN(typed) ? convertUnit(typed, amountEntryUnit, amountBaseUnit) : null;
+                if (base !== null) setAmount(String(Math.round(base * 100) / 100));
+                setAmountDraft(undefined);
+              }}
+              keyboardType="decimal-pad"
+              selectTextOnFocus
+            />
+            {amountFamily.length > 0 && (
+              <>
+                <View style={{ width: 1, alignSelf: 'stretch', backgroundColor: theme.borderInput, marginVertical: 6 }} />
+                <UnitPickerButton embedded value={amountEntryUnit} options={amountFamily} onChange={u => { setAmountEntryUnit(u); setAmountDraft(undefined); setHasChanges(true); }} />
+              </>
+            )}
+          </View>
         </View>
         )}
 

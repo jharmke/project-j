@@ -5,12 +5,16 @@ import { useMemo, useRef, useState } from 'react';
 import { Animated, Dimensions, Easing, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../theme';
 import { Type } from '../typography';
+import { unitLabel } from '../utils/unitConversion';
 
 interface UnitPickerButtonProps {
   value: string;
   options: string[];
   onChange: (unit: string) => void;
   minWidth?: number;
+  // embedded: drop the button's own background/border so it can sit INSIDE another bordered
+  // container (e.g. merged with an amount field) and read as one unified control.
+  embedded?: boolean;
 }
 
 // Layout constants used to decide whether the menu fits below the button.
@@ -28,7 +32,7 @@ const SAFE_BOTTOM_INSET = 175;  // clears the home indicator AND any floating bo
 // identically inside a screen, a tab, or a Modal) and flips to open UPWARD when there isn't enough
 // room below. Options cascade in on open, unrolling away from the button in whichever direction it
 // opened.
-export default function UnitPickerButton({ value, options, onChange, minWidth = 48 }: UnitPickerButtonProps) {
+export default function UnitPickerButton({ value, options, onChange, minWidth = 48, embedded = false }: UnitPickerButtonProps) {
   const { theme } = useTheme();
   const [open, setOpen] = useState(false);
   const [openUp, setOpenUp] = useState(false);
@@ -80,9 +84,9 @@ export default function UnitPickerButton({ value, options, onChange, minWidth = 
     <View ref={wrapperRef}>
       <TouchableOpacity
         onPress={handleOpen}
-        style={{ minWidth, height: 36, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 2, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingHorizontal: 8 }}
+        style={{ minWidth, height: 36, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 2, paddingHorizontal: embedded ? 10 : 8, ...(embedded ? {} : { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8 }) }}
       >
-        <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textMuted }}>{value}</Text>
+        <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.textMuted }}>{unitLabel(value)}</Text>
         <Ionicons name="chevron-down" size={10} color={theme.textDim} />
       </TouchableOpacity>
 
@@ -119,7 +123,7 @@ export default function UnitPickerButton({ value, options, onChange, minWidth = 
                   onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); onChange(u); setOpen(false); }}
                   style={{ paddingVertical: 8, paddingHorizontal: 12, backgroundColor: u === value ? theme.accentBlueBg : 'transparent' }}
                 >
-                  <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: u === value ? theme.accentBlue : theme.textMuted }}>{u}</Text>
+                  <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: u === value ? theme.accentBlue : theme.textMuted }}>{unitLabel(u)}</Text>
                 </TouchableOpacity>
               </Animated.View>
             ))}

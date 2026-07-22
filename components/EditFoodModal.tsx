@@ -479,7 +479,7 @@ export default function EditFoodModal({ visible, editFoodData, setEditFoodData, 
               faceStyle={{ paddingVertical: 12, borderRadius: 8 }}
               label="Save"
               onPress={onSave}
-              disabled={!editFoodData?.name?.trim() || !editFoodData?.cal}
+              disabled={!editFoodData?.name?.trim() || !editFoodData?.cal || !(parseFloat(editFoodData?.servingGrams) > 0)}
             />
           </View>
         </Animated.View>

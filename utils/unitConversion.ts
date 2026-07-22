@@ -74,3 +74,10 @@ export function convertibleUnitsFor(primaryUnit: string): string[] {
   if (group === 'volume') return VOLUME_UNITS;
   return [];
 }
+
+// Presentation label for a unit key. The keys stay lowercase everywhere for the math; this is
+// display only -- "mL"/"L" read correctly instead of "ml"/"l" (the lone "l" looked like a "1").
+const UNIT_LABELS: Record<string, string> = { ml: 'mL', l: 'L' };
+export function unitLabel(unit: string): string {
+  return UNIT_LABELS[unit.toLowerCase()] || unit;
+}

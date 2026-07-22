@@ -21,6 +21,7 @@ import BackgroundLayers from '../../components/BackgroundLayers';
 import Svg, { Circle } from 'react-native-svg';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
+import { unitLabel } from '../../utils/unitConversion';
 import { barFillGradient } from '../../utils/barGradient';
 import { sumWaterEntries, reconcileDayWater } from '../../utils/waterData';
 import { cancelWaterPaceNotification } from '../../services/notifications';
@@ -1862,6 +1863,8 @@ export default function LogScreen() {
                             foodNutrients: (entry as any).foodNutrients || [],
                             existingAmount: editAmount,
                             existingUnit: editUnit,
+                            existingDisplayUnit: e.displayUnit || undefined,
+                            existingDisplayAmount: e.displayAmount != null ? String(e.displayAmount) : undefined,
                             timestamp: entry.timestamp || Date.now(),
                             fsId: (entry as any).fsId || null,
                             myFoodId: (entry as any).myFoodId || null,
@@ -1886,9 +1889,12 @@ export default function LogScreen() {
                           const foodName = parts[0];
                           const brand = parts.length > 1 ? parts.slice(1).join(' · ') : null;
                           const amountMatch = entry.name.match(/\((\d+\.?\d*(?:g|oz|serving))\)$/);
-                          // Round any over-precise gram/oz weight baked into the stored name for display, e.g.
-                          // "113.33304999999999g" -> "113.3g". Display-only; the stored entry is untouched.
-                          const amountLabel = amountMatch ? tidyFoodName(amountMatch[1]) : null;
+                          // #9: entries logged in a non-base unit carry displayUnit/displayAmount -- show those
+                          // ("6 oz", "240 mL") instead of the grams baked into the name. Older entries fall back
+                          // to the name regex. Round any over-precise weight for display; stored entry untouched.
+                          const amountLabel = (entry as any).displayUnit != null
+                            ? `${tidyFoodName(String((entry as any).displayAmount))} ${unitLabel((entry as any).displayUnit)}`
+                            : amountMatch ? tidyFoodName(amountMatch[1]) : null;
                           return (
                             <>
                               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>

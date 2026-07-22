@@ -1,8 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
-import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useToast } from '../components/Toast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,6 +18,7 @@ import ScreenHeader from '../components/ScreenHeader';
 import BackgroundLayers from '../components/BackgroundLayers';
 import ButtonShine from '../components/ButtonShine';
 import GradientNumber from '../components/GradientNumber';
+import { unitLabel } from '../utils/unitConversion';
 import PrimaryCTA from '../components/PrimaryCTA';
 import ModalHeader from '../components/ModalHeader';
 
@@ -26,7 +27,11 @@ export default function RecipeLogScreen() {
   const { theme } = useTheme();
   const { recipeJson, meal, date } = useLocalSearchParams<{ recipeJson: string; meal: string; date: string }>();
 
-  const recipe = recipeJson ? JSON.parse(recipeJson) : null;
+  // The route param is a snapshot taken when this screen opened. Editing the recipe in the builder and
+  // coming back would otherwise land on those stale numbers and read as a save that didn't take, so the
+  // live copy is re-read from storage every time the screen comes back into view.
+  const paramRecipe = recipeJson ? JSON.parse(recipeJson) : null;
+  const [recipe, setRecipe] = useState<any>(paramRecipe);
   const isWholeBatch = (recipe?.servingCount ?? 1) === 0;
   const [logMode, setLogMode] = useState<'serving' | 'weight'>(
     isWholeBatch || (recipe?.defaultToWeight && recipe?.totalWeight > 0) ? 'weight' : 'serving'
@@ -40,6 +45,27 @@ export default function RecipeLogScreen() {
   useEffect(() => {
     loadMealSlots().then(({ mealSlots: slots }) => setMealSlots(slots));
   }, []);
+
+  const paramRecipeId = paramRecipe?.id;
+  const paramRecipeName = paramRecipe?.name;
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      (async () => {
+        try {
+          const saved = await AsyncStorage.getItem('pj_recipes');
+          if (!saved || !active) return;
+          const list = JSON.parse(saved);
+          if (!Array.isArray(list)) return;
+          const fresh = list.find((r: any) => (paramRecipeId ? r.id === paramRecipeId : r.name === paramRecipeName));
+          // Not found means it was deleted from another screen -- keep the snapshot rather than
+          // blanking the page out from under someone mid-log.
+          if (fresh && active) setRecipe(fresh);
+        } catch {}
+      })();
+      return () => { active = false; };
+    }, [paramRecipeId, paramRecipeName])
+  );
   const { showToast } = useToast();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -123,7 +149,7 @@ export default function RecipeLogScreen() {
       const entries = current.entries || [];
       const label = logMode === 'serving'
         ? `${servingAmount} ${recipe.servingName}`
-        : `${weightAmount}${recipe.totalWeightUnit}`;
+        : `${weightAmount}${unitLabel(recipe.totalWeightUnit || 'g')}`;
       // A recipe with a total weight has a gram basis, so Edit Entry shows the amount box with the real
       // portion (in the recipe's weight unit). A serving-count-only recipe has no gram basis, so the
       // entry is flagged servingOnly and Edit Entry hides the amount box (no fake "Amount (g): 100").
@@ -195,7 +221,13 @@ export default function RecipeLogScreen() {
     }
   };
 
-  const weightUnitWord: Record<string, string> = { g: 'grams', oz: 'ounces', lbs: 'pounds', ml: 'milliliters', cups: 'cups' };
+  // Spoken form for "How many ___?". Covers the app-wide unit keys plus the two legacy spellings
+  // ("lbs"/"cups") that recipes saved before the serving-unit redesign still carry on disk.
+  const weightUnitWord: Record<string, string> = {
+    g: 'grams', kg: 'kilograms', oz: 'ounces', lb: 'pounds', lbs: 'pounds',
+    ml: 'milliliters', l: 'liters', cup: 'cups', cups: 'cups',
+    tbsp: 'tablespoons', tsp: 'teaspoons', 'fl oz': 'fluid ounces',
+  };
   const styles = useStyles(theme);
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -218,7 +250,7 @@ export default function RecipeLogScreen() {
         <View style={styles.infoCard}>
           <Text style={styles.infoText}>
             {isWholeBatch ? 'Whole batch' : `${recipe.servingCount} ${recipe.servingName} total`}
-            {totalWeight > 0 ? ` · ${totalWeight}${recipe.totalWeightUnit} total weight` : ''}
+            {totalWeight > 0 ? ` · ${totalWeight}${unitLabel(recipe.totalWeightUnit || 'g')} total weight` : ''}
           </Text>
           <View style={styles.macroRow}>
             <View style={styles.macroStat}>
@@ -293,7 +325,7 @@ export default function RecipeLogScreen() {
               // Last row drops its divider: inside a card a trailing rule reads as a broken edge.
               <View key={i} style={[styles.ingredientRow, i === recipe.ingredients.length - 1 && { borderBottomWidth: 0, paddingBottom: 0 }]}>
                 <View style={{ flex: 1, marginRight: 12 }}>
-                  <GradientNumber value={`${ing.name} (${ing.amount}${ing.unit})`} color={theme.textSecondary} style={styles.ingredientName} />
+                  <GradientNumber value={`${ing.name} (${ing.amount}${unitLabel(ing.unit || 'g')})`} color={theme.textSecondary} style={styles.ingredientName} />
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                       <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.macroProtein }} />
@@ -335,7 +367,7 @@ export default function RecipeLogScreen() {
                 onPress={() => setLogMode('weight')}>
                 {logMode === 'weight' ? <ButtonShine radius={6} /> : null}
                 <Text style={[styles.toggleBtnText, logMode === 'weight' && { color: theme.accentBlue }]}>
-                  By weight ({recipe.totalWeightUnit})
+                  By weight ({unitLabel(recipe.totalWeightUnit || 'g')})
                 </Text>
               </TouchableOpacity>
             )}

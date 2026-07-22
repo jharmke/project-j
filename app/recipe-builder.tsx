@@ -4,7 +4,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useCallback, useRef, useEffect, useState } from 'react';
-import { Alert, Animated, Dimensions, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CustomFoodCreator from '../components/CustomFoodCreator';
 import GradientNumber from '../components/GradientNumber';
@@ -19,6 +19,8 @@ import ScreenHeader from '../components/ScreenHeader';
 import PrimaryCTA from '../components/PrimaryCTA';
 import ButtonShine from '../components/ButtonShine';
 import BackgroundLayers from '../components/BackgroundLayers';
+import UnitPickerButton from '../components/UnitPickerButton';
+import { convertUnit, unitGroup, unitLabel } from '../utils/unitConversion';
 
 interface Ingredient {
   id: string;
@@ -100,9 +102,17 @@ interface Recipe {
 }
 
 const makeId = () => Math.random().toString(36).substr(2, 9);
-const WEIGHT_UNITS = ['g', 'oz', 'lbs', 'ml', 'cups'];
-const SCREEN_W = Dimensions.get('window').width;
-const SCREEN_H = Dimensions.get('window').height;
+const WEIGHT_ENTRY_UNITS = ['g', 'kg', 'oz', 'lb'];
+const VOLUME_ENTRY_UNITS = ['ml', 'l', 'cup', 'tbsp', 'tsp', 'fl oz'];
+const ALL_ENTRY_UNITS = [...WEIGHT_ENTRY_UNITS, ...VOLUME_ENTRY_UNITS];
+// Recipes built before the serving-unit redesign saved their own dialect ("lbs", "cups") from a
+// hand-rolled picker. Read those as the app-wide keys so old recipes keep working and can convert;
+// nothing is rewritten on disk until the user saves the recipe again.
+const LEGACY_UNIT_ALIASES: Record<string, string> = { lbs: 'lb', cups: 'cup', mls: 'ml' };
+const normalizeUnit = (u?: string) => {
+  const key = (u || 'g').toLowerCase();
+  return LEGACY_UNIT_ALIASES[key] || key;
+};
 
 const filterDecimal = (v: string, set: (s: string) => void) => {
   const stripped = v.replace(/[^0-9.]/g, '');
@@ -131,10 +141,6 @@ export default function RecipeBuilderScreen() {
   const [servingName, setServingName] = useState('');
   const [defaultToWeight, setDefaultToWeight] = useState(false);
   const [showCustomFoodModal, setShowCustomFoodModal] = useState(false);
-  const [showWeightUnitDropdown, setShowWeightUnitDropdown] = useState(false);
-  const [unitBtnPos, setUnitBtnPos] = useState<{ top?: number; bottom?: number; right: number } | null>(null);
-  const weightUnitAnim = useRef(new Animated.Value(0)).current;
-  const unitBtnRef = useRef<View>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const tutorialStateRef = useRef<any>({});
 
@@ -147,25 +153,19 @@ export default function RecipeBuilderScreen() {
   const servingsCardRef = useTutorialTarget('recipe_servings_card');
   const saveBtnRef = useTutorialTarget('recipe_save_btn');
 
-  const openWeightUnitDropdown = () => {
-    weightUnitAnim.setValue(0);
-    unitBtnRef.current?.measureInWindow((x, y, width, height) => {
-      const dropdownHeight = WEIGHT_UNITS.length * 44 + 8;
-      const spaceBelow = SCREEN_H - (y + height);
-      if (spaceBelow < dropdownHeight + 20) {
-        setUnitBtnPos({ bottom: SCREEN_H - y + 4, right: SCREEN_W - x - width });
-      } else {
-        setUnitBtnPos({ top: y + height + 4, right: SCREEN_W - x - width });
-      }
-      setShowWeightUnitDropdown(true);
-      Animated.timing(weightUnitAnim, { toValue: 1, duration: 180, useNativeDriver: true }).start();
-    });
-  };
-  const closeWeightUnitDropdown = () => {
-    Animated.timing(weightUnitAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => {
-      setShowWeightUnitDropdown(false);
-      setUnitBtnPos(null);
-    });
+  // Switching the finished-weight unit: inside one family the number converts (2000 g -> 70.55 oz, the
+  // batch is the same size either way). Weight <-> volume can't convert without density, so the number
+  // is left alone and only the unit changes -- the recipe's nutrition comes from its ingredients, this
+  // field is just how big the finished batch is, so nothing is corrupted either way.
+  const changeTotalWeightUnit = (u: string) => {
+    const current = normalizeUnit(totalWeightUnit);
+    if (u === current) return;
+    const typed = parseFloat(totalWeight);
+    if (unitGroup(u) === unitGroup(current) && !isNaN(typed)) {
+      const converted = convertUnit(typed, current, u);
+      if (converted !== null) setTotalWeight(String(Math.round(converted * 100) / 100));
+    }
+    setTotalWeightUnit(u);
   };
 
   useEffect(() => {
@@ -204,7 +204,7 @@ export default function RecipeBuilderScreen() {
         name: s.recipeName?.trim() || 'Demo Chicken Bowl',
         ingredients: s.ingredients || [],
         totalWeight: parseFloat(s.totalWeight) || 0,
-        totalWeightUnit: s.totalWeightUnit || 'g',
+        totalWeightUnit: normalizeUnit(s.totalWeightUnit),
         servingCount: s.servings || 4,
         servingName: s.servingName || 'serving',
         totalCal: s.totalCal || 0,
@@ -275,7 +275,7 @@ export default function RecipeBuilderScreen() {
           setRecipeName(recipe.name);
           setIngredients(recipe.ingredients);
           setTotalWeight(recipe.totalWeight.toString());
-          setTotalWeightUnit(recipe.totalWeightUnit);
+          setTotalWeightUnit(normalizeUnit(recipe.totalWeightUnit));
           setServingCount(recipe.servingCount === 0 ? '' : recipe.servingCount.toString());
           setServingName(recipe.servingName);
           setDefaultToWeight(recipe.defaultToWeight || false);
@@ -319,7 +319,9 @@ export default function RecipeBuilderScreen() {
       ...(food.copper              ? { copper:              food.copper              } : {}),
       ...(food.caffeine            ? { caffeine:            food.caffeine            } : {}),
       amount: food.servingSize || 100,
-      unit: food.servingUnit || 'g',
+      // servingUnit is the free-text Serving NAME ("1 scoop"), not a unit -- the ingredient row needs
+      // the food's actual base unit or it renders things like "240 1 cup".
+      unit: normalizeUnit(food.servingUnitType),
     };
     setIngredients(prev => [...prev, ingredient]);
   };
@@ -567,7 +569,7 @@ export default function RecipeBuilderScreen() {
             ingredients.map((ing, idx) => (
               <View key={ing.id} ref={idx === 0 ? ingredientRowRef : null} style={[styles.ingredientRow, idx < ingredients.length - 1 && styles.ingredientBorder]}>
                 <View style={styles.ingredientLeft}>
-                  <Text style={styles.ingredientName}>{ing.name} ({ing.amount}{ing.unit})</Text>
+                  <Text style={styles.ingredientName}>{ing.name} ({ing.amount}{unitLabel(ing.unit)})</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                       <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.macroProtein }} />
@@ -692,14 +694,12 @@ export default function RecipeBuilderScreen() {
               value={totalWeight}
               onChangeText={v => filterDecimal(v, setTotalWeight)}
             />
-            <View ref={unitBtnRef} collapsable={false}>
-              <TouchableOpacity
-                style={styles.unitPickerBtn}
-                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); showWeightUnitDropdown ? closeWeightUnitDropdown() : openWeightUnitDropdown(); }}>
-                <Text style={styles.unitPickerBtnText}>{totalWeightUnit}</Text>
-                <Ionicons name={showWeightUnitDropdown ? 'chevron-up' : 'chevron-down'} size={12} color={theme.accentBlue} />
-              </TouchableOpacity>
-            </View>
+            <UnitPickerButton
+              value={normalizeUnit(totalWeightUnit)}
+              options={ALL_ENTRY_UNITS}
+              twoColumn
+              onChange={changeTotalWeightUnit}
+            />
           </View>
           <TouchableOpacity style={styles.defaultWeightToggleRow} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setDefaultToWeight(v => !v); }} activeOpacity={0.7}>
             <View style={[styles.defaultWeightCheckbox, defaultToWeight && styles.defaultWeightCheckboxActive]}>
@@ -710,30 +710,6 @@ export default function RecipeBuilderScreen() {
         </View>
 
       </ScrollView>
-
-      {/* Weight unit dropdown -- Modal for reliable click-outside dismiss */}
-      {showWeightUnitDropdown && unitBtnPos && (
-        <Modal transparent animationType="none" onRequestClose={closeWeightUnitDropdown}>
-          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={closeWeightUnitDropdown} />
-          <Animated.View style={[styles.unitDropdown, {
-            position: 'absolute',
-            ...(unitBtnPos.top !== undefined ? { top: unitBtnPos.top } : { bottom: unitBtnPos.bottom }),
-            right: unitBtnPos.right,
-            opacity: weightUnitAnim,
-            transform: [{ translateY: weightUnitAnim.interpolate({ inputRange: [0, 1], outputRange: [unitBtnPos.top !== undefined ? -6 : 6, 0] }) }],
-          }]}>
-            {WEIGHT_UNITS.map((u, i) => (
-              <TouchableOpacity
-                key={u}
-                style={[styles.unitDropdownItem, i < WEIGHT_UNITS.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.borderSubtle }]}
-                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setTotalWeightUnit(u); closeWeightUnitDropdown(); }}>
-                <Text style={[styles.unitDropdownText, totalWeightUnit === u && { color: theme.accentBlue, fontFamily: Type.uiSemibold }]}>{u}</Text>
-                {totalWeightUnit === u && <Ionicons name="checkmark" size={12} color={theme.accentBlue} />}
-              </TouchableOpacity>
-            ))}
-          </Animated.View>
-        </Modal>
-      )}
 
       <CustomFoodCreator
         visible={showCustomFoodModal}

@@ -231,7 +231,13 @@ export default function FoodDetailScreen() {
   }>();
 const isRecipeMode = recipeMode === 'true';
 const isTutorialMode = tutorialMode === 'true';
-  const food = tutorialFood === 'chicken_breast' ? buildTutorialChickenFood() : (foodJson ? JSON.parse(foodJson) : null);
+  const paramFood = tutorialFood === 'chicken_breast' ? buildTutorialChickenFood() : (foodJson ? JSON.parse(foodJson) : null);
+  // The route param is a snapshot taken when this screen opened. Editing the food definition used to
+  // force a bounce back off the screen because there was no way to show the new numbers; now a save
+  // swaps in the record that was just written so the user can stay put. Only ever set for a real My
+  // Food save -- every other route (FatSecret result, AI estimate, recipe, tutorial) keeps the param.
+  const [refreshedFood, setRefreshedFood] = useState<any>(null);
+  const food = refreshedFood ?? paramFood;
   const foodId: string | null = food?.myFoodData?.id || (food as any)?.myFoodId || food?.fsId || null;
   const fsServings: any[] = food?.fsServings || [];
   const myFoodAdditionalServings: Array<{ label: string; grams: number }> = food?.myFoodData?.additionalServings || [];
@@ -837,7 +843,9 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           ...(vitaminC    ? { vitaminC } : {}),
           ...(vitaminD    ? { vitaminD } : {}),
           amount: parseFloat(amount),
-          unit,
+          // The food's REAL base unit (mL for volume foods), not the vestigial `unit` state this used
+          // to read, which was stuck on 'g' and made every ingredient claim to be grams.
+          unit: amountBaseUnit,
           calPer100g,
           proteinPer100g,
           carbsPer100g,
@@ -1060,8 +1068,10 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
       const servingGrams = parseFloat(editFoodData.servingGrams) || src?.servingSize || 100;
       const servingUnitType = editFoodData.servingUnitType || 'g';
       const servingLabel = editFoodData.servingLabel?.trim() || `${servingGrams}${unitLabel(servingUnitType)}`;
+      // Held onto so the screen can refresh in place instead of bouncing the user off it.
+      let savedRecord: any = null;
       const updated = foods.map((f: any) =>
-        (src?.id ? f.id === src.id : f.name === (src?.name || src?.description)) ? {
+        (src?.id ? f.id === src.id : f.name === (src?.name || src?.description)) ? (savedRecord = {
           ...f,
           name: editFoodData.name.trim(),
           brand: editFoodData.brand?.trim() || undefined,
@@ -1112,17 +1122,96 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             .filter((s: any) => s.label?.trim() && parseFloat(s.grams) > 0)
             .map((s: any) => ({ label: s.label.trim(), grams: parseFloat(s.grams) })),
           type: editFoodData.type || 'food',
-        } : f
+        }) : f
       );
       await storageSet('pj_my_foods', JSON.stringify(updated));
       saveToFirebase('my_foods', 'foods', updated).catch(() => {});
       showToast('Food saved', editFoodData.name.trim(), 'success');
       closeEditFoodModal();
-      // This screen's `food` is parsed once from a route param, not live state -- there's no
-      // way to refresh it in place after a save, so leave the screen entirely rather than sit on
-      // stale numbers. Goes back to wherever the user actually came from (My Foods, a logged
-      // entry's Edit Entry, etc.), same as the regular back button, never a hardcoded destination.
-      if (router.canGoBack()) router.back();
+      if (savedRecord) {
+        // Refresh in place: swap in the record that was just written, and re-seed the serving and
+        // amount so the box can't sit on the OLD serving size next to the NEW nutrition -- that
+        // would look correct while being wrong, which is worse than the old bounce-out.
+        const newBase = savedRecord.servingUnitType || 'g';
+        const newServing = {
+          label: savedRecord.servingUnit || `${savedRecord.servingSize}${unitLabel(newBase)}`,
+          calories: savedRecord.cal || 0,
+          protein: savedRecord.protein || 0,
+          carbs: savedRecord.carbs || 0,
+          fat: savedRecord.fat || 0,
+          fiber: savedRecord.fiber || 0,
+          sugar: savedRecord.sugar || 0,
+          sodium: savedRecord.sodium || 0,
+          cholesterol: savedRecord.cholesterol || 0,
+          saturatedFat: savedRecord.saturatedFat || 0,
+          polyunsaturatedFat: savedRecord.polyunsaturatedFat || 0,
+          monounsaturatedFat: savedRecord.monounsaturatedFat || 0,
+          potassium: savedRecord.potassium || 0,
+          vitaminA: savedRecord.vitaminA || 0,
+          vitaminC: savedRecord.vitaminC || 0,
+          calcium: savedRecord.calcium || 0,
+          iron: savedRecord.iron || 0,
+          sugarAlcohols: savedRecord.sugarAlcohols || 0,
+          addedSugars: savedRecord.addedSugars || 0,
+          transFat: savedRecord.transFat || 0,
+          vitaminD: savedRecord.vitaminD || 0,
+          grams: savedRecord.servingSize || 100,
+          unit: newBase,
+          isDefault: true,
+        };
+        setRefreshedFood({
+          ...food,
+          description: savedRecord.name,
+          brand: savedRecord.brand || null,
+          calPer100g: savedRecord.calPer100g,
+          proteinPer100g: savedRecord.proteinPer100g,
+          carbsPer100g: savedRecord.carbsPer100g,
+          fatPer100g: savedRecord.fatPer100g,
+          servingGrams: savedRecord.servingSize,
+          servingUnitType: newBase,
+          servingDisplayUnit: savedRecord.servingDisplayUnit,
+          servingUnit: savedRecord.servingUnit,
+          myFoodData: savedRecord,
+          isCustom: true,
+          // A custom food displays its STORED absolute values (existingCal and friends) until the
+          // user touches the amount -- refreshing only the per-100g figures left calories and macros
+          // showing the pre-edit numbers. On the Edit Entry route these belong to the logged entry,
+          // not the food, so they stay exactly as the user logged them.
+          ...(isEditing ? {} : {
+            existingCal: savedRecord.cal || 0,
+            existingProtein: savedRecord.protein || 0,
+            existingCarbs: savedRecord.carbs || 0,
+            existingFat: savedRecord.fat || 0,
+            existingAmount: String(savedRecord.servingSize || 100),
+            foodNutrients: [
+              { nutrientName: 'Energy', unitName: 'KCAL', value: savedRecord.cal || 0 },
+              { nutrientName: 'Protein', unitName: 'G', value: savedRecord.protein || 0 },
+              { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: savedRecord.carbs || 0 },
+              { nutrientName: 'Total lipid (fat)', unitName: 'G', value: savedRecord.fat || 0 },
+            ],
+          }),
+        });
+        setResolvedMyFood(savedRecord);
+        setResolvedServingGrams(savedRecord.servingSize || 0);
+        setSelectedServing(newServing);
+        setAmountDraft(undefined);
+        setAmountEntryUnit(
+          savedRecord.servingDisplayUnit && unitGroup(savedRecord.servingDisplayUnit) === unitGroup(newBase)
+            ? savedRecord.servingDisplayUnit
+            : newBase
+        );
+        // Editing an existing diary entry: that entry's logged amount is the user's, not ours to
+        // overwrite because the food definition changed. Only a fresh log re-seeds to one serving.
+        if (!isEditing) {
+          setServingCount(1);
+          setServingCountStr('1');
+          setAmount(String(savedRecord.servingSize || 100));
+        }
+      } else if (router.canGoBack()) {
+        // Couldn't find the food in My Foods (shouldn't happen) -- never sit on numbers this screen
+        // can't vouch for. Leave, same as the regular back button, never a hardcoded destination.
+        router.back();
+      }
     } catch (e) {
       console.log('Edit food error', e);
     }

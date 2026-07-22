@@ -868,7 +868,7 @@ export const TUTORIALS: Tutorial[] = [
   {
     id: 'create_food',
     name: 'Creating Your Own Food',
-    description: 'Build a custom food entry and save it to your personal library.',
+    description: 'Build a custom food by hand or by scanning its label, and save it to your library.',
     tab: 'log',
     steps: [
       {
@@ -908,10 +908,25 @@ export const TUTORIALS: Tutorial[] = [
         },
       },
       {
-        // Step 3: spotlights calories + serving size + unit pills as one section.
+        // Step 3: the Scan Nutrition Label button. Explained, never fired -- a walkthrough can't
+        // open the camera and hand back a real label, and a faked scan would teach the wrong thing.
+        targetKey: 'create_food_scan',
+        title: 'SCAN THE LABEL INSTEAD',
+        body: {
+          discipline: 'Faster than typing. Photograph the Nutrition Facts panel and the fields below fill themselves. Nothing saves straight from the camera: you get a review screen first, with anything unclear marked in amber so a bad read never slips through.',
+          balanced: 'Rather than typing everything, tap Scan Nutrition Label and photograph the panel. A review screen shows what it read, flags anything unclear, and lets you fix it before saving.',
+          mindful: 'If typing all of this feels like a lot, photograph the label instead. You will see everything it read and can change any of it before saving.',
+        },
+      },
+      {
+        // Step 4: spotlights calories + serving size + unit pills as one section.
         // tutorialAction fires on NEXT and expands the macros section so step 4
         // shows the full expanded area already open.
         targetKey: 'create_food_calories_section',
+        // The Serving card outgrew the space between the bubble and the bottom bar once it gained the
+        // merged Serving Name field and the unit dropdown, so its spotlight cutout was being clipped.
+        // Same call the Macros step below already made for the same reason: no dim, no cutout to clip.
+        noDimOverlay: true,
         tutorialAction: 'expandOptionalSection',
         title: 'CALORIES & SERVING SIZE',
         body: {
@@ -921,7 +936,7 @@ export const TUTORIALS: Tutorial[] = [
         },
       },
       {
-        // Step 4: the macros + extended section is taller than the viewport, so a
+        // Step 5: the macros + extended section is taller than the viewport, so a
         // spotlight cutout gets flagged off-screen and drops. noDimOverlay keeps every
         // field bright (the tip copy references them, so they must stay visible). Anchor
         // the bubble to the compact "Macros & Extended Nutrition" toggle so it auto-
@@ -930,13 +945,13 @@ export const TUTORIALS: Tutorial[] = [
         noDimOverlay: true,
         title: 'MACROS & EXTENDED',
         body: {
-          discipline: 'Protein, carbs, fat, fiber, sodium, cholesterol, saturated fat, all from the label. Skip any and they show as 0 in your log. Your macro bars will not reflect foods with missing macros.',
-          balanced: 'These fields are all optional. Fill in what you have from the label. The more you enter, the more accurate your macro tracking.',
-          mindful: 'Add whatever macro info you have. If the label is not handy, skip it and save. The food still logs correctly without them.',
+          discipline: 'Protein, carbs, fat, fiber, sodium, cholesterol, saturated fat, all from the label. Skip any and they show as 0 in your log. Your macro bars will not reflect foods with missing macros. Nutrients with an official daily value have a percent box beside the amount: type either side and the other fills in, for labels that print only a percentage.',
+          balanced: 'These fields are all optional. Fill in what you have from the label. Most nutrients have a percent box next to the amount, so if your label only prints a percentage you can enter that instead and the amount fills itself in.',
+          mindful: 'Add whatever macro info you have. If the label is not handy, skip it and save. Some labels only print percentages, so there is a percent box next to each amount if that is easier.',
         },
       },
       {
-        // Step 5: spotlights save button. tutorialAction closes creator and
+        // Step 6: spotlights save button. tutorialAction closes creator and
         // navigates back to the tab the user came from.
         targetKey: 'create_food_save',
         tutorialAction: 'closeCreatorAfterTutorial',

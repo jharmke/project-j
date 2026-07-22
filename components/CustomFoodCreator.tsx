@@ -110,6 +110,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
   const optionalToggleRef    = useTutorialTarget('create_food_optional');
   const macrosSectionRef     = useTutorialTarget('create_food_macros_section');
   const saveBtnRef           = useTutorialTarget('create_food_save');
+  const scanBtnRef           = useTutorialTarget('create_food_scan');
   const scrollViewRef        = useRef<ScrollView>(null);
 
   // Controls mounting of the inline (non-Modal) view in tutorialMode.
@@ -642,6 +643,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
 
         {/* Scan a real Nutrition Facts panel to autofill the fields below -- fast path to correct
             a FatSecret entry that's slightly off, or skip typing everything from a box by hand. */}
+        <View ref={scanBtnRef as any} collapsable={false}>
         <TouchableOpacity
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleScanLabel(); }}
           disabled={scanningLabel}
@@ -653,6 +655,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
         <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, marginBottom: 10, textAlign: 'center' }}>
           Tip: get as close as you can while keeping the whole label in frame.
         </Text>
+        </View>
 
         {/* Serving box -- Calories lives here too, spotlit as one unit by tutorial step 3 */}
         <View ref={caloriesSectionRef as any} style={{ backgroundColor: theme.bgCard, borderRadius: 12, borderWidth: 0.5, borderColor: theme.borderCard, padding: 14, marginBottom: 10 }}>

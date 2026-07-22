@@ -16,6 +16,7 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-22 **Serving-unit redesign Piece 2: family-aware weight/volume dropdown on the diary logging screen (food-detail).** Amount field now has a g/kg/oz/lb (or mL/L/cup/tbsp/tsp/fl oz for volume foods) picker merged into one unified box; logs remember the unit entered or the food's native unit (displayUnit/displayAmount) so the meal card + edit reopen read "11 oz"/"240 mL", grams stays canonical for all math/totals; switching a logged entry's unit undims Update Entry and switching back to g clears it; mL/L capitalization via unitLabel; EditFoodModal Save now guards against an empty Amount (fixes the empty-amount garbage-macros bug). Device-confirmed by Justin. Recipe builder still on its own follow-up.
 - 2026-07-22 **Serving-unit redesign Piece 1: EditFoodModal now mirrors Create Food** (boxed Basic Info + Serving sections, Serving/Calories moved up above the nutrient grid, merged "Serving Name" free-text field, g/kg/oz/lb weight dropdown on Amount converting to canonical grams). Non-destructive: no legacy food's numbers/units rewritten. Device-confirmed by Justin. Photo button intentionally not added (kept existing entry points). Pieces 2 (logging-screen weight dropdown) + 3 (legacy migration) still open.
 - 2026-07-22 **UnitPickerButton dropdown now flips upward when there's no room below (measures own screen position, 175px bottom inset clears the Cancel/Save Food bar) and cascades options in on open; added hairline dividers between rows.** Component-only fix, applies everywhere the unit picker is used. Device-confirmed by Justin.
 - 2026-07-19 **WEB (World English Bible) added as a second translation, WEB is now primary/default, KJV
@@ -853,13 +854,15 @@ are separate pre-submission checklists, NOT part of this menu.
   (1) DONE 2026-07-22 -- EditFoodModal.tsx redesigned to mirror Create Food (see RECENTLY SHIPPED). Photo
       button dropped (existing entry points kept); Food/Supplement toggle already existed in Edit. Legacy
       migration deferred to Piece 3 (this build is non-destructive, doesn't rewrite old foods).
-  (2) **[Justin's top priority for this feature]** Add the same g/kg/oz/lb weight dropdown to the diary
-      LOGGING screen (app/food-detail.tsx) Amount field, for BOTH custom My Foods and FatSecret results --
-      so a portion weighed in oz off a scale converts to grams at log time. Currently grams-only there; this
-      is the biggest daily win and was missing from the original plan.
-  (3) Downstream audit -- confirm new (always-grams) foods and legacy non-gram foods both behave; legacy
-      My Foods/cloned foods degrade gracefully (worst case a few need re-checking, never corrupt). Optional
-      rollout polish: a one-time "What's New" heads-up that older custom foods may need a quick re-check.
+  (2) DONE 2026-07-22 -- family-aware weight/volume dropdown on the food-detail logging Amount, unified
+      box, logs remember the unit, empty-amount guard (see RECENTLY SHIPPED). Grew beyond the original
+      weight-only plan to also cover volume (mL/cup) foods, since FatSecret liquids come in mL.
+  (3) OPEN -- extend the weight+volume dropdown to Create/Edit Food's PRIMARY Amount (currently weight-only)
+      so a liquid like almond milk can be BUILT in mL from scratch (cup=240mL FDA labeling value to verify).
+  (4) OPEN -- extend the same dropdown to the RECIPE builder's amount entry (its own surface).
+  (5) OPEN -- legacy/downstream audit: confirm new + legacy non-gram foods behave; legacy My Foods/cloned
+      foods degrade gracefully (worst case a few need re-checking, never corrupt). Optional rollout polish:
+      a one-time "What's New" heads-up that older custom foods may need a quick re-check.
   Migration risk is scoped to My Foods + cloned foods only (FatSecret results are always fresh from the API).
   Per-serving display must NOT regress to the old per-100g behavior (Justin's #1 pet peeve) -- grams-canonical
   is exactly what the per-serving engine needs; guard it.

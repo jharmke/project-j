@@ -847,6 +847,24 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
+- [NOW, surfaced 2026-07-22] **Serving-unit redesign sweep -- finish it across all three food surfaces.**
+  Three pieces, built slow, on-device test between each:
+  (1) EditFoodModal.tsx -- apply the merged "Serving Name" field + g/kg/oz/lb weight dropdown on Amount,
+      AND restructure to fully match CustomFoodCreator's look (boxed Basic Info + Serving sections, Serving
+      + Calories moved UP above the nutrient grid). Also reconcile two chrome gaps: Edit has no Brand photo
+      button and no Food/Supplement toggle (toggle staying locked/hidden in Edit is the current plan).
+      Graceful legacy read: carry an old food's unit+label into the new Serving Name text, grams stays
+      canonical.
+  (2) **[Justin's top priority for this feature]** Add the same g/kg/oz/lb weight dropdown to the diary
+      LOGGING screen (app/food-detail.tsx) Amount field, for BOTH custom My Foods and FatSecret results --
+      so a portion weighed in oz off a scale converts to grams at log time. Currently grams-only there; this
+      is the biggest daily win and was missing from the original plan.
+  (3) Downstream audit -- confirm new (always-grams) foods and legacy non-gram foods both behave; legacy
+      My Foods/cloned foods degrade gracefully (worst case a few need re-checking, never corrupt). Optional
+      rollout polish: a one-time "What's New" heads-up that older custom foods may need a quick re-check.
+  Migration risk is scoped to My Foods + cloned foods only (FatSecret results are always fresh from the API).
+  Per-serving display must NOT regress to the old per-100g behavior (Justin's #1 pet peeve) -- grams-canonical
+  is exactly what the per-serving engine needs; guard it.
 - [surfaced 2026-07-20, found during iPad auth testing] **iPad layout looks broken -- wrapped date, oversized
   text.** On Justin's iPad (not previously tested on this app), Home's "MONDAY, JULY 20" date wraps to a
   second line under the greeting, and Otto's chat header ("Wellness and App Guide" subtitle) renders visibly

@@ -22,6 +22,8 @@ import UnitPickerButton from './UnitPickerButton';
 const FOOD_SERVING_UNITS = ['g', 'ml', 'fl oz', 'oz', 'container', 'serving', 'tbsp', 'tsp', 'cup'];
 const SUPPLEMENT_ONLY_UNITS = ['pill', 'capsule', 'tablet', 'softgel', 'gummy'];
 const EDIT_SERVING_UNITS = [...FOOD_SERVING_UNITS, ...SUPPLEMENT_ONLY_UNITS];
+const SUPPLEMENT_UNIT_OPTIONS = [...SUPPLEMENT_ONLY_UNITS, 'ml', 'g'];
+const WEIGHT_ENTRY_UNITS = ['g', 'kg', 'oz', 'lb'];
 
 const filterDecimal = (v: string) => {
   const stripped = v.replace(/[^0-9.]/g, '');
@@ -51,11 +53,17 @@ export default function EditFoodModal({ visible, editFoodData, setEditFoodData, 
   // unit automatically. Draft holds raw in-progress text so mid-typing isn't reformatted.
   const [additionalServingUnits, setAdditionalServingUnits] = useState<Record<string, string>>({});
   const [additionalServingDrafts, setAdditionalServingDrafts] = useState<Record<string, string>>({});
+  // Weight-unit entry convenience on the primary Serving amount (food type only). servingGrams stays
+  // canonical grams always; servingEntryUnit/servingDraft are transient typing state, never persisted.
+  const [servingEntryUnit, setServingEntryUnit] = useState('g');
+  const [servingDraft, setServingDraft] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (visible) {
       overlayAnim.setValue(0);
       cardAnim.setValue(0);
+      setServingEntryUnit('g');
+      setServingDraft(undefined);
       Animated.parallel([
         Animated.timing(overlayAnim, { toValue: 1, duration: 180, useNativeDriver: true }),
         Animated.spring(cardAnim, { toValue: 1, useNativeDriver: true, damping: 20, stiffness: 300 }),
@@ -178,25 +186,34 @@ export default function EditFoodModal({ visible, editFoodData, setEditFoodData, 
               </TouchableOpacity>
             </View>
 
-            {/* Basic Info */}
-            <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Basic Info</Text>
-            {([
-              { label: 'Food Name', key: 'name', keyboard: 'default' as const },
-              { label: 'Brand (optional)', key: 'brand', keyboard: 'default' as const },
-              { label: 'Calories (kcal)', key: 'cal', keyboard: 'decimal-pad' as const },
-            ]).map(f => (
-              <View key={f.key} style={{ marginBottom: 10 }}>
-                <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4 }}>{f.label}</Text>
+            {/* Basic Info box */}
+            <View style={{ backgroundColor: theme.bgCard, borderRadius: 12, borderWidth: 0.5, borderColor: theme.borderCard, padding: 14, marginBottom: 10 }}>
+              <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.textPrimary, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Basic Info</Text>
+              <View style={{ marginBottom: 12 }}>
+                <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiMedium, marginBottom: 5 }}>Food Name <Text style={{ color: '#cc3333' }}>*</Text></Text>
                 <TextInput
-                  style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 15, fontFamily: Type.ui }}
-                  value={editFoodData?.[f.key] || ''}
-                  onChangeText={v => set(f.key, f.keyboard === 'decimal-pad' ? filterDecimal(v) : v)}
-                  keyboardType={f.keyboard}
+                  style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: Type.ui }}
+                  value={editFoodData?.name || ''}
+                  onChangeText={v => set('name', v)}
+                  placeholder="e.g. Chicken Breast"
                   placeholderTextColor={theme.textDim}
+                  autoCapitalize="words"
                   selectTextOnFocus
                 />
               </View>
-            ))}
+              <View>
+                <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiMedium, marginBottom: 5 }}>Brand</Text>
+                <TextInput
+                  style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: Type.ui }}
+                  value={editFoodData?.brand || ''}
+                  onChangeText={v => set('brand', v)}
+                  placeholder="e.g. Tyson"
+                  placeholderTextColor={theme.textDim}
+                  autoCapitalize="words"
+                  selectTextOnFocus
+                />
+              </View>
+            </View>
 
             <TouchableOpacity
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleScanLabel(); }}
@@ -210,120 +227,79 @@ export default function EditFoodModal({ visible, editFoodData, setEditFoodData, 
               Tip: get as close as you can while keeping the whole label in frame.
             </Text>
 
-            <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-            <NutrientFieldsGrid
-              sections={[
-                {
-                  key: 'macros', title: 'Macros', columns: 3,
-                  fields: [
-                    { key: 'protein', label: 'Protein', unit: 'g', value: editFoodData?.protein || '', onChange: setNum('protein'), dotColor: '#0d9268' },
-                    { key: 'carbs',   label: 'Carbs',   unit: 'g', value: editFoodData?.carbs || '',   onChange: setNum('carbs'),   dotColor: '#c47d1a' },
-                    { key: 'fat',     label: 'Fat',     unit: 'g', value: editFoodData?.fat || '',     onChange: setNum('fat'),     dotColor: '#a83232' },
-                  ],
-                },
-                {
-                  key: 'extendedFats', title: 'Extended Fats', columns: 2,
-                  fields: [
-                    { key: 'saturatedFat',       label: 'Sat. Fat',  unit: 'g', value: editFoodData?.saturatedFat || '',       onChange: setNum('saturatedFat') },
-                    { key: 'polyunsaturatedFat', label: 'Poly Fat',  unit: 'g', value: editFoodData?.polyunsaturatedFat || '', onChange: setNum('polyunsaturatedFat') },
-                    { key: 'monounsaturatedFat', label: 'Mono Fat',  unit: 'g', value: editFoodData?.monounsaturatedFat || '', onChange: setNum('monounsaturatedFat') },
-                    { key: 'transFat',           label: 'Trans Fat', unit: 'g', value: editFoodData?.transFat || '',           onChange: setNum('transFat') },
-                  ],
-                },
-                {
-                  key: 'otherNutrients', title: 'Other Nutrients', columns: 2,
-                  fields: [
-                    { key: 'fiber',         label: 'Fiber',        unit: 'g',  value: editFoodData?.fiber || '',         onChange: setNum('fiber') },
-                    { key: 'sugar',         label: 'Sugar',        unit: 'g',  value: editFoodData?.sugar || '',         onChange: setNum('sugar') },
-                    { key: 'sugarAlcohols', label: 'Sugar Alc.',   unit: 'g',  value: editFoodData?.sugarAlcohols || '', onChange: setNum('sugarAlcohols') },
-                    { key: 'addedSugars',   label: 'Added Sugars', unit: 'g',  value: editFoodData?.addedSugars || '',   onChange: setNum('addedSugars') },
-                    { key: 'sodium',        label: 'Sodium',       unit: 'mg', value: editFoodData?.sodium || '',        onChange: setNum('sodium') },
-                    { key: 'cholesterol',   label: 'Chol.',        unit: 'mg', value: editFoodData?.cholesterol || '',   onChange: setNum('cholesterol') },
-                    { key: 'potassium',     label: 'Potassium',    unit: 'mg', value: editFoodData?.potassium || '',     onChange: setNum('potassium') },
-                  ],
-                },
-                {
-                  key: 'vitamins', title: 'Vitamins', columns: 2,
-                  fields: [
-                    { key: 'vitaminA', label: 'Vitamin A', unit: 'mcg', value: editFoodData?.vitaminA || '', onChange: setNum('vitaminA') },
-                    { key: 'vitaminC', label: 'Vitamin C', unit: 'mg',  value: editFoodData?.vitaminC || '', onChange: setNum('vitaminC') },
-                    { key: 'vitaminD', label: 'Vitamin D', unit: 'mcg', value: editFoodData?.vitaminD || '', onChange: setNum('vitaminD') },
-                    { key: 'vitaminE', label: 'Vitamin E', unit: 'mg',  value: editFoodData?.vitaminE || '', onChange: setNum('vitaminE') },
-                    { key: 'vitaminK', label: 'Vitamin K', unit: 'mcg', value: editFoodData?.vitaminK || '', onChange: setNum('vitaminK') },
-                  ],
-                },
-                {
-                  key: 'bVitamins', title: 'B Vitamins', columns: 2,
-                  fields: [
-                    { key: 'vitaminB6',  label: 'B6',         unit: 'mg',  value: editFoodData?.vitaminB6 || '',  onChange: setNum('vitaminB6') },
-                    { key: 'folate',     label: 'Folate',     unit: 'mcg', value: editFoodData?.folate || '',     onChange: setNum('folate') },
-                    { key: 'vitaminB12', label: 'B12',        unit: 'mcg', value: editFoodData?.vitaminB12 || '', onChange: setNum('vitaminB12') },
-                    { key: 'biotin',     label: 'Biotin',     unit: 'mcg', value: editFoodData?.biotin || '',     onChange: setNum('biotin') },
-                    { key: 'thiamin',    label: 'Thiamin',    unit: 'mg',  value: editFoodData?.thiamin || '',    onChange: setNum('thiamin') },
-                    { key: 'riboflavin', label: 'Riboflavin', unit: 'mg',  value: editFoodData?.riboflavin || '', onChange: setNum('riboflavin') },
-                    { key: 'niacin',     label: 'Niacin',     unit: 'mg',  value: editFoodData?.niacin || '',     onChange: setNum('niacin') },
-                    { key: 'choline',    label: 'Choline',    unit: 'mg',  value: editFoodData?.choline || '',    onChange: setNum('choline') },
-                  ],
-                },
-                {
-                  key: 'minerals', title: 'Minerals', columns: 2,
-                  fields: [
-                    { key: 'calcium',   label: 'Calcium',   unit: 'mg', value: editFoodData?.calcium || '',   onChange: setNum('calcium') },
-                    { key: 'iron',      label: 'Iron',      unit: 'mg', value: editFoodData?.iron || '',      onChange: setNum('iron') },
-                    { key: 'magnesium', label: 'Magnesium', unit: 'mg', value: editFoodData?.magnesium || '', onChange: setNum('magnesium') },
-                    { key: 'zinc',      label: 'Zinc',      unit: 'mg', value: editFoodData?.zinc || '',      onChange: setNum('zinc') },
-                    { key: 'copper',    label: 'Copper',    unit: 'mg', value: editFoodData?.copper || '',    onChange: setNum('copper') },
-                  ],
-                },
-                {
-                  key: 'other', title: 'Other', columns: 2,
-                  fields: [
-                    { key: 'caffeine', label: 'Caffeine', unit: 'mg', value: editFoodData?.caffeine || '', onChange: setNum('caffeine') },
-                  ],
-                },
-              ]}
-            />
-
-            {/* Serving */}
-            <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-            <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Serving</Text>
-            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, marginBottom: 4 }}>AMOUNT ({editFoodData?.servingUnitType || 'g'})</Text>
-                <TextInput
-                  style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: Type.ui }}
-                  value={editFoodData?.servingGrams || ''}
-                  onChangeText={setNum('servingGrams')}
-                  keyboardType="decimal-pad"
-                  placeholderTextColor={theme.textDim}
-                  selectTextOnFocus
-                />
+            {/* Serving box -- Calories lives here too, mirrors Create Food's layout */}
+            <View style={{ backgroundColor: theme.bgCard, borderRadius: 12, borderWidth: 0.5, borderColor: theme.borderCard, padding: 14, marginBottom: 10 }}>
+              <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.textPrimary, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Serving</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiMedium, marginBottom: 5 }}>Calories <Text style={{ color: theme.textDim }}>kcal</Text> <Text style={{ color: '#cc3333' }}>*</Text></Text>
+                  <TextInput
+                    style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: Type.ui }}
+                    value={editFoodData?.cal || ''}
+                    onChangeText={setNum('cal')}
+                    keyboardType="decimal-pad"
+                    placeholder="0"
+                    placeholderTextColor={theme.textDim}
+                    selectTextOnFocus
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiMedium, marginBottom: 5 }}>Serving</Text>
+                  {editFoodData?.type === 'supplement' ? (
+                    <View style={{ flexDirection: 'row', gap: 6 }}>
+                      <TextInput
+                        style={{ flex: 1, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: Type.ui }}
+                        value={editFoodData?.servingGrams || ''}
+                        onChangeText={setNum('servingGrams')}
+                        keyboardType="decimal-pad"
+                        placeholder="100"
+                        placeholderTextColor={theme.textDim}
+                        selectTextOnFocus
+                      />
+                      <UnitPickerButton value={editFoodData?.servingUnitType || 'g'} options={SUPPLEMENT_UNIT_OPTIONS} onChange={u => set('servingUnitType', u)} minWidth={60} />
+                    </View>
+                  ) : (
+                    <View style={{ flexDirection: 'row', gap: 6 }}>
+                      <TextInput
+                        style={{ flex: 1, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: Type.ui }}
+                        value={servingEntryUnit === 'g' ? (editFoodData?.servingGrams || '') : (servingDraft !== undefined ? servingDraft : (editFoodData?.servingGrams ? String(Math.round(((convertUnit(parseFloat(editFoodData.servingGrams), 'g', servingEntryUnit) ?? 0)) * 100) / 100) : ''))}
+                        onChangeText={v => {
+                          const stripped = filterDecimal(v);
+                          if (servingEntryUnit === 'g') set('servingGrams', stripped);
+                          else setServingDraft(stripped);
+                        }}
+                        onBlur={() => {
+                          if (servingEntryUnit === 'g' || servingDraft === undefined) return;
+                          const typed = parseFloat(servingDraft);
+                          const grams = !isNaN(typed) ? convertUnit(typed, servingEntryUnit, 'g') : null;
+                          if (grams !== null) set('servingGrams', String(Math.round(grams * 100) / 100));
+                          setServingDraft(undefined);
+                        }}
+                        keyboardType="decimal-pad"
+                        placeholder="100"
+                        placeholderTextColor={theme.textDim}
+                        selectTextOnFocus
+                      />
+                      <UnitPickerButton value={servingEntryUnit} options={WEIGHT_ENTRY_UNITS} onChange={u => { setServingEntryUnit(u); setServingDraft(undefined); }} />
+                    </View>
+                  )}
+                </View>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, marginBottom: 4 }}>LABEL (OPTIONAL)</Text>
+              {/* Serving Name -- one free-text field, replaces the old Label box + unit scroller.
+                  Purely descriptive; the Amount above is always the real number, in grams. */}
+              <View style={{ marginTop: 12 }}>
+                <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: Type.uiMedium, marginBottom: 5 }}>Serving Name <Text style={{ color: theme.textDim }}>(optional)</Text></Text>
                 <TextInput
-                  style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: Type.ui }}
+                  style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: Type.ui }}
                   value={editFoodData?.servingLabel || ''}
                   onChangeText={v => set('servingLabel', v)}
+                  placeholder="e.g. 1 scoop, 3 tbsp, 250 mL"
                   placeholderTextColor={theme.textDim}
-                  placeholder="e.g. 1 scoop"
                 />
               </View>
             </View>
-            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, marginBottom: 8 }}>UNIT</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingRight: 4, marginBottom: 10 }}>
-              {(editFoodData?.type === 'supplement' ? EDIT_SERVING_UNITS : FOOD_SERVING_UNITS).map(u => (
-                <TouchableOpacity
-                  key={u}
-                  onPress={() => set('servingUnitType', u)}
-                  style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, borderWidth: 1, backgroundColor: editFoodData?.servingUnitType === u ? theme.accentBlueBg : 'transparent', borderColor: editFoodData?.servingUnitType === u ? theme.accentBlueBorder : theme.borderInput }}>
-                  <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: editFoodData?.servingUnitType === u ? theme.accentBlue : theme.textMuted }}>{u}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
 
             {/* Additional Servings */}
-            <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
               <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: Type.uiBold, letterSpacing: 3, textTransform: 'uppercase' }}>Additional Servings</Text>
               <TouchableOpacity
@@ -418,6 +394,81 @@ export default function EditFoodModal({ visible, editFoodData, setEditFoodData, 
             {(editFoodData?.additionalServings || []).length === 0 && (
               <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, marginBottom: 10 }}>Tap Add to define extra serving sizes (e.g. 1 link, 6 pieces)</Text>
             )}
+
+            {/* Nutrients -- last, mirrors Create Food's order */}
+            <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 10, marginBottom: 14 }} />
+            <NutrientFieldsGrid
+              sections={[
+                {
+                  key: 'macros', title: 'Macros', columns: 3,
+                  fields: [
+                    { key: 'protein', label: 'Protein', unit: 'g', value: editFoodData?.protein || '', onChange: setNum('protein'), dotColor: '#0d9268' },
+                    { key: 'carbs',   label: 'Carbs',   unit: 'g', value: editFoodData?.carbs || '',   onChange: setNum('carbs'),   dotColor: '#c47d1a' },
+                    { key: 'fat',     label: 'Fat',     unit: 'g', value: editFoodData?.fat || '',     onChange: setNum('fat'),     dotColor: '#a83232' },
+                  ],
+                },
+                {
+                  key: 'extendedFats', title: 'Extended Fats', columns: 2,
+                  fields: [
+                    { key: 'saturatedFat',       label: 'Sat. Fat',  unit: 'g', value: editFoodData?.saturatedFat || '',       onChange: setNum('saturatedFat') },
+                    { key: 'polyunsaturatedFat', label: 'Poly Fat',  unit: 'g', value: editFoodData?.polyunsaturatedFat || '', onChange: setNum('polyunsaturatedFat') },
+                    { key: 'monounsaturatedFat', label: 'Mono Fat',  unit: 'g', value: editFoodData?.monounsaturatedFat || '', onChange: setNum('monounsaturatedFat') },
+                    { key: 'transFat',           label: 'Trans Fat', unit: 'g', value: editFoodData?.transFat || '',           onChange: setNum('transFat') },
+                  ],
+                },
+                {
+                  key: 'otherNutrients', title: 'Other Nutrients', columns: 2,
+                  fields: [
+                    { key: 'fiber',         label: 'Fiber',        unit: 'g',  value: editFoodData?.fiber || '',         onChange: setNum('fiber') },
+                    { key: 'sugar',         label: 'Sugar',        unit: 'g',  value: editFoodData?.sugar || '',         onChange: setNum('sugar') },
+                    { key: 'sugarAlcohols', label: 'Sugar Alc.',   unit: 'g',  value: editFoodData?.sugarAlcohols || '', onChange: setNum('sugarAlcohols') },
+                    { key: 'addedSugars',   label: 'Added Sugars', unit: 'g',  value: editFoodData?.addedSugars || '',   onChange: setNum('addedSugars') },
+                    { key: 'sodium',        label: 'Sodium',       unit: 'mg', value: editFoodData?.sodium || '',        onChange: setNum('sodium') },
+                    { key: 'cholesterol',   label: 'Chol.',        unit: 'mg', value: editFoodData?.cholesterol || '',   onChange: setNum('cholesterol') },
+                    { key: 'potassium',     label: 'Potassium',    unit: 'mg', value: editFoodData?.potassium || '',     onChange: setNum('potassium') },
+                  ],
+                },
+                {
+                  key: 'vitamins', title: 'Vitamins', columns: 2,
+                  fields: [
+                    { key: 'vitaminA', label: 'Vitamin A', unit: 'mcg', value: editFoodData?.vitaminA || '', onChange: setNum('vitaminA') },
+                    { key: 'vitaminC', label: 'Vitamin C', unit: 'mg',  value: editFoodData?.vitaminC || '', onChange: setNum('vitaminC') },
+                    { key: 'vitaminD', label: 'Vitamin D', unit: 'mcg', value: editFoodData?.vitaminD || '', onChange: setNum('vitaminD') },
+                    { key: 'vitaminE', label: 'Vitamin E', unit: 'mg',  value: editFoodData?.vitaminE || '', onChange: setNum('vitaminE') },
+                    { key: 'vitaminK', label: 'Vitamin K', unit: 'mcg', value: editFoodData?.vitaminK || '', onChange: setNum('vitaminK') },
+                  ],
+                },
+                {
+                  key: 'bVitamins', title: 'B Vitamins', columns: 2,
+                  fields: [
+                    { key: 'vitaminB6',  label: 'B6',         unit: 'mg',  value: editFoodData?.vitaminB6 || '',  onChange: setNum('vitaminB6') },
+                    { key: 'folate',     label: 'Folate',     unit: 'mcg', value: editFoodData?.folate || '',     onChange: setNum('folate') },
+                    { key: 'vitaminB12', label: 'B12',        unit: 'mcg', value: editFoodData?.vitaminB12 || '', onChange: setNum('vitaminB12') },
+                    { key: 'biotin',     label: 'Biotin',     unit: 'mcg', value: editFoodData?.biotin || '',     onChange: setNum('biotin') },
+                    { key: 'thiamin',    label: 'Thiamin',    unit: 'mg',  value: editFoodData?.thiamin || '',    onChange: setNum('thiamin') },
+                    { key: 'riboflavin', label: 'Riboflavin', unit: 'mg',  value: editFoodData?.riboflavin || '', onChange: setNum('riboflavin') },
+                    { key: 'niacin',     label: 'Niacin',     unit: 'mg',  value: editFoodData?.niacin || '',     onChange: setNum('niacin') },
+                    { key: 'choline',    label: 'Choline',    unit: 'mg',  value: editFoodData?.choline || '',    onChange: setNum('choline') },
+                  ],
+                },
+                {
+                  key: 'minerals', title: 'Minerals', columns: 2,
+                  fields: [
+                    { key: 'calcium',   label: 'Calcium',   unit: 'mg', value: editFoodData?.calcium || '',   onChange: setNum('calcium') },
+                    { key: 'iron',      label: 'Iron',      unit: 'mg', value: editFoodData?.iron || '',      onChange: setNum('iron') },
+                    { key: 'magnesium', label: 'Magnesium', unit: 'mg', value: editFoodData?.magnesium || '', onChange: setNum('magnesium') },
+                    { key: 'zinc',      label: 'Zinc',      unit: 'mg', value: editFoodData?.zinc || '',      onChange: setNum('zinc') },
+                    { key: 'copper',    label: 'Copper',    unit: 'mg', value: editFoodData?.copper || '',    onChange: setNum('copper') },
+                  ],
+                },
+                {
+                  key: 'other', title: 'Other', columns: 2,
+                  fields: [
+                    { key: 'caffeine', label: 'Caffeine', unit: 'mg', value: editFoodData?.caffeine || '', onChange: setNum('caffeine') },
+                  ],
+                },
+              ]}
+            />
           </ScrollView>
           <View style={{ flexDirection: 'row', gap: 10, padding: 16, paddingTop: 12 }}>
             <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleClose(); }} style={{ flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, alignItems: 'center' }}>

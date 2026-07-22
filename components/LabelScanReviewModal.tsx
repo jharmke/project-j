@@ -8,6 +8,7 @@ import { Type } from '../typography';
 import ModalHeader from './ModalHeader';
 import PrimaryCTA from './PrimaryCTA';
 import UnitPickerButton from './UnitPickerButton';
+import ButtonShine from './ButtonShine';
 import { CollapsibleBody } from './NutrientFieldsGrid';
 import { ParsedLabel, DV_REFERENCE } from '../utils/nutritionLabelParser';
 
@@ -111,10 +112,11 @@ export default function LabelScanReviewModal({ parsed, onConfirm, onClose, onRet
   // Built synchronously, NOT in an effect: each collapsible section measures its own height on its
   // first render, and rows that arrived one render later measured as zero and stayed collapsed to
   // nothing. The rows have to exist before the first paint.
-  const buildRows = (label: ParsedLabel): Record<string, Row> => {
+  const buildRows = (label: ParsedLabel, useVariant = false): Record<string, Row> => {
+    const source = useVariant && label.secondary ? label.secondary.fields : label.fields;
     const initial: Record<string, Row> = {};
     for (const key of Object.keys(FIELD_META)) {
-      const f = label.fields[key];
+      const f = source[key];
       initial[key] = {
         value: f?.value != null ? String(f.value) : '',
         percentDV: f?.percentDV != null ? String(f.percentDV) : '',
@@ -131,6 +133,18 @@ export default function LabelScanReviewModal({ parsed, onConfirm, onClose, onRet
   );
 
   const [rows, setRows] = useState<Record<string, Row>>(() => buildRows(parsed));
+  // Only ever offered when the label's second column is a genuinely different food ("as prepared",
+  // "with 1/2 cup milk"). A per-container column is arithmetic the app already does, so it's never
+  // shown. Switching swaps every number below; only the selected one gets saved, because as-prepared
+  // is not a serving size of as-packaged -- adding milk changes the ratios, so it's another food.
+  const variant = parsed.secondary && parsed.secondary.kind === 'variant' ? parsed.secondary : null;
+  const [useVariant, setUseVariant] = useState(false);
+  const switchColumn = (next: boolean) => {
+    if (next === useVariant) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    setUseVariant(next);
+    setRows(buildRows(parsed, next));
+  };
   // Serving is editable now: it's the one number every other number on the card is keyed to, and it
   // used to be the only thing on this screen a user couldn't correct.
   const [servingName, setServingName] = useState(parsed.serving.name ?? parsed.serving.description ?? '');
@@ -151,6 +165,7 @@ export default function LabelScanReviewModal({ parsed, onConfirm, onClose, onRet
     Animated.spring(cardAnim, { toValue: 1, useNativeDriver: true, damping: 20, stiffness: 300 }).start();
 
     // Re-sync only when a NEW scan replaces this one; the first scan is already seeded above.
+    setUseVariant(false);
     setRows(buildRows(parsed));
     setServingName(parsed.serving.name ?? parsed.serving.description ?? '');
     setServingAmount(parsed.serving.amount != null ? String(parsed.serving.amount)
@@ -328,6 +343,38 @@ export default function LabelScanReviewModal({ parsed, onConfirm, onClose, onRet
           )}
 
           <ScrollView ref={scrollRef} contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets={true}>
+            {variant && (
+              <View style={{ marginBottom: 10 }}>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {[false, true].map(isVariant => {
+                    const active = useVariant === isVariant;
+                    return (
+                      <TouchableOpacity
+                        key={String(isVariant)}
+                        onPress={() => switchColumn(isVariant)}
+                        style={{
+                          flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 44,
+                          borderRadius: 10, borderWidth: 1, overflow: 'hidden',
+                          backgroundColor: active ? theme.accentBlueBg : theme.bgInput,
+                          borderColor: active ? theme.accentBlueBorder : theme.borderInput,
+                        }}
+                      >
+                        {active ? <ButtonShine radius={10} /> : null}
+                        <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: active ? theme.accentBlue : theme.textMuted }}>
+                          {isVariant ? 'As Prepared' : 'As Packaged'}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, marginTop: 6 }}>
+                  {variant.headerText
+                    ? `This label has two versions. The second reads "${variant.headerText}". Only the one you pick is saved.`
+                    : 'This label has two versions. Only the one you pick is saved.'}
+                </Text>
+              </View>
+            )}
+
             {/* Serving: editable, mirroring Create Food's own Serving Name + Amount + unit. */}
             <View style={{ backgroundColor: theme.bgCard, borderRadius: 12, borderWidth: 0.5, borderColor: theme.borderCard, padding: 14, marginBottom: 10 }}>
               <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.textPrimary, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Serving</Text>

@@ -60,8 +60,20 @@ function splitServingDescription(description: string): { name: string; amount: n
   return { name: description.trim(), amount: null, unit: null };
 }
 
+// A dual-column label's SECOND column. Two kinds, told apart by arithmetic rather than wording:
+//  - 'container': the first column times the servings per container. Redundant, the app already
+//    computes it, and it is never offered to the user.
+//  - 'variant': a genuinely different food -- "as prepared", "with 1/2 cup milk". Not derivable
+//    from the first column at any multiplier, so the user gets to choose which one they're logging.
+export interface ParsedSecondaryColumn {
+  kind: 'container' | 'variant';
+  headerText: string | null;
+  fields: Record<string, ParsedField>;
+}
+
 export interface ParsedLabel {
   fields: Record<string, ParsedField>;
+  secondary: ParsedSecondaryColumn | null;
   serving: ParsedServing;
   servingsPerContainer: { value: number | null; confidence: number | null };
   missingCoreField: string | null; // 'Calories' | 'Total Fat' | 'Total Carbohydrate' | 'Protein' | null
@@ -223,6 +235,23 @@ function findRowPercent(anchor: OcrBlockLike, blocks: OcrBlockLike[]): OcrBlockL
 // Only ever consulted when Pass 1/2 above found the field's NAME but no inline number, so this
 // can't invent a field that was never printed, and BARE_VALUE's %-exclusion keeps it from ever
 // grabbing a %DV number instead of the real value.
+// Every cell on a nutrient's row, left to right. A dual-column label puts column one's value first
+// and column two's second -- so the columns are told apart by ORDER, not by a vertical boundary.
+// (A boundary was tried first and abandoned: the big Calories numbers are aligned differently from
+// the small cells below them, so no single x position separates the columns on every row. That's
+// what left a granola label's As Prepared protein empty on every scan, 2026-07-22.)
+function rowCells(anchor: OcrBlockLike, blocks: OcrBlockLike[]): { values: OcrBlockLike[]; percents: OcrBlockLike[] } {
+  const right = blocks
+    .filter(b => b !== anchor
+      && b.boundingBox.x > anchor.boundingBox.x
+      && (rowsOverlap(anchor, b) || (rowsOverlapCurved(anchor, b) && ownsRow(anchor, b, blocks))))
+    .sort((a, b) => a.boundingBox.x - b.boundingBox.x);
+  return {
+    values: right.filter(b => BARE_VALUE.test(b.text)),
+    percents: right.filter(b => LONE_PERCENT.test(b.text)),
+  };
+}
+
 function findRowValue(anchor: OcrBlockLike, blocks: OcrBlockLike[]): OcrBlockLike | null {
   const pick = (sameRow: (a: OcrBlockLike, b: OcrBlockLike) => boolean, curved: boolean) => {
     let best: OcrBlockLike | null = null;
@@ -270,70 +299,20 @@ const NOT_SIGNIFICANT_KEYWORDS: Record<string, RegExp> = {
 // found, the cut is null and every lookup behaves exactly as it did before.
 const SECONDARY_COLUMN_HEADER = /(?:per|each)\s+(?:container|package|pkg|pint|bottle|can)\b|as prepared|as packaged|prepared\b|with\s+[^.]{0,24}\b(?:milk|water|juice)\b/i;
 
-function detectColumnCut(blocks: OcrBlockLike[]): number | null {
+// The second column's heading, used only for the caption under the As Packaged / As Prepared
+// pills ("Granola with 1/2 Cup Fat Free Milk"). Never used to locate the column: a heading is
+// wider than the numbers beneath it and starts further right, which is exactly what broke an
+// earlier boundary-based attempt. Must sit in the right half, so a stray "per container" fragment
+// at the left margin can never be mistaken for it.
+function findSecondaryHeaderText(blocks: OcrBlockLike[]): string | null {
   if (blocks.length === 0) return null;
   const minX = Math.min(...blocks.map(b => b.boundingBox.x));
   const maxX = Math.max(...blocks.map(b => b.boundingBox.x + b.boundingBox.width));
-  const width = maxX - minX;
-  // A real second column lives in the right half of the label. Position is the guard that text
-  // matching can't provide: OCR chunks "3 servings per container" differently scan to scan, and a
-  // stray "per container" fragment at the LEFT margin was being read as a column header, putting the
-  // cut at the edge and blanking every nutrient row (Justin, intermittently, 2026-07-22).
-  const rightHalf = minX + width * 0.45;
-
-  // 1. The column's own header, when the label prints one.
+  const rightHalf = minX + (maxX - minX) * 0.45;
   const header = blocks
     .filter(b => SECONDARY_COLUMN_HEADER.test(b.text) && !/servings?\s+per/i.test(b.text) && b.boundingBox.x >= rightHalf)
     .sort((a, b) => a.boundingBox.x - b.boundingBox.x)[0];
-  if (header) return guardCut(header.boundingBox.x, blocks);
-
-  // 2. No readable header -- fall back to the shape of the %DV numbers themselves. A single-column
-  //    label stacks them in one vertical band; a dual-column label makes two bands with a wide gap.
-  const percents = blocks.filter(b => LONE_PERCENT.test(b.text));
-  if (percents.length >= 4) {
-    const bands = bandsOf(percents);
-    if (bands.length === 2) return guardCut((bands[0].max + bands[1].min) / 2, blocks);
-  }
-
-  // 3. Last resort: the shape of EVERY number on the label. That tiny grey "Per container" header
-  //    and its faint %DV column both fail to OCR on a glossy pint, but the VALUES still read. A
-  //    single-column label makes two bands (values, then %DVs); a dual-column label makes four.
-  //    Three bands is ambiguous -- refuse rather than guess, because a wrong cut loses real data.
-  const numbers = blocks.filter(b => NUMERIC_CELL.test(b.text));
-  if (numbers.length >= 6) {
-    const bands = bandsOf(numbers);
-    if (bands.length >= 4) return guardCut((bands[1].max + bands[2].min) / 2, blocks);
-  }
-  return null;
-}
-
-// A block that is nothing but a number, with or without a nutrition unit or a percent sign.
-const NUMERIC_CELL = /^\s*\d+(?:\.\d+)?\s*(?:g|mg|mcg|%)?\s*$/i;
-
-// Groups blocks into vertical bands by x position: a new band starts wherever the horizontal gap
-// exceeds ~1.5 typical cell widths, which is far wider than the spacing inside one column.
-function bandsOf(blocks: OcrBlockLike[]): { min: number; max: number }[] {
-  const sorted = [...blocks].sort((a, b) => a.boundingBox.x - b.boundingBox.x);
-  const widths = sorted.map(b => b.boundingBox.width).sort((a, b) => a - b);
-  const medianWidth = widths[Math.floor(widths.length / 2)] || 1;
-  const bands: { min: number; max: number }[] = [];
-  for (const blk of sorted) {
-    const x = blk.boundingBox.x;
-    const right = x + blk.boundingBox.width;
-    const last = bands[bands.length - 1];
-    if (last && x - last.max <= medianWidth * 1.5) last.max = Math.max(last.max, right);
-    else bands.push({ min: x, max: right });
-  }
-  return bands;
-}
-
-// Last line of defence: a cut that would throw away most of the label is not a column boundary, it's
-// a misdetection. Refusing it means the worst case is "behaves like it did before," never "loses
-// every number on the label."
-function guardCut(cut: number | null, blocks: OcrBlockLike[]): number | null {
-  if (cut === null) return null;
-  const kept = blocks.filter(b => b.boundingBox.x < cut).length;
-  return kept >= blocks.length * 0.6 ? cut : null;
+  return header ? header.text.trim() : null;
 }
 
 // OCR reads a zero as a capital O constantly, and a nutrition label's zeros are exactly the rows
@@ -386,47 +365,87 @@ export function parseNutritionLabel(ocr: OcrResultLike): ParsedLabel {
     : [];
   const matchBlocks = blocks.filter(b => !footnoteBlocks.includes(b));
 
-  // Nutrient rows never read past the first number column (see detectColumnCut). The serving-size
-  // line is deliberately NOT cut: it spans the full label width above the columns, so its value can
-  // legitimately sit further right than any column boundary.
-  const columnCut = detectColumnCut(matchBlocks);
-  const rowBlocks = columnCut === null ? matchBlocks : matchBlocks.filter(b => b.boundingBox.x < columnCut);
+  const rowBlocks = matchBlocks;
+  // Anchors are shared between the columns: the nutrient NAME is printed once, on the left, and both
+  // columns hang off it.
+  const anchors: Record<string, OcrBlockLike> = {};
+  const secondaryHeaderText = findSecondaryHeaderText(matchBlocks);
 
   const fields: Record<string, ParsedField> = {};
 
+  // ── Anchors first, then learn where the columns are ───────────────────────────────────────────
+  // Two approaches were tried and each failed where the other worked: a vertical boundary line
+  // (couldn't be placed reliably -- headings are wider than their columns) and pure left-to-right
+  // cell order (position-blind -- when a faint left cell failed to OCR, the RIGHT column's number
+  // silently slid into its place, putting the container column's 30% DV on Total Fat).
+  //
+  // This does both: rows that read cleanly teach us where each column sits, and those learned
+  // positions then place the cells on rows that only read one. A lone cell in column two's
+  // territory leaves column one EMPTY (and therefore flagged) instead of inheriting a number that
+  // was never its own. Learned from the label itself, so no dependence on headings or alignment.
+  type Anchored = { anchor: OcrBlockLike; inlineValue: number | null; inlinePercent: number | null };
+  const anchored: Record<string, Anchored> = {};
   for (const def of FIELD_DEFS) {
-    let value: number | null = null;
-    let percentDV: number | null = null;
-    let confidence: number | null = null;
-    let anchorBlock: OcrBlockLike | null = null;
-
-    // Pass 1: find the block that names this field, pulling an inline value if present.
+    let anchor: OcrBlockLike | null = null;
+    let inlineValue: number | null = null;
+    let inlinePercent: number | null = null;
+    // Pass 1: the block that names this field, pulling an inline value if present.
     for (const b of matchBlocks) {
       const m = def.namePattern.exec(b.text);
       if (m) {
-        value = parseFloat(m[1]);
-        confidence = b.confidence;
-        anchorBlock = b;
+        inlineValue = parseFloat(m[1]);
+        anchor = b;
         const pm = def.inlinePercentPattern.exec(b.text);
-        if (pm) percentDV = parseFloat(pm[1]);
+        if (pm) inlinePercent = parseFloat(pm[1]);
         break;
       }
     }
-
-    // Not found with a value -- check for a BARE name mention (field printed as %DV only,
-    // e.g. "Thiamin 10%" as one block or "Thiamin" / "10%" as two separate blocks).
-    if (!anchorBlock) {
+    // Pass 2: a BARE name mention (field printed as %DV only, or name and number split apart).
+    if (!anchor) {
       const bare = BARE_NAME_PATTERNS[def.key];
       for (const b of matchBlocks) {
         if (bare.test(b.text)) {
-          anchorBlock = b;
-          confidence = b.confidence;
+          anchor = b;
           const pm = /(\d+(?:\.\d+)?)\s*%/.exec(b.text);
-          if (pm) percentDV = parseFloat(pm[1]);
+          if (pm) inlinePercent = parseFloat(pm[1]);
           break;
         }
       }
     }
+    if (anchor) { anchored[def.key] = { anchor, inlineValue, inlinePercent }; anchors[def.key] = anchor; }
+  }
+
+  const learnSplit = (which: 'values' | 'percents'): number | null => {
+    const firstEdges: number[] = [];
+    const secondEdges: number[] = [];
+    for (const key of Object.keys(anchored)) {
+      const cells = rowCells(anchored[key].anchor, matchBlocks)[which];
+      if (cells.length >= 2) {
+        firstEdges.push(cells[0].boundingBox.x + cells[0].boundingBox.width);
+        secondEdges.push(cells[1].boundingBox.x);
+      }
+    }
+    if (firstEdges.length < 2) return null;               // one clean row isn't a pattern
+    const firstRight = Math.max(...firstEdges);
+    const secondLeft = Math.min(...secondEdges);
+    if (secondLeft <= firstRight) return null;            // they overlap: don't pretend to know
+    return (firstRight + secondLeft) / 2;
+  };
+  const valueSplit = learnSplit('values');
+  const percentSplit = learnSplit('percents');
+
+  // Picks a row's cell for a given column: by learned position when we have one, otherwise by order.
+  const pickCell = (cells: OcrBlockLike[], split: number | null, column: 0 | 1): OcrBlockLike | null => {
+    if (split === null) return cells[column] ?? null;
+    return cells.find(c => (column === 0 ? c.boundingBox.x < split : c.boundingBox.x >= split)) ?? null;
+  };
+
+  for (const def of FIELD_DEFS) {
+    const hit = anchored[def.key];
+    const anchorBlock: OcrBlockLike | null = hit?.anchor ?? null;
+    let value: number | null = hit?.inlineValue ?? null;
+    let percentDV: number | null = hit?.inlinePercent ?? null;
+    let confidence: number | null = anchorBlock ? anchorBlock.confidence : null;
 
     // Field name never appeared anywhere on the label at all -- leave untouched, per the
     // "never overwrite a field the label didn't print" rule. Zero and absent are NOT the same;
@@ -442,20 +461,21 @@ export function parseNutritionLabel(ocr: OcrResultLike): ParsedLabel {
       continue;
     }
 
-    // Value still missing -- name was found but not an inline number (see findRowValue above for
-    // why this happens on real photos). Look for a bare number on the same row, to the right.
+    const cells = rowCells(anchorBlock, rowBlocks);
+
+    // Value still missing -- name was found but not an inline number (Vision often reads a field's
+    // name and its number as two disconnected blocks). Take the cell that belongs to column ONE.
     if (value === null) {
-      const rowValue = findRowValue(anchorBlock, rowBlocks);
+      const rowValue = pickCell(cells.values, valueSplit, 0);
       if (rowValue) {
         value = parseFloat(BARE_VALUE.exec(rowValue.text)![1]);
         confidence = Math.min(confidence ?? 1, rowValue.confidence);
       }
     }
 
-    // Percent still missing -- look for a separate "NN%" block on the same row, to the right
-    // (the real dual-column-style layout Vision's bounding boxes make possible to detect).
+    // Same for the %DV: column one's cell only.
     if (percentDV === null) {
-      const rowPercent = findRowPercent(anchorBlock, rowBlocks);
+      const rowPercent = pickCell(cells.percents, percentSplit, 0);
       if (rowPercent) {
         percentDV = parseFloat(LONE_PERCENT.exec(rowPercent.text)![1]);
         confidence = Math.min(confidence ?? 1, rowPercent.confidence);
@@ -490,6 +510,51 @@ export function parseNutritionLabel(ocr: OcrResultLike): ParsedLabel {
     }
 
     fields[def.key] = { value, percentDV, confidence };
+  }
+
+  // Read the second column off the same anchors. No inline pass here: an inline number belongs to
+  // whichever column the name block sits in, which is always the first.
+  const secondaryFields: Record<string, ParsedField> = {};
+  // Is there a second column at all? Two numbers on the Calories row is the clearest single tell;
+  // otherwise several rows carrying two value cells each. One stray number to the right of one row
+  // is not a column.
+  const calAnchorForColumns = matchBlocks.find(b => /calories/i.test(b.text));
+  const calRowNumbers = calAnchorForColumns ? rowCells(calAnchorForColumns, matchBlocks).values.length : 0;
+  const rowsWithTwoValues = FIELD_DEFS.filter(d => anchors[d.key] && rowCells(anchors[d.key], matchBlocks).values.length >= 2).length;
+  const isDualColumn = calRowNumbers >= 2 || rowsWithTwoValues >= 3;
+
+  if (isDualColumn) {
+    for (const def of FIELD_DEFS) {
+      const anchor = anchors[def.key];
+      if (!anchor) { secondaryFields[def.key] = { value: null, percentDV: null, confidence: null }; continue; }
+      const cells = rowCells(anchor, matchBlocks);
+      const v = pickCell(cells.values, valueSplit, 1);
+      const p = pickCell(cells.percents, percentSplit, 1);
+      let value2 = v ? parseFloat(BARE_VALUE.exec(v.text)![1]) : null;
+      let percent2 = p ? parseFloat(LONE_PERCENT.exec(p.text)![1]) : null;
+      // A row with no %DV printed (Protein on most labels) often comes back as ONE merged block
+      // spanning both columns -- "Protein 5g 10g" -- so there's no separate cell on the right to
+      // find. Both numbers are sitting in the anchor itself: the first is column one, the second is
+      // column two. Confirmed on a real granola label, 2026-07-22.
+      if (value2 === null) {
+        const inRow = [...anchor.text.matchAll(/(\d+(?:\.\d+)?)\s*(?:g|mg|mcg)\b/gi)];
+        if (inRow.length >= 2) value2 = parseFloat(inRow[1][1]);
+      }
+      if (percent2 === null) {
+        const pctInRow = [...anchor.text.matchAll(/(\d+(?:\.\d+)?)\s*%/g)];
+        if (pctInRow.length >= 2) percent2 = parseFloat(pctInRow[1][1]);
+      }
+      const dv2 = DV_REFERENCE[def.key];
+      if (dv2) {
+        if (value2 === null && percent2 !== null) value2 = Math.round((percent2 / 100) * dv2 * 10) / 10;
+        else if (value2 !== null && percent2 === null) percent2 = Math.round((value2 / dv2) * 100);
+      }
+      secondaryFields[def.key] = {
+        value: value2,
+        percentDV: percent2,
+        confidence: v || p ? Math.min(v?.confidence ?? 1, p?.confidence ?? 1) : null,
+      };
+    }
   }
 
   // Serving size: "Serving size" and its value can land in ONE merged block ("Serving size 1/3
@@ -560,5 +625,31 @@ export function parseNutritionLabel(ocr: OcrResultLike): ParsedLabel {
   const LOW_CONFIDENCE_THRESHOLD = 0.5;
   const lowConfidenceCount = Object.values(fields).filter(f => f.confidence !== null && f.confidence < LOW_CONFIDENCE_THRESHOLD).length;
 
-  return { fields, serving, servingsPerContainer, missingCoreField, lowConfidenceCount };
+  // Classify the second column by arithmetic, not by wording. If it's consistently the first column
+  // times the servings per container, it's the redundant per-container column and nobody needs to see
+  // it. If it isn't a multiple, it's a different food (mix vs mix-with-milk) and the user chooses.
+  let secondary: ParsedSecondaryColumn | null = null;
+  if (isDualColumn) {
+    const ratios: number[] = [];
+    for (const key of [...CORE_FIELD_KEYS, 'sodium', 'sugar']) {
+      const a = fields[key]?.value;
+      const bVal = secondaryFields[key]?.value;
+      if (a != null && bVal != null && a > 0) ratios.push(bVal / a);
+    }
+    const spc = servingsPerContainer.value;
+    let kind: 'container' | 'variant' = 'variant';
+    if (ratios.length >= 2 && spc != null && spc > 1) {
+      const sorted = [...ratios].sort((x, y) => x - y);
+      const median = sorted[Math.floor(sorted.length / 2)];
+      if (Math.abs(median - spc) <= spc * 0.15) kind = 'container';
+    }
+    const anyValue = Object.values(secondaryFields).some(f => f.value !== null);
+    // With no serving count to compare against there's nothing to reason with, so don't offer a
+    // choice we can't stand behind -- the first column is used, exactly as before.
+    if (anyValue && (kind === 'container' || spc != null)) {
+      secondary = { kind, headerText: secondaryHeaderText, fields: secondaryFields };
+    }
+  }
+
+  return { fields, secondary, serving, servingsPerContainer, missingCoreField, lowConfidenceCount };
 }

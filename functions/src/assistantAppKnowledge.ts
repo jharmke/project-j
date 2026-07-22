@@ -248,6 +248,12 @@ LOG TAB (FOOD DIARY)
     If the label prints "X servings per container" and a serving amount, a "1 Container" option is added
     to Additional Servings automatically. If it says "Not a significant source of ...", those nutrients
     are recorded as 0, because that is what the phrase means.
+    TWO-COLUMN LABELS: some labels print two columns of numbers. When the second is just the first times
+    the servings per container, it is ignored (the app already does that multiplication). When it is a
+    genuinely different food -- "as prepared", "with 1/2 cup milk", cereal or a baking mix -- the review
+    card shows As Packaged / As Prepared pills and every number swaps between them. Only the selected one
+    is saved: as-prepared is a different food, not a serving size of the dry mix, so someone who wants
+    both should scan twice and save two foods.
 - RECIPES: from the Food Library (Log tab > LIBRARY button) tap the FAB > CREATE RECIPE (opens the
   Recipe Builder). Log a saved recipe from the Recipes tab in Add Food, or the Recipe Log.
   CHANGE HOW MUCH OF AN INGREDIENT IS IN A RECIPE: tap the ingredient's row in the builder (the small

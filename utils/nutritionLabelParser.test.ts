@@ -314,5 +314,102 @@ console.log('\nnutrition label parser\n');
   check('"1Og" is read as 10g', result.fields.protein.value === 10, result.fields.protein.value);
 }
 
+// ── 15. Second column classified: per-container (redundant) vs as-prepared (a different food) ─────
+{
+  // Ice cream: 3 servings per container, second column is exactly 3x the first.
+  const container: OcrBlockLike[] = [
+    b('3 servings per container', 100, 50, 500, 40),
+    b('Per serving', 700, 100, 220, 40), b('Per container', 1000, 100, 260, 40),
+    b('Calories', 100, 160, 300, 60), b('140', 700, 160, 140, 60), b('420', 1000, 160, 140, 60),
+    b('Total Fat', 100, 220, 250, 40), b('8g', 700, 220, 70, 40), b('24g', 1000, 220, 80, 40),
+    b('Sodium', 100, 280, 250, 40), b('120mg', 700, 280, 100, 40), b('360mg', 1000, 280, 110, 40),
+    b('Protein', 100, 340, 250, 40), b('10g', 700, 340, 80, 40), b('30g', 1000, 340, 80, 40),
+  ];
+  const r1 = parseNutritionLabel({ text: '', blocks: container });
+  check('per-container column is classified as container, not offered as a choice', r1.secondary?.kind === 'container', r1.secondary?.kind);
+  check('per-container label still takes the per-serving numbers', r1.fields.calories.value === 140, r1.fields.calories.value);
+
+  // Granola: 6 servings per container, but the second column is "with milk" -- NOT 6x anything.
+  const prepared: OcrBlockLike[] = [
+    b('About 6 servings per container', 100, 50, 600, 40),
+    b('Granola', 700, 100, 200, 40), b('Granola with 1/2 Cup Fat Free Milk', 1000, 100, 400, 40),
+    b('Calories', 100, 160, 300, 60), b('250', 700, 160, 140, 60), b('300', 1000, 160, 140, 60),
+    b('Total Fat', 100, 220, 250, 40), b('12g', 700, 220, 80, 40), b('8g', 1000, 220, 70, 40),
+    b('Sodium', 100, 280, 250, 40), b('100mg', 700, 280, 100, 40), b('160mg', 1000, 280, 110, 40),
+    b('Protein', 100, 340, 250, 40), b('5g', 700, 340, 70, 40), b('10g', 1000, 340, 80, 40),
+  ];
+  const r2 = parseNutritionLabel({ text: '', blocks: prepared });
+  check('as-prepared column is classified as a variant the user can choose', r2.secondary?.kind === 'variant', r2.secondary?.kind);
+  check('variant label defaults to the first column (250 cal, not 300)', r2.fields.calories.value === 250, r2.fields.calories.value);
+  check('variant column carries its own numbers (300 cal)', r2.secondary?.fields.calories.value === 300, r2.secondary?.fields.calories.value);
+  check('variant column keeps its own fat (8g with milk vs 12g dry)', r2.secondary?.fields.fat.value === 8, r2.secondary?.fields.fat.value);
+}
+
+// ── 16. A dual-column row with no %DV arrives as ONE merged block ─────────────────────────────────
+// Protein prints no %DV, so its row is just two numbers and OCR hands it back merged: "Protein 5g
+// 10g". The first number is column one, the second is column two -- there is no separate right-hand
+// cell to find (real granola label, 2026-07-22: As Prepared protein came back empty every scan).
+{
+  const blocks: OcrBlockLike[] = [
+    b('About 6 servings per container', 100, 50, 600, 40),
+    b('Granola', 700, 100, 200, 40), b('Granola with 1/2 Cup Fat Free Milk', 1000, 100, 400, 40),
+    b('Calories', 100, 160, 300, 60), b('250', 700, 160, 140, 60), b('300', 1000, 160, 140, 60),
+    b('Total Fat', 100, 220, 250, 40), b('12g', 700, 220, 80, 40), b('8g', 1000, 220, 70, 40),
+    b('Sodium', 100, 280, 250, 40), b('100mg', 700, 280, 100, 40), b('160mg', 1000, 280, 110, 40),
+    b('Protein 5g 10g', 100, 340, 900, 40),   // merged across both columns
+  ];
+  const result = parseNutritionLabel({ text: '', blocks });
+  check('merged no-%DV row: primary protein is the first number', result.fields.protein.value === 5, result.fields.protein.value);
+  check('merged no-%DV row: variant protein is the second number', result.secondary?.fields.protein.value === 10, result.secondary?.fields.protein.value);
+}
+
+// ── 17. The cut comes from the Calories row, not the column HEADING's left edge ───────────────────
+// A heading ("Granola with 1/2 Cup Fat Free Milk") is wider than the numbers beneath it and starts
+// further right, so using its x put the boundary PAST the second column's own values: fat and sodium
+// were being back-derived from their %DV, and Protein (no %DV printed) came back empty every scan.
+{
+  const blocks: OcrBlockLike[] = [
+    b('About 6 servings per container', 60, 40, 500, 30),
+    b('Granola', 480, 90, 90, 26),
+    b('Granola with 1/2 Cup Fat Free Milk', 585, 85, 210, 40),   // heading starts RIGHT of its column
+    b('Calories', 40, 160, 180, 50),
+    b('250', 440, 155, 120, 60),
+    b('300', 680, 155, 120, 60),
+    b('Total Fat', 40, 240, 130, 26), b('12g', 345, 240, 45, 26), b('15%', 505, 240, 45, 26),
+    b('8g', 567, 240, 35, 26), b('10%', 720, 240, 45, 26),
+    b('Protein', 40, 300, 110, 26), b('5g', 345, 300, 35, 26), b('10g', 567, 300, 45, 26),
+  ];
+  const result = parseNutritionLabel({ text: '', blocks });
+  check('heading-right-of-column: primary fat is read, not derived', result.fields.fat.value === 12, result.fields.fat.value);
+  check('heading-right-of-column: variant fat comes from its own cell (8g)', result.secondary?.fields.fat.value === 8, result.secondary?.fields.fat.value);
+  check('heading-right-of-column: variant protein is 10g, not empty', result.secondary?.fields.protein.value === 10, result.secondary?.fields.protein.value);
+  check('caption still quotes the column heading', !!result.secondary?.headerText?.includes('Fat Free Milk'), result.secondary?.headerText);
+}
+
+// ── 18. A faint left-hand cell must NOT be replaced by the right column's ─────────────────────────
+// On a glossy pint the small grey per-serving %DV sometimes fails to OCR entirely. Reading cells by
+// order alone then promoted the CONTAINER column's %DV into its place (Total Fat 8g showing 30% DV,
+// repeatedly, 2026-07-22). Other rows read both cells, so the column positions are known -- a lone
+// cell sitting in column two's territory must leave column one empty, not fill it.
+{
+  const blocks: OcrBlockLike[] = [
+    b('3 servings per container', 60, 40, 500, 30),
+    b('Calories', 40, 100, 180, 50), b('140', 440, 100, 120, 50), b('420', 680, 100, 120, 50),
+    // Clean rows: both %DV cells present, so the columns' positions are learnable.
+    b('Sodium', 40, 180, 130, 26), b('120mg', 345, 180, 60, 26), b('5%', 505, 180, 40, 26),
+    b('360mg', 600, 180, 60, 26), b('15%', 720, 180, 45, 26),
+    b('Total Carb.', 40, 220, 150, 26), b('17g', 345, 220, 45, 26), b('6%', 505, 220, 40, 26),
+    b('51g', 600, 220, 45, 26), b('18%', 720, 220, 45, 26),
+    // Fat's own 10% failed to read; only the container column's 30% survived.
+    b('Total Fat', 40, 260, 130, 26), b('8g', 345, 260, 40, 26),
+    b('24g', 600, 260, 45, 26), b('30%', 720, 260, 45, 26),
+  ];
+  const result = parseNutritionLabel({ text: '', blocks });
+  check('faint left cell: fat value still 8g', result.fields.fat.value === 8, result.fields.fat.value);
+  check('faint left cell: fat does NOT inherit the container column 30% DV', result.fields.fat.percentDV !== 30, result.fields.fat.percentDV);
+  check('faint left cell: neighbouring clean rows unaffected', result.fields.sodium.percentDV === 5, result.fields.sodium.percentDV);
+  check('faint left cell: carbs keep their own 6%', result.fields.carbs.percentDV === 6, result.fields.carbs.percentDV);
+}
+
 console.log(`\n${passed} passed, ${failed} failed\n`);
 if (failed > 0) { console.log('Failed:', fails.join(', ')); process.exit(1); }

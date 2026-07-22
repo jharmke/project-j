@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
-import { useMemo, useRef, useState } from 'react';
-import { Animated, Dimensions, Easing, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Dimensions, Easing, Keyboard, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../theme';
 import { Type } from '../typography';
 import { unitGroup, unitLabel } from '../utils/unitConversion';
@@ -70,14 +70,28 @@ export default function UnitPickerButton({ value, options, onChange, minWidth = 
     ).start();
   };
 
+  // An open keyboard eats the space below the button (this picker sits next to a numeric field, so the
+  // keypad is usually up). Without this the menu opens downward into the keypad and gets cut off.
+  const keyboardH = useRef(0);
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', e => { keyboardH.current = e.endCoordinates?.height ?? 0; });
+    const hide = Keyboard.addListener('keyboardDidHide', () => { keyboardH.current = 0; });
+    return () => { show.remove(); hide.remove(); };
+  }, []);
+
   const handleOpen = () => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     const node = wrapperRef.current;
     if (node) {
       node.measureInWindow((_x, y, _w, h) => {
         const screenH = Dimensions.get('window').height;
-        const spaceBelow = screenH - (y + h) - SAFE_BOTTOM_INSET;
-        const up = menuHeight > spaceBelow;
+        // Whichever is taller: the keyboard, or the reserved room for a floating bottom bar.
+        const bottomInset = Math.max(keyboardH.current, SAFE_BOTTOM_INSET);
+        const spaceBelow = screenH - (y + h) - bottomInset;
+        const spaceAbove = y - BUTTON_GAP;
+        // Flip up when it doesn't fit below -- but only if up is actually roomier, otherwise a menu
+        // that fits nowhere would flip into an even tighter space.
+        const up = menuHeight > spaceBelow && spaceAbove > spaceBelow;
         setOpenUp(up);
         setOpen(true);
         runCascade(up);

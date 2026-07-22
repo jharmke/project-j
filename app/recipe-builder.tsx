@@ -4,7 +4,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useCallback, useRef, useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CustomFoodCreator from '../components/CustomFoodCreator';
 import GradientNumber from '../components/GradientNumber';
@@ -20,7 +20,8 @@ import PrimaryCTA from '../components/PrimaryCTA';
 import ButtonShine from '../components/ButtonShine';
 import BackgroundLayers from '../components/BackgroundLayers';
 import UnitPickerButton from '../components/UnitPickerButton';
-import { convertUnit, unitGroup, unitLabel } from '../utils/unitConversion';
+import ModalHeader from '../components/ModalHeader';
+import { convertUnit, convertibleUnitsFor, unitGroup, unitLabel } from '../utils/unitConversion';
 
 interface Ingredient {
   id: string;
@@ -152,6 +153,68 @@ export default function RecipeBuilderScreen() {
   const totalsCardRef = useTutorialTarget('recipe_totals_card');
   const servingsCardRef = useTutorialTarget('recipe_servings_card');
   const saveBtnRef = useTutorialTarget('recipe_save_btn');
+
+  // ── Ingredient amount editor ──────────────────────────────────────────────────────────────────
+  // Every nutrient on an ingredient is a straight linear multiple of its amount (that's how they were
+  // computed when it was added), so changing 235g to 335g is an exact rescale, never an estimate.
+  // calPer100g and friends are RATES, not totals -- they are deliberately not in this list.
+  const INGREDIENT_NUTRIENT_KEYS = [
+    'cal', 'protein', 'carbs', 'fat', 'fiber', 'sugar', 'sodium', 'cholesterol', 'saturatedFat',
+    'polyunsaturatedFat', 'monounsaturatedFat', 'addedSugars', 'transFat', 'vitaminA', 'vitaminC',
+    'vitaminD', 'vitaminE', 'vitaminK', 'vitaminB6', 'folate', 'vitaminB12', 'biotin', 'thiamin',
+    'riboflavin', 'niacin', 'choline', 'magnesium', 'zinc', 'copper', 'caffeine',
+  ];
+  const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
+  const [ingAmountDraft, setIngAmountDraft] = useState('');
+  const [ingUnit, setIngUnit] = useState('g');
+  const ingModalAnim = useRef(new Animated.Value(0)).current;
+
+  const openAmountEditor = (ing: Ingredient) => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    setIngAmountDraft(String(ing.amount));
+    setIngUnit(normalizeUnit(ing.unit));
+    setEditingIngredient(ing);
+  };
+  const closeAmountEditor = (after?: () => void) => {
+    Animated.timing(ingModalAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => {
+      setEditingIngredient(null);
+      after?.();
+    });
+  };
+  // Same-family units only. An existing ingredient can't jump from grams to cups -- that needs the
+  // food's density, and this screen will not invent one.
+  const changeIngUnit = (u: string) => {
+    const typed = parseFloat(ingAmountDraft);
+    if (!isNaN(typed)) {
+      const converted = convertUnit(typed, ingUnit, u);
+      if (converted !== null) setIngAmountDraft(String(Math.round(converted * 100) / 100));
+    }
+    setIngUnit(u);
+  };
+  const ingEditTyped = parseFloat(ingAmountDraft);
+  const ingEditValid = !isNaN(ingEditTyped) && ingEditTyped > 0 &&
+    !(editingIngredient && ingUnit === normalizeUnit(editingIngredient.unit) && ingEditTyped === editingIngredient.amount);
+
+  const saveAmountEdit = () => {
+    if (!editingIngredient || !ingEditValid) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    const target = editingIngredient;
+    const oldUnit = normalizeUnit(target.unit);
+    // Express the new amount in the ingredient's existing unit so the ratio is apples to apples.
+    const newInOldUnit = ingUnit === oldUnit ? ingEditTyped : (convertUnit(ingEditTyped, ingUnit, oldUnit) ?? ingEditTyped);
+    const ratio = target.amount > 0 ? newInOldUnit / target.amount : 1;
+    setIngredients(prev => prev.map(i => {
+      if (i.id !== target.id) return i;
+      const scaled: any = { ...i, amount: Math.round(ingEditTyped * 100) / 100, unit: ingUnit };
+      INGREDIENT_NUTRIENT_KEYS.forEach(k => {
+        const v = (i as any)[k];
+        if (typeof v !== 'number') return;
+        scaled[k] = k === 'cal' ? Math.round(v * ratio) : Math.round(v * ratio * 10) / 10;
+      });
+      return scaled as Ingredient;
+    }));
+    closeAmountEditor(() => showToast('Ingredient updated', target.name, 'success'));
+  };
 
   // Switching the finished-weight unit: inside one family the number converts (2000 g -> 70.55 oz, the
   // batch is the same size either way). Weight <-> volume can't convert without density, so the number
@@ -568,6 +631,12 @@ export default function RecipeBuilderScreen() {
           ) : (
             ingredients.map((ing, idx) => (
               <View key={ing.id} ref={idx === 0 ? ingredientRowRef : null} style={[styles.ingredientRow, idx < ingredients.length - 1 && styles.ingredientBorder]}>
+                {/* Tap the row (not a tiny pencil) to change the amount -- the trash stays its own
+                    target so the two can't be confused for each other. */}
+                <TouchableOpacity
+                  style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
+                  activeOpacity={0.7}
+                  onPress={() => openAmountEditor(ing)}>
                 <View style={styles.ingredientLeft}>
                   <Text style={styles.ingredientName}>{ing.name} ({ing.amount}{unitLabel(ing.unit)})</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3 }}>
@@ -589,6 +658,12 @@ export default function RecipeBuilderScreen() {
                   <GradientNumber value={String(ing.cal)} color={theme.accentGreen} style={{ fontSize: 18, fontFamily: Type.num }} />
                   <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.ui, letterSpacing: 1 }}>kcal</Text>
                 </View>
+                {/* Quiet affordance: without it the row reads as a readout, not a control. Top-aligned
+                    with the same padding as the trash so the two icons share a line. */}
+                <View style={{ padding: 4, marginRight: 8, alignSelf: 'flex-start' }}>
+                  <Ionicons name="pencil" size={14} color={theme.textDim} />
+                </View>
+                </TouchableOpacity>
                 <TouchableOpacity onPress={() => removeIngredient(ing.id)} style={styles.removeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                   <Ionicons name="trash-outline" size={16} color={theme.accentRed || '#cc3333'} />
                 </TouchableOpacity>
@@ -717,6 +792,69 @@ export default function RecipeBuilderScreen() {
         onSaved={handleCustomFoodSaved}
       />
 
+      {/* Edit an ingredient's amount */}
+      <Modal
+        visible={!!editingIngredient}
+        transparent
+        animationType="none"
+        onShow={() => {
+          ingModalAnim.setValue(0);
+          Animated.spring(ingModalAnim, { toValue: 1, useNativeDriver: true, damping: 20, stiffness: 300 }).start();
+        }}
+        onRequestClose={() => closeAmountEditor()}>
+        <Animated.View style={[styles.modalOverlay, { opacity: ingModalAnim }]}>
+          <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={() => closeAmountEditor()} />
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%' }} pointerEvents="box-none">
+            {/* No overflow:'hidden' on the card on purpose -- ModalHeader has no background of its own so
+                nothing needs clipping, and clipping sliced the unit dropdown off at the card's edge. */}
+            <Animated.View
+              style={[styles.modal, { padding: 0, transform: [{ scale: ingModalAnim.interpolate({ inputRange: [0, 1], outputRange: [0.88, 1] }) }] }]}
+              pointerEvents="box-none">
+              <ModalHeader title="Edit Amount" subtitle={editingIngredient?.name} onClose={() => closeAmountEditor()} />
+              <View style={{ width: '100%', paddingHorizontal: 24, paddingBottom: 24, paddingTop: 4 }}>
+                <Text style={styles.fieldLabel}>Amount</Text>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TextInput
+                    style={[styles.fieldInput, { flex: 1 }]}
+                    value={ingAmountDraft}
+                    onChangeText={v => filterDecimal(v, setIngAmountDraft)}
+                    keyboardType="decimal-pad"
+                    selectTextOnFocus
+                    autoFocus
+                    placeholder="0"
+                    placeholderTextColor={theme.textDim}
+                  />
+                  {convertibleUnitsFor(ingUnit).length > 0 && (
+                    <UnitPickerButton value={ingUnit} options={convertibleUnitsFor(ingUnit)} onChange={changeIngUnit} />
+                  )}
+                </View>
+                <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, marginTop: 8 }}>
+                  Calories and every macro scale with the amount.
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
+                  <TouchableOpacity
+                    style={[styles.amountEditBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]}
+                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeAmountEditor(); }}>
+                    <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiSemibold }}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.amountEditBtn, {
+                      backgroundColor: ingEditValid ? theme.accentBlueBg : theme.bgInput,
+                      borderColor: ingEditValid ? theme.accentBlueBorder : theme.borderInput,
+                      opacity: ingEditValid ? 1 : 0.5,
+                    }]}
+                    disabled={!ingEditValid}
+                    onPress={saveAmountEdit}>
+                    {ingEditValid ? <ButtonShine radius={10} /> : null}
+                    <Text style={{ fontSize: 14, color: ingEditValid ? theme.accentBlue : theme.textDim, fontFamily: Type.uiSemibold }}>Save</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Animated.View>
+          </KeyboardAvoidingView>
+        </Animated.View>
+      </Modal>
+
     </View>
   );
 }
@@ -810,22 +948,22 @@ const useStyles = (theme: any) => StyleSheet.create({
   defaultWeightCheckbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 1, borderColor: theme.borderInput, backgroundColor: theme.bgInput, alignItems: 'center', justifyContent: 'center' },
   defaultWeightCheckboxActive: { backgroundColor: theme.accentBlue, borderColor: theme.accentBlue },
   defaultWeightLabel: { fontSize: 13, color: theme.textSecondary, fontFamily: Type.ui },
-  unitPickerBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
-    borderRadius: 8, paddingHorizontal: 12, paddingVertical: 13,
+  // Centered floating card, mirroring the recipe log screen's modal so the two match exactly.
+  modalOverlay: { flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
+  modal: {
+    backgroundColor: theme.bgSheet,
+    borderRadius: 16,
+    borderWidth: 0.5,
+    borderColor: theme.borderCard,
+    borderTopWidth: 1.5,
+    borderTopColor: theme.accentBlueRaw,
+    padding: 24,
+    width: '100%',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 12,
+    alignItems: 'center',
   },
-  unitPickerBtnText: { color: theme.accentBlue, fontSize: 13, fontFamily: Type.uiSemibold },
-  unitDropdown: {
-    backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.borderCard,
-    borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw,
-    borderRadius: 10, minWidth: 80,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8,
-    elevation: 10,
+  amountEditBtn: {
+    flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 44,
+    borderRadius: 10, borderWidth: 1, overflow: 'hidden',
   },
-  unitDropdownItem: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 14, paddingVertical: 12,
-  },
-  unitDropdownText: { fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiMedium },
 });

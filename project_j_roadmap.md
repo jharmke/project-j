@@ -1173,8 +1173,25 @@ are separate pre-submission checklists, NOT part of this menu.
   "not a significant source" footnote reading as 0, curved-can row matching, and keyboard avoidance.
   STILL OPEN on this feature: dual-column parsing (the big one, not started), the container row can't be
   built from a volume-only serving with no gram equivalent, no scan entry point in the barcode flow,
-  "Includes 11g Added Sugars" wording still unmatched (only "Incl."), bilingual labels, Otto/tutorial
-  pass, and the temp "OCR Test" row in Settings dev tools.
+  bilingual labels, and the temp "OCR Test" row in Settings dev tools. (Otto's KB now covers label
+  scanning as of 2026-07-22; the TUTORIAL pass is still open.)
+  **WORDING VARIANTS -- one sweep, not one bug at a time.** Manufacturers abbreviate differently and the
+  parser only knows one spelling each, so a real box silently loses a field. Confirmed missed on real
+  labels: "Includes 11g Added Sugars" (only "Incl." matched) and "Total Carb." (only "Total Carbohydrate"
+  matched -- Justin's protein ice cream, 2026-07-22, carbs dropped on every scan). Do these as ONE pass
+  over every FIELD_DEF rather than chasing them individually. Candidates to cover, from label conventions
+  (not yet each confirmed on a real box -- verify while building):
+    - Total Carbohydrate / Total Carb. / Total Carbs / Carbohydrate
+    - Includes / Incl. / Including (added sugars)
+    - Saturated Fat / Sat. Fat / Sat Fat  |  Trans Fat / Trans-Fat (often italicised)
+    - Dietary Fiber / Fiber / Total Fiber  |  Total Sugars / Sugars
+    - Cholesterol / Cholest.  |  Sodium / Sod.  |  Potassium / Potas.  |  Vitamin D / Vit. D / Vit D
+    - Unit suffixes that can break number parsing: "mcg RAE" (vitamin A), "mcg DFE" (folate),
+      "mg NE" (niacin), "mg alpha-tocopherol" (vitamin E)
+    - "< 1g" / "less than 1g" (real: the pancake box prints "Dietary Fiber < 1g") -- currently parses as
+      nothing; should read as 0 or as <1, decide when building
+    - OCR letter/number confusion: "Og" read for "0g", "l" for "1"
+    - Spacing: "8 g" vs "8g"
   THREE FOUND 2026-07-22 (Justin, scanning a silver Ghost Energy can; causes verified in code):
   (a) **The Serving line in the review modal is read-only.** `LabelScanReviewModal.tsx` renders
       `parsed.serving.description` as plain Text while every nutrient row is an editable TextInput. So a

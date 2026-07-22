@@ -98,7 +98,7 @@ interface FieldDef {
 
 const CORE_FIELD_KEYS = ['calories', 'fat', 'carbs', 'protein'];
 
-const FIELD_DEFS: FieldDef[] = [
+const RAW_FIELD_DEFS: FieldDef[] = [
   { key: 'calories',    unit: 'kcal', namePattern: /calories\D{0,3}(\d+(?:\.\d+)?)/i, inlinePercentPattern: /calories.*?(\d+(?:\.\d+)?)\s*%/i },
   { key: 'fat',          unit: 'g',   namePattern: /total fat\D{0,3}(\d+(?:\.\d+)?)\s*g/i,          inlinePercentPattern: /total fat.*?(\d+(?:\.\d+)?)\s*%/i },
   { key: 'saturatedFat', unit: 'g',   namePattern: /sat(?:urated)?\.?\s*fat\D{0,3}(\d+(?:\.\d+)?)\s*g/i, inlinePercentPattern: /sat(?:urated)?\.?\s*fat.*?(\d+(?:\.\d+)?)\s*%/i },
@@ -114,7 +114,8 @@ const FIELD_DEFS: FieldDef[] = [
   // "Incl. 11g Added Sugars" -- the ONE field on a real FDA label where the number comes BEFORE
   // the name instead of after. Handled as its own pattern rather than forcing it into the
   // name-then-number shape every other field uses.
-  { key: 'addedSugars',  unit: 'g',   namePattern: /(?:incl\.?|includes?|including)\s+(\d+(?:\.\d+)?)\s*g\s+added sugars/i,  inlinePercentPattern: /added sugars.*?(\d+(?:\.\d+)?)\s*%/i },
+  // The optional "/ translation" run covers a bilingual bag's "Includes / Incluye 0g Added Sugars".
+  { key: 'addedSugars',  unit: 'g',   namePattern: /(?:incl\.?|includes?|including)(?:\s*\/\s*[^0-9]{0,20})?\s*(\d+(?:\.\d+)?)\s*g\s+added sugars/i,  inlinePercentPattern: /added sugars.*?(\d+(?:\.\d+)?)\s*%/i },
   { key: 'protein',      unit: 'g',   namePattern: /protein\D{0,3}(\d+(?:\.\d+)?)\s*g/i,             inlinePercentPattern: /protein.*?(\d+(?:\.\d+)?)\s*%/i },
   { key: 'vitaminD',     unit: 'mcg', namePattern: /vit(?:amin)?\.?\s*d\D{0,3}(\d+(?:\.\d+)?)\s*mcg/i, inlinePercentPattern: /vit(?:amin)?\.?\s*d.*?(\d+(?:\.\d+)?)\s*%/i },
   { key: 'calcium',      unit: 'mg',  namePattern: /calcium\D{0,3}(\d+(?:\.\d+)?)\s*mg/i,            inlinePercentPattern: /calcium.*?(\d+(?:\.\d+)?)\s*%/i },
@@ -137,13 +138,31 @@ const FIELD_DEFS: FieldDef[] = [
   { key: 'copper',       unit: 'mg',  namePattern: /copper\D{0,3}(\d+(?:\.\d+)?)\s*mg/i,              inlinePercentPattern: /copper.*?(\d+(?:\.\d+)?)\s*%/i },
 ];
 
+// ── Bilingual labels ──────────────────────────────────────────────────────────────────────────
+// A bilingual bag prints "Total Fat / Grasa Total 7g" -- the number is real and right there, but the
+// patterns above only allow a couple of characters between a name and its number, so the match failed
+// and the app fell back to working BACKWARDS from the %DV column. Every value came out slightly wrong
+// in a provable way (carbs 19.3 = 7% of 275 instead of the printed 18g), and rows with no %DV printed
+// at all -- Protein, Total Sugars, Trans Fat -- came back empty. Confirmed on a real tortilla-chip
+// bag, 2026-07-22.
+//
+// So: allow a much longer run between the name and its number, but ONLY across a slash. An English
+// label has no slash there, so nothing about it changes.
+const BILINGUAL_GAP = '(?:\\D{0,3}|\\s*[\\/|]\\s*[^0-9]{0,30})';
+const FIELD_DEFS: FieldDef[] = RAW_FIELD_DEFS.map(f => ({
+  ...f,
+  namePattern: new RegExp(f.namePattern.source.replace('\\D{0,3}', BILINGUAL_GAP), 'i'),
+}));
+
 // A field's NAME can appear in a block with no adjacent value at all (e.g. a bare "Thiamin"
 // label sitting to the left of its own %DV in a separate block) -- this catches that case so the
 // cross-block %DV lookup below still has something to anchor to.
 // Anchored with a word boundary: without it, "choline" matched inside "Alpha-Glyceryl Phosphoryl
 // Choline" in an ingredients list and then grabbed the nearest number as a value (2026-07-22).
+// Built from the RAW defs on purpose: the bilingual rewrite above replaces the \D marker this split
+// relies on, and splitting the rewritten source would produce an unbalanced group.
 const BARE_NAME_PATTERNS: Record<string, RegExp> = Object.fromEntries(
-  FIELD_DEFS.map(f => [f.key, new RegExp('\\b' + f.namePattern.source.split('\\D')[0], 'i')])
+  RAW_FIELD_DEFS.map(f => [f.key, new RegExp('\\b' + f.namePattern.source.split('\\D')[0], 'i')])
 );
 
 const LONE_PERCENT = /^\s*(\d+(?:\.\d+)?)\s*%\s*$/;
@@ -556,8 +575,16 @@ export function parseNutritionLabel(ocr: OcrResultLike): ParsedLabel {
   let serving: ParsedServing = { description: null, grams: null, confidence: null, name: null, amount: null, unit: null };
   const servingLabelBlock = blocks.find(b => /serving size/i.test(b.text));
   const buildServing = (description: string, confidence: number): ParsedServing => {
-    const gramsMatch = /\(?(\d+(?:\.\d+)?)\s*g\)?/i.exec(description);
-    const split = splitServingDescription(description);
+    // Bilingual serving lines read "Serving Size / Tamaño por ración 1oz (28g)", so the capture
+    // starts with the Spanish half and the name came out as "/ Tamaño por ración 1oz". If a slash
+    // appears BEFORE the first digit, drop everything ahead of that digit. A slash that comes after
+    // it is part of the measurement itself ("1/3 cup mix") and is left alone.
+    const firstDigit = description.search(/\d/);
+    const head = firstDigit > 0 ? description.slice(0, firstDigit) : '';
+    const cleaned = /[\/|]/.test(head) ? description.slice(firstDigit) : description;
+    const gramsMatch = /\(?(\d+(?:\.\d+)?)\s*g\)?/i.exec(cleaned);
+    const split = splitServingDescription(cleaned);
+    description = cleaned;
     return {
       description,
       grams: gramsMatch ? parseFloat(gramsMatch[1]) : null,

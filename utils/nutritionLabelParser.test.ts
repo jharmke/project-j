@@ -411,5 +411,45 @@ console.log('\nnutrition label parser\n');
   check('faint left cell: carbs keep their own 6%', result.fields.carbs.percentDV === 6, result.fields.carbs.percentDV);
 }
 
+// ── 19. Bilingual label: read the PRINTED number, don't work backwards from the %DV ───────────────
+// Real tortilla-chip bag, 2026-07-22. "Total Fat / Grasa Total 7g" is one block, so there was no
+// separate value cell to find, and the name-to-number gap was too long for the pattern -- so every
+// value got back-derived from the %DV column (carbs came out 19.3 = 7% of 275, instead of the
+// printed 18g) and rows with no %DV at all came back empty.
+{
+  const blocks: OcrBlockLike[] = [
+    b('11 Servings per container / Raciones por envase', 60, 40, 700, 30),
+    b('Serving Size / Tamaño por ración 1oz (28g/about 12 chips)', 60, 80, 780, 30),
+    b('Calories / Calorías', 60, 130, 400, 50), b('140', 700, 130, 120, 50),
+    b('Total Fat / Grasa Total 7g', 60, 200, 420, 30), b('9%', 780, 200, 50, 30),
+    b('Saturated Fat / Grasa Saturada 1g', 80, 240, 460, 30), b('5%', 780, 240, 50, 30),
+    b('Trans Fat / Grasa Trans 0g', 80, 280, 420, 30),
+    b('Cholesterol / Colesterol 0mg', 60, 320, 430, 30), b('0%', 780, 320, 50, 30),
+    b('Sodium / Sodio 90mg', 60, 360, 360, 30), b('4%', 780, 360, 50, 30),
+    b('Total Carbohydrate / Carbohidratos Totales 18g', 60, 400, 640, 30), b('7%', 780, 400, 50, 30),
+    b('Dietary Fiber / Fibra Dietética 2g', 80, 440, 460, 30), b('7%', 780, 440, 50, 30),
+    b('Total Sugars / Azúcares Totales 0g', 80, 480, 470, 30),
+    b('Includes / Incluye 0g Added Sugars / Azúcares Añadidos', 100, 520, 700, 30), b('0%', 780, 520, 50, 30),
+    b('Protein / Proteínas 2g', 60, 560, 350, 30),
+    b('Calcium / Calcio 20mg', 60, 640, 370, 30), b('2%', 780, 640, 50, 30),
+    b('Iron / Hierro 0mg', 60, 680, 320, 30), b('0%', 780, 680, 50, 30),
+    b('Potassium / Potasio 80mg', 60, 720, 400, 30), b('2%', 780, 720, 50, 30),
+  ];
+  const result = parseNutritionLabel({ text: '', blocks });
+  check('bilingual: carbs are the printed 18g, not 19.3 derived from 7%', result.fields.carbs.value === 18, result.fields.carbs.value);
+  check('bilingual: sodium is the printed 90mg, not 92', result.fields.sodium.value === 90, result.fields.sodium.value);
+  check('bilingual: potassium is the printed 80mg, not 94', result.fields.potassium.value === 80, result.fields.potassium.value);
+  check('bilingual: calcium is the printed 20mg, not 26', result.fields.calcium.value === 20, result.fields.calcium.value);
+  check('bilingual: iron is the printed 0mg, not 0.4', result.fields.iron.value === 0, result.fields.iron.value);
+  check('bilingual: protein reads 2g (no %DV to fall back on)', result.fields.protein.value === 2, result.fields.protein.value);
+  check('bilingual: total sugars reads 0g', result.fields.sugar.value === 0, result.fields.sugar.value);
+  check('bilingual: trans fat reads 0g', result.fields.transFat.value === 0, result.fields.transFat.value);
+  check('bilingual: added sugars reads 0g through the translation', result.fields.addedSugars.value === 0, result.fields.addedSugars.value);
+  check('bilingual: fat still 7g', result.fields.fat.value === 7, result.fields.fat.value);
+  check('bilingual: serving amount 28g', result.serving.amount === 28, result.serving.amount);
+  check('bilingual: serving name drops the Spanish half', result.serving.name === '1oz', result.serving.name);
+  check('bilingual: servings per container 11', result.servingsPerContainer.value === 11, result.servingsPerContainer.value);
+}
+
 console.log(`\n${passed} passed, ${failed} failed\n`);
 if (failed > 0) { console.log('Failed:', fails.join(', ')); process.exit(1); }

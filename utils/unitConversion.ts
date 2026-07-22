@@ -35,6 +35,15 @@ export function isVolumeUnit(unit: string): unit is VolumeUnit {
   return (VOLUME_UNITS as string[]).includes(unit.toLowerCase());
 }
 
+// Spellings from before this system existed (the recipe builder had its own hand-rolled picker that
+// wrote "lbs"/"cups"). Read those as the app-wide keys so old records still convert; nothing on disk
+// is rewritten until the user saves that record again.
+const LEGACY_UNIT_ALIASES: Record<string, string> = { lbs: 'lb', cups: 'cup', mls: 'ml' };
+export function normalizeUnitKey(unit?: string): string {
+  const key = (unit || 'g').toLowerCase();
+  return LEGACY_UNIT_ALIASES[key] || key;
+}
+
 // Which convertible group a unit belongs to -- null for count-based units (container, serving,
 // pill, capsule, etc.) that have no fixed relationship to weight or volume at all.
 export function unitGroup(unit: string): 'weight' | 'volume' | null {

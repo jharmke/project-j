@@ -18,7 +18,8 @@ import ScreenHeader from '../components/ScreenHeader';
 import BackgroundLayers from '../components/BackgroundLayers';
 import ButtonShine from '../components/ButtonShine';
 import GradientNumber from '../components/GradientNumber';
-import { unitLabel } from '../utils/unitConversion';
+import { convertUnit, convertibleUnitsFor, normalizeUnitKey, unitLabel } from '../utils/unitConversion';
+import UnitPickerButton from '../components/UnitPickerButton';
 import PrimaryCTA from '../components/PrimaryCTA';
 import ModalHeader from '../components/ModalHeader';
 
@@ -38,6 +39,8 @@ export default function RecipeLogScreen() {
   );
   const [servingAmount, setServingAmount] = useState('1');
   const [weightAmount, setWeightAmount] = useState('');
+  // Typing unit for the portion box, defaults to the recipe's own unit. Never persisted onto the recipe.
+  const [weightUnit, setWeightUnit] = useState<string>(normalizeUnitKey(paramRecipe?.totalWeightUnit));
   const [showMealPicker, setShowMealPicker] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState(meal || 'ms_lunch');
   const [mealSlots, setMealSlots] = useState<MealSlot[]>(DEFAULT_MEAL_SLOTS);
@@ -60,7 +63,13 @@ export default function RecipeLogScreen() {
           const fresh = list.find((r: any) => (paramRecipeId ? r.id === paramRecipeId : r.name === paramRecipeName));
           // Not found means it was deleted from another screen -- keep the snapshot rather than
           // blanking the page out from under someone mid-log.
-          if (fresh && active) setRecipe(fresh);
+          if (fresh && active) {
+            setRecipe(fresh);
+            // The recipe may have been re-saved in a different unit while we were away; a typing unit
+            // from the old family would silently mean something else, so follow the recipe.
+            const freshUnit = normalizeUnitKey(fresh.totalWeightUnit);
+            setWeightUnit(prev => (convertUnit(1, prev, freshUnit) === null ? freshUnit : prev));
+          }
         } catch {}
       })();
       return () => { active = false; };
@@ -83,11 +92,21 @@ export default function RecipeLogScreen() {
 
   const totalWeight = recipe.totalWeight || 0;
   const servingCount = recipe.servingCount || 0;
+  // The unit the recipe itself is defined in. The portion box can be typed in any sibling unit
+  // (a batch defined in lb, weighed out at 8 oz) -- the typed amount converts back to the recipe's
+  // own unit before it ever touches the math, so the recipe is never redefined by logging it.
+  const recipeUnit = normalizeUnitKey(recipe.totalWeightUnit);
+  const weightAmountInRecipeUnit = () => {
+    const typed = parseFloat(weightAmount);
+    if (isNaN(typed)) return NaN;
+    if (weightUnit === recipeUnit) return typed;
+    return convertUnit(typed, weightUnit, recipeUnit) ?? typed;
+  };
 
   const getMultiplier = () => {
     if (logMode === 'serving' && servingCount > 0) return parseFloat(servingAmount) / servingCount;
     if (!totalWeight) return 0;
-    return parseFloat(weightAmount) / totalWeight;
+    return weightAmountInRecipeUnit() / totalWeight;
   };
 
   const multiplier = getMultiplier() || 0;
@@ -135,8 +154,9 @@ export default function RecipeLogScreen() {
           ...(recipe.totalZinc       ? { zinc:               Math.round((recipe.totalZinc       || 0) * multiplier * 10) / 10 } : {}),
           ...(recipe.totalCopper     ? { copper:             Math.round((recipe.totalCopper     || 0) * multiplier * 10) / 10 } : {}),
           ...(recipe.totalCaffeine   ? { caffeine:           Math.round((recipe.totalCaffeine   || 0) * multiplier) } : {}),
-          amount: logMode === 'weight' ? parseFloat(weightAmount) : parseFloat(servingAmount),
-          unit: logMode === 'weight' ? (recipe.totalWeightUnit || 'g') : recipe.servingName,
+          // As an ingredient, the amount is stored in the RECIPE's own unit, whatever it was typed in.
+          amount: logMode === 'weight' ? Math.round(weightAmountInRecipeUnit() * 100) / 100 : parseFloat(servingAmount),
+          unit: logMode === 'weight' ? recipeUnit : recipe.servingName,
         };
         await AsyncStorage.setItem('pj_pending_ingredient', JSON.stringify(ingredient));
         showToast('Added to recipe', recipe.name, 'success');
@@ -149,7 +169,7 @@ export default function RecipeLogScreen() {
       const entries = current.entries || [];
       const label = logMode === 'serving'
         ? `${servingAmount} ${recipe.servingName}`
-        : `${weightAmount}${unitLabel(recipe.totalWeightUnit || 'g')}`;
+        : `${weightAmount}${unitLabel(weightUnit)}`;
       // A recipe with a total weight has a gram basis, so Edit Entry shows the amount box with the real
       // portion (in the recipe's weight unit). A serving-count-only recipe has no gram basis, so the
       // entry is flagged servingOnly and Edit Entry hides the amount box (no fake "Amount (g): 100").
@@ -165,7 +185,12 @@ export default function RecipeLogScreen() {
         isRecipe: true,
         servingOnly: !hasWeight,
         loggedAmount: hasWeight ? portionInWeightUnit : parseFloat(servingAmount),
-        loggedUnit: hasWeight ? (recipe.totalWeightUnit || 'g') : recipe.servingName,
+        loggedUnit: hasWeight ? recipeUnit : recipe.servingName,
+        // Logged in a sibling unit: remember what the user actually typed so the meal card reads
+        // "8 oz" instead of the recipe-unit number. Same mechanism food entries already use.
+        ...(hasWeight && logMode === 'weight' && weightUnit !== recipeUnit
+          ? { displayUnit: weightUnit, displayAmount: parseFloat(weightAmount) }
+          : {}),
         fiber: Math.round((recipe.totalFiber || 0) * multiplier * 10) / 10,
         sugar: Math.round((recipe.totalSugar || 0) * multiplier * 10) / 10,
         sodium: Math.round((recipe.totalSodium || 0) * multiplier),
@@ -367,7 +392,7 @@ export default function RecipeLogScreen() {
                 onPress={() => setLogMode('weight')}>
                 {logMode === 'weight' ? <ButtonShine radius={6} /> : null}
                 <Text style={[styles.toggleBtnText, logMode === 'weight' && { color: theme.accentBlue }]}>
-                  By weight ({unitLabel(recipe.totalWeightUnit || 'g')})
+                  By weight ({unitLabel(weightUnit)})
                 </Text>
               </TouchableOpacity>
             )}
@@ -383,20 +408,38 @@ export default function RecipeLogScreen() {
         <View style={styles.nutritionCard}>
           <View style={styles.amountRow}>
             <Text style={styles.amountLabel}>
-              {logMode === 'serving' ? `How many ${recipe.servingName}?` : `How many ${weightUnitWord[recipe.totalWeightUnit] || recipe.totalWeightUnit}?`}
+              {logMode === 'serving' ? `How many ${recipe.servingName}?` : `How many ${weightUnitWord[weightUnit] || unitLabel(weightUnit)}?`}
             </Text>
-            <TextInput
-              style={styles.amountInput}
-              value={logMode === 'serving' ? servingAmount : weightAmount}
-              onChangeText={logMode === 'serving' ? setServingAmount : setWeightAmount}
-              keyboardType="decimal-pad"
-              selectTextOnFocus
-            />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <TextInput
+                style={styles.amountInput}
+                value={logMode === 'serving' ? servingAmount : weightAmount}
+                onChangeText={logMode === 'serving' ? setServingAmount : setWeightAmount}
+                keyboardType="decimal-pad"
+                selectTextOnFocus
+              />
+              {/* Weigh your portion in whatever your scale reads -- the recipe stays defined in its own
+                  unit, this only changes what you type in. Same family only (no density guessing). */}
+              {logMode === 'weight' && convertibleUnitsFor(recipeUnit).length > 0 && (
+                <UnitPickerButton
+                  value={weightUnit}
+                  options={convertibleUnitsFor(recipeUnit)}
+                  onChange={u => {
+                    const typed = parseFloat(weightAmount);
+                    if (!isNaN(typed)) {
+                      const converted = convertUnit(typed, weightUnit, u);
+                      if (converted !== null) setWeightAmount(String(Math.round(converted * 100) / 100));
+                    }
+                    setWeightUnit(u);
+                  }}
+                />
+              )}
+            </View>
           </View>
           <Text style={styles.nutritionTitle}>
             {logMode === 'serving'
               ? `Nutrition for ${servingAmount} ${recipe.servingName}`
-              : `Nutrition for ${weightAmount || '0'} ${weightUnitWord[recipe.totalWeightUnit] || recipe.totalWeightUnit}`}
+              : `Nutrition for ${weightAmount || '0'} ${weightUnitWord[weightUnit] || unitLabel(weightUnit)}`}
           </Text>
           <View style={styles.macroRow}>
             <View style={styles.macroStat}>

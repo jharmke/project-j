@@ -16,6 +16,7 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-22 **Serving-unit Piece 4c: log a recipe portion in any sibling unit.** The recipe log screen's By-weight box got the shared unit picker: a batch defined in lb can be logged as 8 oz (or a mL recipe in cups) and the typed amount converts back to the recipe's own unit before any math, so logging never redefines the recipe. Same-family units only. The prompt, the "Nutrition for X" line and the By weight toggle all follow the picked unit, and the diary entry carries displayUnit/displayAmount so the meal card reads "8 oz" instead of the converted number. Legacy "lbs"/"cups" recipes get the picker too -- that alias translation moved into utils/unitConversion.ts (`normalizeUnitKey`) so the builder and log screen share one source of truth. Device-confirmed by Justin. NOTE: recipes never needed a servingDisplayUnit like foods -- a recipe's stored unit IS its display unit (no canonical base underneath), so they already remembered.
 - 2026-07-22 **Serving-unit Piece 4b: edit an ingredient's amount in the recipe builder** (was delete-and-re-add only). Tap the ingredient ROW (quiet dim pencil marks it as tappable; trash stays its own target) -> centered card with the amount + same-family unit picker; every nutrient rescales linearly (exact, not an estimate -- they were always a straight multiple of the amount) and the row keeps whatever unit was picked. Dim Save until there's a real change, light haptic on Cancel / medium on Save. ALSO FIXED IN THE SHARED PICKER (applies app-wide -- Create Food, Edit Food, logging, recipe total weight): the dropdown now measures the real keyboard height instead of only reserving room for a floating bottom bar, so it flips upward instead of opening into the keypad, and only flips when up is genuinely roomier. Device-confirmed by Justin.
 - 2026-07-22 **Serving-unit Piece 4a: recipe builder joins the unit system, plus two stale-screen fixes.** Recipe builder's Total Finished Weight dropped its hand-rolled dropdown for the shared 2-column Weight/Volume picker, moved from its own dialect (lbs/cups) to the app-wide keys with legacy spellings read gracefully, and converts within a family on switch; recipe-log's "How many ___?" word list, By weight toggle, and total-weight line all follow. Fixed ingredients always being stamped "g" (food-detail was reading a vestigial unit state, so a 240 mL milk logged as 240 g) and inline-created custom foods being labeled with their serving NAME instead of a unit. STALE-SCREEN FIXES: the recipe page now re-reads the recipe on focus (edit + save used to land you back on the pre-edit version, reading as a save that didn't take), and food-detail refreshes in place after a food edit instead of bouncing the user off the screen -- including the stored absolute cal/macros, which are what a custom food actually displays (a logged entry's own numbers are deliberately left alone). Device-confirmed by Justin.
 - 2026-07-22 **Serving-unit redesign Piece 3b: volume support in EditFoodModal + foods now remember the unit they were built in.** Edit Food's primary Amount got the same 2-column Weight/Volume picker as Create Food and stopped hardcoding grams (a mL food now opens as mL, not a number mislabeled "g"); within-family converts, cross-family flips the canonical base, and legacy non-measurement units ("container"/"serving") fall back to grams for display and flip to a real base only when the user deliberately picks a unit. NEW `servingDisplayUnit` field (display only, never math, ignored if it leaves the base's family): a juice built as "1 Cup" is greeted as 1 Cup on food detail, logging, and Edit instead of 236.59 mL, with per-entry displayUnit still winning when editing an existing log. Also swept lowercase "ml"/"l" leaks through unitLabel (row placeholders, Create Food's "Serving (mL)" header, food-detail Amount label + avg readout, auto-generated serving labels, diary entry names). Device-confirmed by Justin. STILL OPEN: recipe builder picker; legacy audit.
@@ -871,9 +872,9 @@ are separate pre-submission checklists, NOT part of this menu.
       recipe log screen's unit wording follows. See RECENTLY SHIPPED.
   (4b) DONE 2026-07-22 -- ingredient amount editor + the shared picker's keyboard-aware flip. See
       RECENTLY SHIPPED.
-  (4c) OPEN, optional polish -- recipes could remember a display unit the way foods now do
-      (servingDisplayUnit), and log-time conversion (recipe defined in g, log a portion in oz) is still
-      not possible. Discussed 2026-07-22, deliberately deferred out of 4a to keep the round small.
+  (4c) DONE 2026-07-22 -- log-time conversion on the recipe log screen. See RECENTLY SHIPPED. (The
+      "recipes should remember a display unit" half of this item was a bad read on my part: recipes have
+      no canonical base under them, so their stored unit already IS what's displayed. Nothing to build.)
   (5) OPEN -- legacy/downstream audit: confirm new + legacy non-gram foods behave; legacy My Foods/cloned
       foods degrade gracefully (worst case a few need re-checking, never corrupt). Optional rollout polish:
       a one-time "What's New" heads-up that older custom foods may need a quick re-check.
@@ -1160,6 +1161,23 @@ are separate pre-submission checklists, NOT part of this menu.
   2026-07-21: replacing the system camera picker with a custom live-camera screen (viewfinder box + "align
   label in frame" text, same pattern as the barcode scanner) instead of the system photo picker -- real,
   non-trivial rebuild, deliberately deferred in favor of the free text-hint above for now.
+  THREE MORE FOUND 2026-07-22 (Justin, scanning a silver Ghost Energy can; causes verified in code, none
+  fixed yet):
+  (a) **The Serving line in the review modal is read-only.** `LabelScanReviewModal.tsx` renders
+      `parsed.serving.description` as plain Text while every nutrient row is an editable TextInput. So a
+      misread serving (the exact thing every other number is keyed to) cannot be corrected in the one
+      screen built for correcting misreads. Justin: "seems like a glaring miss." Agreed.
+  (b) **Serving size lost when the label prints "Serving Size:" and its value far right on the same row.**
+      Not a distance problem -- `nutritionLabelParser.ts` (~line 249) tries the SAME block first via
+      `/serving size\s*[:\-]?\s*(.+)/i`, and on this can that inline match succeeded with pure punctuation
+      (the modal displayed a bare ":"). A non-empty inline match short-circuits the same-row bounding-box
+      fallback that WOULD have found "1 Can (16 fl oz)". Fix: require the inline capture to contain an
+      alphanumeric character before accepting it, otherwise fall through to the same-row search.
+  (c) **The review modal only lists fields the scan FOUND.** Rows come from `Object.entries(rows)` (parsed
+      fields only), so anything OCR missed simply isn't on screen and can't be typed in -- on this can that
+      meant Total Fat, Sodium, Protein, B6 and B12 were unreachable even though the user is looking right
+      at the label. Should show the full offered field set, missed ones blank/dimmed, so a bad scan is
+      still a usable head start instead of a dead end.
 
 - [PARKED 2026-07-19 -- shipped parts in RECENTLY SHIPPED, full story in the archive] **Some screens still
   feel slow to open, cause unidentified.** Haptic delay is fixed and 4 screens' data loading is batched (see

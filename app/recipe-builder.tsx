@@ -21,7 +21,7 @@ import ButtonShine from '../components/ButtonShine';
 import BackgroundLayers from '../components/BackgroundLayers';
 import UnitPickerButton from '../components/UnitPickerButton';
 import ModalHeader from '../components/ModalHeader';
-import { convertUnit, convertibleUnitsFor, unitGroup, unitLabel } from '../utils/unitConversion';
+import { convertUnit, convertibleUnitsFor, normalizeUnitKey, unitGroup, unitLabel } from '../utils/unitConversion';
 
 interface Ingredient {
   id: string;
@@ -107,13 +107,9 @@ const WEIGHT_ENTRY_UNITS = ['g', 'kg', 'oz', 'lb'];
 const VOLUME_ENTRY_UNITS = ['ml', 'l', 'cup', 'tbsp', 'tsp', 'fl oz'];
 const ALL_ENTRY_UNITS = [...WEIGHT_ENTRY_UNITS, ...VOLUME_ENTRY_UNITS];
 // Recipes built before the serving-unit redesign saved their own dialect ("lbs", "cups") from a
-// hand-rolled picker. Read those as the app-wide keys so old recipes keep working and can convert;
-// nothing is rewritten on disk until the user saves the recipe again.
-const LEGACY_UNIT_ALIASES: Record<string, string> = { lbs: 'lb', cups: 'cup', mls: 'ml' };
-const normalizeUnit = (u?: string) => {
-  const key = (u || 'g').toLowerCase();
-  return LEGACY_UNIT_ALIASES[key] || key;
-};
+// hand-rolled picker. normalizeUnitKey reads those as the app-wide keys (shared with recipe-log so
+// the two screens can't drift); nothing is rewritten on disk until the recipe is saved again.
+const normalizeUnit = normalizeUnitKey;
 
 const filterDecimal = (v: string, set: (s: string) => void) => {
   const stripped = v.replace(/[^0-9.]/g, '');

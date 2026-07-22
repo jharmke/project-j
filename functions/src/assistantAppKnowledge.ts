@@ -235,6 +235,19 @@ LOG TAB (FOOD DIARY)
     the Log tab, OR the FAB in the Food Library. Photo + text input, editable breakdown.
   - CUSTOM FOOD: from the Food Library (Log tab > LIBRARY button) tap the FAB (bottom corner) >
     CREATE FOOD. (Also reachable inline via the Custom Food Creator inside Add Food / My Foods.)
+  - SCAN A NUTRITION LABEL: inside Create Food or Edit Food, tap "Scan Nutrition Label" and photograph
+    the panel. It reads on-device (no internet needed) and opens a review card BEFORE anything is saved.
+    The review card lists every field the app supports, grouped Calories & Macros / More Nutrition /
+    Vitamins / Minerals, each header showing how many it found. Boxes with nothing found start collapsed.
+    An amber border means "check this": either the read was unclear, or it's a core field (calories, fat,
+    carbs, protein) the scan missed entirely. Everything is editable, including the Serving Name, the
+    serving Amount with its weight/volume unit, and Servings Per Container. A "Retake" button in the
+    corner re-shoots the photo without losing your place. "Looks Good" fills the food form; the form's
+    own Save is what actually saves. Tips when a scan struggles: get close but keep the whole panel in
+    frame, and shiny or curved packages (cans especially) read worse than flat boxes.
+    If the label prints "X servings per container" and a serving amount, a "1 Container" option is added
+    to Additional Servings automatically. If it says "Not a significant source of ...", those nutrients
+    are recorded as 0, because that is what the phrase means.
 - RECIPES: from the Food Library (Log tab > LIBRARY button) tap the FAB > CREATE RECIPE (opens the
   Recipe Builder). Log a saved recipe from the Recipes tab in Add Food, or the Recipe Log.
   CHANGE HOW MUCH OF AN INGREDIENT IS IN A RECIPE: tap the ingredient's row in the builder (the small

@@ -881,7 +881,8 @@ are separate pre-submission checklists, NOT part of this menu.
   (4c) DONE 2026-07-22 -- log-time conversion on the recipe log screen. See RECENTLY SHIPPED. (The
       "recipes should remember a display unit" half of this item was a bad read on my part: recipes have
       no canonical base under them, so their stored unit already IS what's displayed. Nothing to build.)
-  (5) PINNED 2026-07-22 by Justin (parked, not dropped) -- legacy/downstream audit: confirm new + legacy non-gram foods behave; legacy My Foods/cloned
+  (5) CLOSED 2026-07-22 -- Justin spot-checked three pre-redesign custom foods, all fine, and his call is
+      that what matters is new foods being correct. Not chasing further. Original scope was: legacy/downstream audit: confirm new + legacy non-gram foods behave; legacy My Foods/cloned
       foods degrade gracefully (worst case a few need re-checking, never corrupt). Optional rollout polish:
       a one-time "What's New" heads-up that older custom foods may need a quick re-check.
   Migration risk is scoped to My Foods + cloned foods only (FatSecret results are always fresh from the API).

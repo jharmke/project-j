@@ -915,9 +915,9 @@ export const TUTORIALS: Tutorial[] = [
         tutorialAction: 'expandOptionalSection',
         title: 'CALORIES & SERVING SIZE',
         body: {
-          discipline: 'Required. Pull calories from the label. Serving size (right field) + unit pill sets what one serving weighs, which makes per-gram math accurate when you adjust amounts later.',
-          balanced: 'Enter calories from the label, then set the serving size to the right. Together they let the app scale correctly when you log a different amount.',
-          mindful: 'Calories from the label, serving size to the right. If you do not have the label, no stress. Just enter what you know.',
+          discipline: 'Required. Pull calories from the label. Serving size (right field) plus its unit sets what one serving is, which keeps the math accurate when you adjust amounts later. The unit dropdown covers weight (g, kg, oz, lb) and volume (mL, L, cup, tbsp, tsp, fl oz), and the food remembers whichever one you build it in.',
+          balanced: 'Enter calories from the label, then set the serving size to the right. The unit dropdown handles both weight and volume, and whatever you pick is how the food greets you later. Together they let the app scale correctly when you log a different amount.',
+          mindful: 'Calories from the label, serving size to the right. Pick whichever unit you actually think in, weight or volume, and the food keeps it. If you do not have the label, no stress. Just enter what you know.',
         },
       },
       {

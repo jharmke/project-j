@@ -590,7 +590,13 @@ COMMON "HOW DO I..." QUICK INDEX
 - Clear a whole meal at once: Log tab > expand the meal > tap the "Clear all" link at the bottom of its
   item list (one confirm, removes only that meal's entries for the day).
 - Build a recipe: Log tab > Library > FAB > Create Recipe (opens the Recipe Builder).
-- Create a custom food: Log tab > Library > FAB > Create Food.
+- Create a custom food: Log tab > Library > FAB > Create Food. The Serving amount has a unit dropdown
+  covering weight (g, kg, oz, lb) and volume (mL, L, cup, tbsp, tsp, fl oz). Units convert inside their
+  own family (oz to g, cup to mL); weight and volume never convert into each other, since that needs the
+  food's density, so picking across families keeps the number and switches what the food is measured in.
+  The food remembers the unit it was built in and is shown in that unit everywhere afterward. Editing a
+  food (My Foods > tap > Edit) offers the same dropdown, and the logging screen lets you type an amount
+  in any sibling unit without changing the food itself.
 - Log water: Home Water card presets, or the identical Water card on the Log tab.
 - Edit/delete a water entry: open the water log > pencil icon on the entry.
 - Log a lift (sets): Workout tab > lifting log (weight x reps + check).

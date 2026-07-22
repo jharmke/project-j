@@ -16,6 +16,7 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-22 **Serving-unit redesign Piece 1: EditFoodModal now mirrors Create Food** (boxed Basic Info + Serving sections, Serving/Calories moved up above the nutrient grid, merged "Serving Name" free-text field, g/kg/oz/lb weight dropdown on Amount converting to canonical grams). Non-destructive: no legacy food's numbers/units rewritten. Device-confirmed by Justin. Photo button intentionally not added (kept existing entry points). Pieces 2 (logging-screen weight dropdown) + 3 (legacy migration) still open.
 - 2026-07-22 **UnitPickerButton dropdown now flips upward when there's no room below (measures own screen position, 175px bottom inset clears the Cancel/Save Food bar) and cascades options in on open; added hairline dividers between rows.** Component-only fix, applies everywhere the unit picker is used. Device-confirmed by Justin.
 - 2026-07-19 **WEB (World English Bible) added as a second translation, WEB is now primary/default, KJV
   secondary.** Reader, Today's Message, Gratitude card, Favorites, custom saved verses, the verse-pool
@@ -849,12 +850,9 @@ are separate pre-submission checklists, NOT part of this menu.
 
 - [NOW, surfaced 2026-07-22] **Serving-unit redesign sweep -- finish it across all three food surfaces.**
   Three pieces, built slow, on-device test between each:
-  (1) EditFoodModal.tsx -- apply the merged "Serving Name" field + g/kg/oz/lb weight dropdown on Amount,
-      AND restructure to fully match CustomFoodCreator's look (boxed Basic Info + Serving sections, Serving
-      + Calories moved UP above the nutrient grid). Also reconcile two chrome gaps: Edit has no Brand photo
-      button and no Food/Supplement toggle (toggle staying locked/hidden in Edit is the current plan).
-      Graceful legacy read: carry an old food's unit+label into the new Serving Name text, grams stays
-      canonical.
+  (1) DONE 2026-07-22 -- EditFoodModal.tsx redesigned to mirror Create Food (see RECENTLY SHIPPED). Photo
+      button dropped (existing entry points kept); Food/Supplement toggle already existed in Edit. Legacy
+      migration deferred to Piece 3 (this build is non-destructive, doesn't rewrite old foods).
   (2) **[Justin's top priority for this feature]** Add the same g/kg/oz/lb weight dropdown to the diary
       LOGGING screen (app/food-detail.tsx) Amount field, for BOTH custom My Foods and FatSecret results --
       so a portion weighed in oz off a scale converts to grams at log time. Currently grams-only there; this

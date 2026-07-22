@@ -235,6 +235,12 @@ LOG TAB (FOOD DIARY)
     the Log tab, OR the FAB in the Food Library. Photo + text input, editable breakdown.
   - CUSTOM FOOD: from the Food Library (Log tab > LIBRARY button) tap the FAB (bottom corner) >
     CREATE FOOD. (Also reachable inline via the Custom Food Creator inside Add Food / My Foods.)
+  - ENTERING A NUTRIENT BY %DV: plenty of labels, supplements especially, print only a percentage for a
+    vitamin and never the mg or mcg. In Create Food and Edit Food, every nutrient with an official FDA
+    daily value has one box split in two: the amount on the left, the percent on the right. Type either
+    and the other fills in. The amount is what gets stored. Nutrients with no official daily value
+    (protein, trans fat, poly and mono fat, sugar, sugar alcohols, caffeine) have no percent side, and
+    neither do the three macros, which labels always print in grams.
   - SCAN A NUTRITION LABEL: inside Create Food or Edit Food, tap "Scan Nutrition Label" and photograph
     the panel. It reads on-device (no internet needed) and opens a review card BEFORE anything is saved.
     The review card lists every field the app supports, grouped Calories & Macros / More Nutrition /

@@ -80,19 +80,11 @@ export interface ParsedLabel {
   lowConfidenceCount: number;
 }
 
-// FDA Daily Value reference (mirrors components/NutritionGearModal.tsx's 'standard' preset --
-// this is the FIXED reference a label's own %DV column is calculated against, never the user's
-// personal/dynamic goal). Fields with no real published DV (calories, Poly/Mono Fat, Sugar
-// Alcohols) are omitted on purpose -- deriving a fake number for them would be worse than
-// leaving the field un-derivable.
-export const DV_REFERENCE: Record<string, number> = {
-  fat: 78, saturatedFat: 20, cholesterol: 300, sodium: 2300, carbs: 275, fiber: 28,
-  addedSugars: 50, potassium: 4700,
-  vitaminA: 900, vitaminC: 90, vitaminD: 20, vitaminE: 15, vitaminK: 120,
-  vitaminB6: 1.7, folate: 400, vitaminB12: 2.4, biotin: 30,
-  thiamin: 1.2, riboflavin: 1.3, niacin: 16, choline: 550,
-  calcium: 1300, iron: 18, magnesium: 420, zinc: 11, copper: 0.9,
-};
+// The FDA Daily Value table now lives in utils/nutrientDV.ts so the scanner's review card and the
+// manual %DV fields in Create/Edit Food read the exact same numbers. Re-exported here because this
+// module's consumers already import it from this path.
+export { DV_REFERENCE } from './nutrientDV';
+import { DV_REFERENCE } from './nutrientDV';
 
 interface FieldDef {
   key: string;

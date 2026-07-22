@@ -1008,9 +1008,9 @@ export const TUTORIALS: Tutorial[] = [
         noTabBarOffset: true,
         title: 'INGREDIENT ROW',
         body: {
-          discipline: 'Each row shows the amount, calories, and P/C/F split. If the macros look wrong, remove and re-add with the correct gram weight.',
-          balanced: 'Each ingredient shows its amount and nutrition contribution at a glance. The more accurate your amounts, the more accurate your log.',
-          mindful: 'Each ingredient row shows what it contributes. Do your best with amounts. A reasonable estimate is always better than skipping the log.',
+          discipline: 'Each row shows the amount, calories, and P/C/F split. Amount wrong? Tap the row and correct it. Calories and macros rescale exactly. The trash removes it instead.',
+          balanced: 'Each ingredient shows its amount and nutrition contribution at a glance. Tap a row to change the amount and everything recalculates. The more accurate your amounts, the more accurate your log.',
+          mindful: 'Each ingredient row shows what it contributes. Tap one any time to adjust the amount. Do your best with amounts. A reasonable estimate is always better than skipping the log.',
         },
       },
       {

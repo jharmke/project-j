@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from './utils/storage';
+import { isSyncReady } from './services/syncService';
 import { evaluateCalorieGoalHit, paceTargetFromWeightGoal } from './utils/goalHit';
 import { buildDailyBmrMap } from './utils/statsData';
 
@@ -1387,6 +1388,7 @@ export async function checkAndUnlock(
   achievementId: string,
   store: AchievementsStore
 ): Promise<{ newlyUnlocked: boolean; updatedStore: AchievementsStore }> {
+  if (!isSyncReady()) return { newlyUnlocked: false, updatedStore: store }; // don't stamp unlockedAt against a not-yet-restored store
   const def = ACHIEVEMENTS.find(a => a.id === achievementId);
   if (!def) return { newlyUnlocked: false, updatedStore: store };
 

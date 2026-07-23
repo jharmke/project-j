@@ -908,20 +908,14 @@ are separate pre-submission checklists, NOT part of this menu.
   Migration risk is scoped to My Foods + cloned foods only (FatSecret results are always fresh from the API).
   Per-serving display must NOT regress to the old per-100g behavior (Justin's #1 pet peeve) -- grams-canonical
   is exactly what the per-serving engine needs; guard it.
-- [surfaced 2026-07-23, NOW, visual batch Justin handed over -- work top-down, #1 already SHIPPED] **Justin's
-  screenshot batch.** Ranked cluster, do in order:
-  (1) DONE 2026-07-23 -- Recent library row showed per-gram calories after logging by weight (see RECENTLY SHIPPED).
-  (2) CLOSED 2026-07-23, no change needed -- TooltipModal titles ALREADY render via GradientTitle (the molded
-      light-top/dark-bottom mask). The first screenshot just read as flat at a glance; a closer look at the
-      "Advanced Nutrition" tooltip confirmed the gradient is there. Justin: "it's fine as is."
-  (3) DONE 2026-07-23 -- EvR visual pass shipped (see RECENTLY SHIPPED). Hero numbers now molded via
-      GradientNumber, bars now filled via the app-wide barFillGradient. Device-confirmed by Justin.
-  (4) DONE 2026-07-23 -- recovery compare card redesigned (see RECENTLY SHIPPED). Two bars replaced by a
-      single shared 0-100 recovery track: a pin per score, shaded gap between them, "-8 pts" pill on the
-      hero-number row. Device-confirmed by Justin.
-  (5) App Thread ideas (both land here, ranked, NOT backlog): (a) star-rating review prompt/popup; (b) monthly
-      trends report/summary and/or a trends section. NOTE overlap: (b) overlaps the existing Custom Reports
-      track AND the time-of-day nutrition insights item below -- decide merge vs standalone when it's picked up.
+- [surfaced 2026-07-23, from Justin's App Thread notes] **In-app "rate us" star prompt.** A prompt/popup
+  asking the user to review the app with stars (StoreKit review request). Needs a smart trigger (after a
+  streak/achievement/positive moment, rate-limited, respects Apple's 3x/year cap) rather than firing cold.
+  Unscoped -- launch-adjacent (App Store rating drives installs).
+- [surfaced 2026-07-23, from Justin's App Thread notes] **Monthly trends report / trends section.** A
+  once-a-month trends summary, OR a standing "trends" section, OR both. OVERLAP to resolve before building:
+  this overlaps the existing Custom Reports track AND the time-of-day nutrition insights item below -- decide
+  merge vs standalone when picked up. Unscoped.
 - [surfaced 2026-07-22, BUG, real tester hit it -- NOT fixing tonight, captured only] **Wrong notifications
   firing despite logged data (Justin's dad, current TestFlight).** Two bad fires, both while he HAD logged:
   (a) "Nothing Logged Yet -- Your food log is empty today. Tap to add a meal." fired around 2:00 PM even

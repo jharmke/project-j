@@ -191,3 +191,40 @@ export const onPrayerRequestCreated = onDocumentCreated(
     }
   }
 );
+
+// Fires when an app feedback document is created under users/{uid}/app_feedback/{docId}.
+// Client writes directly to Firestore -- this trigger handles the email notification.
+// Email is best-effort; the Firestore write always succeeds independently.
+export const onAppFeedbackCreated = onDocumentCreated(
+  { document: 'users/{uid}/app_feedback/{docId}', secrets: [GMAIL_APP_PASSWORD] },
+  async (event) => {
+    const data = event.data?.data();
+    if (!data) return;
+
+    const { type, description, photoUrl, userName, userEmail, appVersion, device } = data as {
+      type: string;
+      description: string;
+      photoUrl?: string;
+      userName: string;
+      userEmail: string;
+      appVersion: string;
+      device: string;
+    };
+
+    try {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user: 'jtharmke@gmail.com', pass: GMAIL_APP_PASSWORD.value() },
+      });
+      const photoLine = photoUrl ? `\n\nPhoto: ${photoUrl}` : '';
+      await transporter.sendMail({
+        from: '"GoodForge" <jtharmke@gmail.com>',
+        to: 'dev.harmke@gmail.com',
+        subject: `[GoodForge] ${type} -- ${userName || 'App User'}`,
+        text: `From: ${userName || 'Anonymous'}${userEmail ? ` (${userEmail})` : ''}\n\n${description}${photoLine}\n\n----------\nType: ${type}\nApp version: ${appVersion}\nDevice: ${device}`,
+      });
+    } catch (e) {
+      console.error('Email send failed (feedback still in Firestore):', e);
+    }
+  }
+);

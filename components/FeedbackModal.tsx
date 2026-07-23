@@ -1,12 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 import Constants from 'expo-constants';
 import { triggerHaptic } from '@/utils/haptics';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useRef, useState } from 'react';
 import {
-  Animated, KeyboardAvoidingView, Linking, Modal, Platform, ScrollView,
+  Animated, Image, KeyboardAvoidingView, Modal, Platform, ScrollView,
   StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
+import { auth, db, storage } from '../firebaseConfig';
 import { useTheme } from '../theme';
 import { useToast, ToastRenderer } from './Toast';
 import { Type } from '../typography';
@@ -14,13 +18,13 @@ import ModalHeader from './ModalHeader';
 import ButtonShine from './ButtonShine';
 import PrimaryCTA from './PrimaryCTA';
 
-// Send Feedback. Opened from Settings > About. Collects a type + a description and hands off to
-// the user's mail app via a mailto link, addressed to the dev inbox. No backend (per spec). A
-// mailto cannot attach files, so a note points users to email screenshots directly for now.
+// Send Feedback. Opened from Settings > Help. Collects a type + description + an optional photo,
+// writes straight to Firestore (users/{uid}/app_feedback), never leaves the app -- same pattern as
+// PrayerRequestModal. A Cloud Function (onAppFeedbackCreated) emails it to the dev inbox; the photo
+// (if any) uploads to Storage first and the email gets a link, same upload pattern as foodPhotos.ts.
 // Centered floating card per the modal standard: spring scale + opacity in onShow, handle pill,
 // overlay tap-to-dismiss, ToastRenderer inside the Modal. No double dashes in user-facing strings.
 
-const FEEDBACK_EMAIL = 'dev.harmke@gmail.com';
 const TYPES = ['Bug', 'Suggestion', 'Other'] as const;
 type FeedbackType = typeof TYPES[number];
 
@@ -38,12 +42,16 @@ export default function FeedbackModal({ visible, onClose }: Props) {
 
   const [type, setType] = useState<FeedbackType>('Bug');
   const [description, setDescription] = useState('');
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
 
-  const canSend = description.trim().length > 0;
+  const canSend = description.trim().length > 0 && !sending;
 
   const open = () => {
     setType('Bug');
     setDescription('');
+    setPhotoUri(null);
+    setSending(false);
     scaleAnim.setValue(0.92);
     opacityAnim.setValue(0);
     Animated.parallel([
@@ -64,23 +72,40 @@ export default function FeedbackModal({ visible, onClose }: Props) {
     close();
   };
 
+  const pickPhoto = async () => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85 });
+    if (!result.canceled && result.assets[0]) setPhotoUri(result.assets[0].uri);
+  };
+
   const handleSend = async () => {
-    if (!canSend) return;
+    if (!canSend || !auth.currentUser) return;
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
-    const version = Constants.expoConfig?.version ?? '1.0';
-    const subject = `[GoodForge] ${type}`;
-    const body = `${description.trim()}\n\n----------\nType: ${type}\nApp version: ${version}\nDevice: ${Platform.OS} ${Platform.Version}`;
-    const url = `mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    setSending(true);
     try {
-      const can = await Linking.canOpenURL(url);
-      if (!can) {
-        showToast('No mail app found', `Email ${FEEDBACK_EMAIL} directly`, 'error');
-        return;
+      let photoUrl: string | undefined;
+      if (photoUri) {
+        const r = ref(storage, `users/${auth.currentUser.uid}/feedback_photos/${Date.now()}.jpg`);
+        const response = await fetch(photoUri);
+        const blob = await response.blob();
+        await uploadBytes(r, blob, { contentType: 'image/jpeg' });
+        photoUrl = await getDownloadURL(r);
       }
-      await Linking.openURL(url);
+      await addDoc(collection(db, 'users', auth.currentUser.uid, 'app_feedback'), {
+        type,
+        description: description.trim(),
+        photoUrl: photoUrl ?? null,
+        userName: auth.currentUser.displayName ?? '',
+        userEmail: auth.currentUser.email ?? '',
+        appVersion: Constants.expoConfig?.version ?? '1.0',
+        device: `${Platform.OS} ${Platform.Version}`,
+        timestamp: serverTimestamp(),
+      });
+      showToast('Feedback sent', 'Thanks for helping us improve GoodForge', 'success');
       close();
     } catch {
-      showToast('Could not open mail', `Email ${FEEDBACK_EMAIL} directly`, 'error');
+      showToast('Could not send', 'Please try again', 'error');
+      setSending(false);
     }
   };
 
@@ -111,7 +136,7 @@ export default function FeedbackModal({ visible, onClose }: Props) {
 
             <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 24 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
               <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.ui, lineHeight: 19, marginBottom: 16 }}>
-                Found a bug or have an idea? Send it our way. It opens your mail app with the details filled in.
+                Found a bug or have an idea? Send it our way, right from the app.
               </Text>
 
               {/* Type pills */}
@@ -155,17 +180,40 @@ export default function FeedbackModal({ visible, onClose }: Props) {
                 }}
               />
 
-              {/* Screenshot note */}
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 12, marginBottom: 18 }}>
-                <Ionicons name="image-outline" size={13} color={theme.textMuted} style={{ marginTop: 1 }} />
-                <Text style={{ flex: 1, fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, lineHeight: 17 }}>
-                  Have a screenshot? Email it straight to {FEEDBACK_EMAIL}.
-                </Text>
-              </View>
+              {/* Photo attach */}
+              <Text style={[styles.label, { color: theme.textMuted, marginTop: 16 }]}>PHOTO (OPTIONAL)</Text>
+              {photoUri ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+                  <Image source={{ uri: photoUri }} style={{ width: 56, height: 56, borderRadius: 8, borderWidth: 1, borderColor: theme.borderCard }} />
+                  <TouchableOpacity
+                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setPhotoUri(null); }}
+                    activeOpacity={0.7}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 5, minHeight: 44, paddingHorizontal: 10 }}
+                  >
+                    <Ionicons name="close-circle" size={16} color={theme.accentRed} />
+                    <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.accentRed }}>Remove</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  onPress={pickPhoto}
+                  activeOpacity={0.85}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    minHeight: 44, borderRadius: 10, marginBottom: 18,
+                    backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
+                  }}
+                >
+                  <Ionicons name="image-outline" size={16} color={theme.accentBlue} />
+                  <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>Attach a Photo</Text>
+                </TouchableOpacity>
+              )}
 
               {/* Send button */}
               <PrimaryCTA
                 label="Send"
+                busyLabel="Sending..."
+                busy={sending}
                 onPress={handleSend}
                 disabled={!canSend}
               />

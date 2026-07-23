@@ -299,7 +299,21 @@ LOG TAB (FOOD DIARY)
   the Log tab.
 - WATER: there is a dedicated Water card on BOTH the Home tab and the Log tab, and they are
   identical (same quick-add presets, same water log with per-entry edit/delete).
-- FOOD DETAIL: tap a logged entry to edit amount/servings, add a photo, favorite it.
+- FOOD DETAIL: tap a logged entry (or a search result) to open it. Quantity is TWO controls, not three
+  (the old separate "Amount" number-and-unit row was removed 2026-07-22):
+  * SERVING SIZE row: a tappable pill that answers "what does one serving mean?" It opens a picker with
+    everything in one list: plain units grouped under "By Weight" (g, kg, oz, lb) or "By Volume" for
+    liquids (mL, L, cup, tbsp, tsp, fl oz), then any named servings under "Common Servings" (like
+    "1 breast" or "1 cup"). Every named serving shows its gram weight so it can be checked against the
+    package, and shows its calories.
+  * AMOUNT row: a minus / plus stepper with a typable box in the middle. It answers "how many." Macros
+    recalculate live off the chosen serving.
+  You can also add a photo and favorite the food here.
+- BARCODE SET / UNSET: the Food Detail header has a button that links a barcode directly to this food.
+  It reads blue "Set" when no barcode is linked and red "Unset" when one is. Tapping "Set" opens a
+  scanner; after that, scanning that barcode always opens this food. "Unset" asks to confirm before
+  removing the link. If the scanned barcode is already linked to a DIFFERENT food, the app asks first
+  before moving it over.
 - OFFLINE: FatSecret search needs a connection; offline shows a "can't reach the food database"
   state. (A manual offline entry fallback is a future item, not built yet.)
 

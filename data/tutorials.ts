@@ -669,27 +669,18 @@ export const TUTORIALS: Tutorial[] = [
         navigateTo: '/food-detail?tutorialMode=true&tutorialFood=chicken_breast&meal=Lunch',
         navigateDelay: 400,
         body: {
-          discipline: 'Amount field defaults to 100g. Type your actual gram weight for precision. Macros recalculate live. Accuracy here compounds over time.',
-          balanced: 'The amount field lets you enter exactly how much you had. Macros update in real time as you type.',
-          mindful: 'You can type in how much you ate by weight. Everything recalculates as you adjust. No pressure to be exact.',
+          discipline: 'Serving Size defines what one serving means. Tap it to pick a plain unit like grams or ounces, or a named serving like 1 breast. Every named serving shows its gram weight so you can check it against the package.',
+          balanced: 'Tap Serving Size to choose what one serving is: a plain unit like grams, or a named serving like 1 breast. Each option shows its weight.',
+          mindful: 'Serving Size is where you pick what one serving means: a unit like grams, or a named serving like 1 breast. Choose whatever matches your food.',
         },
       },
       {
         targetKey: 'log_food_detail_stepper',
-        title: 'SERVINGS STEPPER',
+        title: 'AMOUNT',
         body: {
-          discipline: 'Tap + to multiply servings in 0.5 increments (1, 1.5, 2...). Faster than calculating grams when you know you had "2 servings".',
-          balanced: 'The + and - buttons adjust the number of servings. Handy when you had a labeled amount like "2 cups" instead of a gram weight.',
-          mindful: 'Use + or - to add or remove servings without typing. Tap + if you had more than one serving.',
-        },
-      },
-      {
-        targetKey: 'log_food_detail_serving',
-        title: 'SERVING PICKER',
-        body: {
-          discipline: 'Tap the serving name to switch units. Match the label on your food. This example has 100g, 1 breast (172g), and 1 oz: three real options.',
-          balanced: 'Tap the serving name to switch between different serving options. This food shows 100g, 1 breast, and 1 oz as examples.',
-          mindful: 'Different serving sizes are available here. Pick whichever option matches what you actually had.',
+          discipline: 'Amount is how many. Tap plus or minus to step it, or type straight into the middle box. Macros recalculate live off the serving you chose above.',
+          balanced: 'Amount is how many you had. Use plus and minus, or type the number in the middle. Everything updates as you go.',
+          mindful: 'Amount is simply how much you had. Tap plus or minus, or type the number. No need to be exact.',
         },
       },
       {

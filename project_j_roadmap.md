@@ -1129,15 +1129,15 @@ are separate pre-submission checklists, NOT part of this menu.
   entries logged together. Repeat a Meal already re-logs separate entries from history; this would persist
   a named bundle. Needs its own design pass (look/behavior, where it's saved + surfaced, how it lives
   alongside recipes without confusing the two). Full spec context: SPEC_repeat_meal.md bottom section.
-- [ ] [FIX, data-integrity, needs reinstall verify] Achievement unlockedAt reinstall hardening. Badges
-  stamp unlockedAt = new Date() at award time (achievementData.ts:1420); on a reinstall before the cloud
-  restore lands, a check can first-unlock against an empty store and re-stamp the whole earned set to
-  "today" (this is the June-22 clump on Justin's test account). Achievements ALREADY sync via storageSet +
-  the reinstall auto-restore + checkAndUnlock is idempotent, so a proper restore preserves dates -- the
-  residual is a RACE. FIX: gate achievement checks behind the restore-complete flag so no scan runs until
-  the restore lands. Optional belt-and-suspenders: backfill unlockedAt from goal-day history for count-
-  based badges. Touches the sync/restore/achievement flow -> do deliberately + verify with a device
-  reinstall. (Surfaced via the Custom Reports "Achievements earned" block 2026-07-07.)
+- [FIX IMPLEMENTED 2026-07-23, PENDING DEVICE REINSTALL VERIFY] Achievement unlockedAt reinstall hardening.
+  Badges stamp unlockedAt = new Date() at award time; on a reinstall before the cloud restore lands, a check
+  could first-unlock against an empty store and re-stamp the whole earned set to "today" (this was the
+  June-22 clump on Justin's test account) -- a RACE, not a logic bug (checkAndUnlock is already idempotent).
+  FIX: `checkAndUnlock()` in achievementData.ts now bails out early via the existing `isSyncReady()` restore
+  gate (services/syncService.ts), same flag already protecting storage writes elsewhere, so no achievement
+  scan can run until the restore lands. tsc clean. Needs a real device reinstall to confirm the race is
+  actually closed -- can't be verified any other way. (Surfaced via the Custom Reports "Achievements
+  earned" block 2026-07-07.)
 - [PARKED 2026-07-12, known limitation, do not keep prompt-tweaking] EvR ranked diagnostic card INSIGHT (the middle
   "why" sentence) occasionally comes out rambling/circular -- e.g. the sleep->workout card kept landing on "...the
   session you planned simply does not happen," which just restates the claim+proof and reads weird. INVESTIGATED:

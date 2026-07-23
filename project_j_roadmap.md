@@ -891,6 +891,27 @@ are separate pre-submission checklists, NOT part of this menu.
   Migration risk is scoped to My Foods + cloned foods only (FatSecret results are always fresh from the API).
   Per-serving display must NOT regress to the old per-100g behavior (Justin's #1 pet peeve) -- grams-canonical
   is exactly what the per-serving engine needs; guard it.
+- [surfaced 2026-07-22, BUG, real tester hit it -- NOT fixing tonight, captured only] **Wrong notifications
+  firing despite logged data (Justin's dad, current TestFlight).** Two bad fires, both while he HAD logged:
+  (a) "Nothing Logged Yet -- Your food log is empty today. Tap to add a meal." fired around 2:00 PM even
+  though Morning (228 kcal: Jelly, Waffles) and Lunch (421 kcal: Hamburger Buns, Ground Beef) were already
+  logged that day -- the empty-log notification isn't checking current logged state before firing (or fired
+  off a stale schedule). (b) "Drink Up -- Your water pace is a little behind. Grab a glass." fired around
+  10:45 AM with 28 oz already logged (two 10:15 AM entries, +12 and +16) against a 64 oz goal; the Water Log
+  modal read "Expected Now 40 oz / Behind" at that moment, so the pace curve wanted 40 of 64 oz by ~10:45 AM,
+  which is very front-loaded. TWO candidate issues: the water notification not respecting recent logging,
+  AND/OR the expected-pace curve being too aggressive early in the day. Needs its own investigation.
+- [surfaced 2026-07-22] **Keep the AI Estimate photo with the meal.** If a photo was used in the AI
+  estimator, that photo should stay attached to the logged entry. Likely needs a "meal photo" feature on
+  logged entries to hang it on. Justin thinks it isn't overly hard.
+- [surfaced 2026-07-22, needs design pass] **Time-of-day nutrition insights (EvR / reports / summaries /
+  insights / coaches -- wherever it fits).** Surface timing effects: eating too much too late can disrupt
+  deep sleep, etc., with varied examples of what each thing affects. Possibly fold in caffeine levels, late
+  workouts, and water timing too. Unscoped.
+- [surfaced 2026-07-22, QUICK WIN candidate] **"Expected" sub-bar on the water card(s).** Add a thin
+  secondary progress bar right under the main water bar showing expected-by-now progress filled, so the
+  expected amount is visible without opening the water modal. Justin likes it. (He wrote "2 water modals" --
+  clarify whether that means the Home + Log water cards or the modal itself when this gets picked up.)
 - [surfaced 2026-07-20, found during iPad auth testing] **iPad layout looks broken -- wrapped date, oversized
   text.** On Justin's iPad (not previously tested on this app), Home's "MONDAY, JULY 20" date wraps to a
   second line under the greeting, and Otto's chat header ("Wellness and App Guide" subtitle) renders visibly
@@ -1301,9 +1322,6 @@ are separate pre-submission checklists, NOT part of this menu.
   hand-rolled card spread it -- then "make cards deeper" is one number, not a 40-site hunt. The FULL fix is
   migrating cards to `<GradientCard>`, but that needs GradientCard's OWN hardcoded '#000' @0.12 shadow
   fixed first or every card gets worse, and each card passes different props, so it is a real refactor.
-- [QUICK WIN, found 2026-07-16] **`bgInset` tiles with no border.** Profile's estimate tiles + Projected
-  box were fill-only (no outline) and vanished once Light's ground brightened; both fixed. The same
-  "bgInset fill, no border" pattern almost certainly exists on other screens -- sweep for it.
 - [QUICK WIN, found 2026-07-15, PARTIAL] **Otto (+ Halo?) FAB placement audit.** The floating companion FAB
   sits bottom-left on many stack screens and can overlap the last card's content when the page has no
   bottom padding. FIXED so far: sleep.tsx + achievements.tsx (paddingBottom bumped to `insets.bottom + 96`),

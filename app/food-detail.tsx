@@ -2,7 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { triggerHaptic } from '@/utils/haptics';
+import { triggerHaptic, triggerHapticNotification } from '@/utils/haptics';
+import { Camera, CameraView } from 'expo-camera';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActionSheetIOS, Alert, Animated, Dimensions, Image, Linking, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -310,6 +311,11 @@ const isTutorialMode = tutorialMode === 'true';
   const [showPhotoFullscreen, setShowPhotoFullscreen] = useState(false);
   const [foodStats, setFoodStats] = useState<{ count: number; lastDate: string | null; avgGrams: number } | null>(null);
   const [isFav, setIsFav] = useState(false);
+  // Barcode link. SET/UNSET is the same vocabulary the barcode results list already teaches, reached
+  // from the food itself instead of only from a scan. One barcode maps to one food, and pinning
+  // overwrites, so there is no conflict case to handle here.
+  const [linkedBarcode, setLinkedBarcode] = useState<string | null>(null);
+  const [scanningForLink, setScanningForLink] = useState(false);
   const [showSaveAsCopy, setShowSaveAsCopy] = useState(false);
   const [carbsOpen, setCarbsOpen] = useState(true);
   const [fatsOpen, setFatsOpen] = useState(true);
@@ -323,6 +329,8 @@ const isTutorialMode = tutorialMode === 'true';
   // stepper counts servings (1 serving = the whole estimate) instead of showing a bogus gram amount.
   const isServingOnly = !!(food as any)?.servingOnly || !!food?.aiEstimated;
   const [selectedServing, setSelectedServing] = useState<any>(virtualDefaultServing);
+  // FatSecret's serving list when it had to be fetched here rather than arriving with the food.
+  const [fetchedServings, setFetchedServings] = useState<any[]>([]);
   // Resolved base serving size for edit mode -- starts from stored servingGrams, falls back to My Foods lookup
   const [resolvedServingGrams, setResolvedServingGrams] = useState<number>(
     // Serving-only recipe entries have no grams; treat "1 serving" as the unit (nominal grams = 1) so
@@ -378,6 +386,76 @@ const isTutorialMode = tutorialMode === 'true';
     vitaminD: (effectiveServing.vitaminD ?? 0) / effectiveServing.grams,
   } : null;
 
+  // The food's OWN serving ("15 chips", "3 oz", "1 bar (37g)") is often not in allServings at all --
+  // it's built from the food's stored data as syntheticServing when FatSecret's serving list wasn't
+  // fetched. The picker was therefore missing the very serving the screen was already using, which
+  // made four different branded foods look like the app had no idea what their serving was.
+  // Built from the food's OWN serving (syntheticServing), NOT from whatever is currently selected.
+  // Using the selection meant that picking "g" replaced "15 chips" in this section with "g" -- the
+  // food's real serving vanished from the list the moment you chose anything else.
+  const namedServings = (() => {
+    const list = allServings.length > 0 ? [...allServings] : [...fetchedServings];
+    const own = syntheticServing;
+    if (own && own.grams > 0 && !list.some((s: any) => s.label === own.label)) {
+      list.unshift(own);
+    }
+    return list;
+  })();
+
+  // A serving's weight, but only when its name doesn't already state it. "1 serving (85 g)" and
+  // "100 g" carry their own weight; "1 cup cooked, diced" and "15 chips" don't. Without this the
+  // list printed things like "85 g · 85 g".
+  const servingWeightSuffix = (s: any): string | null => {
+    if (!s || s.isUnit || !(s.grams > 0)) return null;
+    const rounded = Math.round(s.grams * 10) / 10;
+    const name = String(s.label ?? '');
+    if (name.includes(String(rounded)) || name.includes(String(Math.round(s.grams)))) return null;
+    return `${rounded} ${unitLabel(s.unit || 'g')}`;
+  };
+
+  // ── Plain units as servings ───────────────────────────────────────────────────────────────────
+  // "g", "oz", "cup" answer the same question the named servings do: what does ONE of this mean?
+  // They used to live in a SECOND dropdown on the Amount row, so the screen asked that question
+  // twice, in two different places, with a stepper in between. Built here as ordinary servings so
+  // one list can hold both and the Amount row can go away entirely.
+  const unitServingBase = effectiveServing?.unit || food?.servingUnitType || 'g';
+  const unitServings = (servingRates && !isServingOnly)
+    ? convertibleUnitsFor(unitServingBase).map(u => {
+        const perOne = convertUnit(1, u, unitServingBase) ?? 1;
+        // NOT rounded. One gram of a 37 g / 130 kcal bar is 3.5135 kcal; storing it as 4 and then
+        // multiplying by 37 gave 148. Rounding happens once, on screen, never before the maths.
+        const scale = (v: number) => v * perOne;
+        return {
+          label: unitLabel(u),
+          unitKey: u,
+          isUnit: true,
+          grams: perOne,
+          unit: unitServingBase,
+          calories: servingRates.calories * perOne,
+          protein: scale(servingRates.protein),
+          carbs: scale(servingRates.carbs),
+          fat: scale(servingRates.fat),
+          fiber: scale(servingRates.fiber),
+          sugar: scale(servingRates.sugar),
+          sodium: scale(servingRates.sodium),
+          cholesterol: scale(servingRates.cholesterol),
+          saturatedFat: scale(servingRates.saturatedFat),
+          polyunsaturatedFat: scale(servingRates.polyunsaturatedFat),
+          monounsaturatedFat: scale(servingRates.monounsaturatedFat),
+          potassium: scale(servingRates.potassium),
+          vitaminA: scale(servingRates.vitaminA),
+          vitaminC: scale(servingRates.vitaminC),
+          calcium: scale(servingRates.calcium),
+          iron: scale(servingRates.iron),
+          sugarAlcohols: scale(servingRates.sugarAlcohols),
+          addedSugars: scale(servingRates.addedSugars),
+          transFat: scale(servingRates.transFat),
+          vitaminD: scale(servingRates.vitaminD),
+          isDefault: false,
+        };
+      })
+    : [];
+
   useEffect(() => {
     const resolveServings = async () => {
       if (fsServings.length > 0) return;
@@ -392,6 +470,9 @@ const isTutorialMode = tutorialMode === 'true';
         servings = await fetchFatSecretByName(food.description).catch(() => []);
       }
       if (servings.length > 0) {
+        // Keep the WHOLE fetched list, not just the default. Throwing the rest away is why a scanned
+        // food showed "15 chips" on the screen while the picker had nothing but plain units to offer.
+        setFetchedServings(servings);
         const def = (searchResultCal !== null ? servings.find((s: any) => s.calories === searchResultCal) : null) || servings.find((s: any) => s.isDefault) || servings[0];
         if (def) {
           setSelectedServing(def);
@@ -538,6 +619,128 @@ const isTutorialMode = tutorialMode === 'true';
     registerTutorialAction('saveTutorialEntry', saveTutorialEntry);
     return () => unregisterTutorialAction('saveTutorialEntry');
   }, [isTutorialMode]);
+
+  // Is a barcode already pinned to THIS food? Overrides are stored keyed by barcode, holding either a
+  // My Food reference (id + name) or a whole FatSecret result, so both shapes are checked.
+  const overrideMatchesThisFood = (entry: any): boolean => {
+    if (!entry) return false;
+    if (entry.isMyFood) {
+      const myFoodId = (food as any)?.myFoodData?.id || (food as any)?.myFoodId;
+      if (myFoodId && entry.myFoodId) return entry.myFoodId === myFoodId;
+      return entry.myFoodName === food?.description;
+    }
+    if (entry.fsId && food?.fsId) return entry.fsId === food.fsId;
+    return entry.description === food?.description;
+  };
+
+  useEffect(() => {
+    if (!food?.description) return;
+    AsyncStorage.getItem('pj_barcode_overrides').then(saved => {
+      if (!saved) return;
+      const overrides = JSON.parse(saved);
+      const hit = Object.keys(overrides).find(code => overrideMatchesThisFood(overrides[code]));
+      setLinkedBarcode(hit ?? null);
+    }).catch(() => {});
+  }, [food?.description, food?.fsId]);
+
+  const closeServingPicker = () => {
+    Animated.timing(servingPickerAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => setShowServingPicker(false));
+  };
+
+  // Confirms first, with the same wording the Set Foods list already uses for this action.
+  const confirmUnsetBarcode = () => {
+    if (!linkedBarcode) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    Alert.alert(
+      'Remove Barcode Link?',
+      `"${food?.description}" will no longer be linked to this barcode. You can re-link it by scanning again.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Remove', style: 'destructive', onPress: unsetBarcode },
+      ]
+    );
+  };
+
+  const unsetBarcode = async () => {
+    if (!linkedBarcode) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+    try {
+      const saved = await AsyncStorage.getItem('pj_barcode_overrides');
+      const overrides = saved ? JSON.parse(saved) : {};
+      delete overrides[linkedBarcode];
+      await storageSet('pj_barcode_overrides', JSON.stringify(overrides));
+      setLinkedBarcode(null);
+      showToast('Barcode unset', food.description, 'info');
+    } catch (e) {
+      showToast('Could not unset', 'Try again', 'error');
+    }
+  };
+
+  // The camera fires onBarcodeScanned on EVERY frame it can read a code, and setState is async, so
+  // a state flag let dozens of frames through before it flipped -- one scan produced a wall of
+  // toasts. A ref flips synchronously on the very first frame.
+  const linkScanLock = useRef(false);
+
+  const writeBarcodeLink = async (code: string) => {
+    try {
+      const saved = await AsyncStorage.getItem('pj_barcode_overrides');
+      const overrides = saved ? JSON.parse(saved) : {};
+      // Same shape add-food writes, so the scan flow reads it back without knowing where it came from.
+      overrides[code] = (food.isMyFood || food.isCustom)
+        ? {
+            isMyFood: true,
+            myFoodName: food.description,
+            myFoodId: (food as any)?.myFoodData?.id || (food as any)?.myFoodId || null,
+            isOverride: true,
+          }
+        : { ...food, isOverride: true };
+      await storageSet('pj_barcode_overrides', JSON.stringify(overrides));
+      setLinkedBarcode(code);
+      triggerHapticNotification(Haptics.NotificationFeedbackType.Success);
+      showToast('Barcode set', `Future scans open ${food.description}`, 'success');
+    } catch (e) {
+      showToast('Could not set barcode', 'Try again', 'error');
+    }
+  };
+
+  const handleLinkScan = async ({ data }: { data: string }) => {
+    if (!data || linkScanLock.current) return;
+    linkScanLock.current = true;
+    setScanningForLink(false);
+    try {
+      const saved = await AsyncStorage.getItem('pj_barcode_overrides');
+      const overrides = saved ? JSON.parse(saved) : {};
+      const existing = overrides[data];
+      // Pinning overwrites, so a barcode already pointing at a DIFFERENT food would silently move
+      // without the user knowing which one they just unlinked. Ask first, by name.
+      if (existing && !overrideMatchesThisFood(existing)) {
+        const otherName = existing.myFoodName || existing.description || 'another food';
+        Alert.alert(
+          'Barcode Already Set',
+          `This barcode currently opens "${otherName}". Move it to "${food.description}"?`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Move It', onPress: () => writeBarcodeLink(data) },
+          ]
+        );
+        return;
+      }
+      await writeBarcodeLink(data);
+    } catch (e) {
+      showToast('Could not set barcode', 'Try again', 'error');
+    }
+  };
+
+  const startLinkScan = async () => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    const perm = await Camera.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      showToast('Camera access needed', 'Enable camera access to scan a barcode', 'error');
+      return;
+    }
+    linkScanLock.current = false;
+    setScanningForLink(true);
+  };
 
   const toggleFav = async () => {
     // Spring animation
@@ -1316,6 +1519,23 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
               <Ionicons name="copy-outline" size={22} color={theme.textDim} />
             </TouchableOpacity>
           ) : null}
+          {/* SET / UNSET a barcode for this food. Blue reads like Edit next to it; red is the same
+              destructive treatment used for CLEAR elsewhere, so the linked state is unmistakable. */}
+          {!isEditing && !isTutorialMode && (
+            <TouchableOpacity
+              style={{
+                backgroundColor: linkedBarcode ? theme.accentRedBg : theme.accentBlueBg,
+                borderWidth: 1,
+                borderColor: linkedBarcode ? theme.accentRedBorder : theme.accentBlueBorder,
+                borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, overflow: 'hidden',
+              }}
+              onPress={linkedBarcode ? confirmUnsetBarcode : startLinkScan}>
+              <ButtonShine radius={6} />
+              <Text style={{ color: linkedBarcode ? theme.accentRed : theme.accentBlue, fontSize: 13, fontFamily: Type.uiSemibold }}>
+                {linkedBarcode ? 'Unset' : 'Set'}
+              </Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity onPress={toggleFav} style={{ width: 30, height: 30, alignItems: 'center', justifyContent: 'center' }}>
             <Animated.View style={{ transform: [{ scale: starScale }], alignItems: 'center', justifyContent: 'center' }}>
               <Ionicons
@@ -1330,7 +1550,10 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
       />
 
       <ScrollView ref={detailScrollRef} contentContainerStyle={styles.content} automaticallyAdjustKeyboardInsets keyboardDismissMode="on-drag">
-        <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 20 }}>
+        {/* Centred, not top-aligned: the photo tile sets this row's height, so a food with no brand
+            left its name stranded at the top of a tall empty row. Centring resolves it either way --
+            a taller text column (badge + name + brand) simply centres the tile against itself. */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
           <View style={{ flex: 1, paddingRight: foodId ? 16 : 0 }}>
             {food?.aiEstimated && (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 3, paddingHorizontal: 5, paddingVertical: 2, alignSelf: 'flex-start', marginBottom: 4 }}>
@@ -1377,27 +1600,50 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           )}
         </View>
 
-        {/* Serving picker -- shows when multiple servings available (FatSecret or custom additional) */}
-        {(fsServings.length > 1 || customServings.length > 1) && (
-          <TouchableOpacity
-            ref={servingPickerRef as any}
-            style={styles.servingPickerBtn}
-            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowServingPicker(true); }}>
-            <View>
-              <Text style={styles.servingPickerLabel}>Serving Size</Text>
-              <Text style={styles.servingPickerValue}>{selectedServing?.label || 'Select serving'}</Text>
-            </View>
-            <Text style={styles.servingPickerCal}>{selectedServing?.calories || 0} kcal ▼</Text>
-          </TouchableOpacity>
+        {/* Serving picker -- now the ONLY place that answers "what does one of this mean?", so it shows
+            whenever there's anything to choose between, including the plain units. */}
+        {/* Laid out like the Amount row below it: the LABEL sits on the page and only the tappable
+            part is a bordered control on the right, so the two read as a pair and the control is
+            obviously a control. The pill is width-capped and clamps to two lines, so neither a
+            FatSecret name like "1 small piece (yield after cooking, bone removed)" nor anything a
+            user types can push it off the screen. */}
+        {(fsServings.length > 1 || customServings.length > 1 || unitServings.length > 0) && (
+          <View ref={amountRowRef as any} collapsable={false} style={[styles.amountRow, { marginBottom: 12 }]}>
+            <Text style={styles.amountLabel}>Serving Size</Text>
+            <TouchableOpacity
+              style={styles.servingPickerBtn}
+              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowServingPicker(true); }}>
+              {/* No flex:1 -- that forced the pill to its maximum width even for "100 g", leaving the
+                  text floating in a box sized for a sentence. It hugs its content and only grows to
+                  the cap when a serving name actually needs the room. */}
+              <ButtonShine radius={8} />
+              <Text
+                numberOfLines={2}
+                style={{ flexShrink: 1, fontSize: 14, color: theme.accentBlue, fontFamily: Type.uiSemibold, textAlign: 'right' }}>
+                {(() => {
+                  const label = selectedServing?.label || effectiveServing?.label || 'Select serving';
+                  const weight = servingWeightSuffix(effectiveServing);
+                  return weight ? `${label} · ${weight}` : label;
+                })()}
+              </Text>
+              {/* No calorie number here on purpose. It describes the serving DEFINITION, but the Amount
+                  row below is what gets logged -- at 80g this said 239 while the donut said 191. */}
+              <Ionicons name="chevron-down" size={16} color={theme.accentBlue} style={{ marginLeft: 6 }} />
+            </TouchableOpacity>
+          </View>
         )}
 
         {/* Servings stepper */}
         {effectiveServing && (
+          <View ref={servingPickerRef as any} collapsable={false} style={{ width: '100%' }}>
           <View ref={stepperRowRef} style={[styles.amountRow, { marginBottom: 12 }]}>
-            <View>
-              <Text style={styles.amountLabel}>Servings</Text>
-              {effectiveServing.label && /\d/.test(effectiveServing.label) ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: Type.ui, marginTop: 2 }}>{effectiveServing.label}</Text> : null}
-            </View>
+            {/* "Amount", not "Servings": once a plain unit can be the serving, this counts grams or
+                ounces just as often as it counts servings. The sub-line restates the choice in plain
+                words so the math never has to be held in your head. */}
+            {/* No sub-line here. Whatever it said was the TOTAL, which the nutrition heading below
+                already states -- on the default the same "28 g" was printing three times down one
+                screen. This row answers "how many", nothing else. */}
+            <Text style={styles.amountLabel}>Amount</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <TouchableOpacity
                 onPress={() => {
@@ -1451,50 +1697,26 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
               </TouchableOpacity>
             </View>
           </View>
+          </View>
         )}
 
-        {/* Amount input -- label reflects actual serving unit. Hidden for serving-only recipe
-            entries (no gram basis) so they don't show a bogus "Amount (g): 100". */}
-        {!isServingOnlyRecipe && (
-        <View ref={amountRowRef} style={styles.amountRow}>
-          <Text style={styles.amountLabel}>{amountFamily.length > 0 ? 'Amount' : `Amount (${unitLabel(amountBaseUnit)})`}</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8 }}>
-            <TextInput
-              style={{ color: theme.textSecondary, paddingVertical: 12, paddingHorizontal: 12, fontSize: 24, fontFamily: Type.num, width: amountFamily.length > 0 ? 96 : 120, textAlign: 'center' }}
-              value={amountEntryUnit === amountBaseUnit ? amount : (amountDraft !== undefined ? amountDraft : (amount ? String(Math.round(((convertUnit(parseFloat(amount), amountBaseUnit, amountEntryUnit) ?? 0)) * 100) / 100) : ''))}
-              onChangeText={v => {
-                const stripped = v.replace(/[^0-9.]/g, '');
-                const dot = stripped.indexOf('.');
-                const clean = dot === -1 ? stripped : stripped.slice(0, dot + 1) + stripped.slice(dot + 1).replace(/\./g, '').slice(0, 1);
-                if (amountEntryUnit === amountBaseUnit) setAmount(clean);
-                else setAmountDraft(clean);
-                setAmountChanged(true); setServingCount(1); setHasChanges(true);
-              }}
-              onBlur={() => {
-                if (amountEntryUnit === amountBaseUnit || amountDraft === undefined) return;
-                const typed = parseFloat(amountDraft);
-                const base = !isNaN(typed) ? convertUnit(typed, amountEntryUnit, amountBaseUnit) : null;
-                if (base !== null) setAmount(String(Math.round(base * 100) / 100));
-                setAmountDraft(undefined);
-              }}
-              keyboardType="decimal-pad"
-              selectTextOnFocus
-            />
-            {amountFamily.length > 0 && (
-              <>
-                <View style={{ width: 1, alignSelf: 'stretch', backgroundColor: theme.borderInput, marginVertical: 6 }} />
-                <UnitPickerButton embedded value={amountEntryUnit} options={amountFamily} onChange={u => { setAmountEntryUnit(u); setAmountDraft(undefined); setHasChanges(true); }} />
-              </>
-            )}
-          </View>
-        </View>
-        )}
+        {/* The Amount row (number + its own unit dropdown) was REMOVED here 2026-07-22. It asked the
+            same question as the Serving Size picker above -- "what does one of this mean?" -- in a
+            second dropdown, with a stepper sandwiched between them. Three controls for one quantity.
+            The units moved into the serving list, so the stepper above is now the only number to
+            enter. `amountRowRef` still anchors the tutorial to the stepper row instead. */}
 
         {/* Nutrition */}
         <View style={styles.nutritionCard}>
           <Text style={styles.nutritionTitle}>
             {'Nutrition for '}
-            <Text style={{ textTransform: 'none' }}>{isServingOnlyRecipe ? `${amount} ${amount === '1' ? 'serving' : 'servings'}` : `${amount}${effectiveServing?.unit || unit}`}</Text>
+            {/* The quantity, nothing else. Spelling out the serving name here made headings like
+                "Nutrition for 2 x 1 thin slice (approx 2" x 1-1/2" x 1/8")" wrap across two lines. */}
+            <Text style={{ textTransform: 'none' }}>
+              {isServingOnlyRecipe
+                ? `${amount} ${amount === '1' ? 'serving' : 'servings'}`
+                : `${amount} ${unitLabel(amountBaseUnit)}`}
+            </Text>
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 16 }}>
             <MacroDonut protein={protein} carbs={carbs} fat={fat} calories={calories} theme={theme} />
@@ -1920,33 +2142,124 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
         }}
       />
 
-      {/* Serving Picker Modal -- fade in/out, no slide */}
+      {/* Barcode scanner for SET. Its own lightweight viewfinder rather than routing through Add Food's
+          scanner: that one runs a whole lookup-and-results flow, and this only needs the digits. */}
+      <Modal visible={scanningForLink} animationType="slide" onRequestClose={() => setScanningForLink(false)}>
+        <View style={{ flex: 1, backgroundColor: '#000' }}>
+          <CameraView
+            style={StyleSheet.absoluteFillObject}
+            onBarcodeScanned={handleLinkScan}
+            barcodeScannerSettings={{ barcodeTypes: ['upc_a', 'upc_e', 'ean13', 'ean8'] }}
+          />
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '30%', backgroundColor: 'rgba(0,0,0,0.55)' }} />
+            <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '35%', backgroundColor: 'rgba(0,0,0,0.55)' }} />
+            <View style={{ position: 'absolute', top: '30%', bottom: '35%', left: 0, width: '10%', backgroundColor: 'rgba(0,0,0,0.55)' }} />
+            <View style={{ position: 'absolute', top: '30%', bottom: '35%', right: 0, width: '10%', backgroundColor: 'rgba(0,0,0,0.55)' }} />
+            <View style={{ width: '80%', aspectRatio: 2.5, position: 'relative' }}>
+              <View style={{ position: 'absolute', top: 0, left: 0, width: 28, height: 28, borderTopWidth: 3, borderLeftWidth: 3, borderColor: theme.accentBlueRaw, borderTopLeftRadius: 4 }} />
+              <View style={{ position: 'absolute', top: 0, right: 0, width: 28, height: 28, borderTopWidth: 3, borderRightWidth: 3, borderColor: theme.accentBlueRaw, borderTopRightRadius: 4 }} />
+              <View style={{ position: 'absolute', bottom: 0, left: 0, width: 28, height: 28, borderBottomWidth: 3, borderLeftWidth: 3, borderColor: theme.accentBlueRaw, borderBottomLeftRadius: 4 }} />
+              <View style={{ position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderBottomWidth: 3, borderRightWidth: 3, borderColor: theme.accentBlueRaw, borderBottomRightRadius: 4 }} />
+            </View>
+            <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13, fontFamily: Type.ui, marginTop: 14, letterSpacing: 1 }}>
+              Scan this food's barcode
+            </Text>
+            <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontFamily: Type.ui, marginTop: 4 }}>
+              Future scans will open {food?.description}
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setScanningForLink(false); }}
+            style={{ position: 'absolute', bottom: insets.bottom + 30, alignSelf: 'center', paddingHorizontal: 28, paddingVertical: 12, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.14)' }}>
+            <Text style={{ color: '#fff', fontSize: 15, fontFamily: Type.uiSemibold }}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+
+      {/* Serving Picker -- a centered floating card, not the bottom sheet it used to be. A FatSecret
+          staple like generic chicken carries 15+ servings, which used to grow past the screen with no
+          scroll and no way out except picking one. Capped and scrollable now, and it follows the app's
+          own modal standard: handle pill, gradient title, X, top accent border, tap-outside to close. */}
       <Modal visible={showServingPicker} transparent animationType="none" onShow={() => {
         servingPickerAnim.setValue(0);
-        Animated.timing(servingPickerAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+        Animated.spring(servingPickerAnim, { toValue: 1, useNativeDriver: true, damping: 20, stiffness: 300 }).start();
       }}>
-        <Animated.View style={[styles.modalOverlay, { opacity: servingPickerAnim }]}>
-          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => {
-            Animated.timing(servingPickerAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => setShowServingPicker(false));
-          }} />
-          <Animated.View style={[styles.modal, { transform: [{ translateY: servingPickerAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
-            <Text style={styles.modalTitle}>Select Serving Size</Text>
-            {allServings.map((s: any, i: number) => (
-              <TouchableOpacity
-                key={i}
-                style={[styles.mealOption, selectedServing?.label === s.label && styles.mealOptionActive]}
-                onPress={() => {
-                  triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-                  setSelectedServing(s);
-                  setAmount(s.grams > 0 ? s.grams.toString() : '100');
-                  setAmountChanged(true);
-                  setServingCount(1);
-                  Animated.timing(servingPickerAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => setShowServingPicker(false));
-                }}>
-                <Text style={[styles.mealOptionText, selectedServing?.label === s.label && { color: theme.accentBlue }]}>{s.label}</Text>
-                <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui }}>{s.calories} kcal</Text>
-              </TouchableOpacity>
-            ))}
+        <Animated.View style={[styles.centeredOverlay, { opacity: servingPickerAnim }]}>
+          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={closeServingPicker} />
+          <Animated.View
+            style={[styles.centeredCard, { transform: [{ scale: servingPickerAnim.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) }] }]}
+            pointerEvents="box-none">
+            <ModalHeader title="Select Serving Size" subtitle="What should one serving be?" onClose={closeServingPicker} />
+            {/* Row CARDS, matching the food library's search results -- same left accent edge, same
+                name-over-detail stack, same green kcal with its caption. A serving like "1 thin slice
+                (approx 2" x 1-1/2" x 1/8")" is split at the parenthesis so the measurement becomes the
+                quiet second line instead of one long wrapping string. */}
+            <ScrollView style={{ width: '100%' }} contentContainerStyle={{ paddingVertical: 8 }}>
+              {[
+                { key: 'units', title: unitServingBase === 'ml' ? 'By Volume' : 'By Weight', rows: unitServings },
+                { key: 'named', title: 'Common Servings', rows: namedServings },
+              ].filter(sec => sec.rows.length > 0).map(sec => (
+                <View key={sec.key}>
+                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginTop: 8, marginBottom: 6, marginHorizontal: 16 }}>
+                    {sec.title}
+                  </Text>
+                  {sec.rows.map((s: any, i: number) => {
+                    const active = selectedServing?.label === s.label;
+                    const raw = String(s.label ?? '');
+                    const parenAt = raw.indexOf('(');
+                    const title = parenAt > 0 ? raw.slice(0, parenAt).trim() : raw;
+                    const detail = parenAt > 0 ? raw.slice(parenAt).replace(/^\(|\)$/g, '').trim() : null;
+                    return (
+                      <TouchableOpacity
+                        key={`${sec.key}_${i}`}
+                        style={[styles.servingRow, active && { borderColor: theme.accentBlueBorder, backgroundColor: theme.accentBlueBg }]}
+                        onPress={() => {
+                          triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+                          setSelectedServing(s);
+                          setAmount(s.grams > 0 ? s.grams.toString() : '100');
+                          setAmountChanged(false);
+                          setServingCount(1);
+                          setServingCountStr('1');
+                          // Picking a serving IS a deliberate change. Without this, a food that
+                          // displays its stored values (any of your own foods) kept showing them
+                          // whatever you chose -- "Nutrition for 1 g" reading 130 kcal, a whole bar.
+                          setServingCountTouched(true);
+                          setHasChanges(true);
+                          closeServingPicker();
+                        }}>
+                        <View style={{ flex: 1, marginRight: 12 }}>
+                          <GradientNumber
+                            value={title}
+                            color={active ? theme.accentBlue : theme.textSecondary}
+                            style={{ fontSize: 14, fontFamily: Type.uiSemibold }}
+                          />
+                          {/* Every serving carries its WEIGHT, the way Cronometer lists "cup - 245g".
+                              It's what makes a serving checkable against the package: a bag reading
+                              "28g / about 12 chips" against an entry called "15 chips" looks wrong
+                              until you can see they're both 28 g. */}
+                          {(detail || servingWeightSuffix(s)) && (
+                            <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.ui, marginTop: 1 }}>
+                              {[detail, servingWeightSuffix(s)].filter(Boolean).join(' · ')}
+                            </Text>
+                          )}
+                        </View>
+                        {/* Calories only on the named servings. Comparing "1 cup = 320" against
+                            "1 slice = 17" is a real decision; comparing "1 g = 2" against "1 oz = 67"
+                            is not -- you pick whichever unit your scale reads. */}
+                        {!s.isUnit && (
+                          <View style={{ alignItems: 'flex-end', minWidth: 46 }}>
+                            <GradientNumber value={String(s.calories)} color={theme.accentGreen} style={{ fontSize: 20, fontFamily: Type.num }} />
+                            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.ui, marginTop: -2 }}>kcal</Text>
+                          </View>
+                        )}
+                        {active && <Ionicons name="checkmark" size={16} color={theme.accentBlue} style={{ marginLeft: 8 }} />}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              ))}
+            </ScrollView>
           </Animated.View>
         </Animated.View>
       </Modal>
@@ -2041,9 +2354,46 @@ const useStyles = (theme: any) => StyleSheet.create({
   mealSelectorLabel: { fontSize: 12, color: theme.textMuted, fontFamily: Type.ui },
   mealSelectorValue: { fontSize: 14, color: theme.accentBlue, fontFamily: Type.uiSemibold },
   modalOverlay: { flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'flex-end' },
+  // Centred floating card, the app's standard modal shape. Kept separate from modalOverlay/modal
+  // above, which the meal and time pickers still use -- those weren't part of this change.
+  centeredOverlay: { flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
+  // Deliberately mirrors add-food's `resultItem`: the food library's row is the app's most-used list
+  // shape, and the picker previously read as a plain iOS settings list bolted onto the screen.
+  servingRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginHorizontal: 12, marginVertical: 4,
+    minHeight: 64,
+    backgroundColor: theme.bgCard,
+    borderWidth: 0.5, borderColor: theme.borderCard,
+    borderTopColor: 'rgba(255,255,255,0.1)',
+    borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw,
+    borderRadius: 10, padding: 14,
+    shadowColor: theme.cardShadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: theme.cardShadowOpacity, shadowRadius: 6,
+  },
+  centeredCard: {
+    width: '100%', maxHeight: '70%',
+    backgroundColor: theme.bgSheet,
+    borderRadius: 16,
+    borderWidth: 0.5, borderColor: theme.borderCard,
+    borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw,
+    overflow: 'hidden',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 12,
+  },
   modal: { backgroundColor: theme.bgSheet, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, borderWidth: 1, borderColor: theme.borderCard },
   modalTitle: { fontSize: 18, color: theme.textPrimary, fontFamily: Type.uiSemibold, marginBottom: 16 },
-  servingPickerBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, borderRadius: 10, padding: 14, marginBottom: 12 },
+  // A compact control on the right of its row, not a full-width panel. maxWidth keeps it from
+  // swallowing the row when a serving name is long; the text inside clamps to two lines.
+  // Styled like the stepper's own +/- buttons rather than as a card: it sits directly beside them,
+  // and one "blue means tappable" language reads as deliberate where two did not. The top accent
+  // border went with the card shape it was drawn for.
+  servingPickerBtn: {
+    flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-end', flexShrink: 1,
+    maxWidth: '62%', minHeight: 44,
+    backgroundColor: theme.accentBlueBg,
+    borderWidth: 1, borderColor: theme.accentBlueBorder,
+    borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12,
+    overflow: 'hidden',
+  },
   servingPickerLabel: { fontSize: 10, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 3 },
   servingPickerValue: { fontSize: 15, color: theme.textPrimary, fontFamily: Type.uiSemibold },
   servingPickerCal: { fontSize: 18, color: theme.accentGreen, fontFamily: Type.num },

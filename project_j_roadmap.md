@@ -16,6 +16,7 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-23 **Recent library row showed per-gram calories after logging by weight.** Logging 18g of a FatSecret Swiss cheese (or 24mL of creamer) made the Recent list show "3 kcal / 0g / 0g" -- the food's per-1-gram value, not its serving. Cause: the logged entry stored its "label" number (the headline Recent shows) from the SELECTED logging unit, so picking the "g"/"mL" serving stamped a one-gram serving as the food's label. Fix: the stored label now always comes from the food's real DEFAULT serving, decoupled from whatever unit was logged (food-detail.tsx, the labelCal/labelProtein/labelCarbs/labelFat writer). Cosmetic only -- day totals/history were always correct; the sole consumer of the stored label is the Recent list. Old entries self-heal on re-log or age out of the 30-day window. Device-confirmed by Justin.
 - 2026-07-22 **Barcode scan "SET" banner redesigned.** The loose text after a barcode scan is now a quiet bordered info banner: the centered "Tap SET on the correct item to confirm it for future scans" line, with "None match? Create & Set food" underneath rebuilt as a real bordered blue button (icon, ButtonShine, 44pt target, haptic). CUT before ship: a version that retired the tip after a few scans -- Justin never approved it and wants the tip to always show. Device-confirmed by Justin.
 - 2026-07-22 **Explainers caught up to the two-control Food Detail.** Food logging TUTORIAL rewritten: the two stale steps that described typing into the removed Amount box now cover the Serving Size picker (pick a unit or a named serving) and the Amount stepper (how many); the now-duplicate third detail step was dropped. Otto's KB gained the merged serving picker, the removed Amount row, and the Set/Unset barcode button. Otto redeployed. Device-confirmed by Justin.
 - 2026-07-22 **Food detail: the quantity controls collapsed from three to two, plus SET/UNSET barcode linking.** The screen asked "how much?" three ways -- a Serving Size picker, a Servings stepper, and an Amount box with its OWN second unit dropdown. The units moved INTO the serving list (Cronometer's model: named servings and plain units answer the same question, "what does one of this mean?"), so the Amount row is gone and the stepper is the only number. Picker rebuilt: centered floating card with handle pill, gradient title, X, top accent border, tap-outside to close; rows are cards matching the food library's search results, split BY WEIGHT (or By Volume) first then COMMON SERVINGS, each named serving carrying its own weight so it can be checked against the package ("15 chips · 28 g" against a bag reading "28g / about 12 chips"). SET/UNSET button in the header links a barcode straight from the food (blue SET / red UNSET, confirms before unsetting, asks before moving a barcode off another food). FIXED ALONG THE WAY: the picker didn't list the food's own serving (four branded foods looked like the app had no idea what their serving was -- the fetched FatSecret list was being thrown away except the default); the camera fired a scan per FRAME so one barcode produced a wall of toasts; the serving modal had no height cap or scroll, so a 15-serving food filled the screen with no way out but picking one; per-unit values were ROUNDED before being multiplied (1 g of a 37 g / 130 kcal bar stored as 4, so 37 g came back 148); picking a serving didn't count as a change, so a custom food showed "Nutrition for 1 g" at 130 kcal. Device-confirmed by Justin throughout. STILL OPEN: FatSecret contradicts itself on some foods (oat milk: search says 98 kcal, its own serving list says 117) and the app deliberately prefers the search number.
@@ -905,6 +906,21 @@ are separate pre-submission checklists, NOT part of this menu.
   Migration risk is scoped to My Foods + cloned foods only (FatSecret results are always fresh from the API).
   Per-serving display must NOT regress to the old per-100g behavior (Justin's #1 pet peeve) -- grams-canonical
   is exactly what the per-serving engine needs; guard it.
+- [surfaced 2026-07-23, NOW, visual batch Justin handed over -- work top-down, #1 already SHIPPED] **Justin's
+  screenshot batch.** Ranked cluster, do in order:
+  (1) DONE 2026-07-23 -- Recent library row showed per-gram calories after logging by weight (see RECENTLY SHIPPED).
+  (2) Tooltip modal titles aren't gradient. Every (i) TooltipModal title ("Calories Today", etc.) renders as
+      flat accent; make the title gradient. One component (components/TooltipModal.tsx), fixes all at once.
+  (3) EvR visual pass: (a) the hero numbers on the Effort vs Results cards (134g/145g, 68/76, 9.4lb/5lb) need
+      the gradient-number treatment, and (b) the progress bars on EvR never got the premium bar touch-up other
+      screens have. Same screen, bundle together.
+  (4) EvR "recovery scores drop after your hardest training days" card -- the double progress bar makes no
+      sense. Two bars (68 after hard, 76 after easy) aren't compared to anything, so they read as noise. Needs
+      a real comparison visual for the two recovery scores. DESIGN CALL FIRST: bring Justin 2-3 options before
+      any code.
+  (5) App Thread ideas (both land here, ranked, NOT backlog): (a) star-rating review prompt/popup; (b) monthly
+      trends report/summary and/or a trends section. NOTE overlap: (b) overlaps the existing Custom Reports
+      track AND the time-of-day nutrition insights item below -- decide merge vs standalone when it's picked up.
 - [surfaced 2026-07-22, BUG, real tester hit it -- NOT fixing tonight, captured only] **Wrong notifications
   firing despite logged data (Justin's dad, current TestFlight).** Two bad fires, both while he HAD logged:
   (a) "Nothing Logged Yet -- Your food log is empty today. Tap to add a meal." fired around 2:00 PM even

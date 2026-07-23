@@ -1116,10 +1116,14 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
   proteinPer100g,
   carbsPer100g,
   fatPer100g,
-  labelCal: selectedServing?.calories || effectiveServing?.calories || defaultFsServing?.calories || calPer100g,
-  labelProtein: selectedServing?.protein || effectiveServing?.protein || defaultFsServing?.protein || proteinPer100g,
-  labelCarbs: selectedServing?.carbs || effectiveServing?.carbs || defaultFsServing?.carbs || carbsPer100g,
-  labelFat: selectedServing?.fat || effectiveServing?.fat || defaultFsServing?.fat || fatPer100g,
+  // The stored "label" is the food's real DEFAULT serving (what Recent shows as the headline number),
+  // decoupled from whatever unit was actually logged. Logging 18g by weight must NOT overwrite the
+  // label with "1 gram = 3 kcal" -- prefer the canonical default serving, and only fall back to the
+  // selected/effective serving for custom/AI foods that have no default serving.
+  labelCal: virtualDefaultServing?.calories || selectedServing?.calories || effectiveServing?.calories || calPer100g,
+  labelProtein: virtualDefaultServing?.protein || selectedServing?.protein || effectiveServing?.protein || proteinPer100g,
+  labelCarbs: virtualDefaultServing?.carbs || selectedServing?.carbs || effectiveServing?.carbs || carbsPer100g,
+  labelFat: virtualDefaultServing?.fat || selectedServing?.fat || effectiveServing?.fat || fatPer100g,
   loggedAmount: amount,
   loggedUnit: amountBaseUnit,
   // Preserve the food's serving NAME ("1 Cup", "1 scoop") so re-opening the entry shows it under

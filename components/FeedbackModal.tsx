@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import Constants from 'expo-constants';
 import { triggerHaptic } from '@/utils/haptics';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
@@ -85,8 +86,14 @@ export default function FeedbackModal({ visible, onClose }: Props) {
     try {
       let photoUrl: string | undefined;
       if (photoUri) {
+        // The picker can hand back a HEIC file (default iPhone camera format) with no format
+        // conversion -- uploading those raw bytes labeled "image/jpeg" produces a file no JPEG
+        // decoder can read. Re-encode through ImageManipulator first so the bytes actually ARE JPEG.
+        const context = ImageManipulator.manipulate(photoUri);
+        const rendered = await context.renderAsync();
+        const saved = await rendered.saveAsync({ format: SaveFormat.JPEG, compress: 0.8 });
         const r = ref(storage, `users/${auth.currentUser.uid}/feedback_photos/${Date.now()}.jpg`);
-        const response = await fetch(photoUri);
+        const response = await fetch(saved.uri);
         const blob = await response.blob();
         await uploadBytes(r, blob, { contentType: 'image/jpeg' });
         photoUrl = await getDownloadURL(r);

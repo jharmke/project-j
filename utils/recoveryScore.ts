@@ -60,10 +60,13 @@ function compScore(today: number, baseline: number, higherIsBetter: boolean, max
   return Math.max(0, Math.min(100, Math.round(75 + (raw / maxDev) * 25)));
 }
 
-// Two-sided: both heavy overload and inactivity hurt recovery.
+// Two-sided: both heavy overload and inactivity hurt recovery. Unlike the other
+// components, matching your baseline IS the ideal outcome here (consistent training
+// rhythm), so this peaks at 100 instead of the neutral 75 -- it falls off at the same
+// rate either direction and still bottoms out at 0 at +/-100% deviation.
 function actScore(today: number, baseline: number): number {
   const deviation = Math.abs(today - baseline) / Math.max(1, baseline);
-  return Math.max(0, Math.min(100, Math.round(75 - deviation * 75)));
+  return Math.max(0, Math.min(100, Math.round(100 - deviation * 100)));
 }
 
 export function calcRecoveryScore(input: RecoveryInput): RecoveryResult {

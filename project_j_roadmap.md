@@ -867,20 +867,21 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
-- [surfaced 2026-07-23, scoring calibration -- Justin flagged the ceiling feels low] **Recovery score can't
-  crack the low-80s even on an all-green day.** NOT a bug: verified against utils/recoveryScore.ts and
-  recomputed Justin's real day (HRV 46.9/base 41.8, Sleep 85, RHR 51/base 52, Prev Activity 640/base 688,
-  Resp 13.2/base 13.5) by hand -- it lands on exactly 80, the honest number. WHY the ceiling is low: every
-  signal is scored vs the user's own 7-day baseline where "at baseline = 75 pts," so matching your baseline
-  is a 75, not a 100; you have to substantially BEAT your rolling baseline on the heavy signals (HRV 35%,
-  Sleep 22%) to climb. THE HARSH PIECE worth questioning: the Previous Activity component (`actScore`,
-  17% weight) is two-sided and maxes out at 75 -- it can only ever subtract, never add, so 17% of the score
-  is permanently capped at 75 and drags the ceiling down no matter how good everything else is. Even a
-  perfect-activity day contributes only 75 there. Partly by design (PRIMED 80+ is meant to be earned; Whoop/
-  Oura rarely hand out 95s), but the activity ceiling is the specific thing to reconsider. Decision needed:
-  leave as-is, let activity score above 75 when balanced, or re-weight. Do NOT change scoring without Justin
-  signing off on the new curve -- honest-numbers rule applies (the displayed score must equal what the
-  engine computes).
+- [decided + implemented 2026-07-23, PENDING DEVICE VERIFY] **Recovery score activity-component ceiling
+  fix.** Justin signed off on the curve after discussing trade-offs (compared against Whoop's Green
+  67-100/Yellow 34-66/Red 0-33 bands and Oura's approx. Optimal 85+/Good 70-84, both of which treat
+  mid-70s-to-low-80s as a normal good day, so the existing strictness elsewhere was left alone).
+  `actScore` in utils/recoveryScore.ts changed from peaking at 75 (neutral, could only subtract) to
+  peaking at 100 at exact-baseline activity, same falloff shape, still 0 at +/-100% deviation -- a strict
+  improvement, no historical day's activity component can score lower under the new curve than the old
+  one. NOTE: Recovery Score is a write-once morning snapshot (locked into pj_<date> the first time it's
+  computed that day), so this only affects today-if-not-yet-locked and future days -- it does NOT
+  retroactively change any already-stored past score. A separate historical-recompute-and-preview tool
+  was discussed (re-derive each day's true-at-the-time baseline from HealthKit and reapply the new
+  formula for comparison, without overwriting stored snapshots) but explicitly deferred, not built this
+  session. Needs on-device verify: next locked recovery score should reflect the new curve. Justin's
+  real reference day (HRV 46.9/base 41.8, Sleep 85, RHR 51/base 52, Prev Activity 640/base 688, Resp
+  13.2/base 13.5) recomputes to 84 (was 80) under the new formula.
 - [NOW, surfaced 2026-07-22] **Serving-unit redesign sweep -- finish it across all three food surfaces.**
   Three pieces, built slow, on-device test between each:
   (1) DONE 2026-07-22 -- EditFoodModal.tsx redesigned to mirror Create Food (see RECENTLY SHIPPED). Photo

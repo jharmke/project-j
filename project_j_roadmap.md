@@ -16,6 +16,7 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-23 **Effort vs Results visual pass.** The EvR report viewer's cards missed the app's molded treatment: hero numbers (134g/145g, 68/76, 9.4lb/5lb, score + range values) were flat text and the progress bars were flat solid fills. Now every hero number renders through GradientNumber and every fill bar through the app-wide barFillGradient (utils/barGradient), matching the rest of the app. Done with two shared helpers (heroNum, barFill) across all six card variants (target/range/compare/score/goalbar/dots); the range card's marker/band left alone (it's a pin, not a fill). Unit suffix gets paddingBottom:6 to sit on the number's baseline (matches comparison-report.tsx; without it the unit dropped below the value -- caught + fixed on device). Device-confirmed by Justin. NOTE: the compare card's two recovery bars got the gradient too but its "double bar makes no sense" redesign is still open (NEXT UP item 4).
 - 2026-07-23 **Recent library row showed per-gram calories after logging by weight.** Logging 18g of a FatSecret Swiss cheese (or 24mL of creamer) made the Recent list show "3 kcal / 0g / 0g" -- the food's per-1-gram value, not its serving. Cause: the logged entry stored its "label" number (the headline Recent shows) from the SELECTED logging unit, so picking the "g"/"mL" serving stamped a one-gram serving as the food's label. Fix: the stored label now always comes from the food's real DEFAULT serving, decoupled from whatever unit was logged (food-detail.tsx, the labelCal/labelProtein/labelCarbs/labelFat writer). Cosmetic only -- day totals/history were always correct; the sole consumer of the stored label is the Recent list. Old entries self-heal on re-log or age out of the 30-day window. Device-confirmed by Justin.
 - 2026-07-22 **Barcode scan "SET" banner redesigned.** The loose text after a barcode scan is now a quiet bordered info banner: the centered "Tap SET on the correct item to confirm it for future scans" line, with "None match? Create & Set food" underneath rebuilt as a real bordered blue button (icon, ButtonShine, 44pt target, haptic). CUT before ship: a version that retired the tip after a few scans -- Justin never approved it and wants the tip to always show. Device-confirmed by Justin.
 - 2026-07-22 **Explainers caught up to the two-control Food Detail.** Food logging TUTORIAL rewritten: the two stale steps that described typing into the removed Amount box now cover the Serving Size picker (pick a unit or a named serving) and the Amount stepper (how many); the now-duplicate third detail step was dropped. Otto's KB gained the merged serving picker, the removed Amount row, and the Set/Unset barcode button. Otto redeployed. Device-confirmed by Justin.
@@ -909,11 +910,11 @@ are separate pre-submission checklists, NOT part of this menu.
 - [surfaced 2026-07-23, NOW, visual batch Justin handed over -- work top-down, #1 already SHIPPED] **Justin's
   screenshot batch.** Ranked cluster, do in order:
   (1) DONE 2026-07-23 -- Recent library row showed per-gram calories after logging by weight (see RECENTLY SHIPPED).
-  (2) Tooltip modal titles aren't gradient. Every (i) TooltipModal title ("Calories Today", etc.) renders as
-      flat accent; make the title gradient. One component (components/TooltipModal.tsx), fixes all at once.
-  (3) EvR visual pass: (a) the hero numbers on the Effort vs Results cards (134g/145g, 68/76, 9.4lb/5lb) need
-      the gradient-number treatment, and (b) the progress bars on EvR never got the premium bar touch-up other
-      screens have. Same screen, bundle together.
+  (2) CLOSED 2026-07-23, no change needed -- TooltipModal titles ALREADY render via GradientTitle (the molded
+      light-top/dark-bottom mask). The first screenshot just read as flat at a glance; a closer look at the
+      "Advanced Nutrition" tooltip confirmed the gradient is there. Justin: "it's fine as is."
+  (3) DONE 2026-07-23 -- EvR visual pass shipped (see RECENTLY SHIPPED). Hero numbers now molded via
+      GradientNumber, bars now filled via the app-wide barFillGradient. Device-confirmed by Justin.
   (4) EvR "recovery scores drop after your hardest training days" card -- the double progress bar makes no
       sense. Two bars (68 after hard, 76 after easy) aren't compared to anything, so they read as noise. Needs
       a real comparison visual for the two recovery scores. DESIGN CALL FIRST: bring Justin 2-3 options before

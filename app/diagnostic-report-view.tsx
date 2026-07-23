@@ -11,6 +11,9 @@ import { ToastRenderer, useToast } from '../components/Toast';
 import TooltipIcon from '../components/TooltipIcon';
 import { CardWash } from '../components/GradientCard';
 import GradientTitle from '../components/GradientTitle';
+import GradientNumber from '../components/GradientNumber';
+import { LinearGradient } from 'expo-linear-gradient';
+import { barFillGradient } from '../utils/barGradient';
 import { useTheme } from '../theme';
 import { useMembership } from '../MembershipContext';
 import { useTutorial } from '../context/TutorialContext';
@@ -135,6 +138,23 @@ function StatBar({ metric, accent, theme, positive }: { metric: NonNullable<Diag
   const barTrack = { height: 8, borderRadius: 4, backgroundColor: accent + '22', overflow: 'hidden' as const };
   const widthOf = (a: Animated.Value) => a.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
 
+  // Hero value, MOLDED like every other hero number in the app (GradientNumber), with the unit kept as a
+  // small flat label beside it -- same number+unit pattern the food cards use. Replaces the old flat
+  // <Text>{value}<Text unit/></Text> across every card variant.
+  const heroNum = (value: string, color: string) => (
+    <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+      <GradientNumber value={value} color={color} style={numStyle} />
+      {/* paddingBottom lifts the unit off the number's line-box floor onto its baseline -- matches the
+          working number+unit pattern in comparison-report.tsx; without it the unit drops below the value. */}
+      <Text style={[unitStyle, { color, paddingBottom: 6, marginLeft: 1 }]}>{unit}</Text>
+    </View>
+  );
+  // Molded bar fill -- the app-wide progress-bar touch-up (utils/barGradient). Drop-in child for an
+  // Animated fill view: the view keeps its size/position + overflow:hidden, this paints the gradient.
+  const barFill = (color: string) => (
+    <LinearGradient colors={barFillGradient(color)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }} />
+  );
+
   // ── Pill (target + range only) ──
   let pill: string | null = null;
   if (!positive) {
@@ -159,17 +179,17 @@ function StatBar({ metric, accent, theme, positive }: { metric: NonNullable<Diag
       <View style={{ marginBottom: 12 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 12 }}>
           <View>
-            <Text style={[numStyle, { color: t.textSecondary }]}>{fmt(metric.value)}<Text style={unitStyle}>{unit}</Text></Text>
+            {heroNum(fmt(metric.value), t.textSecondary)}
             <Text style={labelStyle}>{metric.primaryLabel}</Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={[numStyle, { color: accent }]}>{fmt(metric.target)}<Text style={unitStyle}>{unit}</Text></Text>
+            {heroNum(fmt(metric.target), accent)}
             <Text style={[labelStyle, { textAlign: 'right' }]}>{metric.secondaryLabel}</Text>
           </View>
         </View>
         <View style={{ height: 28, paddingTop: 2 }}>
           <View style={{ position: 'absolute', top: 2, left: 0, right: 0, height: 8, borderRadius: 4, backgroundColor: t.textMuted + '22' }} />
-          <Animated.View style={{ position: 'absolute', top: 2, left: 0, height: 8, borderRadius: 4, backgroundColor: accent, width: reveal.interpolate({ inputRange: [0, 1], outputRange: ['0%', `${fillActual * 100}%`] }) }} />
+          <Animated.View style={{ position: 'absolute', top: 2, left: 0, height: 8, borderRadius: 4, overflow: 'hidden', width: reveal.interpolate({ inputRange: [0, 1], outputRange: ['0%', `${fillActual * 100}%`] }) }}>{barFill(accent)}</Animated.View>
           {/* PREDICTED tick (grey, matches the predicted number) */}
           <View style={{ position: 'absolute', top: -1, left: `${goalPct * 100}%`, marginLeft: -1.5, width: 3, height: 14, borderRadius: 1.5, backgroundColor: t.textSecondary }} />
           {/* axis ends */}
@@ -206,19 +226,19 @@ function StatBar({ metric, accent, theme, positive }: { metric: NonNullable<Diag
       <View style={{ marginBottom: 12 }}>
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginBottom: 10 }}>
           <View style={{ marginRight: 28 }}>
-            <Text style={[numStyle, { color: accent }]}>{fmt(metric.value)}<Text style={unitStyle}>{unit}</Text></Text>
+            {heroNum(fmt(metric.value), accent)}
             <Text style={labelStyle}>{metric.primaryLabel}</Text>
           </View>
           <View>
-            <Text style={[numStyle, { color: t.textSecondary }]}>{fmt(metric.target)}<Text style={unitStyle}>{unit}</Text></Text>
+            {heroNum(fmt(metric.target), t.textSecondary)}
             <Text style={labelStyle}>{metric.secondaryLabel}</Text>
           </View>
         </View>
         <View style={[barTrack, { marginBottom: 6 }]}>
-          <Animated.View style={{ height: '100%', borderRadius: 4, backgroundColor: accent, width: widthOf(anim) }} />
+          <Animated.View style={{ height: '100%', borderRadius: 4, overflow: 'hidden', width: widthOf(anim) }}>{barFill(accent)}</Animated.View>
         </View>
         <View style={barTrack}>
-          <Animated.View style={{ height: '100%', borderRadius: 4, backgroundColor: t.textSecondary, width: widthOf(animB) }} />
+          <Animated.View style={{ height: '100%', borderRadius: 4, overflow: 'hidden', width: widthOf(animB) }}>{barFill(t.textSecondary)}</Animated.View>
         </View>
       </View>
     );
@@ -230,7 +250,7 @@ function StatBar({ metric, accent, theme, positive }: { metric: NonNullable<Diag
       <View style={{ marginBottom: 12 }}>
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginBottom: 10 }}>
           <View>
-            <Text style={[numStyle, { color: accent }]}>{fmt(metric.value)}<Text style={unitStyle}>{unit}</Text></Text>
+            {heroNum(fmt(metric.value), accent)}
             <Text style={labelStyle}>{metric.primaryLabel}</Text>
           </View>
           {!!metric.caption && (
@@ -239,7 +259,7 @@ function StatBar({ metric, accent, theme, positive }: { metric: NonNullable<Diag
         </View>
         <View style={{ height: 34, paddingTop: 4 }}>
           <View style={{ position: 'absolute', top: 4, left: 0, right: 0, height: 8, borderRadius: 4, backgroundColor: accent + '22' }} />
-          <Animated.View style={{ position: 'absolute', top: 4, left: 0, height: 8, borderRadius: 4, backgroundColor: accent, width: widthOf(anim) }} />
+          <Animated.View style={{ position: 'absolute', top: 4, left: 0, height: 8, borderRadius: 4, overflow: 'hidden', width: widthOf(anim) }}>{barFill(accent)}</Animated.View>
           <AxisTicks theme={t} ticks={[{ pct: 0, label: 0 }, { pct: 1, label: 100 }]} />
         </View>
       </View>
@@ -265,11 +285,11 @@ function StatBar({ metric, accent, theme, positive }: { metric: NonNullable<Diag
       <View style={{ marginBottom: 12 }}>
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginBottom: 12 }}>
           <View style={{ marginRight: 28 }}>
-            <Text style={[numStyle, { color: accent }]}>{fmt(metric.value)}<Text style={unitStyle}>{unit}</Text></Text>
+            {heroNum(fmt(metric.value), accent)}
             <Text style={labelStyle}>{metric.primaryLabel}</Text>
           </View>
           <View>
-            <Text style={[numStyle, { color: t.textSecondary }]}>{lo}-{hi}<Text style={unitStyle}>{unit}</Text></Text>
+            {heroNum(`${lo}-${hi}`, t.textSecondary)}
             <Text style={labelStyle}>TARGET RANGE</Text>
           </View>
           {pill && (
@@ -303,11 +323,11 @@ function StatBar({ metric, accent, theme, positive }: { metric: NonNullable<Diag
     <View style={{ marginBottom: 12 }}>
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginBottom: 10 }}>
         <View style={{ marginRight: 28 }}>
-          <Text style={[numStyle, { color: accent }]}>{fmt(metric.value)}<Text style={unitStyle}>{unit}</Text></Text>
+          {heroNum(fmt(metric.value), accent)}
           <Text style={labelStyle}>{metric.primaryLabel}</Text>
         </View>
         <View>
-          <Text style={[numStyle, { color: t.textSecondary }]}>{fmt(metric.target)}<Text style={unitStyle}>{unit}</Text></Text>
+          {heroNum(fmt(metric.target), t.textSecondary)}
           <Text style={labelStyle}>{secondaryCap}</Text>
         </View>
         {pill && (
@@ -318,7 +338,7 @@ function StatBar({ metric, accent, theme, positive }: { metric: NonNullable<Diag
       </View>
       <View style={{ height: 34, paddingTop: 4 }}>
         <View style={{ position: 'absolute', top: 4, left: 0, right: 0, height: 8, borderRadius: 4, backgroundColor: accent + '22' }} />
-        <Animated.View style={{ position: 'absolute', top: 4, left: 0, height: 8, borderRadius: 4, backgroundColor: accent, width: widthOf(anim) }} />
+        <Animated.View style={{ position: 'absolute', top: 4, left: 0, height: 8, borderRadius: 4, overflow: 'hidden', width: widthOf(anim) }}>{barFill(accent)}</Animated.View>
         <AxisTicks theme={t} ticks={[{ pct: 0, label: 0 }, { pct: 1, label: fmt(metric.target) }]} />
       </View>
     </View>

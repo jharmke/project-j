@@ -6,6 +6,7 @@
 
 ## MOTIVATION / GAMIFICATION
 - Motivation hub: unify Challenges + Achievements + Records + Streaks into one "proof you're showing up" family (Records/Streaks already live in Stats; Challenges section being added there too; Achievements has its own page). Design the Challenges Stats section so achievement siblings can slot in later. (Justin 2026-06-18, while building #7.)
+- Onboarding intro to Challenges/Achievements -- a standalone first-week mini challenge (not tucked inside the Challenges or Achievements pages themselves; placement TBD -- Otto notification, a banner, something else) that introduces new users to those two systems. On completion, hands off with a "go check Achievements, or build your own challenge" nudge. Originally scoped as the mechanic to unlock Slate/Warm/Blush themes, but themes were made free-by-default instead 2026-07-23 (not worth gating 3 cosmetic themes behind new build work). The onboarding-funnel idea is still good on its own merits -- revisit as engagement/retention work, or pair with theme rewards again if the theme roster grows. (Justin + Claude 2026-07-23.)
 
 ---
 

@@ -1183,12 +1183,6 @@ are separate pre-submission checklists, NOT part of this menu.
   HealthKit opt-in step (declined / no sleep data granted) could double as a signal for default ordering.
   Needs its own design session.
 
-- [NOW, do today/tomorrow] STARTER CHALLENGE -> theme unlocks (Slate / Warm / Blush). The 3 non-default
-  themes are meant to be EARNED by completing a short starter challenge (per CLAUDE.md theme system), but
-  the unlock mechanic needs building/verifying. FIRST STEP = state-check what already exists (are the
-  themes actually gated? does any challenge exist?) before building, so we don't assume. Keep the "no theme
-  is EVER paid" rule intact -- these are earned, never bought (distinct from the monetization track).
-  Surfaced 2026-07-11.
 - [found 2026-07-18, follow-on to the bar gradient above] **Ring/donut gradient pass.** Same molded
   3-stop recipe (`utils/barGradient.ts`), applied to SVG stroke arcs instead of flat View fills. 6 real
   files have actual progress-ring arcs (not just decorative circles), confirmed via `strokeDasharray`

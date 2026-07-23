@@ -223,7 +223,7 @@ Tag pills: backgroundColor t.color+'99', borderColor t.color, text color #ffffff
 
 ## Theme System
 Token-based. One theme.ts file. Every component references tokens, never hardcoded hex values.
-Themes: Light (free, DEFAULT for new users), Dark (free), Slate, Warm, Blush. Light and Dark are unlocked by default; Slate, Warm, and Blush are earned by completing a short starter challenge. No theme is ever paid.
+Themes: Light (free, DEFAULT for new users), Dark, Slate, Warm, Blush. All five are free and unlocked by default. No theme is ever paid. (Earlier plan had Slate/Warm/Blush earned via a starter challenge; dropped 2026-07-23, not worth the build for 3 cosmetic themes -- see backlog MOTIVATION / GAMIFICATION for the bigger idea it came from. Revisit theme-as-reward if the theme roster grows.)
 Default theme is Light. Order in settings: Light, Dark, Slate, Warm, Blush.
 Each theme has accent color options. Accents are free: unlocking a theme grants full access to all of its accents.
 Testing standard: Justin's primary is Light with cyan accent (he switches accents occasionally). Audit all 5 themes x all accent options before marking any visual feature done.

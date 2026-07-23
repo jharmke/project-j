@@ -16,6 +16,8 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-20 **Restore gate stale-screen bug fixed.** Account-switch restore on a device that previously onboarded a different account was actually succeeding under the hood; the already-rendered screens just never knew to re-read the freshly-restored data. Fix: a plain "Account Restored, please close and reopen" alert on a genuine restore. Confirmed on Justin's phone; never any real risk to cloud data (`uploadAllLocal` was hard-gated on `syncReady` the whole time).
+- 2026-07-20 **Firebase auth identity edge cases -- sign-in handling, Connected Accounts, contact email.** Built and device-tested: `sign-in.tsx` now catches `account-exists-with-different-credential` and guides the user to the right method; new Connected Accounts section in Settings > Account for linking/unlinking Apple + Google (with a "can't remove your last method" guard); preferred contact email picker for accounts with diverging linked emails. 2 test scenarios (new device + same provider, same or different email) deliberately left open, still in NEXT UP.
 - 2026-07-23 **Water pace indicator on the Home + Log water cards.** The "expected by now" pace is now surfaced on the card without opening the modal: a short vertical PIN on the main water bar at the expected position, taller than the bar (with a thin light edge) so it stays visible when the fill passes it. Colour is NEUTRAL unless behind -- grey when on/ahead of pace, amber slightly behind, red well behind, always grey in Mindful (a green pin blended into the blue bar and clashed across accents; it now only takes a colour when it needs to nudge). Iterated live with Justin: started as a thin second sub-bar (read as a confusing redundant bar), became the pin; a header "PACE" legend was built then CUT (looked cramped by the gear, and the neutral-unless-behind colour makes the tick self-signalling -- the modal's "Expected Now" is the explanation one tap away). Also: both water modals' main bars got the molded barFillGradient touch-up. Under the hood, one shared helper (utils/waterPace.ts) now feeds both cards AND both modals, so they can't disagree -- and Log's modal now uses the day's REAL wake time (it was hardcoded to 6 AM; Home always used real). Pace math unchanged: linear wake->10 PM, expected = elapsed/window * goal. Device-confirmed by Justin. (NOTE: surfacing "expected" makes the pace curve more visible -- if it runs too aggressive early, that's the separate dad-notification item.)
 - 2026-07-23 **EvR recovery "compare" card redesigned.** The two stacked bars (68 after hard / 76 after easy) read as noise -- 68 and 76 out of 100 are near-identical bar lengths, so the drop was invisible and the bars compared to nothing. Replaced with ONE shared 0-100 recovery track: a vertical pin for each score (accent = flagged condition, grey = baseline), the span between them shaded, 0/100 axis ends, and a compact "-8 pts" pill on the hero-number row (an earlier centered "8 PTS LOWER" banner was cut -- it competed with the orange recommendation line and just restated the numbers). Applies to both compare insights (recovery after hard vs easy days, after short vs full sleep); both are 0-100 so the scale is anchored to 100 (utils/smartTipsEngine.ts feeds them). The "define hard/easy day" idea was explicitly dropped (Justin: nobody hunts a tooltip for that). Device-confirmed by Justin.
 - 2026-07-23 **Effort vs Results visual pass.** The EvR report viewer's cards missed the app's molded treatment: hero numbers (134g/145g, 68/76, 9.4lb/5lb, score + range values) were flat text and the progress bars were flat solid fills. Now every hero number renders through GradientNumber and every fill bar through the app-wide barFillGradient (utils/barGradient), matching the rest of the app. Done with two shared helpers (heroNum, barFill) across all six card variants (target/range/compare/score/goalbar/dots); the range card's marker/band left alone (it's a pin, not a fill). Unit suffix gets paddingBottom:6 to sit on the number's baseline (matches comparison-report.tsx; without it the unit dropped below the value -- caught + fixed on device). Device-confirmed by Justin. NOTE: the compare card's two recovery bars got the gradient too but its "double bar makes no sense" redesign is still open (NEXT UP item 4).
@@ -882,34 +884,6 @@ are separate pre-submission checklists, NOT part of this menu.
   session. Needs on-device verify: next locked recovery score should reflect the new curve. Justin's
   real reference day (HRV 46.9/base 41.8, Sleep 85, RHR 51/base 52, Prev Activity 640/base 688, Resp
   13.2/base 13.5) recomputes to 84 (was 80) under the new formula.
-- [NOW, surfaced 2026-07-22] **Serving-unit redesign sweep -- finish it across all three food surfaces.**
-  Three pieces, built slow, on-device test between each:
-  (1) DONE 2026-07-22 -- EditFoodModal.tsx redesigned to mirror Create Food (see RECENTLY SHIPPED). Photo
-      button dropped (existing entry points kept); Food/Supplement toggle already existed in Edit. Legacy
-      migration deferred to Piece 3 (this build is non-destructive, doesn't rewrite old foods).
-  (2) DONE 2026-07-22 -- family-aware weight/volume dropdown on the food-detail logging Amount, unified
-      box, logs remember the unit, empty-amount guard (see RECENTLY SHIPPED). Grew beyond the original
-      weight-only plan to also cover volume (mL/cup) foods, since FatSecret liquids come in mL.
-  (3) DONE 2026-07-22 -- Create Food (3a) AND EditFoodModal (3b) both have the 2-column weight/volume
-      picker; cup kept at 236.6mL. 3b also added `servingDisplayUnit` (display-only preferred unit, so a
-      food built in Cups is greeted in Cups everywhere) and swept lowercase ml/l leaks. See RECENTLY
-      SHIPPED. Legacy "container"/"serving" foods display as grams and only flip to a real base when the
-      user deliberately picks a unit -- deliberate, revisit in (5) if it ever bites.
-  (4a) DONE 2026-07-22 -- recipe builder's Total Finished Weight uses the shared 2-column picker + the
-      app-wide unit keys (legacy lbs/cups read gracefully, never rewritten on disk until re-saved); the
-      recipe log screen's unit wording follows. See RECENTLY SHIPPED.
-  (4b) DONE 2026-07-22 -- ingredient amount editor + the shared picker's keyboard-aware flip. See
-      RECENTLY SHIPPED.
-  (4c) DONE 2026-07-22 -- log-time conversion on the recipe log screen. See RECENTLY SHIPPED. (The
-      "recipes should remember a display unit" half of this item was a bad read on my part: recipes have
-      no canonical base under them, so their stored unit already IS what's displayed. Nothing to build.)
-  (5) CLOSED 2026-07-22 -- Justin spot-checked three pre-redesign custom foods, all fine, and his call is
-      that what matters is new foods being correct. Not chasing further. Original scope was: legacy/downstream audit: confirm new + legacy non-gram foods behave; legacy My Foods/cloned
-      foods degrade gracefully (worst case a few need re-checking, never corrupt). Optional rollout polish:
-      a one-time "What's New" heads-up that older custom foods may need a quick re-check.
-  Migration risk is scoped to My Foods + cloned foods only (FatSecret results are always fresh from the API).
-  Per-serving display must NOT regress to the old per-100g behavior (Justin's #1 pet peeve) -- grams-canonical
-  is exactly what the per-serving engine needs; guard it.
 - [surfaced 2026-07-23, from Justin's App Thread notes] **In-app "rate us" star prompt.** A prompt/popup
   asking the user to review the app with stars (StoreKit review request). Needs a smart trigger (after a
   streak/achievement/positive moment, rate-limited, respects Apple's 3x/year cap) rather than firing cold.
@@ -958,144 +932,16 @@ are separate pre-submission checklists, NOT part of this menu.
   or tested for iPad -- likely cause is either the iPad's system text-size (accessibility "Larger Text")
   setting being bigger than the phone's, or simply no iPad-specific layout existing at all, but this is a
   guess, not confirmed by reading code yet. Needs its own look.
-- [surfaced 2026-07-20, data-integrity, FIXED + DEVICE-TESTED, root cause was smaller than first feared]
-  **Restore gate fails to pull real data on a real account-switch on
-  a device that previously onboarded a DIFFERENT account -- confirmed on Justin's iPad, current TestFlight
-  build.** Sequence that reproduced it: iPad had previously been signed into a different (empty) Google
-  account, onboarded (so `pj_onboarding_complete` was stamped 'true' locally for THAT account). Signed out,
-  signed back in via Google using jtharmke@gmail.com -- which Firebase correctly resolved to Justin's REAL,
-  already-linked account (confirmed via Cloud Audit: same account, `apple.com, google.com` both listed) --
-  but the app kept showing all-zero data instead of pulling down the real account's real cloud data.
-
-  ROOT CAUSE, PARTIALLY DIAGNOSED: two SEPARATE places decide whether to run the restore gate on a fresh
-  sign-in -- `app/sign-in.tsx`'s own useEffect, and `app/_layout.tsx`'s root effect. `sign-in.tsx` only calls
-  `runRestoreGate()` if the LOCAL `pj_onboarding_complete` flag is not already 'true' -- but that flag is
-  device-level, not account-scoped, so it can already read 'true' from a PREVIOUS different account's
-  session, causing sign-in.tsx to skip the restore check entirely and route straight into the app on stale
-  local data. `_layout.tsx`'s separate effect does NOT have this same flawed skip -- it calls
-  `runRestoreGate()` unconditionally when `onboardingComplete` is true, which should have caught this. NOT
-  YET CONFIRMED: why the restore still failed to complete even via `_layout.tsx`'s path (likely candidates:
-  a race between the two effects both hitting the memoized `runRestoreGate()` around the same time, or the
-  cloud fetch itself failing/timing out) -- needs real tracing, not a guess, before any fix is written.
-
-  CONFIRMED SAFE (verified two independent ways, not just reasoning about the code): (1) Justin's phone
-  showed all real data intact and untouched throughout. (2) Justin checked the Firebase console directly
-  (Firestore -> users -> his real UID -> store subcollection) and confirmed every real day entry and profile
-  data is present and untouched. The reason nothing was ever at risk: `uploadAllLocal()`
-  (services/syncService.ts) is the ONLY function that ever pushes local data to Firestore, and it hard-gates
-  on an in-memory `syncReady` flag (`if (!syncReady) return 0`) that only ever gets set true INSIDE a
-  successful `_runRestoreGate()` completion. Since the restore never completed on the iPad, that flag never
-  flipped true, so backgrounding/closing/relaunching the app, or even logging new entries locally on the
-  broken device, could not and cannot push anything to Justin's real cloud account. Worst case for anything
-  typed locally on the iPad during the broken window: it would get cleared out LOCALLY (iPad-only) once a
-  correct restore eventually succeeds there, since the account-switch path always clears local before
-  writing the fetched cloud data -- never a risk to the real account itself.
-
-  ROOT CAUSE CONFIRMED (2026-07-20, retested): NOT a restore failure. Justin fully closed and reopened the
-  iPad app (already-established-safe action) and his real jtharmke data was there, fully correct. So the
-  cloud fetch/restore was actually succeeding the whole time -- the bug is that the already-rendered screens
-  never knew to re-read the newly-restored local data, so they kept showing the stale pre-restore state
-  until a full manual app relaunch. Much lower severity than originally feared: never a data problem, purely
-  a "screen doesn't know to refresh itself" problem.
-
-  FIX WRITTEN + DEVICE-TESTED (2026-07-20): `app/_layout.tsx` -- first tried a `remountKey` trick (forcing
-  the whole screen stack to unmount/remount via a changing `key`), but on reflection that made unverifiable
-  assumptions about expo-router's internal navigation state, so it was REPLACED before ever shipping with a
-  simpler, guaranteed-correct fix: when `runRestoreGate()` resolves with `'restored'` (a genuine account
-  switch just replaced local data), show a plain alert -- "Account Restored -- please close and reopen the
-  app to see it." This is mechanically identical to the manual close-and-reopen Justin already proved safe
-  tonight, just prompted automatically instead of guessed at. CONFIRMED on Justin's phone: reproduced the
-  scenario (switched to a different real account, then back), saw the new popup, closed/reopened, real data
-  was there. Pure JS, no new native dependency, type-checks clean.
-
-- [surfaced 2026-07-20, data-integrity, BUILT + DEVICE-TESTED on Justin's phone, ship-ready] **Firebase auth
-  identity edge cases could cause real data loss / lockout.** Firestore is keyed by
-  Firebase UID (the stable `sub` claim from the Apple/Google identity token), not email. Confirmed SAFE:
-  user changes their Apple ID or Gmail email address (same underlying account) -> same sub, same UID, data
-  restores fine.
-
-  CONFIRMED BY READING CODE (2026-07-20): `app/sign-in.tsx`'s `handleAppleSignIn` / `handleGoogleSignIn`
-  both call `signInWithCredential` directly with no linking logic and no specific handling of Firebase's
-  `account-exists-with-different-credential` error -- both just fall into a generic catch that shows "Sign
-  In Failed, Something went wrong. Please try again." `AuthContext.tsx` has no linking code either. The
-  existing `pj_data_owner_uid` restore-gate mechanism (services/syncService.ts) is a SEPARATE, ALREADY-
-  WORKING safety net -- it protects against a genuinely different person's data getting clobbered/uploaded
-  wrong on a shared device, but it does nothing for the identity-linking problem below; it only runs after
-  Firebase has already decided who "this person" is.
-
-  CONFIRMED VIA FIREBASE CONSOLE (Authentication -> Settings -> User account linking, checked by Justin
-  2026-07-20): project is set to **"Link accounts that use the same email"** (not "create separate accounts
-  for each provider"). What this setting actually does: it does NOT auto-merge silently. When someone tries
-  a NEW provider (e.g. Google) with an email that already has an account under a DIFFERENT provider (e.g.
-  Apple), Firebase REFUSES that sign-in and throws `account-exists-with-different-credential` -- it's on
-  the app to catch that and guide the user to sign in with their original method, then call
-  `linkWithCredential` to attach the new one. Since sign-in.tsx doesn't catch it, the real-world result today
-  is NOT silent data loss for this case -- it's a **dead-end**: the user just sees the generic failure alert
-  every time, with no idea the fix is "tap the other button." True on both same-device and new-device
-  attempts (Firebase's linking rule is project-wide, not device-specific).
-
-  CONFIRMED REAL GAP THAT CANNOT BE CODE-FIXED: Apple's "Hide My Email" gives Firebase a private relay
-  address (e.g. `xyz@privaterelay.appleid.com`) instead of the real email. If a user signed up via Apple
-  with Hide My Email on, then later tries Google with their real Gmail, Firebase sees no matching email on
-  file and silently creates a genuinely separate, empty account -- no error, nothing to catch. This is Apple
-  deliberately preventing cross-app email correlation (a privacy feature working as intended), not a bug.
-  Reactive email-matching can never close this gap by design. Justin confirmed (2026-07-20) neither his nor
-  his wife's Apple ID uses Hide My Email, so the planned test devices validate the normal case correctly,
-  not this specific gap.
-
-  BUILD PLAN, ALL 4 PIECES DONE (2026-07-20):
-  1. **Sign-in-time handling -- BUILT.** `app/sign-in.tsx` catches `account-exists-with-different-credential`
-     in both Apple and Google catch blocks (`handleAccountExistsError`), looks up which provider the email
-     really belongs to via `fetchSignInMethodsForEmail` (falls back to a generic-but-still-helpful message if
-     that lookup comes back empty), and tells the user which method to use instead of the old generic
-     failure alert.
-  2. **Connected Accounts -- BUILT + DEVICE-TESTED.** New section in Settings -> Account, right below the
-     email row. Shows Apple/Google each with "Connect" (not yet linked) or "Remove" (linked). "Connect" calls
-     `linkWithCredential` on the already-authenticated user -- no email-matching needed, works even across
-     different emails. Confirmed on-device: linking a never-before-used credential succeeds cleanly and
-     ties it to the current account permanently (a later fresh sign-in with that credential logs back into
-     the SAME account, not a new one); attempting to link a credential that already belongs to a DIFFERENT
-     existing account correctly fails with "Already Connected" (Firebase refuses it, neither account is
-     touched). Shared `GOOGLE_IOS_CLIENT_ID` moved to config.ts so sign-in.tsx and settings.tsx can't drift.
-  3. **Unlink support -- BUILT + DEVICE-TESTED.** Same screen, "Remove" next to each connected method.
-     Confirmed on-device: removing one method works and shows a toast; the "never remove your last method"
-     guard correctly blocks removal and shows "Cannot Remove" when only one would be left.
-  4. **"Smooth" -- RESOLVED, no change needed.** Justin's call (2026-07-20): the plain native `Alert.alert`
-     confirmation is fine as-is for Remove -- it matches the existing pattern already used by Sign Out and
-     Delete Account in this same section, so a custom centered modal here would actually be LESS consistent,
-     not more.
-  CONFIRMED VIA REAL DEVICE TEST (2026-07-20): scenario 1 (same email, different provider, same device) --
-  removed Google in Connected Accounts, signed out, signed back in with Google using the same email. Result:
-  Firebase silently auto-linked back to the SAME real account, zero error shown, real data intact. This means
-  Firebase's project-level linking setting appears to auto-resolve this case on its own in practice -- the
-  sign-in-time error-handling code (#1 in the build plan above) remains a real, correct safety net, but its
-  actual trigger conditions in this project's live configuration are still not fully proven; it may rarely or
-  never fire for a normal matching-verified-email case.
-
-  PREFERRED CONTACT EMAIL -- BUILT (2026-07-20). Lives in `pj_profile` (already cloud-synced). Settings ->
-  Account only shows the picker when linked providers actually have DIFFERENT emails -- for Justin's own
-  account (both jtharmke@gmail.com) it correctly shows nothing, so this hasn't been visually confirmed on a
-  real diverging-email account yet, just type-checked clean.
-
-  DECIDED, OUT OF SCOPE FOR NOW: no automated "forgot which account I used" recovery system. If a user only
-  ever used ONE provider and has multiple accounts under it (e.g. two Gmail addresses) and forgets which,
-  Connected Accounts doesn't help (nothing to link, they never used a second method) -- the answer for now
-  is a manual support-contact path (email support, Justin looks the account up in the Firebase console using
-  whatever details the user can provide). Revisit only if this becomes a real recurring burden at scale.
-
-  TEST PLAN STATUS (2026-07-20) -- CONFIRMED assets available: Justin's own account, a backup Gmail, a
-  dev-account Gmail, his wife's separate Apple ID + Google account, and a spare iPad as a second device:
-  1. Same email, different provider, same device -- CONFIRMED tonight (see above, auto-links cleanly).
-  2. New device, same provider, same email (Apple -> Apple) -- STILL OPEN, Justin's call 2026-07-20 to leave
-     this pinned here rather than backlog it, just not doing it right now.
-  3. New device, different provider, same email -- CONFIRMED tonight via the iPad testing (this is the
-     scenario that surfaced the stale-screen bug, now fixed and confirmed working).
-  4. New device, different provider, different email -- CONFIRMED repeatedly tonight (justin.harmke stayed
-     separate/empty throughout all testing). Not a bug, by design.
-  5. New device, same provider, different email -- STILL OPEN, same as #2, left pinned here on purpose.
-  Plus: Connected Accounts link/unlink -- CONFIRMED tonight, including linking a never-before-used credential,
-  correctly failing to link a credential already used by a different account, and the "can't remove your
-  last method" guard.
+- [surfaced 2026-07-20, data-integrity] **Firebase auth identity edge cases -- 2 test scenarios still open.**
+  Main build fully shipped and device-tested (see RECENTLY SHIPPED for the one-liner, archive for full
+  detail): sign-in-time handling for `account-exists-with-different-credential`, Connected Accounts
+  link/unlink in Settings, preferred contact email picker. Two test scenarios deliberately left un-run,
+  Justin's call 2026-07-20 to pin here rather than backlog: (2) new device, same provider, same email
+  (Apple -> Apple to a fresh device) and (5) new device, same provider, different email. Known real gap
+  that can't be code-fixed either way: Apple's Hide My Email gives Firebase a private relay address, so a
+  user who signs up via Apple with it on and later tries Google with their real Gmail gets a silently
+  separate, empty account -- no error, nothing to catch, Apple's privacy design working as intended. Doesn't
+  affect Justin or his wife's test accounts (neither uses Hide My Email).
 - [surfaced 2026-07-20, QUICK WIN, BUILT tonight -- pending Justin's on-device confirm] **Add a WEB/KJV
   translation toggle to Today's Message modal's gear icon.** Direct follow-on to the WEB translation feature
   (shipped 2026-07-19, see RECENTLY SHIPPED). Built inside the shared `VersePoolModal.tsx` (both Home's Faith

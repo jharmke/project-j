@@ -1397,3 +1397,125 @@ UNDONE OR REPLACED BEFORE A PUBLIC APP STORE RELEASE. CHECK THIS LIST AT EVERY L
 - In-app review prompt -- prompt to rate at the right moment.
 - Accessibility -- respect system Dynamic Type font sizes.
 - Tooltip pulse visibility awareness -- only pulse when card is visible in ScrollView viewport. Complex, not blocking.
+
+---
+
+## RESTORE GATE STALE-SCREEN BUG + FIREBASE AUTH IDENTITY EDGE CASES (2026-07-20)
+
+**Restore gate fails to pull real data on a real account-switch on a device that previously onboarded a
+DIFFERENT account -- confirmed on Justin's iPad, current TestFlight build.** Sequence that reproduced it:
+iPad had previously been signed into a different (empty) Google account, onboarded (so
+`pj_onboarding_complete` was stamped 'true' locally for THAT account). Signed out, signed back in via
+Google using jtharmke@gmail.com -- which Firebase correctly resolved to Justin's REAL, already-linked
+account (confirmed via Cloud Audit: same account, `apple.com, google.com` both listed) -- but the app kept
+showing all-zero data instead of pulling down the real account's real cloud data.
+
+ROOT CAUSE, PARTIALLY DIAGNOSED (first pass): two SEPARATE places decide whether to run the restore gate
+on a fresh sign-in -- `app/sign-in.tsx`'s own useEffect, and `app/_layout.tsx`'s root effect. `sign-in.tsx`
+only calls `runRestoreGate()` if the LOCAL `pj_onboarding_complete` flag is not already 'true' -- but that
+flag is device-level, not account-scoped, so it can already read 'true' from a PREVIOUS different account's
+session, causing sign-in.tsx to skip the restore check entirely and route straight into the app on stale
+local data. `_layout.tsx`'s separate effect does NOT have this same flawed skip.
+
+CONFIRMED SAFE throughout (verified two independent ways): Justin's phone showed all real data intact and
+untouched; Justin checked the Firebase console directly (Firestore -> users -> his real UID -> store
+subcollection) and confirmed every real day entry and profile data present and untouched. The reason
+nothing was ever at risk: `uploadAllLocal()` (services/syncService.ts) is the ONLY function that ever
+pushes local data to Firestore, and it hard-gates on an in-memory `syncReady` flag that only ever gets set
+true INSIDE a successful `_runRestoreGate()` completion -- since the restore never completed on the iPad,
+that flag never flipped true, so nothing local could ever push to the real cloud account.
+
+ROOT CAUSE CONFIRMED (retested): NOT a restore failure. Justin fully closed and reopened the iPad app and
+his real jtharmke data was there, fully correct. So the cloud fetch/restore was actually succeeding the
+whole time -- the bug is that the already-rendered screens never knew to re-read the newly-restored local
+data, so they kept showing the stale pre-restore state until a full manual app relaunch. Much lower
+severity than originally feared: never a data problem, purely a "screen doesn't know to refresh itself"
+problem.
+
+FIX WRITTEN + DEVICE-TESTED: `app/_layout.tsx` -- first tried a `remountKey` trick (forcing the whole
+screen stack to unmount/remount via a changing `key`), but on reflection that made unverifiable assumptions
+about expo-router's internal navigation state, so it was REPLACED before ever shipping with a simpler,
+guaranteed-correct fix: when `runRestoreGate()` resolves with `'restored'` (a genuine account switch just
+replaced local data), show a plain alert -- "Account Restored -- please close and reopen the app to see
+it." CONFIRMED on Justin's phone: reproduced the scenario (switched to a different real account, then
+back), saw the new popup, closed/reopened, real data was there. Pure JS, no new native dependency,
+type-checks clean.
+
+---
+
+**Firebase auth identity edge cases could cause real data loss / lockout.** Firestore is keyed by Firebase
+UID (the stable `sub` claim from the Apple/Google identity token), not email. Confirmed SAFE: user changes
+their Apple ID or Gmail email address (same underlying account) -> same sub, same UID, data restores fine.
+
+CONFIRMED BY READING CODE: `app/sign-in.tsx`'s `handleAppleSignIn` / `handleGoogleSignIn` both called
+`signInWithCredential` directly with no linking logic and no specific handling of Firebase's
+`account-exists-with-different-credential` error -- both just fell into a generic catch showing "Sign In
+Failed, Something went wrong. Please try again." The existing `pj_data_owner_uid` restore-gate mechanism
+(services/syncService.ts) is a SEPARATE, already-working safety net against a different person's data
+getting clobbered on a shared device, but does nothing for identity-linking; it only runs after Firebase
+has already decided who "this person" is.
+
+CONFIRMED VIA FIREBASE CONSOLE (Authentication -> Settings -> User account linking): project is set to
+**"Link accounts that use the same email"**. What that actually does: it does NOT auto-merge silently. When
+someone tries a NEW provider with an email that already has an account under a DIFFERENT provider, Firebase
+REFUSES that sign-in and throws `account-exists-with-different-credential` -- it's on the app to catch that
+and guide the user to sign in with their original method, then call `linkWithCredential`. Since sign-in.tsx
+didn't catch it, the real-world result was NOT silent data loss -- it was a dead-end: generic failure alert,
+no idea the fix is "tap the other button." True on both same-device and new-device attempts (project-wide
+rule, not device-specific).
+
+CONFIRMED REAL GAP THAT CANNOT BE CODE-FIXED: Apple's "Hide My Email" gives Firebase a private relay
+address instead of the real email. If a user signed up via Apple with Hide My Email on, then later tries
+Google with their real Gmail, Firebase sees no matching email on file and silently creates a genuinely
+separate, empty account -- no error, nothing to catch. This is Apple deliberately preventing cross-app
+email correlation (a privacy feature working as intended), not a bug. Reactive email-matching can never
+close this gap by design. Neither Justin's nor his wife's Apple ID uses Hide My Email.
+
+BUILD, ALL 4 PIECES DONE:
+1. **Sign-in-time handling.** `app/sign-in.tsx` catches `account-exists-with-different-credential` in both
+   Apple and Google catch blocks (`handleAccountExistsError`), looks up which provider the email really
+   belongs to via `fetchSignInMethodsForEmail`, and tells the user which method to use instead of the old
+   generic failure alert.
+2. **Connected Accounts -- DEVICE-TESTED.** New section in Settings -> Account, below the email row. Shows
+   Apple/Google each with "Connect" or "Remove". "Connect" calls `linkWithCredential` on the
+   already-authenticated user -- no email-matching needed, works even across different emails. Confirmed:
+   linking a never-before-used credential ties it to the current account permanently; attempting to link a
+   credential already belonging to a DIFFERENT existing account correctly fails with "Already Connected".
+   Shared `GOOGLE_IOS_CLIENT_ID` moved to config.ts so sign-in.tsx and settings.tsx can't drift.
+3. **Unlink support -- DEVICE-TESTED.** "Remove" next to each connected method; the "never remove your last
+   method" guard correctly blocks removal and shows "Cannot Remove" when only one would be left.
+4. **Confirmation UX -- RESOLVED, no change needed.** Justin's call: the plain native `Alert.alert`
+   confirmation is fine as-is for Remove -- matches the existing Sign Out / Delete Account pattern in the
+   same section; a custom modal here would be LESS consistent, not more.
+
+CONFIRMED VIA REAL DEVICE TEST: scenario 1 (same email, different provider, same device) -- removed Google
+in Connected Accounts, signed out, signed back in with Google using the same email. Firebase silently
+auto-linked back to the SAME real account, zero error shown, real data intact. Firebase's project-level
+linking setting appears to auto-resolve this case on its own in practice -- the sign-in-time error-handling
+code remains a real, correct safety net, but its actual trigger conditions in this project's live
+configuration are still not fully proven; it may rarely or never fire for a normal matching-verified-email
+case.
+
+PREFERRED CONTACT EMAIL -- BUILT. Lives in `pj_profile` (already cloud-synced). Settings -> Account only
+shows the picker when linked providers actually have DIFFERENT emails -- for Justin's own account (both
+jtharmke@gmail.com) it correctly shows nothing, so this hasn't been visually confirmed on a real
+diverging-email account, just type-checked clean.
+
+DECIDED, OUT OF SCOPE FOR NOW: no automated "forgot which account I used" recovery system. If a user only
+ever used ONE provider and has multiple accounts under it and forgets which, Connected Accounts doesn't
+help -- the answer for now is a manual support-contact path. Revisit only if this becomes a real recurring
+burden at scale.
+
+TEST PLAN STATUS -- CONFIRMED assets available: Justin's own account, a backup Gmail, a dev-account Gmail,
+his wife's separate Apple ID + Google account, and a spare iPad as a second device:
+1. Same email, different provider, same device -- CONFIRMED (auto-links cleanly).
+2. New device, same provider, same email (Apple -> Apple) -- STILL OPEN, Justin's call to leave pinned in
+   the active roadmap rather than backlog it.
+3. New device, different provider, same email -- CONFIRMED via the iPad testing (this is the scenario that
+   surfaced the stale-screen bug above, now fixed and confirmed working).
+4. New device, different provider, different email -- CONFIRMED repeatedly (justin.harmke stayed
+   separate/empty throughout all testing). Not a bug, by design.
+5. New device, same provider, different email -- STILL OPEN, same as #2, left pinned on purpose.
+Plus: Connected Accounts link/unlink -- CONFIRMED, including linking a never-before-used credential,
+correctly failing to link a credential already used by a different account, and the "can't remove your
+last method" guard.

@@ -23,6 +23,7 @@ import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
 import { unitLabel } from '../../utils/unitConversion';
 import { barFillGradient } from '../../utils/barGradient';
+import { wakeMsFromStored, computeWaterPace, paceTone, pacePinTone, paceToneColor, paceLabel } from '../../utils/waterPace';
 import { sumWaterEntries, reconcileDayWater } from '../../utils/waterData';
 import { cancelWaterPaceNotification } from '../../services/notifications';
 import { loadCalorieTargets } from '../../utils/calorieTarget';
@@ -296,6 +297,8 @@ export default function LogScreen() {
   const [entries, setEntries] = useState<FoodEntry[]>([]);
   const [water, setWater] = useState(0);
   const [waterEntries, setWaterEntries] = useState<{amount:number;timestamp:string;sign:'add'|'remove'}[]>([]);
+  // The day's logged wake time (string like "6:30 AM"), used for the water pace line + modal. Null => 6 AM.
+  const [sleepWakeStr, setSleepWakeStr] = useState<string|null>(null);
   const [calTarget, setCalTarget] = useState(0);
   const [profileBmr, setProfileBmr] = useState(0);
   const [paceDeficit, setPaceDeficit] = useState(-500);
@@ -648,6 +651,17 @@ export default function LogScreen() {
       : calDelta <= 300 ? theme.statusWarn
       : theme.statusBad;
   const waterPct = Math.min(100, (water / waterGoal) * 100);
+  // Pace pin, shared by the header PACE legend and the tick on the bar (same colour + presence). Today only;
+  // null when the goal is met or the pace hasn't started. Neutral unless behind: grey -> amber -> red.
+  const waterPacePin = (() => {
+    if (!isToday) return null;
+    const wp = computeWaterPace(water, waterGoal, wakeMsFromStored(sleepWakeStr), true);
+    if (wp.met || wp.expectedOz <= 0) return null;
+    return {
+      color: paceToneColor(pacePinTone(wp, styleMode), { good: theme.statusGood, warn: theme.statusWarn, bad: theme.statusBad, neutral: theme.textSecondary }),
+      leftPct: Math.min(100, (wp.expectedOz / waterGoal) * 100),
+    };
+  })();
 
   const saveField = async (field: string, value: any) => {
     try {
@@ -687,6 +701,7 @@ export default function LogScreen() {
 }
           if (typeof data.water === 'number') setWater(Math.max(0, data.water));
           if (Array.isArray(data.waterEntries)) setWaterEntries(data.waterEntries);
+          setSleepWakeStr(data.sleepWakeTime || null);
         } else {
           const cloudData = await loadFromFirebase(todayKey);
           if (cloudData) {
@@ -838,6 +853,7 @@ export default function LogScreen() {
               if (typeof data.water === 'number') setWater(Math.max(0, data.water));
             }
             setCaloriesBurned(parseInt(data.activeCalories || data.caloriesBurned) || 0);
+            setSleepWakeStr(data.sleepWakeTime || null);
           } else {
             setEntries([]);
             setWater(0);
@@ -845,6 +861,7 @@ export default function LogScreen() {
             setTotalProtein(0);
             setTotalCarbs(0);
             setTotalFat(0);
+            setSleepWakeStr(null);
           }
         const profileData = await AsyncStorage.getItem('pj_profile');
         if (profileData) {
@@ -916,6 +933,7 @@ export default function LogScreen() {
           }
           if (typeof data.water === 'number') setWater(Math.max(0, data.water));
           if (Array.isArray(data.waterEntries)) setWaterEntries(data.waterEntries);
+          setSleepWakeStr(data.sleepWakeTime || null);
           setCaloriesBurned(parseInt(data.activeCalories || data.caloriesBurned) || 0);
           // Load past-day IF data for read-only summary
           if (data.ifStart && data.ifEnd) {
@@ -2003,7 +2021,14 @@ export default function LogScreen() {
             <GradientIcon name="settings" size={16} color={theme.textMuted} />
           </TouchableOpacity>
         </View>
-        <WaterBar pct={waterPct} color={theme.accentBlue} trackColor={theme.bgProgressTrack} refreshKey={logRefreshKey} overGoal={water > waterGoal} />
+        <View>
+          <WaterBar pct={waterPct} color={theme.accentBlue} trackColor={theme.bgProgressTrack} refreshKey={logRefreshKey} overGoal={water > waterGoal} />
+          {waterPacePin && (
+            // Pace tick: taller than the bar so it stays visible even when the fill passes it; thin light edge
+            // lifts it off the blue fill on every accent.
+            <View style={{ position: 'absolute', top: -3, left: `${waterPacePin.leftPct}%`, marginLeft: -1.75, width: 3.5, height: 12, borderRadius: 1.75, backgroundColor: waterPacePin.color, borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.6)' }} />
+          )}
+        </View>
         <View style={styles.waterBtns}>
           {waterPresets.map((oz, i) => (
             <PressableButton key={i} style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => updateWater(oz)}>
@@ -2172,15 +2197,13 @@ export default function LogScreen() {
 
     {/* Water Detail Modal */}
     {showWaterDetailModal && (() => {
-      const goalMet = water >= waterGoal;
-      const wakeMs = (() => { const d = new Date(); d.setHours(6, 0, 0, 0); return d.getTime(); })();
-      const bedMs  = (() => { const d = new Date(); d.setHours(22, 0, 0, 0); return d.getTime(); })();
-      const totalMinutes = Math.max(1, (bedMs - wakeMs) / 60000);
-      const elapsedMinutes = Math.min(totalMinutes, Math.max(0, (Date.now() - wakeMs) / 60000));
-      const expectedOz = isToday ? Math.round((elapsedMinutes / totalMinutes) * waterGoal) : waterGoal;
-      const pct = expectedOz > 0 ? Math.min(1, water / expectedOz) : 1;
-      const statusLabel = goalMet ? 'Goal Met!' : pct >= 0.9 ? 'On Track' : pct >= 0.7 ? 'Behind' : 'Falling Behind';
-      const statusColor = goalMet || pct >= 0.9 ? theme.statusGood : pct >= 0.7 ? theme.statusWarn : theme.statusBad;
+      // Shared pace math (utils/waterPace) -- now uses the day's real wake time (was hardcoded 6 AM here),
+      // matching the card's pace line and the Home modal.
+      const pace = computeWaterPace(water, waterGoal, wakeMsFromStored(sleepWakeStr), isToday);
+      const expectedOz = pace.expectedOz;
+      const goalMet = pace.met;
+      const statusLabel = paceLabel(pace, styleMode);
+      const statusColor = paceToneColor(paceTone(pace, styleMode), { good: theme.statusGood, warn: theme.statusWarn, bad: theme.statusBad, neutral: theme.textMuted });
       const cardScale = waterDetailAnim.interpolate({ inputRange: [0, 1], outputRange: [0.93, 1] });
       const presetsValid = waterPresetInputs.every(v => { const n = parseInt(v); return !isNaN(n) && n > 0; });
       const presetsChanged = waterPresetInputs.some((v, i) => { const n = parseInt(v); return !isNaN(n) && n > 0 && n !== waterPresets[i]; });
@@ -2244,7 +2267,9 @@ export default function LogScreen() {
                     )}
                   </View>
                   <View style={{ height:8, backgroundColor: theme.bgProgressTrack, borderRadius:8, overflow:'hidden' }}>
-                    <View style={{ height:'100%', borderRadius:8, backgroundColor: theme.accentBlue, width:`${Math.min(100, (water / waterGoal) * 100)}%` }} />
+                    <View style={{ height:'100%', borderRadius:8, overflow:'hidden', width:`${Math.min(100, (water / waterGoal) * 100)}%` }}>
+                      <LinearGradient colors={barFillGradient(theme.accentBlue)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }} />
+                    </View>
                   </View>
                 </View>
                 <View style={{ height:0.5, backgroundColor: theme.borderCard, marginHorizontal:16 }} />

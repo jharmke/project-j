@@ -25,6 +25,7 @@ import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, weig
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
 import { barFillGradient } from '../../utils/barGradient';
+import { wakeMsFromStored, computeWaterPace, paceTone, pacePinTone, paceToneColor, paceLabel } from '../../utils/waterPace';
 import { runAfterLaunchSplash } from '../../utils/launchSplashGate';
 import { maybeRunAdaptiveTdee } from '../../utils/adaptiveTdee';
 import { isSyncReady } from '../../services/syncService';
@@ -2388,6 +2389,18 @@ export default function HomeScreen() {
     );
   };
 
+  // Pace pin, shared by the header PACE legend and the tick on the bar (same colour + presence). Null when
+  // the goal is met or the pace hasn't started. Neutral unless behind: grey -> amber -> red, grey in Mindful.
+  const waterPacePin = (() => {
+    const wakeMs = sleepWakeTime ? sleepWakeTime.getTime() : wakeMsFromStored(sleepStoredWake);
+    const wp = computeWaterPace(water, waterGoal, wakeMs, true);
+    if (wp.met || wp.expectedOz <= 0) return null;
+    return {
+      color: paceToneColor(pacePinTone(wp, styleMode), { good: theme.statusGood, warn: theme.statusWarn, bad: theme.statusBad, neutral: theme.textSecondary }),
+      leftPct: Math.min(100, (wp.expectedOz / waterGoal) * 100),
+    };
+  })();
+
   const renderWaterCard = () => (
     <View style={[styles.card, { backgroundColor: theme.bgCardGlass, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
         <CardWatermark name="water" color={theme.accentBlueRaw} />
@@ -2404,7 +2417,14 @@ export default function HomeScreen() {
           <GradientIcon name="settings" size={16} color={theme.textMuted} />
         </TouchableOpacity>
       </View>
-      <AnimatedProgressBar pct={Math.min(100,(water/waterGoal)*100)} color={theme.accentBlue} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} overGoal={water > waterGoal} />
+      <View>
+        <AnimatedProgressBar pct={Math.min(100,(water/waterGoal)*100)} color={theme.accentBlue} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} overGoal={water > waterGoal} />
+        {waterPacePin && (
+          // Pace tick: taller than the bar so it stays visible even when the fill passes it; thin light edge
+          // lifts it off the blue fill on every accent.
+          <View style={{ position: 'absolute', top: -3, left: `${waterPacePin.leftPct}%`, marginLeft: -1.75, width: 3.5, height: 12, borderRadius: 1.75, backgroundColor: waterPacePin.color, borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.6)' }} />
+        )}
+      </View>
       <View style={styles.waterBtns}>
         {waterPresets.map((oz,i) => (
           <PressableButton key={i} style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => doWaterUpdate(oz)}>
@@ -3909,33 +3929,13 @@ export default function HomeScreen() {
 
       {/* ── Water Detail Modal ── */}
       {showWaterDetailModal && (() => {
-        let wakeMs: number;
-        if (sleepWakeTime) {
-          wakeMs = sleepWakeTime.getTime();
-        } else if (sleepStoredWake) {
-          const match = sleepStoredWake.match(/(\d+):(\d+)\s*(AM|PM)/i);
-          if (match) {
-            let h = parseInt(match[1]);
-            const m = parseInt(match[2]);
-            const ampm = match[3].toUpperCase();
-            if (ampm === 'PM' && h !== 12) h += 12;
-            if (ampm === 'AM' && h === 12) h = 0;
-            const d = new Date(); d.setHours(h, m, 0, 0);
-            wakeMs = d.getTime();
-          } else {
-            const d = new Date(); d.setHours(6, 0, 0, 0); wakeMs = d.getTime();
-          }
-        } else {
-          const d = new Date(); d.setHours(6, 0, 0, 0); wakeMs = d.getTime();
-        }
-        const bedD = new Date(); bedD.setHours(22, 0, 0, 0);
-        const totalMinutes = Math.max(1, (bedD.getTime() - wakeMs) / 60000);
-        const elapsedMinutes = Math.min(totalMinutes, Math.max(0, (Date.now() - wakeMs) / 60000));
-        const expectedOz = Math.round((elapsedMinutes / totalMinutes) * waterGoal);
-        const goalMet = water >= waterGoal;
-        const pct = expectedOz > 0 ? Math.min(1, water / expectedOz) : 1;
-        const statusLabel = goalMet ? 'Goal Met!' : pct >= 0.9 ? 'On Track' : pct >= 0.7 ? 'Behind' : 'Falling Behind';
-        const statusColor = goalMet || pct >= 0.9 ? theme.statusGood : pct >= 0.7 ? theme.statusWarn : theme.statusBad;
+        // Shared pace math (utils/waterPace) so the modal never disagrees with the card's pace line.
+        const wakeMs = sleepWakeTime ? sleepWakeTime.getTime() : wakeMsFromStored(sleepStoredWake);
+        const pace = computeWaterPace(water, waterGoal, wakeMs, true);
+        const expectedOz = pace.expectedOz;
+        const goalMet = pace.met;
+        const statusLabel = paceLabel(pace, styleMode);
+        const statusColor = paceToneColor(paceTone(pace, styleMode), { good: theme.statusGood, warn: theme.statusWarn, bad: theme.statusBad, neutral: theme.textMuted });
         const cardScale = waterDetailAnim.interpolate({ inputRange: [0, 1], outputRange: [0.93, 1] });
         const presetsValid = waterPresetInputs.every(v => { const n = parseInt(v); return !isNaN(n) && n > 0; });
         const presetsChanged = waterPresetInputs.some((v, i) => { const n = parseInt(v); return !isNaN(n) && n > 0 && n !== waterPresets[i]; });
@@ -3991,7 +3991,9 @@ export default function HomeScreen() {
                   )}
                 </View>
                 <View style={{ height:8, backgroundColor: theme.bgProgressTrack, borderRadius:8, overflow:'hidden' }}>
-                  <View style={{ height:'100%', borderRadius:8, backgroundColor: theme.accentBlue, width:`${Math.min(100, (water / waterGoal) * 100)}%` }} />
+                  <View style={{ height:'100%', borderRadius:8, overflow:'hidden', width:`${Math.min(100, (water / waterGoal) * 100)}%` }}>
+                    <LinearGradient colors={barFillGradient(theme.accentBlue)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }} />
+                  </View>
                 </View>
               </View>
               <View style={{ height:0.5, backgroundColor: theme.borderCard, marginHorizontal:16 }} />

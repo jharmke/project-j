@@ -1,4 +1,4 @@
-# Project J -- Active Roadmap
+﻿# Project J -- Active Roadmap
 # Read this at the start of every session.
 # Completed/shipped detail lives in project_j_roadmap_archive.md (reference only when needed).
 # Parked/future items live in project_j_backlog.md.
@@ -16,6 +16,7 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-20 **WEB/KJV translation toggle added to Today's Message modal's gear icon**, on top of the shared VersePoolModal so Home's Faith Today card and the Faith tab pick it up automatically. Confirmed by Justin.
 - 2026-07-20 **Restore gate stale-screen bug fixed.** Account-switch restore on a device that previously onboarded a different account was actually succeeding under the hood; the already-rendered screens just never knew to re-read the freshly-restored data. Fix: a plain "Account Restored, please close and reopen" alert on a genuine restore. Confirmed on Justin's phone; never any real risk to cloud data (`uploadAllLocal` was hard-gated on `syncReady` the whole time).
 - 2026-07-20 **Firebase auth identity edge cases -- sign-in handling, Connected Accounts, contact email.** Built and device-tested: `sign-in.tsx` now catches `account-exists-with-different-credential` and guides the user to the right method; new Connected Accounts section in Settings > Account for linking/unlinking Apple + Google (with a "can't remove your last method" guard); preferred contact email picker for accounts with diverging linked emails. 2 test scenarios (new device + same provider, same or different email) deliberately left open, still in NEXT UP.
 - 2026-07-23 **Water pace indicator on the Home + Log water cards.** The "expected by now" pace is now surfaced on the card without opening the modal: a short vertical PIN on the main water bar at the expected position, taller than the bar (with a thin light edge) so it stays visible when the fill passes it. Colour is NEUTRAL unless behind -- grey when on/ahead of pace, amber slightly behind, red well behind, always grey in Mindful (a green pin blended into the blue bar and clashed across accents; it now only takes a colour when it needs to nudge). Iterated live with Justin: started as a thin second sub-bar (read as a confusing redundant bar), became the pin; a header "PACE" legend was built then CUT (looked cramped by the gear, and the neutral-unless-behind colour makes the tick self-signalling -- the modal's "Expected Now" is the explanation one tap away). Also: both water modals' main bars got the molded barFillGradient touch-up. Under the hood, one shared helper (utils/waterPace.ts) now feeds both cards AND both modals, so they can't disagree -- and Log's modal now uses the day's REAL wake time (it was hardcoded to 6 AM; Home always used real). Pace math unchanged: linear wake->10 PM, expected = elapsed/window * goal. Device-confirmed by Justin. (NOTE: surfacing "expected" makes the pace curve more visible -- if it runs too aggressive early, that's the separate dad-notification item.)
@@ -942,11 +943,6 @@ are separate pre-submission checklists, NOT part of this menu.
   user who signs up via Apple with it on and later tries Google with their real Gmail gets a silently
   separate, empty account -- no error, nothing to catch, Apple's privacy design working as intended. Doesn't
   affect Justin or his wife's test accounts (neither uses Hide My Email).
-- [surfaced 2026-07-20, QUICK WIN, BUILT tonight -- pending Justin's on-device confirm] **Add a WEB/KJV
-  translation toggle to Today's Message modal's gear icon.** Direct follow-on to the WEB translation feature
-  (shipped 2026-07-19, see RECENTLY SHIPPED). Built inside the shared `VersePoolModal.tsx` (both Home's Faith
-  Today card and the Faith tab's card open this same modal, so one change covers both automatically). Not
-  yet confirmed working on Justin's device.
 - [surfaced 2026-07-20, ties into the nutrition label scan work, needs its own build] **Universal weight-unit
   conversion (g / oz / lbs) for every food, custom or FatSecret-sourced.** Surfaced comparing to Cronometer's
   serving-size UX. CONFIRMED BY READING CODE (2026-07-20): FatSecret-sourced foods already have a real
@@ -1032,105 +1028,6 @@ are separate pre-submission checklists, NOT part of this menu.
   or mixed/packaged dishes), so scope is "optional assist on common single-ingredient foods," not a promise
   of precision everywhere. STILL OPEN: exact placement (add-food, CustomFoodCreator, food-detail serving
   entry) and design details -- figure out when we get to it.
-- [surfaced 2026-07-19, FULLY LOCKED 2026-07-21, ready to build] **Scan a nutrition facts panel to autofill
-  a food's macros.** Full spec in `SPEC_nutrition_label_scan.md` -- read that before touching this. Short
-  version: on-device OCR via `expo-ocr-kit` (Apple Vision/ML Kit, bounding boxes per field, confirmed via
-  real docs), pull every field the label prints, never overwrite a field the label did not print, never
-  auto-save, one whole-label scan (not per-field). Review flow: compact EDITABLE centered modal shows every
-  scanned field flat (confidence flags carry over), user can fix obvious bad reads right there, "Looks Good"
-  populates the real edit form, existing Save button is the real confirmation. Dual-column labels produce
-  "1 serving" (defaults into the form) + "1 container" (alternate option in the existing FatSecret-style
-  serving picker, appended not replacing any existing servings). New this session: value/%DV live-link for
-  every field with a real FDA DV reference (not calories), a shared non-blocking "double-check before
-  saving" banner triggered by a missing core field (Calories/Fat/Carbs/Protein) or 3+ low-confidence flags.
-  STALE CLAIMS CORRECTED 2026-07-22 (verified in code, do not re-add them to the open list): the scan
-  button IS in EditFoodModal.tsx, and "1 Container" IS wired into Additional Servings on confirm in BOTH
-  CustomFoodCreator and EditFoodModal (re-scanning replaces the prior auto-added container row, manual
-  rows untouched). Real remaining limit there: the container row is built by multiplying serving grams x
-  servings-per-container, so a label whose serving is volume-only with no gram equivalent ("1 Can (16 fl
-  oz)") produces no container row at all.
-  Entry points: CustomFoodCreator, food-detail's copy-to-edit flow, and the barcode-override flow (confirmed
-  `pj_barcode_overrides` has no structural blocker, just needs the scanned object shaped like the existing
-  serving-picker item). MONETIZATION: TBD, Justin leaning free (~80%) -- unlike the AI Meal Estimator/Otto,
-  this runs on-device OCR with no per-call API cost, so the "costs me money to run" Supporter-gate
-  justification doesn't apply here. Revisit before shipping. No open questions remain; one full build, no
-  v1/v2 phasing.
-  BUILD PROGRESS (2026-07-21): parser (`utils/nutritionLabelParser.ts`) + review modal
-  (`components/LabelScanReviewModal.tsx`) built and device-confirmed working end to end through
-  CustomFoodCreator -- real granola-bar-label scan populated the form correctly, saved clean. Fixed along the
-  way: two Modals stacked at once (camera scan review as its OWN Modal) caused a stuck invisible layer that
-  froze the screen underneath once closed -- review now renders inside the SAME Modal as the form, swapped in
-  place of it, never a second stacked Modal. Also fixed: protein was wrongly given a fabricated %DV (real
-  labels never print one for protein) -- removed from `DV_REFERENCE`. STILL OPEN: "1 container" isn't wired
-  into Additional Servings yet (parsed, shown in review, but not applied on confirm), scan button not yet in
-  `EditFoodModal.tsx` or the barcode-override flow, dual-column parsing not started, Otto/tutorial/tooltip
-  pass not done, temp "OCR Test" row in Settings dev tools still needs removing once the flow is fully solid.
-  MORE FIXES same session, from testing real boxes (pancake mix, canned chicken, bilingual chip bag):
-  calories/serving-size/servings-per-container all had "name and number can land in one OCR block OR two
-  separate blocks, inconsistently scan to scan" bugs -- fixed with same-row bounding-box fallbacks mirroring
-  the existing %DV technique. addedSugars regex only matched the abbreviated "Incl." wording, not the more
-  common "Includes" -- STILL OPEN, not yet fixed. servings-per-container regex only matched literally "per
-  container" -- broadened to match any trailing word after "servings per," not an enumerated list. Row-match
-  "same row" tolerance was a fixed pixel count -- broke on farther-away photos where the whole label shrinks
-  proportionally (confirmed: caused %DV to bleed across adjacent rows); now scales with the row's own text
-  size instead. Re-added the photo crop step (`allowsEditing`) removed earlier by mistake -- lets users frame
-  out background clutter, which was confirmed tripping up OCR. Added a standing caption under the Scan button:
-  "Tip: get as close as you can while keeping the whole label in frame." KNOWN NOT FIXED, real limits not bugs:
-  bilingual (English/Spanish) labels still fail broadly (name+value regex distance assumption breaks when a
-  translation sits between them -- needs the bounding-box technique extended to values across the board, not
-  yet done); physically warped/dented label surfaces cause real geometric distortion no amount of tolerance
-  tuning can fully solve (amber flags are the mitigation, not a fix). PINNED, not built, not urgent per Justin
-  2026-07-21: replacing the system camera picker with a custom live-camera screen (viewfinder box + "align
-  label in frame" text, same pattern as the barcode scanner) instead of the system photo picker -- real,
-  non-trivial rebuild, deliberately deferred in favor of the free text-hint above for now.
-  ALL THREE BELOW ARE FIXED 2026-07-22 (see RECENTLY SHIPPED) -- kept for the causes, which are worth
-  remembering. Also fixed the same session: phantom choline from the ingredients list, the
-  "not a significant source" footnote reading as 0, curved-can row matching, and keyboard avoidance.
-  NOTHING OPEN on this feature as of 2026-07-22 -- Otto's KB and the Create Food tutorial both cover label
-  scanning now. Everything else on the old open list is DONE or was already done and the
-  list was stale -- verified in code 2026-07-22: dual-column parsing SHIPPED; bilingual labels SHIPPED;
-  the container row DOES build from a volume-only serving (fixed when the serving became editable with
-  its own unit); the barcode flow DOES have a scan entry point (its "Create & Set Food" path opens the
-  same CustomFoodCreator, which has the Scan button). The temp "OCR Test" dev row is deliberately staying
-  until the launch-prep DEV TOOL SWEEP (see REVERT BEFORE LAUNCH item 7).
-  KNOWN LIMITS, real not fixable by more parser logic: a glossy/curved can still misreads the odd
-  character (a "1g" fiber read as "19", Ghost's calories missed entirely) -- the amber flag catching it
-  IS the mitigation. Photographing a label off a computer SCREEN is meaningfully worse than the real
-  package (pixel grid + moire); use real packages when judging accuracy.
-  **WORDING VARIANTS -- one sweep, not one bug at a time.** Manufacturers abbreviate differently and the
-  parser only knows one spelling each, so a real box silently loses a field. Confirmed missed on real
-  labels: "Includes 11g Added Sugars" (only "Incl." matched) and "Total Carb." (only "Total Carbohydrate"
-  matched -- Justin's protein ice cream, 2026-07-22, carbs dropped on every scan). Do these as ONE pass
-  over every FIELD_DEF rather than chasing them individually. Candidates to cover, from label conventions
-  (not yet each confirmed on a real box -- verify while building):
-    - Total Carbohydrate / Total Carb. / Total Carbs / Carbohydrate
-    - Includes / Incl. / Including (added sugars)
-    - Saturated Fat / Sat. Fat / Sat Fat  |  Trans Fat / Trans-Fat (often italicised)
-    - Dietary Fiber / Fiber / Total Fiber  |  Total Sugars / Sugars
-    - Cholesterol / Cholest.  |  Sodium / Sod.  |  Potassium / Potas.  |  Vitamin D / Vit. D / Vit D
-    - Unit suffixes that can break number parsing: "mcg RAE" (vitamin A), "mcg DFE" (folate),
-      "mg NE" (niacin), "mg alpha-tocopherol" (vitamin E)
-    - "< 1g" / "less than 1g" (real: the pancake box prints "Dietary Fiber < 1g") -- currently parses as
-      nothing; should read as 0 or as <1, decide when building
-    - OCR letter/number confusion: "Og" read for "0g", "l" for "1"
-    - Spacing: "8 g" vs "8g"
-  THREE FOUND 2026-07-22 (Justin, scanning a silver Ghost Energy can; causes verified in code):
-  (a) **The Serving line in the review modal is read-only.** `LabelScanReviewModal.tsx` renders
-      `parsed.serving.description` as plain Text while every nutrient row is an editable TextInput. So a
-      misread serving (the exact thing every other number is keyed to) cannot be corrected in the one
-      screen built for correcting misreads. Justin: "seems like a glaring miss." Agreed.
-  (b) **Serving size lost when the label prints "Serving Size:" and its value far right on the same row.**
-      Not a distance problem -- `nutritionLabelParser.ts` (~line 249) tries the SAME block first via
-      `/serving size\s*[:\-]?\s*(.+)/i`, and on this can that inline match succeeded with pure punctuation
-      (the modal displayed a bare ":"). A non-empty inline match short-circuits the same-row bounding-box
-      fallback that WOULD have found "1 Can (16 fl oz)". Fix: require the inline capture to contain an
-      alphanumeric character before accepting it, otherwise fall through to the same-row search.
-  (c) **The review modal only lists fields the scan FOUND.** Rows come from `Object.entries(rows)` (parsed
-      fields only), so anything OCR missed simply isn't on screen and can't be typed in -- on this can that
-      meant Total Fat, Sodium, Protein, B6 and B12 were unreachable even though the user is looking right
-      at the label. Should show the full offered field set, missed ones blank/dimmed, so a bad scan is
-      still a usable head start instead of a dead end.
-
 - [PARKED 2026-07-19 -- shipped parts in RECENTLY SHIPPED, full story in the archive] **Some screens still
   feel slow to open, cause unidentified.** Haptic delay is fixed and 4 screens' data loading is batched (see
   RECENTLY SHIPPED), but Settings and Achievements feel IDENTICALLY slow on TestFlight despite Achievements

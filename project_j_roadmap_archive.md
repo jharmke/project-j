@@ -1519,3 +1519,45 @@ his wife's separate Apple ID + Google account, and a spare iPad as a second devi
 Plus: Connected Accounts link/unlink -- CONFIRMED, including linking a never-before-used credential,
 correctly failing to link a credential already used by a different account, and the "can't remove your
 last method" guard.
+
+---
+
+## SCAN A NUTRITION FACTS PANEL TO AUTOFILL A FOOD (2026-07-19 through 2026-07-23, CONFIRMED DONE)
+
+Full spec: `SPEC_nutrition_label_scan.md`. On-device OCR via `expo-ocr-kit`, one whole-label scan, review
+modal shows every field editable before anything saves. Justin confirmed the feature built and finished
+2026-07-23; individual fixes along the way already have their own RECENTLY SHIPPED lines (dual-column
+labels, bilingual labels, wording-variant sweep, review-card rebuild). Kept here as the fuller story/causes
+in case a similar OCR bug shows up elsewhere:
+
+- Two Modals stacked at once (camera review as its own Modal) caused a stuck invisible layer freezing the
+  screen underneath once closed -- fixed by rendering review inside the SAME Modal as the form.
+- Protein was wrongly given a fabricated %DV (real labels never print one for protein) -- removed from
+  DV_REFERENCE.
+- Calories/serving-size/servings-per-container: name and number can land in one OCR block or two separate
+  blocks, inconsistently scan to scan -- fixed with same-row bounding-box fallbacks.
+- addedSugars regex only matched "Incl.", not "Includes"; servings-per-container regex only matched
+  literally "per container" -- broadened.
+- Row-match "same row" tolerance was a fixed pixel count, broke on farther-away photos -- now scales with
+  the row's own text size.
+- Bilingual labels: "Total Fat / Grasa Total 7g" arrives as one OCR block, so every number was being
+  back-derived from %DV instead of read directly (subtly wrong for carbs/sodium/calcium/potassium/iron,
+  and rows with no printed %DV came back empty). Fix: a nutrient's number may sit far from its name, but
+  only across a slash -- an English label has no slash there, so the pattern extends safely.
+- Dual-column labels (per-serving/per-container, or genuinely different foods like "as prepared"):
+  classified by ARITHMETIC not wording -- first column x servings-per-container = the redundant per-container
+  column; anything else = a real second food, offered as As Packaged / As Prepared pills.
+- Wording variants swept in one pass rather than one bug at a time: Total Carb./Total Carbs, Includes/
+  Including, Sat. Fat, Trans-Fat, Cholest., Vit. D, bare Fiber, Total Sugar, OCR O-for-0 confusion (both
+  standalone and inside a number, e.g. "1Og" -> 10g eating Protein).
+- Review card rebuilt to list every supported field (not just what OCR found), grouped with "N found"
+  counts, amber dot on a section header when a flag hides inside a closed box, missing core fields
+  (calories/fat/carbs/protein) themselves flagged amber. Serving became editable (was read-only, "seems
+  like a glaring miss" -- Justin). Added a Retake button.
+- Curved-can misreads (glossy Ghost Energy can: "1g" fiber read as "19", calories missed) are a real OCR
+  limit, not a parser bug -- the amber flag catching it IS the mitigation, not a fix.
+- Photographing a label off a computer SCREEN is meaningfully worse than a real package (pixel grid +
+  moire) -- use real packages when judging accuracy.
+- DEFERRED, not built, pinned by Justin 2026-07-21: replacing the system photo picker with a custom
+  live-camera screen (viewfinder box + "align label in frame" text, same pattern as the barcode scanner).
+  Real, non-trivial rebuild -- moved to project_j_backlog.md rather than left dangling in NEXT UP.

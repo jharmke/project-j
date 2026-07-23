@@ -12,6 +12,7 @@ import { useToast, ToastRenderer } from './Toast';
 import { Type } from '../typography';
 import ModalHeader from './ModalHeader';
 import ButtonShine from './ButtonShine';
+import PrimaryCTA from './PrimaryCTA';
 
 // Send Feedback. Opened from Settings > About. Collects a type + a description and hands off to
 // the user's mail app via a mailto link, addressed to the dev inbox. No backend (per spec). A
@@ -86,11 +87,14 @@ export default function FeedbackModal({ visible, onClose }: Props) {
   return (
     <Modal visible={visible} transparent animationType="none" onShow={open} onRequestClose={closeWithHaptic}>
       <ToastRenderer />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Animated.View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.55)', opacity: opacityAnim }]} pointerEvents="none" />
-          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={closeWithHaptic} />
-
+      {/* Backdrop: solid, full-screen, sits outside the KeyboardAvoidingView so it still covers behind the keyboard. */}
+      <TouchableOpacity
+        style={[StyleSheet.absoluteFillObject, { backgroundColor: theme.overlayBg }]}
+        activeOpacity={1}
+        onPress={closeWithHaptic}
+      />
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }} pointerEvents="box-none">
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="box-none">
           <Animated.View
             style={{
               width: '88%', maxHeight: '82%',
@@ -160,20 +164,11 @@ export default function FeedbackModal({ visible, onClose }: Props) {
               </View>
 
               {/* Send button */}
-              <TouchableOpacity
+              <PrimaryCTA
+                label="Send"
                 onPress={handleSend}
                 disabled={!canSend}
-                activeOpacity={0.85}
-                style={{
-                  borderRadius: 10, padding: 15, alignItems: 'center',
-                  backgroundColor: canSend ? theme.accentBlue : theme.bgCard,
-                  borderWidth: canSend ? 0 : 1, borderColor: theme.borderCard,
-                  opacity: canSend ? 1 : 0.6,
-                }}
-              >
-                {canSend && <ButtonShine radius={10} />}
-                <Text style={{ color: canSend ? theme.bgPrimary : theme.textMuted, fontSize: 17, fontFamily: Type.uiBold, letterSpacing: 0.2 }}>SEND</Text>
-              </TouchableOpacity>
+              />
             </ScrollView>
           </Animated.View>
         </View>

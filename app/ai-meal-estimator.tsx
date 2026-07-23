@@ -27,6 +27,7 @@ import { useMembership } from '../MembershipContext';
 import { triggerHaptic } from '../utils/haptics';
 import { DEFAULT_MEAL_SLOTS, MealSlot, getMealDisplayName, loadMealSlots } from '../utils/mealSlots';
 import { storageSet } from '../utils/storage';
+import { cancelFoodLogNotification } from '../services/notifications';
 import {
   Confidence, EstimateResult, IMAGE_QUALITY, LineItem, computeTotals,
   generateMealEstimate, getRemainingUses, incrementQuota, limitFor, nextResetLabel,
@@ -461,6 +462,7 @@ export default function AIMealEstimatorScreen() {
       entries.push(newEntry);
       await storageSet(`pj_${targetDate}`, JSON.stringify({ ...current, entries }));
       saveToFirebase(targetDate, 'entries', entries).catch(() => {}); // fire-and-forget: don't block nav on the secondary write
+      cancelFoodLogNotification();
       triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
       showToast(
         `${mealName.trim()} ${mindful ? 'recorded' : 'added'}`,

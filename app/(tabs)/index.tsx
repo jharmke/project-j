@@ -30,7 +30,8 @@ import { runAfterLaunchSplash } from '../../utils/launchSplashGate';
 import { maybeRunAdaptiveTdee } from '../../utils/adaptiveTdee';
 import { isSyncReady } from '../../services/syncService';
 import { reconcileDayWater, runWaterReconciliation } from '../../utils/waterData';
-import { cancelWaterPaceNotification, cancelWeeklySummaryNotification, cancelMonthlySummaryNotification } from '../../services/notifications';
+import { cancelWaterPaceNotification, cancelWeeklySummaryNotification, cancelMonthlySummaryNotification, cancelWeightLogNotification } from '../../services/notifications';
+import { refreshLiveNotifications } from '../../services/notificationScheduler';
 import { VERSES, resolveDailyVerse } from '../../data/verses';
 import { WHATS_NEW } from '../../data/whatsNew';
 import { addNotification } from '../../utils/notifications';
@@ -608,6 +609,7 @@ export default function HomeScreen() {
     setWaterEntries(newEntries);
     await storageSet(`pj_${todayKey}`, JSON.stringify({ ...current, water: newWater, waterEntries: newEntries, waterGoal }));
     saveToFirebase(todayKey, 'water', newWater);
+    refreshLiveNotifications();
     if (deltaOz > 0) {
       showToast('Water logged', `+${Math.abs(deltaOz)} oz · ${newWater} oz total`, 'info');
     } else if (deltaOz < 0) {
@@ -631,6 +633,7 @@ export default function HomeScreen() {
     setWaterEntries(newEntries);
     await storageSet(`pj_${todayKey}`, JSON.stringify({ ...current, water: newWater, waterEntries: newEntries, waterGoal }));
     saveToFirebase(todayKey, 'water', newWater);
+    refreshLiveNotifications();
     showToast('Entry removed', `${newWater} oz total`, 'info');
   };
 
@@ -673,6 +676,7 @@ export default function HomeScreen() {
     setWaterEntries(newEntries);
     await storageSet(`pj_${todayKey}`, JSON.stringify({ ...current, water: newWater, waterEntries: newEntries, waterGoal }));
     saveToFirebase(todayKey, 'water', newWater);
+    refreshLiveNotifications();
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     showToast('Entry updated', `${newWater} oz total`, 'success');
     closeWaterEntryEdit();
@@ -2091,6 +2095,7 @@ export default function HomeScreen() {
       const existing = await AsyncStorage.getItem(`pj_${todayKey}`);
       const current = existing ? JSON.parse(existing) : {};
       await storageSet(`pj_${todayKey}`, JSON.stringify({ ...current, weight: val }));
+      cancelWeightLogNotification();
     } catch (e) { console.log('Weight save error', e); }
 
     showToast('Weight saved', undefined, 'success');

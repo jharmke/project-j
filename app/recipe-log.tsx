@@ -8,6 +8,7 @@ import { useToast } from '../components/Toast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { saveToFirebase } from '../firebaseConfig';
 import { storageSet } from '../utils/storage';
+import { cancelFoodLogNotification } from '../services/notifications';
 import { useTheme } from '../theme';
 import { DEFAULT_MEAL_SLOTS, MealSlot, loadMealSlots } from '../utils/mealSlots';
 import { ACHIEVEMENTS, checkAndUnlock, loadAchievements, checkMomentumAchievements, checkNutritionAchievements, getCelebTier } from '../achievementData';
@@ -222,6 +223,7 @@ export default function RecipeLogScreen() {
       entries.push(newEntry);
       await storageSet(`pj_${date}`, JSON.stringify({ ...current, entries }));
       await saveToFirebase(date, 'entries', entries);
+      cancelFoodLogNotification();
       showToast('Recipe logged', recipe.name, 'success');
       // A recipe log is a food log: fire the same achievement checks food-detail does, forced past
       // the once-per-day gate so a same-day threshold pops now instead of on the next app-open.

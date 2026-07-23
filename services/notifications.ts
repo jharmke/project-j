@@ -735,6 +735,9 @@ export const cancelIFWindowNotifications = async () => {
 export const cancelFoodLogNotification = () =>
   Notifications.cancelScheduledNotificationAsync('pj_food_log').catch(() => {});
 
+export const cancelWeightLogNotification = () =>
+  Notifications.cancelScheduledNotificationAsync('pj_weight_log').catch(() => {});
+
 export const cancelWaterNotifications = () =>
   Promise.all([1, 2, 3, 4].map(i =>
     Notifications.cancelScheduledNotificationAsync(`pj_water_${i}`).catch(() => {})

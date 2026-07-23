@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { scheduleDailyNotifications, SchedulerContext, FaithJourney, StyleMode, shouldAskPermission, requestNotificationPermission, scheduleWaterNotificationsNow, scheduleActivityNotificationNow } from './notifications';
+import { scheduleDailyNotifications, SchedulerContext, FaithJourney, StyleMode, shouldAskPermission, requestNotificationPermission, scheduleWaterNotificationsNow, scheduleActivityNotificationNow, cancelFoodLogNotification, cancelWeightLogNotification } from './notifications';
 import { getVacation, vacationTodayKey } from '../utils/vacationMode';
 import { effectiveExerciseMinutes } from '../utils/exerciseMinutes';
 
@@ -263,6 +263,24 @@ export const refreshLiveNotifications = async () => {
 
     await scheduleWaterNotificationsNow(todayWater, waterGoal, styleMode, mindfulGrowthAreas);
     await scheduleActivityNotificationNow(todayActiveCals, activeCalGoal, todayExerciseMins, exerciseMinsGoal, styleMode, mindfulGrowthAreas);
+
+    // Safety net: if any logging screen ever forgets to cancel its own notification
+    // directly (the bug that let the food-log reminder fire despite logged meals),
+    // this catches it the next time the app comes to the foreground.
+    let todayFoodEntries = 0;
+    const allKeys = Object.keys(today);
+    for (const key of allKeys) {
+      if (key === 'entries' || (!key.includes('_') && key !== 'water' && key !== 'weight' && key !== 'steps' && key !== 'activeCalories' && key !== 'caloriesBurned' && key !== 'sleep' && key !== 'if' && !key.startsWith('if') && !key.startsWith('sleep'))) {
+        if (Array.isArray(today[key])) todayFoodEntries += today[key].length;
+      }
+    }
+    for (const slot of ['morning', 'lunch', 'dinner', 'snacks', 'breakfast', 'entries']) {
+      if (Array.isArray(today[slot]) && !allKeys.includes(slot)) {
+        todayFoodEntries += today[slot].length;
+      }
+    }
+    if (todayFoodEntries > 0) cancelFoodLogNotification();
+    if (typeof today.weight === 'number') cancelWeightLogNotification();
   } catch (e) {
     console.log('[notificationScheduler] refresh error:', e);
   }

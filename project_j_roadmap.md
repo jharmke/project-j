@@ -918,16 +918,28 @@ are separate pre-submission checklists, NOT part of this menu.
   once-a-month trends summary, OR a standing "trends" section, OR both. OVERLAP to resolve before building:
   this overlaps the existing Custom Reports track AND the time-of-day nutrition insights item below -- decide
   merge vs standalone when picked up. Unscoped.
-- [surfaced 2026-07-22, BUG, real tester hit it -- NOT fixing tonight, captured only] **Wrong notifications
+- [surfaced 2026-07-22, BUG, root-caused + FIXED 2026-07-23, PENDING DEVICE VERIFY] **Wrong notifications
   firing despite logged data (Justin's dad, current TestFlight).** Two bad fires, both while he HAD logged:
-  (a) "Nothing Logged Yet -- Your food log is empty today. Tap to add a meal." fired around 2:00 PM even
-  though Morning (228 kcal: Jelly, Waffles) and Lunch (421 kcal: Hamburger Buns, Ground Beef) were already
-  logged that day -- the empty-log notification isn't checking current logged state before firing (or fired
-  off a stale schedule). (b) "Drink Up -- Your water pace is a little behind. Grab a glass." fired around
-  10:45 AM with 28 oz already logged (two 10:15 AM entries, +12 and +16) against a 64 oz goal; the Water Log
-  modal read "Expected Now 40 oz / Behind" at that moment, so the pace curve wanted 40 of 64 oz by ~10:45 AM,
-  which is very front-loaded. TWO candidate issues: the water notification not respecting recent logging,
-  AND/OR the expected-pace curve being too aggressive early in the day. Needs its own investigation.
+  (a) "Nothing Logged Yet" fired ~2pm despite Morning + Lunch already logged. (b) "Drink Up" fired ~10:45am
+  with 28oz already logged against a 64oz goal, while the Water modal itself read "Expected Now 40oz/Behind".
+  ROOT CAUSE (a): the food-log reminder is a fixed-time device alarm cancelled only from `food-detail.tsx`'s
+  save path -- `recipe-log.tsx` and `ai-meal-estimator.tsx` also write food entries directly but never
+  cancelled it, confirmed by reading both files (no import of `cancelFoodLogNotification` in either).
+  ROOT CAUSE (b): the water reminder's "skip if within 25% of pace" check is correct and already existed
+  (`scheduleWaterNotificationsNow`), but only ever re-ran when the app came back from background
+  (`refreshLiveNotifications` in `_layout.tsx`) -- never immediately after logging water while already
+  in the app, which is the normal case. Not a bad curve, a stale-check-timing bug.
+  ALSO FOUND: Weight Log Reminder had NO cancel mechanism anywhere in the code -- logging weight never
+  stopped it from firing. Same root pattern as (a): an action with multiple/any logging path needs its
+  notification cancelled from every path that can trigger it, not just the original one.
+  FIX (all three, 2026-07-23): added `cancelFoodLogNotification()` to `recipe-log.tsx` and
+  `ai-meal-estimator.tsx`'s save paths. Built `cancelWeightLogNotification()` (didn't exist) and wired it
+  into Home's `logWeight`. Wired `refreshLiveNotifications()` into every water add/delete/edit path in both
+  Home (`index.tsx`) and Log (`log.tsx`) instead of only firing on full-goal-hit, so the already-correct
+  pace check reruns immediately after every log, not just on app-foreground. Also added a food-logged /
+  weight-logged safety-net check inside `refreshLiveNotifications` itself, so even a future new logging
+  entry point that forgets to cancel its own notification gets caught the next time the app foregrounds.
+  tsc clean on all touched files (pre-existing unrelated errors elsewhere untouched). NOT yet device-tested.
 - [surfaced 2026-07-22] **Keep the AI Estimate photo with the meal.** If a photo was used in the AI
   estimator, that photo should stay attached to the logged entry. Likely needs a "meal photo" feature on
   logged entries to hang it on. Justin thinks it isn't overly hard.

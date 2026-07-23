@@ -26,6 +26,7 @@ import { barFillGradient } from '../../utils/barGradient';
 import { wakeMsFromStored, computeWaterPace, paceTone, pacePinTone, paceToneColor, paceLabel } from '../../utils/waterPace';
 import { sumWaterEntries, reconcileDayWater } from '../../utils/waterData';
 import { cancelWaterPaceNotification } from '../../services/notifications';
+import { refreshLiveNotifications } from '../../services/notificationScheduler';
 import { loadCalorieTargets } from '../../utils/calorieTarget';
 import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, handleDailyGoalHit, getCelebTier } from '../../achievementData';
 import { showAchievementToast, showDailyGoalToast } from '../../components/AchievementToast';
@@ -1188,6 +1189,7 @@ export default function LogScreen() {
     setWaterEntries(newEntries);
     await storageSet(`pj_${activeDate}`, JSON.stringify({ ...current, water: newWater, waterEntries: newEntries, waterGoal }));
     saveToFirebase(activeDate, 'water', newWater);
+    refreshLiveNotifications();
     showToast('Entry removed', `${newWater} oz total`, 'info');
   };
 
@@ -1289,6 +1291,7 @@ export default function LogScreen() {
     setWaterEntries(newEntries);
     await storageSet(`pj_${activeDate}`, JSON.stringify({ ...current, water: newWater, waterEntries: newEntries, waterGoal }));
     saveToFirebase(activeDate, 'water', newWater);
+    refreshLiveNotifications();
     if (oz > 0) {
       showToast('Water logged', `+${oz} oz · ${newWater} oz total`, 'info');
     } else if (oz < 0) {

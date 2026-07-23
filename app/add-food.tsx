@@ -1613,19 +1613,21 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         />
         </View>
 
-{/* Scan banner -- shows while lastScannedBarcode is set */}
+{/* Scan banner -- shows while lastScannedBarcode is set. A quiet info banner with the "Tap SET"
+          instruction, and the Create & Set button underneath as a real action. */}
       {lastScannedBarcode && (
-        <View style={{ marginHorizontal: 16, marginBottom: 8 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 2 }}>
-            <Ionicons name="information-circle-outline" size={13} color={theme.textMuted} style={{ marginRight: 5 }} />
-            <Text style={{ flex: 1, fontSize: 11, color: theme.textMuted, fontFamily: Type.ui }}>Tap SET on the correct item to confirm it for future scans</Text>
+        <View style={{ marginHorizontal: 16, marginBottom: 8, backgroundColor: theme.bgInset, borderWidth: 0.5, borderColor: theme.borderCard, borderRadius: 10, padding: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
+            <Ionicons name="information-circle-outline" size={14} color={theme.textMuted} style={{ marginRight: 6 }} />
+            <Text style={{ flexShrink: 1, fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, lineHeight: 16, textAlign: 'center' }}>Tap SET on the correct item to confirm it for future scans</Text>
           </View>
           <TouchableOpacity
             ref={isTutorialScanMode ? (createBarcodeRef as any) : undefined}
-            onPress={() => { setBarcodeForCreate(lastScannedBarcode); setShowCreateFood(true); }}
-            style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 }}>
-            <Ionicons name="add-circle-outline" size={13} color={theme.accentBlueRaw} />
-            <Text style={{ fontSize: 11, color: theme.accentBlueRaw, fontFamily: Type.uiSemibold }}>None match? Create & Set food</Text>
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setBarcodeForCreate(lastScannedBarcode); setShowCreateFood(true); }}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 44, paddingHorizontal: 12, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8, overflow: 'hidden' }}>
+            <ButtonShine radius={8} />
+            <Ionicons name="add-circle-outline" size={15} color={theme.accentBlue} />
+            <Text style={{ fontSize: 13, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>None match? Create & Set food</Text>
           </TouchableOpacity>
         </View>
       )}

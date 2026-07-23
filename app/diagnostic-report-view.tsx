@@ -135,7 +135,6 @@ function StatBar({ metric, accent, theme, positive }: { metric: NonNullable<Diag
   // reads as a unit, not part of the value.
   const unitStyle = { fontSize: 13, fontFamily: Type.num };
   const labelStyle = { fontSize: 9, letterSpacing: 2, fontFamily: Type.uiBold, color: t.textMuted, textTransform: 'uppercase' as const, marginTop: 2 };
-  const barTrack = { height: 8, borderRadius: 4, backgroundColor: accent + '22', overflow: 'hidden' as const };
   const widthOf = (a: Animated.Value) => a.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
 
   // Hero value, MOLDED like every other hero number in the app (GradientNumber), with the unit kept as a
@@ -220,11 +219,22 @@ function StatBar({ metric, accent, theme, positive }: { metric: NonNullable<Diag
     );
   }
 
-  // ── compare: two numbers, two stacked bars (A accent, B secondary) ──
+  // ── compare: two recovery scores (A accent, B secondary) placed on ONE shared 0-100 recovery track,
+  // with the span between them shaded and the gap called out. Two full bars from zero were the old design
+  // and read as noise -- 68 and 76 out of 100 are nearly the same length, so the drop was invisible. Both
+  // compare insights (recovery after hard vs easy days, after short vs full sleep) are 0-100 scores, so the
+  // scale is anchored to 100. If a non-0-100 compare is ever added, this needs a real scaleMax + axis. ──
   if (kind === 'compare') {
+    const loVal = Math.min(metric.value, metric.target);
+    const hiVal = Math.max(metric.value, metric.target);
+    const loPct = Math.max(0, Math.min(1, loVal / 100));
+    const hiPct = Math.max(0, Math.min(1, hiVal / 100));
+    const delta = Math.round(hiVal - loVal);
+    // Signed from A's side (accent / primaryLabel = the flagged condition): -8 means A sits 8 below B.
+    const signedDelta = Math.round(metric.value - metric.target);
     return (
       <View style={{ marginBottom: 12 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginBottom: 10 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginBottom: 14 }}>
           <View style={{ marginRight: 28 }}>
             {heroNum(fmt(metric.value), accent)}
             <Text style={labelStyle}>{metric.primaryLabel}</Text>
@@ -233,12 +243,24 @@ function StatBar({ metric, accent, theme, positive }: { metric: NonNullable<Diag
             {heroNum(fmt(metric.target), t.textSecondary)}
             <Text style={labelStyle}>{metric.secondaryLabel}</Text>
           </View>
+          {delta > 0 && (
+            <View style={{ marginLeft: 'auto', alignSelf: 'center', backgroundColor: accent + '1f', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+              <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: accent }}>{signedDelta > 0 ? '+' : '−'}{Math.abs(signedDelta)} pts</Text>
+            </View>
+          )}
         </View>
-        <View style={[barTrack, { marginBottom: 6 }]}>
-          <Animated.View style={{ height: '100%', borderRadius: 4, overflow: 'hidden', width: widthOf(anim) }}>{barFill(accent)}</Animated.View>
-        </View>
-        <View style={barTrack}>
-          <Animated.View style={{ height: '100%', borderRadius: 4, overflow: 'hidden', width: widthOf(animB) }}>{barFill(t.textSecondary)}</Animated.View>
+        <View style={{ height: 30, paddingTop: 4 }}>
+          {/* base 0-100 recovery track */}
+          <View style={{ position: 'absolute', top: 4, left: 0, right: 0, height: 8, borderRadius: 4, backgroundColor: t.textMuted + '22' }} />
+          {/* shaded gap between the two scores -- grows from the lower marker toward the higher one */}
+          <Animated.View style={{ position: 'absolute', top: 4, height: 8, borderRadius: 4, left: `${loPct * 100}%`, width: reveal.interpolate({ inputRange: [0, 1], outputRange: ['0%', `${(hiPct - loPct) * 100}%`] }), backgroundColor: accent + '3a' }} />
+          {/* marker: B (after easy / full) grey */}
+          <View style={{ position: 'absolute', top: 0, left: `${(metric.target / 100) * 100}%`, marginLeft: -2, width: 4, height: 16, borderRadius: 2, backgroundColor: t.textSecondary }} />
+          {/* marker: A (after hard / short) accent */}
+          <View style={{ position: 'absolute', top: 0, left: `${(metric.value / 100) * 100}%`, marginLeft: -2, width: 4, height: 16, borderRadius: 2, backgroundColor: accent }} />
+          {/* axis ends */}
+          <Text style={{ position: 'absolute', top: 15, left: 0, fontSize: 9, fontFamily: Type.uiBold, color: t.textMuted }}>0</Text>
+          <Text style={{ position: 'absolute', top: 15, right: 0, fontSize: 9, fontFamily: Type.uiBold, color: t.textMuted }}>100</Text>
         </View>
       </View>
     );

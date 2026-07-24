@@ -27,6 +27,7 @@ import { backfillAllPhotos } from '../utils/foodPhotos';
 import { setLaunchSplashShowing } from '../utils/launchSplashGate';
 import { applyVacation } from '../utils/vacationMode';
 import { ensureRatePromptInitialized } from '../utils/ratingPrompt';
+import { checkOttoPrompts } from '../utils/ottoPrompts';
 import * as Notifications from 'expo-notifications';
 import { setupNotificationHandler } from '../services/notifications';
 import { runDailyNotificationScheduler, refreshLiveNotifications } from '../services/notificationScheduler';
@@ -162,6 +163,7 @@ function RootLayoutNav() {
         // auto-expire a finished one) so the cloud mirror lands too.
         applyVacation().catch(() => {});
         ensureRatePromptInitialized().catch(() => {}); // stamp firstSeenAt once, after any real restore has landed
+        checkOttoPrompts().catch(() => {}); // populate/clear the Rate Us fallback + Feedback Otto cards
         // Cold launch into Home: play the condensed logo cinematic over the hand-off. Show
         // the custom splash FIRST and let it hide the native splash itself once it has painted
         // (see LaunchSplash) -- otherwise hiding the native splash here lifts it a frame before

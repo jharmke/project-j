@@ -39,6 +39,8 @@ const CAT_LABEL: Record<string, string> = {
   summary_ready: 'Summaries',
   whats_new: "What's New",
   tdee_suggestion: 'Suggestion',
+  rate_us: 'Rate Us',
+  feedback_prompt: 'Feedback',
 };
 
 function relTime(ms: number): string {

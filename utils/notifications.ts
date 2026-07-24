@@ -22,7 +22,8 @@ const MAX = 100; // hard cap so the list can never grow unbounded
 
 export type NotifLifecycle = 'replace' | 'stack';
 export type NotifCategory =
-  | 'tdee_suggestion' | 'achievement' | 'daily_goal' | 'record' | 'summary_ready' | 'whats_new';
+  | 'tdee_suggestion' | 'achievement' | 'daily_goal' | 'record' | 'summary_ready' | 'whats_new'
+  | 'rate_us' | 'feedback_prompt';
 
 export interface NotifItem {
   id: string;                 // stable id: category key for 'replace', per-event id for 'stack'

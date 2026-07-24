@@ -574,7 +574,7 @@ export default function SettingsScreen() {
   const [showPrayerModal, setShowPrayerModal] = useState(false);
   const scrollViewRef = useRef<any>(null);
   const quietHoursRowRef = useRef<any>(null);
-  const { section: deepLinkSection } = useLocalSearchParams<{ section?: string }>();
+  const { section: deepLinkSection, fireRating, openFeedback } = useLocalSearchParams<{ section?: string; fireRating?: string; openFeedback?: string }>();
   const fsCoachingSectionRef = useRef<any>(null);
   const fsDisciplineRef = useRef<any>(null);
   const fsBalancedRef = useRef<any>(null);
@@ -1366,6 +1366,15 @@ export default function SettingsScreen() {
   const appVersion = Constants.expoConfig?.version ?? '1.0';
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
+  // Tap-through from Otto's notification hub (utils/ottoPrompts.ts). Each param fires its action
+  // once on arrival -- not re-checked on every render, so re-navigating back here later doesn't
+  // repeat it.
+  useEffect(() => {
+    if (openFeedback === 'true') setFeedbackOpen(true);
+  }, [openFeedback]);
+  useEffect(() => {
+    if (fireRating === 'true') requestRatingPrompt().catch(() => {});
+  }, [fireRating]);
 
   return (
     <LinearGradient colors={[theme.gradientEnd, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>

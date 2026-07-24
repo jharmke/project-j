@@ -2584,7 +2584,8 @@ export default function SettingsScreen() {
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
               triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
               const result = await requestRatingPrompt({ force: true });
-              showToast(result.fired ? 'Rating prompt fired' : 'Did not fire', result.fired ? 'Check for the native popup' : result.reason, result.fired ? 'success' : 'error');
+              const detail = result.error ? `Error: ${result.error}` : `hasAction: ${result.hadAction}`;
+              showToast(result.fired ? 'Ask recorded' : 'Did not fire', detail, result.error ? 'error' : 'info');
             }}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowTitle, { color: theme.accentBlue }]}>Force Rate Us Prompt</Text>

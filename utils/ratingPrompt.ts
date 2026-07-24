@@ -75,19 +75,24 @@ export async function canAskForRating(): Promise<{ allowed: boolean; reason?: Ca
 // Fires Apple's native prompt if allowed and records the ask. `force` (dev-tools testing only) skips
 // every guard but STILL records the ask, so the budget bookkeeping itself is exercised by the test,
 // not bypassed along with everything else.
-export async function requestRatingPrompt(opts?: { force?: boolean }): Promise<{ fired: boolean; reason?: CanAskReason }> {
+export async function requestRatingPrompt(opts?: { force?: boolean }): Promise<{ fired: boolean; reason?: CanAskReason; hadAction?: boolean; error?: string }> {
   if (!opts?.force) {
     const check = await canAskForRating();
     if (!check.allowed) return { fired: false, reason: check.reason };
   }
+  let hadAction = false;
+  let error: string | undefined;
   try {
-    if (await StoreReview.hasAction()) {
+    hadAction = await StoreReview.hasAction();
+    if (hadAction) {
       await StoreReview.requestReview();
     }
-  } catch {}
+  } catch (e: any) {
+    error = e?.message || String(e);
+  }
   const state = await loadRatePromptState();
   await storageSet(KEY, JSON.stringify({ ...state, lastAskedAt: new Date().toISOString(), totalAsks: state.totalAsks + 1 }));
-  return { fired: true };
+  return { fired: true, hadAction, error };
 }
 
 // Call from a real trigger moment (water goal hit, gratitude logged, etc.), NOT from the dev-tools

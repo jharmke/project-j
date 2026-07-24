@@ -203,6 +203,7 @@ pj_healthkit_skip -- set when user taps "Maybe later" on HealthKit opt-in
 pj_challenge -- the single active/pending challenge | pj_challenges -- completed challenge history (Past Challenges + Run It Back)
 (pj_vs_streak RETIRED 2026-06-18 with the YvY card; replaced by the Challenge home card)
 pj_dayscore_disclaimer_seen -- first-use Day Score disclaimer seen state
+pj_rate_prompt -- Rate Us prompt budget: { firstSeenAt, lastAskedAt, totalAsks }. See SPEC_rate_us_and_feedback.md.
 
 ## Design System
 Background: #0d0d0f

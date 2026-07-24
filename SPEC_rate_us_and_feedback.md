@@ -1,9 +1,20 @@
 # SPEC — Rate Us & Feedback Prompts
 
-Status: DESIGN LOCKED 2026-07-23. Nothing built yet. This doc is the source of truth. Grew out of the
+Status: DESIGN LOCKED 2026-07-23, BUILD IN PROGRESS. This doc is the source of truth. Grew out of the
 "starter challenge -> theme unlock" NEXT UP item; that idea was dropped (see project_j_backlog.md,
 MOTIVATION / GAMIFICATION), but the "introduce the App Store rating ask + a real feedback channel"
 piece survived and became this spec.
+
+BUILD PROGRESS (2026-07-23): Batch 1 (foundation) done, not yet device-tested. `expo-store-review`
+installed (NEW native package -- needs a fresh EAS development build before it can be tested on-device).
+`utils/ratingPrompt.ts` built: `pj_rate_prompt` state (firstSeenAt/lastAskedAt/totalAsks, auto-synced via
+the generic pj_ prefix mechanism, no extra sync wiring needed), `canAskForRating()` (7-day account-age +
+30-day/3-total budget), `requestRatingPrompt({force})`. firstSeenAt stamped once in app/_layout.tsx right
+after the restore gate resolves (so a reinstalled long-time user's real original date, already restored
+from the cloud by then, is never mistaken for a brand-new install). Dev-tools rows added in Settings:
+"Force Rate Us Prompt" (bypasses every guard, still records the ask so the budget bookkeeping itself gets
+exercised) and "Reset Rate Prompt State" (clears pj_rate_prompt for repeat testing). Triggers not wired
+yet -- next batch.
 
 Pairs with: the existing `FeedbackModal.tsx` (rebuilt 2026-07-23 to send in-app with an optional photo
 instead of mailto — already shipped, not part of this build) and Otto's in-app notification hub

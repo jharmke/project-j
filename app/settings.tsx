@@ -17,6 +17,7 @@ import { useAuth } from '../AuthContext';
 import { BLANK_DAY, WorkoutTag } from '../workoutData';
 import CelebrationOverlay from '../components/CelebrationOverlay';
 import FeedbackModal from '../components/FeedbackModal';
+import { requestRatingPrompt } from '../utils/ratingPrompt';
 import { showAchievementToast } from '../components/AchievementToast';
 import { ACHIEVEMENTS, loadAchievements, checkAndUnlock, loadGoalHitCounts, checkSleepAchievements, checkNutritionAchievements, checkMomentumAchievements, checkWorkoutAchievements, checkFaithAchievements, getWeightMilestonesCrossed, isGoalWeightHit } from '../achievementData';
 import { collection, getDocs } from 'firebase/firestore';
@@ -2578,6 +2579,30 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Clears all unlocked achievements.</Text>
               </View>
               <Ionicons name="trophy-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              const result = await requestRatingPrompt({ force: true });
+              showToast(result.fired ? 'Rating prompt fired' : 'Did not fire', result.fired ? 'Check for the native popup' : result.reason, result.fired ? 'success' : 'error');
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentBlue }]}>Force Rate Us Prompt</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Bypasses all guards, still records the ask.</Text>
+              </View>
+              <Ionicons name="star-outline" size={18} color={theme.accentBlue} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              await AsyncStorage.removeItem('pj_rate_prompt');
+              showToast('Rate prompt state cleared', 'firstSeenAt/lastAskedAt/totalAsks reset', 'success');
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentAmber }]}>Reset Rate Prompt State</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Clears the account-age/budget tracking for retesting.</Text>
+              </View>
+              <Ionicons name="refresh-outline" size={18} color={theme.accentAmber} />
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {

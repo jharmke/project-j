@@ -1080,6 +1080,10 @@ are separate pre-submission checklists, NOT part of this menu.
   breaking NRN's "hidden, no judgment" rule.** Open question, no direction yet. Only existing mechanism
   today is the dismissable 30-day "faith settings can be changed" reminder. Needs real discussion before
   any concrete idea gets proposed -- easy to accidentally violate the opt-out.
+  IDEA surfaced 2026-07-24 (Justin, while confirming NRN has no Faith tab access): some kind of sample/
+  manual entry point into faith content for NRN users -- a soft, optional taste rather than the hard wall
+  that's there today. Floated, not designed, not discussed in depth -- fold into this item when it's
+  actually picked up.
 - [surfaced 2026-07-19, faith, needs discussion] **More Reading Plans / Devotionals?** Open-ended, no
   specific gap identified yet -- discuss whether the current plan/devotional library is thin somewhere
   specific before treating as a scoped task.

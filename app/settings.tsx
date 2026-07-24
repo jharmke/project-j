@@ -17,7 +17,7 @@ import { useAuth } from '../AuthContext';
 import { BLANK_DAY, WorkoutTag } from '../workoutData';
 import CelebrationOverlay from '../components/CelebrationOverlay';
 import FeedbackModal from '../components/FeedbackModal';
-import { requestRatingPrompt } from '../utils/ratingPrompt';
+import { requestRatingPrompt, resetRatePromptBudget } from '../utils/ratingPrompt';
 import { showAchievementToast } from '../components/AchievementToast';
 import { ACHIEVEMENTS, loadAchievements, checkAndUnlock, loadGoalHitCounts, checkSleepAchievements, checkNutritionAchievements, checkMomentumAchievements, checkWorkoutAchievements, checkFaithAchievements, getWeightMilestonesCrossed, isGoalWeightHit } from '../achievementData';
 import { collection, getDocs } from 'firebase/firestore';
@@ -2605,12 +2605,12 @@ export default function SettingsScreen() {
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
               triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-              await AsyncStorage.removeItem('pj_rate_prompt');
-              showToast('Rate prompt state cleared', 'firstSeenAt/lastAskedAt/totalAsks reset', 'success');
+              await resetRatePromptBudget();
+              showToast('Rate prompt budget reset', 'Ask history cleared, account age backdated past the 7-day gate', 'success');
             }}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowTitle, { color: theme.accentAmber }]}>Reset Rate Prompt State</Text>
-                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Clears the account-age/budget tracking for retesting.</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Clears ask history and backdates account age past the 7-day gate.</Text>
               </View>
               <Ionicons name="refresh-outline" size={18} color={theme.accentAmber} />
             </TouchableOpacity>

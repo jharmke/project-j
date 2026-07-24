@@ -95,6 +95,15 @@ export async function requestRatingPrompt(opts?: { force?: boolean }): Promise<{
   return { fired: true, hadAction, error };
 }
 
+// Dev-tools testing only: resets the ask history (lastAskedAt/totalAsks) and backdates firstSeenAt
+// to (MIN_ACCOUNT_AGE_DAYS + 1) days ago, so the 7-day account-age gate can never block a test --
+// including undoing the damage from any earlier reset that wiped firstSeenAt to "now." A raw
+// AsyncStorage.removeItem of the whole key was the original (wrong) approach.
+export async function resetRatePromptBudget(): Promise<void> {
+  const backdated = new Date(Date.now() - (MIN_ACCOUNT_AGE_DAYS + 1) * 24 * 60 * 60 * 1000).toISOString();
+  await storageSet(KEY, JSON.stringify({ firstSeenAt: backdated, lastAskedAt: null, totalAsks: 0 }));
+}
+
 // Call from a real trigger moment (water goal hit, gratitude logged, etc.), NOT from the dev-tools
 // button. Fires 3 seconds after the call so it never fights an achievement toast / celebration
 // overlay popping from the same action for the screen. `tutorialActive` must be the caller's own

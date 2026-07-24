@@ -397,7 +397,11 @@ FAITH TAB (hidden for "Not Right Now" users)
   presets on/off, your custom verses) and an (i) tooltip.
 - BIBLE & PLANS: open the Bible reader.
 - READING PLANS: structured Bible reading plans (its own section + the Reading Plans hub).
-- DEVOTIONALS: daily devotional readings (can "Reflect with Halo").
+- DEVOTIONALS: daily devotional readings (can "Reflect with Halo"). Finishing every day of a devotional
+  moves it to a COMPLETED section on the Plans page (Plans tab > Devotionals) with a Restart option --
+  Restart is a full reset (clears your previous answers and Halo reflections so you can start fresh, this
+  can't be undone), not a soft resume. A finished devotional drops off the Home and Faith tab cards once
+  done; find it again via Plans > Devotionals > Completed.
 - PRAYER: prayer log + "Add Prayer" (+ FAB); submit a prayer request via the prayer request modal.
 - GRATITUDE: gratitude streak card + log an entry.
 - HALO (faith companion): the gold cross FAB -- faith conversation, Bible questions, spiritual

@@ -1615,3 +1615,71 @@ multiple visibly broken states (dead gestures, mismatched crop, an ugly non-stan
 icon, and a fully collapsed button layout) went to master's history before Justin ever tested them. Standing
 rule going forward: code goes in, Justin tests it on his phone, commit/push happens only after he confirms
 it's right -- not automatically the instant a change is made.
+
+## DEVOTIONAL COMPLETION STATE, RESTART, AND BUTTON REDESIGN (2026-07-24)
+
+Justin's original report: finishing "Rest and Recovery" (3/3 days) left it stuck on the Plans page's
+IN PROGRESS section with a dead-end "Continue" button, still showed as active on the Faith tab, and the
+day screen's three buttons (Save reflection / Reflect on this with Halo / Mark complete) were three
+visually unrelated styles -- the Completed one specifically read as near-invisible (a 12% translucent
+green wash with nothing else distinguishing it).
+
+**Root cause.** Devotionals only ever tracked completion PER DAY (`entries[day].completed`), never at the
+devotional level -- there was no concept anywhere of "this whole devotional is done," so a fully-checked-off
+one just sat in the same active list forever. `getNextDay` clamped to the last day once everything was
+checked, meaning "Continue" just reopened an already-completed final day in a loop.
+
+**What shipped:**
+- `isDevotionalComplete()` (data/devotionals.ts) -- one-line derived check (`completed === total`) using
+  data that already existed via `getDevotionalCompletion`. No new storage field needed.
+- Plans screen: devotionals split into IN PROGRESS / COMPLETED sections. COMPLETED rows get a green
+  checkmark badge and a "Restart" primary action instead of "Continue."
+- **Restart = full wipe (drop + re-enroll), not a soft reset.** Justin was asked whether restart should
+  keep old typed answers around as a starting point or clear everything, and punted the call back:
+  "i honestly dont know." Claude's call, reasoned out loud: the whole point of redoing a devotional is
+  usually a different season of life wanting a fresh reflection, not staring at an old answer from months
+  ago -- a soft reset that kept prior answers pre-filled would undercut that. Confirm dialog warns it's
+  destructive and can't be undone, same pattern as the existing Drop confirmation.
+- Home's `FaithTodayCard.tsx` AND the Faith tab's own separate "Bible and Plans" card implementation
+  (`app/(tabs)/faith.tsx` -- NOT a shared component, a full independent duplicate) both had to be filtered
+  to drop a completed devotional from their active lists. Fixing only the Home component left the Faith
+  tab still showing the finished one -- the exact duplicate-entry-point class of bug flagged earlier this
+  session (gratitude's two save paths), caught because it's now a standing habit to check for a second
+  unwired copy before declaring something fixed.
+- **Real trap avoided mid-fix:** the Faith tab's `activeDevs` variable was doing double duty -- feeding
+  both the display list AND the `MAX_ACTIVE_DEVOTIONALS` cap check (`atCap`). Filtering it to exclude
+  completed devotionals for display would have silently also excluded them from the cap count, letting a
+  user with e.g. 2 completed-but-kept + 1 in-progress devotional (3 total storage slots used) look like
+  they had room for more when they didn't. Split into `enrolledDevs` (unfiltered, feeds the cap) and
+  `activeDevs` (filtered, feeds display) once this was noticed by cross-checking `plans.tsx`'s own
+  (correct) `devsAtLimit` logic before assuming the naive filter was safe.
+- **Browse-button lockout, found while fixing the above.** The Faith tab's "Bible and Plans" card's ONLY
+  entry point into the full `/plans` screen was a "+ Browse" button that disappears entirely
+  (`{!atCap && <Browse>}`, nothing shown in its place) once you hit the 3-active cap for either reading
+  plans or devotionals -- meaning the more a user actually engaged with the feature, the less access they
+  had to manage it. Not a full hard lockout (the Bible reader's own gear-icon settings modal has an
+  always-present "Plans" row), but that's a buried path on an unrelated screen for a card whose entire
+  purpose is plans. Fix: the column LABEL itself ("READING PLANS" / "DEVOTIONALS") is now a persistent
+  tap target into `/plans`, independent of cap state. Confirmed the identical `atCap` pattern exists on
+  the reading-plans side too; deliberately left unfixed, folded into the upcoming full reading-plans pass
+  instead of a piecemeal fix here.
+- **Button redesign, two attempts.** First attempt turned "Mark complete/Completed" into a second molded
+  `PrimaryCTA` (matching Save reflection's construction). This was WRONG -- it violated `PrimaryCTA`'s own
+  documented rule ("reserve solid fill for the ONE primary action on a screen"), and Justin correctly
+  called it out as still three clashing styles (now two heavy CTAs sandwiching one lighter pill, with
+  Completed visibly bigger than its neighbors). Second attempt rebuilt Mark Complete/Completed to
+  structurally match the "Reflect on this with Halo" pill exactly (badge circle + `ButtonShine` + opaque
+  tinted fill + `GradientTitle` label) instead of `PrimaryCTA` -- amber while open, green once done, using
+  a bespoke opaque green mix (`mix('#0d9268', theme.bgInput, ...)`, the same recipe `accentAmberBgOpaque`
+  already uses under the hood) since no green equivalent token exists in the theme, and a translucent wash
+  was the original "blends into the background" complaint in the first place.
+- **Two small polish passes after "device-confirmed"-adjacent testing:** Restart had no haptic on the
+  initiating tap -- traced to the shared `PressScale` button component used for Continue/Start/Restart
+  alike never firing one at all, fixed once at that shared point rather than only for Restart. The new
+  column-label chevrons weren't lining up with their text: `alignItems: 'center'` doesn't reliably align a
+  text baseline against an icon glyph's own box, a `marginTop` nudge under `alignItems: 'baseline'` had
+  zero visible effect (margin appears to get absorbed into RN's baseline layout calculation rather than
+  applied), and a `transform: [{ translateY }]` (a purely visual, post-layout shift) was what actually
+  moved it -- worth remembering for any future icon-vs-text alignment fix on this codebase.
+
+Device-confirmed by Justin across all of it.

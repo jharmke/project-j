@@ -16,6 +16,14 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-24 **Devotional completion state, Restart, and button redesign, device-confirmed.** A finished
+  devotional now moves to its own COMPLETED section on Plans (with Restart) instead of sitting in IN
+  PROGRESS forever with a dead Continue button, and drops off both Home's and the Faith tab's own
+  "Bible and Plans" card (two separate implementations, both had to be fixed). Plans/Devotionals column
+  labels are now a persistent entry point into /plans regardless of the 3-active cap (Browse used to
+  vanish there with nothing to replace it). Devotional day screen's 3 buttons unified into one CTA +
+  two matching pills instead of three clashing styles. Confirmed same Browse-lockout gap exists on
+  Reading Plans, deliberately left for the full reading-plans pass (NEXT UP).
 - 2026-07-24 **Custom profile pictures, device-confirmed.** Plus badge on Profile's own avatar (own
   avatar stays inert there, no dead-end tap) opens an in-house Photo Options modal (ModalHeader, gradient
   icons/labels, ButtonShine, real house press-scale) -> Take Photo / Choose from Library / Remove Photo.

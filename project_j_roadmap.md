@@ -870,15 +870,14 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
-- [DESIGN LOCKED 2026-07-23, ready to build] **Rate Us + Feedback prompts.** Full spec in
-  SPEC_rate_us_and_feedback.md -- read that before touching this. Short version: two independent Otto-hub
-  asks, never merged (merging would let Feedback go silent once Rate Us's budget runs out). Rate Us fires
-  Apple's native review prompt directly (no pre-screen -- review gating is against Apple's guidelines) off
-  a real trigger list (water goal, gratitude, reading plan/devotional, manual workout done, protein goal
-  [needs new live-hit code], real weight milestone, challenge win), 30-day/3-total shared budget, 7-day
-  minimum account age, tutorial/demo-state guard, 3s delay to avoid colliding with achievement toasts,
-  Otto fallback for users the trigger list misses. Feedback is a separate Otto card, ~3-week re-appear
-  cadence, no cap, routes to the already-shipped in-app FeedbackModal. Surfaced 2026-07-23.
+- [BUILD IN PROGRESS 2026-07-23, PAUSED ON AN OPEN BUG] **Rate Us + Feedback prompts.** Full spec +
+  current build progress in SPEC_rate_us_and_feedback.md -- READ THE "OPEN BUG, STOPPED HERE" NOTE AT THE
+  TOP before touching this. Short version of the bug: batch 1 (foundation) + batch 2 (water/gratitude/
+  reading-plan/devotional triggers) are built and the wiring is confirmed correct via diagnostics, but the
+  native Apple popup itself stopped visually appearing after its first successful test -- likely Apple's
+  own opaque display pacing, not a code bug (hasAction:true, no thrown error, every guard checked).
+  Batches 3-5 (protein/weight-milestone/workout/challenge-win triggers, Otto fallback + Feedback cards,
+  theme audit) not started -- can proceed independently of the open bug above.
 - [decided + implemented 2026-07-23, PENDING DEVICE VERIFY] **Recovery score activity-component ceiling
   fix.** Justin signed off on the curve after discussing trade-offs (compared against Whoop's Green
   67-100/Yellow 34-66/Red 0-33 bands and Oura's approx. Optimal 85+/Good 70-84, both of which treat

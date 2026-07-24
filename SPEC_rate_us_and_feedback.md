@@ -5,16 +5,34 @@ Status: DESIGN LOCKED 2026-07-23, BUILD IN PROGRESS. This doc is the source of t
 MOTIVATION / GAMIFICATION), but the "introduce the App Store rating ask + a real feedback channel"
 piece survived and became this spec.
 
-BUILD PROGRESS (2026-07-23): Batch 1 (foundation) done, not yet device-tested. `expo-store-review`
-installed (NEW native package -- needs a fresh EAS development build before it can be tested on-device).
-`utils/ratingPrompt.ts` built: `pj_rate_prompt` state (firstSeenAt/lastAskedAt/totalAsks, auto-synced via
-the generic pj_ prefix mechanism, no extra sync wiring needed), `canAskForRating()` (7-day account-age +
-30-day/3-total budget), `requestRatingPrompt({force})`. firstSeenAt stamped once in app/_layout.tsx right
-after the restore gate resolves (so a reinstalled long-time user's real original date, already restored
-from the cloud by then, is never mistaken for a brand-new install). Dev-tools rows added in Settings:
-"Force Rate Us Prompt" (bypasses every guard, still records the ask so the budget bookkeeping itself gets
-exercised) and "Reset Rate Prompt State" (clears pj_rate_prompt for repeat testing). Triggers not wired
-yet -- next batch.
+BUILD PROGRESS (2026-07-23): Batch 1 (foundation) built and device-confirmed working (native prompt fired
+correctly on first test, copy matched spec). Batch 2 built: `fireRatingTrigger()` helper (3s delay so it
+never fights an achievement toast/celebration for the screen; skips when a tutorial is active) wired into
+water goal (index.tsx), gratitude (journal.tsx), reading plan (bible.tsx's markPlanRead), and devotional
+completion (devotional.tsx's handleComplete -- initially missed in batch 2 since it's a separate handler
+from reading-plan, fixed same session). Batches 3-5 (protein/weight-milestone/workout/challenge-win
+triggers, Otto fallback + Feedback cards, theme audit) NOT STARTED.
+
+⚠️ OPEN BUG, STOPPED HERE 2026-07-23 end of session -- READ THIS FIRST NEXT SESSION:
+After the batch-1 success, NOTHING fires anymore -- not the real triggers (water/gratitude/reading-plan/
+devotional, tested with Reset Rate Prompt State done first each time) and not even the "Force Rate Us
+Prompt" dev button, which bypasses every guard we control. Diagnosed as far as code can tell us: added
+diagnostic return values (`hadAction`, `error`) to `requestRatingPrompt()` (see the function in
+utils/ratingPrompt.ts) and the force button's toast now shows them. Result: `hasAction: true`, no error --
+meaning `StoreReview.hasAction()` returns true and `StoreReview.requestReview()` completes with no thrown
+error every time. So OUR code is doing everything right; something on Apple's own side is silently
+declining to actually display the UI. Checked and ruled out: iOS Settings > App Store > "In-App Ratings &
+Reviews" toggle -- already ON. Not yet tried: restarting the phone (not just closing the app -- some of
+Apple's own caching may live at the OS level), or just waiting and retrying later. Apple's own docs
+explicitly say the system can decline to show the prompt for undocumented reasons and there is no API to
+force it or learn why -- this may not be a fixable bug at all, just Apple's own opaque pacing kicking in
+after the first real display. DO NOT keep guessing at code fixes here without new evidence -- the
+diagnostic toast already proved the JS/native call chain is correct. If it's still not showing next
+session after a phone restart, the honest move is to accept this can't be reliably tested on-demand and
+verify it properly closer to actual ship (fresh device state), rather than keep burning session time on
+it. Batches 3+ can and should proceed independently of this -- the wiring pattern (fireRatingTrigger,
+tutorial guard, 3s delay) is proven correct from batch 2, this open item is specifically about the
+native popup's on-demand visual reliability during testing, not about whether our trigger code is right.
 
 Pairs with: the existing `FeedbackModal.tsx` (rebuilt 2026-07-23 to send in-app with an optional photo
 instead of mailto — already shipped, not part of this build) and Otto's in-app notification hub

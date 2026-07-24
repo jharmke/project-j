@@ -870,6 +870,15 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
+- [DESIGN LOCKED 2026-07-23, ready to build] **Rate Us + Feedback prompts.** Full spec in
+  SPEC_rate_us_and_feedback.md -- read that before touching this. Short version: two independent Otto-hub
+  asks, never merged (merging would let Feedback go silent once Rate Us's budget runs out). Rate Us fires
+  Apple's native review prompt directly (no pre-screen -- review gating is against Apple's guidelines) off
+  a real trigger list (water goal, gratitude, reading plan/devotional, manual workout done, protein goal
+  [needs new live-hit code], real weight milestone, challenge win), 30-day/3-total shared budget, 7-day
+  minimum account age, tutorial/demo-state guard, 3s delay to avoid colliding with achievement toasts,
+  Otto fallback for users the trigger list misses. Feedback is a separate Otto card, ~3-week re-appear
+  cadence, no cap, routes to the already-shipped in-app FeedbackModal. Surfaced 2026-07-23.
 - [decided + implemented 2026-07-23, PENDING DEVICE VERIFY] **Recovery score activity-component ceiling
   fix.** Justin signed off on the curve after discussing trade-offs (compared against Whoop's Green
   67-100/Yellow 34-66/Red 0-33 bands and Oura's approx. Optimal 85+/Good 70-84, both of which treat
@@ -1407,6 +1416,7 @@ Every major feature has a SPEC_*.md in the repo root. Active ones tied to open w
 - App Store: APP_STORE_CHECKLIST.md, COMPLIANCE_SCAN_findings.md | Launch: **LAUNCH_CHECKLIST.md** (the single
   ordered launch list; supersedes the REVERT + LAUNCH BLOCKERS sections above)
 - Monetization: SPEC_monetization.md | Restaurant Mode (researched, unbuilt): SPEC_restaurant_mode.md
+- Rate Us + Feedback prompts (designed, unbuilt): SPEC_rate_us_and_feedback.md
 - Coffee Drink Builder (designed, unbuilt; data audit gates the build): SPEC_drink_builder.md
 
 ## 📎 ARCHIVES

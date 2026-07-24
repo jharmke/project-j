@@ -30,6 +30,16 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-24 **Recipe photos, same system food already has (device-confirmed).** Direct port of food's
+  photo feature: recipe-builder.tsx (creator) gets add/replace/remove with a pending-photo flow for
+  brand-new recipes (uploads once the recipe gets its id on save), recipe-log.tsx (the detail/log screen)
+  gets a thumbnail with the same full-screen viewer. Deleting a recipe now purges its photo too. Along the
+  way, fixed real pre-existing issues on recipe-log's totals card: missing top accent border, Calories
+  wrongly colored green (should be neutral, matches food-detail's own convention), and an uneven 4-stat
+  row (flex:1 columns let shorter digit counts throw off spacing -- switched to fixed 25% width, same fix
+  day-detail.tsx's nutrient grid already uses). Also added a RECIPE TOTALS eyebrow to that card since
+  every sibling card had one and it didn't. This closes out the whole meal-photo feature arc (Log tab +
+  Day Detail + Recipes, all three now shipped).
 - 2026-07-24 **Meal-slot photo, Day Detail thumbnails (device-confirmed).** Follow-on batch to the Log tab
   piece below. Any meal slot that has both logged food AND a photo shows a small 22x22 thumbnail next to
   the meal name in Day Detail's Meals section; tap for the same full-screen viewer. Slots with a photo but
@@ -993,12 +1003,6 @@ are separate pre-submission checklists, NOT part of this menu.
   weight-logged safety-net check inside `refreshLiveNotifications` itself, so even a future new logging
   entry point that forgets to cancel its own notification gets caught the next time the app foregrounds.
   tsc clean on all touched files (pre-existing unrelated errors elsewhere untouched). NOT yet device-tested.
-- [DESIGN LOCKED 2026-07-24, ready to build] **Recipes get the same photo system food already has.**
-  Verified food's existing photo feature (`pj_food_photo_${foodId}`, food-detail.tsx +
-  CustomFoodCreator.tsx) only ever shows on the detail screen and its creation flow -- never a thumbnail
-  on any list/row. Direct, low-risk port: recipe-builder.tsx (the creator) gets the same add-photo option,
-  the recipe detail/log screen gets the same tap-to-add/view area. No thumbnail needed on the recipe
-  library/main list either, matching food's own pattern exactly.
 - [surfaced 2026-07-22, needs design pass] **Time-of-day nutrition insights (EvR / reports / summaries /
   insights / coaches -- wherever it fits).** Surface timing effects: eating too much too late can disrupt
   deep sleep, etc., with varied examples of what each thing affects. Possibly fold in caffeine levels, late

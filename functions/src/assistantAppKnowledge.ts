@@ -273,6 +273,10 @@ LOG TAB (FOOD DIARY)
   to the amount. A recipe defined in pounds can be logged as 8 oz; the app converts back to the recipe's
   own unit, so logging never redefines the recipe. Same-family units only (weight with weight, volume
   with volume). The diary entry shows the unit the user actually typed.
+  RECIPE PHOTO: same photo system as regular foods, one photo per recipe. In the Recipe Builder it sits
+  next to the Recipe Name field (tap the empty dashed box to add one, tap an existing photo to view/replace/
+  remove it full-screen). On the recipe's log screen the same thumbnail appears next to the recipe's totals
+  (calories/protein/carbs/fat). Deleting a recipe deletes its photo too.
 - REPEAT A MEAL: fast way to re-log a meal you eat often (e.g. the same breakfast daily). When a meal
   slot is EMPTY and there's matching history in the last 14 days, that slot reads "Expand to repeat a
   meal" under its name. The controls are NOT on the collapsed row: the user must EXPAND the slot (tap the

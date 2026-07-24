@@ -11,7 +11,7 @@
 
 ---
 
-## 📸 MEAL-SLOT PHOTO -- LOG TAB + DAY DETAIL (device-confirmed, SHIPPED 2026-07-24, commits 7e491bc, 0a98841)
+## 📸 MEAL-SLOT PHOTO -- LOG TAB + DAY DETAIL + RECIPES (device-confirmed, SHIPPED 2026-07-24, commits 7e491bc, 0a98841, 3d5e830)
 
 **Day Detail follow-on (commit 0a98841):** Built as its own batch right after the Log tab piece shipped,
 per the original "go in batches" plan. Easy build -- reused resolveMealPhoto() exactly as the Log tab
@@ -78,12 +78,45 @@ guarantee as food photos: never lost on delete/reinstall.
   dark-bottom tones, made the checked box look like it had a mismatched ring. Fixed by dropping the border
   entirely when checked (`borderWidth: on ? 0 : 1.5`).
 
-**Explicitly deferred, NOT part of this ship (both remain in NEXT UP):**
-- Day Detail thumbnails (small photo per slot, expand full-screen on tap) -- same feature, different
-  surface, was part of the original design discussion but pushed to its own follow-on batch per Justin's
-  "go in batches" plan. Never reached in this session.
-- Recipes getting the identical photo system food already has (recipe-builder.tsx creator + recipe
-  detail/log screen) -- aligned on as a paired feature, explicitly deferred to a separate batch, untouched.
+**Recipe photos (commit 3d5e830), the last piece of the arc:** Direct port of food's photo feature, per
+Justin's own framing going in: "should be pretty straightforward." New utils/recipePhotos.ts mirrors
+foodPhotos.ts/mealPhotos.ts exactly (`users/{uid}/recipe_photos/{id}.jpg`, `pj_recipe_photo_{recipeId}`).
+recipe-builder.tsx (the creator) gets add/replace/remove next to the Recipe Name field, same dashed-box/
+thumbnail treatment as CustomFoodCreator.tsx. A brand-new recipe doesn't have an id until Save, so a picked
+photo is held as `pendingPhotoUri` and uploaded right where `recipe.id = recipeId || makeId()` gets built
+-- exact mirror of how CustomFoodCreator solves the same problem for new foods. Editing an existing recipe
+uploads immediately since its id is already stable. recipe-log.tsx (the screen you land on to log a
+recipe) gets a thumbnail with the identical full-screen Replace/Remove viewer food-detail.tsx uses.
+add-food.tsx's deleteRecipe now calls purgeRecipePhoto so deleting a recipe doesn't orphan its Storage
+file, mirroring the line that already existed there for custom foods.
+
+While in recipe-log.tsx, fixed several real pre-existing issues on its totals card that surfaced during
+device review (none were introduced by the photo work, all pre-dated it):
+- Card had no top accent border at all -- every sibling card on the screen (Ingredients, the bottom
+  Nutrition card) had one, this one didn't. Added `borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw`
+  to both infoCard and nutritionCard.
+- Calories was colored `theme.accentGreen`, inconsistent with food-detail.tsx's own calorie number which
+  uses neutral `theme.textSecondary` (Calories isn't one of the three macros, was never meant to carry a
+  macro color). Fixed in both the top totals card and the bottom "Nutrition for X grams" card.
+- The 4-stat row (Cal/Protein/Carbs/Fat) used `flex: 1` columns, which only produces visually equal columns
+  when every value renders the same width -- "107g" (4 chars) is narrower than "11.4g" (5 chars), so Fat's
+  column had more slack on both sides and the Carbs-Fat gap read wider than Protein-Carbs. Switched
+  macroStat to fixed `width: '25%'`, the same technique day-detail.tsx's nutrient grid already uses.
+- Labels ("protein", "carbs", "fat") were plain lowercase, inconsistent with every card-label convention
+  in the app. Added `textTransform: 'uppercase'` + letterspacing + bold to macroLabel (shared style, fixes
+  both cards at once).
+- The totals card had no eyebrow label, unlike its siblings (Ingredients has one, Recipe Name has one).
+  Added "RECIPE TOTALS" using the same `sectionLabel` style already used for "Ingredients." Also
+  restructured the card into a left column (eyebrow -> "Whole batch..." caption -> the 4-stat row) beside
+  the 64x64 photo, rather than pairing the photo 1:1 against just the single caption line -- pairing it
+  with only one short line left a dead vertical gap no matter how that line was aligned (tried centering,
+  tried top-aligning, both just moved the gap around instead of removing it); giving the photo a taller
+  stacked column to sit beside removed the gap without inflating any font size, which was Justin's own
+  proposed fix ("cant we just move the whole batch to right above the cal/macros so its their header").
+  Final touch: bumped the eyebrow-to-caption gap from 8px (shared with Ingredients) to 12px via a local
+  override so it wouldn't read tighter above than the caption-to-macros gap below.
+
+**Deferred, NOT part of this arc:**
 - Meal-photo scrapbook/browsable gallery -- explicitly held off, logged in project_j_backlog.md under
   FOOD INTELLIGENCE. Justin: cheap to add once photos have actually accumulated, wasted effort before that.
 

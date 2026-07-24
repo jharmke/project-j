@@ -1683,3 +1683,71 @@ checked, meaning "Continue" just reopened an already-completed final day in a lo
   moved it -- worth remembering for any future icon-vs-text alignment fix on this codebase.
 
 Device-confirmed by Justin across all of it.
+
+## READING PLANS: COMPLETION-DRIVEN PACING, RESTART, PLAN-COMPLETE MOMENT (2026-07-24)
+
+First half of a two-part pass Justin scoped out after the devotional work shipped -- the foundational
+fixes below, plus the standalone Home card deletion, all landed this session; the dedicated schedule
+page itself (the bigger half) is still ahead, tracked in NEXT UP.
+
+**The real bug, and it was real.** `getTodayReading` resolved "today's" day from calendar days elapsed
+since enrollment (`Math.floor((now - startDate) / 1 day)`), completely independent of what was actually
+completed. Read 2 days then skip 3, and it silently jumped to day 5 -- the missed days weren't "still
+waiting for you," they were just gone, replaced by whatever the calendar said was current. Fixed with
+`getNextDayIndex` (first day not in `completedDays`), the same completion-driven model devotionals
+already used. Removed the old `getTodayDayIndex` entirely rather than leave a now-wrong function sitting
+unused -- it had exactly one caller, this was it.
+
+**A second bug this surfaced, caught by Justin testing not by Claude:** with the calendar dependency
+gone, marking a day complete now immediately reveals the NEXT day as "current" regardless of the actual
+date -- so a highly motivated user could read all 28 days in one sitting and the app would keep calling
+each one "today's reading." Justin: "1 day should have 1 of that reading plan on it... isnt that
+confusing to you?" Real tension against the Reading Plans tab's own intro copy ("move through Scripture
+at your own pace"), which implies exactly the pace-flexible model that was just built. Resolution,
+talked through rather than assumed: pace-flexibility stays (matches the tab's stated intent, and Justin
+came around to "yeah i guess they can go through it at whatever pace they want"), but the tiny Bible-
+reader strip is the wrong SURFACE for that flexibility to live -- a single swapping label can't honestly
+answer "is this today's or tomorrow's" because the app genuinely no longer tracks that distinction, on
+purpose. Renamed the strip "TODAY'S READING" -> "NEXT READING" (accurate: it's the next thing, no
+calendar promise attached) and explicitly punted the real fix to the dedicated schedule page, where
+seeing the full day-numbered list removes the need to guess at all. This ambiguity is NOT considered
+resolved by the rename alone -- Justin confirmed "fine" on that specific point, but the underlying
+confusion is what the schedule page is FOR.
+
+**isReadingPlanComplete()** (data/readingPlans.ts), IN PROGRESS/COMPLETED split, and Restart (drop +
+re-enroll, full wipe, same reasoning as devotional Restart) all ported directly from the devotional
+pattern -- the storage shapes are structurally identical (`startDate`/`completedDays`/`enrolledAt` vs
+`startDate`/`entries`/`enrolledAt`), so this was a clean port, not a redesign.
+
+**Same duplicate-list trap as devotionals, same fix.** `FaithTodayCard.tsx` (Home) and `faith.tsx`'s own
+separate "Bible and Plans" card implementation both needed the completed-plan filter applied by hand --
+two independent copies of "active reading plans," not a shared component. And the same `enrolledPlans`
+(unfiltered, feeds `MAX_ACTIVE_PLANS`) vs `activePlans` (filtered, feeds display) split was needed in
+faith.tsx to avoid the cap silently under-counting completed-but-kept plans, exactly the trap already
+caught once for devotionals earlier the same session -- checked for it proactively this time instead of
+shipping it broken again.
+
+**"Has to be some sort of recognition in that moment that its complete," Justin, after agreeing to drop
+completed plans off the Bible reader strip entirely** (matching everywhere else -- a plan can't show
+"Complete" in an active-reading surface forever). Fixed by having `markPlanRead` check, after adding the
+day, whether that was the FINAL day (`getPlanCompletion(...).completed === plan.totalDays`) and firing a
+distinct "Plan complete!" toast instead of the routine "Day X marked complete" one, rather than the
+moment just silently vanishing on next render. No achievement/celebration-overlay tie-in was added --
+there's no existing achievement for finishing a reading plan, and wiring one up (TIER_CONFIG, tooltips,
+Otto's KB) is a bigger, separate decision than what was actually asked for.
+
+**Standalone "Reading Plans" Home card deleted entirely**, per Justin, once he remembered mid-conversation
+that a second, different Home card (`FaithTodayCard`, "Faith Today" in Edit Layout) already combines
+reading plans AND devotionals in one card, mirroring the Faith tab -- the standalone `ReadingPlansCard`
+was redundant and devotional-blind (reading plans only), which was the actual root of "the home card
+needs a lot of work." Removed the `CardId` union member, the `CARD_REGISTRY` entry, all three mode-
+specific default orders (`DEFAULT_ORDER`/`DISCIPLINE_ORDER`/`MINDFUL_ORDER`), the render-switch case, the
+NRN faith-restriction check, the import, and deleted `components/ReadingPlansCard.tsx` outright (Justin's
+words: "delete... entirely," not a soft retire like the earlier `fitness_metrics` precedent). Verified
+safe before deleting: `cardOrder` is already defensively filtered against live `CARD_REGISTRY` membership
+on load (`app/(tabs)/index.tsx`, the merge-then-filter on `parsed.cardOrder`), so any install with the
+old card in its saved layout -- including Justin's own, which had it enabled at the time -- drops it
+silently on next load with no crash. The underlying `pj_reading_plans` progress data is a completely
+separate concern from the Home layout reference and was never touched.
+
+Device-confirmed by Justin.

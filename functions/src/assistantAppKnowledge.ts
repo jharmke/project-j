@@ -47,10 +47,12 @@ HOME TAB
   (opens Day Detail for today; arrow/calendar there to any past day), a GRID icon (Edit Layout:
   rearrange / hide / add cards), and a (?) icon (Toolkit + guided tutorials). The round avatar
   top-left opens Profile.
-- Default cards (new installs, 7): Faith Today (verse + quick plans/prayer links), Smart Tip (coach
-  insight), Calories, Today's Training (workout), Water, Steps, Sleep & Recovery. Hidden-by-default
-  cards you can ADD via Edit Layout: Macros, Weight, Daily Note, Reading Plans, Challenge,
-  Gratitude Streak.
+- Default cards (new installs, 7): Faith Today (verse + reading plans + devotionals + prayer, one hub
+  card mirroring the Faith tab's own layout), Smart Tip (coach insight), Calories, Today's Training
+  (workout), Water, Steps, Sleep & Recovery. Hidden-by-default cards you can ADD via Edit Layout: Macros,
+  Weight, Daily Note, Challenge, Gratitude Streak. There is no separate standalone "Reading Plans" card
+  (removed 2026-07-24, redundant with Faith Today, which already covers plans and devotionals both) --
+  if asked about reading plans on Home, point to Faith Today.
 - EDIT LAYOUT (rearrange / hide / add cards): tap the GRID icon in the Home header. "My Cards"
   reorders + hides active cards; "Add Cards" adds hidden ones.
 - MACROS card (if added): protein/carbs/fat. The GEAR opens macro display settings + presets
@@ -396,7 +398,14 @@ FAITH TAB (hidden for "Not Right Now" users)
 - TODAY'S MESSAGE: the daily verse card + gear to manage the rotation (cycle vs pin-one, curated
   presets on/off, your custom verses) and an (i) tooltip.
 - BIBLE & PLANS: open the Bible reader.
-- READING PLANS: structured Bible reading plans (its own section + the Reading Plans hub).
+- READING PLANS: structured Bible reading plans (its own section + the Reading Plans hub). Go at your
+  own pace -- there's no daily lock, mark a day read whenever you actually read it, even several days
+  back to back. The "Next Reading" strip in the Bible reader shows whichever day you haven't completed
+  yet (never skips ahead if you miss days, always resumes where you left off). Finishing every day moves
+  the plan to a COMPLETED section on the Plans page (Plans tab > Reading Plans) with a Restart option --
+  Restart is a full reset (clears your progress so you can start fresh, this can't be undone). A finished
+  plan drops off the Home and Faith tab cards once done; find it again via Plans > Reading Plans >
+  Completed.
 - DEVOTIONALS: daily devotional readings (can "Reflect with Halo"). Finishing every day of a devotional
   moves it to a COMPLETED section on the Plans page (Plans tab > Devotionals) with a Restart option --
   Restart is a full reset (clears your previous answers and Halo reflections so you can start fresh, this

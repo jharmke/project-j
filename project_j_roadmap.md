@@ -16,6 +16,15 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-24 **Reading plans: completion-driven pacing, Restart, plan-complete moment, device-confirmed.**
+  First half of the reading-plans pass (the dedicated schedule page is still ahead, see NEXT UP). Fixed
+  a real bug: "today's reading" was calendar-driven, so missing a few days silently skipped those
+  readings instead of resuming where you left off -- now completion-driven like devotionals. Same
+  IN PROGRESS/COMPLETED split + Restart as devotionals. Bible reader strip renamed "Today's Reading" ->
+  "Next Reading" (no longer a calendar promise), drops a plan once complete instead of showing "Complete"
+  forever, and finishing the LAST day now fires a distinct "Plan complete!" toast. Deleted the standalone
+  "Reading Plans" Home card entirely -- the "Faith Today" card already combines reading plans and
+  devotionals in one, mirroring the Faith tab; the standalone one was redundant and devotional-blind.
 - 2026-07-24 **Devotional completion state, Restart, and button redesign, device-confirmed.** A finished
   devotional now moves to its own COMPLETED section on Plans (with Restart) instead of sitting in IN
   PROGRESS forever with a dead Continue button, and drops off both Home's and the Faith tab's own
@@ -892,6 +901,13 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
+- [NOW, IN PROGRESS 2026-07-24] **Dedicated reading-plan page.** Foundational fixes shipped (completion-
+  driven pacing, Restart, plan-complete moment -- see RECENTLY SHIPPED); the actual page is still ahead.
+  Full schedule view for a plan: every day listed with its passage, read/unread state, tap a day to jump
+  to it in the Bible reader, manual mark-as-read toggle per day. Once it exists: retarget the Bible
+  reader's "NEXT READING" passage tap (currently just re-navigates within the reader) to open this page
+  instead. This is also the deliberate fix for the strip's "today vs next" ambiguity that a label alone
+  can't solve -- seeing the full day-numbered schedule removes the need to guess.
 - [surfaced 2026-07-24, needs discussion, not urgent] **Sync Claude memory/instructions between Justin's
   two accounts.** He switches between 2 Claude accounts when usage limits hit and wants their memory/
   instructions merged so they're identical. Before proposing anything: need to know whether both accounts

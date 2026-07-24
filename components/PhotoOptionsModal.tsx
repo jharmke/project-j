@@ -3,13 +3,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useRef } from 'react';
-import { Animated, Modal as RNModal, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Modal as RNModal, Pressable, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../theme';
 import { Type } from '../typography';
 import ButtonShine from './ButtonShine';
 import GradientIcon from './GradientIcon';
 import ModalHeader from './ModalHeader';
-import PressableButton from './PressableButton';
 
 // Same lift/sink recipe as GradientIcon, applied to the row labels too -- kept local rather than a
 // new shared component since GradientTitle is deliberately scoped to ScreenHeader/ModalHeader only.
@@ -40,6 +39,45 @@ function GradientLabel({ label, color, style }: { label: string; color: string; 
         <Text style={[style, { opacity: 0 }]}>{label}</Text>
       </LinearGradient>
     </MaskedView>
+  );
+}
+
+type Row = { label: string; icon: 'camera' | 'image' | 'trash'; onPress: () => void; destructive?: boolean };
+
+// House "card press" standard (scale 0.97 in, 1.0 out, timing not spring) hand-rolled here instead
+// of PressableButton -- that component forces flex:1 on itself, built specifically to sit as a flex
+// child in a horizontal row of buttons. Dropped into this vertical list, flex:1 with no parent height
+// collapsed all three rows on top of each other (shipped broken, caught on device). A plain full-width
+// Pressable has no such assumption.
+function OptionRow({ row, theme }: { row: Row; theme: ReturnType<typeof useTheme>['theme'] }) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const pressIn = () => Animated.timing(scale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start();
+  const pressOut = () => Animated.timing(scale, { toValue: 1, duration: 100, useNativeDriver: true }).start();
+
+  return (
+    <Pressable
+      onPressIn={pressIn}
+      onPressOut={pressOut}
+      onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); row.onPress(); }}
+    >
+      <Animated.View
+        style={{
+          transform: [{ scale }],
+          flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, paddingHorizontal: 14,
+          borderRadius: 10, borderWidth: 1,
+          backgroundColor: row.destructive ? theme.accentRedBg : theme.accentBlueBg,
+          borderColor: row.destructive ? theme.accentRedBorder : theme.accentBlueBorder,
+        }}
+      >
+        <ButtonShine radius={10} />
+        <GradientIcon name={row.icon} size={17} color={row.destructive ? theme.accentRed : theme.accentBlueRaw} />
+        <GradientLabel
+          label={row.label}
+          color={row.destructive ? theme.accentRed : theme.accentBlueRaw}
+          style={{ fontSize: 15, fontFamily: Type.uiSemibold }}
+        />
+      </Animated.View>
+    </Pressable>
   );
 }
 
@@ -81,7 +119,7 @@ export default function PhotoOptionsModal({ visible, hasPhoto, onClose, onTakePh
     ]).start(() => onClose());
   };
 
-  const rows: { label: string; icon: 'camera' | 'image' | 'trash'; onPress: () => void; destructive?: boolean }[] = [
+  const rows: Row[] = [
     { label: 'Take Photo', icon: 'camera', onPress: onTakePhoto },
     { label: 'Choose from Library', icon: 'image', onPress: onChooseLibrary },
   ];
@@ -117,26 +155,7 @@ export default function PhotoOptionsModal({ visible, hasPhoto, onClose, onTakePh
           <ModalHeader title="Profile Photo" onClose={close} />
 
           <View style={{ paddingHorizontal: 16, paddingTop: 4, gap: 10 }}>
-            {rows.map(row => (
-              <PressableButton
-                key={row.label}
-                onPress={row.onPress}
-                style={{
-                  flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, paddingHorizontal: 14,
-                  borderRadius: 10, borderWidth: 1,
-                  backgroundColor: row.destructive ? theme.accentRedBg : theme.accentBlueBg,
-                  borderColor: row.destructive ? theme.accentRedBorder : theme.accentBlueBorder,
-                }}
-              >
-                <ButtonShine radius={10} />
-                <GradientIcon name={row.icon} size={17} color={row.destructive ? theme.accentRed : theme.accentBlueRaw} />
-                <GradientLabel
-                  label={row.label}
-                  color={row.destructive ? theme.accentRed : theme.accentBlueRaw}
-                  style={{ fontSize: 15, fontFamily: Type.uiSemibold }}
-                />
-              </PressableButton>
-            ))}
+            {rows.map(row => <OptionRow key={row.label} row={row} theme={theme} />)}
           </View>
         </Animated.View>
       </View>

@@ -4318,11 +4318,17 @@ export default function HomeScreen() {
             {/* Segmented tabs -- dynamic, reflects editTab state */}
             <View ref={editLayoutTabsRef} collapsable={false} style={{ flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10 }}>
               <View style={{ flex: 1, flexDirection: 'row', backgroundColor: theme.bgInput, borderRadius: 10, padding: 3 }}>
-                <View style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center', backgroundColor: editTab === 'my' ? theme.accentBlueRaw : 'transparent' }}>
-                  <Text style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase', color: editTab === 'my' ? '#ffffff' : theme.textMuted }}>My Cards</Text>
+                <View style={{ flex: 1, paddingVertical: 7, borderRadius: 8, alignItems: 'center',
+                  backgroundColor: editTab === 'my' ? theme.accentBlueBg : 'transparent',
+                  borderWidth: editTab === 'my' ? 1.5 : 0, borderColor: theme.accentBlueBorder }}>
+                  {editTab === 'my' && <ButtonShine radius={8} />}
+                  <Text style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase', color: editTab === 'my' ? theme.accentBlue : theme.textMuted }}>My Cards</Text>
                 </View>
-                <View style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center', backgroundColor: editTab === 'add' ? theme.accentBlueRaw : 'transparent' }}>
-                  <Text style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase', color: editTab === 'add' ? '#ffffff' : theme.textMuted }}>Add Cards</Text>
+                <View style={{ flex: 1, paddingVertical: 7, borderRadius: 8, alignItems: 'center',
+                  backgroundColor: editTab === 'add' ? theme.accentBlueBg : 'transparent',
+                  borderWidth: editTab === 'add' ? 1.5 : 0, borderColor: theme.accentBlueBorder }}>
+                  {editTab === 'add' && <ButtonShine radius={8} />}
+                  <Text style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase', color: editTab === 'add' ? theme.accentBlue : theme.textMuted }}>Add Cards</Text>
                 </View>
               </View>
             </View>
@@ -4452,17 +4458,23 @@ export default function HomeScreen() {
             {/* Segmented control tabs */}
             <View style={{ flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10 }}>
               <View style={{ flex: 1, flexDirection: 'row', backgroundColor: theme.bgInput, borderRadius: 10, padding: 3 }}>
-                {(['my', 'add'] as const).map(tab => (
-                  <TouchableOpacity key={tab} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditTab(tab); }}
-                    style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center',
-                      backgroundColor: editTab === tab ? theme.accentBlueRaw : 'transparent',
-                    }}>
-                    <Text style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase',
-                      color: editTab === tab ? '#ffffff' : theme.textMuted }}>
-                      {tab === 'my' ? 'My Cards' : 'Add Cards'}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                {(['my', 'add'] as const).map(tab => {
+                  const tabActive = editTab === tab;
+                  return (
+                    <TouchableOpacity key={tab} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditTab(tab); }}
+                      style={{ flex: 1, paddingVertical: 7, borderRadius: 8, alignItems: 'center',
+                        backgroundColor: tabActive ? theme.accentBlueBg : 'transparent',
+                        borderWidth: tabActive ? 1.5 : 0,
+                        borderColor: theme.accentBlueBorder,
+                      }}>
+                      {tabActive && <ButtonShine radius={8} />}
+                      <Text style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase',
+                        color: tabActive ? theme.accentBlue : theme.textMuted }}>
+                        {tab === 'my' ? 'My Cards' : 'Add Cards'}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </View>
 

@@ -30,6 +30,12 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-24 **Meal-slot photo, Day Detail thumbnails (device-confirmed).** Follow-on batch to the Log tab
+  piece below. Any meal slot that has both logged food AND a photo shows a small 22x22 thumbnail next to
+  the meal name in Day Detail's Meals section; tap for the same full-screen viewer. Slots with a photo but
+  no logged food show nothing on Day Detail (Justin's explicit call -- Day Detail is a "what did I eat"
+  summary, photo-only reminders are a Log tab concern). Only remaining piece of the meal-photo feature is
+  the recipes photo port, still in NEXT UP.
 - 2026-07-24 **Meal-slot photo, Log tab (device-confirmed).** One photo per meal slot per day, independent
   from the slot's logged food items (Clear all never touches the photo). Lives in the expanded meal
   section as a dashed camera box (empty) or thumbnail (has photo) in its own centered column, food-list
@@ -987,9 +993,6 @@ are separate pre-submission checklists, NOT part of this menu.
   weight-logged safety-net check inside `refreshLiveNotifications` itself, so even a future new logging
   entry point that forgets to cancel its own notification gets caught the next time the app foregrounds.
   tsc clean on all touched files (pre-existing unrelated errors elsewhere untouched). NOT yet device-tested.
-- [Log tab piece SHIPPED 2026-07-24, see RECENTLY SHIPPED -- this is what's still left] **Meal-slot photo
-  on Day Detail.** Small thumbnails per slot that has a photo, expand full-screen on tap -- same feature,
-  just the Day Detail surface, deliberately built as its own follow-on batch rather than one giant change.
 - [DESIGN LOCKED 2026-07-24, ready to build] **Recipes get the same photo system food already has.**
   Verified food's existing photo feature (`pj_food_photo_${foodId}`, food-detail.tsx +
   CustomFoodCreator.tsx) only ever shows on the detail screen and its creation flow -- never a thumbnail

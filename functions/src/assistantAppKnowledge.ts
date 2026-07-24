@@ -303,7 +303,9 @@ LOG TAB (FOOD DIARY)
   under it. This photo is completely independent from the meal's logged food items: tapping "Clear all"
   removes only the food entries and never deletes the photo, and removing the photo never touches the
   food entries. A slot can have a photo even with nothing logged in it yet. Photos are backed up to the
-  cloud, so they survive app reinstall just like food photos do.
+  cloud, so they survive app reinstall just like food photos do. It also shows on Day Detail (tap any day
+  on Home/Stats): a small thumbnail appears next to a meal's name in the Meals section, but only for
+  meals that have BOTH logged food and a photo -- a photo with nothing logged only shows on the Log tab.
 - IMPORTANT: there is NO "Add Food" button on the Log tab itself. Food is added via the PLUS sign on
   a mealtime card, or via the LIBRARY button (Food Library). Never tell a user to "tap Add Food" on
   the Log tab.

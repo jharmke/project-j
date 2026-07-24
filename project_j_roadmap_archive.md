@@ -11,9 +11,22 @@
 
 ---
 
-## 📸 MEAL-SLOT PHOTO ON THE LOG TAB (device-confirmed, SHIPPED 2026-07-24, commit 7e491bc)
+## 📸 MEAL-SLOT PHOTO -- LOG TAB + DAY DETAIL (device-confirmed, SHIPPED 2026-07-24, commits 7e491bc, 0a98841)
 
-**What shipped:** One photo per meal slot (Morning/Lunch/Dinner/Snacks/Supplements/etc.) per day on the
+**Day Detail follow-on (commit 0a98841):** Built as its own batch right after the Log tab piece shipped,
+per the original "go in batches" plan. Easy build -- reused resolveMealPhoto() exactly as the Log tab
+does (Promise.all over all mealSlots, keyed on currentDate + mealSlots so it re-resolves on date nav) and
+the same full-screen viewer Modal pattern verbatim. One real design decision surfaced before coding:
+Day Detail only ever renders a meal section when it has logged food (`if (mealEntries.length === 0)
+return null`), so a slot with a photo but nothing logged (the "photo as a reminder to log later" case)
+would render nothing at all -- no section to hang a thumbnail on. Asked Justin directly rather than
+guessing: show a photo-only section anyway, or skip it. He picked skip -- Day Detail is a "what did I eat"
+summary, not a place for photo-only reminders; that's a same-day Log tab concern. So the thumbnail (a
+small 22x22 badge, borderRadius 5) only ever appears next to a meal name that already has both food AND a
+photo, sitting in the section header row next to the kcal total. Tap opens the same full-screen viewer.
+Confirmed working first pass, no iteration needed -- "looks good. all good here."
+
+**What shipped (Log tab, commit 7e491bc):** One photo per meal slot (Morning/Lunch/Dinner/Snacks/Supplements/etc.) per day on the
 Log tab. Tied to the whole meal, not to any individual food item, and not reused day to day. Lives in the
 EXPANDED meal tray, deliberately independent from "Clear all" -- clearing a slot's logged food items must
 never delete its photo, confirmed explicitly as two separate actions on two separate pieces of data.

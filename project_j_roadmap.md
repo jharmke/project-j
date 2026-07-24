@@ -874,6 +874,12 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
+- [surfaced 2026-07-24, needs discussion, not urgent] **Sync Claude memory/instructions between Justin's
+  two accounts.** He switches between 2 Claude accounts when usage limits hit and wants their memory/
+  instructions merged so they're identical. Before proposing anything: need to know whether both accounts
+  run on the same machine/profile (in which case they may already share the same local memory directory
+  and there's nothing to sync) or are genuinely separate setups. Explicitly not for the 2026-07-24 session
+  -- just needs to stay visible for when Justin's ready to dig in.
 - [decided + implemented 2026-07-23, PENDING DEVICE VERIFY] **Recovery score activity-component ceiling
   fix.** Justin signed off on the curve after discussing trade-offs (compared against Whoop's Green
   67-100/Yellow 34-66/Red 0-33 bands and Oura's approx. Optimal 85+/Good 70-84, both of which treat

@@ -978,9 +978,26 @@ are separate pre-submission checklists, NOT part of this menu.
   weight-logged safety-net check inside `refreshLiveNotifications` itself, so even a future new logging
   entry point that forgets to cancel its own notification gets caught the next time the app foregrounds.
   tsc clean on all touched files (pre-existing unrelated errors elsewhere untouched). NOT yet device-tested.
-- [surfaced 2026-07-22] **Keep the AI Estimate photo with the meal.** If a photo was used in the AI
-  estimator, that photo should stay attached to the logged entry. Likely needs a "meal photo" feature on
-  logged entries to hang it on. Justin thinks it isn't overly hard.
+- [DESIGN LOCKED 2026-07-24, ready to build] **Meal-slot photo on the Log tab.** Started as "keep the AI
+  estimate photo with the meal" (2026-07-22); the AI-estimator-photo-persistence idea was explicitly
+  dropped mid-discussion as unnecessary complexity -- this is a simpler, standalone feature. One photo
+  (not multiple) per meal SLOT (Morning/Lunch/Dinner/Snacks/Supplements) per DAY -- tied to the whole meal,
+  not to individual food items, and not reused day to day. Can be added even with nothing logged in that
+  slot yet (Justin: "maybe they take a pic as a reminder to manually log later"). Lives in the EXPANDED
+  meal section near the "Clear all" row (Claude's call, Justin agreed: putting the add/view UI in the
+  COLLAPSED row would put an empty dotted camera box on every meal slot by default, most of which will
+  never get a photo -- Supplements especially), a dotted box that becomes the actual photo thumbnail once
+  one exists. Deliberately independent from "Clear all": clearing a slot's food items must NEVER delete
+  its photo -- confirmed explicitly, these are two separate actions on two separate pieces of data.
+  Surfaces on Day Detail too as small thumbnails that expand full-screen on tap. Scrapbook/photo-database
+  browsing view explicitly held off, logged in project_j_backlog.md under FOOD INTELLIGENCE instead --
+  cheap to add once photos have actually accumulated, wasted effort before that.
+- [DESIGN LOCKED 2026-07-24, ready to build, small/paired with the above] **Recipes get the same photo
+  system food already has.** Verified food's existing photo feature (`pj_food_photo_${foodId}`,
+  food-detail.tsx + CustomFoodCreator.tsx) only ever shows on the detail screen and its creation flow --
+  never a thumbnail on any list/row. So this is a direct, low-risk port: recipe-builder.tsx (the creator)
+  gets the same add-photo option, the recipe detail/log screen gets the same tap-to-add/view area. No
+  thumbnail needed on the recipe library/main list either, matching food's own pattern exactly.
 - [surfaced 2026-07-22, needs design pass] **Time-of-day nutrition insights (EvR / reports / summaries /
   insights / coaches -- wherever it fits).** Surface timing effects: eating too much too late can disrupt
   deep sleep, etc., with varied examples of what each thing affects. Possibly fold in caffeine levels, late

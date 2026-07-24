@@ -20,6 +20,7 @@
 - Restaurant menu lookup -- scan/search restaurant, pull nutrition from FatSecret. Post-FatSecret feature.
 - Creatine tracking (manual) -- mirror the existing caffeine tracking: let users log creatine by hand (FatSecret does not carry it), then surface it in the nutrition display. Common supplement people track, Justin included. (Justin 2026-07-01.)
 - Nutrition label scan: replace the system photo picker with a custom live-camera screen (viewfinder box + "align label in frame" text, same pattern as the barcode scanner). Real, non-trivial rebuild -- deliberately deferred in favor of a simple text hint under the Scan button. (Justin 2026-07-21, feature itself confirmed done 2026-07-23 -- see archive.)
+- Meal-photo scrapbook / picture database -- once meal-slot photos exist (NEXT UP), a browsable "look back at what you've eaten" gallery across days/weeks. Deliberately held off building alongside the photo feature itself -- there's no real data to browse yet, so it's cheap to add later once photos have actually accumulated, not now. (Justin 2026-07-24.)
 
 ---
 

@@ -17,6 +17,11 @@ interface Props {
   visible: boolean;
   onClose: () => void;
   hideTour?: boolean;
+  // Override the registry-category-derived amber/blue scheme. Needed for dual-context cards like
+  // GratitudeStreakCard whose OWN tooltip category is 'Habits' (correct -- it's a secular habit
+  // tracker on Home) but which also renders on the Faith tab wearing the amber skin; the icon
+  // itself already knows which context it's in, this just lets the modal agree.
+  forceFaith?: boolean;
 }
 
 // Same lift/sink recipe as GradientNumber (a big icon glyph is roughly square, same as a number glyph --
@@ -59,7 +64,7 @@ function GradientIcon({ name, size, color }: { name: keyof typeof Ionicons.glyph
   );
 }
 
-export default function TooltipModal({ tooltipKey, visible, onClose, hideTour }: Props) {
+export default function TooltipModal({ tooltipKey, visible, onClose, hideTour, forceFaith }: Props) {
   const { theme } = useTheme();
   const { startTutorial } = useTutorial();
 
@@ -75,7 +80,7 @@ export default function TooltipModal({ tooltipKey, visible, onClose, hideTour }:
 
   // Faith tooltips (Bible/prayer/etc.) run the app's amber scheme instead of the user's chosen accent --
   // same rule PrayerRequestModal already follows (faith ? accentAmber : accentBlue[Raw]).
-  const isFaith = def?.category === 'Faith';
+  const isFaith = forceFaith ?? (def?.category === 'Faith');
   const accent    = isFaith ? theme.accentAmber : theme.accentBlue;
   const accentRaw = isFaith ? theme.accentAmber : theme.accentBlueRaw;
   const gotItBg     = isFaith ? theme.accentAmber + '18' : theme.accentBlueBg;

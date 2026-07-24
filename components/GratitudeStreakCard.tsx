@@ -16,7 +16,7 @@ import TooltipIcon from './TooltipIcon';
 import ButtonShine from './ButtonShine';
 import AnimatedNumber from './AnimatedNumber';
 import GradientNumber from './GradientNumber';
-import { CardWash, CardWatermark } from './GradientCard';
+import { CardWatermark } from './GradientCard';
 import { fetchVerseText } from '../data/verses';
 import { Type, numLine } from '../typography';
 
@@ -445,9 +445,6 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
 
   return (
     <View ref={cardRef} style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder, borderTopColor: cardTop, borderTopWidth: faith ? 2 : 1.5, shadowColor: t.cardShadow, shadowOpacity: t.cardShadowOpacity }]}>
-      {faith
-        ? null
-        : <CardWash color={t.accentBlueRaw} radius={14} />}
       <CardWatermark name="heart" color={accent} />
 
       {/* Header */}
@@ -457,7 +454,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
           <Text style={[styles.cardLabel, { color: inkMuted }]}>Gratitude Streak</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <TooltipIcon tooltipKey="gratitude_streak" color={faith ? accent : undefined} />
+          <TooltipIcon tooltipKey="gratitude_streak" color={faith ? accent : undefined} forceFaith={faith} />
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Ionicons name={faith ? 'journal' : 'book'} size={16} color={btnText} />
           </TouchableOpacity>

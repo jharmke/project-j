@@ -16,9 +16,11 @@ interface Props {
   hideTour?: boolean;
   /** Override the (i) icon color. Defaults to the blue accent; faith cards pass amber. */
   color?: string;
+  /** Forwarded to TooltipModal -- see its own doc comment. Only needed by dual-context cards. */
+  forceFaith?: boolean;
 }
 
-export default function TooltipIcon({ tooltipKey, size = 13, hideTour, color }: Props) {
+export default function TooltipIcon({ tooltipKey, size = 13, hideTour, color, forceFaith }: Props) {
   const { theme } = useTheme();
   const { seen, markSeen } = useTooltip(tooltipKey);
   const [modalVisible, setModalVisible] = useState(false);
@@ -65,6 +67,7 @@ export default function TooltipIcon({ tooltipKey, size = 13, hideTour, color }: 
         visible={modalVisible}
         onClose={handleClose}
         hideTour={hideTour}
+        forceFaith={forceFaith}
       />
     </>
   );

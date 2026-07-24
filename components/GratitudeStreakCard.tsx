@@ -358,7 +358,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
         id: existingIdx >= 0 ? entries[existingIdx].id : `${todayKey}_gratitude_${Date.now()}`,
         date: todayKey,
         category: 'gratitude',
-        title: 'Gratitude',
+        title: 'Daily Gratitude',
         notes: text,
       };
       if (existingIdx >= 0) { entries[existingIdx] = entry; }

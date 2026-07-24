@@ -887,6 +887,12 @@ export default function HomeScreen() {
   // Style mode + faith journey
   const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
   const [faithJourney, setFaithJourney] = useState<'rooted' | 'exploring' | 'notrightnow'>('rooted');
+  // Cards that render null on Home for NRN (see renderCardById's 'verse' and 'reading_plans' cases).
+  // Edit Layout's My Cards / Add Cards lists need to agree with that, purely a DISPLAY filter -- never
+  // mutates cardVisible/cardOrder, so switching back to Exploring/Rooted silently restores them with
+  // zero data loss, same as they were left.
+  const isFaithRestrictedForNRN = (id: CardId) =>
+    faithJourney === 'notrightnow' && (id === 'verse' || id === 'reading_plans');
   const [burnAccuracyPct, setBurnAccuracyPct] = useState(100);
   // Whether burnAccuracyPct has been loaded from settings yet. The active-cal goal check must wait
   // for this: burnAccuracyPct defaults to 100, so evaluating before the real value (e.g. 80%) loads
@@ -4323,7 +4329,7 @@ export default function HomeScreen() {
             {/* MY CARDS tab */}
             {editTab === 'my' && (
               <ScrollView showsVerticalScrollIndicator={false} scrollEnabled={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}>
-                {cardOrder.slice(0, 4).map((id, idx) => {
+                {cardOrder.filter(id => !isFaithRestrictedForNRN(id)).slice(0, 4).map((id, idx) => {
                   const cardMeta = CARD_REGISTRY.find(c => c.id === id);
                   if (!cardMeta) return null;
                   const isVisible = cardVisible[id];
@@ -4361,10 +4367,10 @@ export default function HomeScreen() {
             {editTab === 'add' && (
               <ScrollView showsVerticalScrollIndicator={false} scrollEnabled={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}>
                 <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase', marginBottom: 8, marginTop: 4 }}>Home Cards</Text>
-                {CARD_REGISTRY.filter(m => !cardVisible[m.id] && !(m.id === 'reading_plans' && faithJourney === 'notrightnow')).length === 0 ? (
+                {CARD_REGISTRY.filter(m => !cardVisible[m.id] && !isFaithRestrictedForNRN(m.id)).length === 0 ? (
                   <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui, marginBottom: 12 }}>All cards are currently visible.</Text>
                 ) : (
-                  CARD_REGISTRY.filter(m => !cardVisible[m.id] && !(m.id === 'reading_plans' && faithJourney === 'notrightnow')).map(m => (
+                  CARD_REGISTRY.filter(m => !cardVisible[m.id] && !isFaithRestrictedForNRN(m.id)).map(m => (
                     <View key={m.id} style={styles.editCardRow}>
                       <View style={[styles.editBadge, { backgroundColor: theme.accentGreenBg, borderColor: theme.accentGreenBorder }]}>
                         <Ionicons name="add" size={14} color={theme.accentGreen} />
@@ -4464,11 +4470,16 @@ export default function HomeScreen() {
             {editTab === 'my' && (
               <View style={{ flex: 1 }}>
               <DraggableFlatList
-                data={cardOrder.filter(id => cardVisible[id])}
+                data={cardOrder.filter(id => cardVisible[id] && !isFaithRestrictedForNRN(id))}
                 keyExtractor={(item) => item}
                 contentContainerStyle={{ paddingHorizontal:16, paddingBottom: 20 }}
                 onDragEnd={({ data: visibleData }) => {
-                  const hidden = cardOrder.filter(id => !cardVisible[id]);
+                  // NRN-restricted cards are excluded from `data` above (not draggable while
+                  // restricted) but must NOT be dropped from cardOrder entirely -- they're still
+                  // cardVisible:true underneath, just temporarily unrenderable. Bucket them with
+                  // `hidden` so they're preserved (appended at the end) and silently reappear where
+                  // draggable again the moment faith journey changes back.
+                  const hidden = cardOrder.filter(id => !cardVisible[id] || isFaithRestrictedForNRN(id));
                   const newOrder = [...visibleData, ...hidden];
                   setCardOrder(newOrder);
                   saveLayout(newOrder, cardVisible);
@@ -4537,12 +4548,12 @@ export default function HomeScreen() {
             {editTab === 'add' && (
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}>
                 <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase', marginBottom: 8, marginTop: 4 }}>Home Cards</Text>
-                {CARD_REGISTRY.filter(meta => !cardVisible[meta.id] && !(meta.id === 'reading_plans' && faithJourney === 'notrightnow')).length === 0 ? (
+                {CARD_REGISTRY.filter(meta => !cardVisible[meta.id] && !isFaithRestrictedForNRN(meta.id)).length === 0 ? (
                   <View style={{ paddingVertical: 16, alignItems: 'center' }}>
                     <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui }}>All home cards are active</Text>
                   </View>
                 ) : (
-                  CARD_REGISTRY.filter(meta => !cardVisible[meta.id] && !(meta.id === 'reading_plans' && faithJourney === 'notrightnow')).map(meta => (
+                  CARD_REGISTRY.filter(meta => !cardVisible[meta.id] && !isFaithRestrictedForNRN(meta.id)).map(meta => (
                     <TouchableOpacity key={meta.id}
                       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); toggleCardVisible(meta.id); setEditTab('my'); }}
                       style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle, gap: 12 }}>

@@ -2094,6 +2094,7 @@ export default function HomeScreen() {
             const isFirst = updatedStore['weight_goal'].count === 1;
             const gd = ACHIEVEMENTS.find(a => a.id === 'weight_goal');
             showCelebration(isFirst ? 'diamond' : 'large', gd?.name ?? 'GOAL WEIGHT', isFirst ? gd : undefined);
+            fireRatingTrigger(tutorialActiveState);
           }
         }
       }
@@ -2164,6 +2165,7 @@ export default function HomeScreen() {
         const isFirstEarn = updatedStore['weight_goal'].count === 1;
         const weightGoalDef = ACHIEVEMENTS.find(a => a.id === 'weight_goal');
         showCelebration(isFirstEarn ? 'diamond' : 'large', weightGoalDef?.name ?? 'GOAL WEIGHT', isFirstEarn ? weightGoalDef : undefined);
+        fireRatingTrigger(tutorialActiveState);
       }
     }
   };

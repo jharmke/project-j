@@ -218,7 +218,12 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
 
       const journalRaw = await AsyncStorage.getItem('pj_bible_reflections');
       const entries: any[] = journalRaw ? JSON.parse(journalRaw) : [];
+      // Streak/weekly-dots purposes: ANY gratitude entry today counts, card or manual alike.
       const todayEntry = entries.find(e => e.category === 'gratitude' && e.date === todayKey);
+      // Display/edit purposes: ONLY the card's own entry (fixed id, see handleSave) -- a manual
+      // gratitude entry created via Journal for today must never override what the card itself
+      // shows or silently get overwritten if the card is edited afterward.
+      const todayCardEntry = entries.find(e => e.id === `${todayKey}_gratitude_card`);
 
       // Compute which days of the current Sun-Sat week have a logged entry
       const todayDate = new Date(todayKey + 'T00:00:00');
@@ -274,8 +279,8 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
       setStreak(gratitudeStreak);
       setSavers(saversState);
 
-      if (todayEntry) {
-        setLoggedEntry(todayEntry.notes || '');
+      if (todayCardEntry) {
+        setLoggedEntry(todayCardEntry.notes || '');
         setCardState('logged');
       } else {
         setLoggedEntry('');
@@ -353,9 +358,13 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
     try {
       const raw = await AsyncStorage.getItem('pj_bible_reflections');
       const entries: any[] = raw ? JSON.parse(raw) : [];
-      const existingIdx = entries.findIndex(e => e.category === 'gratitude' && e.date === todayKey);
+      // Fixed, deterministic id -- always the same one for a given day's card entry, regardless of
+      // when it was created. Finds/edits ONLY the card's own entry, never a manual Journal entry
+      // that happens to share today's date + gratitude category.
+      const cardEntryId = `${todayKey}_gratitude_card`;
+      const existingIdx = entries.findIndex(e => e.id === cardEntryId);
       const entry = {
-        id: existingIdx >= 0 ? entries[existingIdx].id : `${todayKey}_gratitude_${Date.now()}`,
+        id: cardEntryId,
         date: todayKey,
         category: 'gratitude',
         title: 'Daily Gratitude',

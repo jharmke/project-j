@@ -1373,7 +1373,19 @@ export default function SettingsScreen() {
     if (openFeedback === 'true') setFeedbackOpen(true);
   }, [openFeedback]);
   useEffect(() => {
-    if (fireRating === 'true') requestRatingPrompt().catch(() => {});
+    // 'true' = normal fire (from the Otto card, already passed canAskForRating()).
+    // 'force' = dev-tools test fire (from the button below) -- now routed through a real navigation
+    // into a freshly-mounted screen, same as the Otto card, instead of firing in place, to test
+    // whether THAT (not Apple randomness) is what made the Otto path reliable. Shows the same
+    // diagnostic toast the old in-place button did.
+    if (fireRating === 'true') {
+      requestRatingPrompt().catch(() => {});
+    } else if (fireRating === 'force') {
+      requestRatingPrompt({ force: true }).then(result => {
+        const detail = result.error ? `Error: ${result.error}` : `hasAction: ${result.hadAction}`;
+        showToast(result.fired ? 'Ask recorded' : 'Did not fire', detail, result.error ? 'error' : 'info');
+      }).catch(() => {});
+    }
   }, [fireRating]);
 
   return (
@@ -2590,15 +2602,17 @@ export default function SettingsScreen() {
               <Ionicons name="trophy-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
               triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-              const result = await requestRatingPrompt({ force: true });
-              const detail = result.error ? `Error: ${result.error}` : `hasAction: ${result.hadAction}`;
-              showToast(result.fired ? 'Ask recorded' : 'Did not fire', detail, result.error ? 'error' : 'info');
+              // TEST: routed through a real navigation into a freshly-mounted screen (same mechanism
+              // the Otto card uses), instead of firing in place like this used to. See if that alone
+              // is what made the Otto path reliable. Expect Settings to visibly push again on top of
+              // itself -- that's expected for this test, not a bug.
+              router.push({ pathname: '/settings', params: { fireRating: 'force' } });
             }}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowTitle, { color: theme.accentBlue }]}>Force Rate Us Prompt</Text>
-                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Bypasses all guards, still records the ask.</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Bypasses all guards, still records the ask. Navigates fresh (test).</Text>
               </View>
               <Ionicons name="star-outline" size={18} color={theme.accentBlue} />
             </TouchableOpacity>

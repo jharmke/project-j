@@ -30,6 +30,11 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-24 **Flat progress-bar sweep, closed out.** HR Zone modal (shared by workout tab exercises +
+  everywhere else it opens from) and the Stats tab's standalone Time in Zones card both swapped their flat
+  per-zone-color fills for barFillGradient(r.color) -- same molded depth, zone color-coding untouched.
+  With steps and stats cards already fixed separately, this closes the sweep that started with the water
+  pace work: every progress bar in the app now uses the same real gradient treatment. Device-confirmed.
 - 2026-07-24 **Dedicated reading-plan schedule page, device-confirmed.** Second half of the reading-plans
   pass. New app/reading-plan.tsx: full schedule for a plan grouped into weeks behind a "Week N" picker
   (plans run 21-397 days, a flat scroll wasn't reasonable), tap a day's passage to jump into the Bible,
@@ -980,11 +985,6 @@ are separate pre-submission checklists, NOT part of this menu.
   insights / coaches -- wherever it fits).** Surface timing effects: eating too much too late can disrupt
   deep sleep, etc., with varied examples of what each thing affects. Possibly fold in caffeine levels, late
   workouts, and water timing too. Unscoped.
-- [surfaced 2026-07-23, PARTIALLY DONE 2026-07-24 -- "any progress bar needs it"] **Flat progress-bar
-  sweep.** Water modal, EvR, the reading-plan schedule page, the Plans page, and the Faith tab / Home
-  "Bible and Plans" cards all now use the molded barFillGradient (fixed in this session's reading-plans
-  pass, found while chasing an unrelated request). Still untouched: steps, stats cards, and anywhere else
-  app-wide with a flat fill -- hunt those down and give them the same touch-up. QUICK-WIN-ish audit.
 - [surfaced 2026-07-20, found during iPad auth testing] **iPad layout looks broken -- wrapped date, oversized
   text.** On Justin's iPad (not previously tested on this app), Home's "MONDAY, JULY 20" date wraps to a
   second line under the greeting, and Otto's chat header ("Wellness and App Guide" subtitle) renders visibly

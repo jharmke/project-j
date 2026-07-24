@@ -89,6 +89,13 @@ export function getDevotionalCompletion(
   return { completed, total: dev.totalDays, pct: dev.totalDays > 0 ? completed / dev.totalDays : 0 };
 }
 
+/** Every day marked complete -- the devotional as a whole is done, not just "in progress" on its
+ *  last day. Distinct from progress.pct === 1 only in that it's explicit about intent at call sites. */
+export function isDevotionalComplete(dev: Devotional, progress?: DevotionalProgress): boolean {
+  if (!progress) return false;
+  return getDevotionalCompletion(dev, progress).completed === dev.totalDays;
+}
+
 // ─── Devotional 1: Rest and Recovery (3 days) ─────────────────────────────────
 // Wellness-tied moat category. Connects physical rest/recovery to the rest the
 // gospel offers, without spiritualizing metrics or prosperity-gospel framing.

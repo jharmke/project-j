@@ -33,7 +33,7 @@ import {
   READING_PLANS, getPlanCompletion, getTodayReading, MAX_ACTIVE_PLANS, type ReadingPlansStorage,
 } from '../../data/readingPlans';
 import {
-  DEVOTIONALS, getDevotionalCompletion, MAX_ACTIVE_DEVOTIONALS, type DevotionalsStorage,
+  DEVOTIONALS, getDevotionalCompletion, isDevotionalComplete, MAX_ACTIVE_DEVOTIONALS, type DevotionalsStorage,
 } from '../../data/devotionals';
 import { loadReadingPlanProgress } from '../../utils/readingPlansProgress';
 import { loadDevotionalProgress, getDevotionalProgress, getNextDay } from '../../utils/devotionals';
@@ -424,7 +424,14 @@ function BibleCard({ theme }: { theme: Theme }) {
   };
 
   const activePlans = READING_PLANS.filter(p => !!planStore[p.id]);
-  const activeDevs = DEVOTIONALS.filter(d => !!devStore[d.id]);
+  // enrolledDevs = every devStore record regardless of completion -- this is what MAX_ACTIVE_DEVOTIONALS
+  // actually bounds (a completed-but-not-dropped devotional still occupies a storage slot; Restart/Drop
+  // are what free one). activeDevs is the DISPLAY list for this card and excludes completed ones, same
+  // as the Home version -- Plans is where a completed one lives (with Restart). This is a SEPARATE card
+  // implementation from components/FaithTodayCard.tsx (Home's version), not a shared component -- the
+  // two lists have to be kept in sync by hand. Caught this exact gap once already this pass.
+  const enrolledDevs = DEVOTIONALS.filter(d => !!devStore[d.id]);
+  const activeDevs = enrolledDevs.filter(d => !isDevotionalComplete(d, devStore[d.id]));
 
   // Pilot surface treatment (Bible & Plans card only): on the 4 light-family themes the 6%
   // amber tile wash vanished into the card, so lift insets to a clean bright surface; dark
@@ -551,7 +558,7 @@ function BibleCard({ theme }: { theme: Theme }) {
                 onPress: () => continueDevotional(d.id),
               };
             })}
-            atCap={activeDevs.length >= MAX_ACTIVE_DEVOTIONALS}
+            atCap={enrolledDevs.length >= MAX_ACTIVE_DEVOTIONALS}
             onBrowse={() => browse('devotionals')}
           />
         </View>
@@ -595,7 +602,19 @@ function PlansColumn({ theme, label, emptyText, items, atCap, onBrowse, colRef }
   const chipBg = theme.accentAmber + (isDark ? '2e' : '24');
   return (
     <View ref={colRef} collapsable={false} style={styles.plansCol}>
-      <Text style={[styles.colLabel, { color: inkMuted }]}>{label}</Text>
+      {/* Label itself opens /plans, same destination as Browse -- Browse only shows while under the
+          active cap, so a maxed-out column (every tile full) had NO way into the Plans page at all
+          from this card except a buried "Plans" row inside the Bible reader's own gear menu. This is
+          the persistent entry point that doesn't depend on there being room to add another. */}
+      <TouchableOpacity
+        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); onBrowse(); }}
+        activeOpacity={0.7}
+        hitSlop={{ top: 6, bottom: 6, left: 0, right: 6 }}
+        style={styles.colLabelRow}
+      >
+        <Text style={[styles.colLabel, { color: inkMuted }]}>{label}</Text>
+        <Ionicons name="chevron-forward" size={11} color={inkMuted} style={{ transform: [{ translateY: 2 }] }} />
+      </TouchableOpacity>
       {items.length === 0 ? (
         <View style={styles.emptyCol}>
           <Text style={[styles.emptyColText, { color: inkMuted }]}>{emptyText}</Text>
@@ -835,6 +854,7 @@ const styles = StyleSheet.create({
   plansRow:        { flexDirection: 'row', alignItems: 'stretch' },
   plansCol:        { flex: 1 },
   vDivider:        { width: 1, marginHorizontal: 10 },
+  colLabelRow:     { flexDirection: 'row', alignItems: 'baseline', gap: 3, alignSelf: 'flex-start' },
   colLabel:        { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', fontFamily: Type.uiBold, marginBottom: 10 },
   // Clean surface tile with a 3px amber left accent bar (the settings pattern), so amber reads as an
   // accent instead of a fill. Name is Lora serif (the "set apart" font, matching prayers + the

@@ -20,7 +20,7 @@ import {
 import { useToast } from '../components/Toast';
 import CompanionChat, { MiniCross } from '../components/CompanionChat';
 import CompanionFAB from '../components/CompanionFAB';
-import { useTheme } from '../theme';
+import { useTheme, mix } from '../theme';
 import type { DevotionalsStorage, DevotionalHaloTurn } from '../data/devotionals';
 import { cancelFaithReadingNotification } from '../services/notifications';
 import { fireRatingTrigger } from '../utils/ratingPrompt';
@@ -377,22 +377,33 @@ export default function DevotionalScreen() {
             )}
           </View>
 
-          {/* Mark complete */}
-          <TouchableOpacity
+          {/* Mark complete -- SAME pill construction as "Reflect on this with Halo" above (badge circle +
+              gradient title + opaque tinted fill), not a second molded PrimaryCTA. Save reflection is the
+              one true CTA on this screen per PrimaryCTA's own rule ("reserve solid fill for the ONE
+              primary action"); making Mark Complete a second molded button gave the screen two competing
+              heavy elements sandwiching one lighter pill, which is what actually read as "3 different
+              styles, completed looks bigger" even after the color was fixed. Green fill is a bespoke
+              opaque mix (mirrors how accentAmberBgOpaque itself is built: accent mixed INTO bgInput, not
+              a translucent wash over the page) -- there's no green equivalent token in the theme, and a
+              wash was the original "blends into background" bug in the first place. */}
+          <PressScale
             onPress={handleComplete}
-            activeOpacity={0.85}
-            style={[styles.completeBtn, {
-              backgroundColor: completed ? `rgba(13,146,104,0.12)` : theme.bgCard,
-              borderColor: completed ? 'rgba(13,146,104,0.45)' : `rgba(${GOLD_RGB},0.30)`,
+            style={[styles.haloBtn, {
+              backgroundColor: completed ? mix('#0d9268', theme.bgInput, themeId === 'dark' ? 0.22 : 0.16) : theme.accentAmberBgOpaque,
+              borderColor: completed ? 'rgba(13,146,104,0.5)' : 'rgba(232,160,32,0.5)',
             }]}
           >
-            <Ionicons
-              name={completed ? 'checkmark-circle' : 'ellipse-outline'}
-              size={20}
+            <ButtonShine radius={12} />
+            <View style={[styles.haloBadge, { backgroundColor: completed ? '#0d9268' : HALO_GOLD }]}>
+              <Ionicons name={completed ? 'checkmark' : 'ellipse-outline'} size={15} color="#ffffff" />
+            </View>
+            <GradientTitle
+              title={completed ? 'Completed' : 'Mark This Day Complete'}
               color={completed ? '#0d9268' : theme.accentAmber}
+              numberOfLines={1}
+              style={styles.haloBtnText}
             />
-            <GradientTitle title={completed ? 'Completed' : 'Mark this day complete'} color={completed ? '#0d9268' : theme.accentAmber} numberOfLines={1} style={styles.completeText} />
-          </TouchableOpacity>
+          </PressScale>
 
           {/* Day navigation */}
           <View style={styles.navRow}>
@@ -465,8 +476,6 @@ const styles = StyleSheet.create({
   haloRow:         { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12, borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, minHeight: 56, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
   haloRowTitle:    { fontSize: 14, fontFamily: Type.uiSemibold },
   haloRowPreview:  { fontSize: 12, fontFamily: Type.ui, marginTop: 2 },
-  completeBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 12, height: 52, borderRadius: 14, borderWidth: 1 },
-  completeText:    { fontSize: 15, fontFamily: Type.uiSemibold },
   navRow:          { flexDirection: 'row', justifyContent: 'space-between', marginTop: 24 },
   navBtn:          { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 10, paddingHorizontal: 4, minHeight: 44 },
   navText:         { fontSize: 14, fontFamily: Type.uiSemibold },

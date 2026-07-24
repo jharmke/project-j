@@ -12,7 +12,7 @@ import {
   READING_PLANS, getPlanCompletion, getTodayReading, MAX_ACTIVE_PLANS, type ReadingPlansStorage,
 } from '../data/readingPlans';
 import {
-  DEVOTIONALS, getDevotionalCompletion, MAX_ACTIVE_DEVOTIONALS, type DevotionalsStorage,
+  DEVOTIONALS, getDevotionalCompletion, isDevotionalComplete, MAX_ACTIVE_DEVOTIONALS, type DevotionalsStorage,
 } from '../data/devotionals';
 import {
   loadReadingPlanProgress, enrollReadingPlan, dropReadingPlan,
@@ -193,9 +193,35 @@ export default function PlansScreen() {
     );
   };
 
+  // Restart = drop then re-enroll, same as Drop Devotional under the hood. A deliberate full wipe,
+  // not a soft reset: the point of redoing a devotional is usually a different season wanting a
+  // fresh reflection, not your old typed answer sitting there pre-filled.
+  const confirmRestartDevotional = (devId: string) => {
+    const dev = DEVOTIONALS.find(d => d.id === devId);
+    Alert.alert(
+      'Restart this devotional?',
+      `This clears your previous answers and Halo reflections on "${dev?.name}" so you can start fresh. This can't be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Restart', style: 'destructive',
+          onPress: async () => {
+            triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+            await unenrollDevotional(devId);
+            const updated = await enrollDevotional(devId);
+            setDevStore(updated);
+            showToast(`${dev?.shortName} restarted`, undefined, 'success');
+          },
+        },
+      ],
+    );
+  };
+
   // ── Section splits ──────────────────────────────────────────────────────────
   const activePlans = READING_PLANS.filter(p => !!planStore[p.id]);
   const availablePlans = READING_PLANS.filter(p => !planStore[p.id]);
+  const inProgressDevs = DEVOTIONALS.filter(d => !!devStore[d.id] && !isDevotionalComplete(d, devStore[d.id]));
+  const completedDevs = DEVOTIONALS.filter(d => !!devStore[d.id] && isDevotionalComplete(d, devStore[d.id]));
   const activeDevs = DEVOTIONALS.filter(d => !!devStore[d.id]);
   const availableDevs = DEVOTIONALS.filter(d => !devStore[d.id]);
   const plansAtLimit = activePlans.length >= MAX_ACTIVE_PLANS;
@@ -305,10 +331,10 @@ export default function PlansScreen() {
               <Text style={[styles.intro, { color: theme.textPrimary }]}>
                 Shorter, guided readings with a written reflection, a question, and Halo to think it through with you.
               </Text>
-              {activeDevs.length > 0 && (
+              {inProgressDevs.length > 0 && (
                 <>
                   <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>IN PROGRESS</Text>
-                  {activeDevs.map(dev => {
+                  {inProgressDevs.map(dev => {
                     const c = getDevotionalCompletion(dev, devStore[dev.id]);
                     const nextDay = getNextDay(dev, getDevotionalProgress(devStore, dev.id));
                     return (
@@ -329,10 +355,34 @@ export default function PlansScreen() {
                   })}
                 </>
               )}
+              {completedDevs.length > 0 && (
+                <>
+                  <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>COMPLETED</Text>
+                  {completedDevs.map(dev => {
+                    const c = getDevotionalCompletion(dev, devStore[dev.id]);
+                    return (
+                      <View key={dev.id} onLayout={e => { cardOffsets.current[dev.id] = e.nativeEvent.layout.y; }}>
+                      <PlanRow
+                        theme={theme}
+                        icon="checkmark-circle"
+                        accentColor="#0d9268"
+                        title={dev.name}
+                        lengthLabel={`${dev.totalDays} days`}
+                        description={dev.description}
+                        progress={c}
+                        primaryLabel="Restart"
+                        onPrimary={() => confirmRestartDevotional(dev.id)}
+                        onDrop={() => confirmDropDevotional(dev.id)}
+                      />
+                      </View>
+                    );
+                  })}
+                </>
+              )}
               {availableDevs.length > 0 ? (
                 <>
                   <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>
-                    {activeDevs.length > 0 ? 'MORE DEVOTIONALS' : 'CHOOSE A DEVOTIONAL'}
+                    {inProgressDevs.length > 0 || completedDevs.length > 0 ? 'MORE DEVOTIONALS' : 'CHOOSE A DEVOTIONAL'}
                   </Text>
                   {availableDevs.length > 1 && <SortControl theme={theme} mode={sortMode} onChange={setSortMode} />}
                   {devsAtLimit && (
@@ -416,7 +466,7 @@ function SortControl({ theme, mode, onChange }: { theme: Theme; mode: SortMode; 
 // gold icon badge, title, length, description, an animated progress bar when in progress, the
 // primary action (Start / Continue), and an optional drop control for active items.
 function PlanRow({
-  theme, icon, title, lengthLabel, description, progress, primaryLabel, onPrimary, onDrop, disabled,
+  theme, icon, title, lengthLabel, description, progress, primaryLabel, onPrimary, onDrop, disabled, accentColor,
 }: {
   theme: Theme;
   icon: string;
@@ -428,10 +478,12 @@ function PlanRow({
   onPrimary: () => void;
   onDrop?: () => void;
   disabled?: boolean;
+  accentColor?: string; // COMPLETED rows pass the house "done" green instead of the page's gold
 }) {
   // Calm warm card to match the faith tab: eggshell on the light family (warm theme brightens so it
   // lifts off its warm page), dark keeps its card color.
   const isDark = theme.id === 'dark';
+  const accent = accentColor ?? theme.accentAmber;
   return (
     <View style={[styles.card, {
       backgroundColor: theme.id === 'warm' ? 'rgba(255,253,248,0.96)' : theme.bgCard,
@@ -441,8 +493,8 @@ function PlanRow({
       shadowOpacity: theme.cardShadowOpacity,
     }]}>
       <View style={styles.cardTop}>
-        <View style={[styles.iconBadge, { backgroundColor: `rgba(${GOLD_RGB},0.12)` }]}>
-          <Ionicons name={icon as any} size={20} color={theme.accentAmber} />
+        <View style={[styles.iconBadge, { backgroundColor: accent + '1f' }]}>
+          <Ionicons name={icon as any} size={20} color={accent} />
         </View>
         <View style={{ flex: 1 }}>
           <GradientTitle title={title} color={theme.accentAmber} numberOfLines={1} style={styles.cardTitle} />
@@ -517,7 +569,7 @@ function PressScale({ onPress, style, children }: { onPress: () => void; style: 
     <Animated.View style={[{ flex: 1 }, { transform: [{ scale }] }]}>
       <TouchableOpacity
         activeOpacity={0.9}
-        onPress={onPress}
+        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); onPress(); }}
         onPressIn={() => Animated.timing(scale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start()}
         onPressOut={() => Animated.timing(scale, { toValue: 1, duration: 150, useNativeDriver: true }).start()}
         style={style}

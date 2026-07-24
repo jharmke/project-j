@@ -11,6 +11,71 @@
 
 ---
 
+## 📸 MEAL-SLOT PHOTO ON THE LOG TAB (device-confirmed, SHIPPED 2026-07-24, commit 7e491bc)
+
+**What shipped:** One photo per meal slot (Morning/Lunch/Dinner/Snacks/Supplements/etc.) per day on the
+Log tab. Tied to the whole meal, not to any individual food item, and not reused day to day. Lives in the
+EXPANDED meal tray, deliberately independent from "Clear all" -- clearing a slot's logged food items must
+never delete its photo, confirmed explicitly as two separate actions on two separate pieces of data.
+
+**Where it came from:** Started 2026-07-22 as "keep the AI estimator photo with the meal." That framing
+was explicitly killed mid-discussion 2026-07-24 -- Justin: "just forget the idea of saving the AI food
+picture. that is confusing you and making this way too complicated. just focus on the mealtime picture
+thing." Individual foods already have their own photo feature (utils/foodPhotos.ts); this is a completely
+separate concept scoped to the mealtime itself, log tab only.
+
+**Storage:** New utils/mealPhotos.ts, a direct mirror of foodPhotos.ts's pattern (that file exists because
+of the real 2026-06-22 incident where local-only photos got wiped on reinstall). Local file cache +
+Firebase Storage upload (`users/{uid}/meal_photos/{date}_{slotId}.jpg`) + the download URL stored in the
+synced `pj_meal_photo_{date}_{slotId}` AsyncStorage key + re-download-to-cache on reinstall. Same
+guarantee as food photos: never lost on delete/reinstall.
+
+**UI, the actual design journey (many live iteration rounds, all pre-commit):**
+- First pass: photo control right-aligned next to "Clear all" in a single row. Justin: "we cant center
+  them? idk" -- didn't like the asymmetry.
+- Tried a bordered/boxed background around the photo row. Justin: "im not sure how i feel about the
+  picture row being in a box like that" -- dropped, went back to no background.
+- Tried centering just "Clear all" as a standalone pill first, before touching the photo section, to
+  isolate variables. Landed on a pill/badge shape but still "too tall."
+- Tried fully centering photo + "Remove Photo" text (no X icon) stacked, "Clear all" as its own pill below.
+  Closer but still not clicking.
+- Justin proposed the fix directly: a hairline divider straight down the center, each half (photo controls
+  / clear-all control) centered horizontally within its own half. That's the shape that shipped.
+- First attempt at that layout used `gap` to place the two halves side by side instead of true `flex:1`
+  halves -- caused the divider to sit off-center and text to wrap oddly. Fixed by giving each side a real
+  `flex:1` container with `alignItems:'center'`, divider as a 1px `alignSelf:'stretch'` View between them.
+- Empty meal slots (nothing logged yet) looked clunky with a divider splitting a photo control from a
+  clear-all button that has nothing to clear. Fixed by skipping the two-column split entirely when
+  `mealEntries.length === 0` -- empty slots just show the centered standalone photo control, no divider,
+  no Clear all. Justin: "the empty state meal slot feels a little weird but think its ok" -- final signoff,
+  known minor rough edge, not worth further iteration right now.
+- Empty-state control: dashed-border 56x56 box with a muted camera-outline icon + "Add Photo" caption
+  underneath, `ActivityIndicator` swapped in mid-upload. Has-photo state: same 56x56 box now showing the
+  actual thumbnail (tap for full-screen viewer, same pattern as food-detail.tsx's), "Remove Photo" text
+  link underneath in accentRed (no X icon -- tried and rejected).
+- Collapsed (non-expanded) row: small GradientIcon camera badge next to the meal name, shown only when
+  that slot has a photo -- a quiet signal without a default dotted box on every slot (Supplements
+  especially would almost never get a photo).
+
+**Bonus fixes found via screenshots while in this area (components/RepeatMealModal.tsx):**
+- "Add N items · X kcal" button was a flat TouchableOpacity. Swapped to the real PrimaryCTA component
+  (disabled/dim state when nothing selected, busy state while adding).
+- Per-food checkboxes got a barFillGradient fill when checked (previously flat backgroundColor). That
+  surfaced a new mismatch -- the flat single-tone border no longer matched the gradient's light-top/
+  dark-bottom tones, made the checked box look like it had a mismatched ring. Fixed by dropping the border
+  entirely when checked (`borderWidth: on ? 0 : 1.5`).
+
+**Explicitly deferred, NOT part of this ship (both remain in NEXT UP):**
+- Day Detail thumbnails (small photo per slot, expand full-screen on tap) -- same feature, different
+  surface, was part of the original design discussion but pushed to its own follow-on batch per Justin's
+  "go in batches" plan. Never reached in this session.
+- Recipes getting the identical photo system food already has (recipe-builder.tsx creator + recipe
+  detail/log screen) -- aligned on as a paired feature, explicitly deferred to a separate batch, untouched.
+- Meal-photo scrapbook/browsable gallery -- explicitly held off, logged in project_j_backlog.md under
+  FOOD INTELLIGENCE. Justin: cheap to add once photos have actually accumulated, wasted effort before that.
+
+---
+
 ## 🐢 NAVIGATION DELAY INVESTIGATION + OTTO TELEPORT FIX (2026-07-19)
 
 **Navigation haptic/animation delay -- SHIPPED + CONFIRMED, investigation PARKED.** Justin flagged every

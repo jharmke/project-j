@@ -414,7 +414,7 @@ export default function ProfileScreen() {
         {/* Frosted chrome fill -- matches the tab bar (theme.chromeFill). 'transparent' on pure-blur themes. */}
         <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.chromeFill }]} pointerEvents="none" />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-          <HeaderAvatar inert />
+          <HeaderAvatar editable />
           <View style={{ flex: 1 }}>
             <GradientTitle title="Profile" color={theme.accentBlueRaw} style={styles.headerTitle} />
             <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, marginTop: 1, letterSpacing: 2, textTransform: 'uppercase' }}>

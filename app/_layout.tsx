@@ -208,6 +208,7 @@ function RootLayoutNav() {
         <Stack.Screen name="body-measurements" options={{ headerShown: false }} />
         <Stack.Screen name="body-measurement-log" options={{ headerShown: false }} />
         <Stack.Screen name="settings" options={{ headerShown: false }} />
+        <Stack.Screen name="profile-photo-crop" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
         <Stack.Screen name="bible" options={{ headerShown: false }} />
         <Stack.Screen name="journal" options={{ headerShown: false }} />
         <Stack.Screen name="prayer" options={{ headerShown: false }} />

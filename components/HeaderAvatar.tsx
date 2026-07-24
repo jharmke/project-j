@@ -1,16 +1,24 @@
-import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { triggerHaptic } from '@/utils/haptics';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActionSheetIOS, Alert, Image, Platform, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Platform, Text, TouchableOpacity, View } from 'react-native';
 import { deleteObject, ref } from 'firebase/storage';
 import { auth, storage } from '../firebaseConfig';
 import { storageSet } from '../utils/storage';
 import { useTheme } from '../theme';
 import { Type } from '../typography';
+import GradientIcon from './GradientIcon';
+import PhotoOptionsModal from './PhotoOptionsModal';
+
+// Module-level cache (outside the component) so every HeaderAvatar instance across the app shares
+// one last-known-good value. Each tab header is a SEPARATE component instance that reads pj_profile
+// itself on first mount -- without this, the very first visit to each tab renders the blank default
+// icon for a beat before the async read resolves and swaps in the real photo. Seeding new instances
+// from this cache means only the very first tab touched in a session can ever show that flash.
+let cache: { name: string; photoURL: string | null } | null = null;
 
 /**
  * Shared top-left header avatar. Lives on every tab header so the user's
@@ -23,8 +31,9 @@ import { Type } from '../typography';
  */
 export default function HeaderAvatar({ inert = false, editable = false }: { inert?: boolean; editable?: boolean }) {
   const { theme } = useTheme();
-  const [name, setName] = useState('');
-  const [photoURL, setPhotoURL] = useState<string | null>(null);
+  const [name, setName] = useState(cache?.name ?? '');
+  const [photoURL, setPhotoURL] = useState<string | null>(cache?.photoURL ?? null);
+  const [pickerVisible, setPickerVisible] = useState(false);
 
   // Reload the name/photo each time the owning tab regains focus so an edit in
   // Profile is reflected without an app restart.
@@ -35,8 +44,11 @@ export default function HeaderAvatar({ inert = false, editable = false }: { iner
         if (!active) return;
         try {
           const p = raw ? JSON.parse(raw) : null;
-          setName(p?.name ? p.name : '');
-          setPhotoURL(p?.photoURL ? p.photoURL : null);
+          const nextName = p?.name ? p.name : '';
+          const nextPhoto = p?.photoURL ? p.photoURL : null;
+          setName(nextName);
+          setPhotoURL(nextPhoto);
+          cache = { name: nextName, photoURL: nextPhoto };
         } catch {
           setName('');
           setPhotoURL(null);
@@ -80,47 +92,23 @@ export default function HeaderAvatar({ inert = false, editable = false }: { iner
   };
 
   const removePhoto = async () => {
-    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     try {
       const raw = await AsyncStorage.getItem('pj_profile');
       const p = raw ? JSON.parse(raw) : {};
       await storageSet('pj_profile', JSON.stringify({ ...p, photoURL: null }));
       setPhotoURL(null);
+      cache = { name, photoURL: null };
       if (auth.currentUser) {
         try { await deleteObject(ref(storage, `users/${auth.currentUser.uid}/profile_photo.jpg`)); } catch {}
       }
     } catch {}
   };
 
-  const openPicker = () => {
-    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-    const removeOption = photoURL ? ['Remove Photo'] : [];
-    if (Platform.OS === 'ios') {
-      const options = ['Take Photo', 'Choose from Library', ...removeOption, 'Cancel'];
-      ActionSheetIOS.showActionSheetWithOptions(
-        { options, cancelButtonIndex: options.length - 1, destructiveButtonIndex: photoURL ? 2 : undefined },
-        (i) => {
-          if (i === 0) takePhoto();
-          else if (i === 1) pickFromLibrary();
-          else if (photoURL && i === 2) removePhoto();
-        },
-      );
-    } else {
-      const buttons: any[] = [
-        { text: 'Take Photo', onPress: takePhoto },
-        { text: 'Choose from Library', onPress: pickFromLibrary },
-      ];
-      if (photoURL) buttons.push({ text: 'Remove Photo', style: 'destructive', onPress: removePhoto });
-      buttons.push({ text: 'Cancel', style: 'cancel' });
-      Alert.alert('Profile Photo', undefined, buttons);
-    }
-  };
-
   const avatarInner = photoURL
     ? <Image source={{ uri: photoURL }} style={{ width: 40, height: 40, borderRadius: 20 }} />
     : initials
       ? <Text style={{ fontSize: 15, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 0.5 }}>{initials}</Text>
-      : <Ionicons name="person" size={20} color={theme.accentBlue} />;
+      : <GradientIcon name="person" size={20} color={theme.accentBlueRaw} />;
 
   return (
     <View>
@@ -134,18 +122,26 @@ export default function HeaderAvatar({ inert = false, editable = false }: { iner
       </TouchableOpacity>
       {editable && (
         <TouchableOpacity
-          onPress={openPicker}
+          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setPickerVisible(true); }}
           activeOpacity={0.8}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           style={{
             position: 'absolute', bottom: -2, right: -2, width: 18, height: 18, borderRadius: 9,
-            backgroundColor: theme.accentBlue, borderWidth: 2, borderColor: theme.bgPrimary,
+            backgroundColor: theme.bgCard, borderWidth: 2, borderColor: theme.bgPrimary,
             alignItems: 'center', justifyContent: 'center',
           }}
         >
-          <Ionicons name="add" size={12} color="#ffffff" />
+          <GradientIcon name="add-circle" size={15} color={theme.accentBlueRaw} />
         </TouchableOpacity>
       )}
+      <PhotoOptionsModal
+        visible={pickerVisible}
+        hasPhoto={!!photoURL}
+        onClose={() => setPickerVisible(false)}
+        onTakePhoto={() => { setPickerVisible(false); takePhoto(); }}
+        onChooseLibrary={() => { setPickerVisible(false); pickFromLibrary(); }}
+        onRemove={() => { setPickerVisible(false); removePhoto(); }}
+      />
     </View>
   );
 }

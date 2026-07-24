@@ -22,7 +22,7 @@ import { Type } from '../typography';
 // drag to reposition; the circular window always stays fully covered by the image (scale
 // is clamped so you can never zoom out past "image fills the circle").
 
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+const { width: SCREEN_W } = Dimensions.get('window');
 const CROP_SIZE = Math.min(SCREEN_W - 64, 320);
 const MAX_PINCH = 5;
 
@@ -144,25 +144,34 @@ export default function ProfilePhotoCrop() {
         </TouchableOpacity>
       </View>
 
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         <GestureDetector gesture={composedGesture}>
-          <View style={{ width: CROP_SIZE, height: CROP_SIZE, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-            <Reanimated.View style={imageStyle}>
-              <Image source={{ uri }} style={{ width: '100%', height: '100%' }} />
-            </Reanimated.View>
+          <View style={{ width: CROP_SIZE, height: CROP_SIZE, overflow: 'hidden' }}>
+            <View style={{ width: CROP_SIZE, height: CROP_SIZE, alignItems: 'center', justifyContent: 'center' }}>
+              <Reanimated.View style={imageStyle}>
+                <Image source={{ uri }} style={{ width: '100%', height: '100%' }} />
+              </Reanimated.View>
+            </View>
+
+            {/* Decorative only -- wrapped in a plain View with pointerEvents="none" because setting
+                that prop directly on <Svg> doesn't reliably stop it from intercepting touches on iOS,
+                which is what silently ate every pinch/pan gesture the first time this shipped. Scoped
+                to the same CROP_SIZE box as the gesture target (not full-screen) so the circle guide
+                can never drift out of alignment with the square that actually gets cropped. */}
+            <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+              <Svg width={CROP_SIZE} height={CROP_SIZE}>
+                <Defs>
+                  <Mask id="cropMask">
+                    <Rect x={0} y={0} width={CROP_SIZE} height={CROP_SIZE} fill="#ffffff" />
+                    <Circle cx={CROP_SIZE / 2} cy={CROP_SIZE / 2} r={CROP_SIZE / 2} fill="#000000" />
+                  </Mask>
+                </Defs>
+                <Rect x={0} y={0} width={CROP_SIZE} height={CROP_SIZE} fill="rgba(0,0,0,0.7)" mask="url(#cropMask)" />
+                <Circle cx={CROP_SIZE / 2} cy={CROP_SIZE / 2} r={CROP_SIZE / 2 - 1} stroke="#ffffff" strokeWidth={1.5} fill="none" />
+              </Svg>
+            </View>
           </View>
         </GestureDetector>
-
-        <Svg width={SCREEN_W} height={SCREEN_H} style={StyleSheet.absoluteFillObject} pointerEvents="none">
-          <Defs>
-            <Mask id="cropMask">
-              <Rect x={0} y={0} width={SCREEN_W} height={SCREEN_H} fill="#ffffff" />
-              <Circle cx={SCREEN_W / 2} cy={SCREEN_H / 2} r={CROP_SIZE / 2} fill="#000000" />
-            </Mask>
-          </Defs>
-          <Rect x={0} y={0} width={SCREEN_W} height={SCREEN_H} fill="rgba(0,0,0,0.7)" mask="url(#cropMask)" />
-          <Circle cx={SCREEN_W / 2} cy={SCREEN_H / 2} r={CROP_SIZE / 2} stroke="#ffffff" strokeWidth={1.5} fill="none" />
-        </Svg>
       </View>
 
       <View style={{ paddingBottom: 60, alignItems: 'center' }}>

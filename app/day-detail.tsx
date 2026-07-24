@@ -3,11 +3,12 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
 import { storageSet } from '../utils/storage';
 import { DEFAULT_MEAL_SLOTS, MealSlot, findSlotForMeal, loadMealSlots, getMealDisplayName } from '../utils/mealSlots';
+import { resolveMealPhoto } from '../utils/mealPhotos';
 import { calcSleepScore, sleepScoreColor as getSleepScoreColor } from '../utils/sleepScore';
 import { recoveryZone } from '../utils/recoveryScore';
 import { Type, PAGE_TITLE } from '../typography';
@@ -75,6 +76,8 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
   const [pickerMonth, setPickerMonth] = useState(0);
   const [mealSlots, setMealSlots] = useState<MealSlot[]>(DEFAULT_MEAL_SLOTS);
   const [slotNameCache, setSlotNameCache] = useState<Record<string, string>>({});
+  const [mealPhotos, setMealPhotos] = useState<Record<string, string | null>>({});
+  const [mealPhotoFullscreen, setMealPhotoFullscreen] = useState<string | null>(null);
   const calFadeAnim = useRef(new Animated.Value(0)).current;
 
   const today = new Date();
@@ -92,6 +95,18 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
       setSlotNameCache(cache);
     });
   }, []);
+
+  // Reload every slot's photo whenever the viewed date or the slot list changes.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const entries = await Promise.all(
+        mealSlots.map(async s => [s.id, await resolveMealPhoto(currentDate, s.id)] as const)
+      );
+      if (alive) setMealPhotos(Object.fromEntries(entries));
+    })();
+    return () => { alive = false; };
+  }, [currentDate, mealSlots]);
 
   useEffect(() => {
     const load = async () => {
@@ -675,10 +690,18 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                     const mealEntries = entries.filter((e: any) => e.meal === mealKey || (slot && e.meal === slot.name));
                     if (mealEntries.length === 0) return null;
                     const mealTotal = mealEntries.reduce((s: number, e: any) => s + e.cal, 0);
+                    const photoUri = mealPhotos[slot?.id ?? mealKey];
                     return (
                       <View key={mealKey} style={{ marginBottom: 12 }}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-                          <Text style={styles.sectionLabel}>{displayName}</Text>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <Text style={styles.sectionLabel}>{displayName}</Text>
+                            {!!photoUri && (
+                              <TouchableOpacity onPress={() => setMealPhotoFullscreen(photoUri)} activeOpacity={0.8}>
+                                <Image source={{ uri: photoUri }} style={{ width: 22, height: 22, borderRadius: 5, borderWidth: 1, borderColor: theme.borderCard }} />
+                              </TouchableOpacity>
+                            )}
+                          </View>
                           <GradientNumber value={`${mealTotal} kcal`} color={theme.accentGreen} style={{ fontSize: 12, fontFamily: Type.uiSemibold }} />
                         </View>
                         {mealEntries.map((entry: any, i: number) => (
@@ -890,6 +913,19 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
         </View>
 
       </ScrollView>
+
+      <Modal visible={!!mealPhotoFullscreen} transparent animationType="fade" onRequestClose={() => setMealPhotoFullscreen(null)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.96)', justifyContent: 'center', alignItems: 'center' }}>
+          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => setMealPhotoFullscreen(null)} />
+          {mealPhotoFullscreen && (
+            <Image
+              source={{ uri: mealPhotoFullscreen }}
+              style={{ width: Dimensions.get('window').width * 0.88, height: Dimensions.get('window').width * 0.88, borderRadius: 16 }}
+              resizeMode="cover"
+            />
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }

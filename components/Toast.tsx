@@ -74,8 +74,10 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
   return (
     <Animated.View
       style={[styles.toast, {
-        backgroundColor: theme.bgSheet,
-        borderColor: theme.borderSubtle,
+        backgroundColor: theme.bgInput,
+        borderColor: theme.borderInput,
+        shadowColor: theme.cardShadow,
+        shadowOpacity: theme.cardShadowOpacity,
         transform: [{ translateY: Animated.add(slideAnim, panY) }],
         opacity: fadeAnim,
       }]}
@@ -156,13 +158,11 @@ const styles = StyleSheet.create({
   toast: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 0.5,
+    borderWidth: 1.5,
     borderRadius: 12,
     paddingVertical: 12,
     paddingRight: 12,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 8,
     overflow: 'hidden',

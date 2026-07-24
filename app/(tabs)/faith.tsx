@@ -423,18 +423,15 @@ function BibleCard({ theme }: { theme: Theme }) {
     router.push({ pathname: '/plans', params: { tab } });
   };
 
-  // enrolledPlans = every planStore record regardless of completion, same enrolledDevs/activeDevs
-  // split as below (a completed-but-not-dropped plan still occupies a storage slot).
-  const enrolledPlans = READING_PLANS.filter(p => !!planStore[p.id]);
-  const activePlans = enrolledPlans.filter(p => !isReadingPlanComplete(p, planStore[p.id]));
-  // enrolledDevs = every devStore record regardless of completion -- this is what MAX_ACTIVE_DEVOTIONALS
-  // actually bounds (a completed-but-not-dropped devotional still occupies a storage slot; Restart/Drop
-  // are what free one). activeDevs is the DISPLAY list for this card and excludes completed ones, same
-  // as the Home version -- Plans is where a completed one lives (with Restart). This is a SEPARATE card
-  // implementation from components/FaithTodayCard.tsx (Home's version), not a shared component -- the
-  // two lists have to be kept in sync by hand. Caught this exact gap once already this pass.
-  const enrolledDevs = DEVOTIONALS.filter(d => !!devStore[d.id]);
-  const activeDevs = enrolledDevs.filter(d => !isDevotionalComplete(d, devStore[d.id]));
+  // Both lists (and the MAX_ACTIVE_* cap below) exclude completed items -- a completed-but-kept
+  // plan/devotional must NOT keep blocking a new enrollment. Real bug caught by Justin: capped at
+  // 3 total enrolled (2 in progress + 1 completed) with no way to start a 4th even though only 2
+  // were genuinely active. The cap is about how many things you're actively juggling, not a
+  // permanent storage limit. This is a SEPARATE card implementation from
+  // components/FaithTodayCard.tsx (Home's version), not a shared component -- the two lists have
+  // to be kept in sync by hand. Caught the duplicate-list gap once already this pass.
+  const activePlans = READING_PLANS.filter(p => !!planStore[p.id] && !isReadingPlanComplete(p, planStore[p.id]));
+  const activeDevs = DEVOTIONALS.filter(d => !!devStore[d.id] && !isDevotionalComplete(d, devStore[d.id]));
 
   // Pilot surface treatment (Bible & Plans card only): on the 4 light-family themes the 6%
   // amber tile wash vanished into the card, so lift insets to a clean bright surface; dark
@@ -539,7 +536,7 @@ function BibleCard({ theme }: { theme: Theme }) {
                 onPress: () => continuePlan(p.id),
               };
             })}
-            atCap={enrolledPlans.length >= MAX_ACTIVE_PLANS}
+            atCap={activePlans.length >= MAX_ACTIVE_PLANS}
             onBrowse={() => browse('reading')}
           />
           <View style={[styles.vDivider, { backgroundColor: 'rgba(212,134,10,0.18)' }]} />
@@ -561,7 +558,7 @@ function BibleCard({ theme }: { theme: Theme }) {
                 onPress: () => continueDevotional(d.id),
               };
             })}
-            atCap={enrolledDevs.length >= MAX_ACTIVE_DEVOTIONALS}
+            atCap={activeDevs.length >= MAX_ACTIVE_DEVOTIONALS}
             onBrowse={() => browse('devotionals')}
           />
         </View>

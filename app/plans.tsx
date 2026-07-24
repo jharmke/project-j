@@ -119,9 +119,9 @@ export default function PlansScreen() {
   };
 
   const startReadingPlan = async (planId: string) => {
-    // Cap guard: block a new enrollment past MAX_ACTIVE_PLANS (mirrors the reader's plan browser).
-    // Counts from the freshest store, never deletes anything already active.
-    if (Object.keys(planStore).length >= MAX_ACTIVE_PLANS) {
+    // Cap guard: block a new enrollment past MAX_ACTIVE_PLANS of things actually IN PROGRESS --
+    // a completed-but-kept plan must not keep blocking a new one.
+    if (inProgressPlans.length >= MAX_ACTIVE_PLANS) {
       triggerHapticNotification(Haptics.NotificationFeedbackType.Warning);
       showToast(`Max ${MAX_ACTIVE_PLANS} active plans. Drop one to add another.`, undefined, 'info');
       return;
@@ -182,9 +182,9 @@ export default function PlansScreen() {
   };
 
   const startDevotional = async (devId: string) => {
-    // Cap guard: block a new enrollment past MAX_ACTIVE_DEVOTIONALS. Counts from the freshest
-    // store, never deletes anything already active.
-    if (Object.keys(devStore).length >= MAX_ACTIVE_DEVOTIONALS) {
+    // Cap guard: block a new enrollment past MAX_ACTIVE_DEVOTIONALS of things actually IN
+    // PROGRESS -- a completed-but-kept devotional must not keep blocking a new one.
+    if (inProgressDevs.length >= MAX_ACTIVE_DEVOTIONALS) {
       triggerHapticNotification(Haptics.NotificationFeedbackType.Warning);
       showToast(`Max ${MAX_ACTIVE_DEVOTIONALS} active devotionals. Drop one to add another.`, undefined, 'info');
       return;
@@ -248,8 +248,12 @@ export default function PlansScreen() {
   const completedDevs = DEVOTIONALS.filter(d => !!devStore[d.id] && isDevotionalComplete(d, devStore[d.id]));
   const activeDevs = DEVOTIONALS.filter(d => !!devStore[d.id]);
   const availableDevs = DEVOTIONALS.filter(d => !devStore[d.id]);
-  const plansAtLimit = activePlans.length >= MAX_ACTIVE_PLANS;
-  const devsAtLimit = activeDevs.length >= MAX_ACTIVE_DEVOTIONALS;
+  // The cap is about how many things you're actively juggling, not a permanent storage limit --
+  // a completed-but-kept plan/devotional must NOT keep blocking a new enrollment. Real bug caught
+  // by Justin: capped at 3 total enrolled (2 in progress + 1 completed) with no way to start a 4th
+  // even though only 2 were genuinely active.
+  const plansAtLimit = inProgressPlans.length >= MAX_ACTIVE_PLANS;
+  const devsAtLimit = inProgressDevs.length >= MAX_ACTIVE_DEVOTIONALS;
 
   // Sort the BROWSE lists only (in-progress items stay in their own order). 'featured' keeps the
   // curated data order; 'short' is shortest-first (good for "I want a quick one"); 'az' by title.

@@ -125,13 +125,9 @@ export default function HeaderAvatar({ inert = false, editable = false }: { iner
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setPickerVisible(true); }}
           activeOpacity={0.8}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          style={{
-            position: 'absolute', bottom: -2, right: -2, width: 18, height: 18, borderRadius: 9,
-            backgroundColor: theme.bgCard, borderWidth: 2, borderColor: theme.bgPrimary,
-            alignItems: 'center', justifyContent: 'center',
-          }}
+          style={{ position: 'absolute', bottom: -3, right: -3 }}
         >
-          <GradientIcon name="add-circle" size={15} color={theme.accentBlueRaw} />
+          <GradientIcon name="add-circle" size={18} color={theme.accentBlueRaw} />
         </TouchableOpacity>
       )}
       <PhotoOptionsModal

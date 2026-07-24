@@ -1,14 +1,18 @@
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useRef } from 'react';
 import { Animated, Modal as RNModal, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../theme';
 import { Type } from '../typography';
+import GradientIcon from './GradientIcon';
+import ModalHeader from './ModalHeader';
 
 // In-house replacement for ActionSheetIOS on the profile photo entry point -- the native sheet has
 // no controllable animation (it just teleports in), which reads rough against the rest of the app's
-// motion. Centered floating card per the modal standard: spring scale + opacity in onShow, handle pill.
+// motion. Centered floating card per the modal standard, ModalHeader for the title/handle/close like
+// every other modal (do not hand-roll a header again -- that's what shipped the first time and none
+// of it matched: wrong font, wrong color, wrong placement, and a decorative handle pill that didn't
+// actually close anything).
 
 interface Props {
   visible: boolean;
@@ -41,11 +45,11 @@ export default function PhotoOptionsModal({ visible, hasPhoto, onClose, onTakePh
     ]).start(() => onClose());
   };
 
-  const rows: { label: string; icon: keyof typeof Ionicons.glyphMap; onPress: () => void; destructive?: boolean }[] = [
-    { label: 'Take Photo', icon: 'camera-outline', onPress: onTakePhoto },
-    { label: 'Choose from Library', icon: 'image-outline', onPress: onChooseLibrary },
+  const rows: { label: string; icon: 'camera' | 'image' | 'trash'; onPress: () => void; destructive?: boolean }[] = [
+    { label: 'Take Photo', icon: 'camera', onPress: onTakePhoto },
+    { label: 'Choose from Library', icon: 'image', onPress: onChooseLibrary },
   ];
-  if (hasPhoto) rows.push({ label: 'Remove Photo', icon: 'trash-outline', onPress: onRemove, destructive: true });
+  if (hasPhoto) rows.push({ label: 'Remove Photo', icon: 'trash', onPress: onRemove, destructive: true });
 
   return (
     <RNModal transparent animationType="none" visible={visible} onRequestClose={close} onShow={animateIn}>
@@ -57,16 +61,15 @@ export default function PhotoOptionsModal({ visible, hasPhoto, onClose, onTakePh
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="box-none">
         <Animated.View
           style={{
-            width: '82%',
+            width: '86%',
             backgroundColor: theme.bgSheet,
-            borderRadius: 16,
+            borderRadius: 20,
             borderWidth: 0.5,
             borderColor: theme.borderCard,
             borderTopWidth: 1.5,
-            borderTopColor: theme.accentBlueRaw + '55',
-            paddingTop: 10,
-            paddingBottom: 8,
-            paddingHorizontal: 8,
+            borderTopColor: theme.accentBlueRaw + 'b3',
+            paddingBottom: 16,
+            overflow: 'hidden',
             transform: [{ scale: scaleAnim }],
             opacity: opacityAnim,
             shadowColor: '#000',
@@ -75,29 +78,26 @@ export default function PhotoOptionsModal({ visible, hasPhoto, onClose, onTakePh
             shadowRadius: 12,
           }}
         >
-          <View style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard, marginBottom: 12 }} />
-          <Text style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', textAlign: 'center', color: theme.textMuted, fontFamily: Type.uiBold, marginBottom: 10 }}>
-            Profile Photo
-          </Text>
+          <ModalHeader title="Profile Photo" onClose={close} />
 
-          {rows.map((row, i) => (
-            <TouchableOpacity
-              key={row.label}
-              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); row.onPress(); }}
-              activeOpacity={0.7}
-              style={{
-                flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, paddingHorizontal: 12,
-                borderTopWidth: i > 0 ? 0.5 : 0, borderTopColor: theme.borderCard,
-              }}
-            >
-              <Ionicons name={row.icon} size={17} color={row.destructive ? theme.accentRed : theme.accentBlue} />
-              <Text style={{ fontSize: 15, fontFamily: Type.uiMedium, color: row.destructive ? theme.accentRed : theme.textPrimary }}>{row.label}</Text>
-            </TouchableOpacity>
-          ))}
-
-          <TouchableOpacity onPress={close} activeOpacity={0.7} style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 12, marginTop: 4, borderTopWidth: 0.5, borderTopColor: theme.borderCard }}>
-            <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: theme.textMuted }}>Cancel</Text>
-          </TouchableOpacity>
+          <View style={{ paddingHorizontal: 16, paddingTop: 4, gap: 10 }}>
+            {rows.map(row => (
+              <TouchableOpacity
+                key={row.label}
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); row.onPress(); }}
+                activeOpacity={0.85}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, paddingHorizontal: 14,
+                  borderRadius: 10, borderWidth: 1,
+                  backgroundColor: row.destructive ? theme.accentRedBg : theme.accentBlueBg,
+                  borderColor: row.destructive ? theme.accentRedBorder : theme.accentBlueBorder,
+                }}
+              >
+                <GradientIcon name={row.icon} size={17} color={row.destructive ? theme.accentRed : theme.accentBlueRaw} />
+                <Text style={{ fontSize: 15, fontFamily: Type.uiSemibold, color: row.destructive ? theme.accentRed : theme.accentBlue }}>{row.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </Animated.View>
       </View>
     </RNModal>

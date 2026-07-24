@@ -5,34 +5,35 @@ Status: DESIGN LOCKED 2026-07-23, BUILD IN PROGRESS. This doc is the source of t
 MOTIVATION / GAMIFICATION), but the "introduce the App Store rating ask + a real feedback channel"
 piece survived and became this spec.
 
-BUILD PROGRESS (2026-07-23): Batch 1 (foundation) built and device-confirmed working (native prompt fired
+BUILD PROGRESS (2026-07-24): Batch 1 (foundation) built and device-confirmed working (native prompt fired
 correctly on first test, copy matched spec). Batch 2 built: `fireRatingTrigger()` helper (3s delay so it
 never fights an achievement toast/celebration for the screen; skips when a tutorial is active) wired into
 water goal (index.tsx), gratitude (journal.tsx), reading plan (bible.tsx's markPlanRead), and devotional
 completion (devotional.tsx's handleComplete -- initially missed in batch 2 since it's a separate handler
-from reading-plan, fixed same session). Batches 3-5 (protein/weight-milestone/workout/challenge-win
-triggers, Otto fallback + Feedback cards, theme audit) NOT STARTED.
+from reading-plan, fixed same session). Batch 3 built: protein goal (DailyGoalId extended to include
+'protein' -- no live hook existed at all before this, now matches the same handleDailyGoalHit pattern as
+steps/activeCals/exerciseMins with its own celebration+toast), weight milestone (index.tsx's weight-save
+handler, only the newly-unlocked highest-crossed milestone), manual workout completion (workout.tsx's
+Finish Workout handler, already gated on real logged work), challenge win (the Home challenge card's
+dismiss tap specifically -- NOT the passive background scan that auto-acknowledges on app open, since
+that isn't a deliberate action; only fires when won is true). Batches 4-5 (Otto fallback + Feedback
+cards, theme audit) NOT STARTED.
 
-⚠️ OPEN BUG, STOPPED HERE 2026-07-23 end of session -- READ THIS FIRST NEXT SESSION:
-After the batch-1 success, NOTHING fires anymore -- not the real triggers (water/gratitude/reading-plan/
-devotional, tested with Reset Rate Prompt State done first each time) and not even the "Force Rate Us
-Prompt" dev button, which bypasses every guard we control. Diagnosed as far as code can tell us: added
-diagnostic return values (`hadAction`, `error`) to `requestRatingPrompt()` (see the function in
-utils/ratingPrompt.ts) and the force button's toast now shows them. Result: `hasAction: true`, no error --
-meaning `StoreReview.hasAction()` returns true and `StoreReview.requestReview()` completes with no thrown
-error every time. So OUR code is doing everything right; something on Apple's own side is silently
-declining to actually display the UI. Checked and ruled out: iOS Settings > App Store > "In-App Ratings &
-Reviews" toggle -- already ON. Not yet tried: restarting the phone (not just closing the app -- some of
-Apple's own caching may live at the OS level), or just waiting and retrying later. Apple's own docs
-explicitly say the system can decline to show the prompt for undocumented reasons and there is no API to
-force it or learn why -- this may not be a fixable bug at all, just Apple's own opaque pacing kicking in
-after the first real display. DO NOT keep guessing at code fixes here without new evidence -- the
-diagnostic toast already proved the JS/native call chain is correct. If it's still not showing next
-session after a phone restart, the honest move is to accept this can't be reliably tested on-demand and
-verify it properly closer to actual ship (fresh device state), rather than keep burning session time on
-it. Batches 3+ can and should proceed independently of this -- the wiring pattern (fireRatingTrigger,
-tutorial guard, 3s delay) is proven correct from batch 2, this open item is specifically about the
-native popup's on-demand visual reliability during testing, not about whether our trigger code is right.
+⚠️ OPEN BUG, STILL UNRESOLVED as of 2026-07-24 -- READ THIS FIRST NEXT SESSION:
+Nothing fires on-device -- not any real trigger and not even the force-fire dev button which bypasses
+every guard we control. Diagnostics (`hadAction`/`error` returned from `requestRatingPrompt()`, shown in
+the force button's toast) confirm the JS/native call chain is correct: `hasAction: true`, no thrown error,
+every time. Ruled out: iOS Settings > App Store > "In-App Ratings & Reviews" toggle (already on). REAL
+LEAD FOUND 2026-07-24: a confirmed, Apple-acknowledged bug (Apple Developer Forums thread 821981) where
+`requestReview()` runs clean but shows nothing, specifically on iOS 26.5 BETA builds, specifically in
+debug/development builds -- already fixed in the iOS 26.5 RC. If Justin's phone is on a beta iOS build,
+this is almost certainly the actual explanation, not our code and not permanently broken. STILL NEEDS
+CONFIRMING: whether his phone is actually on a beta iOS version (Settings > General > Software Update) --
+ask this first before anything else next session. If not on beta, this is still genuinely unresolved and
+needs fresh investigation, not a repeat of the same "Apple's opaque pacing" answer -- that framing was
+called out as unsatisfying and needs a firmer answer than "not our problem" if it recurs. Batches 3+ can
+and do proceed independently of this open item -- the wiring pattern is proven correct, this is
+specifically about the native popup's on-demand visual reliability during testing.
 
 Pairs with: the existing `FeedbackModal.tsx` (rebuilt 2026-07-23 to send in-app with an optional photo
 instead of mailto — already shipped, not part of this build) and Otto's in-app notification hub

@@ -406,6 +406,11 @@ FAITH TAB (hidden for "Not Right Now" users)
   Restart is a full reset (clears your progress so you can start fresh, this can't be undone). A finished
   plan drops off the Home and Faith tab cards once done; find it again via Plans > Reading Plans >
   Completed.
+- READING PLAN SCHEDULE PAGE: tap "View Plan" on a plan (Plans page, the Bible reader's "Next Reading"
+  strip, or the Faith tab card) to open its full schedule -- every day grouped into weeks behind a
+  "Week N" picker, each day showing its passage and a read/unread toggle you can tap directly (mark any
+  day done, in any order, this is where the "own pace" flexibility actually lives), and tapping a
+  passage jumps straight into the Bible at that spot.
 - DEVOTIONALS: daily devotional readings (can "Reflect with Halo"). Finishing every day of a devotional
   moves it to a COMPLETED section on the Plans page (Plans tab > Devotionals) with a Restart option --
   Restart is a full reset (clears your previous answers and Halo reflections so you can start fresh, this

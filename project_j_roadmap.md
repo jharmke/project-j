@@ -16,8 +16,19 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-24 **Dedicated reading-plan schedule page, device-confirmed.** Second half of the reading-plans
+  pass. New app/reading-plan.tsx: full schedule for a plan grouped into weeks behind a "Week N" picker
+  (plans run 21-397 days, a flat scroll wasn't reasonable), tap a day's passage to jump into the Bible,
+  inline circle toggle to mark any day read/unread in any order (this is where the pace-flexibility we
+  agreed on actually lives now). Plans page's "Continue", the Bible strip's passage tap, and the Faith tab
+  card's plan tile all now open this page instead of jumping straight into the Bible. Caught mid-build:
+  the general Otto companion was showing on this new route instead of Halo (AssistantOverlay's hide-list
+  is a hardcoded route-segment set that a brand new screen isn't automatically part of). Also swept every
+  reading-plan/devotional progress bar across the app (this page, Plans page, Faith tab card, Home's Faith
+  Today card which got a bar + day count added back after being deliberately bar-less before) onto the
+  real barFillGradient treatment used everywhere else, replacing flat fills nobody had caught until now.
 - 2026-07-24 **Reading plans: completion-driven pacing, Restart, plan-complete moment, device-confirmed.**
-  First half of the reading-plans pass (the dedicated schedule page is still ahead, see NEXT UP). Fixed
+  First half of the reading-plans pass. Fixed
   a real bug: "today's reading" was calendar-driven, so missing a few days silently skipped those
   readings instead of resuming where you left off -- now completion-driven like devotionals. Same
   IN PROGRESS/COMPLETED split + Restart as devotionals. Bible reader strip renamed "Today's Reading" ->
@@ -901,13 +912,6 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
-- [NOW, IN PROGRESS 2026-07-24] **Dedicated reading-plan page.** Foundational fixes shipped (completion-
-  driven pacing, Restart, plan-complete moment -- see RECENTLY SHIPPED); the actual page is still ahead.
-  Full schedule view for a plan: every day listed with its passage, read/unread state, tap a day to jump
-  to it in the Bible reader, manual mark-as-read toggle per day. Once it exists: retarget the Bible
-  reader's "NEXT READING" passage tap (currently just re-navigates within the reader) to open this page
-  instead. This is also the deliberate fix for the strip's "today vs next" ambiguity that a label alone
-  can't solve -- seeing the full day-numbered schedule removes the need to guess.
 - [surfaced 2026-07-24, needs discussion, not urgent] **Sync Claude memory/instructions between Justin's
   two accounts.** He switches between 2 Claude accounts when usage limits hit and wants their memory/
   instructions merged so they're identical. Before proposing anything: need to know whether both accounts

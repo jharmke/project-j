@@ -1751,3 +1751,73 @@ silently on next load with no crash. The underlying `pj_reading_plans` progress 
 separate concern from the Home layout reference and was never touched.
 
 Device-confirmed by Justin.
+
+## DEDICATED READING-PLAN SCHEDULE PAGE (2026-07-24)
+
+The big half of the reading-plans pass, discussed and built same session (an earlier version of this
+same discussion got lost to a compaction boundary before any code existed, so this is the real one).
+Justin's original ask: no way to preview/see a schedule of a plan's readings, wants a dedicated page like
+the devotional day screen but showing the whole plan -- progress, every day's chapters/verses, completion
+state, tap a day to jump to it in the Bible, a mark-as-read toggle per day.
+
+**The scrollable-list problem, caught before building the wrong thing.** Plans run 21 to 397 days (Bible
+in a Year). A flat list of day rows was Claude's first plan; Justin caught it before anything was built:
+"a scrollable list isnt reasonable here." Resolved by grouping days into weeks (7 per group) behind a
+"Week N" picker -- Justin specifically wanted a dropdown, and it turns out the app already has that exact
+interaction pattern (the Bible reader's own book picker), so this wasn't a new UI concept, just applying
+an existing one. Only the selected week's ~7 rows ever render, regardless of plan length, so a 397-day
+plan and a 21-day plan cost the same to render.
+
+**Where the "own pace" flexibility actually lives now.** Earlier in the session, Claude and Justin worked
+through a real tension: reading plans becoming purely completion-driven (see the "Reading Plans:
+Completion-Driven Pacing" entry above) meant a user COULD finish all 28 days in one sitting with the app
+calling each one "today's reading" the whole time, which felt wrong to Justin even though the tab's own
+copy ("move through Scripture at your own pace") explicitly supports going as fast as you want. Resolution
+reached then: pace-flexibility stays, but it needed a real home -- not a single strip label pretending to
+know your calendar intent. This page IS that home: the inline circle toggle lets you mark any day done, in
+any order, and the full week-grouped schedule makes that legible instead of confusing, because you can see
+the whole picture instead of guessing from one line of text.
+
+**Entry points retargeted**, so "continuing" a plan means "see where I am" rather than "jump straight into
+reading": Plans page's primary button (relabeled "View Plan" -- Justin pushed back on keeping "Continue",
+correctly: "id disagree i think 'continue' would lead me to believe it was taking me to my reading"), the
+Bible reader's "Next Reading" strip's passage tap, and the Faith tab card's plan tile tap. All three used
+to route straight into the Bible reader with `planNavBook`/`planNavChapter` params; now they open
+`/reading-plan?id=X` instead. `openReadingPlan` (plans.tsx) and `continuePlan` (faith.tsx) both shrank
+to a single `router.push`, since they no longer need to compute which passage to jump to.
+
+**Halo missing, found by Justin testing, not caught before shipping.** The general Otto companion FAB
+showed up on the brand new page instead of Halo. Root cause: `AssistantOverlay.tsx` is a single app-wide
+mount (in the root layout, outside the Stack) that decides on every screen whether Otto's FAB should
+appear, via a hardcoded `HIDE_SEGMENTS` set of route segments ('bible', 'journal', 'prayer', 'devotional',
+'plans', etc.) -- a brand new route segment ('reading-plan') was never going to be in that list until
+someone added it, and nothing else in the codebase would have caught this by inspection; it had to be
+seen on device. Fixed by adding the segment to the hide-list AND actually mounting Halo's own
+`CompanionFAB`/`CompanionChat` on the page for the first time (it never had one -- hiding Otto without
+giving Halo a way in would have left the page with no faith companion mounted at all, which is the trap:
+two separate things had to both be done, not just one).
+
+**Progress bar sweep, prompted by "need the bars in the bible and plans reading plan and devotional cards
+too."** Confirmed via `barFillGradient` usage search that NONE of the reading-plan/devotional progress
+bars anywhere in the app had ever received the molded gradient treatment used everywhere else (Home's
+water/calorie bars, EvR's bars) -- this page's own bar, the Plans page's shared `ProgressBar`, and the
+Faith tab card's `TileBar` were all still flat fills, on top of the toast-bar fix earlier the same session
+following the identical pattern (a component nobody had circled back to since it was first built). All
+three now use `barFillGradient(theme.accentAmber)` + `theme.bgProgressTrack` instead of a hardcoded flat
+color + `theme.bgInput`. Checking for this DURING the sweep also surfaced that Home's `FaithTodayCard.tsx`
+tiles never had a progress bar at ALL (a deliberate original decision, per its own code comment: "kept
+short on purpose") -- Justin asked for one there too, so `RowItem` grew `completed`/`total` fields and
+`Tile` grew its own `TileBar`, matching the Faith tab card's version exactly (bar + "X/Y" caption row).
+
+**Two small font/style follow-ups**, both because Claude fixed the wrong element on the first pass and had
+to be corrected: Justin asked to bump "the description font" (the plan's summary paragraph at the top of
+the page) to bold and slightly bigger; Claude bumped the day-row PASSAGE text instead ("Matthew 1-3"),
+which Justin caught immediately ("no wtf you made the chapter/verse titles in the cards for days bigger. i
+was talking about the description font!"). Reverted the passage text, applied bold + 14->15px to the
+actual description. Separately, Justin floated using the app's "Voice" typeface (a distinct slab font
+reserved for "coach insight, verses, Otto -- where the personality lives") on the day-passage text; Claude
+pushed back rather than applying it blindly -- Voice is built for actual prose/personality moments
+elsewhere in the app, not a terse reference label sitting next to a plain-UI-font "DAY 1" caption in the
+same row, and recommended a same-font-family Bold weight bump instead, which is what shipped.
+
+Device-confirmed by Justin across all of it.

@@ -272,6 +272,18 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
         }
       }
 
+      // A manual gratitude entry via Journal is a true alternate entry point to the card's own
+      // "Log Gratitude" -- if ANY entry exists for today and the streak hasn't been credited yet,
+      // credit it now, same as handleSave does for a card save. computeStreak is idempotent
+      // (no-ops once lastLoggedDate is already today), so this can never double-count against a
+      // later card save the same day.
+      if (todayEntry && gratitudeStreak.lastLoggedDate !== todayKey) {
+        const result = computeStreak(gratitudeStreak, saversState, todayKey);
+        gratitudeStreak = result.newStreak;
+        saversState = result.newSavers;
+        needsWrite = true;
+      }
+
       if (needsWrite) {
         await storageSet('pj_streaks', JSON.stringify({ ...stored, gratitude: gratitudeStreak, savers: saversState }));
       }
@@ -279,8 +291,12 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
       setStreak(gratitudeStreak);
       setSavers(saversState);
 
-      if (todayCardEntry) {
-        setLoggedEntry(todayCardEntry.notes || '');
+      // Prefer the card's own entry; if it doesn't have one yet, preview whatever manual entry
+      // exists for today (a real starting point, not an empty card pretending nothing was logged)
+      // -- but saving through the card always writes to its own slot, never overwrites the manual one.
+      const previewEntry = todayCardEntry ?? todayEntry;
+      if (previewEntry) {
+        setLoggedEntry(previewEntry.notes || '');
         setCardState('logged');
       } else {
         setLoggedEntry('');

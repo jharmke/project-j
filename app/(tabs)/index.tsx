@@ -1560,15 +1560,14 @@ export default function HomeScreen() {
     }
   }, [water, waterGoal, loaded]);
 
-  // ── Protein goal achievement (no prior live hook existed -- built for the Rate Us trigger,
-  //    SPEC_rate_us_and_feedback.md) ────────────────────────────────────────────
+  // ── Protein goal hit detection (no celebration/toast -- Justin's call: silent, only exists to
+  //    drive the Rate Us trigger, SPEC_rate_us_and_feedback.md. Still goes through
+  //    handleDailyGoalHit's once-per-day gate so it can't fire more than once per day.) ──────
   useEffect(() => {
     if (!loaded) return;
     if (totalProtein > 0 && macroGoals.protein > 0 && totalProtein >= macroGoals.protein) {
-      handleDailyGoalHit('protein').then(({ fired, count: hitCount }) => {
+      handleDailyGoalHit('protein').then(({ fired }) => {
         if (!fired) return;
-        showCelebration('small', 'PROTEIN GOAL');
-        showDailyGoalToast('Protein Goal', hitCount, 'nutrition', theme.macroProtein);
         fireRatingTrigger(tutorialActiveState);
       });
     }

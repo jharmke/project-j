@@ -870,15 +870,16 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
-- [BUILD IN PROGRESS 2026-07-24, OPEN BUG ON DEVICE VERIFY] **Rate Us + Feedback prompts.** Full spec +
-  current build progress in SPEC_rate_us_and_feedback.md -- READ THE "OPEN BUG" NOTE AT THE TOP before
-  touching this. Batches 1-3 built (foundation, water/gratitude/reading-plan/devotional triggers, protein/
-  weight-milestone/workout/challenge-win triggers) -- wiring confirmed correct via diagnostics, but the
-  native Apple popup itself won't visually appear on-device (not from any real trigger, not even the
-  force-fire dev button). REAL LEAD as of 2026-07-24: a confirmed Apple bug where requestReview() runs
-  clean but shows nothing on iOS 26.5 BETA debug builds specifically, already fixed in the 26.5 RC --
-  needs confirming whether Justin's phone is on a beta iOS version. Batches 4-5 (Otto fallback + Feedback
-  cards, theme audit) not started -- can proceed independently of the open bug above.
+- [BUILD IN PROGRESS 2026-07-24, ONE BATCH LEFT] **Rate Us + Feedback prompts.** Full spec + build
+  progress in SPEC_rate_us_and_feedback.md -- READ THE "OPEN BUG" NOTE AT THE TOP before touching this.
+  Batches 1-4 built and pushed: foundation, all 7 real triggers (water/gratitude/reading-plan/devotional/
+  protein/weight-milestone/workout/challenge-win), and the two Otto notification-hub cards (Rate Us
+  fallback + independent Feedback nudge). Only batch 5 (theme + Mindful audit) left. OPEN ISSUE, doesn't
+  block finishing the build: the native Apple popup itself won't visually appear on Justin's ad-hoc
+  dev-client (confirmed correct at the source-code level, all the way to Apple's real API call -- iOS
+  26.5.2, not the beta bug found earlier). Recommendation: verify on a real TestFlight build instead of
+  continuing to chase it on the dev-client, since that's a distribution channel with actually-documented
+  behavior for this feature. Justin's folding that into his next TestFlight push.
 - [decided + implemented 2026-07-23, PENDING DEVICE VERIFY] **Recovery score activity-component ceiling
   fix.** Justin signed off on the curve after discussing trade-offs (compared against Whoop's Green
   67-100/Yellow 34-66/Red 0-33 bands and Oura's approx. Optimal 85+/Good 70-84, both of which treat

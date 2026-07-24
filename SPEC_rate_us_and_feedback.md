@@ -16,24 +16,57 @@ steps/activeCals/exerciseMins with its own celebration+toast), weight milestone 
 handler, only the newly-unlocked highest-crossed milestone), manual workout completion (workout.tsx's
 Finish Workout handler, already gated on real logged work), challenge win (the Home challenge card's
 dismiss tap specifically -- NOT the passive background scan that auto-acknowledges on app open, since
-that isn't a deliberate action; only fires when won is true). Batches 4-5 (Otto fallback + Feedback
-cards, theme audit) NOT STARTED.
+that isn't a deliberate action; only fires when won is true). Protein's celebration/toast was removed
+same session per Justin's call -- goal-hit detection stays, still routed through
+handleDailyGoalHit's once-per-day gate, just silent (no showCelebration/showDailyGoalToast), unlike
+water/steps/activeCals/exerciseMins which do celebrate.
+
+Batch 4 built: new utils/ottoPrompts.ts, checked once per app boot (app/_layout.tsx). Rate Us fallback
+card mirrors the shared budget exactly via canAskForRating() -- not a separate quota -- and clears
+itself if a real trigger already spent the allowance since the last check, so a stale dead card never
+sits in the list. Feedback card is fully independent: own key (pj_feedback_prompt), 21-day re-appear
+cadence, no cap, held back 5 days if a Rate Us ask fired recently (the spacing rule). Both route through
+Settings via query params (fireRating=true / openFeedback=true, same pattern as the existing
+deepLinkSection mechanism) -- tapping Rate Us fires requestRatingPrompt() directly (no pre-screen, same
+rule as every other trigger), tapping Feedback opens the already-shipped FeedbackModal. Added
+rate_us/feedback_prompt to NotifCategory + CAT_LABEL. NOT YET DEVICE-TESTED (pure JS, no rebuild needed
+-- just needs Justin to reload and check both cards appear/route correctly; the "does Rate Us's actual
+popup show" part is still blocked on the open bug below, but the CARD showing + routing is independently
+testable).
+
+Batch 5 (theme + Mindful audit) NOT STARTED -- last one left.
 
 ⚠️ OPEN BUG, STILL UNRESOLVED as of 2026-07-24 -- READ THIS FIRST NEXT SESSION:
 Nothing fires on-device -- not any real trigger and not even the force-fire dev button which bypasses
-every guard we control. Diagnostics (`hadAction`/`error` returned from `requestRatingPrompt()`, shown in
-the force button's toast) confirm the JS/native call chain is correct: `hasAction: true`, no thrown error,
-every time. Ruled out: iOS Settings > App Store > "In-App Ratings & Reviews" toggle (already on). REAL
-LEAD FOUND 2026-07-24: a confirmed, Apple-acknowledged bug (Apple Developer Forums thread 821981) where
-`requestReview()` runs clean but shows nothing, specifically on iOS 26.5 BETA builds, specifically in
-debug/development builds -- already fixed in the iOS 26.5 RC. If Justin's phone is on a beta iOS build,
-this is almost certainly the actual explanation, not our code and not permanently broken. STILL NEEDS
-CONFIRMING: whether his phone is actually on a beta iOS version (Settings > General > Software Update) --
-ask this first before anything else next session. If not on beta, this is still genuinely unresolved and
-needs fresh investigation, not a repeat of the same "Apple's opaque pacing" answer -- that framing was
-called out as unsatisfying and needs a firmer answer than "not our problem" if it recurs. Batches 3+ can
-and do proceed independently of this open item -- the wiring pattern is proven correct, this is
-specifically about the native popup's on-demand visual reliability during testing.
+every guard we control. Justin is on iOS 26.5.2 (a stable release, NOT beta), which rules out the one
+Apple-acknowledged beta-specific bug found earlier (Apple Developer Forums thread 821981, iOS 26.5 beta
+debug builds, fixed in the RC -- does not apply here).
+
+Dug all the way to the actual installed package source (node_modules/expo-store-review), not just docs/
+forum summaries, since those had already led to two wrong conclusions this session. Confirmed at the
+source level:
+  - `hasAction()` is NOT a meaningful "will it show" signal -- on iOS it just resolves
+    `!isRunningFromTestFlight()`, which is true for almost any non-TestFlight build. The earlier
+    "hasAction: true" diagnostic proved less than it was presented as proving.
+  - The native Swift module (StoreReviewModule.swift) finds a valid foreground window scene (no error
+    thrown = one was found) and calls Apple's real `AppStore.requestReview(in: currentScene)` (StoreKit
+    2, since Justin's on iOS 16+) with no exception anywhere in the chain.
+  - So: JS -> native -> Apple's real API, confirmed correct end to end. Whatever decides not to show
+    anything happens entirely inside Apple's closed-source StoreKit implementation, which we cannot see
+    into or force.
+
+NEW THEORY, not yet confirmed: Justin's test build is an EAS-built, ad-hoc-signed dev-client .ipa
+installed directly on-device -- NOT run from Xcode with a debugger attached, and NOT TestFlight. Most
+"it always shows in dev/debug builds" claims found online are based on Xcode-attached runs specifically.
+This is a third, less-documented distribution channel that Apple's internal StoreKit logic may treat
+differently. Cannot be proven without Apple's own source.
+
+RECOMMENDATION: stop testing this on the raw dev-client -- verify it on a real TestFlight build instead,
+which is a distribution channel with actually-documented, reliable behavior for this feature. Justin
+agreed to fold this into testing on his next TestFlight push rather than continuing to chase it on the
+dev-client. Batches 3-4 both shipped despite this being unresolved -- the wiring pattern is proven
+correct at every layer we can inspect; this is specifically about the native popup's on-demand visual
+reliability during ad-hoc dev-client testing, not about whether our code is right.
 
 Pairs with: the existing `FeedbackModal.tsx` (rebuilt 2026-07-23 to send in-app with an optional photo
 instead of mailto — already shipped, not part of this build) and Otto's in-app notification hub

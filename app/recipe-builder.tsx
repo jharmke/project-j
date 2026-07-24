@@ -4,13 +4,16 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useCallback, useRef, useEffect, useState } from 'react';
-import { Alert, Animated, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActionSheetIOS, Alert, Animated, Dimensions, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Directory, File as FSFile, Paths } from 'expo-file-system/next';
+import * as ImagePicker from 'expo-image-picker';
 import CustomFoodCreator from '../components/CustomFoodCreator';
 import GradientNumber from '../components/GradientNumber';
-import { useToast } from '../components/Toast';
+import { useToast, ToastRenderer } from '../components/Toast';
 import { saveToFirebase } from '../firebaseConfig';
 import { storageSet } from '../utils/storage';
+import { uploadRecipePhoto, resolveRecipePhoto, purgeRecipePhoto, recipePhotoKey } from '../utils/recipePhotos';
 import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
@@ -138,6 +141,12 @@ export default function RecipeBuilderScreen() {
   const [servingName, setServingName] = useState('');
   const [defaultToWeight, setDefaultToWeight] = useState(false);
   const [showCustomFoodModal, setShowCustomFoodModal] = useState(false);
+  // photoUri = an existing recipe's already-uploaded photo (editing). pendingPhotoUri = a photo
+  // picked before the recipe has an id yet (new recipe); it's copied + uploaded once saveRecipe()
+  // creates the id, mirroring CustomFoodCreator's pending-photo pattern for new foods.
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [pendingPhotoUri, setPendingPhotoUri] = useState<string | null>(null);
+  const [showPhotoFullscreen, setShowPhotoFullscreen] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const tutorialStateRef = useRef<any>({});
 
@@ -338,9 +347,77 @@ export default function RecipeBuilderScreen() {
           setServingCount(recipe.servingCount === 0 ? '' : recipe.servingCount.toString());
           setServingName(recipe.servingName);
           setDefaultToWeight(recipe.defaultToWeight || false);
+          resolveRecipePhoto(recipe.id).then(uri => { if (uri) setPhotoUri(uri); });
         }
       }
     } catch (e) {}
+  };
+
+  const currentPhotoUri = pendingPhotoUri || photoUri;
+
+  const handlePhotoRemove = () => {
+    Alert.alert('Remove Photo', 'Remove this photo?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          if (recipeId) await purgeRecipePhoto(recipeId);
+          setPhotoUri(null);
+          setPendingPhotoUri(null);
+          setShowPhotoFullscreen(false);
+          showToast('Photo removed', undefined, 'success');
+        },
+      },
+    ]);
+  };
+
+  const saveExistingPhoto = async (id: string, sourceUri: string) => {
+    try {
+      const safeId = id.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const photoDir = new Directory(Paths.document, 'recipe_photos');
+      if (!photoDir.exists) photoDir.create();
+      const destUri = `${photoDir.uri}${safeId}.jpg`;
+      const destFile = new FSFile(destUri);
+      if (destFile.exists) destFile.delete();
+      const srcFile = new FSFile(sourceUri);
+      srcFile.copy(destFile);
+      setPhotoUri(destUri);
+      setShowPhotoFullscreen(false);
+      triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+      showToast('Photo saved', undefined, 'success');
+      const { url } = await uploadRecipePhoto(id, destUri);
+      await AsyncStorage.setItem(recipePhotoKey(id), url || destUri);
+    } catch (e: any) {
+      showToast('Photo save failed', e?.message || 'Please try again', 'error');
+    }
+  };
+
+  const handlePhotoAdd = () => {
+    ActionSheetIOS.showActionSheetWithOptions(
+      { options: ['Take Photo', 'Choose from Library', 'Cancel'], cancelButtonIndex: 2 },
+      (buttonIndex) => {
+        if (buttonIndex === 2) return;
+        (async () => {
+          try {
+            let result: ImagePicker.ImagePickerResult;
+            if (buttonIndex === 0) {
+              result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.85 });
+            } else {
+              result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85 });
+            }
+            if (result.canceled) return;
+            if (recipeId) {
+              await saveExistingPhoto(recipeId, result.assets[0].uri);
+            } else {
+              setPendingPhotoUri(result.assets[0].uri);
+            }
+          } catch {
+            showToast('Photo failed', 'Unable to access camera or library', 'error');
+          }
+        })();
+      }
+    );
   };
 
   const handleCustomFoodSaved = (food: any) => {
@@ -536,6 +613,23 @@ export default function RecipeBuilderScreen() {
         createdAt: Date.now(),
         defaultToWeight,
       };
+      if (pendingPhotoUri && !recipeId) {
+        try {
+          const safeId = recipe.id.replace(/[^a-zA-Z0-9_-]/g, '_');
+          const photoDir = new Directory(Paths.document, 'recipe_photos');
+          if (!photoDir.exists) photoDir.create();
+          const destUri = `${photoDir.uri}${safeId}.jpg`;
+          const destFile = new FSFile(destUri);
+          if (destFile.exists) destFile.delete();
+          const srcFile = new FSFile(pendingPhotoUri);
+          srcFile.copy(destFile);
+          // Upload at creation so the photo survives a reinstall, mirrors CustomFoodCreator.
+          const { url } = await uploadRecipePhoto(recipe.id, destUri);
+          await AsyncStorage.setItem(recipePhotoKey(recipe.id), url || destUri);
+        } catch (e) {
+          console.log('Recipe photo save error', e);
+        }
+      }
       const saved = await AsyncStorage.getItem('pj_recipes');
       let recipes = saved ? JSON.parse(saved) : [];
       if (recipeId) {
@@ -585,14 +679,28 @@ export default function RecipeBuilderScreen() {
         {/* Recipe Name */}
         <View style={styles.card}>
           <Text style={styles.cardLabel}>Recipe Name</Text>
-          <View ref={nameInputRef} collapsable={false}>
-            <TextInput
-              style={styles.recipeNameInput}
-              placeholder="e.g. Chicken Stir Fry"
-              placeholderTextColor={theme.textDim}
-              value={recipeName}
-              onChangeText={setRecipeName}
-            />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View ref={nameInputRef} collapsable={false} style={{ flex: 1 }}>
+              <TextInput
+                style={styles.recipeNameInput}
+                placeholder="e.g. Chicken Stir Fry"
+                placeholderTextColor={theme.textDim}
+                value={recipeName}
+                onChangeText={setRecipeName}
+              />
+            </View>
+            <TouchableOpacity
+              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); currentPhotoUri ? setShowPhotoFullscreen(true) : handlePhotoAdd(); }}
+              style={{ width: 64, height: 64 }}
+              activeOpacity={0.8}>
+              {currentPhotoUri ? (
+                <Image source={{ uri: currentPhotoUri }} style={{ width: 64, height: 64, borderRadius: 10 }} resizeMode="cover" />
+              ) : (
+                <View style={{ width: 64, height: 64, borderRadius: 10, borderWidth: 1.5, borderStyle: 'dashed', borderColor: theme.textDim, alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="camera-outline" size={24} color={theme.textDim} />
+                </View>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -849,6 +957,37 @@ export default function RecipeBuilderScreen() {
             </Animated.View>
           </KeyboardAvoidingView>
         </Animated.View>
+      </Modal>
+
+      {/* Photo Full-Screen Modal */}
+      <Modal visible={showPhotoFullscreen} transparent animationType="fade">
+        <ToastRenderer />
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.96)', justifyContent: 'center', alignItems: 'center' }}>
+          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => setShowPhotoFullscreen(false)} />
+          {currentPhotoUri && (
+            <Image
+              source={{ uri: currentPhotoUri }}
+              style={{ width: Dimensions.get('window').width * 0.88, height: Dimensions.get('window').width * 0.88, borderRadius: 16 }}
+              resizeMode="cover"
+            />
+          )}
+          <View style={{ flexDirection: 'row', gap: 12, marginTop: 24 }}>
+            <TouchableOpacity
+              onPress={handlePhotoAdd}
+              style={{ paddingHorizontal: 28, paddingVertical: 12, backgroundColor: theme.accentBlueRaw, borderRadius: 10 }}>
+              <ButtonShine radius={10} solid />
+              <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: Type.uiSemibold }}>Replace</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handlePhotoRemove}
+              style={{ paddingHorizontal: 28, paddingVertical: 12, backgroundColor: '#cc3333', borderRadius: 10 }}>
+              <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: Type.uiSemibold }}>Remove</Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity onPress={() => setShowPhotoFullscreen(false)} style={{ marginTop: 20, padding: 8 }}>
+            <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: Type.uiMedium }}>Close</Text>
+          </TouchableOpacity>
+        </View>
       </Modal>
 
     </View>

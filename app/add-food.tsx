@@ -17,6 +17,7 @@ import { app, db, getUserId, loadFromFirebase, saveToFirebase } from '../firebas
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { storageSet } from '../utils/storage';
 import { purgeFoodPhoto } from '../utils/foodPhotos';
+import { purgeRecipePhoto } from '../utils/recipePhotos';
 import { getMealDisplayName, MealSlot, loadMealSlots } from '../utils/mealSlots';
 import { setCameraActive } from '../utils/assistantFab';
 import { unitLabel } from '../utils/unitConversion';
@@ -1223,6 +1224,8 @@ const openFoodDetail = async (food: SearchResult) => {
             setRecipes(updated);
             await storageSet('pj_recipes', JSON.stringify(updated));
             saveToFirebase('recipes', 'list', updated).catch(() => {});
+            // Clean up this recipe's photo (local + cloud) so no orphan is left behind.
+            purgeRecipePhoto(recipeId).catch(() => {});
             showToast('Recipe deleted', recipeName, 'success');
           },
         },

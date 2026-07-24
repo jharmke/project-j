@@ -1,13 +1,17 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { useToast } from '../components/Toast';
+import { ActionSheetIOS, Alert, Animated, Dimensions, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Directory, File as FSFile, Paths } from 'expo-file-system/next';
+import * as ImagePicker from 'expo-image-picker';
+import { useToast, ToastRenderer } from '../components/Toast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { saveToFirebase } from '../firebaseConfig';
 import { storageSet } from '../utils/storage';
+import { resolveRecipePhoto, uploadRecipePhoto, purgeRecipePhoto, recipePhotoKey } from '../utils/recipePhotos';
 import { cancelFoodLogNotification } from '../services/notifications';
 import { useTheme } from '../theme';
 import { DEFAULT_MEAL_SLOTS, MealSlot, loadMealSlots } from '../utils/mealSlots';
@@ -45,6 +49,8 @@ export default function RecipeLogScreen() {
   const [showMealPicker, setShowMealPicker] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState(meal || 'ms_lunch');
   const [mealSlots, setMealSlots] = useState<MealSlot[]>(DEFAULT_MEAL_SLOTS);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [showPhotoFullscreen, setShowPhotoFullscreen] = useState(false);
 
   useEffect(() => {
     loadMealSlots().then(({ mealSlots: slots }) => setMealSlots(slots));
@@ -70,6 +76,7 @@ export default function RecipeLogScreen() {
             // from the old family would silently mean something else, so follow the recipe.
             const freshUnit = normalizeUnitKey(fresh.totalWeightUnit);
             setWeightUnit(prev => (convertUnit(1, prev, freshUnit) === null ? freshUnit : prev));
+            resolveRecipePhoto(fresh.id).then(uri => { if (active) setPhotoUri(uri); });
           }
         } catch {}
       })();
@@ -87,6 +94,69 @@ export default function RecipeLogScreen() {
     Animated.timing(fadeAnim, { toValue: 0, duration: 160, useNativeDriver: true }).start(() => {
       setShowMealPicker(false);
     });
+  };
+
+  const savePhoto = async (sourceUri: string) => {
+    if (!recipe?.id) return;
+    try {
+      const safeId = recipe.id.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const photoDir = new Directory(Paths.document, 'recipe_photos');
+      if (!photoDir.exists) photoDir.create();
+      const destUri = `${photoDir.uri}${safeId}.jpg`;
+      const destFile = new FSFile(destUri);
+      if (destFile.exists) destFile.delete();
+      const srcFile = new FSFile(sourceUri);
+      srcFile.copy(destFile);
+      setPhotoUri(destUri);
+      setShowPhotoFullscreen(false);
+      triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+      showToast('Photo saved', undefined, 'success');
+      const { url } = await uploadRecipePhoto(recipe.id, destUri);
+      await AsyncStorage.setItem(recipePhotoKey(recipe.id), url || destUri);
+    } catch (e: any) {
+      showToast('Photo save failed', e?.message || 'Please try again', 'error');
+    }
+  };
+
+  const handlePhotoAdd = () => {
+    if (!recipe?.id) return;
+    ActionSheetIOS.showActionSheetWithOptions(
+      { options: ['Take Photo', 'Choose from Library', 'Cancel'], cancelButtonIndex: 2 },
+      (buttonIndex) => {
+        if (buttonIndex === 2) return;
+        (async () => {
+          try {
+            let result: ImagePicker.ImagePickerResult;
+            if (buttonIndex === 0) {
+              result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.85 });
+            } else {
+              result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85 });
+            }
+            if (result.canceled) return;
+            await savePhoto(result.assets[0].uri);
+          } catch {
+            showToast('Photo failed', 'Unable to access camera or library', 'error');
+          }
+        })();
+      }
+    );
+  };
+
+  const handlePhotoRemove = () => {
+    if (!recipe?.id) return;
+    Alert.alert('Remove Photo', 'Remove this photo?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          await purgeRecipePhoto(recipe.id);
+          setPhotoUri(null);
+          setShowPhotoFullscreen(false);
+          showToast('Photo removed', undefined, 'success');
+        },
+      },
+    ]);
   };
 
   if (!recipe) return null;
@@ -275,35 +345,52 @@ export default function RecipeLogScreen() {
 
         {/* Recipe Info */}
         <View style={styles.infoCard}>
-          <Text style={styles.infoText}>
-            {isWholeBatch ? 'Whole batch' : `${recipe.servingCount} ${recipe.servingName} total`}
-            {totalWeight > 0 ? ` · ${totalWeight}${unitLabel(recipe.totalWeightUnit || 'g')} total weight` : ''}
-          </Text>
-          <View style={styles.macroRow}>
-            <View style={styles.macroStat}>
-              <GradientNumber
-                value={String(isWholeBatch ? Math.round(recipe.totalCal) : Math.round(recipe.totalCal / servingCount))}
-                color={theme.accentGreen} style={styles.macroVal} />
-              <Text style={styles.macroLabel}>{isWholeBatch ? 'total cal' : `cal/${recipe.servingName}`}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.sectionLabel}>Recipe Totals</Text>
+              <Text style={[styles.infoText, { marginTop: 4 }]}>
+                {isWholeBatch ? 'Whole batch' : `${recipe.servingCount} ${recipe.servingName} total`}
+                {totalWeight > 0 ? ` · ${totalWeight}${unitLabel(recipe.totalWeightUnit || 'g')} total weight` : ''}
+              </Text>
+              <View style={styles.macroRow}>
+                <View style={styles.macroStat}>
+                  <GradientNumber
+                    value={String(isWholeBatch ? Math.round(recipe.totalCal) : Math.round(recipe.totalCal / servingCount))}
+                    color={theme.textSecondary} style={styles.macroVal} />
+                  <Text style={styles.macroLabel}>{isWholeBatch ? 'total cal' : `cal/${recipe.servingName}`}</Text>
+                </View>
+                <View style={styles.macroStat}>
+                  <GradientNumber
+                    value={`${isWholeBatch ? Math.round(recipe.totalProtein * 10) / 10 : Math.round(recipe.totalProtein / servingCount * 10) / 10}g`}
+                    color={theme.macroProtein} style={styles.macroVal} />
+                  <Text style={styles.macroLabel}>protein</Text>
+                </View>
+                <View style={styles.macroStat}>
+                  <GradientNumber
+                    value={`${isWholeBatch ? Math.round(recipe.totalCarbs * 10) / 10 : Math.round(recipe.totalCarbs / servingCount * 10) / 10}g`}
+                    color={theme.macroCarbs} style={styles.macroVal} />
+                  <Text style={styles.macroLabel}>carbs</Text>
+                </View>
+                <View style={styles.macroStat}>
+                  <GradientNumber
+                    value={`${isWholeBatch ? Math.round(recipe.totalFat * 10) / 10 : Math.round(recipe.totalFat / servingCount * 10) / 10}g`}
+                    color={theme.macroFat} style={styles.macroVal} />
+                  <Text style={styles.macroLabel}>fat</Text>
+                </View>
+              </View>
             </View>
-            <View style={styles.macroStat}>
-              <GradientNumber
-                value={`${isWholeBatch ? Math.round(recipe.totalProtein * 10) / 10 : Math.round(recipe.totalProtein / servingCount * 10) / 10}g`}
-                color={theme.macroProtein} style={styles.macroVal} />
-              <Text style={styles.macroLabel}>protein</Text>
-            </View>
-            <View style={styles.macroStat}>
-              <GradientNumber
-                value={`${isWholeBatch ? Math.round(recipe.totalCarbs * 10) / 10 : Math.round(recipe.totalCarbs / servingCount * 10) / 10}g`}
-                color={theme.macroCarbs} style={styles.macroVal} />
-              <Text style={styles.macroLabel}>carbs</Text>
-            </View>
-            <View style={styles.macroStat}>
-              <GradientNumber
-                value={`${isWholeBatch ? Math.round(recipe.totalFat * 10) / 10 : Math.round(recipe.totalFat / servingCount * 10) / 10}g`}
-                color={theme.macroFat} style={styles.macroVal} />
-              <Text style={styles.macroLabel}>fat</Text>
-            </View>
+            <TouchableOpacity
+              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); photoUri ? setShowPhotoFullscreen(true) : handlePhotoAdd(); }}
+              style={{ width: 64, height: 64 }}
+              activeOpacity={0.8}>
+              {photoUri ? (
+                <Image source={{ uri: photoUri }} style={{ width: 64, height: 64, borderRadius: 10 }} resizeMode="cover" />
+              ) : (
+                <View style={{ width: 64, height: 64, borderRadius: 10, borderWidth: 1.5, borderStyle: 'dashed', borderColor: theme.textDim, alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="camera-outline" size={24} color={theme.textDim} />
+                </View>
+              )}
+            </TouchableOpacity>
           </View>
           {/* Extended nutrition: every nutrient the recipe actually carries, on the same basis
               (whole batch vs per serving) as the macros above. Shows only what's present, so a
@@ -445,7 +532,7 @@ export default function RecipeLogScreen() {
           </Text>
           <View style={styles.macroRow}>
             <View style={styles.macroStat}>
-              <GradientNumber value={String(calories)} color={theme.accentGreen} style={[styles.macroVal, { fontSize: 32 }]} />
+              <GradientNumber value={String(calories)} color={theme.textSecondary} style={[styles.macroVal, { fontSize: 32 }]} />
               <Text style={styles.macroLabel}>Calories</Text>
             </View>
             <View style={styles.macroStat}>
@@ -500,6 +587,37 @@ export default function RecipeLogScreen() {
         </Animated.View>
       </Modal>
 
+      {/* Photo Full-Screen Modal */}
+      <Modal visible={showPhotoFullscreen} transparent animationType="fade">
+        <ToastRenderer />
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.96)', justifyContent: 'center', alignItems: 'center' }}>
+          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => setShowPhotoFullscreen(false)} />
+          {photoUri && (
+            <Image
+              source={{ uri: photoUri }}
+              style={{ width: Dimensions.get('window').width * 0.88, height: Dimensions.get('window').width * 0.88, borderRadius: 16 }}
+              resizeMode="cover"
+            />
+          )}
+          <View style={{ flexDirection: 'row', gap: 12, marginTop: 24 }}>
+            <TouchableOpacity
+              onPress={handlePhotoAdd}
+              style={{ paddingHorizontal: 28, paddingVertical: 12, backgroundColor: theme.accentBlueRaw, borderRadius: 10 }}>
+              <ButtonShine radius={10} solid />
+              <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: Type.uiSemibold }}>Replace</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handlePhotoRemove}
+              style={{ paddingHorizontal: 28, paddingVertical: 12, backgroundColor: '#cc3333', borderRadius: 10 }}>
+              <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: Type.uiSemibold }}>Remove</Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity onPress={() => setShowPhotoFullscreen(false)} style={{ marginTop: 20, padding: 8 }}>
+            <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: Type.uiMedium }}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -518,16 +636,20 @@ const useStyles = (theme: any) => StyleSheet.create({
   content: { padding: 16, paddingBottom: 120 },
   // Had NO shadow -- never written, not broken. Read fine while Light's ground was the old grey #e3e6ee
   // (a white card had value contrast to lean on); the brightened #f2f3f7 took that away.
-  infoCard: { backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, padding: 16, marginBottom: 16, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
+  infoCard: { backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, borderRadius: 10, padding: 16, marginBottom: 16, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
   infoText: { fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginBottom: 12 },
   // alignItems 'flex-end': the stats TOP-aligned before, and Calories is 32px while the macros are 22px --
   // so the three small numbers floated high and Calories hung below them. Bottom-aligning the columns fixes
   // both: the labels line up, and since the labels are identical heights the numbers land on a shared
   // baseline. (No effect on the infoCard row above, where every value is the same size.)
   macroRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
-  macroStat: { alignItems: 'center', flex: 1 },
+  // width: '25%', not flex: 1 -- flex only guarantees equal columns when every value is the same
+  // rendered width. "107g" is narrower than "11.4g", so flex:1 gave Fat's column extra slack on both
+  // sides and the Carbs-Fat gap read wider than Protein-Carbs. Fixed % width pins all four identically
+  // regardless of digit count, same fix day-detail.tsx's nutrient grid already uses.
+  macroStat: { alignItems: 'center', width: '25%' },
   macroVal: { fontSize: 22, fontFamily: Type.num, letterSpacing: 1 },
-  macroLabel: { fontSize: 10, color: theme.textMuted, fontFamily: Type.ui, marginTop: 2, textAlign: 'center' },
+  macroLabel: { fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, marginTop: 2, textAlign: 'center', textTransform: 'uppercase', letterSpacing: 1 },
   // Ingredients is a CARD now. It was naked content sitting between two cards, so the page read
   // card / nothing / card -- it looked like something had failed to load, and once the page gained a glow
   // the list was floating in it. It is also the thing you actually scan on this screen.
@@ -553,7 +675,7 @@ const useStyles = (theme: any) => StyleSheet.create({
   servingBtn: { flex: 1, padding: 10, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, alignItems: 'center' },
   servingBtnActive: { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder },
   servingBtnText: { color: theme.textMuted, fontSize: 14, fontFamily: Type.uiMedium },
-  nutritionCard: { backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, padding: 16, marginBottom: 20, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
+  nutritionCard: { backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, borderRadius: 10, padding: 16, marginBottom: 20, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
   nutritionTitle: { fontSize: 11, color: theme.textMuted, fontFamily: Type.uiMedium, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 },
   // logBtn / logBtnText removed 2026-07-15: Add to Diary is PrimaryCTA now.
   modalOverlay: { flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },

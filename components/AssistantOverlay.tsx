@@ -42,6 +42,7 @@ const HIDE_SEGMENTS = new Set([
   'prayer',
   'devotional',
   'plans',
+  'reading-plan',
   'ai-meal-estimator',
 ]);
 

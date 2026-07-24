@@ -754,7 +754,7 @@ export default function BibleScreen() {
                   <>
                     <TouchableOpacity
                       style={{ flex: 1 }}
-                      onPress={() => navigateToPlanPassage(reading.day.passages[0].book, reading.day.passages[0].startChapter)}
+                      onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/reading-plan', params: { id: plan.id } }); }}
                     >
                       <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: theme.accentAmber }} numberOfLines={1}>
                         {formatDayReading(reading.day)}

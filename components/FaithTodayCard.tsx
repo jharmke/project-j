@@ -16,6 +16,7 @@ import { loadDevotionalProgress, getDevotionalProgress, getNextDay } from '../ut
 import { useTheme, faithInk, faithInkBody, faithInkMuted, faithTintBg, faithTintBorder, type Theme } from '../theme';
 import ButtonShine from './ButtonShine';
 import { LinearGradient } from 'expo-linear-gradient';
+import { barFillGradient } from '../utils/barGradient';
 import GradientIcon from './GradientIcon';
 import VersePoolModal from './VersePoolModal';
 import { Type } from '../typography';
@@ -40,7 +41,7 @@ const RESUME_MS = 10000;
 const PAGES = 3;
 
 type Props = { verse: DailyVerse | null; theme: Theme };
-type RowItem = { id: string; icon: string; name: string; pct: number; nextRef: string };
+type RowItem = { id: string; icon: string; name: string; pct: number; completed: number; total: number; nextRef: string };
 
 // Each page's own state title is the single card label (no separate "FAITH TODAY" line;
 // the card is named Faith Today in the edit-layout list). Page 1 also carries the journal door.
@@ -72,8 +73,9 @@ function PageHeader({ title, icon, theme, withJournal, onJournal, withGear, onGe
   );
 }
 
-// One compact tile in a page-2 column: icon + name, then the next chapter. No progress bar and
-// no day counts on the home card (kept short on purpose; the full progress lives on the Faith tab).
+// One compact tile in a page-2 column: icon + name, a progress bar + day count, then the next
+// chapter. Used to be bar-less and count-less on purpose ("kept short"); Justin asked for the bar
+// and count back to match the Faith tab's own version of this card.
 function Tile({ item, theme }: { item: RowItem; theme: Theme }) {
   return (
     <View style={[styles.tile, { backgroundColor: theme.bgTileFaith, borderColor: theme.borderCard, borderLeftColor: theme.accentAmber }]}>
@@ -81,7 +83,27 @@ function Tile({ item, theme }: { item: RowItem; theme: Theme }) {
         <Ionicons name={item.icon as any} size={12} color={theme.accentAmber} />
         <Text numberOfLines={1} style={[styles.tileName, { color: theme.accentAmber }]}>{item.name}</Text>
       </View>
-      {item.nextRef ? <Text numberOfLines={1} style={[styles.tileRef, { color: faithInkMuted(theme) }]}>{item.nextRef}</Text> : null}
+      <TileBar pct={item.pct} theme={theme} />
+      <View style={styles.tileCaptionRow}>
+        <Text style={[styles.tileCaption, { color: faithInkMuted(theme) }]}>{item.completed}/{item.total}</Text>
+        {item.nextRef ? <Text numberOfLines={1} style={[styles.tileRef, { color: faithInkMuted(theme) }]}>{item.nextRef}</Text> : null}
+      </View>
+    </View>
+  );
+}
+
+// Animated progress bar (width animates on mount / when pct changes, per the animation standard).
+function TileBar({ pct, theme }: { pct: number; theme: Theme }) {
+  const w = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(w, { toValue: pct, duration: 600, useNativeDriver: false }).start();
+  }, [pct]);
+  const width = w.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
+  return (
+    <View style={[styles.barTrack, { backgroundColor: theme.bgProgressTrack }]}>
+      <Animated.View style={{ width, height: '100%', borderRadius: 2, overflow: 'hidden' }}>
+        <LinearGradient colors={barFillGradient(theme.accentAmber)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }} />
+      </Animated.View>
     </View>
   );
 }
@@ -216,13 +238,15 @@ export default function FaithTodayCard({ verse, theme }: Props) {
     const prog = planStore[p.id];
     const today = getTodayReading(p, prog);
     const nextRef = today === 'complete' ? 'Done' : `${today.day.passages[0].book} ${today.day.passages[0].startChapter}`;
-    return { id: p.id, icon: p.icon, name: p.shortName, pct: getPlanCompletion(p, prog).pct, nextRef };
+    const c = getPlanCompletion(p, prog);
+    return { id: p.id, icon: p.icon, name: p.shortName, pct: c.pct, completed: c.completed, total: c.total, nextRef };
   });
   const devItems: RowItem[] = activeDevs.map(d => {
     const nextDay = getNextDay(d, getDevotionalProgress(devStore, d.id));
     const day = d.days[nextDay - 1];
     const nextRef = day ? `${day.passage.book} ${day.passage.startChapter}` : '';
-    return { id: d.id, icon: d.icon, name: d.shortName, pct: getDevotionalCompletion(d, devStore[d.id]).pct, nextRef };
+    const c = getDevotionalCompletion(d, devStore[d.id]);
+    return { id: d.id, icon: d.icon, name: d.shortName, pct: c.pct, completed: c.completed, total: c.total, nextRef };
   });
   const noPlans = planItems.length === 0 && devItems.length === 0;
 
@@ -385,8 +409,9 @@ const styles = StyleSheet.create({
   tileTop: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4 },
   tileName: { flex: 1, fontSize: 12, fontFamily: 'Lora_500Medium' },
   tileRef: { fontSize: 10, fontFamily: Type.ui },
-  barTrack: { height: 4, borderRadius: 2, overflow: 'hidden' },
-  barFill: { height: 4, borderRadius: 2 },
+  barTrack: { height: 4, borderRadius: 2, overflow: 'hidden', marginBottom: 4 },
+  tileCaptionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
+  tileCaption: { fontSize: 10, fontFamily: Type.ui },
   prayerBox: { borderRadius: 10, borderWidth: 1, borderLeftWidth: 3, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 7 },
   prayerText: { fontSize: 13, fontFamily: 'Lora_500Medium' },
   moreText: { fontSize: 11, fontFamily: Type.uiSemibold, marginTop: 2 },

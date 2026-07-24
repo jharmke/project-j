@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
+import { barFillGradient } from '../../utils/barGradient';
 import { Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Reanimated, { FadeInDown } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
@@ -396,17 +397,11 @@ function BibleCard({ theme }: { theme: Theme }) {
     router.push(params ? { pathname: '/bible', params } : '/bible');
   };
 
-  // Resume a reading plan at the day's passage (mirrors the /plans page's openReadingPlan).
+  // Opens the dedicated schedule page now, not straight into the Bible -- mirrors the /plans
+  // page's openReadingPlan.
   const continuePlan = (planId: string) => {
-    const plan = READING_PLANS.find(p => p.id === planId);
-    const prog = planStore[planId];
-    if (!plan || !prog) return;
-    const today = getTodayReading(plan, prog);
-    const passage = today === 'complete'
-      ? plan.days[plan.totalDays - 1].passages[0]
-      : today.day.passages[0];
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-    router.push({ pathname: '/bible', params: { planNavBook: passage.book, planNavChapter: String(passage.startChapter) } });
+    router.push({ pathname: '/reading-plan', params: { id: planId } });
   };
 
   // Resume a devotional on its next unfinished day (mirrors /plans).
@@ -706,8 +701,10 @@ function TileBar({ pct, theme }: { pct: number; theme: Theme }) {
   }, [pct]);
   const width = w.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
   return (
-    <View style={[styles.tileBarTrack, { backgroundColor: theme.bgInput }]}>
-      <Animated.View style={[styles.tileBarFill, { width, backgroundColor: theme.accentAmber }]} />
+    <View style={[styles.tileBarTrack, { backgroundColor: theme.bgProgressTrack }]}>
+      <Animated.View style={[styles.tileBarFill, { width, overflow: 'hidden' }]}>
+        <LinearGradient colors={barFillGradient(theme.accentAmber)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }} />
+      </Animated.View>
     </View>
   );
 }

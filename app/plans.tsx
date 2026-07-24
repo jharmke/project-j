@@ -3,13 +3,14 @@ import {
   ActivityIndicator, Alert, Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { barFillGradient } from '../utils/barGradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic, triggerHapticNotification } from '@/utils/haptics';
 import {
-  READING_PLANS, getPlanCompletion, getTodayReading, isReadingPlanComplete, MAX_ACTIVE_PLANS, type ReadingPlansStorage,
+  READING_PLANS, getPlanCompletion, isReadingPlanComplete, MAX_ACTIVE_PLANS, type ReadingPlansStorage,
 } from '../data/readingPlans';
 import {
   DEVOTIONALS, getDevotionalCompletion, isDevotionalComplete, MAX_ACTIVE_DEVOTIONALS, type DevotionalsStorage,
@@ -106,16 +107,11 @@ export default function PlansScreen() {
   }, [params.focus]);
 
   // ── Reading plan actions ────────────────────────────────────────────────────
+  // Opens the dedicated schedule page now, not straight into the Bible -- "Continue" implied
+  // jumping right to reading, which this no longer does (renamed to "View Plan" at the call site).
   const openReadingPlan = (planId: string) => {
-    const plan = READING_PLANS.find(p => p.id === planId);
-    const prog = planStore[planId];
-    if (!plan || !prog) return;
-    const today = getTodayReading(plan, prog);
-    const passage = today === 'complete'
-      ? plan.days[plan.totalDays - 1].passages[0]
-      : today.day.passages[0];
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-    router.push({ pathname: '/bible', params: { planNavBook: passage.book, planNavChapter: String(passage.startChapter) } });
+    router.push({ pathname: '/reading-plan', params: { id: planId } });
   };
 
   const startReadingPlan = async (planId: string) => {
@@ -320,7 +316,7 @@ export default function PlansScreen() {
                         lengthLabel={`${plan.totalDays} days`}
                         description={plan.description}
                         progress={c}
-                        primaryLabel="Continue"
+                        primaryLabel="View Plan"
                         onPrimary={() => openReadingPlan(plan.id)}
                         onDrop={() => confirmDropPlan(plan.id)}
                       />
@@ -590,8 +586,10 @@ function ProgressBar({ pct, theme }: { pct: number; theme: Theme }) {
   }, [pct]);
   const width = w.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
   return (
-    <View style={[styles.barTrack, { backgroundColor: theme.bgInput }]}>
-      <Animated.View style={[styles.barFill, { width, backgroundColor: theme.accentAmber }]} />
+    <View style={[styles.barTrack, { backgroundColor: theme.bgProgressTrack }]}>
+      <Animated.View style={[styles.barFill, { width, overflow: 'hidden' }]}>
+        <LinearGradient colors={barFillGradient(theme.accentAmber)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }} />
+      </Animated.View>
     </View>
   );
 }

@@ -213,6 +213,7 @@ function RootLayoutNav() {
         <Stack.Screen name="journal" options={{ headerShown: false }} />
         <Stack.Screen name="prayer" options={{ headerShown: false }} />
         <Stack.Screen name="devotional" options={{ headerShown: false }} />
+        <Stack.Screen name="reading-plan" options={{ headerShown: false }} />
         <Stack.Screen name="plans" options={{ headerShown: false }} />
         <Stack.Screen name="achievements" options={{ headerShown: false }} />
         <Stack.Screen name="day-summary" options={{ headerShown: false }} />

@@ -76,6 +76,19 @@ export async function markReadingPlanDay(planId: string, dayIndex: number): Prom
   return next;
 }
 
+/** Reverse a day's completion (0-indexed). No-op if not enrolled. */
+export async function unmarkReadingPlanDay(planId: string, dayIndex: number): Promise<ReadingPlansStorage> {
+  const store = await readStore();
+  const prog = store[planId];
+  if (!prog) return store;
+  const next: ReadingPlansStorage = {
+    ...store,
+    [planId]: { ...prog, completedDays: prog.completedDays.filter(d => d !== dayIndex) },
+  };
+  await writeStore(next);
+  return next;
+}
+
 export function isReadingPlanEnrolled(store: ReadingPlansStorage, planId: string): boolean {
   return !!store[planId];
 }

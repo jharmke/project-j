@@ -4361,10 +4361,10 @@ export default function HomeScreen() {
             {editTab === 'add' && (
               <ScrollView showsVerticalScrollIndicator={false} scrollEnabled={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}>
                 <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase', marginBottom: 8, marginTop: 4 }}>Home Cards</Text>
-                {CARD_REGISTRY.filter(m => !cardVisible[m.id]).length === 0 ? (
+                {CARD_REGISTRY.filter(m => !cardVisible[m.id] && !(m.id === 'reading_plans' && faithJourney === 'notrightnow')).length === 0 ? (
                   <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui, marginBottom: 12 }}>All cards are currently visible.</Text>
                 ) : (
-                  CARD_REGISTRY.filter(m => !cardVisible[m.id]).map(m => (
+                  CARD_REGISTRY.filter(m => !cardVisible[m.id] && !(m.id === 'reading_plans' && faithJourney === 'notrightnow')).map(m => (
                     <View key={m.id} style={styles.editCardRow}>
                       <View style={[styles.editBadge, { backgroundColor: theme.accentGreenBg, borderColor: theme.accentGreenBorder }]}>
                         <Ionicons name="add" size={14} color={theme.accentGreen} />
@@ -4537,12 +4537,12 @@ export default function HomeScreen() {
             {editTab === 'add' && (
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}>
                 <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase', marginBottom: 8, marginTop: 4 }}>Home Cards</Text>
-                {CARD_REGISTRY.filter(meta => !cardVisible[meta.id]).length === 0 ? (
+                {CARD_REGISTRY.filter(meta => !cardVisible[meta.id] && !(meta.id === 'reading_plans' && faithJourney === 'notrightnow')).length === 0 ? (
                   <View style={{ paddingVertical: 16, alignItems: 'center' }}>
                     <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui }}>All home cards are active</Text>
                   </View>
                 ) : (
-                  CARD_REGISTRY.filter(meta => !cardVisible[meta.id]).map(meta => (
+                  CARD_REGISTRY.filter(meta => !cardVisible[meta.id] && !(meta.id === 'reading_plans' && faithJourney === 'notrightnow')).map(meta => (
                     <TouchableOpacity key={meta.id}
                       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); toggleCardVisible(meta.id); setEditTab('my'); }}
                       style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle, gap: 12 }}>

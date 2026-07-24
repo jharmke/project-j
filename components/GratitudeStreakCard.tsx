@@ -456,7 +456,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <TooltipIcon tooltipKey="gratitude_streak" color={faith ? accent : undefined} forceFaith={faith} />
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons name={faith ? 'journal' : 'book'} size={16} color={btnText} />
+            <Ionicons name="journal" size={16} color={btnText} />
           </TouchableOpacity>
         </View>
       </View>

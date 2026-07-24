@@ -10,6 +10,8 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useToast } from './Toast';
+import { fireRatingTrigger } from '../utils/ratingPrompt';
+import { useTutorial } from '../context/TutorialContext';
 import TooltipIcon from './TooltipIcon';
 import ButtonShine from './ButtonShine';
 import AnimatedNumber from './AnimatedNumber';
@@ -126,6 +128,7 @@ type CardState = 'empty' | 'logged' | 'editing';
 
 export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, theme: t, variant = 'home' }: Props) {
   const { showToast } = useToast();
+  const { activeState: tutorialActiveState } = useTutorial();
   const inputRef = useRef<TextInput>(null);
   const cardRef = useRef<View>(null);
 
@@ -386,6 +389,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
       if (cardState !== 'editing') {
         cancelEveningGratitudeNotification();
         rescheduleStreakProtection().catch(() => {});
+        fireRatingTrigger(tutorialActiveState);
       }
       if (graceUsed) {
         showToast(`Grace day saved your streak! ${updatedSavers.count} saver${updatedSavers.count !== 1 ? 's' : ''} left`, undefined, 'success');

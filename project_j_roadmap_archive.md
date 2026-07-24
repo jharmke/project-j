@@ -1561,3 +1561,57 @@ in case a similar OCR bug shows up elsewhere:
 - DEFERRED, not built, pinned by Justin 2026-07-21: replacing the system photo picker with a custom
   live-camera screen (viewfinder box + "align label in frame" text, same pattern as the barcode scanner).
   Real, non-trivial rebuild -- moved to project_j_backlog.md rather than left dangling in NEXT UP.
+
+## CUSTOM PROFILE PICTURES (2026-07-24)
+
+Pulled up from the backlog. Entry point is a small plus badge on the Profile screen's own avatar --
+deliberately NOT the avatar itself, since everywhere else in the app the avatar is a tap-to-navigate-to-
+Profile button, and on Profile itself that would be a dead-end tap. Picking a photo routes to a dedicated
+full-screen "Move and Scale" crop step (pinch to zoom, drag to reposition inside a circular guide) before
+it ever uploads, cropped via ImageManipulator to the visible circle's bounding square, resized to 512x512,
+uploaded to a fixed per-user Storage path (`users/{uid}/profile_photo.jpg`, so re-uploads overwrite instead
+of piling up orphans). `photoURL` rides inside the existing `pj_profile` object, so it syncs for free
+through the same path as the rest of profile data -- no new sync wiring. Every tab header now shows the
+photo in place of initials once one is set.
+
+**The rough build.** This feature went through five iterations before it was right, and cost real trust
+along the way:
+1. First cut used the native `ActionSheetIOS` for the picker (Take Photo/Choose from Library/Remove) --
+   Justin flagged it teleports in with zero animation, rough against the rest of the app's motion. Replaced
+   with an in-house `PhotoOptionsModal`.
+2. The crop screen's pinch/pan gestures were completely dead on first ship. Root cause: the circular guide
+   overlay was an SVG with `pointerEvents="none"` set directly on `<Svg>`, which doesn't reliably stop it
+   intercepting touches on iOS -- it silently ate every gesture before the detector underneath ever saw it.
+   Fix: wrap it in a plain `View` with `pointerEvents="none"` instead. Same shipment also had the visual
+   guide drawn in full-screen coordinates while the actual crop viewport was centered in a squeezed flex
+   region between the top bar and instruction text -- the two didn't share a coordinate space, so even once
+   gestures worked, what got saved didn't match what the on-screen circle showed. Fixed by rescoping the
+   overlay to the same CROP_SIZE box the gesture target uses.
+3. The Photo Options modal shipped with a hand-rolled header instead of reusing `ModalHeader` (the
+   component every other modal in the app already uses correctly) -- wrong font, wrong color (grey instead
+   of accent), wrong placement (centered instead of left-aligned), and a decorative handle pill that looked
+   like it should close the modal but did nothing. Justin: "blows my mind after all of the modals we've
+   built that you went rogue and didn't use our standard." Swapped in real `ModalHeader`.
+4. The plus badge's icon (`add-circle`) went through two broken states in a row: first a mismatched white
+   ring around it (assumed the header background is flat `bgPrimary`; it's actually a frosted blur), then --
+   after removing the ring AND its backing fill in the same pass -- the plus mark itself went invisible,
+   because `add-circle`'s plus is a transparent knockout in the glyph with nothing behind it to contrast
+   against once the fill was gone too. Fix was narrower than either full pass: drop the border, keep a
+   plain opaque circular backing.
+5. The option rows were swapped to `PressableButton` for a press-scale feel, which shipped BROKEN --
+   `PressableButton` forces `flex:1` on itself and is documented as built specifically for a flex child in
+   a horizontal button row; dropped into this vertical list with no defined parent height, `flex:1`
+   collapsed all three rows on top of each other. This was committed and pushed to master before Justin
+   ever saw it on his phone. Justin: "STOP. FUCKING. COMMITTING. AND. PUSHING. WITHOUT. ME. CONFIRMING."
+   Replaced with a plain full-width `Pressable` + hand-rolled scale animation matching the house card-press
+   standard (0.97 in, 1.0 out, timing not spring), confirmed on device, THEN committed.
+
+**The real lesson, twice compounded.** First: reuse the existing house component before hand-rolling a new
+one -- `ModalHeader`, `PressableButton`'s row-only assumption, and `ButtonShine`'s "don't clip the parent"
+note all exist precisely to prevent the mistakes made rebuilding them ad hoc. Second, and more important:
+"the code compiles" is not "the feature is confirmed." Every fix in this feature until the very last one
+was committed and pushed the moment `tsc` came back clean, with no device confirmation gate -- meaning
+multiple visibly broken states (dead gestures, mismatched crop, an ugly non-standard modal, an invisible
+icon, and a fully collapsed button layout) went to master's history before Justin ever tested them. Standing
+rule going forward: code goes in, Justin tests it on his phone, commit/push happens only after he confirms
+it's right -- not automatically the instant a change is made.

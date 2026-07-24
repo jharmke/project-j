@@ -16,6 +16,13 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-24 **Custom profile pictures, device-confirmed.** Plus badge on Profile's own avatar (own
+  avatar stays inert there, no dead-end tap) opens an in-house Photo Options modal (ModalHeader, gradient
+  icons/labels, ButtonShine, real house press-scale) -> Take Photo / Choose from Library / Remove Photo.
+  Picking a photo routes to a dedicated full-screen crop step (pinch/drag inside a circular guide) before
+  upload. Photo replaces initials on every tab header once set. Rough build (native ActionSheetIOS, dead
+  crop gestures, mismatched crop preview, a layout-collapsing button regression) -- full story + the
+  "STOP committing before I confirm" lesson in the archive.
 - 2026-07-24 **Gratitude card: NRN can now add it to Home (Edit Layout, no Scripture shown), fixed 3
   hardcoded-amber spots that leaked faith styling onto Home for every user, added a grace-saver
   explainer to the tooltip.** Closes the 2026-07-19 "shown to NRN as-is" gap.
@@ -1304,7 +1311,6 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 - Physical measurements in profile -- waist/neck/hip (enables Navy body-fat estimate).
 - HealthKit permissions audit -- review requested vs available data types; add high-value metrics before next build.
 - Loading + error states audit -- sweep all screens for flashy load behavior + silent failures.
-- Custom profile pictures -- user-set avatar via image picker (HeaderAvatar). QoL/aesthetic bump, likely small.
 
 ### Food & Log
 - Big 3 macro presets -- quick protein/carb/fat picker from the macro gear icon and/or Settings.

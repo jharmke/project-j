@@ -382,6 +382,12 @@ PROFILE TAB
 - Water presets (the quick-add oz amounts) are NOT edited on Profile -- that section was removed
   2026-07-17 as redundant. Edit them via the GEAR icon on the Water card, on either Home or Log (same
   presets, same underlying value, edit from whichever tab is convenient).
+- PROFILE PHOTO: tap the small plus badge on the avatar (top-left of the Profile screen only -- the
+  avatar itself isn't tappable there since there's nowhere to navigate to). Take Photo / Choose from
+  Library / Remove Photo. Picking a photo opens a "Move and Scale" crop step (pinch to zoom, drag to
+  reposition inside a circular guide) before it saves. Once set, the photo replaces the initials on
+  every tab's header avatar, not just Profile's. Syncs like the rest of the profile (survives sign-out/
+  reinstall on the same account).
 
 ================================================================================
 FAITH TAB (hidden for "Not Right Now" users)

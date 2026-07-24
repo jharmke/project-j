@@ -1205,6 +1205,10 @@ are separate pre-submission checklists, NOT part of this menu.
   entries logged together. Repeat a Meal already re-logs separate entries from history; this would persist
   a named bundle. Needs its own design pass (look/behavior, where it's saved + surfaced, how it lives
   alongside recipes without confusing the two). Full spec context: SPEC_repeat_meal.md bottom section.
+  ADDED 2026-07-24, surfaced while building the meal-slot photo feature: the concrete entry point Justin
+  wants is a quick-add "Create Meal" action directly on an ALREADY-LOGGED mealtime on the Log tab --
+  pre-filled with exactly what's currently sitting in that slot (e.g. finish logging Lunch, tap Create
+  Meal, name it, done), not a separate builder screen you populate from scratch.
 - [FIX IMPLEMENTED 2026-07-23, PENDING DEVICE REINSTALL VERIFY] Achievement unlockedAt reinstall hardening.
   Badges stamp unlockedAt = new Date() at award time; on a reinstall before the cloud restore lands, a check
   could first-unlock against an empty store and re-stamp the whole earned set to "today" (this was the

@@ -23,6 +23,8 @@ import CompanionFAB from '../components/CompanionFAB';
 import { useTheme } from '../theme';
 import type { DevotionalsStorage, DevotionalHaloTurn } from '../data/devotionals';
 import { cancelFaithReadingNotification } from '../services/notifications';
+import { fireRatingTrigger } from '../utils/ratingPrompt';
+import { useTutorial } from '../context/TutorialContext';
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import BackgroundLayers from '../components/BackgroundLayers';
@@ -91,6 +93,7 @@ export default function DevotionalScreen() {
   const { theme, themeId } = useTheme();
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
+  const { activeState: tutorialActiveState } = useTutorial();
   const params = useLocalSearchParams<{ id?: string; day?: string }>();
 
   const id = params.id ?? '';
@@ -183,6 +186,7 @@ export default function DevotionalScreen() {
     showToast(completed ? 'Marked not complete' : 'Day complete', undefined, completed ? 'info' : 'success');
     if (!completed) {
       cancelFaithReadingNotification().catch(() => {});
+      fireRatingTrigger(tutorialActiveState);
     }
   };
 

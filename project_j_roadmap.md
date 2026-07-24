@@ -933,10 +933,6 @@ are separate pre-submission checklists, NOT part of this menu.
   session. Needs on-device verify: next locked recovery score should reflect the new curve. Justin's
   real reference day (HRV 46.9/base 41.8, Sleep 85, RHR 51/base 52, Prev Activity 640/base 688, Resp
   13.2/base 13.5) recomputes to 84 (was 80) under the new formula.
-- [surfaced 2026-07-23, from Justin's App Thread notes] **In-app "rate us" star prompt.** A prompt/popup
-  asking the user to review the app with stars (StoreKit review request). Needs a smart trigger (after a
-  streak/achievement/positive moment, rate-limited, respects Apple's 3x/year cap) rather than firing cold.
-  Unscoped -- launch-adjacent (App Store rating drives installs).
 - [surfaced 2026-07-23, from Justin's App Thread notes] **Monthly trends report / trends section.** A
   once-a-month trends summary, OR a standing "trends" section, OR both. OVERLAP to resolve before building:
   this overlaps the existing Custom Reports track AND the time-of-day nutrition insights item below -- decide
@@ -970,10 +966,11 @@ are separate pre-submission checklists, NOT part of this menu.
   insights / coaches -- wherever it fits).** Surface timing effects: eating too much too late can disrupt
   deep sleep, etc., with varied examples of what each thing affects. Possibly fold in caffeine levels, late
   workouts, and water timing too. Unscoped.
-- [surfaced 2026-07-23, from the water pace work -- "any progress bar needs it"] **Flat progress-bar sweep.**
-  The water modal bars and the EvR bars now use the molded barFillGradient; hunt down any remaining FLAT
-  progress-bar fills app-wide (steps, stats cards, wherever) and give them the same touch-up so every bar in
-  the app is consistent. QUICK-WIN-ish audit.
+- [surfaced 2026-07-23, PARTIALLY DONE 2026-07-24 -- "any progress bar needs it"] **Flat progress-bar
+  sweep.** Water modal, EvR, the reading-plan schedule page, the Plans page, and the Faith tab / Home
+  "Bible and Plans" cards all now use the molded barFillGradient (fixed in this session's reading-plans
+  pass, found while chasing an unrelated request). Still untouched: steps, stats cards, and anywhere else
+  app-wide with a flat fill -- hunt those down and give them the same touch-up. QUICK-WIN-ish audit.
 - [surfaced 2026-07-20, found during iPad auth testing] **iPad layout looks broken -- wrapped date, oversized
   text.** On Justin's iPad (not previously tested on this app), Home's "MONDAY, JULY 20" date wraps to a
   second line under the greeting, and Otto's chat header ("Wellness and App Guide" subtitle) renders visibly

@@ -125,8 +125,13 @@ export default function HeaderAvatar({ inert = false, editable = false }: { iner
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setPickerVisible(true); }}
           activeOpacity={0.8}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          style={{ position: 'absolute', bottom: -3, right: -3 }}
+          style={{
+            position: 'absolute', bottom: -3, right: -3, width: 18, height: 18, borderRadius: 9,
+            backgroundColor: theme.bgCard, overflow: 'hidden', alignItems: 'center', justifyContent: 'center',
+          }}
         >
+          {/* add-circle's plus mark is a transparent knockout in the glyph -- without an opaque
+              backing behind it, the "plus" has nothing to contrast against and just disappears. */}
           <GradientIcon name="add-circle" size={18} color={theme.accentBlueRaw} />
         </TouchableOpacity>
       )}

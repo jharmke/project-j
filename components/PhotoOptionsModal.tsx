@@ -1,11 +1,47 @@
+import MaskedView from '@react-native-masked-view/masked-view';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useRef } from 'react';
 import { Animated, Modal as RNModal, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../theme';
 import { Type } from '../typography';
+import ButtonShine from './ButtonShine';
 import GradientIcon from './GradientIcon';
 import ModalHeader from './ModalHeader';
+import PressableButton from './PressableButton';
+
+// Same lift/sink recipe as GradientIcon, applied to the row labels too -- kept local rather than a
+// new shared component since GradientTitle is deliberately scoped to ScreenHeader/ModalHeader only.
+const LIGHT = 0.24;
+const DARK = 0.20;
+function clamp(n: number) { return Math.max(0, Math.min(255, Math.round(n))); }
+function parseHex(hex: string): [number, number, number] | null {
+  const m = /^#?([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(hex.trim());
+  if (!m) return null;
+  let h = m[1];
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+const toHex = (r: number, g: number, b: number) =>
+  '#' + [r, g, b].map(v => clamp(v).toString(16).padStart(2, '0')).join('');
+const lift = (rgb: [number, number, number], amt: number) =>
+  toHex(rgb[0] + (255 - rgb[0]) * amt, rgb[1] + (255 - rgb[1]) * amt, rgb[2] + (255 - rgb[2]) * amt);
+const sink = (rgb: [number, number, number], amt: number) =>
+  toHex(rgb[0] * (1 - amt), rgb[1] * (1 - amt), rgb[2] * (1 - amt));
+
+function GradientLabel({ label, color, style }: { label: string; color: string; style: any }) {
+  const rgb = parseHex(color);
+  if (!rgb) return <Text style={[style, { color }]}>{label}</Text>;
+  const stops: [string, string, string] = [lift(rgb, LIGHT), color, sink(rgb, DARK)];
+  return (
+    <MaskedView maskElement={<Text style={[style, { color: '#000000' }]}>{label}</Text>}>
+      <LinearGradient colors={stops} locations={[0, 0.52, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}>
+        <Text style={[style, { opacity: 0 }]}>{label}</Text>
+      </LinearGradient>
+    </MaskedView>
+  );
+}
 
 // In-house replacement for ActionSheetIOS on the profile photo entry point -- the native sheet has
 // no controllable animation (it just teleports in), which reads rough against the rest of the app's
@@ -82,10 +118,9 @@ export default function PhotoOptionsModal({ visible, hasPhoto, onClose, onTakePh
 
           <View style={{ paddingHorizontal: 16, paddingTop: 4, gap: 10 }}>
             {rows.map(row => (
-              <TouchableOpacity
+              <PressableButton
                 key={row.label}
-                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); row.onPress(); }}
-                activeOpacity={0.85}
+                onPress={row.onPress}
                 style={{
                   flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, paddingHorizontal: 14,
                   borderRadius: 10, borderWidth: 1,
@@ -93,9 +128,14 @@ export default function PhotoOptionsModal({ visible, hasPhoto, onClose, onTakePh
                   borderColor: row.destructive ? theme.accentRedBorder : theme.accentBlueBorder,
                 }}
               >
+                <ButtonShine radius={10} />
                 <GradientIcon name={row.icon} size={17} color={row.destructive ? theme.accentRed : theme.accentBlueRaw} />
-                <Text style={{ fontSize: 15, fontFamily: Type.uiSemibold, color: row.destructive ? theme.accentRed : theme.accentBlue }}>{row.label}</Text>
-              </TouchableOpacity>
+                <GradientLabel
+                  label={row.label}
+                  color={row.destructive ? theme.accentRed : theme.accentBlueRaw}
+                  style={{ fontSize: 15, fontFamily: Type.uiSemibold }}
+                />
+              </PressableButton>
             ))}
           </View>
         </Animated.View>

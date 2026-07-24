@@ -595,9 +595,10 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     title: 'Gratitude',
     body: 'A daily habit of naming something you are thankful for. Log one entry a day to keep your streak alive. Research and Scripture both point the same way: a regular practice of gratitude shifts how you see your day.\n\nThe week grid shows which days this week you logged. The journal icon opens your full history of entries.',
     definitions: [
-      { term: 'Day streak', explanation: 'Consecutive days with a gratitude entry. Log one each day to grow it. Miss a day and it resets, the count is about the habit, not perfection.' },
+      { term: 'Day streak', explanation: 'Consecutive days with a gratitude entry. Log one each day to grow it. Miss a day with no grace saver banked and it resets, the count is about the habit, not perfection.' },
+      { term: 'Grace saver', explanation: 'Log gratitude 7 days in a row and you earn one grace saver (Discipline mode holds up to 1 at a time, Balanced up to 2). Miss exactly one day and a banked grace saver automatically covers it, so your streak survives. Not available in Mindful mode.' },
       { term: 'Week grid', explanation: 'The seven dots are Sunday through Saturday. A filled dot means you logged gratitude that day.' },
-      { term: 'Mindful mode', explanation: 'In Mindful coaching mode this shows your total days logged instead of a streak count, so a missed day never feels like a loss.' },
+      { term: 'Mindful mode', explanation: 'In Mindful coaching mode this shows your total days logged instead of a streak count, so a missed day never feels like a loss. Grace savers do not apply here since there is no streak to protect.' },
     ],
   },
   {

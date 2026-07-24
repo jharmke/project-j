@@ -16,6 +16,9 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-24 **Gratitude card: NRN can now add it to Home (Edit Layout, no Scripture shown), fixed 3
+  hardcoded-amber spots that leaked faith styling onto Home for every user, added a grace-saver
+  explainer to the tooltip.** Closes the 2026-07-19 "shown to NRN as-is" gap.
 - 2026-07-24 **Rate Us + Feedback prompts, fully built and device-confirmed.** 9 real triggers, a shared
   30-day/3-total budget engine, two Otto notification-hub cards (Rate Us fallback + independent Feedback
   nudge). Full story (including the duplicate-entry-point lesson that ate most of the build time) in
@@ -1072,10 +1075,6 @@ are separate pre-submission checklists, NOT part of this menu.
   screen itself already has a correct gate (`minDaysForWindow` / `insufficientData` in
   diagnostic-report.tsx, shows a real "Not Enough Data Yet" state) -- the Home card just never checks it,
   so new users hit a confusing dead-end. Justin: bad first impression, wants this discussed before build.
-- [surfaced 2026-07-19, faith] **Gratitude card shown to NRN users as-is.** Confirmed in code:
-  GratitudeStreakCard has no faith-journey gating and no faith content built into it, so NRN sees the exact
-  same card as everyone else. Justin flagged as a gap worth a real discussion -- fine as-is since it's
-  already secular, or does it need its own explicit NRN treatment/copy.
 - [surfaced 2026-07-19, faith, needs discussion] **Nudging Exploring/NRN users toward growth without
   breaking NRN's "hidden, no judgment" rule.** Open question, no direction yet. Only existing mechanism
   today is the dismissable 30-day "faith settings can be changed" reminder. Needs real discussion before

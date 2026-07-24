@@ -3809,8 +3809,7 @@ export default function HomeScreen() {
       case 'fitness_metrics': return renderFitnessMetricsCard();
       case 'daily_note':      return renderDailyNoteCard();
       case 'gratitude_streak':
-        if (faithJourney === 'notrightnow') return null;
-        return <GratitudeStreakCard styleMode={styleMode} todayKey={todayKey} scrollRef={scrollRef} theme={theme} />;
+        return <GratitudeStreakCard styleMode={styleMode} todayKey={todayKey} scrollRef={scrollRef} theme={theme} faithJourney={faithJourney} />;
       case 'reading_plans':
         if (faithJourney === 'notrightnow') return null;
         return <ReadingPlansCard theme={theme} />;

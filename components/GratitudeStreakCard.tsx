@@ -120,13 +120,19 @@ interface Props {
   theme: any;
   // 'home' (default) keeps the cool blue accent. 'faith' wears the warm gold faith-tab skin.
   variant?: 'home' | 'faith';
+  // Only meaningful on the 'home' variant: NRN users can add this card via Edit Layout (habit
+  // tracking isn't uniquely religious), but Scripture stays hidden for them -- faith features
+  // hidden/no-judgment per the Faith System rule. Defaults to 'rooted' (shows Scripture) so any
+  // caller that doesn't pass this explicitly keeps today's behavior.
+  faithJourney?: 'rooted' | 'exploring' | 'notrightnow';
 }
 
 type CardState = 'empty' | 'logged' | 'editing';
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, theme: t, variant = 'home' }: Props) {
+export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, theme: t, variant = 'home', faithJourney = 'rooted' }: Props) {
+  const hideScripture = variant === 'home' && faithJourney === 'notrightnow';
   const { showToast } = useToast();
   const { activeState: tutorialActiveState } = useTutorial();
   const inputRef = useRef<TextInput>(null);
@@ -511,14 +517,14 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
               key={i}
               style={{
                 width: 9, height: 9, borderRadius: 5,
-                backgroundColor: i < savers.count ? t.accentAmber : 'transparent',
+                backgroundColor: i < savers.count ? accent : 'transparent',
                 borderWidth: 1.5,
-                borderColor: t.accentAmber,
+                borderColor: accent,
                 opacity: i < savers.count ? 1 : 0.4,
               }}
             />
           ))}
-          <Text style={{ fontFamily: graceUsedToday ? Type.uiSemibold : Type.uiMedium, fontSize: 10, color: graceUsedToday ? t.accentAmber : inkMuted }}>
+          <Text style={{ fontFamily: graceUsedToday ? Type.uiSemibold : Type.uiMedium, fontSize: 10, color: graceUsedToday ? accent : inkMuted }}>
             {graceUsedToday
               ? 'Grace saver covered yesterday'
               : savers.count < saverCap
@@ -528,21 +534,24 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
         </View>
       )}
 
-      {/* Divider */}
-      <View style={{ height: 0.5, backgroundColor: t.borderCard, marginBottom: 10 }} />
-
-      {/* Scripture */}
-      <View style={{ marginBottom: 12 }}>
-        {/* inkBody, not t.textSecondary: on faith this is scripture on a warm card, and textSecondary is
-            '#4a4a6a' -- a cool navy. It also now MATCHES the prayer previews on the Faith tab, which sat on
-            the dark headline ink and read heavy. Verses and prayers are the same job: text you read. */}
-        <Text style={{ fontFamily: faith ? 'Lora_500Medium' : Type.ui, fontSize: faith ? 14 : 12, color: inkBody, fontStyle: faith ? 'normal' : 'italic', lineHeight: faith ? 21 : 18, textAlign: faith ? 'center' : 'left' }}>
-          "{webVerseText ?? verse.text}"
-        </Text>
-        <Text style={{ fontFamily: Type.uiSemibold, fontSize: 10, color: t.accentAmber, marginTop: 4, letterSpacing: 0.5, textAlign: faith ? 'center' : 'left' }}>
-          {verse.ref}
-        </Text>
-      </View>
+      {/* Scripture -- hidden entirely for NRN users on Home (faith features stay hidden/no-judgment
+          per the Faith System rule), including the divider above it so nothing sits orphaned. */}
+      {!hideScripture && (
+        <>
+          <View style={{ height: 0.5, backgroundColor: t.borderCard, marginBottom: 10 }} />
+          <View style={{ marginBottom: 12 }}>
+            {/* inkBody, not t.textSecondary: on faith this is scripture on a warm card, and textSecondary is
+                '#4a4a6a' -- a cool navy. It also now MATCHES the prayer previews on the Faith tab, which sat on
+                the dark headline ink and read heavy. Verses and prayers are the same job: text you read. */}
+            <Text style={{ fontFamily: faith ? 'Lora_500Medium' : Type.ui, fontSize: faith ? 14 : 12, color: inkBody, fontStyle: faith ? 'normal' : 'italic', lineHeight: faith ? 21 : 18, textAlign: faith ? 'center' : 'left' }}>
+              "{webVerseText ?? verse.text}"
+            </Text>
+            <Text style={{ fontFamily: Type.uiSemibold, fontSize: 10, color: accent, marginTop: 4, letterSpacing: 0.5, textAlign: faith ? 'center' : 'left' }}>
+              {verse.ref}
+            </Text>
+          </View>
+        </>
+      )}
 
       {/* Logged state */}
       {cardState === 'logged' ? (

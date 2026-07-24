@@ -10,6 +10,20 @@
 
 ---
 
+## 🚨🚀 URGENT BEFORE LAUNCH -- DO NOT FORGET 🚀🚨
+Full detail + everything else launch-related lives in LAUNCH_CHECKLIST.md (the single source of truth for
+launch prep). This is just the "do not let this one slide" flag, kept at the top of the file Justin
+actually reads every session.
+- **Reset the Rate Us prompt budget for TestFlight testers before the real App Store launch.**
+  `pj_rate_prompt` is account-scoped (synced), not build-scoped, so any of the 3 lifetime asks used up
+  during TestFlight testing carry straight into the real launch on the same account -- whoever's exhausted
+  it during beta gets ZERO real review prompts post-launch otherwise. Fix (not yet built, see
+  LAUNCH_CHECKLIST.md Phase 6.0): a version-gated one-time reset that fires automatically the first time
+  each account opens a build at or past the real launch version -- no Dev Tools exposure needed, nothing
+  to remember to tap. Blocked only on picking the actual launch version number.
+
+---
+
 ## 🔴 DO THIS NEXT (time-boxed, do not let it slide)
 - Nothing time-boxed right now. Anthropic key rotation (below) just closed this out 2026-07-18.
 

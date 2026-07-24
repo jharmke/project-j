@@ -164,6 +164,21 @@ Every one of these is currently making the app more generous than it should be a
 
 ## ✅ PHASE 6 — FINAL VERIFICATION (on the real production build)
 
+- [ ] **6.0 — NOT YET BUILT. Reset the Rate Us budget for TestFlight testers on the real launch build.**
+      `pj_rate_prompt` (utils/ratingPrompt.ts) is account-scoped, not build-scoped -- it's a synced `pj_`
+      key, so any asks a tester used up during TestFlight testing carry straight into the real App Store
+      install on the same account. Whoever hit the 3-lifetime-ask cap during beta testing gets ZERO real
+      prompts after launch unless this is handled. Discussed with Claude 2026-07-24 -- Justin doesn't want
+      testers to have Dev Tools visibility (so "just tap Reset Rate Prompt State yourself" is out), and a
+      remote Firestore edit isn't provably safe (unclear whether it reliably pulls back down into an
+      already-running install vs. getting overwritten by the device's own next local write).
+      **The fix: a version-gated one-time reset**, not yet built. On boot, if the installed app version is
+      at or past the real App Store launch version AND this account hasn't already been reset-for-launch,
+      wipe `pj_rate_prompt` back to fresh (`totalAsks: 0`, `lastAskedAt: null`) once, then set a local-only
+      marker so it never fires again. No-op for brand-new App Store downloaders (already fresh). Blocked
+      only on: **the actual version number Justin will submit as 1.0.0 / launch** -- not decided yet. Build
+      this once that number is picked, well before submission, so nothing has to be remembered at the
+      actual moment of shipping.
 - [ ] **6.1 — Full purchase gauntlet on a PRODUCTION build:** subscribe (monthly + annual), tip, restore,
       monthly→annual upgrade, cancel → confirm the card flips "Renews on" → "Ends on", let it lapse → confirm the
       app re-locks.

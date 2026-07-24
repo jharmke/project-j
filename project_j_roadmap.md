@@ -16,6 +16,10 @@
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-24 **Rate Us + Feedback prompts, fully built and device-confirmed.** 9 real triggers, a shared
+  30-day/3-total budget engine, two Otto notification-hub cards (Rate Us fallback + independent Feedback
+  nudge). Full story (including the duplicate-entry-point lesson that ate most of the build time) in
+  SPEC_rate_us_and_feedback.md.
 - 2026-07-20 **WEB/KJV translation toggle added to Today's Message modal's gear icon**, on top of the shared VersePoolModal so Home's Faith Today card and the Faith tab pick it up automatically. Confirmed by Justin.
 - 2026-07-20 **Restore gate stale-screen bug fixed.** Account-switch restore on a device that previously onboarded a different account was actually succeeding under the hood; the already-rendered screens just never knew to re-read the freshly-restored data. Fix: a plain "Account Restored, please close and reopen" alert on a genuine restore. Confirmed on Justin's phone; never any real risk to cloud data (`uploadAllLocal` was hard-gated on `syncReady` the whole time).
 - 2026-07-20 **Firebase auth identity edge cases -- sign-in handling, Connected Accounts, contact email.** Built and device-tested: `sign-in.tsx` now catches `account-exists-with-different-credential` and guides the user to the right method; new Connected Accounts section in Settings > Account for linking/unlinking Apple + Google (with a "can't remove your last method" guard); preferred contact email picker for accounts with diverging linked emails. 2 test scenarios (new device + same provider, same or different email) deliberately left open, still in NEXT UP.
@@ -870,16 +874,6 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
-- [BUILD IN PROGRESS 2026-07-24, ONE BATCH LEFT] **Rate Us + Feedback prompts.** Full spec + build
-  progress in SPEC_rate_us_and_feedback.md -- READ THE "OPEN BUG" NOTE AT THE TOP before touching this.
-  Batches 1-4 built and pushed: foundation, all 7 real triggers (water/gratitude/reading-plan/devotional/
-  protein/weight-milestone/workout/challenge-win), and the two Otto notification-hub cards (Rate Us
-  fallback + independent Feedback nudge). Only batch 5 (theme + Mindful audit) left. OPEN ISSUE, doesn't
-  block finishing the build: the native Apple popup itself won't visually appear on Justin's ad-hoc
-  dev-client (confirmed correct at the source-code level, all the way to Apple's real API call -- iOS
-  26.5.2, not the beta bug found earlier). Recommendation: verify on a real TestFlight build instead of
-  continuing to chase it on the dev-client, since that's a distribution channel with actually-documented
-  behavior for this feature. Justin's folding that into his next TestFlight push.
 - [decided + implemented 2026-07-23, PENDING DEVICE VERIFY] **Recovery score activity-component ceiling
   fix.** Justin signed off on the curve after discussing trade-offs (compared against Whoop's Green
   67-100/Yellow 34-66/Red 0-33 bands and Oura's approx. Optimal 85+/Good 70-84, both of which treat
@@ -1417,7 +1411,7 @@ Every major feature has a SPEC_*.md in the repo root. Active ones tied to open w
 - App Store: APP_STORE_CHECKLIST.md, COMPLIANCE_SCAN_findings.md | Launch: **LAUNCH_CHECKLIST.md** (the single
   ordered launch list; supersedes the REVERT + LAUNCH BLOCKERS sections above)
 - Monetization: SPEC_monetization.md | Restaurant Mode (researched, unbuilt): SPEC_restaurant_mode.md
-- Rate Us + Feedback prompts (designed, unbuilt): SPEC_rate_us_and_feedback.md
+- Rate Us + Feedback prompts (shipped): SPEC_rate_us_and_feedback.md
 - Coffee Drink Builder (designed, unbuilt; data audit gates the build): SPEC_drink_builder.md
 
 ## 📎 ARCHIVES

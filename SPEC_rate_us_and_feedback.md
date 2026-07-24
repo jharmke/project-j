@@ -1,72 +1,45 @@
 # SPEC — Rate Us & Feedback Prompts
 
-Status: DESIGN LOCKED 2026-07-23, BUILD IN PROGRESS. This doc is the source of truth. Grew out of the
-"starter challenge -> theme unlock" NEXT UP item; that idea was dropped (see project_j_backlog.md,
-MOTIVATION / GAMIFICATION), but the "introduce the App Store rating ask + a real feedback channel"
-piece survived and became this spec.
+Status: SHIPPED 2026-07-24, device-confirmed. This doc is the source of truth for the design; see below
+for the real story of what almost derailed the build. Grew out of the "starter challenge -> theme unlock"
+NEXT UP item; that idea was dropped (see project_j_backlog.md, MOTIVATION / GAMIFICATION), but the
+"introduce the App Store rating ask + a real feedback channel" piece survived and became this spec.
 
-BUILD PROGRESS (2026-07-24): Batch 1 (foundation) built and device-confirmed working (native prompt fired
-correctly on first test, copy matched spec). Batch 2 built: `fireRatingTrigger()` helper (3s delay so it
-never fights an achievement toast/celebration for the screen; skips when a tutorial is active) wired into
-water goal (index.tsx), gratitude (journal.tsx), reading plan (bible.tsx's markPlanRead), and devotional
-completion (devotional.tsx's handleComplete -- initially missed in batch 2 since it's a separate handler
-from reading-plan, fixed same session). Batch 3 built: protein goal (DailyGoalId extended to include
-'protein' -- no live hook existed at all before this, now matches the same handleDailyGoalHit pattern as
-steps/activeCals/exerciseMins with its own celebration+toast), weight milestone (index.tsx's weight-save
-handler, only the newly-unlocked highest-crossed milestone), manual workout completion (workout.tsx's
-Finish Workout handler, already gated on real logged work), challenge win (the Home challenge card's
-dismiss tap specifically -- NOT the passive background scan that auto-acknowledges on app open, since
-that isn't a deliberate action; only fires when won is true). Protein's celebration/toast was removed
-same session per Justin's call -- goal-hit detection stays, still routed through
-handleDailyGoalHit's once-per-day gate, just silent (no showCelebration/showDailyGoalToast), unlike
-water/steps/activeCals/exerciseMins which do celebrate.
+## Build summary
 
-Batch 4 built: new utils/ottoPrompts.ts, checked once per app boot (app/_layout.tsx). Rate Us fallback
-card mirrors the shared budget exactly via canAskForRating() -- not a separate quota -- and clears
-itself if a real trigger already spent the allowance since the last check, so a stale dead card never
-sits in the list. Feedback card is fully independent: own key (pj_feedback_prompt), 21-day re-appear
-cadence, no cap, held back 5 days if a Rate Us ask fired recently (the spacing rule). Both route through
-Settings via query params (fireRating=true / openFeedback=true, same pattern as the existing
-deepLinkSection mechanism) -- tapping Rate Us fires requestRatingPrompt() directly (no pre-screen, same
-rule as every other trigger), tapping Feedback opens the already-shipped FeedbackModal. Added
-rate_us/feedback_prompt to NotifCategory + CAT_LABEL. NOT YET DEVICE-TESTED (pure JS, no rebuild needed
--- just needs Justin to reload and check both cards appear/route correctly; the "does Rate Us's actual
-popup show" part is still blocked on the open bug below, but the CARD showing + routing is independently
-testable).
+All 9 real triggers wired and device-confirmed: water goal, gratitude (two entry points, see below),
+reading plan, devotional, protein (silent, no celebration -- Justin's call), weight milestone (two
+entry points), weight goal (two entry points), manual workout completion, challenge win (only fires on
+an actual win, not on manually quitting an active challenge early -- confirmed correct by device test).
+Shared engine: `utils/ratingPrompt.ts` (`pj_rate_prompt` state, 7-day account-age gate, 30-day/3-total
+budget, `fireRatingTrigger()` helper with a 3s delay so it never collides with a celebration/toast from
+the same action). Otto hub: `utils/ottoPrompts.ts`, two independent cards (Rate Us fallback mirrors the
+shared budget; Feedback nudge is fully separate, 21-day cadence, no cap), both device-confirmed working
+including full untruncated body text (Justin's call, safe since both are 'replace' lifecycle -- never
+stack). Theme/Mindful audit: closed without changes needed (both cards already ride theme tokens
+throughout, Mindful gets identical copy per the original design decision).
 
-Batch 5 (theme + Mindful audit) NOT STARTED -- last one left.
+## The real lesson from this build (read before debugging a "doesn't fire" report)
 
-⚠️ OPEN BUG, STILL UNRESOLVED as of 2026-07-24 -- READ THIS FIRST NEXT SESSION:
-Nothing fires on-device -- not any real trigger and not even the force-fire dev button which bypasses
-every guard we control. Justin is on iOS 26.5.2 (a stable release, NOT beta), which rules out the one
-Apple-acknowledged beta-specific bug found earlier (Apple Developer Forums thread 821981, iOS 26.5 beta
-debug builds, fixed in the RC -- does not apply here).
+A large chunk of this build's time went into a wrong theory: that Apple's own StoreKit was silently and
+unpredictably declining to show the review prompt, dug all the way into the actual installed package
+source (`node_modules/expo-store-review`, not just docs) trying to find a platform-level explanation. It
+turned out to be nothing to do with Apple. The real cause, found only when Justin cross-checked which
+UI he used to log something: **several of these actions have more than one place in the app that can
+trigger them, and only one of each pair had been wired**:
+  - Gratitude: `journal.tsx`'s create-entry modal (wired first) vs. `GratitudeStreakCard`'s own
+    `handleSave` (a completely separate function, missed initially).
+  - Devotional vs. reading-plan completion: two separate "mark complete" handlers for what looks like
+    one feature, only reading-plan wired first.
+  - Weight: THREE separate achievement branches across TWO handler functions (the main log-weight
+    handler in index.tsx, and `WeightHistoryModal`'s `refreshWeightCardState`) -- 5lb-increment
+    milestones and hitting your actual goal weight are separate achievements (`weight_goal` is its own,
+    bigger "diamond" celebration), and each combination of {branch} x {handler} had to be found and
+    fixed one at a time as Justin kept testing and finding the next gap.
 
-Dug all the way to the actual installed package source (node_modules/expo-store-review), not just docs/
-forum summaries, since those had already led to two wrong conclusions this session. Confirmed at the
-source level:
-  - `hasAction()` is NOT a meaningful "will it show" signal -- on iOS it just resolves
-    `!isRunningFromTestFlight()`, which is true for almost any non-TestFlight build. The earlier
-    "hasAction: true" diagnostic proved less than it was presented as proving.
-  - The native Swift module (StoreReviewModule.swift) finds a valid foreground window scene (no error
-    thrown = one was found) and calls Apple's real `AppStore.requestReview(in: currentScene)` (StoreKit
-    2, since Justin's on iOS 16+) with no exception anywhere in the chain.
-  - So: JS -> native -> Apple's real API, confirmed correct end to end. Whatever decides not to show
-    anything happens entirely inside Apple's closed-source StoreKit implementation, which we cannot see
-    into or force.
-
-NEW THEORY, not yet confirmed: Justin's test build is an EAS-built, ad-hoc-signed dev-client .ipa
-installed directly on-device -- NOT run from Xcode with a debugger attached, and NOT TestFlight. Most
-"it always shows in dev/debug builds" claims found online are based on Xcode-attached runs specifically.
-This is a third, less-documented distribution channel that Apple's internal StoreKit logic may treat
-differently. Cannot be proven without Apple's own source.
-
-RECOMMENDATION: stop testing this on the raw dev-client -- verify it on a real TestFlight build instead,
-which is a distribution channel with actually-documented, reliable behavior for this feature. Justin
-agreed to fold this into testing on his next TestFlight push rather than continuing to chase it on the
-dev-client. Batches 3-4 both shipped despite this being unresolved -- the wiring pattern is proven
-correct at every layer we can inspect; this is specifically about the native popup's on-demand visual
-reliability during ad-hoc dev-client testing, not about whether our code is right.
+See [[feedback_check_duplicate_entry_points]] in memory -- this is now a saved standing lesson: check
+for a second/duplicate entry point to the same user action BEFORE chasing an external/platform
+explanation for a "doesn't fire" report.
 
 Pairs with: the existing `FeedbackModal.tsx` (rebuilt 2026-07-23 to send in-app with an optional photo
 instead of mailto — already shipped, not part of this build) and Otto's in-app notification hub

@@ -20,6 +20,8 @@ import { useTheme } from '../theme';
 import { ACHIEVEMENTS, checkAndUnlock, loadAchievements, checkMomentumAchievements, checkFaithAchievements, getCelebTier } from '../achievementData';
 import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
+import { fireRatingTrigger } from '../utils/ratingPrompt';
+import { useTutorial } from '../context/TutorialContext';
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import ButtonShine from '../components/ButtonShine';
@@ -359,6 +361,7 @@ export default function JournalScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const { showToast } = useToast();
+  const { activeState: tutorialActiveState } = useTutorial();
   const params = useLocalSearchParams();
 
   const [companionOpen, setCompanionOpen] = useState(false);
@@ -563,6 +566,7 @@ export default function JournalScreen() {
         showCelebration(getCelebTier(def), def.name, def);
         showAchievementToast(def);
       });
+      if (entry.category === 'gratitude') fireRatingTrigger(tutorialActiveState);
     }
 
     // Momentum check -- fires from anywhere, once-per-day gate handles dedup

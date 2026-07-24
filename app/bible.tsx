@@ -35,6 +35,7 @@ import { useTheme } from '../theme';
 import CompanionFAB, { GOLD as HALO_GOLD } from '../components/CompanionFAB';
 import CompanionChat from '../components/CompanionChat';
 import { checkFaithAchievements, getCelebTier } from '../achievementData';
+import { fireRatingTrigger } from '../utils/ratingPrompt';
 import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
 import { cancelFaithReadingNotification } from '../services/notifications';
@@ -161,7 +162,7 @@ export default function BibleScreen() {
   // Tutorial wiring. The reader owns the 'bible' tour: an info icon in the header launches it,
   // a setup action injects a demo-highlighted verse so the action banner is visible, and a clear
   // action restores the prior highlight on end/skip. These targets are spotlit step by step.
-  const { registerTutorialAction, unregisterTutorialAction } = useTutorial();
+  const { registerTutorialAction, unregisterTutorialAction, activeState: tutorialActiveState } = useTutorial();
   const tutBookRef = useTutorialTarget('bible_tut_book');
   const tutVerseRef = useTutorialTarget('bible_tut_verse');
   const tutSunRef = useTutorialTarget('bible_tut_sun');
@@ -614,6 +615,7 @@ export default function BibleScreen() {
       checkFaithAchievements('bible').then(unlocked => {
         unlocked.forEach(def => { showCelebration(getCelebTier(def), def.name, def); showAchievementToast(def); });
       }).catch(() => {});
+      fireRatingTrigger(tutorialActiveState);
     } catch (e) {}
   };
 

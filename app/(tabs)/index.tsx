@@ -22,6 +22,7 @@ import { useToast, ToastRenderer } from '../../components/Toast';
 import { showCelebration } from '../../components/CelebrationOverlay';
 import { showAchievementToast, showDailyGoalToast } from '../../components/AchievementToast';
 import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, weightEntryIsPlausible, getWeightMilestonesCrossed, isGoalWeightHit, handleDailyGoalHit, checkMomentumAchievements, checkSleepAchievements, getCelebTier } from '../../achievementData';
+import { fireRatingTrigger } from '../../utils/ratingPrompt';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
 import { barFillGradient } from '../../utils/barGradient';
@@ -1537,6 +1538,7 @@ export default function HomeScreen() {
         cancelWaterPaceNotification();
         showCelebration('small', 'WATER GOAL');
         showDailyGoalToast('Water Goal', hitCount, 'water', '#3b82f6');
+        fireRatingTrigger(tutorialActiveState);
         loadAchievements().then(async store => {
           let s = store;
           const hydrationMilestones = [

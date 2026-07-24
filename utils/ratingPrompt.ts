@@ -89,3 +89,13 @@ export async function requestRatingPrompt(opts?: { force?: boolean }): Promise<{
   await storageSet(KEY, JSON.stringify({ ...state, lastAskedAt: new Date().toISOString(), totalAsks: state.totalAsks + 1 }));
   return { fired: true };
 }
+
+// Call from a real trigger moment (water goal hit, gratitude logged, etc.), NOT from the dev-tools
+// button. Fires 3 seconds after the call so it never fights an achievement toast / celebration
+// overlay popping from the same action for the screen. `tutorialActive` must be the caller's own
+// useTutorial().activeState -- pass it truthy whenever a tutorial/demo walkthrough is running so a
+// simulated demo action can never spend one of the 3 real asks. Fire-and-forget; never throws.
+export function fireRatingTrigger(tutorialActive: unknown): void {
+  if (tutorialActive) return;
+  setTimeout(() => { requestRatingPrompt().catch(() => {}); }, 3000);
+}

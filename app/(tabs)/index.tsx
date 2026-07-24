@@ -8,7 +8,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, AppState, Dimensions, Easing, Keyboard, KeyboardAvoidingView, Modal, NativeScrollEvent, NativeSyntheticEvent, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { Alert, Animated, AppState, Dimensions, Easing, Keyboard, KeyboardAvoidingView, Modal, NativeScrollEvent, NativeSyntheticEvent, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import ReAnimated, { useAnimatedStyle, useAnimatedProps, useSharedValue, withTiming, withRepeat, withSequence, withDelay, cancelAnimation, Easing as ReAnimEasing, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -4042,7 +4042,13 @@ export default function HomeScreen() {
                           <TouchableOpacity onPress={() => openWaterEntryEdit(realIdx)} hitSlop={{top:8,bottom:8,left:8,right:8}}>
                             <Ionicons name="pencil" size={15} color={theme.accentBlue} />
                           </TouchableOpacity>
-                          <TouchableOpacity onPress={() => deleteWaterEntry(realIdx)} hitSlop={{top:8,bottom:8,left:8,right:8}}>
+                          <TouchableOpacity onPress={() => {
+                            triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+                            Alert.alert('Delete Entry', 'Remove this water entry? This cannot be undone.', [
+                              { text: 'Cancel', style: 'cancel' },
+                              { text: 'Delete', style: 'destructive', onPress: () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy); deleteWaterEntry(realIdx); } },
+                            ]);
+                          }} hitSlop={{top:8,bottom:8,left:8,right:8}}>
                             <Ionicons name="trash-outline" size={16} color={theme.accentRed} />
                           </TouchableOpacity>
                         </View>

@@ -2293,7 +2293,13 @@ export default function LogScreen() {
                           <View style={{ flex:1 }}>
                             <GradientNumber value={`${entry.sign === 'add' ? '+' : '-'}${entry.amount} oz`} color={entry.sign === 'add' ? theme.statusGood : theme.statusBad} style={{ fontSize:14, fontFamily:Type.uiSemibold }} />
                           </View>
-                          <TouchableOpacity onPress={() => deleteWaterEntry(realIdx)} hitSlop={{top:8,bottom:8,left:12,right:8}}>
+                          <TouchableOpacity onPress={() => {
+                            triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+                            Alert.alert('Delete Entry', 'Remove this water entry? This cannot be undone.', [
+                              { text: 'Cancel', style: 'cancel' },
+                              { text: 'Delete', style: 'destructive', onPress: () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy); deleteWaterEntry(realIdx); } },
+                            ]);
+                          }} hitSlop={{top:8,bottom:8,left:12,right:8}}>
                             <Ionicons name="trash-outline" size={16} color={theme.accentRed} />
                           </TouchableOpacity>
                         </View>

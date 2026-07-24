@@ -439,7 +439,11 @@ function AchievementCard({ def, unlocked, progressValue = 0, highlight = false }
         <Text style={{
           fontSize: 9,
           fontFamily: Type.uiSemibold,
-          color: isPlat ? '#93c5fd' : config.badgeColor,
+          // Diamond's badgeColor (#e0f2fe) is a near-white pale blue -- nearly the same as the
+          // card's own light tint, unreadable. badgeColorDark is the established "readable darker
+          // variant" this file already uses elsewhere (the hex badge gradient). Bronze/silver/gold
+          // keep badgeColor -- their values are saturated enough to read fine, not reported broken.
+          color: isPlat ? '#93c5fd' : tier === 'diamond' ? config.badgeColorDark : config.badgeColor,
           textAlign: 'center',
           letterSpacing: 0.5,
           opacity: 0.85,
@@ -520,8 +524,11 @@ function DailyGoalHexBadge({ color, icon, size = 56 }: { color: string; icon: st
 // Which loadProgressValues recount key backs each daily goal's COUNT. The count comes from the historical
 // day-scan (same source as the badge progress bars + Otto), NOT the lossy pj_goal_hit_counts tally, which
 // misses backfilled/edited days. The tally is still used for the "Last earned" DATE only.
+// protein is NOT in DAILY_GOALS (below) and never rendered as a card -- Justin's call, protein goal-hit
+// stays silent, only feeds the Rate Us trigger (SPEC_rate_us_and_feedback.md). Entry exists purely to
+// satisfy the Record<DailyGoalId, string> type after DailyGoalId gained 'protein'; never looked up.
 const GOAL_RECOUNT_KEY: Record<DailyGoalId, string> = {
-  water: 'waterGoalDays', steps: 'stepGoalDays', activeCals: 'activeCalGoalDays', exerciseMins: 'exerciseMinsGoalDays',
+  water: 'waterGoalDays', steps: 'stepGoalDays', activeCals: 'activeCalGoalDays', exerciseMins: 'exerciseMinsGoalDays', protein: 'proteinGoalDays',
 };
 
 function DailyGoalCard({ def, count, lastEarned }: { def: DailyGoalDef; count: number; lastEarned: string }) {

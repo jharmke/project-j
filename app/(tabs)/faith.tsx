@@ -30,7 +30,7 @@ import VersePoolModal from '../../components/VersePoolModal';
 import { resolveDailyVerse, VERSES, type DailyVerse } from '../../data/verses';
 import { loadPrayers, getActive, type Prayer } from '../../utils/prayers';
 import {
-  READING_PLANS, getPlanCompletion, getTodayReading, MAX_ACTIVE_PLANS, type ReadingPlansStorage,
+  READING_PLANS, getPlanCompletion, getTodayReading, isReadingPlanComplete, MAX_ACTIVE_PLANS, type ReadingPlansStorage,
 } from '../../data/readingPlans';
 import {
   DEVOTIONALS, getDevotionalCompletion, isDevotionalComplete, MAX_ACTIVE_DEVOTIONALS, type DevotionalsStorage,
@@ -423,7 +423,10 @@ function BibleCard({ theme }: { theme: Theme }) {
     router.push({ pathname: '/plans', params: { tab } });
   };
 
-  const activePlans = READING_PLANS.filter(p => !!planStore[p.id]);
+  // enrolledPlans = every planStore record regardless of completion, same enrolledDevs/activeDevs
+  // split as below (a completed-but-not-dropped plan still occupies a storage slot).
+  const enrolledPlans = READING_PLANS.filter(p => !!planStore[p.id]);
+  const activePlans = enrolledPlans.filter(p => !isReadingPlanComplete(p, planStore[p.id]));
   // enrolledDevs = every devStore record regardless of completion -- this is what MAX_ACTIVE_DEVOTIONALS
   // actually bounds (a completed-but-not-dropped devotional still occupies a storage slot; Restart/Drop
   // are what free one). activeDevs is the DISPLAY list for this card and excludes completed ones, same
@@ -536,7 +539,7 @@ function BibleCard({ theme }: { theme: Theme }) {
                 onPress: () => continuePlan(p.id),
               };
             })}
-            atCap={activePlans.length >= MAX_ACTIVE_PLANS}
+            atCap={enrolledPlans.length >= MAX_ACTIVE_PLANS}
             onBrowse={() => browse('reading')}
           />
           <View style={[styles.vDivider, { backgroundColor: 'rgba(212,134,10,0.18)' }]} />

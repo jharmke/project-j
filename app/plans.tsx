@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic, triggerHapticNotification } from '@/utils/haptics';
 import {
-  READING_PLANS, getPlanCompletion, getTodayReading, MAX_ACTIVE_PLANS, type ReadingPlansStorage,
+  READING_PLANS, getPlanCompletion, getTodayReading, isReadingPlanComplete, MAX_ACTIVE_PLANS, type ReadingPlansStorage,
 } from '../data/readingPlans';
 import {
   DEVOTIONALS, getDevotionalCompletion, isDevotionalComplete, MAX_ACTIVE_DEVOTIONALS, type DevotionalsStorage,
@@ -153,6 +153,28 @@ export default function PlansScreen() {
     );
   };
 
+  // Restart = drop then re-enroll, same wipe-and-fresh-start logic as devotional Restart.
+  const confirmRestartPlan = (planId: string) => {
+    const plan = READING_PLANS.find(p => p.id === planId);
+    Alert.alert(
+      'Restart this plan?',
+      `This clears your progress on "${plan?.name}" so you can start fresh. This can't be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Restart', style: 'destructive',
+          onPress: async () => {
+            triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+            await dropReadingPlan(planId);
+            const updated = await enrollReadingPlan(planId);
+            setPlanStore(updated);
+            showToast(`${plan?.shortName} restarted`, undefined, 'success');
+          },
+        },
+      ],
+    );
+  };
+
   // ── Devotional actions ──────────────────────────────────────────────────────
   const openDevotional = (devId: string, day: number) => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
@@ -219,6 +241,8 @@ export default function PlansScreen() {
 
   // ── Section splits ──────────────────────────────────────────────────────────
   const activePlans = READING_PLANS.filter(p => !!planStore[p.id]);
+  const inProgressPlans = activePlans.filter(p => !isReadingPlanComplete(p, planStore[p.id]));
+  const completedPlans = activePlans.filter(p => isReadingPlanComplete(p, planStore[p.id]));
   const availablePlans = READING_PLANS.filter(p => !planStore[p.id]);
   const inProgressDevs = DEVOTIONALS.filter(d => !!devStore[d.id] && !isDevotionalComplete(d, devStore[d.id]));
   const completedDevs = DEVOTIONALS.filter(d => !!devStore[d.id] && isDevotionalComplete(d, devStore[d.id]));
@@ -278,10 +302,10 @@ export default function PlansScreen() {
               <Text style={[styles.intro, { color: theme.textPrimary }]}>
                 A reading schedule to move through Scripture at your own pace. Read each day's passage in the Bible.
               </Text>
-              {activePlans.length > 0 && (
+              {inProgressPlans.length > 0 && (
                 <>
                   <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>IN PROGRESS</Text>
-                  {activePlans.map(plan => {
+                  {inProgressPlans.map(plan => {
                     const c = getPlanCompletion(plan, planStore[plan.id]);
                     return (
                       <View key={plan.id} onLayout={e => { cardOffsets.current[plan.id] = e.nativeEvent.layout.y; }}>
@@ -294,6 +318,30 @@ export default function PlansScreen() {
                         progress={c}
                         primaryLabel="Continue"
                         onPrimary={() => openReadingPlan(plan.id)}
+                        onDrop={() => confirmDropPlan(plan.id)}
+                      />
+                      </View>
+                    );
+                  })}
+                </>
+              )}
+              {completedPlans.length > 0 && (
+                <>
+                  <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>COMPLETED</Text>
+                  {completedPlans.map(plan => {
+                    const c = getPlanCompletion(plan, planStore[plan.id]);
+                    return (
+                      <View key={plan.id} onLayout={e => { cardOffsets.current[plan.id] = e.nativeEvent.layout.y; }}>
+                      <PlanRow
+                        theme={theme}
+                        icon="checkmark-circle"
+                        accentColor="#0d9268"
+                        title={plan.name}
+                        lengthLabel={`${plan.totalDays} days`}
+                        description={plan.description}
+                        progress={c}
+                        primaryLabel="Restart"
+                        onPrimary={() => confirmRestartPlan(plan.id)}
                         onDrop={() => confirmDropPlan(plan.id)}
                       />
                       </View>

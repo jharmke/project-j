@@ -16,7 +16,7 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import {
   READING_PLANS, ReadingPlansStorage, formatDayReading,
-  getPlanCompletion, getTodayReading,
+  getPlanCompletion, getTodayReading, isReadingPlanComplete,
 } from '../data/readingPlans';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastRenderer, useToast } from '../components/Toast';
@@ -609,7 +609,14 @@ export default function BibleScreen() {
       setPlanProgress(updated);
       await triggerHapticNotification(Haptics.NotificationFeedbackType.Success);
       const plan = READING_PLANS.find(p => p.id === planId);
-      showToast(`Day ${dayIndex + 1} marked complete`, plan?.shortName, 'success');
+      // A genuinely different moment from "just another day" -- Justin: "has to be some sort of
+      // recognition in that moment that its complete." Fires instead of the normal day toast, not
+      // alongside it.
+      if (plan && getPlanCompletion(plan, updated[planId]).completed === plan.totalDays) {
+        showToast('Plan complete!', plan.name, 'success');
+      } else {
+        showToast(`Day ${dayIndex + 1} marked complete`, plan?.shortName, 'success');
+      }
       cancelFaithReadingNotification().catch(() => {});
       // Faith achievement check for bible reading days
       checkFaithAchievements('bible').then(unlocked => {
@@ -722,34 +729,28 @@ export default function BibleScreen() {
         />
       </View>
 
-      {/* Reading plan strip */}
-      {READING_PLANS.filter(p => !!planProgress[p.id]).length > 0 && (
+      {/* Reading plan strip -- a plan drops off here the moment it's fully complete (the moment itself
+          gets its own "Plan complete!" toast in markPlanRead, since it deserves more than just quietly
+          vanishing). A completed plan lives on the Plans page's COMPLETED section from then on, same
+          as everywhere else in the app; this strip only ever shows genuinely active reading. */}
+      {READING_PLANS.filter(p => !!planProgress[p.id] && !isReadingPlanComplete(p, planProgress[p.id])).length > 0 && (
         <View style={{ borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
           <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 2 }}>
+            {/* "NEXT" not "TODAY'S" -- this is completion-driven, not calendar-driven (skip a few days
+                and it still resumes where you left off), and it lets you read multiple days in one
+                sitting. "Today's" implied a one-per-calendar-day pace that isn't what this does. */}
             <Text style={{ fontSize: 8, fontFamily: Type.uiBold, letterSpacing: 3, color: theme.textDim, textTransform: 'uppercase', marginBottom: 6 }}>
-              TODAY'S READING
+              NEXT READING
             </Text>
           </View>
-          {READING_PLANS.filter(p => !!planProgress[p.id]).map(plan => {
+          {READING_PLANS.filter(p => !!planProgress[p.id] && !isReadingPlanComplete(p, planProgress[p.id])).map(plan => {
             const prog = planProgress[plan.id];
             const reading = getTodayReading(plan, prog);
             const { total } = getPlanCompletion(plan, prog);
             return (
               <View key={plan.id} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 8, gap: 8 }}>
                 <Ionicons name={plan.icon as any} size={12} color={theme.textDim} />
-                {reading === 'complete' ? (
-                  <>
-                    <Text style={{ flex: 1, fontSize: 11, fontFamily: Type.uiSemibold, color: theme.textMuted }} numberOfLines={1}>
-                      {plan.shortName}
-                    </Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                      <Ionicons name="checkmark-circle" size={13} color={theme.accentGreen} />
-                      <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: theme.accentGreen }}>
-                        Complete
-                      </Text>
-                    </View>
-                  </>
-                ) : (
+                {reading === 'complete' ? null : (
                   <>
                     <TouchableOpacity
                       style={{ flex: 1 }}

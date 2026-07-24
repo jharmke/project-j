@@ -9,7 +9,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { type DailyVerse } from '../data/verses';
 import { loadPrayers, getActive, type Prayer } from '../utils/prayers';
-import { READING_PLANS, getPlanCompletion, getTodayReading, type ReadingPlansStorage } from '../data/readingPlans';
+import { READING_PLANS, getPlanCompletion, getTodayReading, isReadingPlanComplete, type ReadingPlansStorage } from '../data/readingPlans';
 import { DEVOTIONALS, getDevotionalCompletion, isDevotionalComplete, type DevotionalsStorage } from '../data/devotionals';
 import { loadReadingPlanProgress } from '../utils/readingPlansProgress';
 import { loadDevotionalProgress, getDevotionalProgress, getNextDay } from '../utils/devotionals';
@@ -205,9 +205,9 @@ export default function FaithTodayCard({ verse, theme }: Props) {
   const goReflectWithHalo = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/faith', params: { openHalo: String(Date.now()), haloVerseRef: sv?.reference ?? '', haloVerseText: sv?.text ?? '' } }); };
   const goAskForPrayer = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/prayer', params: { autoOpenRequest: '1' } }); };
 
-  const activePlans = READING_PLANS.filter(p => !!planStore[p.id]);
-  // A finished devotional drops off the card entirely -- Plans is where a completed one lives
+  // A finished plan/devotional drops off the card entirely -- Plans is where a completed one lives
   // (with its own Restart action); Home only surfaces things still actually in progress.
+  const activePlans = READING_PLANS.filter(p => !!planStore[p.id] && !isReadingPlanComplete(p, planStore[p.id]));
   const activeDevs = DEVOTIONALS.filter(d => !!devStore[d.id] && !isDevotionalComplete(d, devStore[d.id]));
   const activePrayers = getActive(prayers);
   const prayerPreview = activePrayers.slice(0, 3);

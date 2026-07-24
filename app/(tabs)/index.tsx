@@ -47,7 +47,6 @@ import TooltipModal from '../../components/TooltipModal';
 import TooltipIcon from '../../components/TooltipIcon';
 import { useTooltip } from '../../useTooltip';
 import GratitudeStreakCard from '../../components/GratitudeStreakCard';
-import ReadingPlansCard from '../../components/ReadingPlansCard';
 import { StatsCard, CardPeriod, DATA_KEY_META, DEFAULT_STATS_CARDS } from '../../statsCardRegistry';
 import { TrendData, EMPTY_TREND_DATA, fetchTrendData } from '../../utils/statsData';
 import { calcSleepScore, sleepScoreColor } from '../../utils/sleepScore';
@@ -105,7 +104,6 @@ export type CardId =
   | 'fitness_metrics'
   | 'daily_note'
   | 'gratitude_streak'
-  | 'reading_plans'
   | 'vs_yesterday';
 
 interface CardMeta {
@@ -131,13 +129,12 @@ const CARD_REGISTRY: CardMeta[] = [
   // fast restore if we rethink it (VO2 Max + Cardio Recovery capacity card). See backlog.
   { id: 'daily_note',       label: 'Daily Note',         description: 'Journal entry for the day',             defaultVisible: false },
   { id: 'gratitude_streak', label: 'Gratitude Streak',  description: 'Daily gratitude habit tracker',          defaultVisible: false },
-  { id: 'reading_plans',    label: 'Reading Plans',      description: 'Daily Bible reading plan tracker',       defaultVisible: false },
   { id: 'vs_yesterday',     label: 'Challenge',          description: 'Your active challenge, live',            defaultVisible: false },
 ];
 
 export const DEFAULT_ORDER: CardId[] = [
   'verse', 'calories', 'workout', 'water', 'steps', 'sleep', 'smart_tip',
-  'macros', 'weight', 'daily_note', 'reading_plans', 'vs_yesterday', 'gratitude_streak',
+  'macros', 'weight', 'daily_note', 'vs_yesterday', 'gratitude_streak',
 ];
 export const DEFAULT_VISIBLE: Record<CardId, boolean> = Object.fromEntries(
   CARD_REGISTRY.map(c => [c.id, c.defaultVisible])
@@ -149,11 +146,11 @@ export const DEFAULT_VISIBLE: Record<CardId, boolean> = Object.fromEntries(
 // the user picks "Use defaults" in the Settings coaching-mode switch modal.
 export const DISCIPLINE_ORDER: CardId[] = [
   'verse', 'calories', 'workout', 'sleep', 'steps', 'water', 'smart_tip',
-  'macros', 'weight', 'vs_yesterday', 'gratitude_streak', 'reading_plans', 'daily_note',
+  'macros', 'weight', 'vs_yesterday', 'gratitude_streak', 'daily_note',
 ];
 export const MINDFUL_ORDER: CardId[] = [
   'verse', 'sleep', 'calories', 'workout', 'water', 'steps', 'smart_tip',
-  'gratitude_streak', 'weight', 'reading_plans', 'daily_note', 'vs_yesterday',
+  'gratitude_streak', 'weight', 'daily_note', 'vs_yesterday',
 ];
 // Mindful hides macros by default -- users can add via Edit Layout
 export const MINDFUL_VISIBLE: Record<CardId, boolean> = {
@@ -887,12 +884,12 @@ export default function HomeScreen() {
   // Style mode + faith journey
   const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
   const [faithJourney, setFaithJourney] = useState<'rooted' | 'exploring' | 'notrightnow'>('rooted');
-  // Cards that render null on Home for NRN (see renderCardById's 'verse' and 'reading_plans' cases).
+  // Cards that render null on Home for NRN (see renderCardById's 'verse' case).
   // Edit Layout's My Cards / Add Cards lists need to agree with that, purely a DISPLAY filter -- never
   // mutates cardVisible/cardOrder, so switching back to Exploring/Rooted silently restores them with
   // zero data loss, same as they were left.
   const isFaithRestrictedForNRN = (id: CardId) =>
-    faithJourney === 'notrightnow' && (id === 'verse' || id === 'reading_plans');
+    faithJourney === 'notrightnow' && id === 'verse';
   const [burnAccuracyPct, setBurnAccuracyPct] = useState(100);
   // Whether burnAccuracyPct has been loaded from settings yet. The active-cal goal check must wait
   // for this: burnAccuracyPct defaults to 100, so evaluating before the real value (e.g. 80%) loads
@@ -3816,9 +3813,6 @@ export default function HomeScreen() {
       case 'daily_note':      return renderDailyNoteCard();
       case 'gratitude_streak':
         return <GratitudeStreakCard styleMode={styleMode} todayKey={todayKey} scrollRef={scrollRef} theme={theme} faithJourney={faithJourney} />;
-      case 'reading_plans':
-        if (faithJourney === 'notrightnow') return null;
-        return <ReadingPlansCard theme={theme} />;
       case 'vs_yesterday': {
         const cardContent = renderChallengeCard();
         // Whole card navigates to /challenges, active or empty -- the empty state's own "Start a

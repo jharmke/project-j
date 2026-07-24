@@ -43,11 +43,14 @@ export function formatDayReading(day: PlanDay): string {
     .join(', ');
 }
 
-export function getTodayDayIndex(startDate: string): number {
-  const start = new Date(startDate + 'T00:00:00');
-  const now = new Date();
-  const days = Math.floor((now.getTime() - start.getTime()) / 86400000);
-  return Math.max(0, days);
+/** The day to resume on: the first day not yet completed. Completion-driven, NOT calendar-driven --
+ *  read 2 days then skip 3 and this still lands you on day 3, not wherever the calendar would put you.
+ *  Mirrors getNextDay in utils/devotionals.ts exactly (that one is 1-indexed, this is 0-indexed). */
+export function getNextDayIndex(plan: ReadingPlan, progress: PlanProgress): number {
+  for (let i = 0; i < plan.totalDays; i++) {
+    if (!progress.completedDays.includes(i)) return i;
+  }
+  return plan.totalDays - 1;
 }
 
 export function getPlanCompletion(
@@ -58,13 +61,19 @@ export function getPlanCompletion(
   return { completed, total: plan.totalDays, pct: plan.totalDays > 0 ? completed / plan.totalDays : 0 };
 }
 
+/** Every day marked complete -- the plan as a whole is done. Mirrors isDevotionalComplete. */
+export function isReadingPlanComplete(plan: ReadingPlan, progress?: PlanProgress): boolean {
+  if (!progress) return false;
+  return getPlanCompletion(plan, progress).completed === plan.totalDays;
+}
+
 export function getTodayReading(
   plan: ReadingPlan,
   progress: PlanProgress
 ): { day: PlanDay; dayIndex: number; isRead: boolean } | 'complete' {
   const { completed, total } = getPlanCompletion(plan, progress);
   if (completed >= total) return 'complete';
-  const dayIndex = Math.min(getTodayDayIndex(progress.startDate), plan.totalDays - 1);
+  const dayIndex = getNextDayIndex(plan, progress);
   const isRead = progress.completedDays.includes(dayIndex);
   return { day: plan.days[dayIndex], dayIndex, isRead };
 }

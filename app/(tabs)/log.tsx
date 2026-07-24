@@ -6,11 +6,14 @@ import { triggerHaptic } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Easing, InteractionManager, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { ActionSheetIOS, ActivityIndicator, Alert, Animated, Dimensions, Easing, Image, InteractionManager, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import PressableButton from '../../components/PressableButton';
 import PrimaryCTA from '../../components/PrimaryCTA';
 import { DEFAULT_MEAL_SLOTS, MealSlot, findSlotForMeal, loadMealSlots, saveMealSlots } from '../../utils/mealSlots';
+import { resolveMealPhoto, uploadMealPhoto, purgeMealPhoto, mealPhotoKey } from '../../utils/mealPhotos';
 import { getRepeatSummary, logRepeatedItems, SlotRepeatInfo, tidyFoodName } from '../../utils/repeatMeal';
 import RepeatMealModal from '../../components/RepeatMealModal';
 import { BlurView } from 'expo-blur';
@@ -331,6 +334,12 @@ export default function LogScreen() {
     return mealAnimations.current[meal];
   };
   const [activeDate, setActiveDate] = useState(todayKey);
+  // Meal-slot photo -- one per slot per day, showing the completed meal. Deliberately independent
+  // from the slot's logged food items: "Clear all" must never touch this. Keyed by date + slot id
+  // (utils/mealPhotos.ts) so renaming a slot later never orphans its photo.
+  const [mealPhotos, setMealPhotos] = useState<Record<string, string | null>>({});
+  const [mealPhotoUploading, setMealPhotoUploading] = useState<Record<string, boolean>>({});
+  const [mealPhotoFullscreen, setMealPhotoFullscreen] = useState<string | null>(null);
   // Log tab FAB -- multiple entry points (Create Food, Create Recipe, Barcode, Add to Meal), same
   // speed-dial structure as workout-library.tsx / add-food.tsx's own FABs.
   const [showLogFabMenu, setShowLogFabMenu] = useState(false);
@@ -951,6 +960,83 @@ export default function LogScreen() {
     };
     loadDay();
   }, [activeDate]);
+
+  // Reload every slot's photo whenever the viewed date or the slot list changes.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const entries = await Promise.all(
+        mealSlots.map(async s => [s.id, await resolveMealPhoto(activeDate, s.id)] as const)
+      );
+      if (alive) setMealPhotos(Object.fromEntries(entries));
+    })();
+    return () => { alive = false; };
+  }, [activeDate, mealSlots]);
+
+  const pickMealPhoto = async (slotId: string) => {
+    const launch = async (fromCamera: boolean) => {
+      const perm = fromCamera
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert(fromCamera ? 'Camera access needed' : 'Photo access needed', `Allow ${fromCamera ? 'camera' : 'photo'} access in Settings to add a meal photo.`);
+        return;
+      }
+      const res = fromCamera
+        ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.85 })
+        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85 });
+      if (res.canceled || !res.assets?.[0]) return;
+      setMealPhotoUploading(prev => ({ ...prev, [slotId]: true }));
+      try {
+        // Re-encode through ImageManipulator so a HEIC camera photo actually IS a JPEG on disk
+        // before it's cached/uploaded (same fix as the food/profile photo pickers).
+        const context = ImageManipulator.manipulate(res.assets[0].uri);
+        const rendered = await context.renderAsync();
+        const saved = await rendered.saveAsync({ format: SaveFormat.JPEG, compress: 0.85 });
+        const { url } = await uploadMealPhoto(activeDate, slotId, saved.uri);
+        if (url) {
+          await AsyncStorage.setItem(mealPhotoKey(activeDate, slotId), url);
+          setMealPhotos(prev => ({ ...prev, [slotId]: saved.uri }));
+          showToast('Meal photo saved', undefined, 'success');
+        } else {
+          showToast('Could not save photo', 'Please try again', 'error');
+        }
+      } catch {
+        showToast('Could not save photo', 'Please try again', 'error');
+      } finally {
+        setMealPhotoUploading(prev => ({ ...prev, [slotId]: false }));
+      }
+    };
+
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options: ['Take Photo', 'Choose from Library', 'Cancel'], cancelButtonIndex: 2 },
+        i => { if (i === 0) launch(true); else if (i === 1) launch(false); },
+      );
+    } else {
+      Alert.alert('Meal Photo', undefined, [
+        { text: 'Take Photo', onPress: () => launch(true) },
+        { text: 'Choose from Library', onPress: () => launch(false) },
+        { text: 'Cancel', style: 'cancel' },
+      ]);
+    }
+  };
+
+  const removeMealPhoto = (slotId: string) => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    Alert.alert('Remove Photo', 'Remove this meal photo?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove', style: 'destructive', onPress: async () => {
+          triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+          await purgeMealPhoto(activeDate, slotId);
+          setMealPhotos(prev => ({ ...prev, [slotId]: null }));
+          showToast('Photo removed', undefined, 'success');
+        },
+      },
+    ]);
+  };
 
   const deleteEntry = (idx: number) => {
     const newEntries = entries.filter((_, i) => i !== idx);
@@ -1703,7 +1789,13 @@ export default function LogScreen() {
             {/* Meal info middle */}
             <TouchableOpacity ref={entries.some(e => e.tutorialEntry) ? (slot.id === 'ms_lunch' ? (mealTotalRef as any) : undefined) : (mealIdx === 0 ? (mealTotalRef as any) : undefined)} style={[styles.mealInfo, { flexDirection: 'row', alignItems: 'center' }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); toggleMeal(slot.id); }}>
               <View style={{ flex: 1 }}>
-                <GradientNumber value={slot.name} color={theme.textSecondary} style={styles.mealName} />
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <GradientNumber value={slot.name} color={theme.textSecondary} style={styles.mealName} />
+                  {/* Quiet indicator only -- the real add/view control lives in the expanded tray near
+                      Clear all. Showing a full box here by default would put an empty dotted camera
+                      icon on every meal slot (Supplements included), most of which will never get one. */}
+                  {mealPhotos[slot.id] && <GradientIcon name="camera" size={11} color={theme.textMuted} />}
+                </View>
                 {mealTotal > 0 && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
@@ -1975,17 +2067,78 @@ export default function LogScreen() {
                     </TouchableOpacity>
                   ))
                 )}
-                {/* Clear all -- quiet link, only when the meal has items; one confirm for the batch */}
-                {mealEntries.length >= 1 && (
-                  <TouchableOpacity
-                    onPress={() => clearMeal(slot)}
-                    activeOpacity={0.7}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4, paddingTop: 8, paddingBottom: 2, paddingRight: 2 }}>
-                    <Ionicons name="trash-outline" size={13} color={theme.accentRed} />
-                    <Text style={{ fontSize: 12, color: theme.accentRed, fontFamily: Type.uiSemibold }}>Clear all</Text>
-                  </TouchableOpacity>
-                )}
+                {/* Real 2-column layout: a hairline divider down the center, each half's content
+                    horizontally centered WITHIN its own half -- not just two things sitting side by
+                    side with a gap (that was the previous, broken attempt). LEFT = the photo
+                    (independent of the food items above on purpose; Clear all must never touch it).
+                    RIGHT = a stack of actions on this meal -- just Clear all for now, Save as Meal
+                    slots in right below it once that feature exists. */}
+                {(() => {
+                  const photoContent = mealPhotos[slot.id] ? (
+                    <>
+                      <TouchableOpacity onPress={() => setMealPhotoFullscreen(mealPhotos[slot.id])} activeOpacity={0.8}>
+                        <Image source={{ uri: mealPhotos[slot.id]! }} style={{ width: 56, height: 56, borderRadius: 8, borderWidth: 1, borderColor: theme.borderCard }} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => removeMealPhoto(slot.id)}
+                        activeOpacity={0.7}
+                        hitSlop={{ top: 6, bottom: 6, left: 10, right: 10 }}
+                        style={{ minHeight: 32, justifyContent: 'center', paddingHorizontal: 6 }}>
+                        <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.accentRed }}>Remove Photo</Text>
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <>
+                      <TouchableOpacity
+                        onPress={() => pickMealPhoto(slot.id)}
+                        disabled={!!mealPhotoUploading[slot.id]}
+                        activeOpacity={0.7}
+                        style={{
+                          flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+                          width: 56, height: 56, borderRadius: 8, borderWidth: 1, borderStyle: 'dashed', borderColor: theme.borderInput,
+                        }}>
+                        {mealPhotoUploading[slot.id] ? (
+                          <ActivityIndicator size="small" color={theme.textMuted} />
+                        ) : (
+                          <Ionicons name="camera-outline" size={20} color={theme.textMuted} />
+                        )}
+                      </TouchableOpacity>
+                      {!mealPhotoUploading[slot.id] && (
+                        <Text style={{ fontSize: 10, fontFamily: Type.ui, color: theme.textMuted }}>Add Photo</Text>
+                      )}
+                    </>
+                  );
+
+                  // The divider only earns its place when there's a Clear all pill to pair with --
+                  // an empty meal has nothing on the right, so the split just left a floating
+                  // hairline next to dead space. Plain standalone photo section instead.
+                  if (mealEntries.length === 0) {
+                    return <View style={{ alignItems: 'center', gap: 4, marginTop: 10 }}>{photoContent}</View>;
+                  }
+
+                  return (
+                    <View style={{ flexDirection: 'row', marginTop: 10 }}>
+                      <View style={{ flex: 1, alignItems: 'center', gap: 4 }}>{photoContent}</View>
+                      <View style={{ width: 1, alignSelf: 'stretch', backgroundColor: theme.borderCard, marginHorizontal: 8 }} />
+                      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                        <TouchableOpacity
+                          onPress={() => clearMeal(slot)}
+                          activeOpacity={0.85}
+                          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                          style={{
+                            flexDirection: 'row', alignItems: 'center', gap: 5,
+                            minHeight: 30, paddingVertical: 6, paddingHorizontal: 12,
+                            borderRadius: 7, borderWidth: 1, overflow: 'hidden',
+                            backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder,
+                          }}>
+                          <ButtonShine radius={8} />
+                          <Ionicons name="trash-outline" size={13} color={theme.accentRed} />
+                          <Text style={{ fontSize: 13, color: theme.accentRed, fontFamily: Type.uiSemibold }}>Clear all</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  );
+                })()}
               </View>
               </Animated.View>
             )}
@@ -1993,6 +2146,19 @@ export default function LogScreen() {
           </ReAnimated.View>
         );
       })}
+
+      <Modal visible={!!mealPhotoFullscreen} transparent animationType="fade" onRequestClose={() => setMealPhotoFullscreen(null)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.96)', justifyContent: 'center', alignItems: 'center' }}>
+          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => setMealPhotoFullscreen(null)} />
+          {mealPhotoFullscreen && (
+            <Image
+              source={{ uri: mealPhotoFullscreen }}
+              style={{ width: Dimensions.get('window').width * 0.88, height: Dimensions.get('window').width * 0.88, borderRadius: 16 }}
+              resizeMode="cover"
+            />
+          )}
+        </View>
+      </Modal>
 
       {/* AI Meal Estimator -- persistent entry point, always shown below the meals */}
       <ReAnimated.View entering={FadeInDown.delay(120 + mealSlots.length * 60).springify()}>

@@ -11,12 +11,15 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../theme';
 import { useToast, ToastRenderer } from './Toast';
 import { MealSlot } from '../utils/mealSlots';
 import { getRepeatDays, logRepeatedItems, tidyFoodName, RepeatDay } from '../utils/repeatMeal';
+import { barFillGradient } from '../utils/barGradient';
 import { Type, numLine } from '../typography';
 import ModalHeader from './ModalHeader';
+import PrimaryCTA from './PrimaryCTA';
 
 // Macro dot colors, matched to the Log-tab mealtime cards (Protein / Carbs / Fat).
 const MACRO = { protein: '#0d9268', carbs: '#c47d1a', fat: '#a83232' };
@@ -346,13 +349,18 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
                               style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 10 }}
                             >
                               <View style={{
-                                width: 20, height: 20, borderRadius: 5,
-                                borderWidth: 1.5,
+                                width: 20, height: 20, borderRadius: 5, overflow: 'hidden',
+                                borderWidth: on ? 0 : 1.5,
                                 alignItems: 'center', justifyContent: 'center',
-                                backgroundColor: on ? theme.accentBlue : 'transparent',
-                                borderColor: on ? theme.accentBlue : theme.borderInput,
+                                backgroundColor: on ? undefined : 'transparent',
+                                borderColor: theme.borderInput,
                               }}>
-                                {on && <Ionicons name="checkmark" size={13} color={theme.bgPrimary} />}
+                                {on && (
+                                  <>
+                                    <LinearGradient colors={barFillGradient(theme.accentBlue)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={StyleSheet.absoluteFillObject} />
+                                    <Ionicons name="checkmark" size={13} color={theme.bgPrimary} />
+                                  </>
+                                )}
                               </View>
                               <Text
                                 numberOfLines={1}
@@ -367,30 +375,17 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
                           );
                         })}
 
-                        {/* Add button -- dim when nothing selected, full accent when ready */}
-                        <TouchableOpacity
+                        {/* Add button -- was a flat painted fill, now the real molded PrimaryCTA
+                            everywhere else in the app uses. Dim/inactive-when-empty, full accent
+                            when ready is PrimaryCTA's own built-in disabled state. */}
+                        <PrimaryCTA
+                          label={sel.length === 0 ? 'Select at least one item' : `Add ${sel.length} ${sel.length === 1 ? 'item' : 'items'} · ${selKcal} kcal`}
                           onPress={() => handleAdd(day)}
                           disabled={sel.length === 0 || adding}
-                          activeOpacity={0.85}
-                          style={{
-                            marginTop: 10,
-                            borderRadius: 10,
-                            paddingVertical: 12,
-                            alignItems: 'center',
-                            backgroundColor: sel.length === 0 ? theme.bgInput : theme.accentBlue,
-                            opacity: sel.length === 0 ? 0.6 : 1,
-                          }}
-                        >
-                          <Text style={{
-                            fontSize: 13,
-                            fontFamily: Type.uiBold,
-                            color: sel.length === 0 ? theme.textDim : theme.bgPrimary,
-                          }}>
-                            {sel.length === 0
-                              ? 'Select at least one item'
-                              : `Add ${sel.length} ${sel.length === 1 ? 'item' : 'items'} · ${selKcal} kcal`}
-                          </Text>
-                        </TouchableOpacity>
+                          busy={adding}
+                          compact
+                          wrapperStyle={{ marginTop: 10 }}
+                        />
                       </View>
                     )}
                   </View>

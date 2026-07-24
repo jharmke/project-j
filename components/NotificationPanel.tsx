@@ -178,7 +178,17 @@ export default function NotificationPanel({
             <GradientTitle title={n.title} color={theme.textSecondary} numberOfLines={1} style={styles.cardTitle} />
           </View>
         </View>
-        {!!n.body && <Text style={[styles.cardBody, { color: theme.textSecondary }]} numberOfLines={2}>{n.body}</Text>}
+        {/* Rate Us / Feedback show full body text, untruncated -- both are 'replace' lifecycle
+            (never more than one instance in the list at once, unlike stackable achievement/record
+            cards), and the reasoning line ("why bother") is the point of the copy. */}
+        {!!n.body && (
+          <Text
+            style={[styles.cardBody, { color: theme.textSecondary }]}
+            numberOfLines={n.category === 'rate_us' || n.category === 'feedback_prompt' ? undefined : 2}
+          >
+            {n.body}
+          </Text>
+        )}
         <Text style={[styles.cardTime, { color: theme.textDim }]}>{relTime(n.createdAt)}</Text>
       </View>
       <Pressable onPress={() => removeItem(n.id)} hitSlop={10} style={styles.cardClear}>

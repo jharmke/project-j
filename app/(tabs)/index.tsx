@@ -1560,6 +1560,20 @@ export default function HomeScreen() {
     }
   }, [water, waterGoal, loaded]);
 
+  // ── Protein goal achievement (no prior live hook existed -- built for the Rate Us trigger,
+  //    SPEC_rate_us_and_feedback.md) ────────────────────────────────────────────
+  useEffect(() => {
+    if (!loaded) return;
+    if (totalProtein > 0 && macroGoals.protein > 0 && totalProtein >= macroGoals.protein) {
+      handleDailyGoalHit('protein').then(({ fired, count: hitCount }) => {
+        if (!fired) return;
+        showCelebration('small', 'PROTEIN GOAL');
+        showDailyGoalToast('Protein Goal', hitCount, 'nutrition', theme.macroProtein);
+        fireRatingTrigger(tutorialActiveState);
+      });
+    }
+  }, [totalProtein, macroGoals.protein, loaded]);
+
   // ── Load layout from settings ────────────────────────────────────────────────
   useEffect(() => {
     const loadLayout = async () => {
@@ -2130,6 +2144,7 @@ export default function HomeScreen() {
           setAchievementStore(store);
           const def = ACHIEVEMENTS.find(a => a.id === crossed[0]);
           showCelebration(def ? getCelebTier(def) : 'medium', def?.name, def ?? undefined);
+          fireRatingTrigger(tutorialActiveState);
         }
         // Silently unlock remaining
         for (let i = 1; i < crossed.length; i++) {
@@ -3517,7 +3532,7 @@ export default function HomeScreen() {
           <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between' }}>
             <Text style={{ fontSize:13, fontFamily:Type.uiSemibold, color: washColor }}>See how you did ›</Text>
             <TouchableOpacity
-              onPress={async (e: any) => { e?.stopPropagation?.(); triggerHaptic(Haptics.ImpactFeedbackStyle.Light); await clearActiveChallenge(); setActiveChallenge(null); setChallengeProg(null); }}
+              onPress={async (e: any) => { e?.stopPropagation?.(); triggerHaptic(Haptics.ImpactFeedbackStyle.Light); if (won) fireRatingTrigger(tutorialActiveState); await clearActiveChallenge(); setActiveChallenge(null); setChallengeProg(null); }}
               hitSlop={{ top:8, bottom:8, left:8, right:8 }}
               style={{ paddingVertical:4, paddingHorizontal:10, borderRadius:6, borderWidth:1, borderColor: theme.borderCard }}>
               <Text style={{ fontSize:12, fontFamily:Type.uiSemibold, color: theme.textMuted }}>Done</Text>

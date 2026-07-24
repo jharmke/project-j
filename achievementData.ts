@@ -1503,7 +1503,7 @@ export function isGoalWeightHit(
 
 // ─── Daily Goal Hit Counts ────────────────────────────────────────────────────
 
-export type DailyGoalId = 'water' | 'steps' | 'activeCals' | 'exerciseMins';
+export type DailyGoalId = 'water' | 'steps' | 'activeCals' | 'exerciseMins' | 'protein';
 
 export interface DailyGoalEntry {
   count: number;
@@ -1526,6 +1526,7 @@ export const DEFAULT_DAILY_GOAL_COUNTS: DailyGoalCounts = {
   steps:        { count: 0, lastEarned: '' },
   activeCals:   { count: 0, lastEarned: '' },
   exerciseMins: { count: 0, lastEarned: '' },
+  protein:      { count: 0, lastEarned: '' },
 };
 
 export async function loadGoalHitCounts(): Promise<DailyGoalCounts> {

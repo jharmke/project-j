@@ -19,6 +19,7 @@ import { ToastRenderer, useToast } from '../../components/Toast';
 import { showAchievementToast } from '../../components/AchievementToast';
 import { showCelebration } from '../../components/CelebrationOverlay';
 import { checkWorkoutAchievements, getCelebTier } from '../../achievementData';
+import { fireRatingTrigger } from '../../utils/ratingPrompt';
 import { storageSet } from '../../utils/storage';
 import { cancelActivityNotification } from '../../services/notifications';
 import { addNotification, clearNotification } from '../../utils/notifications';
@@ -241,7 +242,7 @@ const [weeklyTemplate, setWeeklyTemplate] = useState<Record<string, DayProgram>>
   const firstSetsRepsRef   = useTutorialTarget('workout_sets_reps');
   const firstCardioRef     = useTutorialTarget('workout_cardio_fields');
   const workoutFabRef      = useTutorialTarget('workout_fab');
-  const { registerScrollView, unregisterScrollView, registerTutorialAction, unregisterTutorialAction } = useTutorial();
+  const { registerScrollView, unregisterScrollView, registerTutorialAction, unregisterTutorialAction, activeState: tutorialActiveState } = useTutorial();
   const hasScrolled = useRef(false);
 const [labelInput, setLabelInput] = useState('');
   const [form, setForm] = useState({ name: '', sets: '', reps: '', rest: '', note: '', isCardio: false, weightUnit: 'lb' as 'lb' | 'kg', trackingType: 'reps' as 'reps' | 'time', duration: '', distance: '', speed: '', incline: '', resistance: '', hr: '', calories: ''});
@@ -1445,6 +1446,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
     // (PRs included) without recomputing. Cleared by clearFinished() the moment the day is edited.
     setFinishedSummaries(prev => ({ ...prev, [activeDay]: summary }));
     openFinishSummary(summary);
+    fireRatingTrigger(tutorialActiveState);
     // No big celebration overlay for PRs -- new lifters PR almost every session, so the recap's
     // trophy section is the recognition. (A bigger celebration is reserved for lifting GOALS later.)
   };

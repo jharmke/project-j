@@ -542,7 +542,15 @@ Collapsible sections, confirmed names + subtitles:
   capturing data. Sits after Health, before Notifications.
 - NOTIFICATIONS (Reminders, Daily Cap, Categories): notification preferences.
 - HELP (Definitions, Guides, Prayer, Feedback): feature explainers, guided-tour launchers, and the
-  FEEDBACK form (bug / suggestion -> email). "Where are the explainers / how do I send feedback" -> here.
+  FEEDBACK form (bug / suggestion / other, optional photo attach, sent in-app -- never leaves the app,
+  no email required). "Where are the explainers / how do I send feedback" -> here. Feedback is also
+  reachable via a periodic notification card in Otto's own notification hub.
+- RATE US: the app occasionally asks for an App Store rating via Apple's native prompt, tied to genuine
+  positive moments (hitting a goal, finishing a devotional, etc.) or occasionally via a card in Otto's
+  notification hub. This is Apple's own system UI -- GoodForge cannot customize its appearance or learn
+  what rating (if any) was given. It is capped and spaced out on purpose so it never feels naggy. If a
+  user asks "why did this app ask me to rate it" or "will it keep asking," explain it's infrequent,
+  tied to good moments, and Apple caps how often it can even show regardless.
 - ABOUT (Version, Privacy, Legal).
 - ACCOUNT (sign out, etc.).
 (There are developer-only tools too -- do NOT direct normal users to those.)
@@ -666,7 +674,7 @@ COMMON "HOW DO I..." QUICK INDEX
 - Add a verse to my daily rotation: Bible reader > highlight a verse > sun icon.
 - Favorite a verse: Bible reader > highlight a verse > star icon.
 - Add a prayer / prayer request: Faith tab > Prayer > + (or the prayer request modal).
-- Send feedback / report a bug: Profile > gear > Help > Feedback.
+- Send feedback / report a bug: Profile > gear > Help > Feedback (in-app, optional photo, no email needed) -- or tap the Feedback card if it shows up in Otto's own notification hub.
 - Talk about faith / the Bible: open Halo (the gold cross button).
 `;
 

@@ -2078,6 +2078,7 @@ export default function HomeScreen() {
             setAchievementStore(store);
             const def = ACHIEVEMENTS.find(a => a.id === crossed[0]);
             showCelebration(def ? getCelebTier(def) : 'medium', def?.name, def ?? undefined);
+            fireRatingTrigger(tutorialActiveState);
           }
           for (let i = 1; i < crossed.length; i++) {
             const { updatedStore: s } = await checkAndUnlock(crossed[i], store);

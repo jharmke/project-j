@@ -10,9 +10,11 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useEffect, useRef } from 'react';
 import { ActivityIndicator, Animated, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../theme';
 import TooltipIcon from './TooltipIcon';
 import { ZoneBound, fmtZoneTime, MaxHRSource, HRZoneModel, zoneDebrief } from '../utils/hrZones';
+import { barFillGradient } from '../utils/barGradient';
 import { Type } from '../typography';
 import ModalHeader from './ModalHeader';
 import GradientNumber from './GradientNumber';
@@ -170,10 +172,12 @@ export default function HRZoneModal({ visible, loading, data, onClose }: Props) 
                       </View>
                       <View style={{ flex: 1, height: 10, borderRadius: 5, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
                         <Animated.View style={{
-                          height: '100%', width: `${pct}%`, borderRadius: 5, backgroundColor: r.color,
+                          height: '100%', width: `${pct}%`, borderRadius: 5, overflow: 'hidden',
                           transformOrigin: 'left',
                           transform: [{ scaleX: barProgress }],
-                        }} />
+                        }}>
+                          <LinearGradient colors={barFillGradient(r.color)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }} />
+                        </Animated.View>
                       </View>
                       <View style={{ width: 56, alignItems: 'flex-end', paddingLeft: 6 }}>
                         {r.sec > 0

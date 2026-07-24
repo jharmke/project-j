@@ -10,9 +10,11 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Text, TouchableOpacity, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../theme';
 import TooltipIcon from './TooltipIcon';
 import { useHealthKit } from '../useHealthKit';
+import { barFillGradient } from '../utils/barGradient';
 import { resolveMaxHR, zoneBounds, timeInZones, fmtZoneTime, ageFromBirthday, ZoneBound, MaxHRSource } from '../utils/hrZones';
 import { Type } from '../typography';
 import GradientNumber from './GradientNumber';
@@ -184,7 +186,9 @@ export default function HRZonesStatsCard() {
                   style={{ flex: 1, height: 10, borderRadius: 5, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}
                   onLayout={e => { if (trackW === 0) setTrackW(e.nativeEvent.layout.width); }}
                 >
-                  <Animated.View style={{ height: '100%', borderRadius: 5, backgroundColor: r.color, width: trackW > 0 ? barProgress.interpolate({ inputRange: [0, 1], outputRange: [0, trackW * pct / 100] }) : 0 }} />
+                  <Animated.View style={{ height: '100%', borderRadius: 5, overflow: 'hidden', width: trackW > 0 ? barProgress.interpolate({ inputRange: [0, 1], outputRange: [0, trackW * pct / 100] }) : 0 }}>
+                    <LinearGradient colors={barFillGradient(r.color)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }} />
+                  </Animated.View>
                 </View>
                 <View style={{ width: 56, alignItems: 'flex-end', paddingLeft: 6 }}>
                   <GradientNumber value={fmtZoneTime(r.sec)} color={r.sec > 0 ? theme.textSecondary : theme.textDim} style={{ fontSize: 16, fontFamily: Type.num, letterSpacing: 0.5 }} />

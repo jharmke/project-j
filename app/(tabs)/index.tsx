@@ -2108,6 +2108,9 @@ export default function HomeScreen() {
   const logWeight = async () => {
     const val = parseFloat(weightInput);
     if (!val || val <= 0) return;
+    // The field's work is done, so the keypad goes with it. Matches gratitude, which already did
+    // this; without it the keypad sat there over a field that had just emptied itself.
+    Keyboard.dismiss();
     setWeight(val);
     setWeightInput('');
     saveToFirebase(todayKey, 'weight', val);
@@ -4216,6 +4219,11 @@ export default function HomeScreen() {
       <ScrollView
         ref={scrollRef}
         automaticallyAdjustKeyboardInsets={true}
+        // Anything typed into inside this ScrollView (the weight card, and the cards' inline inputs)
+        // needs this. Left at the default, the ScrollView eats the first tap after typing to dismiss
+        // the keyboard, so the button you aimed at never fires. Tap-versus-dismiss is decided by
+        // walking the component tree, which is why the fix belongs here and not on the card.
+        keyboardShouldPersistTaps="handled"
         // paddingTop clears the now-ABSOLUTE header (measured, not guessed -- the greeting's font can
         // change its height). Content still scrolls UNDER it; this only stops the FIRST card from
         // starting life hidden behind the glass.

@@ -428,7 +428,10 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={[styles.content, { paddingTop: headerH + 16, paddingBottom: insets.bottom + TAB_SCROLL_PAD }]} automaticallyAdjustKeyboardInsets={true} onScroll={e => { scrollOffset.current = e.nativeEvent.contentOffset.y; }} scrollEventThrottle={16}>
+      {/* keyboardShouldPersistTaps: this page's fields are typed into inside the ScrollView. Left at
+          the default, it eats the first tap after typing to dismiss the keyboard, so whatever you
+          aimed at never fires. */}
+      <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={[styles.content, { paddingTop: headerH + 16, paddingBottom: insets.bottom + TAB_SCROLL_PAD }]} automaticallyAdjustKeyboardInsets={true} keyboardShouldPersistTaps="handled" onScroll={e => { scrollOffset.current = e.nativeEvent.contentOffset.y; }} scrollEventThrottle={16}>
 
         <ProfileSection label="Basic Info" subtitle="Name, height, birthday, sex" defaultOpen={true} theme={theme} first={true} entering={FadeInDown.delay(0).springify()}>
           <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>Name</Text>

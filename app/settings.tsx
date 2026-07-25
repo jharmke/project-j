@@ -1407,7 +1407,10 @@ export default function SettingsScreen() {
         }
       />
 
-      <ScrollView ref={scrollViewRef} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 96 }]} automaticallyAdjustKeyboardInsets={true} onScroll={e => { goalScrollOffset.current = e.nativeEvent.contentOffset.y; }} scrollEventThrottle={16}>
+      {/* keyboardShouldPersistTaps: the goal fields are typed into inside the ScrollView. Left at the
+          default, it eats the first tap after typing to dismiss the keyboard, so whatever you aimed
+          at never fires. */}
+      <ScrollView ref={scrollViewRef} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 96 }]} automaticallyAdjustKeyboardInsets={true} keyboardShouldPersistTaps="handled" onScroll={e => { goalScrollOffset.current = e.nativeEvent.contentOffset.y; }} scrollEventThrottle={16}>
 
         {/* ── Appearance ── */}
         <CollapsibleSection label="Appearance" subtitle="Theme · Accent · Haptics" defaultOpen={deepLinkSection === 'appearance'} theme={theme}>

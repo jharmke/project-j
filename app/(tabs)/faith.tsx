@@ -228,6 +228,9 @@ export default function FaithScreen() {
         ref={scrollRef}
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: headerH + 16, paddingBottom: insets.bottom + TAB_SCROLL_PAD }}
         showsVerticalScrollIndicator={false}
+        // The gratitude card types inside this ScrollView. Left at the default, the ScrollView eats
+        // the first tap after typing to dismiss the keyboard, so Log Gratitude never fired.
+        keyboardShouldPersistTaps="handled"
       >
         {visibleCards.map((id, idx) => (
           <Reanimated.View key={id} entering={FadeInDown.delay(idx * 60).springify()} onLayout={e => { cardOffsets.current[id] = e.nativeEvent.layout.y; }}>

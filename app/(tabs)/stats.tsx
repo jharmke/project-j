@@ -1907,7 +1907,10 @@ export default function StatsScreen() {
         </View>
       </View>
 
-      <ScrollView ref={statsScrollRef} style={styles.container} contentContainerStyle={[styles.content, { paddingTop: headerH + 16, paddingBottom: insets.bottom + TAB_SCROLL_PAD }]}>
+      {/* keyboardShouldPersistTaps: cards on this page are typed into inside the ScrollView. Left at
+          the default, it eats the first tap after typing to dismiss the keyboard, so whatever you
+          aimed at never fires. */}
+      <ScrollView ref={statsScrollRef} style={styles.container} contentContainerStyle={[styles.content, { paddingTop: headerH + 16, paddingBottom: insets.bottom + TAB_SCROLL_PAD }]} keyboardShouldPersistTaps="handled">
 
         {cardsLoaded && statsCards
           .filter(c => c.type === 'system')

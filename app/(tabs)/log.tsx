@@ -15,6 +15,7 @@ import PrimaryCTA from '../../components/PrimaryCTA';
 import { DEFAULT_MEAL_SLOTS, MealSlot, findSlotForMeal, loadMealSlots, saveMealSlots } from '../../utils/mealSlots';
 import { resolveMealPhoto, uploadMealPhoto, purgeMealPhoto, mealPhotoKey } from '../../utils/mealPhotos';
 import { getRepeatSummary, logRepeatedItems, SlotRepeatInfo, tidyFoodName } from '../../utils/repeatMeal';
+import { saveMealFromEntries, loadSavedMeals } from '../../utils/savedMeals';
 import RepeatMealModal from '../../components/RepeatMealModal';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -45,7 +46,7 @@ import GradientIcon from '../../components/GradientIcon';
 import HeaderIconButton from '../../components/HeaderIconButton';
 import ButtonShine from '../../components/ButtonShine';
 import { CardWatermark } from '../../components/GradientCard';
-import { useToast } from '../../components/Toast';
+import { useToast, ToastRenderer } from '../../components/Toast';
 import { useTutorial } from '../../context/TutorialContext';
 import { useTutorialTarget } from '../../hooks/useTutorialTarget';
 import { useHealthKit } from '../../useHealthKit';
@@ -104,12 +105,6 @@ function LogSkeleton({ theme, pulse }: { theme: any; pulse: Animated.Value }) {
     </>
   );
 }
-
-// The repeat pill is sized to its WORST CASE: "Repeat Yesterday · 1,248 kcal" (a 4-digit day) must never
-// truncate. Measured, that's ~205pt of content, so the cap is 212 with a little slack for wider accents/
-// fonts. NOTE this is essentially the pill's natural full-row width already -- the "dead air" that shows up
-// next to a 3-digit value IS this 4-digit headroom, not waste. 190 was tried and truncated "848 kcal".
-const REPEAT_MAX_W = 212;
 
 interface FoodEntry {
   name: string;
@@ -340,6 +335,16 @@ export default function LogScreen() {
   const [mealPhotos, setMealPhotos] = useState<Record<string, string | null>>({});
   const [mealPhotoUploading, setMealPhotoUploading] = useState<Record<string, boolean>>({});
   const [mealPhotoFullscreen, setMealPhotoFullscreen] = useState<string | null>(null);
+  // Save as Meal: name + checklist modal for bundling an already-logged slot's items into a
+  // permanent, reusable Saved Meal (Meal Catalog). saveMealSlot holds the slot being saved
+  // (null = modal closed). saveMealItems is a SNAPSHOT of that slot's entries taken the moment
+  // the modal opens (not re-read live) so the checklist doesn't shift under the user's thumb;
+  // saveMealChecked tracks which of those items are still selected, all true by default.
+  const [saveMealSlot, setSaveMealSlot] = useState<MealSlot | null>(null);
+  const [mealNameDraft, setMealNameDraft] = useState('');
+  const [savingMeal, setSavingMeal] = useState(false);
+  const [saveMealItems, setSaveMealItems] = useState<any[]>([]);
+  const [saveMealChecked, setSaveMealChecked] = useState<boolean[]>([]);
   // Log tab FAB -- multiple entry points (Create Food, Create Recipe, Barcode, Add to Meal), same
   // speed-dial structure as workout-library.tsx / add-food.tsx's own FABs.
   const [showLogFabMenu, setShowLogFabMenu] = useState(false);
@@ -407,6 +412,7 @@ export default function LogScreen() {
   const [pickerYear, setPickerYear] = useState(0);
   const [pickerMonth, setPickerMonth] = useState(0);
   const calFadeAnim = useRef(new Animated.Value(0)).current;
+  const saveMealAnim = useRef(new Animated.Value(0)).current;
   const skipDateEffect = useRef(false);
   const dateEffectMounted = useRef(false);
   const returningFromChild = useRef(false);
@@ -1058,6 +1064,17 @@ export default function LogScreen() {
     return () => { alive = false; };
   }, [activeDate, mealSlots]);
 
+  // Whether the user has ANY saved meal at all, independent of this slot's (or any slot's)
+  // history. Find a Meal must be reachable purely because a saved meal exists, even on a slot
+  // with zero repeat history -- gating on hasHistory alone (the old Repeat-a-Meal-only rule)
+  // would hide a saved meal from a brand-new slot that's never been logged before.
+  const [hasSavedMeals, setHasSavedMeals] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    loadSavedMeals().then(list => { if (alive) setHasSavedMeals(list.length > 0); });
+    return () => { alive = false; };
+  }, []);
+
   // Shared apply path for both the one-tap fast path and the modal: adopt the merged entries list
   // (already persisted to storage by logRepeatedItems), refresh totals, push to Firebase.
   const applyMergedEntries = (merged: any[]) => {
@@ -1113,6 +1130,33 @@ export default function LogScreen() {
         }},
       ]
     );
+  };
+
+  const toggleSaveMealItem = (idx: number) => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    setSaveMealChecked(prev => { const next = [...prev]; next[idx] = !next[idx]; return next; });
+  };
+
+  const saveMealSelected = saveMealItems.filter((_, i) => saveMealChecked[i]);
+  const saveMealSelectedKcal = Math.round(saveMealSelected.reduce((s, e) => s + (e.cal || 0), 0));
+
+  // Bundle the checked items from saveMealItems (a snapshot taken when the modal opened) into
+  // a new named, permanent Saved Meal (Meal Catalog). Does not touch the day's entries at all --
+  // this only writes to pj_saved_meals.
+  const saveMeal = async () => {
+    if (!saveMealSlot || !mealNameDraft.trim() || savingMeal || saveMealSelected.length === 0) return;
+    setSavingMeal(true);
+    try {
+      await saveMealFromEntries(mealNameDraft.trim(), saveMealSelected);
+      setHasSavedMeals(true);
+      triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+      showToast('Meal saved', `"${mealNameDraft.trim()}" added to your Meal Catalog`, 'success');
+      setSaveMealSlot(null);
+    } catch {
+      showToast('Could not save meal', 'Please try again', 'error');
+    } finally {
+      setSavingMeal(false);
+    }
   };
 
   useEffect(() => {
@@ -1835,7 +1879,7 @@ export default function LogScreen() {
                     Gated on mealEntries.length (NOT mealTotal, which the macro line uses): a slot holding only
                     zero-calorie entries has mealTotal 0 but is NOT empty, so the tray would show those entries
                     and no repeat pills -- the hint would be lying. */}
-                {mealEntries.length === 0 && repeatSummary[slot.id]?.hasHistory && (
+                {mealEntries.length === 0 && (repeatSummary[slot.id]?.hasHistory || hasSavedMeals) && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
                   <Ionicons name="repeat" size={10} color={theme.textMuted} />
                   <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.ui }}>
@@ -1872,61 +1916,7 @@ export default function LogScreen() {
                   // appear when you open the slot. Costs Repeat Yesterday one extra tap; buys back a calm
                   // morning and a correct hierarchy. The chevron was already here, so this adds NO new control
                   // competing with the "+".
-                  <>
-                    <Text style={[styles.emptyMealText, { color: theme.textDim }]}>Nothing logged yet. Tap + to add.</Text>
-                    {repeatSummary[slot.id]?.hasHistory && (
-                      // LEFT-ALIGNED to the tray's content, sharing an edge with the "Nothing logged yet" line
-                      // above. CENTERING WAS TRIED AND REJECTED (2026-07-15): the pills stop short of the right
-                      // edge (REPEAT_MAX_W caps the Repeat pill) so left-aligning leaves a bigger gutter on the
-                      // right than the left, and centering was meant to even that out -- but it reads WORSE. The
-                      // tray already has a left-aligned text line establishing an edge, so centered pills float
-                      // against nothing and look disconnected. An uneven gutter beats an arbitrary one.
-                      // REPEAT_MAX_W caps the Repeat pill so it never stretches to a silly width: 212 covers the
-                      // widest label it ever carries ("Repeat Yesterday · 1,248 kcal"). maxWidth, not width, so a
-                      // narrow phone just takes what it has instead of overflowing.
-                      // Contents are LEFT-aligned inside each pill so the glyph sits a fixed inset from the pill
-                      // edge rather than wandering with the label's length.
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 10, paddingTop: 2, paddingBottom: 6 }}>
-                        {repeatSummary[slot.id].yesterdayItems.length > 0 ? (
-                          <>
-                            <PressableButton
-                              flex={1}
-                              wrapperStyle={{ maxWidth: REPEAT_MAX_W }}
-                              onPress={() => repeatYesterday(slot)}
-                              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 5, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 }}>
-                              <ButtonShine radius={10} />
-                              <Ionicons name="repeat" size={13} color={theme.accentBlue} />
-                              <Text numberOfLines={1} style={{ flexShrink: 1, color: theme.accentBlue, fontSize: 12, fontFamily: Type.uiSemibold }}>
-                                Repeat Yesterday · {repeatSummary[slot.id].yesterdayTotal} kcal
-                              </Text>
-                            </PressableButton>
-                            <PressableButton
-                              flex={0}
-                              onPress={() => openRepeatModal(slot)}
-                              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 5, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 }}>
-                              <ButtonShine radius={10} />
-                              <Ionicons name="calendar" size={13} color={theme.accentBlue} />
-                              <Text style={{ color: theme.accentBlue, fontSize: 12, fontFamily: Type.uiSemibold }}>Pick a Day</Text>
-                            </PressableButton>
-                          </>
-                        ) : (
-                          // No yesterday-meal to one-tap, so the single pill opens the picker. It keeps the
-                          // flex:1 + maxWidth of its twin above so this row reads the same width as any other.
-                          <PressableButton
-                            flex={1}
-                            wrapperStyle={{ maxWidth: REPEAT_MAX_W }}
-                            onPress={() => openRepeatModal(slot)}
-                            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 5, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 }}>
-                            <ButtonShine radius={10} />
-                            <Ionicons name="repeat" size={13} color={theme.accentBlue} />
-                            <Text numberOfLines={1} style={{ flexShrink: 1, color: theme.accentBlue, fontSize: 12, fontFamily: Type.uiSemibold }}>
-                              Repeat a Previous Meal
-                            </Text>
-                          </PressableButton>
-                        )}
-                      </View>
-                    )}
-                  </>
+                  <Text style={[styles.emptyMealText, { color: theme.textDim }]}>Nothing logged yet. Tap + to add.</Text>
                 ) : (
                   mealEntries.map((entry, i) => (
                     <TouchableOpacity
@@ -2109,18 +2099,64 @@ export default function LogScreen() {
                     </>
                   );
 
-                  // The divider only earns its place when there's a Clear all pill to pair with --
-                  // an empty meal has nothing on the right, so the split just left a floating
-                  // hairline next to dead space. Plain standalone photo section instead.
+                  // The divider only earns its place when there's something for the right column --
+                  // an empty meal with no history and no saved meals has nothing to offer, so the
+                  // split just left a floating hairline next to dead space. Plain standalone photo
+                  // section instead in that case; once there's a real pill to show (recent history
+                  // OR any saved meal, regardless of slot), it gets the same 2-column treatment as
+                  // a logged slot's Clear all / Save as Meal column.
                   if (mealEntries.length === 0) {
-                    return <View style={{ alignItems: 'center', gap: 4, marginTop: 10 }}>{photoContent}</View>;
+                    const info = repeatSummary[slot.id];
+                    if (!info?.hasHistory && !hasSavedMeals) {
+                      return <View style={{ alignItems: 'center', gap: 4, marginTop: 10 }}>{photoContent}</View>;
+                    }
+                    return (
+                      <View style={{ flexDirection: 'row', marginTop: 10 }}>
+                        <View style={{ flex: 1, alignItems: 'center', gap: 4 }}>{photoContent}</View>
+                        <View style={{ width: 1, alignSelf: 'stretch', backgroundColor: theme.borderCard, marginHorizontal: 8 }} />
+                        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                          {info?.yesterdayItems?.length > 0 && (
+                            <TouchableOpacity
+                              onPress={() => repeatYesterday(slot)}
+                              activeOpacity={0.85}
+                              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                              style={{
+                                flexDirection: 'row', alignItems: 'center', gap: 5,
+                                minHeight: 30, paddingVertical: 6, paddingHorizontal: 12,
+                                borderRadius: 7, borderWidth: 1, overflow: 'hidden',
+                                backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder,
+                              }}>
+                              <ButtonShine radius={8} />
+                              <Ionicons name="repeat" size={13} color={theme.accentBlue} />
+                              <Text numberOfLines={1} style={{ fontSize: 13, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>
+                                Repeat Yesterday · {info.yesterdayTotal} kcal
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+                          <TouchableOpacity
+                            onPress={() => openRepeatModal(slot)}
+                            activeOpacity={0.85}
+                            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                            style={{
+                              flexDirection: 'row', alignItems: 'center', gap: 5,
+                              minHeight: 30, paddingVertical: 6, paddingHorizontal: 12,
+                              borderRadius: 7, borderWidth: 1, overflow: 'hidden',
+                              backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder,
+                            }}>
+                            <ButtonShine radius={8} />
+                            <Ionicons name="search" size={13} color={theme.accentBlue} />
+                            <Text style={{ fontSize: 13, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Find a Meal</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    );
                   }
 
                   return (
                     <View style={{ flexDirection: 'row', marginTop: 10 }}>
                       <View style={{ flex: 1, alignItems: 'center', gap: 4 }}>{photoContent}</View>
                       <View style={{ width: 1, alignSelf: 'stretch', backgroundColor: theme.borderCard, marginHorizontal: 8 }} />
-                      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                         <TouchableOpacity
                           onPress={() => clearMeal(slot)}
                           activeOpacity={0.85}
@@ -2134,6 +2170,28 @@ export default function LogScreen() {
                           <ButtonShine radius={8} />
                           <Ionicons name="trash-outline" size={13} color={theme.accentRed} />
                           <Text style={{ fontSize: 13, color: theme.accentRed, fontFamily: Type.uiSemibold }}>Clear all</Text>
+                        </TouchableOpacity>
+                        {/* Save as Meal -- Batch 1 functional placement, not yet the final tray layout
+                            (that's a separate visual pass once Find a Meal joins this column too). */}
+                        <TouchableOpacity
+                          onPress={() => {
+                            triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+                            setMealNameDraft('');
+                            setSaveMealItems(mealEntries);
+                            setSaveMealChecked(mealEntries.map(() => true));
+                            setSaveMealSlot(slot);
+                          }}
+                          activeOpacity={0.85}
+                          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                          style={{
+                            flexDirection: 'row', alignItems: 'center', gap: 5,
+                            minHeight: 30, paddingVertical: 6, paddingHorizontal: 12,
+                            borderRadius: 7, borderWidth: 1, overflow: 'hidden',
+                            backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder,
+                          }}>
+                          <ButtonShine radius={8} />
+                          <Ionicons name="bookmark-outline" size={13} color={theme.accentBlue} />
+                          <Text style={{ fontSize: 13, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Save as Meal</Text>
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -2158,6 +2216,84 @@ export default function LogScreen() {
             />
           )}
         </View>
+      </Modal>
+
+      {/* Save as Meal -- name + checklist modal, bundles saveMealSlot's CHECKED items into a
+          new permanent Saved Meal (Meal Catalog). Does not touch the day's logged entries.
+          Card sized like Find a Meal (88% width) rather than a narrow utility-dialog width --
+          this holds a real checklist, not a single short field. */}
+      <Modal
+        visible={!!saveMealSlot}
+        transparent
+        animationType="none"
+        onRequestClose={() => setSaveMealSlot(null)}
+        onShow={() => { saveMealAnim.setValue(0); Animated.timing(saveMealAnim, { toValue: 1, duration: 180, useNativeDriver: true }).start(); }}>
+        <Animated.View style={{ flex: 1, opacity: saveMealAnim }}>
+          <ToastRenderer />
+          <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' }} onPress={() => setSaveMealSlot(null)} activeOpacity={1} />
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+            pointerEvents="box-none">
+            <View style={{ width: '88%', maxHeight: '80%', backgroundColor: theme.bgSheet, borderRadius: 20, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 2.5, borderTopColor: theme.accentBlue, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.45, shadowRadius: 28, elevation: 24 }}>
+              <ModalHeader title="Save as Meal" onClose={() => setSaveMealSlot(null)} />
+              <View style={{ paddingHorizontal: 20, paddingBottom: 12 }}>
+                <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui }}>
+                  From <Text style={{ color: theme.textMuted, fontFamily: Type.uiSemibold }}>{saveMealSlot?.name}</Text>. Uncheck anything you don't want included.
+                </Text>
+              </View>
+              <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+                <TextInput
+                  value={mealNameDraft}
+                  onChangeText={setMealNameDraft}
+                  placeholder="e.g. Weekday Breakfast"
+                  placeholderTextColor={theme.textPlaceholder}
+                  style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: theme.textSecondary, fontFamily: Type.uiMedium, marginBottom: 14 }}
+                />
+                {saveMealItems.map((it, i) => {
+                  const on = saveMealChecked[i];
+                  return (
+                    <TouchableOpacity
+                      key={i}
+                      onPress={() => toggleSaveMealItem(i)}
+                      activeOpacity={0.7}
+                      style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 10 }}
+                    >
+                      <View style={{
+                        width: 20, height: 20, borderRadius: 5, overflow: 'hidden',
+                        borderWidth: on ? 0 : 1.5,
+                        alignItems: 'center', justifyContent: 'center',
+                        backgroundColor: on ? undefined : 'transparent',
+                        borderColor: theme.borderInput,
+                      }}>
+                        {on && (
+                          <>
+                            <LinearGradient colors={barFillGradient(theme.accentBlue)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={StyleSheet.absoluteFillObject} />
+                            <Ionicons name="checkmark" size={13} color={theme.bgPrimary} />
+                          </>
+                        )}
+                      </View>
+                      <Text numberOfLines={1} style={{ flex: 1, fontSize: 13, fontFamily: Type.uiMedium, color: on ? theme.textSecondary : theme.textDim }}>
+                        {tidyFoodName(it.name)}
+                      </Text>
+                      <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: on ? theme.textMuted : theme.textDim }}>
+                        {Math.round(it.cal || 0)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+                <PrimaryCTA
+                  label={saveMealSelected.length === 0 ? 'Select at least one item' : `Save ${saveMealSelected.length} ${saveMealSelected.length === 1 ? 'item' : 'items'} · ${saveMealSelectedKcal} kcal`}
+                  onPress={saveMeal}
+                  disabled={!mealNameDraft.trim() || savingMeal || saveMealSelected.length === 0}
+                  busy={savingMeal}
+                  compact
+                  wrapperStyle={{ marginTop: 14 }}
+                />
+              </ScrollView>
+            </View>
+          </KeyboardAvoidingView>
+        </Animated.View>
       </Modal>
 
       {/* AI Meal Estimator -- persistent entry point, always shown below the meals */}

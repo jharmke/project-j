@@ -80,7 +80,7 @@ export const METRIC_DRILLDOWNS: Record<string, MetricDrilldownContent> = {
   activity: {
     title: "Previous Day Activity",
     definition: "This is how many active calories you burned yesterday, the day that most shapes how recovered you are today.",
-    calculation: "Pulled from Apple Health and adjusted by your burn accuracy setting, then compared to your 7-day average daily burn.",
+    calculation: "Pulled from Apple Health and adjusted by your burn accuracy setting, then compared to your 7-day average daily burn. The word under the difference says how far from that average yesterday landed: Balanced when you were close to it, Lighter or Harder when you were further off in either direction.",
     affects: "Recovery is two-sided here. A much bigger day than usual adds fatigue you are still clearing. A much lighter day can mean less of the easy movement that actually helps you recover.",
     improve: (isGood) => isGood
       ? [

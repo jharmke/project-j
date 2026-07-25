@@ -687,6 +687,31 @@ export function useHealthKit() {
         ? Math.round(yestCal.sumQuantity.quantity)
         : null;
 
+      // Apple Health keeps revising a day's total for a while after that day ends, as watch and
+      // phone data reconcile. The Recovery card asks Health live, while the Previous Day Activity
+      // trend reads the figure written into pj_<date> while that day was still running, so the two
+      // drift apart (614 live against 605 stored). Merge the fresher number back so both views
+      // converge on whatever Health most recently reported.
+      // Stored RAW on purpose: the burn-accuracy percentage is applied when this field is READ, so
+      // writing an already-adjusted figure would get it adjusted a second time and quietly sink.
+      // Keyed off yestStart rather than literally "yesterday", because the Sleep screen backfills
+      // past days through this same function with an anchor date. Read-then-merge, this one field.
+      // Only ever updates a day that already has a record; it never conjures one into existence.
+      if (yesterdayActiveCal !== null && yesterdayActiveCal > 0) {
+        try {
+          const yKey = `pj_${yestStart.getFullYear()}-${String(yestStart.getMonth() + 1).padStart(2, '0')}-${String(yestStart.getDate()).padStart(2, '0')}`;
+          const storedRaw = await AsyncStorage.getItem(yKey);
+          if (storedRaw) {
+            const storedDay = JSON.parse(storedRaw);
+            if (storedDay && storedDay.activeCalories !== yesterdayActiveCal) {
+              await storageSet(yKey, JSON.stringify({ ...storedDay, activeCalories: yesterdayActiveCal }));
+            }
+          }
+        } catch {
+          // A failed refresh simply leaves the older stored number in place. Never fatal.
+        }
+      }
+
       // N-day average daily active calories (past N complete days)
       const baseStart = new Date(startOfDay);
       baseStart.setDate(baseStart.getDate() - baselineDays);

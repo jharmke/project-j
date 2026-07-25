@@ -20,6 +20,13 @@ export type RecoveryComponent = {
   score: number;
   delta: string | null;
   isPositive: boolean | null;
+  /**
+   * A short word under the delta explaining what the delta MEANS. Only Prev. Activity sets this,
+   * because only Prev. Activity is two-sided: being under your usual and being over it both pull the
+   * bar the same way, so a bare signed number like "-93 kcal" reads as bad while the bar sits green.
+   * Every other signal has one good direction, where the sign already says everything.
+   */
+  note?: string | null;
 };
 
 export type RecoveryResult = {
@@ -144,6 +151,15 @@ export function calcRecoveryScore(input: RecoveryInput): RecoveryResult {
     score: sc_act!,
     delta: `${yesterdayActiveCal! >= activCalBaseline! ? '+' : ''}${Math.round(yesterdayActiveCal! - activCalBaseline!)} kcal`,
     isPositive: Math.abs((yesterdayActiveCal! - activCalBaseline!) / Math.max(1, activCalBaseline!)) <= 0.3,
+    // Deliberately keyed off sc_act, the SAME number that picks the row's colour, so the word and
+    // the colour can never contradict each other. (actScore is 100 minus the percent you are off
+    // baseline, so 75+ is within 25%, 55+ is within 45%.) Wording stays identical in Mindful: these
+    // describe the day rather than grade it, so there is no judgement for Mindful to strip out.
+    note: sc_act! >= 75
+      ? 'Balanced'
+      : yesterdayActiveCal! < activCalBaseline!
+        ? (sc_act! >= 55 ? 'Lighter' : 'Much lighter')
+        : (sc_act! >= 55 ? 'Harder' : 'Much harder'),
   } : null;
 
   const resp: RecoveryComponent | null = hasResp ? {

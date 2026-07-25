@@ -483,6 +483,13 @@ KEY DESTINATION SCREENS
 - SLEEP & RECOVERY HUB: two tabs -- Sleep (score, trend, stages, hypnogram, metrics, sleep coach)
   and Recovery (recovery score, signals HRV/RHR/Resp/SpO2, trend, recovery coach). Tap any metric
   row for a drill-down modal.
+  Prev. Activity is the one TWO-SIDED signal: yesterday's active calories score highest when they
+  land CLOSE to the 7-day average, and fall off the further away they are in EITHER direction, so a
+  much lighter day and a much harder day both cost the same points. Its row therefore carries a word
+  under the kcal difference saying how far off that average the day landed: "Balanced" when close,
+  "Lighter"/"Harder" further out, "Much lighter"/"Much harder" further out still. That word always
+  matches the row's colour. If a user asks why the bar looks good despite a negative number, this is
+  why: the minus sign means below their usual, not below par.
 - SLEEP + RECOVERY HISTORY (on-demand data): when the user asks about a specific past night or a sleep /
   recovery trend ("how did I sleep Tuesday", "how much deep sleep last night", "what was my HRV on Monday",
   "how has my sleep been this week", "average recovery lately"), that message's snapshot includes a "SLEEP +

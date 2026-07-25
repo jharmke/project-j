@@ -1270,6 +1270,11 @@ export default function SleepHub() {
                     <View style={{ width: 78, alignItems: 'flex-end' }}>
                       <GradientNumber value={comp.value} color={theme.accentBlueRaw} style={{ fontSize: 14, fontFamily: Type.uiBold }} />
                       {comp.delta ? <GradientNumber value={comp.delta} color={theme.accentBlueRaw} style={{ fontSize: 10, fontFamily: Type.uiMedium, marginTop: 1 }} /> : null}
+                      {/* Same wording as the standard view; Mindful only differs in taking the row's
+                          neutral colour instead of a green/amber/red status colour. */}
+                      {comp.note ? (
+                        <Text style={{ fontSize: 9, color: theme.accentBlueRaw, fontFamily: Type.uiMedium, marginTop: 1 }} numberOfLines={1}>{comp.note}</Text>
+                      ) : null}
                     </View>
                     <Ionicons name="chevron-forward" size={14} color={theme.textDim} style={{ marginLeft: 6 }} />
                   </TouchableOpacity>
@@ -1324,6 +1329,9 @@ export default function SleepHub() {
                     {comp.delta && (
                       <GradientNumber value={comp.delta} color={rc} style={{ fontSize: 10, fontFamily: Type.uiMedium, marginTop: 1 }} />
                     )}
+                    {comp.note ? (
+                      <Text style={{ fontSize: 9, color: rc, fontFamily: Type.uiMedium, marginTop: 1 }} numberOfLines={1}>{comp.note}</Text>
+                    ) : null}
                   </View>
                   <Ionicons name="chevron-forward" size={14} color={theme.textDim} style={{ marginLeft: 6 }} />
                 </TouchableOpacity>

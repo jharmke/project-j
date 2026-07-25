@@ -24,6 +24,7 @@ import { barFillGradient } from '../utils/barGradient';
 import { Type, numLine } from '../typography';
 import ModalHeader from './ModalHeader';
 import PrimaryCTA from './PrimaryCTA';
+import ButtonShine from './ButtonShine';
 
 // Macro dot colors, matched to the Log-tab mealtime cards (Protein / Carbs / Fat).
 const MACRO = { protein: '#0d9268', carbs: '#c47d1a', fat: '#a83232' };
@@ -342,6 +343,7 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
                     backgroundColor: active ? theme.accentBlueBg : theme.bgCard,
                     borderColor: active ? theme.accentBlueBorder : theme.borderCard,
                   }}>
+                  {active && <ButtonShine radius={8} />}
                   <Text style={{ fontSize: 13, fontFamily: active ? Type.uiBold : Type.uiMedium, color: active ? theme.accentBlue : theme.textSecondary }}>
                     {tab === 'recent' ? 'Recent' : 'Meal Catalog'}
                   </Text>
@@ -377,6 +379,7 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
                       borderColor: active ? theme.accentBlueBorder : theme.borderCard,
                     }}
                   >
+                    {active && <ButtonShine radius={8} />}
                     <Text style={{
                       fontSize: 13,
                       fontFamily: active ? Type.uiBold : Type.uiMedium,
@@ -594,16 +597,12 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
                           </Text>
                         )}
                       </View>
+                      {/* Total sits alone in the corner now -- no icon crowding it -- so it reads
+                          unambiguously as the sum of what's below, not just another line item. */}
                       <View style={{ alignItems: 'flex-end' }}>
                         <Text style={{ color: theme.textSecondary, fontSize: 20, fontFamily: Type.num, lineHeight: numLine(20) }}>{selKcal}</Text>
                         <Text style={{ color: theme.textDim, fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 1.5 }}>KCAL</Text>
                       </View>
-                      <TouchableOpacity
-                        onPress={() => removeSavedMeal(meal)}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        style={{ padding: 2 }}>
-                        <Ionicons name="trash-outline" size={16} color={theme.textDim} />
-                      </TouchableOpacity>
                     </TouchableOpacity>
 
                     {/* Expanded checklist */}
@@ -645,14 +644,25 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
                           );
                         })}
 
-                        <PrimaryCTA
-                          label={sel.length === 0 ? 'Select at least one item' : `Add ${sel.length} ${sel.length === 1 ? 'item' : 'items'} · ${selKcal} kcal`}
-                          onPress={() => addSavedMealSelection(meal)}
-                          disabled={sel.length === 0 || catalogAdding}
-                          busy={catalogAdding}
-                          compact
-                          wrapperStyle={{ marginTop: 10 }}
-                        />
+                        {/* Trash moved down here from the header -- bottom-right, beside Add,
+                            instead of crowding the total up top. */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 }}>
+                          <View style={{ flex: 1 }}>
+                            <PrimaryCTA
+                              label={sel.length === 0 ? 'Select at least one item' : `Add ${sel.length} ${sel.length === 1 ? 'item' : 'items'} · ${selKcal} kcal`}
+                              onPress={() => addSavedMealSelection(meal)}
+                              disabled={sel.length === 0 || catalogAdding}
+                              busy={catalogAdding}
+                              compact
+                            />
+                          </View>
+                          <TouchableOpacity
+                            onPress={() => removeSavedMeal(meal)}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            style={{ padding: 6 }}>
+                            <Ionicons name="trash-outline" size={18} color={theme.accentRed} />
+                          </TouchableOpacity>
+                        </View>
                       </View>
                     )}
                   </View>

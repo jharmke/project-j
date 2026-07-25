@@ -2129,7 +2129,7 @@ export default function LogScreen() {
                               <ButtonShine radius={8} />
                               <Ionicons name="repeat" size={13} color={theme.accentBlue} />
                               <Text numberOfLines={1} style={{ fontSize: 13, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>
-                                Repeat Yesterday · {info.yesterdayTotal} kcal
+                                Repeat Yesterday
                               </Text>
                             </TouchableOpacity>
                           )}
@@ -2171,8 +2171,23 @@ export default function LogScreen() {
                           <Ionicons name="trash-outline" size={13} color={theme.accentRed} />
                           <Text style={{ fontSize: 13, color: theme.accentRed, fontFamily: Type.uiSemibold }}>Clear all</Text>
                         </TouchableOpacity>
-                        {/* Save as Meal -- Batch 1 functional placement, not yet the final tray layout
-                            (that's a separate visual pass once Find a Meal joins this column too). */}
+                        {/* Find a Meal -- lets a slot that already has food logged pull in MORE from
+                            history or the Meal Catalog, on top of what's there. Previously the
+                            picker only ever showed on an empty slot. */}
+                        <TouchableOpacity
+                          onPress={() => openRepeatModal(slot)}
+                          activeOpacity={0.85}
+                          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                          style={{
+                            flexDirection: 'row', alignItems: 'center', gap: 5,
+                            minHeight: 30, paddingVertical: 6, paddingHorizontal: 12,
+                            borderRadius: 7, borderWidth: 1, overflow: 'hidden',
+                            backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder,
+                          }}>
+                          <ButtonShine radius={8} />
+                          <Ionicons name="search" size={13} color={theme.accentBlue} />
+                          <Text style={{ fontSize: 13, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Find a Meal</Text>
+                        </TouchableOpacity>
                         <TouchableOpacity
                           onPress={() => {
                             triggerHaptic(Haptics.ImpactFeedbackStyle.Light);

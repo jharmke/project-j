@@ -30,6 +30,14 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-25 **Prev Activity: delta explained + number kept fresh (device-confirmed).** The one two-sided
+  recovery signal now carries a short word under the kcal difference (Balanced, then Lighter/Harder, then
+  Much lighter/Much harder) so a "-93 kcal" no longer reads as bad while the bar sits green. Keyed off the
+  same component score that picks the row's colour, so word and colour can never contradict. Identical in
+  Mindful (descriptive, not a grade; Mindful only takes the neutral row colour). Also fixed the 614 vs 605
+  mismatch: the live HealthKit figure is merged back into that day's pj_<date> record (raw, read-then-merge,
+  existing records only) so the Recovery card and the trend graph converge. Drilldown copy + Otto's KB
+  updated and redeployed. Weekly/Monthly/Day Score stay frozen by design; a few kcal can't move a bucket.
 - 2026-07-25 **Food Library calorie truth: one shared label resolver (device-confirmed).** Every Library
   tab now shows a food's DEFAULT serving calories, a property of the food rather than of how it was
   logged or when it was starred. Killed a self-perpetuating loop where a Library card's number was fed
@@ -992,24 +1000,6 @@ are separate pre-submission checklists, NOT part of this menu.
   the day's total active calories on the Home card, the Today's Training card, or somewhere sensible.
   Placement not decided -- pick when picked up. Data already exists (HealthKit activeCalories, stored on
   pj_<date>); the Food Log header already renders an ACTIVE figure, so this is surfacing, not computing.
-- [QUICK WIN, decided 2026-07-25, ready to build] **Recovery hero "Prev Activity" delta text reframe.**
-  Justin was confused why the Prev Activity bar goes right/green for both a -93kcal and a +64kcal day --
-  it's a two-sided metric (closeness to baseline is the goal, not direction), so the bar logic itself is
-  correct and stays as-is (changing it would break the "right=helping" rule the other 4 signals rely on).
-  Fix is copy-only: reframe the delta TEXT next to that one row so it explains itself instead of reading
-  like a directional +/- (e.g. today it just says "-93 kcal", which primes the reader to expect the bar to
-  follow that sign). Direction chosen: keep the signed number but add why-it's-fine context inline, e.g.
-  "93 below usual, still balanced." Exact wording not finalized -- land good, specific, premium copy (see
-  Premium Copy Voice standard) when picked up, not the placeholder above verbatim.
-- [decided 2026-07-25, ready to build] **Prev Activity number sync (614 vs 605 kcal mismatch).** Today's
-  Recovery card queries Apple Health live every time the screen opens (showed 614 for yesterday); the
-  Previous Day Activity trend graph reads that same day's number from the saved pj_<date> record, written
-  earlier and never refreshed (showed 605). Apple Health quietly revises a day's total for a bit after it
-  ends as watch/phone data reconciles, so the two views can drift apart. Fix: when the live fetch runs,
-  merge-write that freshest number back into that day's stored record (read-then-merge, one field only) so
-  both views converge on whichever number HealthKit most recently reported. Minor known ripple: that stored
-  field also feeds Weekly/Monthly summaries and Day Score, which are write-once snapshots -- a few-kcal
-  correction is too small to flip any bucket, so no forced re-summary planned alongside this.
 - [surfaced 2026-07-24, needs discussion, not urgent] **Sync Claude memory/instructions between Justin's
   two accounts.** He switches between 2 Claude accounts when usage limits hit and wants their memory/
   instructions merged so they're identical. Before proposing anything: need to know whether both accounts

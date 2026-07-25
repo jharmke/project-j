@@ -30,6 +30,66 @@ export interface WhatsNewRelease {
 // Newest patch FIRST. WHATS_NEW (below) tracks index 0.
 export const WHATS_NEW_RELEASES: WhatsNewRelease[] = [
   {
+    releaseId: '2026-07-24',
+    version: 'Patch 5',
+    date: 'July 24, 2026',
+    highlights: [
+      {
+        icon: 'book',
+        title: 'A second Bible translation',
+        body: "The World English Bible is here as a second translation option, and it's now the default (KJV is still there if you prefer it). The reader, Today's Message, Gratitude, Favorites, your saved verses, and even Halo's scripture all follow whichever one you pick.",
+      },
+      {
+        icon: 'scan',
+        title: 'Scan a nutrition label',
+        body: "Point your camera at a nutrition facts panel and the app reads it for you: calories, macros, vitamins, minerals, even values only printed as a percent. A review screen shows exactly what it found before anything saves, with anything unclear flagged so you can double check it.",
+      },
+      {
+        icon: 'resize',
+        title: 'Serving sizes, your way',
+        body: "Every place you set a food's amount (Create Food, Edit Food, logging, the Recipe Builder) now offers the right units for what you're measuring: ounces and pounds for weight, cups and milliliters for liquids. Foods remember which unit they were built in. You can also link a barcode straight to a food from its detail screen.",
+      },
+      {
+        icon: 'bookmark',
+        title: 'Save a meal, find a meal',
+        body: "Save any combination of foods you've logged together as a named, reusable meal. Find a Meal (previously Repeat a Meal) now pulls from your recent history or your own saved meals, and works even after you've already started logging that mealtime.",
+      },
+      {
+        icon: 'person-circle',
+        title: 'Custom profile pictures',
+        body: "Set a real photo for your profile, with a quick crop step built in, replacing your initials across the app.",
+      },
+      {
+        icon: 'camera',
+        title: 'Photos for your meals',
+        body: "Attach a photo to any mealtime on the Log tab, separate from your individual foods, and see it on your Day Detail summary too. Recipes get the same option.",
+      },
+      {
+        icon: 'calendar',
+        title: 'Reading plans, refined',
+        body: "Both reading plans and devotionals now track true completion, so a missed day no longer throws off your pace, and both get a Restart option once finished. Reading plans also have a full schedule page you can browse week by week.",
+      },
+      {
+        icon: 'water',
+        title: 'Water pace at a glance',
+        body: "Your water card now shows a subtle marker for where you should be by this point in the day, without needing to open the detail view.",
+      },
+      {
+        icon: 'construct',
+        title: 'Fixes & Improvements',
+        bullets: [
+          "Food, water, and weight reminders no longer fire after you've already logged for the day",
+          'Fixed a navigation haptic delay; taps now respond instantly',
+          "Otto's floating button now glides between positions instead of jumping",
+          'Fixed an account-restore edge case that could leave an old screen showing after switching accounts',
+          'Sign-in now handles a few more account-linking edge cases gracefully',
+          'Recovery comparison charts (Effort vs Results) redesigned for clarity',
+          "Progress bars across HR zones and workout stats now match the app's polished look everywhere",
+        ],
+      },
+    ],
+  },
+  {
     releaseId: '2026-07-18',
     version: 'Patch 4',
     date: 'July 18, 2026',

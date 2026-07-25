@@ -30,6 +30,15 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-24 **Save as Meal + Find a Meal / Meal Catalog (device-confirmed).** New "Save as Meal" action
+  bundles an already-logged slot's checked items into a permanent, named meal (pj_saved_meals) -- unlike
+  a Recipe, items stay SEPARATE editable entries when re-added, never blended into one line. "Repeat a
+  Meal" renamed "Find a Meal" and gained a Meal Catalog tab alongside Recent, sharing the exact same
+  expand-and-checklist behavior. Real gap fixed along the way: the picker used to be gated purely on
+  slot history, hiding a saved meal from any slot (even brand new ones) that had never been repeated
+  before -- now gated on history OR any saved meal. Find a Meal also now reachable from a slot that
+  already has food logged (previously empty-slot only), so you can add more on top of what's there.
+  Otto's KB + the in-app tooltip updated/deployed.
 - 2026-07-24 **Recipe photos, same system food already has (device-confirmed).** Direct port of food's
   photo feature: recipe-builder.tsx (creator) gets add/replace/remove with a pending-photo flow for
   brand-new recipes (uploads once the recipe gets its id on save), recipe-log.tsx (the detail/log screen)
@@ -1204,16 +1213,6 @@ are separate pre-submission checklists, NOT part of this menu.
   tiered block catalog: SPEC_custom_reports.md. REMAINING: grow the block library toward ~55, custom date
   range UI, export (PDF/share), templates, per-chapter faith-tier/wearable gating in the picker, tooltip +
   Otto KB entries.
-- [FOLLOW-ON TO DISCUSS, from Repeat a Meal which SHIPPED 2026-07-10] "SAVE AS A MEAL" = save a group of
-  distinct foods as a named, reusable one-tapper (Justin curious). Differs from a Recipe: a recipe BLENDS
-  ingredients into ONE food line (single entry, loses the items); a meal keeps the foods as SEPARATE
-  entries logged together. Repeat a Meal already re-logs separate entries from history; this would persist
-  a named bundle. Needs its own design pass (look/behavior, where it's saved + surfaced, how it lives
-  alongside recipes without confusing the two). Full spec context: SPEC_repeat_meal.md bottom section.
-  ADDED 2026-07-24, surfaced while building the meal-slot photo feature: the concrete entry point Justin
-  wants is a quick-add "Create Meal" action directly on an ALREADY-LOGGED mealtime on the Log tab --
-  pre-filled with exactly what's currently sitting in that slot (e.g. finish logging Lunch, tap Create
-  Meal, name it, done), not a separate builder screen you populate from scratch.
 - [FIX IMPLEMENTED 2026-07-23, PENDING DEVICE REINSTALL VERIFY] Achievement unlockedAt reinstall hardening.
   Badges stamp unlockedAt = new Date() at award time; on a reinstall before the cloud restore lands, a check
   could first-unlock against an empty store and re-stamp the whole earned set to "today" (this was the

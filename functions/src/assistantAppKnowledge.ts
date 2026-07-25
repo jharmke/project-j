@@ -277,29 +277,37 @@ LOG TAB (FOOD DIARY)
   next to the Recipe Name field (tap the empty dashed box to add one, tap an existing photo to view/replace/
   remove it full-screen). On the recipe's log screen the same thumbnail appears next to the recipe's totals
   (calories/protein/carbs/fat). Deleting a recipe deletes its photo too.
-- REPEAT A MEAL: fast way to re-log a meal you eat often (e.g. the same breakfast daily). When a meal
-  slot is EMPTY and there's matching history in the last 14 days, that slot reads "Expand to repeat a
-  meal" under its name. The controls are NOT on the collapsed row: the user must EXPAND the slot (tap the
-  slot's name or its chevron) and the controls are inside, above where the food list would be. Always tell
-  users to expand the meal slot FIRST. THERE ARE TWO SEPARATE CONTROLS, do not conflate them:
-  (1) the "Repeat Yesterday · <kcal>" pill = a ONE-TAP button that instantly re-logs YESTERDAY's same
-      meal. It does NOT open a picker or let you choose a day; it just adds yesterday's meal.
-  (2) the "Pick a Day" button (a small calendar icon + the words "Pick a Day") next to it = THIS is what
-      opens the picker to choose ANY other past day (last 14 days).
-  So to copy a day that is NOT yesterday (e.g. "last Tuesday", "last week"), tell the user to tap "PICK A
-  DAY", never "tap the Repeat pill." The ONLY exception: if yesterday's slot is empty there's no one-tap
-  target, so the single pill instead reads "Repeat a Previous Meal" and tapping IT opens the picker.
-  In the picker you choose any day and check/uncheck individual items before adding (the running total +
-  macros update live as you toggle). It CLONES the stored entries exactly (servings, calories, macros,
-  extended nutrition, even the food photo carry over; nothing is re-searched or re-estimated), and the
-  foods land as SEPARATE editable entries. You pull FROM any meal via the chips at the top, but items
-  always add to the slot you tapped. Different from a Recipe (a recipe blends ingredients into one food
-  line; Repeat re-logs separate entries from a past day). There is no saved/named object: it just reads
-  your history.
+- FIND A MEAL / SAVE AS MEAL (formerly "Repeat a Meal"): fast way to re-log foods you eat often. Pulls
+  from TWO sources -- your recent history, and a permanent named list of meals you've saved yourself
+  (the "Meal Catalog"). Controls live in the EXPANDED meal slot tray (tap the slot's name or chevron
+  first), never on the collapsed row.
+  EMPTY SLOT: if there's matching history in the last 14 days OR the user has any saved meal at all
+  (regardless of which slot it was saved from), the slot reads "Expand to repeat a meal" and expanding
+  it shows up to two pills: "Repeat Yesterday" (ONE-TAP, instantly re-logs yesterday's same meal, no
+  picker) when yesterday specifically has that meal logged, and "Find a Meal" (opens the picker) always
+  when either source has something to offer. A slot with genuinely nothing to offer (no history, no
+  saved meals anywhere) shows neither pill.
+  NON-EMPTY SLOT: "Find a Meal" is ALSO available once the slot already has food logged -- it's one of
+  three stacked buttons (Find a Meal, Save as Meal, Clear all) next to the meal photo. This lets a user
+  add MORE food on top of what's already there, not just when starting from empty.
+  THE PICKER has two tabs. RECENT = the original behavior: pick any of the last 14 days, check/uncheck
+  individual items, add. It CLONES the stored entries exactly (servings, calories, macros, extended
+  nutrition, even the food photo carry over; nothing is re-searched or re-estimated). MEAL CATALOG = the
+  user's own permanent named meals. To create one: expand an already-logged slot and tap "Save as Meal",
+  which shows a checklist of everything currently in that slot (uncheck anything to leave it out), name
+  it, save -- it now lives in the Catalog forever, reachable from Find a Meal on ANY slot, not just the
+  one it was saved from. Tapping a saved meal in the Catalog expands it the same way Recent's days do
+  (checklist, then an Add button reflecting only what's checked); it never adds everything blindly.
+  Delete a saved meal via the trash icon next to its Add button.
+  In both tabs, items land as SEPARATE editable entries, always in the slot Find a Meal was opened from
+  (Recent's chips let you pull FROM a different meal's history, but it still adds to the slot you
+  started from). Different from a Recipe (a recipe blends ingredients into ONE food line; this re-logs
+  separate entries). Saved meals ARE a real named/saved object now, unlike plain history.
 - CLEAR A WHOLE MEAL: to remove everything logged to one meal at once (instead of deleting item by item),
   expand that meal on the Log tab and tap the small "Clear all" link at the bottom of its item list. It
   asks to confirm, then removes only that meal's entries for the day (other meals untouched). Handy after
-  repeating the wrong day. It can't be undone.
+  repeating the wrong day. It can't be undone. It never touches that slot's photo or any saved meal in
+  the Meal Catalog -- those are separate actions on separate data.
 - MEAL-SLOT PHOTO: each meal slot (Breakfast, Lunch, etc.) can hold ONE photo per day, showing the whole
   meal, separate from any individual food's own photo. Expand the meal slot to see it: a small square
   photo control sits in the tray. Empty state is a dashed camera box, tap it to take a photo or choose

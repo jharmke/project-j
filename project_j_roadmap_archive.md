@@ -11,6 +11,87 @@
 
 ---
 
+## 🍽️ SAVE AS A MEAL + FIND A MEAL / MEAL CATALOG (device-confirmed, SHIPPED 2026-07-24, commits 5d93595, 1cd1817)
+
+**The idea, and why it stayed separate from Recipes:** Justin got curious whether Recipes and this new
+"Meal" concept were basically the same thing and floated merging them. Talked through it: a Recipe BLENDS
+ingredients into one synthesized food line (portioned via servings/weight math) -- a Meal keeps every food
+as its own SEPARATE entry, no blending, no portioning. That's not cosmetic; it's the whole reason Repeat a
+Meal (shipped 2026-07-10) exists as something distinct from Recipes already. Recipes carry real machinery
+(servings, weight, an ingredient editor) a Meal doesn't need at all -- bolting Meal onto the Recipe screen
+would mean exposing all of that for something that has none of it. Kept them separate; Meal rides on
+Repeat a Meal's existing plumbing (utils/repeatMeal.ts's exact-clone logic, RepeatMealModal's checklist UI)
+instead of duplicating a builder.
+
+**Where it lives -- solved the "no room in the tab bar" problem by not needing a tab at all.** Food
+Library's inner tab bar (Recent/My Foods/Favorites/Recipes/Set Foods) was already full, and Justin was
+stuck on where Meals would fit. Realized Repeat Yesterday + Pick a Day (renamed Find a Meal) already WAS
+most of "the meal system" -- a saved-meal source is just the missing third leg, and it belongs in the same
+picker modal as a Meal Catalog tab, not a new Food Library tab. "Save as Meal" and "Find a Meal" both live
+entirely on the Log tab's meal slot trays instead.
+
+**Storage:** New utils/savedMeals.ts (pj_saved_meals) -- name, deep-cloned items, totalKcal, createdAt.
+Adding a saved meal (or a partial checkbox-selection of one) reuses utils/repeatMeal.ts's logRepeatedItems
+directly rather than a parallel merge function, so both sources share one tested day-merge path.
+
+**Real gap found and fixed along the way:** the empty-slot picker was gated purely on
+`repeatSummary[slot.id]?.hasHistory` -- correct back when the only thing behind it was "browse history,"
+wrong once Meal Catalog joined it. A brand-new slot with zero history but a saved meal sitting in the
+Catalog showed NOTHING -- no way to reach it. Fixed to `hasHistory || hasSavedMeals` (hasSavedMeals is
+global, not per-slot -- any saved meal from any slot unlocks the picker everywhere). Justin's own test
+(creating "New Meal" and hitting exactly this dead end) is what surfaced it.
+
+**Modal rebuild (components/RepeatMealModal.tsx, kept its original filename/component name):** renamed
+"Repeat a Meal" -> "Find a Meal" (the old name only described history, not the catalog). Gained two tabs,
+Recent (unchanged 14-day history) and Meal Catalog (the permanent named list) -- deliberately NOT merged
+into one flat list since a history row has no name and a saved meal does; mixing them read as inconsistent
+in an early pass. Catalog rows were first built as a flat "tap once, adds everything, truncated preview"
+row; Justin didn't like not being able to review/deselect before adding, so rebuilt to share Recent's exact
+expand-then-checklist-then-Add pattern instead of inventing a second UI. Card switched from `maxHeight` to
+a fixed `height: '78%'` after switching tabs visibly resized the whole modal (Justin: "I HATE when modals
+change size"). Source-slot chip row now auto-scrolls to reveal the active chip on open -- a launch slot
+late in a long slot list opened invisible otherwise. Trash icon on a Catalog row moved from crowding the
+header's kcal total (competing with it, muddying "is this the total or another line item") down next to
+the Add button, and recolored red to match the app's destructive-action convention. Active-state
+ButtonShine added to the Recent/Catalog tab switcher and the source-slot chips, matching how other
+selected-pill surfaces already read in the app.
+
+**Save as Meal (components in app/(tabs)/log.tsx):** rebuilt from a bare name+Save modal (captured
+everything in the slot with no way to trim it) into a name + full checklist, same row style as Recent's
+checklist, only the CHECKED items get saved. First version used `autoFocus` on the name field, which
+popped the keyboard immediately and -- combined with the modal's percentage-height + centered
+KeyboardAvoidingView -- shrank available space enough that a 5-item list (Dinner) rendered with the
+checklist and Save button pushed entirely off-screen, leaving a blank white card. A 3-item list (Supplements)
+happened to still fit, which is why it looked "sometimes works." Removed autoFocus (no other modal in the
+file uses it); fixed both the blank-card bug and a "first tap just dismisses the keyboard" complaint in one
+change, since the checklist now renders in its normal position before any keyboard ever opens.
+
+**Non-empty slot access (the other Repeat a Meal gap):** Find a Meal used to be empty-slot-only, so there
+was no way to add MORE on top of an already-logged slot -- log a shake into Breakfast, then want
+yesterday's eggs too, and you were stuck. Find a Meal now sits as a third stacked button (Find a Meal /
+Save as Meal / Clear all) next to the photo column on any logged slot, reusing the exact same
+openRepeatModal() the empty-state pill already used -- appends on top, never replaces (logRepeatedItems'
+existing read-then-merge guarantee holds regardless of which entry point triggered it).
+
+**Small fixes found via screenshots:** "Repeat Yesterday · N kcal" truncated once its column shrank to
+half the card width in the new stacked-button layout (the old REPEAT_MAX_W cap was calibrated for a
+full-width horizontal pill, not a stacked half-width one) -- dropped the inline kcal, just "Repeat
+Yesterday" now, removing REPEAT_MAX_W entirely since nothing needs a width cap anymore. Empty slots with
+something to offer now get the same 2-column (photo left / stacked actions right) layout non-empty slots
+already had, instead of a separate horizontal pill row -- also incidentally the fix for the truncation,
+since a vertical stack doesn't need to share row width with a sibling pill. A genuinely empty slot (no
+history, no saved meals anywhere) still gets the old standalone centered photo control, no divider --
+Justin's own call, confirmed with concrete examples of how common that state actually is (any new user's
+first days, a rarely-used slot, anyone who hasn't tried the feature yet).
+
+**Otto's KB + the in-app tooltip (tooltip key repeat_a_meal) both rewritten** to cover Find a Meal, Save as
+Meal, the Meal Catalog tab, and non-empty-slot access; Otto redeployed. NOT updated: the interactive
+tutorial's brief "quick tips" summary blurb still just says "a Repeat pill" -- not wrong, just incomplete,
+left alone deliberately rather than risk breaking tutorial step logic under time pressure. Logged as a
+loose end, not forgotten.
+
+---
+
 ## 📸 MEAL-SLOT PHOTO -- LOG TAB + DAY DETAIL + RECIPES (device-confirmed, SHIPPED 2026-07-24, commits 7e491bc, 0a98841, 3d5e830)
 
 **Day Detail follow-on (commit 0a98841):** Built as its own batch right after the Log tab piece shipped,

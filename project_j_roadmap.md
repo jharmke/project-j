@@ -30,6 +30,17 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-25 **BURNED stat on Home + Log (device-confirmed).** Total burned so far today = burn-accuracy
+  adjusted active + BMR prorated by time of day (full BMR for a past day). BMR is deliberately NOT scaled
+  by burn accuracy -- that setting corrects what the watch MEASURES, and BMR is a formula. The figure was
+  already computed inside LIVE NET; this just shows it. Strip is now 4 even columns split by hairlines
+  (the old layout hard-coded alignment per index and only worked for exactly 3). Hidden in Mindful, as
+  the whole strip already was. Home's tutorial anchors are positional and were re-aligned so the net-
+  calories spotlight didn't silently land on the new stat. Named BURNED not TOTAL: the Log card is titled
+  "Today's Total", meaning calories EATEN. Also writes today's BMR to pj_<date> -- nothing reads it, it
+  exists so a burn trend is possible later without silently rewriting history when weight changes.
+  Graphs/report-builder deliberately NOT built (Justin's call; correct, since without stored BMR the
+  chart would lie).
 - 2026-07-25 **Bible reflection pass + the app-wide keyboard fixes (device-confirmed).** Reflection modal
   rebuilt on ModalHeader (X, handle pill, amber title, tap-outside-to-close), renamed "Reflection", and
   "Mark as Read" removed: it wrote an empty journal entry and let the banner claim "Reflected" when
@@ -1026,10 +1037,6 @@ are separate pre-submission checklists, NOT part of this menu.
   SPEC_notifications.md is the source of truth; 14 types, category-based settings. Mindful pass matters
   here. Note there's an existing notifications BUG item further down this list -- check whether it's
   verified before starting, so this pass isn't built on a broken base.
-- [QUICK WIN, surfaced 2026-07-25, from Justin's morning notes] **Surface total active calories.** Show
-  the day's total active calories on the Home card, the Today's Training card, or somewhere sensible.
-  Placement not decided -- pick when picked up. Data already exists (HealthKit activeCalories, stored on
-  pj_<date>); the Food Log header already renders an ACTIVE figure, so this is surfacing, not computing.
 - [surfaced 2026-07-24, needs discussion, not urgent] **Sync Claude memory/instructions between Justin's
   two accounts.** He switches between 2 Claude accounts when usage limits hit and wants their memory/
   instructions merged so they're identical. Before proposing anything: need to know whether both accounts

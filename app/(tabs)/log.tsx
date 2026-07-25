@@ -585,6 +585,11 @@ export default function LogScreen() {
   const calStats = [
     { label: remainingVal >= 0 ? 'REMAINING' : 'OVER', value: `${Math.abs(Math.round(remainingVal))}`, color: remainingVal >= 0 ? theme.textSecondary : theme.statusBad },
     { label: 'ACTIVE', value: `${activeAdj}`, color: theme.textSecondary },
+    // Everything burned so far: measured active PLUS the BMR spent simply being alive up to this
+    // minute (full BMR once the day is done). Same figure LIVE NET already subtracts, shown instead of
+    // hidden inside the sum. Labelled BURNED, not TOTAL: this card is titled "Today's Total", which
+    // means calories EATEN, so a slot called TOTAL right under it would read as the same number.
+    { label: 'BURNED', value: profileBmr > 0 ? `${Math.round(activeAdj + (isToday ? runningBmrLog : profileBmr))}` : '—', color: theme.textSecondary },
     // Net needs BMR; with no resolvable weight (BMR 0) it would be overstated by the
     // whole missing BMR, so show a dash + hint instead of a wrong number (mirrors home).
     { label: 'LIVE NET', value: profileBmr > 0 ? `${logNet > 0 ? '+' : ''}${Math.round(logNet)}` : '—', color: theme.textSecondary },
@@ -1579,9 +1584,11 @@ export default function LogScreen() {
         {styleMode !== 'mindful' && (
           <>
             <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCardTop, paddingTop: 10, marginTop: 10, flexDirection: 'row' }}>
+              {/* Even, centred columns split by hairlines. The old layout hard-coded alignment per index
+                  (left / centre / right), which only ever worked for exactly three stats. */}
               {calStats.map((s, i) => (
-                <View key={i} style={{ flex: 1, alignItems: i === 1 ? 'center' : i === 2 ? 'flex-end' : 'flex-start' }}>
-                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 2 }}>{s.label}</Text>
+                <View key={i} style={{ flex: 1, alignItems: 'center', paddingHorizontal: 2, borderLeftWidth: i > 0 ? 0.5 : 0, borderLeftColor: theme.borderCard }}>
+                  <Text numberOfLines={1} style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 2 }}>{s.label}</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
                     <GradientNumber value={String(s.value)} color={s.color} style={{ fontSize: 18, fontFamily: Type.num, letterSpacing: 1 }} />
                     <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 1 }}>kcal</Text>

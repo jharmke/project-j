@@ -1408,6 +1408,23 @@ export default function HomeScreen() {
     })();
   }, []);
 
+  // ── Persist today's BMR ─────────────────────────────────────────────────────
+  // Nothing reads this yet, and nothing on screen changes because of it. It exists so a burn trend is
+  // possible LATER without lying: active calories are stored per day, but BMR is derived live from the
+  // current profile, so charting active + BMR over history would silently rewrite every past day the
+  // moment weight changed. Storing the figure that was true on the day is the only honest way to have
+  // that chart, and history you didn't collect can't be recovered afterwards.
+  // Deliberately its own effect rather than folded into the HealthKit write below, which only fires
+  // when HealthKit returns something -- a user without it would never accumulate any history.
+  useEffect(() => {
+    if (!(profileBmr > 0)) return;
+    AsyncStorage.getItem(`pj_${todayKey}`).then(saved => {
+      const current = saved ? JSON.parse(saved) : {};
+      if (current.bmr === profileBmr) return;   // no churn on every render
+      storageSet(`pj_${todayKey}`, JSON.stringify({ ...current, bmr: profileBmr }));
+    }).catch(() => {});
+  }, [profileBmr, todayKey]);
+
   // ── Persist HealthKit to storage ────────────────────────────────────────────
   useEffect(() => {
     if (activeCalories > 0 || steps > 0 || sleepHours !== null || restingHR !== null || respiratoryRate !== null || bloodOxygen !== null || exerciseMinutes !== null || vo2Max !== null || cardioRecovery !== null) {
@@ -2252,6 +2269,11 @@ export default function HomeScreen() {
     const stats = [
       { label: remaining >= 0 ? 'REMAINING' : 'OVER', value: Math.abs(remaining), color: remaining >= 0 ? theme.textSecondary : theme.statusBad },
       { label: 'ACTIVE', value: displayedBurned, color: theme.textSecondary },
+      // Everything burned so far: measured active PLUS the BMR you've spent simply being alive up to
+      // this minute. runningBmr is prorated by time of day, so at 10am this reads what you have
+      // actually burned rather than projecting a whole day. Same BMR figure LIVE NET already subtracts,
+      // just shown instead of hidden inside the sum. Needs BMR for the same reason net does.
+      { label: 'BURNED', value: profileBmr > 0 ? Math.round(displayedBurned + runningBmr) : '—', color: theme.textSecondary },
       // Net needs BMR. With no resolvable weight (BMR 0), net would be overstated by
       // the whole missing BMR, so show a dash + hint instead of a wrong number.
       { label: 'LIVE NET', value: profileBmr > 0 ? `${net > 0 ? '+' : ''}${Math.round(net)}` : '—', color: theme.textSecondary },
@@ -2315,10 +2337,15 @@ export default function HomeScreen() {
         {styleMode !== 'mindful' && (
           <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCardTop, paddingTop:10, flexDirection:'row', marginTop:10 }}>
             {stats.map((s, i) => {
-              const statRef = [calRemainingRef, calActiveRef, calNetRef][i];
+              // Positional, so it MUST stay in step with the stats array above. BURNED sits third and
+              // has no tutorial step of its own; without the null placeholder the net-calories spotlight
+              // would silently land on it instead.
+              const statRef = [calRemainingRef, calActiveRef, null, calNetRef][i];
               return (
-                <View key={i} ref={statRef} collapsable={false} style={{ flex:1, alignItems: i === 1 ? 'center' : i === 2 ? 'flex-end' : 'flex-start' }}>
-                  <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:1.5, textTransform:'uppercase', marginBottom:2 }}>{s.label}</Text>
+                // Even, centred columns split by hairlines. The old layout hard-coded alignment per
+                // index (left / centre / right), which only ever worked for exactly three stats.
+                <View key={i} ref={statRef} collapsable={false} style={{ flex:1, alignItems:'center', paddingHorizontal:2, borderLeftWidth: i > 0 ? 0.5 : 0, borderLeftColor: theme.borderCard }}>
+                  <Text numberOfLines={1} style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:1.5, textTransform:'uppercase', marginBottom:2 }}>{s.label}</Text>
                   <View style={{ flexDirection:'row', alignItems:'baseline', gap:2 }}>
                     <GradientNumber value={String(s.value)} color={s.color} style={{ fontSize:18, fontFamily:Type.num, letterSpacing:1 }} />
                     <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:Type.uiBold, letterSpacing:1 }}>kcal</Text>

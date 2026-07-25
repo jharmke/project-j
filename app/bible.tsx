@@ -29,6 +29,8 @@ import TooltipIcon from '../components/TooltipIcon';
 import HeaderIconButton from '../components/HeaderIconButton';
 import ButtonShine from '../components/ButtonShine';
 import GradientTitle from '../components/GradientTitle';
+import GradientIcon from '../components/GradientIcon';
+import PrimaryCTA from '../components/PrimaryCTA';
 import FabDome from '../components/FabDome';
 import BackgroundLayers from '../components/BackgroundLayers';
 import { useTheme } from '../theme';
@@ -41,6 +43,7 @@ import { showCelebration } from '../components/CelebrationOverlay';
 import { cancelFaithReadingNotification } from '../services/notifications';
 import { Type } from '../typography';
 import KeyboardAwareCenter from '../components/KeyboardAwareCenter';
+import ModalHeader from '../components/ModalHeader';
 
 interface BibleFavorite {
   ref: string;
@@ -800,34 +803,45 @@ export default function BibleScreen() {
         </View>
       )}
 
-      {/* Reflect banner + favorite star */}
+      {/* Reflect banner + favorite star.
+          Stays amber in BOTH states. Green appeared here and nowhere else on the screen, and the
+          checkmark plus the past tense already say "done" -- the colour change was a third signal
+          doing the same job. One strip, one colour, the word does the work. */}
       {highlightedVerse !== null && highlightedVerseRef && (
         <View style={[styles.acknowledgeBanner, {
-          backgroundColor: highlightedVerseAcknowledged ? theme.accentGreenBg : theme.accentAmber + '1A',
-          borderColor: highlightedVerseAcknowledged ? theme.accentGreenBorder : theme.accentAmber + '4D',
+          backgroundColor: theme.accentAmber + '1A',
+          borderColor: theme.accentAmber + '4D',
         }]}>
           <TouchableOpacity
             style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); highlightedVerseAcknowledged ? router.push({ pathname: '/journal', params: { expandDate: `${todayKey}_verse` } }) : setShowReflectionModal(true); }}
           >
-            <Ionicons
-              name={highlightedVerseAcknowledged ? 'checkmark-circle-outline' : 'book-outline'}
+            {/* Solid variants, not outlines: an outline reads faint on the light themes, same reason the
+                header icon buttons are solid everywhere. */}
+            <GradientIcon
+              name={highlightedVerseAcknowledged ? 'checkmark-circle' : 'book'}
               size={14}
-              color={highlightedVerseAcknowledged ? theme.accentGreen : theme.accentAmber}
+              color={theme.accentAmber}
             />
-            <Text style={[styles.acknowledgeText, { color: highlightedVerseAcknowledged ? theme.accentGreen : theme.accentAmber }]}>
+            <Text style={[styles.acknowledgeText, { color: theme.accentAmber }]}>
               {highlightedVerseAcknowledged ? `Reflected · ${highlightedVerseRef}` : `Reflect · ${highlightedVerseRef}`}
             </Text>
           </TouchableOpacity>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+            {/* Always the solid glyph; the COLOUR carries state, not an outline-versus-fill swap that
+                read as two different icons. Colour means something here: amber is a faith state (on),
+                textDim is an action that's simply available, and the gold cross is Halo -- a branded
+                entry point rather than a utility, which is why it deliberately stands apart.
+                textDim over textMuted because muted sat too heavy against the amber; it's also the
+                token that adapts per theme (lighter than muted on Light, the reverse on Dark). */}
             <TouchableOpacity ref={tutSunRef as any} onPress={toggleTodaysMessage} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name={isInTodaysMessage ? 'sunny' : 'sunny-outline'} size={16} color={isInTodaysMessage ? theme.accentAmber : theme.textMuted} />
+              <GradientIcon name="sunny" size={16} color={isInTodaysMessage ? theme.accentAmber : theme.textDim} />
             </TouchableOpacity>
             <TouchableOpacity ref={tutStarRef as any} onPress={toggleFavorite} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name={isCurrentFavorited ? 'star' : 'star-outline'} size={16} color={isCurrentFavorited ? theme.accentAmber : theme.textMuted} />
+              <GradientIcon name="star" size={16} color={isCurrentFavorited ? theme.accentAmber : theme.textDim} />
             </TouchableOpacity>
             <TouchableOpacity onPress={shareVerse} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="share-outline" size={16} color={theme.textMuted} />
+              <GradientIcon name="share" size={16} color={theme.textDim} />
             </TouchableOpacity>
             <TouchableOpacity onPress={discussVerseWithHalo} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <HaloCross size={16} />
@@ -1011,36 +1025,58 @@ export default function BibleScreen() {
       {showReflectionModal && (
         <Modal transparent animationType="fade" visible={showReflectionModal} onRequestClose={() => setShowReflectionModal(false)}>
           <ToastRenderer />
-          <KeyboardAwareCenter style={[styles.overlay, { backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }]}>
-            <View style={[styles.centeredModal, { backgroundColor: theme.bgSheet, borderColor: theme.borderCard }]}>
-              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowReflectionModal(false); }} style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 24, marginBottom: 4 }}>
-                <View style={[styles.sheetHandle, { backgroundColor: theme.sheetHandle }]} />
-              </TouchableOpacity>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-                <Ionicons name="book-outline" size={14} color={theme.accentAmber} />
-                <Text style={[styles.reflectionTitle, { color: theme.textPrimary }]}>Today's Reflection</Text>
-              </View>
+          {/* Tap-outside to close, which this modal never had. Sits outside the keyboard-aware box so it
+              still covers the strip behind the keyboard. */}
+          <TouchableOpacity
+            style={[styles.overlay, { backgroundColor: theme.overlayBg }]}
+            activeOpacity={1}
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowReflectionModal(false); }}
+          />
+          <KeyboardAwareCenter style={[styles.overlay, { justifyContent: 'center', alignItems: 'center' }]} pointerEvents="box-none">
+            {/* Padding is zeroed off the shared card style so ModalHeader can own the top edge, the way
+                it does in every other modal; the body below re-adds its own. Named "Reflection", not
+                "Today's Reflection" -- it isn't only ever about today's verse. */}
+            <View style={[styles.centeredModal, { backgroundColor: theme.bgSheet, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentAmber, paddingHorizontal: 0, paddingTop: 0, paddingBottom: 0, overflow: 'hidden' }]}>
+              <ModalHeader
+                title="Reflection"
+                color={theme.accentAmber}
+                onClose={() => setShowReflectionModal(false)}
+              />
+              <View style={{ paddingHorizontal: 20, paddingBottom: 20, paddingTop: 6 }}>
               {highlightedVerseRef && (
                 <View style={[styles.reflectionVerse, { backgroundColor: theme.bgSheet, borderColor: theme.borderCardVerse }]}>
-                  <Text style={[styles.reflectionVerseText, { color: theme.textSecondary }]}>"{highlightedVerseText}"</Text>
+                  {/* Scripture wears the reader's chosen face here too. Quoting the same verse in the
+                      generic UI font made it read as interface copy rather than as the text itself. */}
+                  <Text style={[styles.reflectionVerseText, { color: theme.textSecondary, fontFamily: bibleFontFamily }]}>"{highlightedVerseText}"</Text>
                   <Text style={[styles.reflectionVerseRef, { color: theme.textMuted }]}>{highlightedVerseRef}</Text>
                 </View>
               )}
               <TextInput
                 ref={reflectionInputRef}
                 style={[styles.reflectionInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
-                placeholder="Write a reflection... (optional)" placeholderTextColor={theme.textPlaceholder}
+                placeholder="Write a reflection..." placeholderTextColor={theme.textPlaceholder}
                 multiline numberOfLines={4} value={reflectionText} onChangeText={setReflectionText}
                 onBlur={() => reflectionInputRef.current?.setNativeProps({ selection: { start: 0, end: 0 } })}
               />
+              {/* One action, dimmed until there is something to save. It used to swap its LABEL between
+                  "Mark as Read" and "Save Reflection", so the button never told you whether it was ready
+                  and "Mark as Read" wrote an empty journal entry that read "Nothing written". Marking a
+                  verse without reflecting on it is already covered by the star and the daily verse list,
+                  and the banner should only ever say "Reflected" when you actually did. */}
               <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
                 <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowReflectionModal(false); }} style={[styles.modalBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]}>
                   <Text style={[styles.modalBtnText, { color: theme.textMuted }]}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={acknowledge} style={[styles.modalBtn, { backgroundColor: theme.accentGreenBg, borderColor: theme.accentGreenBorder, flex: 2 }]}>
-                  <Ionicons name="checkmark" size={14} color={theme.accentGreen} />
-                  <Text style={[styles.modalBtnText, { color: theme.accentGreen }]}>{reflectionText.trim() ? 'Save Reflection' : 'Mark as Read'}</Text>
-                </TouchableOpacity>
+                <PrimaryCTA
+                  label="Save Reflection"
+                  onPress={acknowledge}
+                  disabled={!reflectionText.trim()}
+                  fill={theme.accentAmber}
+                  icon={<Ionicons name="checkmark" size={16} color="#ffffff" />}
+                  wrapperStyle={{ flex: 2 }}
+                  faceStyle={{ paddingVertical: 12, borderRadius: 8 }}
+                />
+              </View>
               </View>
             </View>
           </KeyboardAwareCenter>
@@ -1236,7 +1272,10 @@ const styles = StyleSheet.create({
   settingPill:         { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, alignItems: 'center' },
   reflectionTitle:     { fontSize: 15, fontFamily: Type.uiBold },
   reflectionVerse:     { borderRadius: 8, borderWidth: 1, padding: 12, marginBottom: 12 },
-  reflectionVerseText: { fontSize: 13, fontFamily: Type.ui, fontStyle: 'italic', lineHeight: 20, marginBottom: 6 },
+  // No italic: the reader never italicises scripture, and the quote marks already say it's a quote.
+  // With the default sans it went unnoticed; Georgia and Palatino have real italics, so choosing a
+  // reading font suddenly slanted the verse here while the reader stayed upright.
+  reflectionVerseText: { fontSize: 13, fontFamily: Type.ui, lineHeight: 20, marginBottom: 6 },
   reflectionVerseRef:  { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', textAlign: 'right' },
   reflectionInput:     { borderWidth: 1, borderRadius: 8, padding: 12, fontSize: 13, fontFamily: Type.ui, minHeight: 80, textAlignVertical: 'top' },
   modalBtn:            { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 8, paddingVertical: 12 },

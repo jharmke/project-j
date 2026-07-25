@@ -98,6 +98,8 @@ interface SwipeableEntryProps {
   registerSwipeReset: (id: string, fn: () => void) => void;
   theme: any;
   formatDate: (s: string) => string;
+  /** The Bible reader's chosen face, so a quoted verse reads as scripture here too, not as UI copy. */
+  scriptureFont: string;
 }
 
 function SwipeableEntry({
@@ -107,7 +109,7 @@ function SwipeableEntry({
   editNotes, setEditNotes,
   editCategory, setEditCategory, onSaveEdit, onDelete,
   onResetOtherSwipes, registerSwipeReset,
-  theme, formatDate,
+  theme, formatDate, scriptureFont,
 }: SwipeableEntryProps) {
   const meta = CATEGORY_META[entry.category];
   const isEditing = editingId === entry.id;
@@ -254,7 +256,7 @@ function SwipeableEntry({
             <View style={{ marginTop: 12, paddingBottom: 4 }}>
               {entry.verseText ? (
                 <View style={[styles.verseBox, { backgroundColor: theme.bgCardVerse, borderColor: theme.borderCardVerse }]}>
-                  <Text style={[styles.verseText, { color: theme.textSecondary }]}>"{entry.verseText}"</Text>
+                  <Text style={[styles.verseText, { color: theme.textSecondary, fontFamily: scriptureFont }]}>"{entry.verseText}"</Text>
                 </View>
               ) : null}
 
@@ -366,6 +368,15 @@ export default function JournalScreen() {
   const params = useLocalSearchParams();
 
   const [companionOpen, setCompanionOpen] = useState(false);
+  // The Bible reader's chosen face. A verse quoted on a journal card is the same scripture the reader
+  // shows, so it wears the same font instead of the generic UI one. Falls back to the UI face if the
+  // setting was never touched.
+  const [scriptureFont, setScriptureFont] = useState<string>(Type.ui);
+  useEffect(() => {
+    AsyncStorage.getItem('pj_settings')
+      .then(raw => { if (raw) { const s = JSON.parse(raw); if (s.bibleFontFamily) setScriptureFont(s.bibleFontFamily); } })
+      .catch(() => {});
+  }, []);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [filterCategory, setFilterCategory] = useState<Category | null>(null);
@@ -737,6 +748,7 @@ export default function JournalScreen() {
               registerSwipeReset={registerSwipeReset}
               theme={theme}
               formatDate={formatDate}
+              scriptureFont={scriptureFont}
             />
             </View>
           ))
@@ -975,7 +987,9 @@ const styles = StyleSheet.create({
   filterPillText:    { fontSize: 11, fontFamily: Type.uiSemibold },
   verseRef:          { fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginTop: 2 },
   verseBox:          { borderWidth: 1, borderRadius: 8, padding: 12 },
-  verseText:         { fontSize: 13, fontFamily: Type.ui, fontStyle: 'italic', lineHeight: 20 },
+  // No italic: matches the Bible reader, which never italicises scripture. The quote marks already say
+  // it's a quote, and a real serif reading font made the slant obvious where the sans had hidden it.
+  verseText:         { fontSize: 13, fontFamily: Type.ui, lineHeight: 20 },
   reflectionLabel:   { fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase' },
   reflectionText:    { fontSize: 14, fontFamily: Type.ui, lineHeight: 22 },
   noReflection:      { fontSize: 12, fontFamily: Type.ui, fontStyle: 'italic', marginTop: 4 },

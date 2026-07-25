@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { addPrayer, updatePrayer, type Prayer } from '../utils/prayers';
+import KeyboardAwareCenter from './KeyboardAwareCenter';
 import { cancelPrayerNotification } from '../services/notifications';
 import { useTheme } from '../theme';
 import { ToastRenderer, useToast } from './Toast';
@@ -103,13 +104,18 @@ export default function AddPrayerModal({ visible, onClose, onAdded, editPrayer }
         activeOpacity={1}
         onPress={close}
       />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      <KeyboardAwareCenter
         style={{ flex: 1, justifyContent: 'flex-start', alignItems: 'center', paddingTop: insets.top + 80 }}
         pointerEvents="box-none"
       >
+        {/* maxHeight + flexShrink is what stops this card outrunning the screen. It is top-anchored and
+            its field grew without limit, so a long prayer pushed Cancel and Add below the keyboard with
+            no way to reach them and no way to close the keyboard (multiline: Return makes a new line).
+            Capped to the box above the keyboard, the buttons can never leave. See SPEC_keyboard_modals.md. */}
         <Animated.View
           style={{
+            maxHeight: '100%',
+            flexShrink: 1,
             width: '88%',
             backgroundColor: theme.bgSheet,
             borderRadius: 14,
@@ -154,6 +160,8 @@ export default function AddPrayerModal({ visible, onClose, onAdded, editPrayer }
               fontFamily: Type.ui,
               color: theme.textPrimary,
               minHeight: 72,
+              // Shrinks first when the card runs out of room, so the buttons below it never do.
+              flexShrink: 1,
               textAlignVertical: 'top',
               marginBottom: 16,
             }}
@@ -180,7 +188,11 @@ export default function AddPrayerModal({ visible, onClose, onAdded, editPrayer }
             />
           </View>
         </Animated.View>
-      </KeyboardAvoidingView>
+        {/* No keyboard Done bar here. One was built and tried, then removed: the height cap above means
+            Cancel and Add can never be pushed off screen, so the user is never stranded and the bar had
+            no job left but to look bolted on. KeyboardDoneBar still exists for number-pad fields, where
+            a field genuinely can be the only thing on screen. */}
+      </KeyboardAwareCenter>
     </Modal>
   );
 }

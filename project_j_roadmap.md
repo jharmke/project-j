@@ -1000,17 +1000,12 @@ are separate pre-submission checklists, NOT part of this menu.
   ModalHeader: hand-rolled title, no X, no handle pill, no tap-outside-to-close, off-standard fonts and
   buttons. Bring it in line with every other modal, and rename it to just "Reflection" (Justin's call --
   it isn't only for today's verse). Keyboard behaviour on it is already fine.
-- [surfaced 2026-07-25] **Fixed-height text fields in modals: decide the rule.** Two modals disagree.
-  Add a Prayer GROWS as you type until its buttons slide under the keyboard and become unreachable (a real
-  bug). Journal's create-entry field is a FIXED box that scrolls internally and never grows (deliberate,
-  but Justin flagged it as feeling off). Pick one behaviour and apply it to both: almost certainly a
-  capped height with internal scrolling, so the action row can never leave the screen. Pair with the
-  Done-bar item below since Add a Prayer's multiline keypad has no other way down.
-- [surfaced 2026-07-25] **iOS Done bar for keyboards with no close key.** Multiline fields and number
-  pads have no Return key to dismiss with, so a user can get stuck (hit on Add a Prayer). Add an input
-  accessory Done bar to those two field types ONLY -- a single-line field already dismisses on Return and
-  a Done bar there is just chrome above every keyboard in the app. Find them mechanically: grep for
-  `multiline` and for `keyboardType` of number-pad / numeric / decimal-pad. No device hunting needed.
+- [surfaced 2026-07-25] **Number-pad fields: audit for no-way-to-dismiss.** A number pad has no Return
+  key, so a field on a screen with no other visible control can strand the user. `components/
+  KeyboardDoneBar.tsx` is built and ready for these. Find them mechanically: grep `keyboardType` for
+  number-pad / numeric / decimal-pad. No device hunting needed. Reach for a height cap FIRST -- Add a
+  Prayer's trap was fixed by capping the card so its buttons could never leave, and the Done bar built
+  for it was then removed as redundant and visually bolted-on. See SPEC_keyboard_modals.md.
 - [surfaced 2026-07-25, from Justin's morning notes] **Keyboard-open animation on modals is a teleport.**
   Save a Meal modal and the Water modal both JUMP when the keyboard opens instead of sliding smoothly.
   Justin's read: "this issue is probably everywhere" -- treat as a framework-wide pass, not a two-modal

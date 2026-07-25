@@ -135,7 +135,15 @@ editor did not and regressed. Copy Feedback's shape.
   does nothing for it. Weight History's edit and Recipe Builder's ingredient amount wrap a box that
   isn't full height, where the padding maths would over-shift. Each needs its own look.
 - **Fields with no way to dismiss the keyboard.** Multiline fields and number pads have no Return key.
-  Add a Prayer can strand the user completely: the card grows as you type until the buttons are off
-  screen and there is no way down. Needs a capped height plus an iOS Done accessory bar -- on those two
-  field types ONLY, since a single-line field already dismisses on Return.
+  Number pads are unaudited. `components/KeyboardDoneBar.tsx` exists for them: an iOS input accessory
+  bar, styled after the onboarding height/goal fields (translucent chrome fill over a blur, tight
+  padding, hit-slop rather than a fat touch target -- an opaque fill turns it into a slab).
+  **Apply it to multiline and number-pad fields ONLY**; a single-line field dismisses on Return and a
+  Done bar there is chrome above every keyboard in the app.
+  **Reach for the height cap first.** Add a Prayer was the motivating case: its card grew as you typed
+  until Cancel and Add were pushed off screen with no way back. A Done bar was built for it and then
+  REMOVED, because capping the card height meant the buttons could never leave, so the user was never
+  stranded and the bar had no job left but to look bolted on. It also read as stuck-on rather than part
+  of the keyboard, since a light bar sits badly under a dark keyboard and the keyboard's appearance
+  cannot be reliably predicted. A trapped user is a layout problem before it is a keyboard problem.
 - **~15 files have a TextInput and no keyboard handling at all.** Unaudited.

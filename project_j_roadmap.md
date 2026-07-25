@@ -1141,11 +1141,6 @@ are separate pre-submission checklists, NOT part of this menu.
   actually does in the body) and a "Sources" list (common foods that provide it), alongside the
   consumed-vs-RDA bar. Our NutrientDrilldownModal currently only shows the user's own logged sources, no
   general educational content. Not scoped yet, just captured so it isn't lost.
-- [surfaced 2026-07-20, needs discussion] **Show Total Calories Burned (BMR + Active) somewhere.** Confirmed
-  by reading code: Home already computes both `runningBmr` and active calories internally for the net-calorie
-  math ((tabs)/index.tsx), but there is no standalone display of the combined total anywhere -- it only ever
-  exists as an internal intermediate value. Justin: feels like a nice, obviously useful number to just show.
-  Not scoped -- where it lives (Home card? Stats?) and how it should behave per coaching mode need discussion.
 - [surfaced 2026-07-20, faith, needs scoping discussion] **Smart keyword search for Reading Plans /
   Devotionals.** Idea: searching a term like "masturbation" or "lust" should surface relevant devotionals
   even when the actual title (e.g. "Sexual Integrity") doesn't contain the literal search word. This is a

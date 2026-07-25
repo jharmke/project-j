@@ -737,8 +737,12 @@ export default function RecipeBuilderScreen() {
               <View key={ing.id} ref={idx === 0 ? ingredientRowRef : null} style={[styles.ingredientRow, idx < ingredients.length - 1 && styles.ingredientBorder]}>
                 {/* Tap the row (not a tiny pencil) to change the amount -- the trash stays its own
                     target so the two can't be confused for each other. */}
+                {/* flex-start, matching the row and the trash outside it. Centred, the calories and the
+                    pencil floated to the middle of a two-line name while the trash stayed at the top,
+                    so one row carried three different vertical alignments. Everything now sits on the
+                    name's first line, which is where the eye looks for it. */}
                 <TouchableOpacity
-                  style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
+                  style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-start' }}
                   activeOpacity={0.7}
                   onPress={() => openAmountEditor(ing)}>
                 <View style={styles.ingredientLeft}>
@@ -762,9 +766,11 @@ export default function RecipeBuilderScreen() {
                   <GradientNumber value={String(ing.cal)} color={theme.accentGreen} style={{ fontSize: 18, fontFamily: Type.num }} />
                   <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: Type.ui, letterSpacing: 1 }}>kcal</Text>
                 </View>
-                {/* Quiet affordance: without it the row reads as a readout, not a control. Top-aligned
-                    with the same padding as the trash so the two icons share a line. */}
-                <View style={{ padding: 4, marginRight: 8, alignSelf: 'flex-start' }}>
+                {/* Quiet affordance: without it the row reads as a readout, not a control. Same padding
+                    as the trash, and the shared flex-start above keeps the two icons on one line. The
+                    2pt nudge sits them against the calorie glyph rather than above it, since the number
+                    is taller than they are. */}
+                <View style={{ padding: 4, marginRight: 8, marginTop: 2 }}>
                   <Ionicons name="pencil" size={14} color={theme.textDim} />
                 </View>
                 </TouchableOpacity>
@@ -1054,7 +1060,8 @@ const useStyles = (theme: any) => StyleSheet.create({
   ingredientLeft: { flex: 1, marginRight: 12 },
   ingredientName: { fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiSemibold },
   ingMacro: { fontSize: 11, color: theme.textMuted, fontFamily: Type.ui },
-  removeBtn: { padding: 4 },
+  // marginTop matches the pencil's, so both icons sit against the calorie glyph on the same line.
+  removeBtn: { padding: 4, marginTop: 2 },
   macroRow: { flexDirection: 'row', alignItems: 'center' },
   macroStat: { flex: 1, alignItems: 'center' },
   macroVal: { fontSize: 22, fontFamily: Type.num, letterSpacing: 1 },

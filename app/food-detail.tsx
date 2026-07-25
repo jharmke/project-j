@@ -1085,7 +1085,16 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
         const vitaminD     = computeExtended('vitaminD',           'Vitamin D');
         const ingredient = {
           id: Math.random().toString(36).substr(2, 9),
-          name: food.brand ? `${food.description} · ${food.brand}` : (food.description?.split(' · ')[0] ?? food.description),
+          // A database food's description usually ALREADY ends in its brand ("White Bread · Healthy
+          // Life"), so appending the brand again produced "White Bread · Healthy Life · Healthy Life".
+          // Custom foods dodged it because their name carries no brand suffix, which is why only some
+          // ingredients doubled. Strip the suffix before re-adding it, and only when it's really there.
+          name: (() => {
+            const desc = (food.description ?? '').trim();
+            if (!food.brand) return desc.split(' · ')[0] ?? desc;
+            const suffix = ` · ${food.brand}`;
+            return `${desc.endsWith(suffix) ? desc.slice(0, -suffix.length) : desc}${suffix}`;
+          })(),
           cal: calories,
           protein,
           carbs,

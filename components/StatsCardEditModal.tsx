@@ -7,6 +7,7 @@ import { CardPeriod, ChartType, StatsCard } from '../statsCardRegistry';
 import { ToastRenderer, useToast } from './Toast';
 import { GRAPH_SWATCHES, MACRO_CARBS, MACRO_FAT, MACRO_PROTEIN } from './StatsGraphCard';
 import { Type } from '../typography';
+import KeyboardAwareCenter from './KeyboardAwareCenter';
 import ModalHeader from './ModalHeader';
 import PrimaryCTA from './PrimaryCTA';
 
@@ -122,9 +123,16 @@ export function StatsCardEditModal({ card, onClose, onSave, onDelete, theme }: P
       }}
     >
       <ToastRenderer />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <Animated.View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', opacity: overlayOpacity }}>
-          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleClose(); }} />
+      {/* Dimming and the tap-to-close layer sit OUTSIDE the keyboard-aware box on purpose. Inside it
+          they shrink along with the box when the keyboard opens, leaving the strip behind the keyboard
+          undimmed. Feedback's modal keeps its backdrop out here for the same reason. */}
+      <Animated.View
+        style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.6)', opacity: overlayOpacity }]}
+        pointerEvents="none"
+      />
+      <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleClose(); }} />
+      <KeyboardAwareCenter style={{ flex: 1 }} pointerEvents="box-none">
+        <Animated.View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="box-none">
           <Animated.View style={{
             backgroundColor: card ? theme.bgSheet : 'transparent',
             borderRadius: 20, borderWidth: 0.5, borderTopWidth: 1.5,
@@ -259,7 +267,7 @@ export function StatsCardEditModal({ card, onClose, onSave, onDelete, theme }: P
             </View>
           </Animated.View>
         </Animated.View>
-      </KeyboardAvoidingView>
+      </KeyboardAwareCenter>
     </Modal>
   );
 }

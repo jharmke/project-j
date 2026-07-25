@@ -28,6 +28,7 @@ import ButtonShine from '../components/ButtonShine';
 import FabDome from '../components/FabDome';
 import BackgroundLayers from '../components/BackgroundLayers';
 import ModalHeader from '../components/ModalHeader';
+import KeyboardAwareCenter from '../components/KeyboardAwareCenter';
 import GradientTitle from '../components/GradientTitle';
 import GradientNumber from '../components/GradientNumber';
 import { BlurView } from 'expo-blur';
@@ -854,8 +855,7 @@ export default function JournalScreen() {
       {/* Create entry modal */}
       {showCreateModal && (
         <Modal transparent animationType="fade" visible={showCreateModal} onRequestClose={() => setShowCreateModal(false)}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          <KeyboardAwareCenter
             style={[styles.overlay, { backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }]}
           >
             {/* This is the modal you reach for Gratitude / Study / Prayer / Fitness, and it had NONE of the
@@ -948,7 +948,7 @@ export default function JournalScreen() {
               </View>
               </View>
             </View>
-          </KeyboardAvoidingView>
+          </KeyboardAwareCenter>
         </Modal>
       )}
     </LinearGradient>

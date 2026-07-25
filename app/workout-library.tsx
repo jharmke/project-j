@@ -12,6 +12,7 @@ import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-nativ
 import Reanimated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, runOnJS } from 'react-native-reanimated';
 import { storageSet } from '../utils/storage';
 import { ToastRenderer, useToast } from '../components/Toast';
+import KeyboardAwareCenter from '../components/KeyboardAwareCenter';
 import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
 import { checkWorkoutAchievements, getCelebTier } from '../achievementData';
@@ -1222,7 +1223,7 @@ function ProgramBuilderModal({ onClose, onSave, editingProgram }: {
       <ToastRenderer />
       <Reanimated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.overlayBg }, overlayStyle]} pointerEvents="none" />
       <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={close} />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      <KeyboardAwareCenter style={StyleSheet.absoluteFill} pointerEvents="box-none">
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }} pointerEvents="box-none">
           <Reanimated.View pointerEvents="box-none" style={[{ width: '100%', maxHeight: '70%' }, cardStyle]}>
             <View pointerEvents="auto" style={{ backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12 }}>
@@ -1267,7 +1268,7 @@ function ProgramBuilderModal({ onClose, onSave, editingProgram }: {
             </View>
           </Reanimated.View>
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardAwareCenter>
 
       {showTagCreator && (
         <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
@@ -1490,8 +1491,7 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
       <ToastRenderer />
       <Reanimated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.overlayBg }, overlayAnimStyle]} pointerEvents="none" />
       <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={close} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      <KeyboardAwareCenter
         style={StyleSheet.absoluteFill}
         pointerEvents="box-none">
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }} pointerEvents="box-none">
@@ -1727,7 +1727,7 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
             </View>
           </Reanimated.View>
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardAwareCenter>
 
       {showFillPicker && (
         <Modal transparent animationType="none" visible onRequestClose={closeFillPicker}>
@@ -3747,7 +3747,7 @@ export default function WorkoutLibraryScreen() {
           {/* Rename overlay -- rendered INSIDE the history modal (a second RN <Modal> won't show over
               an already-open one). Sits on top of the history card. */}
           {renaming && (
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }}>
+            <KeyboardAwareCenter style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }}>
               <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => setRenaming(null)} />
               <View style={{ width: '86%', backgroundColor: theme.bgSheet, borderRadius: 14, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }}>
                 <View style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}>
@@ -3777,7 +3777,7 @@ export default function WorkoutLibraryScreen() {
                   </View>
                 </View>
               </View>
-            </KeyboardAvoidingView>
+            </KeyboardAwareCenter>
           )}
         </View>
       </Modal>

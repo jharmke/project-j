@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { auth, db, storage } from '../firebaseConfig';
 import { useTheme } from '../theme';
+import KeyboardAwareCenter from './KeyboardAwareCenter';
 import { useToast, ToastRenderer } from './Toast';
 import { Type } from '../typography';
 import ModalHeader from './ModalHeader';
@@ -125,7 +126,7 @@ export default function FeedbackModal({ visible, onClose }: Props) {
         activeOpacity={1}
         onPress={closeWithHaptic}
       />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }} pointerEvents="box-none">
+      <KeyboardAwareCenter style={{ flex: 1 }} pointerEvents="box-none">
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="box-none">
           <Animated.View
             style={{
@@ -227,7 +228,7 @@ export default function FeedbackModal({ visible, onClose }: Props) {
             </ScrollView>
           </Animated.View>
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardAwareCenter>
     </Modal>
   );
 }

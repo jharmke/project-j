@@ -987,6 +987,30 @@ are separate pre-submission checklists, NOT part of this menu.
   Likely answer: a search box plus sort by recently used / alphabetical / most logged. Check what Recent
   and Favorites already do in the Food Library before inventing a new pattern -- the sort control there
   should almost certainly be reused rather than rebuilt.
+- [surfaced 2026-07-25, part 2 of the keyboard pass] **Hand-rolled keyboard modals still teleport.**
+  The 2026-07-25 sweep converted every modal using KeyboardAvoidingView to KeyboardAwareCenter. It could
+  not see a THIRD pattern: modals that hand-roll it with a Keyboard listener storing the height in state
+  and applying it as padding. State changes land in one frame, so those still jump. Confirmed on Create/
+  Edit Exercise (workout-library, `addKbHeight`). Same pattern in: Add Exercise on the Workout tab
+  (`addExerciseKbHeight`), journal.tsx, profile.tsx, settings.tsx, stats.tsx. NOTE these are actually the
+  best-built of the three patterns -- they also shrink the card's maxHeight, which is what plain
+  KeyboardAvoidingView gets wrong on tall cards. Fix is to animate the number they already compute, not
+  to replace the approach. Grep `KbHeight|keyboardHeight` to find them all.
+- [surfaced 2026-07-25] **Bible "Today's Reflection" modal never got the modal polish pass.** Predates
+  ModalHeader: hand-rolled title, no X, no handle pill, no tap-outside-to-close, off-standard fonts and
+  buttons. Bring it in line with every other modal, and rename it to just "Reflection" (Justin's call --
+  it isn't only for today's verse). Keyboard behaviour on it is already fine.
+- [surfaced 2026-07-25] **Fixed-height text fields in modals: decide the rule.** Two modals disagree.
+  Add a Prayer GROWS as you type until its buttons slide under the keyboard and become unreachable (a real
+  bug). Journal's create-entry field is a FIXED box that scrolls internally and never grows (deliberate,
+  but Justin flagged it as feeling off). Pick one behaviour and apply it to both: almost certainly a
+  capped height with internal scrolling, so the action row can never leave the screen. Pair with the
+  Done-bar item below since Add a Prayer's multiline keypad has no other way down.
+- [surfaced 2026-07-25] **iOS Done bar for keyboards with no close key.** Multiline fields and number
+  pads have no Return key to dismiss with, so a user can get stuck (hit on Add a Prayer). Add an input
+  accessory Done bar to those two field types ONLY -- a single-line field already dismisses on Return and
+  a Done bar there is just chrome above every keyboard in the app. Find them mechanically: grep for
+  `multiline` and for `keyboardType` of number-pad / numeric / decimal-pad. No device hunting needed.
 - [surfaced 2026-07-25, from Justin's morning notes] **Keyboard-open animation on modals is a teleport.**
   Save a Meal modal and the Water modal both JUMP when the keyboard opens instead of sliding smoothly.
   Justin's read: "this issue is probably everywhere" -- treat as a framework-wide pass, not a two-modal

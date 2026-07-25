@@ -6,6 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { auth, db } from '../firebaseConfig';
 import { useTheme } from '../theme';
+import KeyboardAwareCenter from './KeyboardAwareCenter';
 import { ToastRenderer, useToast } from './Toast';
 import PrimaryCTA from './PrimaryCTA';
 import GradientTitle from './GradientTitle';
@@ -72,8 +73,7 @@ export default function PrayerRequestModal({ visible, onClose, variant }: Props)
         activeOpacity={1}
         onPress={close}
       />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      <KeyboardAwareCenter
         style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
         pointerEvents="box-none"
       >
@@ -154,7 +154,7 @@ export default function PrayerRequestModal({ visible, onClose, variant }: Props)
             />
           </View>
         </Animated.View>
-      </KeyboardAvoidingView>
+      </KeyboardAwareCenter>
     </Modal>
   );
 }

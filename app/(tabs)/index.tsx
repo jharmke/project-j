@@ -13,6 +13,7 @@ import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-nativ
 import ReAnimated, { useAnimatedStyle, useAnimatedProps, useSharedValue, withTiming, withRepeat, withSequence, withDelay, cancelAnimation, Easing as ReAnimEasing, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TAB_SCROLL_PAD } from '../../components/CustomTabBar';
+import KeyboardAwareCenter from '../../components/KeyboardAwareCenter';
 import Svg, { Circle } from 'react-native-svg';
 import PressableButton from '../../components/PressableButton';
 import HeaderIconButton from '../../components/HeaderIconButton';
@@ -3973,8 +3974,7 @@ export default function HomeScreen() {
           <>
           <Animated.View style={{ position:'absolute', top:0, bottom:0, left:0, right:0, backgroundColor: theme.overlayBg, zIndex:999, opacity: waterDetailAnim }}>
             <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeWaterDetailModal} activeOpacity={1} />
-            <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            <KeyboardAwareCenter
               style={{ flex:1, justifyContent:'center', alignItems:'center' }}
               pointerEvents="box-none">
             <Animated.View style={{ width:'92%', maxHeight:'82%', backgroundColor: theme.bgSheet, borderRadius:16, borderWidth:0.5, borderColor: theme.borderCard, borderTopWidth:1.5, borderTopColor: theme.accentBlueRaw, overflow:'hidden', transform:[{scale: cardScale}] }}>
@@ -4125,14 +4125,14 @@ export default function HomeScreen() {
               </View>
               </ScrollView>
             </Animated.View>
-            </KeyboardAvoidingView>
+            </KeyboardAwareCenter>
           </Animated.View>
 
           {/* Edit Entry overlay (amount + sign) -- layered above the water modal */}
           {editingWaterIdx !== null && (
             <Animated.View style={{ position:'absolute', top:0, bottom:0, left:0, right:0, backgroundColor: theme.overlayBg, zIndex:1000, opacity: editWaterAnim }}>
               <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeWaterEntryEdit} />
-              <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex:1, justifyContent:'center', alignItems:'center' }} pointerEvents="box-none">
+              <KeyboardAwareCenter style={{ flex:1, justifyContent:'center', alignItems:'center' }} pointerEvents="box-none">
                 <Animated.View style={{ width:'82%', backgroundColor: theme.bgSheet, borderRadius:16, borderWidth:0.5, borderColor: theme.borderCard, borderTopWidth:1.5, borderTopColor: theme.accentBlueRaw, padding:18, transform:[{ scale: editWaterAnim.interpolate({ inputRange:[0,1], outputRange:[0.9,1] }) }] }}>
                   <ModalHeader title="Edit Entry" onClose={closeWaterEntryEdit} />
                   <View style={{ marginBottom: 10 }} />
@@ -4177,7 +4177,7 @@ export default function HomeScreen() {
                     })()}
                   </View>
                 </Animated.View>
-              </KeyboardAvoidingView>
+              </KeyboardAwareCenter>
             </Animated.View>
           )}
           </>

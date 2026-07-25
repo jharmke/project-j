@@ -4,6 +4,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../theme';
+import KeyboardAwareCenter from './KeyboardAwareCenter';
 import { Type } from '../typography';
 import ModalHeader from './ModalHeader';
 import PrimaryCTA from './PrimaryCTA';
@@ -294,8 +295,7 @@ export default function LabelScanReviewModal({ parsed, onConfirm, onClose, onRet
       // The card is centered in the parent's overlay; with a keypad up, its lower half (including the
       // Looks Good button) sat behind the keyboard. flex:1 gives the avoider a bounded height so the
       // card's own maxHeight resolves against the space that's actually left.
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      <KeyboardAwareCenter
         style={{ flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center' }}
         pointerEvents="box-none"
       >
@@ -475,6 +475,6 @@ export default function LabelScanReviewModal({ parsed, onConfirm, onClose, onRet
             <PrimaryCTA wrapperStyle={{ flex: 2 }} faceStyle={{ paddingVertical: 12, borderRadius: 8 }} label="Looks Good" onPress={confirm} />
           </View>
         </Animated.View>
-      </KeyboardAvoidingView>
+      </KeyboardAwareCenter>
   );
 }

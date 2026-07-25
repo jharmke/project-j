@@ -40,6 +40,7 @@ import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
 import { cancelFaithReadingNotification } from '../services/notifications';
 import { Type } from '../typography';
+import KeyboardAwareCenter from '../components/KeyboardAwareCenter';
 
 interface BibleFavorite {
   ref: string;
@@ -1008,7 +1009,7 @@ export default function BibleScreen() {
       {showReflectionModal && (
         <Modal transparent animationType="fade" visible={showReflectionModal} onRequestClose={() => setShowReflectionModal(false)}>
           <ToastRenderer />
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={[styles.overlay, { backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }]}>
+          <KeyboardAwareCenter style={[styles.overlay, { backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }]}>
             <View style={[styles.centeredModal, { backgroundColor: theme.bgSheet, borderColor: theme.borderCard }]}>
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowReflectionModal(false); }} style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 24, marginBottom: 4 }}>
                 <View style={[styles.sheetHandle, { backgroundColor: theme.sheetHandle }]} />
@@ -1040,7 +1041,7 @@ export default function BibleScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-          </KeyboardAvoidingView>
+          </KeyboardAwareCenter>
         </Modal>
       )}
 

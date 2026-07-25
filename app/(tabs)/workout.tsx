@@ -15,6 +15,7 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TAB_BAR_HEIGHT, TAB_SCROLL_PAD } from '../../components/CustomTabBar';
 import BackgroundLayers from '../../components/BackgroundLayers';
+import KeyboardAwareCenter from '../../components/KeyboardAwareCenter';
 import { ToastRenderer, useToast } from '../../components/Toast';
 import { showAchievementToast } from '../../components/AchievementToast';
 import { showCelebration } from '../../components/CelebrationOverlay';
@@ -2977,7 +2978,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
         }}>
         <Reanimated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.overlayBg }, durationOverlayStyle]} pointerEvents="none" />
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => { setDurationEditDay(null); durationOverlay.value = 0; durationCardScale.value = 0.85; durationCardOpacity.value = 0; }} />
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 28 }} pointerEvents="box-none">
+        <KeyboardAwareCenter style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 28 }} pointerEvents="box-none">
           <Reanimated.View pointerEvents="auto" style={[{ width: '100%', maxWidth: 360, backgroundColor: theme.bgSheet, borderRadius: 18, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, padding: 22, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 20, elevation: 10 }, durationCardStyle]}>
             <View style={{ alignItems: 'center', marginBottom: 14 }}>
               <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
@@ -3011,7 +3012,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
               />
             </View>
           </Reanimated.View>
-        </KeyboardAvoidingView>
+        </KeyboardAwareCenter>
         <ToastRenderer />
       </Modal>
 
@@ -3138,7 +3139,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
       {showLabelModal && (
         <Modal transparent animationType="fade" onRequestClose={() => setShowLabelModal(false)}>
           <TouchableOpacity style={{ ...StyleSheet.absoluteFillObject, backgroundColor: theme.overlayBg }} activeOpacity={1} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowLabelModal(false); }} />
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="box-none">
+          <KeyboardAwareCenter style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="box-none">
             <View style={{ backgroundColor: theme.bgSheet, borderRadius: 16, width: '88%', borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16, overflow: 'hidden' }}>
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowLabelModal(false); }} style={{ alignSelf: 'center', paddingTop: 12, paddingBottom: 4, paddingHorizontal: 20 }} hitSlop={{ top: 8, bottom: 8, left: 20, right: 20 }}>
                 <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
@@ -3177,7 +3178,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                 </View>
               </View>
             </View>
-          </KeyboardAvoidingView>
+          </KeyboardAwareCenter>
         </Modal>
       )}
 

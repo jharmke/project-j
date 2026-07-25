@@ -22,6 +22,7 @@ import { saveToFirebase } from '../firebaseConfig';
 import { useTheme } from '../theme';
 import PrimaryCTA from '../components/PrimaryCTA';
 import ModalHeader from '../components/ModalHeader';
+import KeyboardAwareCenter from '../components/KeyboardAwareCenter';
 import ButtonShine from '../components/ButtonShine';
 import { useMembership } from '../MembershipContext';
 import { triggerHaptic } from '../utils/haptics';
@@ -984,14 +985,14 @@ function CenteredModal({ visible, onClose, theme, title, children }: any) {
     <Modal transparent animationType="none" visible={visible} onRequestClose={close} onShow={animateIn}>
       <ToastRenderer />
       <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: theme.overlayBg }} activeOpacity={1} onPress={close} />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }} pointerEvents="box-none">
+      <KeyboardAwareCenter style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }} pointerEvents="box-none">
         <Animated.View style={{ width: '100%', maxWidth: 420, backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 2.5, borderTopColor: theme.accentBlueRaw, overflow: 'hidden', paddingBottom: 20, transform: [{ scale }], opacity, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 14 }}>
           <ModalHeader title={title} onClose={close} />
           <View style={{ paddingHorizontal: 20, paddingTop: 4 }}>
             {children}
           </View>
         </Animated.View>
-      </KeyboardAvoidingView>
+      </KeyboardAwareCenter>
     </Modal>
   );
 }

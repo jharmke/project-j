@@ -64,6 +64,7 @@ import {
 } from '../../services/notifications';
 import { Type, numLine, DISPLAY_CAPS, DISPLAY_TRACKING, displaySize } from '../../typography';
 import ModalHeader from '../../components/ModalHeader';
+import KeyboardAwareCenter from '../../components/KeyboardAwareCenter';
 
 const WATER_TARGET = 128;
 
@@ -1503,6 +1504,14 @@ export default function LogScreen() {
         ref={scrollRef}
         contentContainerStyle={[styles.content, { paddingTop: headerH + 16, paddingBottom: insets.bottom + TAB_SCROLL_PAD }]}
         onScrollBeginDrag={() => {}}
+        // Not about this page's own scrolling: it's about the modals declared INSIDE this ScrollView
+        // in the JSX below. A Modal floats above everything on screen, but in the component tree it is
+        // still this ScrollView's child, and tap-versus-dismiss is decided by walking that tree. Left
+        // at the default ("never"), this ScrollView quietly ate the first tap inside those modals to
+        // dismiss the keyboard, so a checkbox tap dropped the keyboard and never toggled, and a drag
+        // scrolled this page instead of the modal's list. Setting it on the modal's OWN ScrollView
+        // (see Save as Meal) could never help, because the interception happens up here.
+        keyboardShouldPersistTaps="handled"
       >
 
       {/* Everything below is gated on `loaded` so it never shows a page of zeroed cards before the initial
@@ -2246,8 +2255,7 @@ export default function LogScreen() {
         <Animated.View style={{ flex: 1, opacity: saveMealAnim }}>
           <ToastRenderer />
           <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' }} onPress={() => setSaveMealSlot(null)} activeOpacity={1} />
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          <KeyboardAwareCenter
             style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
             pointerEvents="box-none">
             <View style={{ width: '88%', maxHeight: '80%', backgroundColor: theme.bgSheet, borderRadius: 20, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 2.5, borderTopColor: theme.accentBlue, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.45, shadowRadius: 28, elevation: 24 }}>
@@ -2307,7 +2315,7 @@ export default function LogScreen() {
                 />
               </ScrollView>
             </View>
-          </KeyboardAvoidingView>
+          </KeyboardAwareCenter>
         </Animated.View>
       </Modal>
 
@@ -2533,8 +2541,7 @@ export default function LogScreen() {
       return (
         <Animated.View style={{ position:'absolute', top:0, bottom:0, left:0, right:0, backgroundColor: theme.overlayBg, zIndex:999, opacity: waterDetailAnim }}>
           <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeWaterDetailModal} activeOpacity={1} />
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          <KeyboardAwareCenter
             style={{ flex:1, justifyContent:'center', alignItems:'center' }}
             pointerEvents="box-none">
             <Animated.View style={{ width:'92%', maxHeight:'86%', backgroundColor: theme.bgSheet, borderRadius:16, borderWidth:0.5, borderColor: theme.borderCard, borderTopWidth:1.5, borderTopColor: theme.accentBlueRaw, overflow:'hidden', transform:[{scale: cardScale}] }}>
@@ -2679,7 +2686,7 @@ export default function LogScreen() {
                 </View>
               </ScrollView>
             </Animated.View>
-          </KeyboardAvoidingView>
+          </KeyboardAwareCenter>
         </Animated.View>
       );
     })()}

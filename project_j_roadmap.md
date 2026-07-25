@@ -982,6 +982,11 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
+- [surfaced 2026-07-25] **Meal Catalog needs search + sorting.** Find a Meal's Meal Catalog tab is a flat
+  unsorted list today. Fine at five saved meals, miserable at thirty, and there's no way to find anything.
+  Likely answer: a search box plus sort by recently used / alphabetical / most logged. Check what Recent
+  and Favorites already do in the Food Library before inventing a new pattern -- the sort control there
+  should almost certainly be reused rather than rebuilt.
 - [surfaced 2026-07-25, from Justin's morning notes] **Keyboard-open animation on modals is a teleport.**
   Save a Meal modal and the Water modal both JUMP when the keyboard opens instead of sliding smoothly.
   Justin's read: "this issue is probably everywhere" -- treat as a framework-wide pass, not a two-modal

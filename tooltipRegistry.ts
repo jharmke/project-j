@@ -279,6 +279,10 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
         explanation: 'Calories burned through exercise and movement, pulled live from Apple Health. If these seem high, you can adjust accuracy in Settings → Health.',
       },
       {
+        term: 'Burned',
+        explanation: 'Everything your body has spent today: your Active calories plus the resting burn you\'ve earned since midnight. It climbs all day even when you sit still, because staying alive costs calories. Your burn accuracy setting adjusts the Active half only; resting burn comes from your own body stats, not from your watch, so there\'s nothing there to correct. On a past day this shows the full day\'s resting burn rather than a partial one.',
+      },
+      {
         term: 'Live Net',
         explanation: 'The truest picture of your day: calories consumed minus active burn minus the calories your body has already burned at rest since midnight (running BMR). A lower Live Net means more of a deficit.',
       },
@@ -322,6 +326,10 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
       {
         term: 'Active',
         explanation: 'Calories burned through exercise and movement, pulled live from Apple Health. If these seem high, you can adjust accuracy in Settings → Health.',
+      },
+      {
+        term: 'Burned',
+        explanation: 'Everything your body has spent today: your Active calories plus the resting burn you\'ve earned since midnight. It climbs all day even when you sit still, because staying alive costs calories. Your burn accuracy setting adjusts the Active half only; resting burn comes from your own body stats, not from your watch, so there\'s nothing there to correct. On a past day this shows the full day\'s resting burn rather than a partial one.',
       },
       {
         term: 'Live Net',

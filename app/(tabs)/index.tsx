@@ -515,6 +515,7 @@ export default function HomeScreen() {
   const calCardRef       = useTutorialTarget('cal_card_main');
   const calRemainingRef  = useTutorialTarget('cal_card_remaining');
   const calActiveRef     = useTutorialTarget('cal_card_active');
+  const calBurnedRef     = useTutorialTarget('cal_card_burned');
   const calNetRef        = useTutorialTarget('cal_card_net');
   const macrosCardRef    = useTutorialTarget('macros_card_main');
   const macrosProteinRef = useTutorialTarget('macros_protein');
@@ -2337,10 +2338,8 @@ export default function HomeScreen() {
         {styleMode !== 'mindful' && (
           <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCardTop, paddingTop:10, flexDirection:'row', marginTop:10 }}>
             {stats.map((s, i) => {
-              // Positional, so it MUST stay in step with the stats array above. BURNED sits third and
-              // has no tutorial step of its own; without the null placeholder the net-calories spotlight
-              // would silently land on it instead.
-              const statRef = [calRemainingRef, calActiveRef, null, calNetRef][i];
+              // Positional, so it MUST stay in step with the stats array above.
+              const statRef = [calRemainingRef, calActiveRef, calBurnedRef, calNetRef][i];
               return (
                 // Even, centred columns split by hairlines. The old layout hard-coded alignment per
                 // index (left / centre / right), which only ever worked for exactly three stats.

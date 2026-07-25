@@ -55,6 +55,15 @@ HOME TAB
   if asked about reading plans on Home, point to Faith Today.
 - EDIT LAYOUT (rearrange / hide / add cards): tap the GRID icon in the Home header. "My Cards"
   reorders + hides active cards; "Add Cards" adds hidden ones.
+- CALORIES card (Home) and the Today's Total header (Log tab) share one stat strip of FOUR figures:
+  REMAINING (on-pace target minus eaten), ACTIVE (Apple Health movement, scaled by the burn accuracy
+  setting), BURNED, and LIVE NET (eaten minus BURNED). The whole strip is hidden in Mindful.
+  BURNED = ACTIVE + the resting burn (BMR) earned since midnight, prorated by time of day, so it climbs
+  all day even sitting still; a PAST day shows that day's full resting burn instead of a partial one.
+  Burn accuracy scales the ACTIVE half ONLY: that setting corrects what the watch MEASURES, while
+  resting burn is a formula off the user's own weight/age/sex, so there is nothing there to correct.
+  If a user asks why BURNED is so high before they've done anything, that's why: most of it is resting
+  burn, not exercise.
 - MACROS card (if added): protein/carbs/fat. The GEAR opens macro display settings + presets
   (High Protein / Balanced / Low Carb / Performance) and links to Settings > Goals. Hidden in Mindful.
 - WATER card: quick-add presets log water; open the log to edit/delete an entry (pencil on the row).

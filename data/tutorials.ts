@@ -313,6 +313,16 @@ export const TUTORIALS: Tutorial[] = [
         },
       },
       {
+        targetKey: 'cal_card_burned',
+        title: 'BURNED',
+        skipForModes: ['mindful'],
+        body: {
+          discipline: 'Burned = active calories plus the resting burn you\'ve earned since midnight. Your total spend so far. It climbs all day whether you move or not.',
+          balanced: 'Burned is everything your body has spent today: your active calories plus the resting burn that happens just from being alive. It grows all day on its own.',
+          mindful: 'Burned is what your body has used today, movement and rest together. It rises through the day no matter what you do.',
+        },
+      },
+      {
         targetKey: 'cal_card_net',
         title: 'LIVE NET',
         skipForModes: ['mindful'],

@@ -11,6 +11,66 @@
 
 ---
 
+## 🔢 FOOD LIBRARY CALORIE TRUTH -- ONE SHARED LABEL RESOLVER (device-confirmed, SHIPPED 2026-07-25)
+
+**The ask, in Justin's words:** "ANY tab in the library: that food's calorie amount shows that default
+serving size amount of calories. Shows what's on the damn label for FatSecret foods. If it's a custom
+food, whatever I set as the default/main serving." It took three passes to actually deliver that.
+
+**Symptoms:** 2% Cottage Cheese showed 1 kcal / 0g-0g-0g in Recent (real label: 90 kcal per 1/2 cup,
+113 g). A 160 kcal My Food shake showed 159. White bread showed 175 for what is a 70 kcal serving, in
+BOTH Recent and Favourites, and its Food Detail screen rendered 175 kcal against a "2 slices - 41 g"
+serving. Meanwhile the creamer was correct at 10, which made it look random.
+
+**Root cause (the loop).** `food-detail.tsx` treated the Energy value on the incoming food object as
+authoritative "search result calories" and used it to pick the label serving by matching calories --
+and when nothing matched, built a VIRTUAL serving out of that number. That's correct for a live
+FatSecret search result, where the number is the API's. But Recent and Favourites hand in OUR OWN
+stored copy. So a wrong number selected/invented a serving to match itself, that serving became
+`labelCal` on save, and the card re-read it next time. The value re-signed itself on every log, which
+is exactly why "just log it again and it'll fix itself" was wrong: re-logging was the mechanism that
+preserved it.
+
+**Contributing causes, each separately real:**
+- `customServings` recomputed a My Food's base serving from the ROUNDED `calPer100g` instead of the
+  exact calories the user typed. 160 kcal / 325 g stores as 49 per 100 g; 49 x 325 / 100 = 159. This
+  one was introduced by the 2026-07-24 fix attempt (commit 9275ce7) -- a regression, owned as such.
+- That same 07-24 attempt only ever touched CUSTOM foods, while the foods Justin was complaining about
+  were FatSecret. It could never have fixed the reported bug.
+- Favourites stored a snapshot of the numbers on screen when the star was tapped. White bread's was
+  captured mid-2.5-serving dinner, so the star itself held 175. An interim fix that made Recent trust
+  favourites therefore made white bread WORSE -- one bad source swapped for another.
+- Edit Entry never read back the serving an entry was logged in. The grams were always saved; the
+  picker just ignored them, so a 93 g entry reopened against a 113 g serving with "93" still in the
+  amount box. One tap of + would have logged 94 x 113 g = 8,460 kcal, silently.
+
+**The fix that stuck:**
+1. `utils/foodLabel.ts` -- one shared answer to "what is this food's default serving worth?", backed by
+   `pj_food_label_cache`. My Food -> the user's own record (exact, local). FatSecret -> the label serving
+   fetched once and cached. Cache holds nothing user-owned, so it's always safe to drop; writes
+   read-then-merge.
+2. `searchResultCal` is now gated on a new `isSearchResult` flag set ONLY on live search results. Recent,
+   Favourites, Set Foods and Edit all resolve the default serving on its own merits. This is the single
+   change that breaks the loop everywhere at once.
+3. Recent + Favourites read from the resolver. Favourites' stored numbers remain on disk purely as an
+   offline last resort and are never displayed or fed forward -- the star is a pointer, not a record.
+4. Lookups are lazy and strictly sequential, reusing the existing per-row `isRowLoading` spinner, so the
+   Library never blocks on the network and never bursts the FatSecret daily quota. (Quota is undocumented
+   in-repo; the design deliberately doesn't depend on knowing it. Calls go through the server-side
+   `functions/src/fatSecretProxy.ts`, and this is the same lookup a food tap already made.)
+5. Edit Entry restores the logged serving, searching the locally-built plain-unit options (g/oz/mL) as
+   well as FatSecret's named servings -- an earlier attempt searched only the latter and so never found
+   "g", which was the exact case hit.
+
+**Verified on device:** correct numbers across tabs, loading spinners on first resolve, and numbers
+surviving a kill-and-reload with no re-lookup (proving cache persistence).
+
+**Standing lesson:** every failure here was a derived copy of a number being treated as the number.
+Diary entries, favourite snapshots and per-100g figures are all derivative; the label has exactly one
+authority. When a displayed value can disagree with its source, ask which one is the source.
+
+---
+
 ## 🍽️ SAVE AS A MEAL + FIND A MEAL / MEAL CATALOG (device-confirmed, SHIPPED 2026-07-24, commits 5d93595, 1cd1817)
 
 **The idea, and why it stayed separate from Recipes:** Justin got curious whether Recipes and this new

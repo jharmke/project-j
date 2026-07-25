@@ -30,6 +30,15 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-25 **Food Library calorie truth: one shared label resolver (device-confirmed).** Every Library
+  tab now shows a food's DEFAULT serving calories, a property of the food rather than of how it was
+  logged or when it was starred. Killed a self-perpetuating loop where a Library card's number was fed
+  back in as the food's authoritative calories, invented a serving to match itself and re-saved -- so a
+  wrong value re-signed itself on every log and re-logging could never heal it (cottage cheese stuck at
+  1 kcal, a favourited white bread reading 175 for a 41 g slice). New utils/foodLabel.ts + pj_food_label_cache;
+  My Foods answer from the user's own record, FatSecret foods from one cached lookup. Favourites demoted to
+  pointers. Edit Entry now reopens on the serving the entry was logged in (incl. plain g/oz/mL). Full
+  post-mortem in the archive.
 - 2026-07-24 **Save as Meal + Find a Meal / Meal Catalog (device-confirmed).** New "Save as Meal" action
   bundles an already-logged slot's checked items into a permanent, named meal (pj_saved_meals) -- unlike
   a Recipe, items stay SEPARATE editable entries when re-added, never blended into one line. "Repeat a
@@ -965,6 +974,42 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
+- [surfaced 2026-07-25, from Justin's morning notes] **Keyboard-open animation on modals is a teleport.**
+  Save a Meal modal and the Water modal both JUMP when the keyboard opens instead of sliding smoothly.
+  Justin's read: "this issue is probably everywhere" -- treat as a framework-wide pass, not a two-modal
+  patch. Audit every modal with a text input (KeyboardAvoidingView behavior + animation config), pick one
+  correct pattern, apply everywhere. Per Verify Against Working Reference: find a modal that already
+  animates correctly and diff against it FIRST rather than trial-and-error.
+- [surfaced 2026-07-25, from Justin's morning notes] **Notifications pass 2: copy, routing, settings
+  clarity, personality.** Four related asks, one sweep: (a) re-read the exact text of every notification,
+  (b) verify each one deep-links to the RIGHT place, (c) make the settings screen more digestible --
+  specifically, under "WHAT CAN WE NOTIFY YOU ABOUT", show which actual notifications fire for each
+  selection, via subtext or a tooltip, so the choice isn't abstract, (d) more personality in the copy.
+  SPEC_notifications.md is the source of truth; 14 types, category-based settings. Mindful pass matters
+  here. Note there's an existing notifications BUG item further down this list -- check whether it's
+  verified before starting, so this pass isn't built on a broken base.
+- [QUICK WIN, surfaced 2026-07-25, from Justin's morning notes] **Surface total active calories.** Show
+  the day's total active calories on the Home card, the Today's Training card, or somewhere sensible.
+  Placement not decided -- pick when picked up. Data already exists (HealthKit activeCalories, stored on
+  pj_<date>); the Food Log header already renders an ACTIVE figure, so this is surfacing, not computing.
+- [QUICK WIN, decided 2026-07-25, ready to build] **Recovery hero "Prev Activity" delta text reframe.**
+  Justin was confused why the Prev Activity bar goes right/green for both a -93kcal and a +64kcal day --
+  it's a two-sided metric (closeness to baseline is the goal, not direction), so the bar logic itself is
+  correct and stays as-is (changing it would break the "right=helping" rule the other 4 signals rely on).
+  Fix is copy-only: reframe the delta TEXT next to that one row so it explains itself instead of reading
+  like a directional +/- (e.g. today it just says "-93 kcal", which primes the reader to expect the bar to
+  follow that sign). Direction chosen: keep the signed number but add why-it's-fine context inline, e.g.
+  "93 below usual, still balanced." Exact wording not finalized -- land good, specific, premium copy (see
+  Premium Copy Voice standard) when picked up, not the placeholder above verbatim.
+- [decided 2026-07-25, ready to build] **Prev Activity number sync (614 vs 605 kcal mismatch).** Today's
+  Recovery card queries Apple Health live every time the screen opens (showed 614 for yesterday); the
+  Previous Day Activity trend graph reads that same day's number from the saved pj_<date> record, written
+  earlier and never refreshed (showed 605). Apple Health quietly revises a day's total for a bit after it
+  ends as watch/phone data reconciles, so the two views can drift apart. Fix: when the live fetch runs,
+  merge-write that freshest number back into that day's stored record (read-then-merge, one field only) so
+  both views converge on whichever number HealthKit most recently reported. Minor known ripple: that stored
+  field also feeds Weekly/Monthly summaries and Day Score, which are write-once snapshots -- a few-kcal
+  correction is too small to flip any bucket, so no forced re-summary planned alongside this.
 - [surfaced 2026-07-24, needs discussion, not urgent] **Sync Claude memory/instructions between Justin's
   two accounts.** He switches between 2 Claude accounts when usage limits hit and wants their memory/
   instructions merged so they're identical. Before proposing anything: need to know whether both accounts

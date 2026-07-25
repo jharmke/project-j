@@ -241,6 +241,11 @@ const isTutorialMode = tutorialMode === 'true';
   const food = refreshedFood ?? paramFood;
   const foodId: string | null = food?.myFoodData?.id || (food as any)?.myFoodId || food?.fsId || null;
   const fsServings: any[] = food?.fsServings || [];
+  // FatSecret's serving list when it had to be fetched on this screen rather than arriving with the
+  // food. Declared up here (not with the other state below) so the default-serving math further down
+  // can see it: the Edit Entry route never pre-fetches servings, so that math had no list to call
+  // "the default" and fell through to whatever serving happened to be selected.
+  const [fetchedServings, setFetchedServings] = useState<any[]>([]);
   const myFoodAdditionalServings: Array<{ label: string; grams: number }> = food?.myFoodData?.additionalServings || [];
   const baseServingSize = food?.myFoodData?.servingSize || parseFloat(food?.existingAmount || '100') || 100;
   // NOT gated on myFoodAdditionalServings.length > 0 -- a custom food with no EXTRA named serving
@@ -249,14 +254,22 @@ const isTutorialMode = tutorialMode === 'true';
   // headline number for these foods fell through all the way to whatever custom gram amount was
   // typed on a given day instead of the food's real default -- e.g. a cottage cheese logged in
   // custom grams showed "1 kcal" instead of its real per-serving calories.
+  // A My Food's base serving uses the EXACT numbers the user typed on its label, never a
+  // recomputation from calPer100g. That round trip loses a calorie: a 160 kcal / 325 g shake stores
+  // 49 kcal per 100 g (rounded at creation), and 49 x 325 / 100 rounds back to 159. The label said
+  // 160, so every screen must say 160. Only trusted when the base serving IS this record's serving,
+  // so the numbers can never describe a size they don't belong to.
+  const exactLabel = (food?.myFoodData && (food.myFoodData.servingSize ?? baseServingSize) === baseServingSize)
+    ? food.myFoodData
+    : null;
   const customServings = (food?.isCustom && (food?.calPer100g ?? 0) > 0)
     ? [
         {
           label: food.servingUnit || `${baseServingSize}${unitLabel(food.servingUnitType || 'g')}`,
-          calories: Math.round((food.calPer100g || 0) * baseServingSize / 100),
-          protein: Math.round(((food.proteinPer100g || 0) * baseServingSize / 100) * 10) / 10,
-          carbs: Math.round(((food.carbsPer100g || 0) * baseServingSize / 100) * 10) / 10,
-          fat: Math.round(((food.fatPer100g || 0) * baseServingSize / 100) * 10) / 10,
+          calories: exactLabel?.cal ?? Math.round((food.calPer100g || 0) * baseServingSize / 100),
+          protein: exactLabel?.protein ?? Math.round(((food.proteinPer100g || 0) * baseServingSize / 100) * 10) / 10,
+          carbs: exactLabel?.carbs ?? Math.round(((food.carbsPer100g || 0) * baseServingSize / 100) * 10) / 10,
+          fat: exactLabel?.fat ?? Math.round(((food.fatPer100g || 0) * baseServingSize / 100) * 10) / 10,
           fiber: 0, sugar: 0, sodium: 0, cholesterol: 0, saturatedFat: 0,
           polyunsaturatedFat: 0, monounsaturatedFat: 0, potassium: 0,
           vitaminA: 0, vitaminC: 0, calcium: 0, iron: 0, sugarAlcohols: 0,
@@ -281,8 +294,23 @@ const isTutorialMode = tutorialMode === 'true';
         })),
       ]
     : [];
-  const allServings = fsServings.length > 0 ? fsServings : customServings;
-  const searchResultCal: number | null = food?.foodNutrients?.find((n: any) => n.nutrientName === 'Energy')?.value ?? null;
+  // Falls back to the servings fetched on this screen so the Edit Entry route (which arrives with no
+  // serving list) still has a real default serving to reason about instead of an empty list.
+  const allServings = fsServings.length > 0
+    ? fsServings
+    : (customServings.length > 0 ? customServings : fetchedServings);
+  // ONLY a live FatSecret search result's Energy value is authoritative enough to pick the label
+  // serving by matching calories against it, or to build a serving out of. Everywhere else -- Recent,
+  // Favorites, Set Foods, an entry opened for editing -- that value is OUR OWN previously stored
+  // number, and trusting it was the whole bug: a wrong number picked (or invented) a serving to match
+  // itself, then saved itself back, so it re-signed itself on every log and no amount of re-logging
+  // could heal it. A "1 kcal" Recent card conjured a 1 kcal serving from nothing; a favourite holding
+  // a 2.5-serving dinner made the detail screen read 175 kcal for a 41 g slice of bread. Every other
+  // route now resolves the default serving on its own merits.
+  const isEditRoute = entryIndex !== undefined && entryIndex !== '';
+  const searchResultCal: number | null = (food?.isSearchResult && !isEditRoute)
+    ? (food?.foodNutrients?.find((n: any) => n.nutrientName === 'Energy')?.value ?? null)
+    : null;
   const defaultFsServing = allServings.length > 0
     ? ((searchResultCal !== null ? allServings.find((s: any) => s.calories === searchResultCal) : null) || allServings.find((s: any) => s.isDefault) || allServings[0])
     : null;
@@ -335,8 +363,6 @@ const isTutorialMode = tutorialMode === 'true';
   // stepper counts servings (1 serving = the whole estimate) instead of showing a bogus gram amount.
   const isServingOnly = !!(food as any)?.servingOnly || !!food?.aiEstimated;
   const [selectedServing, setSelectedServing] = useState<any>(virtualDefaultServing);
-  // FatSecret's serving list when it had to be fetched here rather than arriving with the food.
-  const [fetchedServings, setFetchedServings] = useState<any[]>([]);
   // Resolved base serving size for edit mode -- starts from stored servingGrams, falls back to My Foods lookup
   const [resolvedServingGrams, setResolvedServingGrams] = useState<number>(
     // Serving-only recipe entries have no grams; treat "1 serving" as the unit (nominal grams = 1) so
@@ -462,6 +488,24 @@ const isTutorialMode = tutorialMode === 'true';
       })
     : [];
 
+  // Editing an entry has to reopen on the serving it was LOGGED in. The entry stores that serving's
+  // weight, and the plain-unit options ("g", "oz", "mL") are built right here rather than coming
+  // from FatSecret -- which is why an earlier attempt that searched only the named servings never
+  // found "g" and snapped back to the default. Searching both lists is the whole fix: without it the
+  // amount box read "93" against a 1/2 cup serving, so one tap of + logged 94 x 113 g.
+  const loggedServingRestored = useRef(false);
+  useEffect(() => {
+    if (!isEditRoute || loggedServingRestored.current) return;
+    const target = Number(food?.servingGrams);
+    if (!(target > 0)) return;
+    const match = [...namedServings, ...unitServings]
+      .find((s: any) => Math.abs((s.grams || 0) - target) < 0.005);
+    if (match) {
+      loggedServingRestored.current = true;
+      setSelectedServing(match);
+    }
+  }, [isEditRoute, food?.servingGrams, namedServings.length, unitServings.length]);
+
   useEffect(() => {
     const resolveServings = async () => {
       if (fsServings.length > 0) return;
@@ -479,7 +523,14 @@ const isTutorialMode = tutorialMode === 'true';
         // Keep the WHOLE fetched list, not just the default. Throwing the rest away is why a scanned
         // food showed "15 chips" on the screen while the picker had nothing but plain units to offer.
         setFetchedServings(servings);
-        const def = (searchResultCal !== null ? servings.find((s: any) => s.calories === searchResultCal) : null) || servings.find((s: any) => s.isDefault) || servings[0];
+        // Editing an entry must reopen on the serving it was LOGGED in, not the food's default. The
+        // entry stores that serving's weight; without honouring it the picker snapped back to the
+        // default while the amount box still held the logged number, so "93 g" was read as 93 of a
+        // 113 g serving and a single tap of + would have logged 94 x 113 g.
+        const loggedServing = (isEditing && Number(food?.servingGrams) > 0)
+          ? servings.find((s: any) => Math.abs((s.grams || 0) - Number(food.servingGrams)) < 0.005)
+          : null;
+        const def = loggedServing || (searchResultCal !== null ? servings.find((s: any) => s.calories === searchResultCal) : null) || servings.find((s: any) => s.isDefault) || servings[0];
         if (def) {
           setSelectedServing(def);
           if (def.grams > 0 && !isEditing) {

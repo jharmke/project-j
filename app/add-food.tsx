@@ -21,6 +21,7 @@ import { purgeRecipePhoto } from '../utils/recipePhotos';
 import { getMealDisplayName, MealSlot, loadMealSlots } from '../utils/mealSlots';
 import { setCameraActive } from '../utils/assistantFab';
 import { unitLabel } from '../utils/unitConversion';
+import { loadLabelCache, getCachedLabel, labelFromMyFood, resolveFsLabel } from '../utils/foodLabel';
 import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
@@ -357,6 +358,8 @@ export default function AddFoodScreen() {
   // Drives a spinner + dim on the tapped row so the tap never reads as unresponsive.
   const [loadingItemKey, setLoadingItemKey] = useState<string | null>(null);
 const [recentFoods, setRecentFoods] = useState<SearchResult[]>([]);
+  // Bumped when a batch of label lookups finishes, so the lists rebuild from the now-warm cache.
+  const [labelVersion, setLabelVersion] = useState(0);
 const [favorites, setFavorites] = useState<MyFood[]>([]);
 const [recipes, setRecipes] = useState<any[]>([]);
 const { meal, date, selectMode, day, recipeMode, tutorialMode, tutorialTab, openCreate, openScanner } = useLocalSearchParams<{ meal: string; date: string; selectMode: string; day: string; recipeMode: string; tutorialMode: string; tutorialTab: string; openCreate: string; openScanner: string }>();
@@ -630,6 +633,14 @@ const saveEditFood = async () => {
       };
     }, [])
   );
+
+  // A finished round of label lookups rebuilds the lists so the freshly cached numbers replace the
+  // placeholders. Skipped on first render, when there's nothing new to fold in yet.
+  useEffect(() => {
+    if (labelVersion === 0) return;
+    loadRecent();
+    loadFavorites();
+  }, [labelVersion]);
 
   const loadBarcodeOverrides = async () => {
     try {
@@ -979,7 +990,11 @@ const saveEditFood = async () => {
 
         // Only apply if this is still the latest search
         if (thisSearchId === searchIdRef.current) {
-          setResults([...matchingRecents, ...myFoodResults, ...fsResults]);
+          // Flagged as coming straight from the database. Food Detail trusts a result's calorie
+          // value to identify the label serving ONLY when it carries this flag, because only here is
+          // that number FatSecret's own. The same number arriving from Recent or Favourites is our
+          // stored copy, and trusting a stored copy is what let wrong values re-save themselves.
+          setResults([...matchingRecents, ...myFoodResults, ...fsResults.map((r: any) => ({ ...r, isSearchResult: true }))]);
         }
       } catch (e) {
         console.log('Search error', e);
@@ -1404,17 +1419,31 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
       const savedFoods = await AsyncStorage.getItem('pj_my_foods');
       const myFoodsMap: Record<string, string> = {};
       const myFoodsTypeMap: Record<string, 'supplement' | 'food'> = {};
+      // The food's own definition, keyed by name -- the most authoritative label there is, because
+      // the user wrote it. Used below to repair Recent rows whose stored label went bad.
+      const myFoodByName: Record<string, any> = {};
+      const myFoodById: Record<string, any> = {};
       if (savedFoods) {
         (JSON.parse(savedFoods) as MyFood[]).forEach(f => {
           if (f.brand) myFoodsMap[f.name] = f.brand;
           if (f.type === 'supplement') myFoodsTypeMap[f.name] = 'supplement';
+          myFoodByName[f.name] = f;
+          if ((f as any).id) myFoodById[(f as any).id] = f;
         });
       }
+      // A favourite's stored numbers are deliberately NOT consulted here. They're a snapshot taken
+      // when the star was tapped, and a snapshot can be wrong: the white bread favourite held a
+      // 2.5-serving dinner, so trusting it made a 41 g slice read 175 kcal everywhere it appeared.
+      // FatSecret foods resolve through the shared label cache below instead.
+      await loadLabelCache();
       const savedRecipesRaw = await AsyncStorage.getItem('pj_recipes');
       const recipeByName: Record<string, any> = {};
       if (savedRecipesRaw) {
         (JSON.parse(savedRecipesRaw) as any[]).forEach(r => { recipeByName[r.name] = r; });
       }
+      // FatSecret foods whose label isn't cached yet. Resolved one at a time after the list is on
+      // screen so the Library never blocks on the network, and never fires a burst of lookups.
+      const pendingLabelIds: string[] = [];
       setRecentFoods(recent.slice(0, 30).map(f => {
         const stripped = f.name.replace(/\s*\(.*?\)\s*$/, '');
         const matchedRecipe = recipeByName[stripped];
@@ -1431,15 +1460,32 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
             fsId: null,
           };
         }
+        // The number on a Library card is a property of the FOOD -- its default serving -- and never
+        // a property of how it happened to be logged. A food the user wrote answers for itself; a
+        // FatSecret food answers through the shared label cache. The value stored on the diary entry
+        // is only a placeholder for the moment before a lookup returns.
+        // My Foods are matched by name only when the row has no fsId, so a real database food can
+        // never be hijacked by a same-named custom one.
+        const myFoodRecord =
+          (f.myFoodId ? myFoodById[f.myFoodId] : null) ||
+          ((f.isMyFood || !f.fsId) ? myFoodByName[stripped] : null) ||
+          null;
+        const resolved = labelFromMyFood(myFoodRecord) || getCachedLabel(f.fsId);
+        if (!resolved && f.fsId) pendingLabelIds.push(f.fsId);
+        const labelCal = resolved ? resolved.cal : f.cal;
+        const labelProtein = resolved ? resolved.protein : (f.protein || 0);
+        const labelCarbs = resolved ? resolved.carbs : (f.carbs || 0);
+        const labelFat = resolved ? resolved.fat : (f.fat || 0);
         return {
+          labelPending: !resolved && !!f.fsId,
           description: stripped,
           fullName: f.name,
           brand: f.brand || myFoodsMap[stripped] || null,
           foodNutrients: [
-            { nutrientName: 'Energy', unitName: 'KCAL', value: f.cal },
-            { nutrientName: 'Protein', unitName: 'G', value: f.protein || 0 },
-            { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: f.carbs || 0 },
-            { nutrientName: 'Total lipid (fat)', unitName: 'G', value: f.fat || 0 },
+            { nutrientName: 'Energy', unitName: 'KCAL', value: labelCal },
+            { nutrientName: 'Protein', unitName: 'G', value: labelProtein },
+            { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: labelCarbs },
+            { nutrientName: 'Total lipid (fat)', unitName: 'G', value: labelFat },
           ],
           calPer100g: f.calPer100g,
           proteinPer100g: f.proteinPer100g,
@@ -1451,10 +1497,37 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
           type: myFoodsTypeMap[stripped] || 'food',
         };
       }));
+      resolvePendingLabels(pendingLabelIds);
     } catch (e) {
       console.log('Load recent error', e);
     }
   };
+
+  // Looks up the label serving for foods we haven't cached, strictly one at a time, and refreshes
+  // the lists as each answer lands. Sequential on purpose: this is the same lookup the app already
+  // makes when a food is tapped, so spreading it out keeps the Library off the API's daily budget
+  // rather than firing thirty requests the moment the screen opens. Cached forever after.
+  const labelQueueRef = useRef<string[]>([]);
+  const labelWorkingRef = useRef(false);
+  const resolvePendingLabels = useCallback((ids: string[]) => {
+    const fresh = ids.filter(id => id && !getCachedLabel(id) && !labelQueueRef.current.includes(id));
+    if (fresh.length === 0) return;
+    labelQueueRef.current.push(...fresh);
+    if (labelWorkingRef.current) return;
+    labelWorkingRef.current = true;
+    (async () => {
+      let resolvedAny = false;
+      while (labelQueueRef.current.length > 0) {
+        const id = labelQueueRef.current.shift()!;
+        const label = await resolveFsLabel(id, fetchFatSecretServings);
+        if (label) resolvedAny = true;
+      }
+      labelWorkingRef.current = false;
+      // One re-render at the end rather than per lookup, so the list doesn't flicker its way
+      // through the queue. Rows waiting on an answer show a spinner in the meantime.
+      if (resolvedAny) setLabelVersion(v => v + 1);
+    })();
+  }, []);
 
   const loadFavorites = async () => {
   try {
@@ -1485,7 +1558,21 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
       return { ...fav, isMyFood: true, isCustom: match.isCustom ?? true, id: fav.id || match.id || (Math.random().toString(36).slice(2) + Date.now().toString(36)) };
     });
     if (changed) await storageSet('pj_favorites', JSON.stringify(enriched));
-    setFavorites(enriched);
+    // A star is a pointer, not a nutrition record. The numbers saved alongside it are a snapshot of
+    // whatever was on screen when it was tapped, and that snapshot drifts: white bread's favourite
+    // held a 2.5-serving dinner and made a 41 g slice read 175 kcal. Display the food's real default
+    // serving instead -- the user's own record for a My Food, the cached label for a FatSecret food.
+    // The stored snapshot survives untouched on disk as the offline last resort.
+    await loadLabelCache();
+    const pendingFavIds: string[] = [];
+    const withLabels = enriched.map((fav: any) => {
+      const resolved = labelFromMyFood(myFoodsByName[fav.name]) || getCachedLabel(fav.fsId);
+      if (!resolved && fav.fsId) pendingFavIds.push(fav.fsId);
+      if (!resolved) return { ...fav, labelPending: !!fav.fsId };
+      return { ...fav, cal: resolved.cal, protein: resolved.protein, carbs: resolved.carbs, fat: resolved.fat, labelPending: false };
+    });
+    setFavorites(withLabels);
+    resolvePendingLabels(pendingFavIds);
   } catch (e) {
     console.log('Load favorites error', e);
   }
@@ -1761,6 +1848,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
     fsId: (f as any).fsId || null,
     type: f.type || 'food',
     brand: (f as any).brand || null,
+    labelPending: (f as any).labelPending || false,
     // Carry the AI flag through so openFoodDetail skips the FatSecret name-search for it.
     aiEstimated: (f as any).aiEstimated || false,
     // AI favorites have no gram serving; hand food-detail an existing-value basis (1 serving =
@@ -1844,7 +1932,9 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
           const brandName = (item as any).brand || (nameParts.length > 1 ? nameParts.slice(1).join(' · ') : null);
           const isSupplement = (item as any).type === 'supplement';
           const rowLoadingKey = `${(item as any).id || (item as any).fsId || item.description}_${index}`;
-          const isRowLoading = loadingItemKey === rowLoadingKey;
+          // Also true while this food's label serving is still being looked up, so the row shows a
+          // spinner rather than a placeholder number that's about to change under the user.
+          const isRowLoading = loadingItemKey === rowLoadingKey || !!(item as any).labelPending;
           return (
             <Animated.View
               ref={

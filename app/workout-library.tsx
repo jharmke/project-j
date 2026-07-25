@@ -12,7 +12,7 @@ import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-nativ
 import Reanimated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, runOnJS } from 'react-native-reanimated';
 import { storageSet } from '../utils/storage';
 import { ToastRenderer, useToast } from '../components/Toast';
-import KeyboardAwareCenter from '../components/KeyboardAwareCenter';
+import KeyboardAwareCenter, { useAnimatedKeyboardHeight } from '../components/KeyboardAwareCenter';
 import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
 import { checkWorkoutAchievements, getCelebTier } from '../achievementData';
@@ -2035,7 +2035,7 @@ export default function WorkoutLibraryScreen() {
   const addCardOpacity = useSharedValue(1);
   // Keyboard height caps the card so it fits between the safe-area top and the keyboard; its internal
   // ScrollView scrolls to reach every field + buttons (replaces the old translateY shift that overran).
-  const [addKbHeight, setAddKbHeight] = useState(0);
+  const addKbHeight = useAnimatedKeyboardHeight();
   const addOverlayStyle = useAnimatedStyle(() => ({ opacity: addOverlay.value }));
   const addCardAnimStyle = useAnimatedStyle(() => ({ transform: [{ scale: addScale.value }], opacity: addCardOpacity.value }));
   const detailOverlay = useSharedValue(0);
@@ -2578,16 +2578,9 @@ export default function WorkoutLibraryScreen() {
     else router.navigate('/(tabs)/workout');
   };
 
-  useEffect(() => {
-    if (!showAddModal) { setAddKbHeight(0); return; }
-    const show = Keyboard.addListener('keyboardWillShow', (e) => {
-      setAddKbHeight(e.endCoordinates.height);
-    });
-    const hide = Keyboard.addListener('keyboardWillHide', (e) => {
-      setAddKbHeight(0);
-    });
-    return () => { show.remove(); hide.remove(); };
-  }, [showAddModal]);
+  // Keyboard height now arrives already animated (see useAnimatedKeyboardHeight). The listener that
+  // used to live here set it as plain state, which lands in a single frame, so this modal snapped to
+  // its new position while the keyboard was still sliding up.
 
   const openAddModal = (ex: LibraryExercise | null = null) => {
     addOverlay.value = 0;
@@ -3394,9 +3387,15 @@ export default function WorkoutLibraryScreen() {
         <ToastRenderer />
         <Reanimated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.overlayBg }, addOverlayStyle]} pointerEvents="none" />
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeAddModal} />
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16, paddingTop: insets.top + 8, paddingBottom: addKbHeight + 8 }} pointerEvents="box-none">
-          <Reanimated.View pointerEvents="box-none" style={[{ width: '100%' }, addCardAnimStyle]}>
-          <View pointerEvents="auto" style={{ maxHeight: Dimensions.get('window').height - insets.top - addKbHeight - 24, backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20 }}>
+        <Animated.View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16, paddingTop: insets.top + 8, paddingBottom: Animated.add(addKbHeight, 8) }} pointerEvents="box-none">
+          {/* The height ceiling lives HERE, as a percentage of the animated padded box above, rather
+              than as a pixel number computed from the keyboard height. A pixel ceiling has to be
+              animated, and React Native applies a height constraint in one frame, so the card resized
+              in a single jump while the padding underneath glided -- which read as the whole modal
+              teleporting. As a percentage the shrinking container carries it for free. Same shape as
+              the Water modal, which is why that one always looked right. */}
+          <Reanimated.View pointerEvents="box-none" style={[{ width: '100%', maxHeight: '100%' }, addCardAnimStyle]}>
+          <Animated.View pointerEvents="auto" style={{ flexShrink: 1, backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20 }}>
             {/* CREATE, not "Add". This modal makes a NEW exercise in your library. The Workout tab has its
                 own modal, also titled "Add Exercise", which adds an existing exercise TO A DAY -- two
                 different jobs wearing one title. Create vs Add is the distinction. */}
@@ -3444,9 +3443,9 @@ export default function WorkoutLibraryScreen() {
                 </View>
               </View>
             </ScrollView>
-          </View>
+          </Animated.View>
           </Reanimated.View>
-        </View>
+        </Animated.View>
       </Modal>
 
       {/* Sort + Filter modal */}

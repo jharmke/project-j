@@ -26,6 +26,49 @@ import { Animated, Easing, Keyboard, Platform, ViewStyle, StyleProp } from 'reac
  * For centred cards only. Full screens and floating save bars are top-aligned and scrollable, where
  * the stock behaviour is fine and should be left alone.
  */
+/**
+ * The keyboard's height as an Animated.Value, for modals that already compute that number themselves
+ * and lay themselves out around it (padding the box, capping the card's max height). Those are the
+ * best-built keyboard modals in the app -- capping the height is exactly what plain
+ * KeyboardAvoidingView gets wrong on a tall card -- they just store the number in state, and a state
+ * change lands in one frame, so the card teleports. This animates the same number over the keyboard's
+ * own duration; the layout maths around it is unchanged.
+ *
+ * Drives layout properties, so it cannot use the native driver. Judge smoothness on a release build.
+ */
+export function useAnimatedKeyboardHeight() {
+  const height = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const onShow = (e: any) => {
+      Animated.timing(height, {
+        toValue: e?.endCoordinates?.height ?? 0,
+        duration: e?.duration || 250,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false,
+      }).start();
+    };
+
+    const onHide = (e: any) => {
+      Animated.timing(height, {
+        toValue: 0,
+        duration: e?.duration || 250,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: false,
+      }).start();
+    };
+
+    const showSub = Keyboard.addListener(showEvent, onShow);
+    const hideSub = Keyboard.addListener(hideEvent, onHide);
+    return () => { showSub.remove(); hideSub.remove(); };
+  }, [height]);
+
+  return height;
+}
+
 export default function KeyboardAwareCenter({
   children,
   style,

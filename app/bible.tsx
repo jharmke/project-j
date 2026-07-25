@@ -697,7 +697,9 @@ export default function BibleScreen() {
           {/* Amber, same as the Faith tab + Prayer. HeaderIconButton defaults to the app accent, so these
               need it passed -- a find-and-replace over this file cannot reach inside the component. */}
           <HeaderIconButton icon="star" onPress={() => setShowFavoritesModal(true)} color={theme.accentAmber} bg={theme.accentAmber + '1A'} border={theme.accentAmber + '4D'} />
-          <HeaderIconButton icon="book" onPress={() => router.push('/journal')} color={theme.accentAmber} bg={theme.accentAmber + '1A'} border={theme.accentAmber + '4D'} />
+          {/* "journal", not "book": the open book reads as scripture, which is the screen you're already
+              on. The closed notebook is the one that says "your writing". */}
+          <HeaderIconButton icon="journal" onPress={() => router.push('/journal')} color={theme.accentAmber} bg={theme.accentAmber + '1A'} border={theme.accentAmber + '4D'} />
           <View ref={tutGearRef as any} collapsable={false}>
             <HeaderIconButton icon="settings" onPress={openSettingsModal} color={theme.accentAmber} bg={theme.accentAmber + '1A'} border={theme.accentAmber + '4D'} />
           </View>

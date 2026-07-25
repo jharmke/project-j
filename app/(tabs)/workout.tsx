@@ -15,7 +15,7 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TAB_BAR_HEIGHT, TAB_SCROLL_PAD } from '../../components/CustomTabBar';
 import BackgroundLayers from '../../components/BackgroundLayers';
-import KeyboardAwareCenter from '../../components/KeyboardAwareCenter';
+import KeyboardAwareCenter, { useAnimatedKeyboardHeight } from '../../components/KeyboardAwareCenter';
 import { ToastRenderer, useToast } from '../../components/Toast';
 import { showAchievementToast } from '../../components/AchievementToast';
 import { showCelebration } from '../../components/CelebrationOverlay';
@@ -402,7 +402,7 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   const addExerciseKeyboardY = useSharedValue(0);
   // Keyboard height drives the modal's available space: the card is height-capped to fit between the
   // safe-area top and the keyboard, and its internal ScrollView scrolls to reach every field + buttons.
-  const [addExerciseKbHeight, setAddExerciseKbHeight] = useState(0);
+  const addExerciseKbHeight = useAnimatedKeyboardHeight();
   const addExerciseKeyboardStyle = useAnimatedStyle(() => ({
     transform: [{ scale: addExerciseScale.value }],
     opacity: addExerciseOpacity.value,
@@ -471,13 +471,13 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   };
 
   useEffect(() => {
+    // Add Exercise's keyboard height now arrives already animated (useAnimatedKeyboardHeight); setting
+    // it as plain state here landed in one frame, so that modal snapped into position.
     const show = Keyboard.addListener('keyboardWillShow', e => {
       manageTagsKeyboardOffset.value = withTiming(e.endCoordinates.height, { duration: e.duration || 250 });
-      setAddExerciseKbHeight(e.endCoordinates.height);
     });
     const hide = Keyboard.addListener('keyboardWillHide', e => {
       manageTagsKeyboardOffset.value = withTiming(0, { duration: e.duration || 250 });
-      setAddExerciseKbHeight(0);
     });
     return () => { show.remove(); hide.remove(); };
   }, []);
@@ -3027,9 +3027,13 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
       }}>
         <Animated.View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: theme.overlayBg, opacity: addExerciseOverlayAnim }} pointerEvents="none" />
         <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={closeAddExerciseModal} />
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16, paddingTop: insets.top + 8, paddingBottom: addExerciseKbHeight + 8 }} pointerEvents="box-none">
-          <Reanimated.View style={[{ width: '100%' }, addExerciseKeyboardStyle]} pointerEvents="box-none">
-            <View pointerEvents="auto" style={{ maxHeight: Dimensions.get('window').height - insets.top - addExerciseKbHeight - 24, backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20, overflow: 'hidden' }}>
+        {/* The height ceiling is a PERCENTAGE of the animated padded box above, not a pixel number
+            computed from the keyboard height. React Native applies a height constraint in one frame,
+            so an animated pixel ceiling resized the card in a jump on top of an otherwise smooth
+            padding animation, which read as the modal teleporting. See SPEC_keyboard_modals.md. */}
+        <Animated.View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16, paddingTop: insets.top + 8, paddingBottom: Animated.add(addExerciseKbHeight, 8) }} pointerEvents="box-none">
+          <Reanimated.View style={[{ width: '100%', maxHeight: '100%' }, addExerciseKeyboardStyle]} pointerEvents="box-none">
+            <View pointerEvents="auto" style={{ flexShrink: 1, backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20, overflow: 'hidden' }}>
               <TouchableOpacity onPress={closeAddExerciseModal} style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}>
                 <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
               </TouchableOpacity>
@@ -3132,7 +3136,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
               </ScrollView>
             </View>
           </Reanimated.View>
-        </View>
+        </Animated.View>
       </Modal>
 
       {/* Label Modal */}

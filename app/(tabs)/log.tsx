@@ -1810,17 +1810,6 @@ export default function LogScreen() {
         entries={entries}
         defaultShowNet={showNetCarbs}
       />
-      {repeatModalSlot && (
-        <RepeatMealModal
-          visible={!!repeatModalSlot}
-          onClose={() => setRepeatModalSlot(null)}
-          slots={mealSlots}
-          launchSlot={repeatModalSlot}
-          viewedKey={activeDate}
-          onAdded={applyMergedEntries}
-        />
-      )}
-
       {/* Meal Sections */}
       {mealSlots.map((slot, mealIdx) => {
         const meal = slot.id;
@@ -2492,6 +2481,23 @@ export default function LogScreen() {
       )}
 
     </ScrollView>
+
+    {/* OUTSIDE the page ScrollView on purpose. A Modal floats above the screen, but in the component
+        tree it stays a child of wherever it's written, and that decides who gets a gesture first.
+        Declared inside, a drag starting on empty space in this modal went to the page scroll beneath
+        and dismissed the keyboard mid-scroll -- setting keyboardShouldPersistTaps on the modal's own
+        list couldn't help, because the interception happened a level up. The Water modal below has
+        always been fine for exactly this reason: it lives out here. See SPEC_keyboard_modals.md. */}
+    {repeatModalSlot && (
+      <RepeatMealModal
+        visible={!!repeatModalSlot}
+        onClose={() => setRepeatModalSlot(null)}
+        slots={mealSlots}
+        launchSlot={repeatModalSlot}
+        viewedKey={activeDate}
+        onAdded={applyMergedEntries}
+      />
+    )}
 
     {showWaterCustomModal && (
       <Animated.View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center', zIndex: 999, opacity: waterModalAnim }}>

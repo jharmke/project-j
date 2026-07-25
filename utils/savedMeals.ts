@@ -15,6 +15,10 @@ export interface SavedMeal {
   items: any[];      // raw stored entries (clone source), same shape Repeat a Meal clones from
   totalKcal: number;
   createdAt: number;
+  // Usage, for the Catalog's "Recent" sort. Both optional: meals saved before this existed have
+  // neither, and sort treats a missing value as never-used rather than as zero-and-therefore-newest.
+  lastUsedAt?: number;
+  useCount?: number;
 }
 
 const KEY = 'pj_saved_meals';
@@ -50,6 +54,21 @@ export async function deleteSavedMeal(id: string): Promise<SavedMeal[]> {
   const updated = existing.filter(m => m.id !== id);
   await storageSet(KEY, JSON.stringify(updated));
   return updated;
+}
+
+// Stamps a meal as used, so the Catalog can sort by what you actually reach for. Called when a meal
+// is added to a day, NOT when it's merely expanded to look at. Read-then-merge, one meal, two fields;
+// a failure here must never block the food from being logged, which is the thing the user asked for.
+export async function markSavedMealUsed(id: string): Promise<void> {
+  try {
+    const existing = await loadSavedMeals();
+    const updated = existing.map(m =>
+      m.id === id ? { ...m, lastUsedAt: Date.now(), useCount: (m.useCount ?? 0) + 1 } : m
+    );
+    await storageSet(KEY, JSON.stringify(updated));
+  } catch {
+    // Sorting metadata is not worth surfacing an error for.
+  }
 }
 
 // Adding a saved meal's (possibly partial, checkbox-selected) items to a day reuses

@@ -13,18 +13,21 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../theme';
 import { useToast, ToastRenderer } from './Toast';
 import { MealSlot } from '../utils/mealSlots';
 import { getRepeatDays, logRepeatedItems, tidyFoodName, RepeatDay } from '../utils/repeatMeal';
-import { loadSavedMeals, deleteSavedMeal, SavedMeal } from '../utils/savedMeals';
+import { loadSavedMeals, deleteSavedMeal, markSavedMealUsed, SavedMeal } from '../utils/savedMeals';
 import { barFillGradient } from '../utils/barGradient';
 import { Type, numLine } from '../typography';
 import ModalHeader from './ModalHeader';
 import PrimaryCTA from './PrimaryCTA';
 import ButtonShine from './ButtonShine';
+import KeyboardAwareCenter from './KeyboardAwareCenter';
+import GradientTitle from './GradientTitle';
+import GradientNumber from './GradientNumber';
 
 // Macro dot colors, matched to the Log-tab mealtime cards (Protein / Carbs / Fat).
 const MACRO = { protein: '#0d9268', carbs: '#c47d1a', fat: '#a83232' };
@@ -67,6 +70,39 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
   const [catalogExpanded, setCatalogExpanded] = useState<Record<string, boolean>>({});
   const [catalogChecked, setCatalogChecked] = useState<Record<string, boolean[]>>({});
   const [catalogAdding, setCatalogAdding] = useState(false);
+  // Catalog search + sort. A saved-meal list is fine unsorted at five and unusable at thirty.
+  const [catalogQuery, setCatalogQuery] = useState('');
+  const [catalogSort, setCatalogSort] = useState<'recent' | 'az' | 'newest'>('recent');
+
+  // Search matches the meal's NAME and the names of the foods inside it, so "chicken" finds a meal
+  // called "Post Workout" that happens to contain chicken. That's the search people actually mean.
+  const visibleSavedMeals = (() => {
+    const q = catalogQuery.trim().toLowerCase();
+    const filtered = q
+      ? savedMeals.filter(m =>
+          m.name.toLowerCase().includes(q) ||
+          m.items.some((it: any) => String(it?.name ?? '').toLowerCase().includes(q))
+        )
+      : savedMeals;
+    const sorted = [...filtered];
+    if (catalogSort === 'az') {
+      sorted.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (catalogSort === 'newest') {
+      sorted.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+    } else {
+      // Never-used meals have no lastUsedAt at all. They sort BELOW everything you've actually used,
+      // then among themselves by newest, rather than being lumped in at the epoch in random order.
+      sorted.sort((a, b) => {
+        const au = a.lastUsedAt ?? 0, bu = b.lastUsedAt ?? 0;
+        if (au !== bu) return bu - au;
+        return (b.createdAt ?? 0) - (a.createdAt ?? 0);
+      });
+    }
+    return sorted;
+  })();
+
+  // Hidden until the list is big enough to need it -- a search box over three meals is clutter.
+  const showCatalogTools = savedMeals.length >= 6;
 
   const sourceSlot = slots.find(s => s.id === sourceSlotId) || launchSlot;
 
@@ -132,18 +168,22 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
   }, [visible, launchSlot.id]);
 
   // Reset to the Recent tab and (re)load the Meal Catalog each time the modal opens fresh --
-  // loaded up front so switching tabs never shows a loading flicker. First meal pre-expanded,
-  // all its items checked by default -- same convention Recent's days use.
+  // loaded up front so switching tabs never shows a loading flicker. Items are all checked by
+  // default so an expanded meal is ready to add.
+  // NOTHING is pre-expanded. This used to open index 0 of the raw stored list, which is the OLDEST
+  // saved meal, so the least likely one sat open pushing the rest down. Now that the list can be
+  // sorted and searched, auto-opening anything fights the order the user just chose.
   useEffect(() => {
     if (!visible) return;
     setActiveTab('recent');
+    setCatalogQuery('');
     setCatalogLoading(true);
     loadSavedMeals().then(list => {
       setSavedMeals(list);
       const exp: Record<string, boolean> = {};
       const chk: Record<string, boolean[]> = {};
-      list.forEach((m, i) => {
-        exp[m.id] = i === 0;
+      list.forEach(m => {
+        exp[m.id] = false;
         chk[m.id] = m.items.map(() => true);
       });
       setCatalogExpanded(exp);
@@ -182,6 +222,10 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
     try {
       const asRepeatItems = items.map(entry => ({ entry, name: entry.name, cal: entry.cal || 0, protein: entry.protein || 0, carbs: entry.carbs || 0, fat: entry.fat || 0 }));
       const merged = await logRepeatedItems(viewedKey, launchSlot.id, asRepeatItems);
+      // Stamped only once the food is actually logged, so the Recent sort reflects meals you reached
+      // for rather than ones you opened and thought better of. Deliberately not awaited: sorting
+      // metadata must never delay the thing the user asked for.
+      markSavedMealUsed(meal.id);
       onAdded(merged);
       triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
       showToast(`${launchSlot.name} added`, `${items.length} ${items.length === 1 ? 'item' : 'items'} · ${kcal} kcal`, 'success');
@@ -281,15 +325,20 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
   return (
     <Modal visible={visible} transparent animationType="none" onShow={open} onRequestClose={closeWithHaptic}>
       <ToastRenderer />
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="box-none">
 
-        {/* Animated dim overlay */}
-        <Animated.View
-          style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.55)', opacity: opacityAnim }]}
-          pointerEvents="none"
-        />
-        {/* Tap-outside dismiss */}
-        <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={closeWithHaptic} />
+      {/* Dimming and tap-outside sit OUTSIDE the keyboard-aware box: inside it they'd shrink with the
+          card and leave the strip behind the keyboard undimmed and untappable. */}
+      <Animated.View
+        style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.55)', opacity: opacityAnim }]}
+        pointerEvents="none"
+      />
+      <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={closeWithHaptic} />
+
+      {/* Keyboard-aware because the Catalog tab has a search field. The card's height is a percentage
+          of THIS box, so padding it shrinks the card, which shortens the list and lets it scroll clear
+          of the keyboard. Without it the card kept its full height and its lower rows sat behind the
+          keys, unreachable by scrolling. */}
+      <KeyboardAwareCenter style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="box-none">
 
         {/* Floating card */}
         <Animated.View
@@ -430,13 +479,26 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
                       borderRadius: 12,
                       borderWidth: isOpen ? 1.5 : 1,
                       borderColor: isOpen ? theme.accentBlueBorder : theme.borderCardTop,
+                      // Same 3pt accent edge every Food Library row carries. These two lists do the
+                      // same job -- food you're about to add -- so they get the same treatment rather
+                      // than a third one, and it's what stops a column of white cards reading as a
+                      // flat slab.
+                      borderLeftWidth: 3,
+                      borderLeftColor: theme.accentBlueRaw,
                       marginBottom: 10,
-                      overflow: 'hidden',
+                      // NO overflow: 'hidden' here. On iOS a shadow is drawn outside the layer bounds,
+                      // so clipping the layer clips the shadow away entirely -- these cards weren't
+                      // showing a faint shadow, they were showing none at all. The background still
+                      // respects borderRadius without it; only a child painting to the very edge would
+                      // need clipping, and none here do.
+                      // Deeper and softer than it was, too: a tight 8pt shadow at 0.14 vanishes on the
+                      // light themes, where a white card sits on a white sheet. Spread does more work
+                      // than darkness, so the radius grows more than the opacity.
                       shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 3 },
-                      shadowOpacity: 0.14,
-                      shadowRadius: 8,
-                      elevation: 4,
+                      shadowOffset: { width: 0, height: 5 },
+                      shadowOpacity: 0.18,
+                      shadowRadius: 14,
+                      elevation: 7,
                     }}
                   >
                     {/* Header row (tap to expand/collapse) */}
@@ -449,12 +511,12 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
                       <View style={{ flex: 1 }}>
                         {/* Day name + date */}
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiBold }}>
-                            {day.relativeLabel}
-                          </Text>
-                          <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiBold }}>
-                            {'  ·  '}{day.dateLabel}
-                          </Text>
+                          <GradientTitle
+                            title={`${day.relativeLabel}  ·  ${day.dateLabel}`}
+                            color={theme.textSecondary}
+                            style={{ fontSize: 14, fontFamily: Type.uiBold }}
+                            numberOfLines={1}
+                          />
                         </View>
                         {/* Live macro dots (reflect what's checked) */}
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
@@ -477,7 +539,10 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
                       </View>
                       {/* Live kcal (reflects what's checked) */}
                       <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={{ color: theme.textSecondary, fontSize: 20, fontFamily: Type.num, lineHeight: numLine(20) }}>{selKcal}</Text>
+                        {/* Green, matching every Food Library row's calorie figure. It also stops the
+                            number being one more grey element, and sits naturally with the green,
+                            amber and red macro dots beside it. */}
+                        <GradientNumber value={String(selKcal)} color={theme.accentGreen} style={{ fontSize: 20, fontFamily: Type.num, lineHeight: numLine(20) }} />
                         <Text style={{ color: theme.textDim, fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 1.5 }}>KCAL</Text>
                       </View>
                     </TouchableOpacity>
@@ -558,8 +623,56 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
               </Text>
             </View>
           ) : (
-            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 14, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
-              {savedMeals.map(meal => {
+            // paddingTop trimmed to 2: the tab row above already carries 12 of its own, and stacking
+            // that on the old 14 left a visible dead band above the search field.
+            // "handled", so a tap on empty space still dismisses the keyboard -- the only way most
+            // people close one. This was briefly "always" to stop a drag from dismissing mid-scroll,
+            // but that turned out to be the Log page's ScrollView reacting from underneath, and this
+            // modal has since moved outside it. With the real cause gone, "handled" behaves.
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 2, paddingBottom: 24 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              {showCatalogTools && (
+                <View style={{ marginBottom: 12, gap: 8 }}>
+                  <TextInput
+                    value={catalogQuery}
+                    onChangeText={setCatalogQuery}
+                    placeholder="Search saved meals..."
+                    placeholderTextColor={theme.textPlaceholder}
+                    style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiMedium }}
+                  />
+                  {/* Chips rather than a sort button: a second RN Modal will not display over an
+                      already-open one (see the Workout Library's rename overlay), so the Food
+                      Library's button-opens-a-sort-modal pattern can't be reused inside this modal.
+                      Three options also read better always-visible than hidden behind a tap. Same
+                      shape as the Saved Verses sort in Bible. */}
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    {([['recent', 'Recent'], ['az', 'A-Z'], ['newest', 'Newest']] as const).map(([val, label]) => {
+                      const on = catalogSort === val;
+                      return (
+                        // Shine + card fill on the active chip, matching the Recent / Meal Catalog tabs
+                        // directly above. Without it these read as flat painted boxes sitting under a
+                        // pair of properly molded ones.
+                        <TouchableOpacity
+                          key={val}
+                          activeOpacity={0.85}
+                          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setCatalogSort(val); }}
+                          style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, borderWidth: 1, overflow: 'hidden', backgroundColor: on ? theme.accentBlueBg : theme.bgCard, borderColor: on ? theme.accentBlueBorder : theme.borderCard }}>
+                          {on && <ButtonShine radius={8} />}
+                          <Text style={{ fontSize: 12, fontFamily: on ? Type.uiSemibold : Type.uiMedium, color: on ? theme.accentBlue : theme.textMuted }}>{label}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              )}
+              {visibleSavedMeals.length === 0 ? (
+                <View style={{ alignItems: 'center', paddingVertical: 28, gap: 6 }}>
+                  <Ionicons name="search" size={24} color={theme.textDim} />
+                  <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.uiSemibold }}>No meals match</Text>
+                  <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: Type.ui, textAlign: 'center' }}>
+                    Try a different word, or search a food inside the meal.
+                  </Text>
+                </View>
+              ) : visibleSavedMeals.map(meal => {
                 const isOpen = catalogExpanded[meal.id];
                 const { items: sel, kcal: selKcal } = catalogSelectedFor(meal);
                 const preview = meal.items.map(it => tidyFoodName(it.name)).join(', ');
@@ -571,13 +684,26 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
                       borderRadius: 12,
                       borderWidth: isOpen ? 1.5 : 1,
                       borderColor: isOpen ? theme.accentBlueBorder : theme.borderCardTop,
+                      // Same 3pt accent edge every Food Library row carries. These two lists do the
+                      // same job -- food you're about to add -- so they get the same treatment rather
+                      // than a third one, and it's what stops a column of white cards reading as a
+                      // flat slab.
+                      borderLeftWidth: 3,
+                      borderLeftColor: theme.accentBlueRaw,
                       marginBottom: 10,
-                      overflow: 'hidden',
+                      // NO overflow: 'hidden' here. On iOS a shadow is drawn outside the layer bounds,
+                      // so clipping the layer clips the shadow away entirely -- these cards weren't
+                      // showing a faint shadow, they were showing none at all. The background still
+                      // respects borderRadius without it; only a child painting to the very edge would
+                      // need clipping, and none here do.
+                      // Deeper and softer than it was, too: a tight 8pt shadow at 0.14 vanishes on the
+                      // light themes, where a white card sits on a white sheet. Spread does more work
+                      // than darkness, so the radius grows more than the opacity.
                       shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 3 },
-                      shadowOpacity: 0.14,
-                      shadowRadius: 8,
-                      elevation: 4,
+                      shadowOffset: { width: 0, height: 5 },
+                      shadowOpacity: 0.18,
+                      shadowRadius: 14,
+                      elevation: 7,
                     }}
                   >
                     {/* Header row (tap to expand/collapse) */}
@@ -588,9 +714,12 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
                     >
                       <Ionicons name={isOpen ? 'chevron-down' : 'chevron-forward'} size={16} color={theme.textMuted} />
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: Type.uiBold }}>
-                          {meal.name}
-                        </Text>
+                        <GradientTitle
+                          title={meal.name}
+                          color={theme.textSecondary}
+                          style={{ fontSize: 14, fontFamily: Type.uiBold }}
+                          numberOfLines={1}
+                        />
                         {!isOpen && (
                           <Text numberOfLines={1} style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, marginTop: 4 }}>
                             {preview}
@@ -600,7 +729,10 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
                       {/* Total sits alone in the corner now -- no icon crowding it -- so it reads
                           unambiguously as the sum of what's below, not just another line item. */}
                       <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={{ color: theme.textSecondary, fontSize: 20, fontFamily: Type.num, lineHeight: numLine(20) }}>{selKcal}</Text>
+                        {/* Green, matching every Food Library row's calorie figure. It also stops the
+                            number being one more grey element, and sits naturally with the green,
+                            amber and red macro dots beside it. */}
+                        <GradientNumber value={String(selKcal)} color={theme.accentGreen} style={{ fontSize: 20, fontFamily: Type.num, lineHeight: numLine(20) }} />
                         <Text style={{ color: theme.textDim, fontSize: 9, fontFamily: Type.uiBold, letterSpacing: 1.5 }}>KCAL</Text>
                       </View>
                     </TouchableOpacity>
@@ -671,7 +803,7 @@ export default function RepeatMealModal({ visible, onClose, slots, launchSlot, v
             </ScrollView>
           ))}
         </Animated.View>
-      </View>
+      </KeyboardAwareCenter>
     </Modal>
   );
 }

@@ -30,6 +30,15 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-25 **Meal Catalog search + sorting, and Find a Meal's visual pass (device-confirmed).** Search
+  matches meal names AND the foods inside them; three sort chips (Recent / A-Z / Newest) rather than a
+  sort button, because a second RN Modal won't display over an already-open one. SavedMeal gains optional
+  lastUsedAt/useCount, stamped when a meal is actually logged, which is what makes "Recent" mean anything.
+  Tools appear only past 6 saved meals. Nothing auto-expands now (it used to open index 0 of the RAW
+  stored list, i.e. the OLDEST meal). Find a Meal moved OUTSIDE the Log page's ScrollView -- declared
+  inside, a drag on empty space dismissed the keyboard from underneath. Modal made keyboard-aware for the
+  new search field. Cards: lost `overflow: hidden` (it was clipping their shadow away entirely on iOS),
+  gained the Food Library's 3pt accent left edge + green kcal, and gradient names/dates/calories.
 - 2026-07-25 **BURNED stat on Home + Log (device-confirmed).** Total burned so far today = burn-accuracy
   adjusted active + BMR prorated by time of day (full BMR for a past day). BMR is deliberately NOT scaled
   by burn accuracy -- that setting corrects what the watch MEASURES, and BMR is a formula. The figure was
@@ -1003,11 +1012,6 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
-- [surfaced 2026-07-25] **Meal Catalog needs search + sorting.** Find a Meal's Meal Catalog tab is a flat
-  unsorted list today. Fine at five saved meals, miserable at thirty, and there's no way to find anything.
-  Likely answer: a search box plus sort by recently used / alphabetical / most logged. Check what Recent
-  and Favorites already do in the Food Library before inventing a new pattern -- the sort control there
-  should almost certainly be reused rather than rebuilt.
 - [surfaced 2026-07-25, part 2 of the keyboard pass] **Hand-rolled keyboard modals still teleport.**
   The 2026-07-25 sweep converted every modal using KeyboardAvoidingView to KeyboardAwareCenter. It could
   not see a THIRD pattern: modals that hand-roll it with a Keyboard listener storing the height in state

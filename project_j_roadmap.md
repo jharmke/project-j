@@ -1012,27 +1012,27 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
-- [surfaced 2026-07-25, part 2 of the keyboard pass] **Hand-rolled keyboard modals still teleport.**
-  The 2026-07-25 sweep converted every modal using KeyboardAvoidingView to KeyboardAwareCenter. It could
-  not see a THIRD pattern: modals that hand-roll it with a Keyboard listener storing the height in state
-  and applying it as padding. State changes land in one frame, so those still jump. Confirmed on Create/
-  Edit Exercise (workout-library, `addKbHeight`). Same pattern in: Add Exercise on the Workout tab
-  (`addExerciseKbHeight`), journal.tsx, profile.tsx, settings.tsx, stats.tsx. NOTE these are actually the
-  best-built of the three patterns -- they also shrink the card's maxHeight, which is what plain
-  KeyboardAvoidingView gets wrong on tall cards. Fix is to animate the number they already compute, not
-  to replace the approach. Grep `KbHeight|keyboardHeight` to find them all.
-- [surfaced 2026-07-25] **Number-pad fields: audit for no-way-to-dismiss.** A number pad has no Return
-  key, so a field on a screen with no other visible control can strand the user. `components/
-  KeyboardDoneBar.tsx` is built and ready for these. Find them mechanically: grep `keyboardType` for
-  number-pad / numeric / decimal-pad. No device hunting needed. Reach for a height cap FIRST -- Add a
-  Prayer's trap was fixed by capping the card so its buttons could never leave, and the Done bar built
-  for it was then removed as redundant and visually bolted-on. See SPEC_keyboard_modals.md.
-- [surfaced 2026-07-25, from Justin's morning notes] **Keyboard-open animation on modals is a teleport.**
-  Save a Meal modal and the Water modal both JUMP when the keyboard opens instead of sliding smoothly.
-  Justin's read: "this issue is probably everywhere" -- treat as a framework-wide pass, not a two-modal
-  patch. Audit every modal with a text input (KeyboardAvoidingView behavior + animation config), pick one
-  correct pattern, apply everywhere. Per Verify Against Working Reference: find a modal that already
-  animates correctly and diff against it FIRST rather than trial-and-error.
+- [PARKED 2026-07-25, low priority, only if it starts to bother anyone] **Floating save bars jump when
+  the keyboard opens.** Everything else from the keyboard pass is done. What's left uses the hand-rolled
+  pattern (a Keyboard listener storing the height in state) to position a floating SAVE BAR rather than a
+  centred card: profile.tsx, settings.tsx, body-measurement-log.tsx, onboarding/profile-setup.tsx,
+  onboarding/your-style.tsx. Deliberately out of scope for the modal pass -- these are full screens, and
+  the standard says leave those alone. Fix if wanted is the same as everywhere else: swap the state for
+  `useAnimatedKeyboardHeight()` from components/KeyboardAwareCenter.tsx so the number arrives animated.
+  Nobody has complained about these; do not churn them speculatively.
+- [PINNED / parked 2026-07-25, deliberately NOT built -- do not "finish" this without a real trap]
+  **Number-pad Done bars.** A number pad has no Return key, so in principle a keypad field can strand a
+  user. Audited: **58 keypad fields across 21 files** (grep `keyboardType` for number-pad / numeric /
+  decimal-pad). Decision: build NOTHING for now.
+  WHY: a keypad only traps you when there's no other way out, and in this app there nearly always is --
+  centred modals dismiss on a tap outside, lists dismiss on a tap in empty space. Blanketing 58 fields
+  would put a grey accessory slab above the keyboard nearly everywhere, which Justin disliked on the one
+  screen it was tried. The one genuine trap found (Add a Prayer) turned out not to be a keyboard problem
+  at all: the card grew until its buttons left the screen, and a height cap fixed it. A trapped user is a
+  layout problem before it is a keyboard problem.
+  IF IT COMES UP: `components/KeyboardDoneBar.tsx` is built, styled to match the onboarding height/goal
+  bar, and is a two-line drop-in (`inputAccessoryViewID` on the field + the component alongside it).
+  Reach for a height cap first. See SPEC_keyboard_modals.md.
 - [surfaced 2026-07-25, from Justin's morning notes] **Notifications pass 2: copy, routing, settings
   clarity, personality.** Four related asks, one sweep: (a) re-read the exact text of every notification,
   (b) verify each one deep-links to the RIGHT place, (c) make the settings screen more digestible --

@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { Animated, TouchableOpacity } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../theme';
+import { barFillGradient } from '../utils/barGradient';
 
 interface Props {
   value: boolean;
@@ -23,6 +25,10 @@ export default function ToggleSwitch({ value, onValueChange, disabled, accent }:
   const onThumb = accent ?? theme.accentBlueRaw;
   const translateX = useRef(new Animated.Value(value ? THUMB_TRAVEL : 2)).current;
   const trackOpacity = useRef(new Animated.Value(value ? 1 : 0)).current;
+  // The thumb's COLOUR used to swap in one frame while the thumb slid smoothly, which is what made a
+  // toggle read as a click rather than a slide. Two stacked thumbs cross-fade instead, both on the
+  // native driver so the fade can't be delayed by a busy JS thread.
+  const thumbFade = useRef(new Animated.Value(value ? 1 : 0)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -35,6 +41,11 @@ export default function ToggleSwitch({ value, onValueChange, disabled, accent }:
         toValue: value ? 1 : 0,
         duration: 180,
         useNativeDriver: false,
+      }),
+      Animated.timing(thumbFade, {
+        toValue: value ? 1 : 0,
+        duration: 180,
+        useNativeDriver: true,
       }),
     ]).start();
   }, [value]);
@@ -69,19 +80,36 @@ export default function ToggleSwitch({ value, onValueChange, disabled, accent }:
         borderColor: onBorder,
         opacity: trackOpacity,
       }} />
-      {/* Thumb */}
+      {/* Thumb. The off (white) and on (gradient) faces are stacked and cross-faded rather than one
+          view changing colour, so the transition reads as a slide instead of a click. Gradient rather
+          than flat fill: the same molded treatment the buttons and bars use. */}
       <Animated.View style={{
         width: THUMB_SIZE,
         height: THUMB_SIZE,
         borderRadius: THUMB_SIZE / 2,
-        backgroundColor: value ? onThumb : '#ffffff',
         transform: [{ translateX }],
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.2,
         shadowRadius: 2,
         elevation: 2,
-      }} />
+        overflow: 'hidden',
+      }}>
+        <Animated.View style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          borderRadius: THUMB_SIZE / 2,
+          backgroundColor: '#ffffff',
+          opacity: thumbFade.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
+        }} />
+        <Animated.View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: thumbFade }}>
+          <LinearGradient
+            colors={barFillGradient(onThumb)}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={{ flex: 1, borderRadius: THUMB_SIZE / 2 }}
+          />
+        </Animated.View>
+      </Animated.View>
     </TouchableOpacity>
   );
 }

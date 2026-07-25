@@ -650,10 +650,12 @@ export default function SettingsScreen() {
       setGoalsForceOpen(true);
       await new Promise(r => setTimeout(r, 400));
     });
+    // Notification settings live on their own PAGE now, so the tour navigates there instead of
+    // expanding a section in place. The page registers its own targets on mount; the wait gives it
+    // time to mount and lay out before the first spotlight tries to measure anything.
     registerTutorialAction('openNotificationsSection', async () => {
-      setNotifTutorialActive(true);
-      setNotifForceOpen(true);
-      await new Promise(r => setTimeout(r, 450));
+      router.push('/notifications');
+      await new Promise(r => setTimeout(r, 550));
     });
     registerTutorialAction('closeNotificationsTutorial', async () => {
       setNotifTutorialActive(false);
@@ -2103,232 +2105,46 @@ export default function SettingsScreen() {
           </View>
         </CollapsibleSection>
 
-        {/* ── Notifications ── */}
-        <CollapsibleSection label="Notifications" subtitle="Reminders · Daily Cap · Categories" defaultOpen={deepLinkSection === 'notifications'} forceOpen={notifForceOpen} theme={theme}>
+        {/* ── Notifications ──
+            Everything that used to live in this section now has its own page. It was one card holding
+            seven separate concerns, and the only way to separate them inside a single card was
+            hairlines and shifting text sizes -- which is exactly why it read as cluttered. What's left
+            here is a status line and a way in, so this screen got shorter rather than longer.
+            A right-facing affordance and a labelled button, not a chevron: the other cards on this
+            screen expand in place, and this one navigates away. */}
+        <CollapsibleSection
+          label="Notifications"
+          subtitle={notifSettings.masterEnabled ? 'On · Reminders · Quiet Hours' : 'Off · No reminders'}
+          defaultOpen={deepLinkSection === 'notifications'}
+          forceOpen={notifForceOpen}
+          theme={theme}
+        >
           <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-
-            {/* Permission banner */}
-            {notifPermission === 'denied' && (
-              <View style={{ backgroundColor: theme.accentRedBg ?? 'rgba(204,51,51,0.12)', borderWidth: 1, borderColor: theme.accentRed, borderRadius: 10, padding: 12, marginBottom: 16 }}>
-                <Text style={{ color: theme.accentRed, fontSize: 13, fontFamily: Type.uiSemibold }}>Notifications Blocked</Text>
-                <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: Type.ui, marginTop: 4 }}>iOS permission was denied. Go to Settings then GoodForge then Notifications to enable.</Text>
+            {/* A status READOUT, not a control. Each line is a label above a value, the same shape the
+                rest of the app uses for a figure and its caption, rather than one run-on sentence. */}
+            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 14 }}>
+              <View style={{ flex: 1, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 10, paddingHorizontal: 12 }}>
+                <Text style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textMuted, marginBottom: 3 }}>Status</Text>
+                <GradientNumber
+                  value={notifSettings.masterEnabled ? 'On' : 'Off'}
+                  color={notifSettings.masterEnabled ? theme.accentGreen : theme.textMuted}
+                  style={{ fontSize: 16, fontFamily: Type.uiBold }}
+                />
               </View>
-            )}
-
-            {/* Master toggle */}
-            <View ref={notifMasterRef} style={[styles.row, { borderTopColor: 'transparent', paddingHorizontal: 0, paddingTop: 0 }]}>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Enable Notifications</Text>
-                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Master on/off for all reminders</Text>
+              <View style={{ flex: 2, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 10, paddingHorizontal: 12 }}>
+                <Text style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textMuted, marginBottom: 3 }}>Quiet Hours</Text>
+                <GradientNumber
+                  value={`${formatNotifTime(notifSettings.quietStart)} to ${formatNotifTime(notifSettings.quietEnd)}`}
+                  color={theme.textSecondary}
+                  style={{ fontSize: 16, fontFamily: Type.uiBold }}
+                />
               </View>
-              <ToggleSwitch
-                value={notifSettings.masterEnabled}
-                onValueChange={v => {
-                  if (!v) closeTimePicker();
-                  if (v && notifPermission === 'undetermined') {
-                    requestNotificationPermission().then(granted => {
-                      setNotifPermission(granted ? 'granted' : 'denied');
-                    });
-                  }
-                  updateNotifSettings({ ...notifSettings, masterEnabled: v });
-                }}
-              />
             </View>
-
-            {(notifSettings.masterEnabled || notifTutorialActive) && (
-              <>
-                {/* ── Quiet Hours ── */}
-                <GradientTitle title="Quiet Hours" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginTop: 16, marginBottom: 10 }} />
-                <View ref={quietHoursRowRef} style={{ flexDirection: 'row', gap: 12, marginBottom: 4 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.uiSemibold, marginBottom: 6 }}>From</Text>
-                    <TouchableOpacity
-                      onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openTimePicker('quietStart', notifSettings.quietStart); }}
-                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 10, alignItems: 'center' }}>
-                      <GradientNumber value={formatNotifTime(notifSettings.quietStart)} color={theme.textSecondary} style={{ fontSize: 15, fontFamily: Type.uiSemibold }} />
-                    </TouchableOpacity>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.uiSemibold, marginBottom: 6 }}>Until</Text>
-                    <TouchableOpacity
-                      onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openTimePicker('quietEnd', notifSettings.quietEnd); }}
-                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 10, alignItems: 'center' }}>
-                      <GradientNumber value={formatNotifTime(notifSettings.quietEnd)} color={theme.textSecondary} style={{ fontSize: 15, fontFamily: Type.uiSemibold }} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                {/* ── Streak Protection ── */}
-                <View style={{ height: 1, backgroundColor: theme.borderInput, marginTop: 16, marginBottom: 12 }} />
-                <View ref={notifStreakRef} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <View style={{ flex: 1, marginRight: 12 }}>
-                    <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Streak Protection</Text>
-                    <Text style={[styles.rowSub, { color: theme.textMuted }]}>Always fires when streaks are at risk tonight. Not subject to the daily cap.</Text>
-                  </View>
-                  <ToggleSwitch
-                    value={notifSettings.streakProtection}
-                    onValueChange={v => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateNotifSettings({ ...notifSettings, streakProtection: v }); }}
-                  />
-                </View>
-
-                {/* ── Daily cap ── */}
-                <View style={{ height: 1, backgroundColor: theme.borderInput, marginTop: 16, marginBottom: 12 }} />
-                <View ref={notifCapRef}>
-                  <GradientTitle title="How Many Per Day" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }} />
-                  <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginBottom: 10 }}>Streaks, IF window, summaries, and water reminders are not counted toward this.</Text>
-                  <View style={{ flexDirection: 'row', gap: 8 }}>
-                    {([3, 5, 'all'] as const).map(cap => (
-                      <TouchableOpacity
-                        key={String(cap)}
-                        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateNotifSettings({ ...notifSettings, dailyCap: cap }); }}
-                        style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: notifSettings.dailyCap === cap ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: notifSettings.dailyCap === cap ? theme.accentBlueBorder : theme.borderInput }}>
-                        {notifSettings.dailyCap === cap && <ButtonShine radius={8} />}
-                        <Text style={{ fontSize: 14, fontFamily: Type.uiBold, color: notifSettings.dailyCap === cap ? theme.accentBlue : theme.textMuted }}>{cap === 'all' ? 'All' : String(cap)}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-
-                {/* ── Category pills ── */}
-                <View style={{ height: 1, backgroundColor: theme.borderInput, marginTop: 16, marginBottom: 12 }} />
-                <View ref={notifCategoriesRef}>
-                <Text style={{ fontSize: 11, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>What Can We Notify You About</Text>
-                <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-                  {([
-                    { key: 'categoryFitness' as const, label: 'Fitness' },
-                    { key: 'categoryFaith' as const, label: 'Faith' },
-                    { key: 'categoryFasting' as const, label: 'Fasting' },
-                    { key: 'categorySummaries' as const, label: 'Summaries' },
-                  ]).map(({ key, label }) => {
-                    const isNRN = key === 'categoryFaith' && faithJourney === 'notrightnow';
-                    const isOn = notifSettings[key] && !isNRN;
-                    return (
-                      <TouchableOpacity
-                        key={key}
-                        onPress={() => {
-                          if (isNRN) return;
-                          triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-                          updateNotifSettings({ ...notifSettings, [key]: !notifSettings[key] });
-                        }}
-                        activeOpacity={isNRN ? 1 : 0.7}
-                        style={{ paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: isOn ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: isOn ? theme.accentBlueBorder : theme.borderInput, opacity: isNRN ? 0.4 : 1 }}>
-                        {isOn && <ButtonShine radius={20} />}
-                        <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: isOn ? theme.accentBlue : theme.textMuted }}>{label}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-                </View>
-
-                {/* ── Water reminders (Fitness category only) ── */}
-                {(notifSettings.categoryFitness || notifTutorialActive) && (
-                  <View ref={notifWaterRef}>
-                    <View style={{ height: 1, backgroundColor: theme.borderInput, marginTop: 16, marginBottom: 12 }} />
-                    <GradientTitle title="Water Reminders" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }} />
-                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, marginBottom: 10 }}>Spaced evenly through your waking hours. Does not count toward the daily cap.</Text>
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                      {([0, 1, 2, 3, 4] as const).map(count => (
-                        <TouchableOpacity
-                          key={count}
-                          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateNotifSettings({ ...notifSettings, waterCount: count }); }}
-                          style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: notifSettings.waterCount === count ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: notifSettings.waterCount === count ? theme.accentBlueBorder : theme.borderInput }}>
-                          {notifSettings.waterCount === count && <ButtonShine radius={8} />}
-                          <Text style={{ fontSize: 13, fontFamily: Type.uiBold, color: notifSettings.waterCount === count ? theme.accentBlue : theme.textMuted }}>{count === 0 ? 'Off' : String(count)}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </View>
-                )}
-
-                {/* ── Advanced ── */}
-                <View style={{ marginTop: 12 }} />
-                <View ref={notifAdvancedRef}>
-                <NotifGroup label="Advanced" summary="Activity time, weight frequency, and more" theme={theme}>
-
-                  {/* Activity reminder time */}
-                  <GradientTitle title="Activity Reminder Time" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }} />
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                    <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: Type.ui, flex: 1, paddingRight: 10 }}>Fires if no workout and steps below 75% of goal</Text>
-                    <TouchableOpacity
-                      onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openTimePicker('activityTime', notifSettings.activityTime); }}
-                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14, marginLeft: 12 }}>
-                      <GradientNumber value={formatNotifTime(notifSettings.activityTime)} color={theme.textSecondary} style={{ fontSize: 14, fontFamily: Type.uiSemibold }} />
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Weight log frequency */}
-                  <View style={{ height: 1, backgroundColor: theme.borderInput, marginBottom: 12 }} />
-                  <GradientTitle title="Weight Log Frequency" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }} />
-                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
-                    {([
-                      { value: 'daily' as const, label: 'Daily' },
-                      { value: '3day' as const, label: 'Every 3 Days' },
-                      { value: 'weekly' as const, label: 'Weekly' },
-                    ]).map(({ value, label }) => (
-                      <TouchableOpacity
-                        key={value}
-                        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateNotifSettings({ ...notifSettings, weightFrequency: value }); }}
-                        style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center', backgroundColor: notifSettings.weightFrequency === value ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: notifSettings.weightFrequency === value ? theme.accentBlueBorder : theme.borderInput }}>
-                        {notifSettings.weightFrequency === value && <ButtonShine radius={8} />}
-                        <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: notifSettings.weightFrequency === value ? theme.accentBlue : theme.textMuted, textAlign: 'center' }}>{label}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-
-                  {/* Prayer check-in time */}
-                  {faithJourney === 'rooted' && (
-                    <>
-                      <View style={{ height: 1, backgroundColor: theme.borderInput, marginBottom: 12 }} />
-                      <GradientTitle title="Prayer Check-In Time" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }} />
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                        <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: Type.ui }}>Fires if no prayer logged today</Text>
-                        <TouchableOpacity
-                          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openTimePicker('prayerTime', notifSettings.prayerTime); }}
-                          style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14, marginLeft: 12 }}>
-                          <GradientNumber value={formatNotifTime(notifSettings.prayerTime)} color={theme.textSecondary} style={{ fontSize: 14, fontFamily: Type.uiSemibold }} />
-                        </TouchableOpacity>
-                      </View>
-                    </>
-                  )}
-
-                  {/* IF window reminder lead time */}
-                  <View style={{ height: 1, backgroundColor: theme.borderInput, marginBottom: 12 }} />
-                  <GradientTitle title="IF Window Reminder" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }} />
-                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
-                    {([15, 30, 60] as const).map(mins => (
-                      <TouchableOpacity
-                        key={mins}
-                        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateNotifSettings({ ...notifSettings, ifLeadMins: mins }); }}
-                        style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center', backgroundColor: notifSettings.ifLeadMins === mins ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: notifSettings.ifLeadMins === mins ? theme.accentBlueBorder : theme.borderInput }}>
-                        {notifSettings.ifLeadMins === mins && <ButtonShine radius={8} />}
-                        <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: notifSettings.ifLeadMins === mins ? theme.accentBlue : theme.textMuted }}>{mins} min</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                  <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.ui, marginBottom: 4 }}>Minutes before eating window closes</Text>
-
-                  {/* Streak protection offset */}
-                  <View style={{ height: 1, backgroundColor: theme.borderInput, marginTop: 8, marginBottom: 12 }} />
-                  <GradientTitle title="Streak Protection Timing" color={theme.accentBlue} numberOfLines={1} style={{ fontSize: 11, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }} />
-                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
-                    {([30, 45, 60] as const).map(mins => (
-                      <TouchableOpacity
-                        key={mins}
-                        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateNotifSettings({ ...notifSettings, streakOffsetMins: mins }); }}
-                        style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center', backgroundColor: notifSettings.streakOffsetMins === mins ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: notifSettings.streakOffsetMins === mins ? theme.accentBlueBorder : theme.borderInput }}>
-                        {notifSettings.streakOffsetMins === mins && <ButtonShine radius={8} />}
-                        <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: notifSettings.streakOffsetMins === mins ? theme.accentBlue : theme.textMuted }}>{mins} min</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                  <Text style={{ fontSize: 11, color: avgBedtime ? theme.accentBlue : theme.textDim, fontFamily: Type.ui }}>
-                    {avgBedtime ? `Minutes before your avg bedtime of ${avgBedtime}` : 'Not enough sleep data yet (needs 3+ nights). Defaults to 9:00 PM.'}
-                  </Text>
-
-                </NotifGroup>
-                </View>
-              </>
-            )}
+            <PrimaryCTA
+              label="Customize Notifications"
+              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/notifications'); }}
+              faceStyle={{ paddingVertical: 12, borderRadius: 8 }}
+            />
           </View>
         </CollapsibleSection>
 

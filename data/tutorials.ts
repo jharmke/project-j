@@ -1799,9 +1799,13 @@ export const TUTORIALS: Tutorial[] = [
   {
     id: 'notifications',
     name: 'Notifications',
-    description: 'Set quiet hours, a daily cap, which categories can reach you, water reminders, and streak protection.',
+    description: 'Set quiet hours, a daily limit, exactly which reminders can reach you, and when each one fires.',
     tab: 'settings',
+    // Notification settings moved out of Settings onto their own page, so the pre-action navigates
+    // there rather than expanding a section in place, and returnRoute pops back to Settings where the
+    // tour was launched from.
     preAction: 'openNotificationsSection',
+    returnRoute: 'back',
     steps: [
       {
         targetKey: 'none',
@@ -1827,60 +1831,52 @@ export const TUTORIALS: Tutorial[] = [
         noTabBarOffset: true,
         title: 'QUIET HOURS',
         body: {
-          discipline: 'No notification fires inside this window, period. Set it to your sleep hours so nothing wakes you. The one exception is streak protection, covered next.',
+          discipline: 'No notification fires inside this window, period. Set it to your sleep hours so nothing wakes you. The one exception is streak protection, covered further down.',
           balanced: 'During quiet hours, the app holds all notifications. Set this to your sleep window so reminders never wake you up.',
           mindful: 'Quiet hours are a window where nothing reaches you. Set it around your sleep so your rest stays undisturbed.',
         },
       },
-      {
-        targetKey: 'notif_streak',
-        noTabBarOffset: true,
-        title: 'STREAK PROTECTION',
-        body: {
-          discipline: 'A safety net. When a streak is about to break tonight, this fires even during quiet hours and even past your daily cap. It is the one reminder that always gets through. Leave it on.',
-          balanced: 'This always fires when one of your streaks is at risk of breaking that night, even during quiet hours and beyond the daily cap. A safety net so you never lose a streak by forgetting.',
-          mindful: 'If a streak is about to slip, this gentle nudge comes through even during quiet hours. It is here to help, and you can turn it off if you prefer.',
-        },
-      },
+      // Streak protection no longer has a step of its own: it sits with the other cap-bypassing
+      // reminders now, and the 'notif_bypass' step below covers it where it actually lives.
       {
         targetKey: 'notif_cap',
         noTabBarOffset: true,
-        title: 'DAILY CAP',
+        title: 'DAILY LIMIT',
         body: {
-          discipline: 'The ceiling on how many reminders you get per day. Streak protection, your IF window, summaries, and water reminders do not count against it, so the cap only limits the optional nudges.',
-          balanced: 'This limits how many notifications you receive in a day. Streaks, your IF window, summaries, and water reminders are exempt, so the cap only applies to the rest.',
-          mindful: 'Set how many reminders feel right per day. Streaks, fasting, summaries, and water are not counted, so you stay in control of the rest.',
+          discipline: 'The ceiling on how many nudges you get per day. Streaks, summaries, and water do not count against it, so the limit only applies to the optional stuff.',
+          balanced: 'This caps how many nudges you get in a day. Streaks, summaries, and water are exempt, so the limit only applies to the rest.',
+          mindful: 'Set how many nudges feel right per day. Streaks, summaries, and water are not counted, so you stay in control of the rest.',
         },
       },
       {
         targetKey: 'notif_categories',
         noTabBarOffset: true,
-        title: 'CATEGORIES',
+        title: 'WHAT REACHES YOU',
         body: {
-          discipline: 'Toggle entire topics on or off: Fitness, Faith, Fasting, and Summaries. Turn off what you do not care about and that whole category goes silent. Faith is hidden if your Faith Journey is set to Not Right Now.',
-          balanced: 'These pills control which topics can reach you: Fitness, Faith, Fasting, and Summaries. Tap any to mute that whole category. Faith only appears if your Faith Journey allows it.',
-          mindful: 'Choose which topics you want to hear about: Fitness, Faith, Fasting, and Summaries. Tap any to quiet it. Faith stays hidden if your Faith Journey is set to Not Right Now.',
+          discipline: 'Three switches: Nutrition, Fitness, Faith. Tap a row to open it and you get every reminder inside it separately, each saying exactly when it fires. Kill one without losing the rest of the group.',
+          balanced: 'Nutrition, Fitness and Faith each have a switch. Tap a row to expand it and you can control each reminder inside on its own, with a line telling you when it fires.',
+          mindful: 'Three areas: Nutrition, Fitness and Faith. Tap any row to open it and choose exactly which reminders you want, one by one. Turn off anything that does not serve you.',
         },
       },
       {
-        targetKey: 'notif_water',
+        targetKey: 'notif_bypass',
         noTabBarOffset: true,
-        title: 'WATER REMINDERS',
+        title: 'ALWAYS SENT',
         body: {
-          discipline: 'Pick how many water nudges you want, spaced evenly across your waking hours. They live under the Fitness category and do not count toward your daily cap. Set to Off if you do not want them.',
-          balanced: 'Choose how many water reminders you get, spread evenly through your day. They are part of the Fitness category and do not count toward the daily cap.',
-          mindful: 'A few optional water nudges, spaced through your day. They do not count toward your cap. Set to Off whenever you like.',
+          discipline: 'Streak protection and summaries ignore your daily limit. Streak protection fires when a streak is about to break, with its timing right underneath. It is the one reminder worth leaving on.',
+          balanced: 'These two come through even if you have hit your daily limit. Streak protection warns you when a streak is at risk that night, and you can set how early it lands.',
+          mindful: 'These come through regardless of your limit. Streak protection is a gentle heads-up when a streak is about to slip, and you can turn it off if you prefer.',
         },
       },
       {
-        targetKey: 'notif_advanced',
+        targetKey: 'notif_timing',
         noTabBarOffset: true,
         tutorialAction: 'closeNotificationsTutorial',
-        title: 'ADVANCED',
+        title: 'TIMING',
         body: {
-          discipline: 'Open Advanced to fine-tune timing: your activity reminder time, weight log frequency, prayer check-in time, IF window lead time, and streak protection timing. Dial in exactly when each one fires.',
-          balanced: 'Tap Advanced for finer control: activity reminder time, weight log frequency, prayer check-in, IF window lead time, and streak protection timing. Everything here is optional.',
-          mindful: 'Advanced holds the finer timing settings: activity, weight, prayer, fasting, and streak reminders. Open it only if you want to adjust the details.',
+          discipline: 'The last card sets when things fire: activity reminder time, weight log frequency, prayer check-in, and your fasting window lead time. Dial these in once and forget them.',
+          balanced: 'This last card controls when reminders land: activity time, weight log frequency, prayer check-in, and how early your fasting window warning arrives.',
+          mindful: 'The final card is timing: when your activity nudge lands, how often weight comes up, prayer check-in, and fasting. Adjust only what you want to.',
         },
       },
     ],

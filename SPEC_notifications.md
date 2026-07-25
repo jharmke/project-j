@@ -187,6 +187,10 @@ With a default cap of 5, users with a full P2 queue will rarely see Weight Log (
 
 Screen renders top to bottom:
 
+> ⚠️ **SUPERSEDED 2026-07-25 — the settings UI below is the ORIGINAL 2026-06-08 design. The
+> notification TYPES, priorities, copy rules, Mindful behaviour and deep links in this file are all
+> still current; only the SETTINGS SCREEN changed. See "SETTINGS UI (CURRENT)" at the end of this file.**
+
 **Enable Notifications** [master on/off toggle]
 
 **Quiet Hours** [tap to edit row, shows current range, e.g. "10:00 PM to 7:00 AM"]
@@ -322,3 +326,95 @@ This layer is NOT part of the current overhaul. Do not build piecemeal. Needs a 
 - 2026-06-08: Full redesign locked with Justin. Smart/Manual split replaced with category-based settings + daily cap + priority system. 14 types finalized (2 killed, 4 new added). Settings UI fully specced. Deep linking table complete. Mindful two-state pass complete. Copy variation approach locked (deterministic rotation, 4-6 per type per mode). Smart coaching scenarios preserved as future layer, not this build, details not agreed on.
 - 2026-06-08: Core build complete. services/notifications.ts and services/notificationScheduler.ts fully rewritten. Settings UI replaced (old 3-accordion/11-toggle structure gone, new spec-compliant design). Deep linking wired. Cancel-on-view (weekly/monthly) and cancel-on-complete (faith reading) hooked up. IF Check-In bug root-caused and fixed. REMAINING: copy variations pass only.
 - 2026-06-10: Live test (Justin). Three bugs found and fixed. (1) Water/weight/IF notifications routed correctly but home screen never read useLocalSearchParams or scrollTo param: added cardOffsets ref + onLayout on all visibleCards wrappers + scrollTo useEffect to index.tsx. (2) Activity notification used string-form router.push which failed silently (try/catch swallowed it): fixed _layout.tsx handler to always use object form. (3) IF notifications routed to home tab but IFCard lives on log tab: fixed route in notifications.ts (both IF Window Closing and IF Check-In), added ifCardOffset ref + scrollTo useEffect + onLayout wrapper to log.tsx. Deep link table below updated to reflect corrected IF route.
+
+---
+
+## SETTINGS UI (CURRENT, as of 2026-07-25)
+
+Replaces the "Settings UI" section higher up in this file. Types, priorities, copy, Mindful behaviour
+and deep links are unchanged -- this is only about where the controls live and how they're grouped.
+
+### It's a page now, not a section
+
+Notification settings moved OUT of the Settings screen into `app/notifications.tsx`.
+
+Settings keeps one collapsible card: a status readout (On/Off + the current quiet hours) and a
+**Customize Notifications** button that pushes `/notifications`. Settings got SHORTER as a result.
+
+WHY: the old section was one card holding seven separate concerns, so the only tools available to
+separate them were hairlines and shifting text sizes -- which is exactly why it read as cluttered. On
+its own page each concern is its own card.
+
+### Category taxonomy changed: 4 -> 3
+
+Was Fitness / Faith / Fasting / Summaries. Now **Nutrition / Fitness / Faith** -- the app's own three
+pillars.
+
+- **Fasting** was never a pillar anyone thinks in; it's a feature inside eating. Folded into Nutrition.
+- **Summaries** is a delivery FORMAT, not a subject. Putting it beside Fitness compared a category to a
+  file type. It's now a standalone switch alongside Streak Protection.
+- The real line already in the code is **what competes for the daily cap vs what bypasses it**. Streak
+  Protection, Summaries and Water bypass; the three pillars compete.
+
+STORAGE WAS NOT MIGRATED: `categoryFasting` is still the stored key behind the **Nutrition** switch, and
+`categoryFitness` behind Fitness. Renamed in the UI only, so nobody's saved preference had to move.
+
+### Per-notification switches (the main change)
+
+Each of the three areas EXPANDS to reveal every reminder inside it, each with its own switch and a line
+saying when it fires.
+
+- **Nutrition** — Food Log, Fasting Check-In, Fasting Window, Water
+- **Fitness** — Activity, Weight Log
+- **Faith** — Daily Verse, Reading & Devotionals, Gratitude, Prayer (Prayer is Rooted-only; the whole
+  area greys out for Not Right Now)
+
+MOTIVATING CASE (Justin's): someone who prays daily outside the app wants the prayer nudge gone but
+would previously have lost the daily verse, reading plan and gratitude with it.
+
+Rules:
+- An area's switch takes its children with it BOTH ways. Off switches every child off; on brings them
+  all back. This keeps the child switches honest -- showing them "on but dimmed" under an area that's
+  off implies they'd fire, and they wouldn't.
+- Turning any single child on revives its area, so "I only want this one" is one tap from an area
+  that's currently off. Areas stay expandable while off for exactly this reason.
+- Turning the LAST child off switches the area off.
+- The area's subtitle is a count ("3 of 4 on"), so a customised area is obvious at a glance.
+- **Water** is a switch, not a pill row with an "Off" option — two ways to turn one thing off in the
+  same list. Its 1-4 count appears under it when on. `waterCount: 0` IS the off state (no separate
+  boolean, so switch and count can't disagree); `waterCountLast` remembers the number so toggling back
+  on restores what they had.
+
+New optional settings keys: `typeFoodLog`, `typeIfCheckIn`, `typeIfWindow`, `typeActivity`,
+`typeWeightLog`, `typeDailyVerse`, `typeFaithReading`, `typeGratitude`, `typePrayer`, `waterCountLast`.
+All read with `?? true` — a settings blob written before they existed keeps every reminder in an
+already-enabled area enabled. Nobody's setup changes meaning on upgrade.
+
+### Page layout (3 cards, accent top border, no eyebrow labels)
+
+1. Enable Notifications + Quiet Hours
+2. Daily Limit (3/5/All), then Nutrition, Fitness, Faith, Streak Protection, Summaries
+3. Timing: activity time, weight frequency, prayer check-in, fasting window lead
+
+Streak Protection's bedtime offset sits directly under its own switch, not stranded in the Timing card.
+The cap-bypass fact is stated in each exempt row's own description ("Sent even if you've hit your daily
+limit") rather than by a badge — a two-word chip like "No limit" reads as UNLIMITED notifications.
+
+### Type scale used on this page
+
+Four roles, nothing else gets a size: **9pt tracked uppercase grey** = card label (unused here, every
+card is labelled by its first row) · **15pt semibold** = a row title · **13pt semibold** = text inside a
+control · **12pt medium muted** = every description. Colour rule: **accent means live** (active
+selection, something switched on, something tappable); static text stays grey.
+
+### Tutorial
+
+The `notifications` tour navigates to the page (preAction `openNotificationsSection` now pushes the
+route) and uses `returnRoute: 'back'` so it lands back on Settings. Targets are registered in
+`app/notifications.tsx`: `notif_master`, `notif_quiet`, `notif_cap`, `notif_categories`, `notif_bypass`,
+`notif_timing`. The old `notif_streak`, `notif_water` and `notif_advanced` steps are gone.
+
+### Still open
+
+- **Copy + personality pass** (the original item (d)): the exact text of all 14 notification types.
+  Deliberately NOT done. Parked in NEXT UP.

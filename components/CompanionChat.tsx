@@ -4,6 +4,7 @@ import {
   ScrollView, Share, StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { barFillGradient } from '../utils/barGradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Rect } from 'react-native-svg';
 import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, runOnJS } from 'react-native-reanimated';
@@ -846,11 +847,21 @@ export default function CompanionChat({
                 multiline
                 onBlur={() => inputRef.current?.setNativeProps({ selection: { start: 0, end: 0 } })}
               />
+              {/* Same molded treatment as Otto's send button, in Halo's gold. Flat when disabled: the
+                  gradient is what says "this does something now". */}
               <Pressable
                 onPress={send}
                 disabled={!canSend}
-                style={[styles.sendBtn, { backgroundColor: canSend ? GOLD : theme.bgInput, borderColor: canSend ? GOLD : theme.borderInput }]}
+                style={[styles.sendBtn, { backgroundColor: canSend ? GOLD : theme.bgInput, borderColor: canSend ? GOLD : theme.borderInput, overflow: 'hidden' }]}
               >
+                {canSend && (
+                  <LinearGradient
+                    colors={barFillGradient(GOLD)}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                )}
                 <Ionicons name="arrow-up" size={20} color={canSend ? CROSS_DARK : theme.textDim} />
               </Pressable>
             </View>

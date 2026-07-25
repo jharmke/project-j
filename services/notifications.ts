@@ -29,8 +29,30 @@ export interface NotificationSettings {
   categoryFasting: boolean;
   categorySummaries: boolean;
 
-  // Water sub-system count (spaced evenly, not competing with P2 cap)
+  // Water sub-system count (spaced evenly, not competing with P2 cap).
+  // 0 IS the off state -- the UI's water switch writes 0 rather than carrying a separate boolean, so
+  // the switch and the count can never disagree about whether water is on.
   waterCount: 0 | 1 | 2 | 3 | 4;
+  // Last non-zero count, so switching water off and back on restores what you had instead of snapping
+  // to a default. Never read by the scheduler; purely so the UI can be polite.
+  waterCountLast: 1 | 2 | 3 | 4;
+
+  // Per-notification switches. The category toggles above are still the master for their group; these
+  // let someone keep a category while silencing ONE thing in it -- the motivating case being a user
+  // who prays daily outside the app and doesn't want the prayer nudge, but would lose the daily verse,
+  // reading plan and gratitude reminders too if Faith were their only control.
+  // All optional: a settings blob written before this existed has none of them, and `?? true` below
+  // means every notification in an already-enabled category stays enabled. Nobody's setup changes
+  // meaning on upgrade.
+  typeFoodLog?: boolean;
+  typeIfCheckIn?: boolean;
+  typeIfWindow?: boolean;
+  typeActivity?: boolean;
+  typeWeightLog?: boolean;
+  typeDailyVerse?: boolean;
+  typeFaithReading?: boolean;
+  typeGratitude?: boolean;
+  typePrayer?: boolean;
 
   // Advanced controls
   activityTime: string;
@@ -58,6 +80,16 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   categoryFasting: true,
   categorySummaries: true,
   waterCount: 3,
+  waterCountLast: 3,
+  typeFoodLog: true,
+  typeIfCheckIn: true,
+  typeIfWindow: true,
+  typeActivity: true,
+  typeWeightLog: true,
+  typeDailyVerse: true,
+  typeFaithReading: true,
+  typeGratitude: true,
+  typePrayer: true,
   activityTime: '17:00',
   weightFrequency: '3day',
   prayerTime: '21:00',
@@ -145,6 +177,24 @@ export const loadNotificationSettings = async (): Promise<NotificationSettings> 
       categoryFasting: parsed.categoryFasting ?? DEFAULT_NOTIFICATION_SETTINGS.categoryFasting,
       categorySummaries: parsed.categorySummaries ?? DEFAULT_NOTIFICATION_SETTINGS.categorySummaries,
       waterCount: ([0, 1, 2, 3, 4] as const).includes(parsed.waterCount) ? parsed.waterCount : DEFAULT_NOTIFICATION_SETTINGS.waterCount,
+      waterCountLast: ([1, 2, 3, 4] as const).includes(parsed.waterCountLast)
+        ? parsed.waterCountLast
+        // Seed from the count they already have, so the first time they switch water off and back on
+        // they get their own number back rather than a default they never chose.
+        : (([1, 2, 3, 4] as const).includes(parsed.waterCount) ? parsed.waterCount : DEFAULT_NOTIFICATION_SETTINGS.waterCountLast),
+      // `?? true` on purpose, NOT `?? DEFAULT`. A settings blob written before per-notification
+      // switches existed has none of these keys, and the honest migration is "everything in a category
+      // you had switched on stays switched on". Defaulting them false would silently mute reminders
+      // someone had already opted into.
+      typeFoodLog: parsed.typeFoodLog ?? true,
+      typeIfCheckIn: parsed.typeIfCheckIn ?? true,
+      typeIfWindow: parsed.typeIfWindow ?? true,
+      typeActivity: parsed.typeActivity ?? true,
+      typeWeightLog: parsed.typeWeightLog ?? true,
+      typeDailyVerse: parsed.typeDailyVerse ?? true,
+      typeFaithReading: parsed.typeFaithReading ?? true,
+      typeGratitude: parsed.typeGratitude ?? true,
+      typePrayer: parsed.typePrayer ?? true,
       activityTime,
       weightFrequency: (['daily', '3day', 'weekly'] as const).includes(parsed.weightFrequency) ? parsed.weightFrequency : DEFAULT_NOTIFICATION_SETTINGS.weightFrequency,
       prayerTime,
@@ -690,7 +740,7 @@ export const scheduleIFWindowNotifications = async (
   settings: NotificationSettings,
   styleMode: StyleMode,
 ) => {
-  if (!settings.masterEnabled || !settings.categoryFasting) return;
+  if (!settings.masterEnabled || !settings.categoryFasting || !(settings.typeIfWindow ?? true)) return;
   if (Platform.OS !== 'ios') return;
   const status = await getPermissionStatus();
   if (status !== 'granted') return;
@@ -981,7 +1031,10 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
   const candidates: P2Item[] = [];
 
   // 1. Faith Reading
-  if (s.categoryFaith && ctx.faithJourney !== 'notrightnow' && ctx.faithReadingPending) {
+  // Each P2 candidate now checks its OWN switch as well as its category. The category is still the
+  // master (off there means off regardless), but a single reminder can be silenced without taking the
+  // rest of its group with it.
+  if (s.categoryFaith && (s.typeFaithReading ?? true) && ctx.faithJourney !== 'notrightnow' && ctx.faithReadingPending) {
     const v = pickCopy('faith_reading', COPY_POOLS.faith_reading, m, growthOn, rotation);
     candidates.push({
       id: 'pj_faith_reading',
@@ -993,7 +1046,7 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
   }
 
   // 2a. Gratitude (fires in both Mindful states)
-  if (s.categoryFaith && ctx.faithJourney !== 'notrightnow' && !ctx.gratitudeLoggedToday) {
+  if (s.categoryFaith && (s.typeGratitude ?? true) && ctx.faithJourney !== 'notrightnow' && !ctx.gratitudeLoggedToday) {
     const v = pickCopy('gratitude', COPY_POOLS.gratitude, m, growthOn, rotation);
     candidates.push({
       id: 'pj_gratitude',
@@ -1005,7 +1058,7 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
   }
 
   // 2b. Prayer (fires in both Mindful states, Rooted only)
-  if (s.categoryFaith && ctx.faithJourney === 'rooted' && !ctx.prayerLoggedToday) {
+  if (s.categoryFaith && (s.typePrayer ?? true) && ctx.faithJourney === 'rooted' && !ctx.prayerLoggedToday) {
     const v = pickCopy('prayer', COPY_POOLS.prayer, m, growthOn, rotation);
     candidates.push({
       id: 'pj_prayer',
@@ -1017,7 +1070,10 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
   }
 
   // 4. Food Log Reminder (fixed 2pm, suppressed in default Mindful)
-  if (s.categoryFitness && ctx.todayFoodEntries === 0 && (!isMindful || growthOn)) {
+  // Food log moved from Fitness to Nutrition when the categories were reorganised: categoryFasting is
+  // the stored key behind the Nutrition switch (renamed in the UI, not in storage, so nobody's saved
+  // preference had to be migrated).
+  if (s.categoryFasting && (s.typeFoodLog ?? true) && ctx.todayFoodEntries === 0 && (!isMindful || growthOn)) {
     const v = pickCopy('food_log', COPY_POOLS.food_log, m, growthOn, rotation);
     candidates.push({
       id: 'pj_food_log',
@@ -1034,7 +1090,7 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
   // activity" would nag them daily off missing data (the wearable-robustness fix). Watch users still
   // get it -- by the time this reminder fires they have active-cal data.
   const hasActivitySignal = ctx.todayActiveCals > 0 || ctx.todayExerciseMins > 0;
-  if (s.categoryFitness && hasActivitySignal && !(ctx.todayActiveCals >= ctx.activeCalGoal && ctx.todayExerciseMins >= ctx.exerciseMinsGoal) && (!isMindful || growthOn)) {
+  if (s.categoryFitness && (s.typeActivity ?? true) && hasActivitySignal && !(ctx.todayActiveCals >= ctx.activeCalGoal && ctx.todayExerciseMins >= ctx.exerciseMinsGoal) && (!isMindful || growthOn)) {
     const v = pickCopy('activity', COPY_POOLS.activity, m, growthOn, rotation);
     candidates.push({
       id: 'pj_activity',
@@ -1046,7 +1102,7 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
   }
 
   // 6. Daily Verse (random 8-11am window, date-seeded for determinism)
-  if (s.categoryFaith && ctx.faithJourney !== 'notrightnow') {
+  if (s.categoryFaith && (s.typeDailyVerse ?? true) && ctx.faithJourney !== 'notrightnow') {
     const dateSeed = parseInt(now.toISOString().split('T')[0].replace(/-/g, '').slice(-4));
     const verseOffsetMins = (dateSeed * 37) % 180;
     const verseHour = 8 + Math.floor(verseOffsetMins / 60);
@@ -1064,7 +1120,7 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
   }
 
   // 7. Weight Log Reminder (suppressed in Mindful always)
-  if (s.categoryFitness && !ctx.weightLoggedToday && ctx.hasLoggedWeightBefore && !isMindful) {
+  if (s.categoryFitness && (s.typeWeightLog ?? true) && !ctx.weightLoggedToday && ctx.hasLoggedWeightBefore && !isMindful) {
     const shouldFire = (() => {
       if (s.weightFrequency === 'daily') return true;
       if (ctx.daysSinceLastWeight === null) return true;
@@ -1085,7 +1141,7 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
   }
 
   // 8. IF Check-In (food logged, IF enabled but not started, suppressed default Mindful)
-  if (s.categoryFasting && ctx.ifEnabled && !ctx.ifStarted && ctx.todayFoodEntries > 0 && (!isMindful || growthOn)) {
+  if (s.categoryFasting && (s.typeIfCheckIn ?? true) && ctx.ifEnabled && !ctx.ifStarted && ctx.todayFoodEntries > 0 && (!isMindful || growthOn)) {
     const v = pickCopy('if_checkin', COPY_POOLS.if_checkin, m, growthOn, rotation);
     candidates.push({
       id: 'pj_if_checkin',
@@ -1104,7 +1160,10 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
   }
 
   // ── Water sub-system (not in P2 cap, spaced evenly across waking hours) ───
-  if (s.categoryFitness && s.waterCount > 0) {
+  // Gated on Nutrition (categoryFasting), not Fitness. Water sits under Nutrition in the settings UI,
+  // and leaving the gate on Fitness meant switching Fitness off silently killed water reminders while
+  // switching Nutrition off left them running -- the opposite of what the screen showed.
+  if (s.categoryFasting && s.waterCount > 0) {
     const { hour: quietEndH, minute: quietEndM } = parseTime(s.quietEnd);
     const { hour: quietStartH, minute: quietStartM } = parseTime(s.quietStart);
     const wakingStartMins = quietEndH * 60 + quietEndM;
@@ -1234,7 +1293,7 @@ export const scheduleWaterNotificationsNow = async (
 ) => {
   await cancelWaterNotifications();
   const s = await loadNotificationSettings();
-  if (!s.masterEnabled || !s.categoryFitness || s.waterCount <= 0) return;
+  if (!s.masterEnabled || !s.categoryFasting || s.waterCount <= 0) return;
   const status = await getPermissionStatus();
   if (status !== 'granted') return;
 
@@ -1286,7 +1345,7 @@ export const scheduleActivityNotificationNow = async (
 ) => {
   await cancelActivityNotification();
   const s = await loadNotificationSettings();
-  if (!s.masterEnabled || !s.categoryFitness) return;
+  if (!s.masterEnabled || !s.categoryFitness || !(s.typeActivity ?? true)) return;
   const isMindful = styleMode === 'mindful';
   if (isMindful && !mindfulGrowthAreas) return;
   const status = await getPermissionStatus();

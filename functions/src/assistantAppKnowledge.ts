@@ -18,7 +18,21 @@ PURPOSE: This is your map of the app: every screen, feature, and how-to, so you 
 HOW TO USE THIS MAP
 ================================================================================
 - Answer app how-to questions by giving the user the real navigation path from this map
-  (e.g. "Go to Profile, tap the gear icon, then open Appearance to change your theme").
+  (e.g. "Open Profile, tap the settings icon top-right, then Appearance to change your theme").
+
+*** HOW TO REACH PROFILE AND SETTINGS -- READ THIS BEFORE GIVING ANY "Profile > Settings" PATH ***
+The bottom tab bar's FIFTH slot is tier-aware, so there is NO single correct answer:
+  - Rooted and Exploring users (the majority): the fifth tab is FAITH. Profile is NOT in the tab bar
+    for them. They reach Profile by tapping their PROFILE PICTURE / AVATAR in the TOP-LEFT of the
+    header on any main screen.
+  - "Not Right Now" users: the fifth tab IS Profile, bottom-right.
+NEVER say "Profile (bottom-right tab)" as a flat instruction -- it is wrong for most users. Say
+"open Profile by tapping your profile picture in the top-left (or the Profile tab if you have one)",
+or just "open Profile" and let them find it.
+From Profile, SETTINGS is the settings icon in the TOP-RIGHT of that screen. Call it "the settings
+icon", not "the gear" -- users do not read it as a gear.
+Everywhere below, "Profile > Settings > X" means: open Profile as described above, tap the settings
+icon top-right, then X. Do not invent tab positions that are not stated here.
 - When a feature has an interactive in-app tutorial, you may OFFER to point the user to it
   ("Want the guided tour? Tap the (?) in the tab header or the (i) on the card").
 - Faith CONVERSATION / Bible study / spiritual guidance is Halo's job, not yours: keep it light
@@ -602,7 +616,42 @@ Collapsible sections, confirmed names + subtitles:
   and never to this in-app section.
 - VACATION MODE: set a trip date range that pauses scoring / streaks / notifications while still
   capturing data. Sits after Health, before Notifications.
-- NOTIFICATIONS (Reminders, Daily Cap, Categories): notification preferences.
+- NOTIFICATIONS: this is a card in Settings showing the current status (on/off + quiet hours) with a
+  "Customize Notifications" button. The actual controls live on their OWN PAGE, reached by that button.
+  If a user asks where notification settings are, send them to Profile > Settings > Notifications >
+  Customize Notifications. They are no longer a section inside Settings itself.
+  The page has three cards:
+  1. ENABLE NOTIFICATIONS (master on/off) + QUIET HOURS (nothing fires between those times).
+  2. DAILY LIMIT (3 / 5 / All) then three expandable areas -- NUTRITION, FITNESS, FAITH -- plus STREAK
+     PROTECTION and SUMMARIES.
+  3. TIMING: activity reminder time, weight log frequency, prayer check-in time, fasting window lead.
+  EXPANDABLE AREAS ARE THE KEY CHANGE: tapping Nutrition / Fitness / Faith opens it to reveal every
+  reminder inside, each with its OWN switch and a line saying when it fires. So a user can silence ONE
+  reminder without losing the rest of its area -- e.g. turn off the Prayer nudge but keep the daily
+  verse, reading plan and gratitude. Previously the only control was the whole area at once, so this is
+  the answer to "how do I turn off just X".
+  What's inside each: Nutrition = Food Log, Fasting Check-In, Fasting Window, Water (a switch, with a
+  1-4 per-day count under it when on). Fitness = Activity, Weight Log. Faith = Daily Verse, Reading &
+  Devotionals, Gratitude, Prayer (Prayer is Rooted only; the whole Faith area is greyed out for Not
+  Right Now).
+  An area's switch takes its reminders with it in both directions: switching an area off switches all
+  of its reminders off, and switching any single reminder back on revives its area. The subtitle shows
+  a count like "3 of 4 on" so a customised area is obvious.
+  DAILY LIMIT caps only the optional nudges. Streak Protection, Summaries and Water are sent even when
+  the limit is reached -- their descriptions say so on screen. Re-engagement messages (the ones
+  welcoming someone back after a break) always come through and are not user-controllable.
+  iOS only asks for notification permission ONCE, ever. Toggling the master switch off and on inside
+  the app will NOT re-prompt; if a user says they never got the iOS prompt, they already granted (or
+  denied) it earlier, and that is normal, not a bug.
+  *** If permission was DENIED, the fix is the iPhone's own Settings app: Settings > Notifications >
+  GoodForge (or Settings > GoodForge > Notifications), and switch Allow Notifications on. ***
+  This has NOTHING to do with Health or Privacy & Security. Never send a user to
+  "Settings > Privacy & Security > Health > GoodForge" for a notification problem -- that path is for
+  HEALTH DATA permissions (steps, sleep, heart rate) and will not fix notifications. Keep the two
+  completely separate: Health permissions live under Privacy & Security > Health; notification
+  permission lives under Notifications.
+  The app also shows a red "Notifications Blocked" banner at the top of its own Notifications page
+  whenever iOS permission is denied, so pointing the user there confirms the diagnosis.
 - HELP (Definitions, Guides, Prayer, Feedback): feature explainers, guided-tour launchers, and the
   FEEDBACK form (bug / suggestion / other, optional photo attach, sent in-app -- never leaves the app,
   no email required). "Where are the explainers / how do I send feedback" -> here. Feedback is also
@@ -682,11 +731,11 @@ SUPPORT THE MISSION / MEMBERSHIP (the app's paid layer)
 ================================================================================
 COMMON "HOW DO I..." QUICK INDEX
 ================================================================================
-- Change theme/color: Profile > gear > Appearance.
-- Change calorie/macro/water/step/sleep goals: Profile > gear > Goals (macros also via the Home
+- Change theme/color: Profile > Settings > Appearance.
+- Change calorie/macro/water/step/sleep goals: Profile > Settings > Goals (macros also via the Home
   Macros card gear).
-- Change coaching style (Discipline/Balanced/Mindful): Profile > gear > Faith & Style.
-- Turn faith features on/off: Profile > gear > Faith & Style.
+- Change coaching style (Discipline/Balanced/Mindful): Profile > Settings > Faith & Style.
+- Turn faith features on/off: Profile > Settings > Faith & Style.
 - Turn Apple Health access on/off or change permissions: the iOS SETTINGS APP > Privacy & Security >
   Health > GoodForge (Apple manages this; it CANNOT be done inside GoodForge). The in-app Profile >
   gear > Health section only holds accuracy / HR-zone / workout-import settings, not the connection.
@@ -731,12 +780,17 @@ COMMON "HOW DO I..." QUICK INDEX
 - Start a challenge: Stats > Challenges > New Challenge (or the FAB).
 - Compare two time periods (Supporter): Stats > Reports > New Comparison.
 - Understand why my results are what they are: Stats > Reports > Effort vs Results (Generate Analysis).
-- Set up a trip (pause scoring/streaks): Profile > gear > Vacation Mode.
+- Set up a trip (pause scoring/streaks): Profile > Settings > Vacation Mode.
+- Change notification settings / turn notifications off: Profile > Settings > Notifications > Customize Notifications.
+- Turn off ONE specific reminder but keep the rest: same page, tap the area it belongs to (Nutrition,
+  Fitness or Faith) to expand it, then switch off just that reminder.
+- Stop notifications waking me at night: same page > Quiet Hours.
+- Get fewer notifications overall: same page > Daily Limit.
 - Support the app / become a Supporter / tip / manage membership: Profile > Membership (or Settings > Membership) > Support the Mission.
 - Add a verse to my daily rotation: Bible reader > highlight a verse > sun icon.
 - Favorite a verse: Bible reader > highlight a verse > star icon.
 - Add a prayer / prayer request: Faith tab > Prayer > + (or the prayer request modal).
-- Send feedback / report a bug: Profile > gear > Help > Feedback (in-app, optional photo, no email needed) -- or tap the Feedback card if it shows up in Otto's own notification hub.
+- Send feedback / report a bug: Profile > Settings > Help > Feedback (in-app, optional photo, no email needed) -- or tap the Feedback card if it shows up in Otto's own notification hub.
 - Talk about faith / the Bible: open Halo (the gold cross button).
 `;
 

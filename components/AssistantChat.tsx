@@ -4,6 +4,7 @@ import {
   ScrollView, Share, StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { barFillGradient } from '../utils/barGradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, runOnJS } from 'react-native-reanimated';
 import { GestureHandlerRootView, GestureDetector, Gesture } from 'react-native-gesture-handler';
@@ -754,11 +755,22 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
                 multiline
                 onBlur={() => inputRef.current?.setNativeProps({ selection: { start: 0, end: 0 } })}
               />
+              {/* Molded when it's live: a flat accent disc was the only primary action in the app still
+                  painted rather than gradient-filled. The disabled state stays flat on purpose -- the
+                  gradient is what says "this does something now". */}
               <Pressable
                 onPress={send}
                 disabled={!canSend}
-                style={[styles.sendBtn, { backgroundColor: canSend ? accent : theme.bgInput, borderColor: canSend ? accent : theme.borderInput }]}
+                style={[styles.sendBtn, { backgroundColor: canSend ? accent : theme.bgInput, borderColor: canSend ? accent : theme.borderInput, overflow: 'hidden' }]}
               >
+                {canSend && (
+                  <LinearGradient
+                    colors={barFillGradient(accent)}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                )}
                 <Ionicons name="arrow-up" size={20} color={canSend ? '#ffffff' : theme.textDim} />
               </Pressable>
             </View>

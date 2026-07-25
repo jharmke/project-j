@@ -30,6 +30,22 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-25 **Notifications settings: own page, 3 categories, per-notification switches
+  (device-confirmed).** Moved out of Settings into app/notifications.tsx; Settings keeps a status card +
+  Customize button and got SHORTER. Categories went 4 -> 3 (the app's own pillars): Fasting folded into
+  Nutrition (it's a feature, not a pillar), Summaries became a standalone switch (it's a delivery format,
+  not a subject). Each area now EXPANDS to per-notification switches with a "fires when" line -- the
+  motivating case being turning off the prayer nudge without losing the daily verse. Area switch takes
+  its children both ways; any child back on revives its area; subtitle shows "3 of 4 on". Water became a
+  switch with its count nested. Storage NOT migrated (categoryFasting still backs Nutrition); new type
+  keys read `?? true` so nobody's setup changes on upgrade. Tutorial rebuilt against the new page with
+  returnRoute back to Settings. Otto's KB updated + redeployed. Full detail in SPEC_notifications.md
+  under "SETTINGS UI (CURRENT)".
+  Also fixed along the way: Otto was telling every Rooted/Exploring user to find Profile in the
+  "bottom-right tab" (it's the Faith tab for them; Profile is the header avatar), and was sending users
+  to iOS Privacy & Security > Health to fix NOTIFICATION permission. Both corrected in the KB.
+  ToggleSwitch app-wide: thumb now cross-fades white -> gradient instead of snapping colour. Otto's and
+  Halo's send buttons are gradient-filled when live.
 - 2026-07-25 **Meal Catalog search + sorting, and Find a Meal's visual pass (device-confirmed).** Search
   matches meal names AND the foods inside them; three sort chips (Recent / A-Z / Newest) rather than a
   sort button, because a second RN Modal won't display over an already-open one. SavedMeal gains optional
@@ -1033,8 +1049,15 @@ are separate pre-submission checklists, NOT part of this menu.
   IF IT COMES UP: `components/KeyboardDoneBar.tsx` is built, styled to match the onboarding height/goal
   bar, and is a two-line drop-in (`inputAccessoryViewID` on the field + the component alongside it).
   Reach for a height cap first. See SPEC_keyboard_modals.md.
-- [surfaced 2026-07-25, from Justin's morning notes] **Notifications pass 2: copy, routing, settings
-  clarity, personality.** Four related asks, one sweep: (a) re-read the exact text of every notification,
+- [PARTIALLY DONE 2026-07-25 -- only the COPY half is left] **Notifications: personality + copy pass.**
+  The settings-clarity half shipped (own page, 3 categories, per-notification switches -- see RECENTLY
+  SHIPPED). What remains is Justin's item (d): the exact TEXT of all 14 notification types, with more
+  personality, across all three coaching modes. SPEC_notifications.md holds the copy rules (4-6
+  deterministic variations per type per mode). Justin explicitly parked this and did NOT want it in the
+  2026-07-25 session. Routing was NOT re-verified either -- he judged it fine and told me not to spend
+  the session re-reading every notification's text.
+- [ORIGINAL ITEM, superseded -- kept for the routing/copy detail] **Notifications pass 2.**
+  (a) re-read the exact text of every notification,
   (b) verify each one deep-links to the RIGHT place, (c) make the settings screen more digestible --
   specifically, under "WHAT CAN WE NOTIFY YOU ABOUT", show which actual notifications fire for each
   selection, via subtext or a tooltip, so the choice isn't abstract, (d) more personality in the copy.

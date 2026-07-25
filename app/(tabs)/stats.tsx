@@ -1620,7 +1620,9 @@ export default function StatsScreen() {
     const showSub = Keyboard.addListener('keyboardWillShow', e => {
       Animated.timing(modalKeyboardOffset, {
         toValue: -(e.endCoordinates.height / 2),
-        duration: 200,
+        // The keyboard's OWN duration rather than a fixed 200, so the card travels with it instead of
+        // finishing early and waiting.
+        duration: e.duration || 250,
         useNativeDriver: true,
       }).start();
     });

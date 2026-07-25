@@ -218,7 +218,10 @@ export default function ReportScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 110 }} showsVerticalScrollIndicator={false}>
+      {/* The report-name field sits in this scroll with nothing else handling the keyboard, so iOS's
+          own inset adjustment does the work. persistTaps so the first tap after typing hits whatever
+          you aimed at instead of being spent dismissing the keyboard. */}
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 110 }} showsVerticalScrollIndicator={false} automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled">
         {/* Range chips */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 14, marginBottom: 4 }}>
           {PRESETS.map(p => {

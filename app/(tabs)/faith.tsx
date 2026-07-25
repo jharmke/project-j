@@ -231,6 +231,9 @@ export default function FaithScreen() {
         // The gratitude card types inside this ScrollView. Left at the default, the ScrollView eats
         // the first tap after typing to dismiss the keyboard, so Log Gratitude never fired.
         keyboardShouldPersistTaps="handled"
+        // NO automaticallyAdjustKeyboardInsets here. It was tried and removed: on this page it yanked
+        // the view far past the gratitude card, burying everything above it. The cards sit high enough
+        // that nothing was being covered in the first place.
       >
         {visibleCards.map((id, idx) => (
           <Reanimated.View key={id} entering={FadeInDown.delay(idx * 60).springify()} onLayout={e => { cardOffsets.current[id] = e.nativeEvent.layout.y; }}>

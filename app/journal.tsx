@@ -28,7 +28,7 @@ import ButtonShine from '../components/ButtonShine';
 import FabDome from '../components/FabDome';
 import BackgroundLayers from '../components/BackgroundLayers';
 import ModalHeader from '../components/ModalHeader';
-import KeyboardAwareCenter from '../components/KeyboardAwareCenter';
+import KeyboardAwareCenter, { useAnimatedKeyboardHeight } from '../components/KeyboardAwareCenter';
 import GradientTitle from '../components/GradientTitle';
 import GradientNumber from '../components/GradientNumber';
 import { BlurView } from 'expo-blur';
@@ -270,6 +270,7 @@ function SwipeableEntry({
                 {!isEditing && (
                   <TouchableOpacity
                     onPress={() => {
+                      triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
                       setEditingId(entry.id);
                       setEditTitle(entry.title);
                       setEditNotes(entry.notes);
@@ -395,7 +396,11 @@ export default function JournalScreen() {
 
   const fabScale = useRef(new Animated.Value(1)).current;
   const categorySheetAnim = useRef(new Animated.Value(0)).current;
+  // Two representations on purpose. keyboardHeight is plain state and only decides WHETHER the edit bar
+  // is on screen; animatedKb drives WHERE it sits. Positioning straight off the state made the bar snap
+  // into place while the keyboard was still sliding.
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const animatedKb = useAnimatedKeyboardHeight();
   const scrollViewRef = useRef<any>(null);
   const entryYPositions = useRef<Record<string, number>>({});
 
@@ -834,8 +839,8 @@ export default function JournalScreen() {
           the exact thing Profile's save-bar comment warns about ("a solid bgSheet panel... reads as a
           foreign object"). Now blur + chromeFill, the same material as the tab bar and every header. */}
       {editingId && keyboardHeight > 0 && (
-        <View style={[styles.floatingEditBar, {
-          bottom: keyboardHeight,
+        <Animated.View style={[styles.floatingEditBar, {
+          bottom: animatedKb,
           borderColor: theme.borderCard,
           overflow: 'hidden',
         }]}>
@@ -847,21 +852,21 @@ export default function JournalScreen() {
           />
           <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.chromeFill }]} pointerEvents="none" />
           <TouchableOpacity
-            onPress={() => { setEditingId(null); setEditTitle(''); setEditNotes(''); Keyboard.dismiss(); }}
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditingId(null); setEditTitle(''); setEditNotes(''); Keyboard.dismiss(); }}
             style={[styles.floatingEditBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]}
           >
             <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: Type.uiSemibold }}>Cancel</Text>
           </TouchableOpacity>
           {/* ACCENT, not green: green is success/goal-hit, saving is an action. */}
           <TouchableOpacity
-            onPress={() => { saveEdit(); Keyboard.dismiss(); }}
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); saveEdit(); Keyboard.dismiss(); }}
             style={[styles.floatingEditBtn, { flex: 2, backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
           >
             <ButtonShine radius={8} />
             <Ionicons name="checkmark" size={14} color={theme.accentBlue} />
             <Text style={{ fontSize: 13, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Save</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       )}
 
       {/* Create entry modal */}

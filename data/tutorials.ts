@@ -727,9 +727,9 @@ export const TUTORIALS: Tutorial[] = [
         targetKey: 'none',
         title: 'QUICK TIPS',
         body: {
-          discipline: 'Demo entry removed. Recents tab: your last 15 logged foods, fastest re-log. Favorites tab: star any food for instant access. And when a meal slot is empty, it reads "Expand to repeat a meal": expand it and a "Repeat" pill copies a previous day\'s meal in with a tap.',
-          balanced: 'Done. The demo entry has been removed. The Recents tab shows your last 15 logged foods, and starring a food saves it in Favorites. Eat the same thing often? An empty meal slot reads "Expand to repeat a meal", and expanding it reveals a "Repeat" pill that re-logs a previous day\'s meal for you.',
-          mindful: 'All cleaned up. The Recents and Favorites tabs make re-logging easier over time. And if you eat the same meal a lot, an empty slot offers to repeat one: expand it and the "Repeat" pill brings a previous day\'s meal back with one tap. Use whichever feels right.',
+          discipline: 'Demo entry removed. Recents tab: your last 15 logged foods, fastest re-log. Favorites tab: star any food for instant access. And when a meal slot has history or a saved meal, it reads "Expand to repeat a meal": expand it for "Repeat Yesterday" (one tap) or "Find a Meal" to pull from your history or your own saved Meal Catalog. Works on a slot that already has food in it too, not just empty ones.',
+          balanced: 'Done. The demo entry has been removed. The Recents tab shows your last 15 logged foods, and starring a food saves it in Favorites. Eat the same thing often? Expand a meal slot for "Repeat Yesterday" or "Find a Meal," which also searches meals you\'ve saved yourself and works even if that slot already has food logged.',
+          mindful: 'All cleaned up. The Recents and Favorites tabs make re-logging easier over time. And if you eat the same meal a lot, expand any slot for "Repeat Yesterday" or "Find a Meal," which can also pull from meals you\'ve saved yourself, whether the slot is empty or not. Use whichever feels right.',
         },
       },
     ],

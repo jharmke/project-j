@@ -243,7 +243,13 @@ const isTutorialMode = tutorialMode === 'true';
   const fsServings: any[] = food?.fsServings || [];
   const myFoodAdditionalServings: Array<{ label: string; grams: number }> = food?.myFoodData?.additionalServings || [];
   const baseServingSize = food?.myFoodData?.servingSize || parseFloat(food?.existingAmount || '100') || 100;
-  const customServings = (food?.isCustom && myFoodAdditionalServings.length > 0 && (food?.calPer100g ?? 0) > 0)
+  // NOT gated on myFoodAdditionalServings.length > 0 -- a custom food with no EXTRA named serving
+  // still has its own base serving (the label/servingUnit + calPer100g it was created with). That
+  // gate used to treat "no extra servings" as "no default serving at all", so labelCal/Recent's
+  // headline number for these foods fell through all the way to whatever custom gram amount was
+  // typed on a given day instead of the food's real default -- e.g. a cottage cheese logged in
+  // custom grams showed "1 kcal" instead of its real per-serving calories.
+  const customServings = (food?.isCustom && (food?.calPer100g ?? 0) > 0)
     ? [
         {
           label: food.servingUnit || `${baseServingSize}${unitLabel(food.servingUnitType || 'g')}`,

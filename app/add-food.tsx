@@ -1388,6 +1388,12 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
               if (!seen.has(dedupeKey) && !seen.has(nameKey)) {
                 seen.add(dedupeKey);
                 seen.add(nameKey);
+                // labelCal/labelProtein/etc. are the food's real DEFAULT serving (decoupled from
+                // whatever amount was actually logged that day) -- intentional, see the comment
+                // by newEntry in food-detail.tsx. The real bug was upstream: a custom food with no
+                // extra named serving defined was treated as having NO default serving at all,
+                // so labelCal fell through to the custom gram amount typed that day. Fixed at the
+                // source (food-detail.tsx's customServings) rather than here.
                 recent.push({ name: e.name, cal: e.labelCal || e.calPer100g || e.cal, protein: e.labelProtein ?? e.proteinPer100g ?? e.protein, carbs: e.labelCarbs ?? e.carbsPer100g ?? e.carbs, fat: e.labelFat ?? e.fatPer100g ?? e.fat, brand: e.brand || null, calPer100g: e.calPer100g, proteinPer100g: e.proteinPer100g, carbsPer100g: e.carbsPer100g, fatPer100g: e.fatPer100g, foodNutrients: e.foodNutrients, fsId: e.fsId || null, myFoodId: e.myFoodId || null, isMyFood: e.isMyFood || false });
               }
             });

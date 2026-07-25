@@ -141,6 +141,22 @@ export default function BibleScreen() {
   const [companionSeed, setCompanionSeed] = useState<{ ref: string } | null>(null);
   const [selectedBook, setSelectedBook] = useState<Book>(BIBLE_BOOKS[0]);
   const [selectedChapter, setSelectedChapter] = useState<Chapter>(BIBLE_BOOKS[0].chapters[0]);
+  // The chapter strip scrolls the current chapter into view. Arriving from the daily verse at John 14
+  // left the strip showing 1-10 with the highlight sitting off-screen, so the app looked like it had
+  // ignored where it just sent you. Centred rather than merely visible, so the neighbouring chapters
+  // are reachable in both directions.
+  const chapterListRef = useRef<FlatList<Chapter>>(null);
+  useEffect(() => {
+    const idx = selectedBook.chapters.findIndex(c => c.chapter === selectedChapter.chapter);
+    if (idx < 0) return;
+    // A frame's grace: on first mount, and right after a book change, the row hasn't laid out yet and
+    // the scroll is dropped silently.
+    const t = setTimeout(() => {
+      chapterListRef.current?.scrollToIndex({ index: idx, animated: true, viewPosition: 0.5 });
+    }, 80);
+    return () => clearTimeout(t);
+  }, [selectedBook, selectedChapter]);
+
   const [chapterVerses, setChapterVerses] = useState<Verse[]>([]);
   const [chapterLoading, setChapterLoading] = useState(false);
   const [showBookPicker, setShowBookPicker] = useState(false);
@@ -715,9 +731,16 @@ export default function BibleScreen() {
       {/* Chapter picker */}
       <View style={[styles.chapterBar, { borderBottomColor: theme.borderCard }]}>
         <FlatList
+          ref={chapterListRef}
           horizontal showsHorizontalScrollIndicator={false}
           data={selectedBook.chapters}
           keyExtractor={ch => String(ch.chapter)}
+          // Psalms is 150 chapters, so a far-off index often isn't rendered yet and scrollToIndex
+          // gives up. Fall back to an estimated offset, which lands close enough that the list then
+          // renders the real item.
+          onScrollToIndexFailed={info => {
+            chapterListRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: true });
+          }}
           contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingVertical: 10 }}
           renderItem={({ item: ch }) => (
             <TouchableOpacity

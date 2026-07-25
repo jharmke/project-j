@@ -30,6 +30,16 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-25 **Bible reflection pass + the app-wide keyboard fixes (device-confirmed).** Reflection modal
+  rebuilt on ModalHeader (X, handle pill, amber title, tap-outside-to-close), renamed "Reflection", and
+  "Mark as Read" removed: it wrote an empty journal entry and let the banner claim "Reflected" when
+  nothing was. One amber Save, dimmed until there's text. Banner stays amber in both states; icons solid
+  + gradient with colour carrying meaning (amber = faith state, textDim = available action, gold cross =
+  Halo). Scripture now wears the reader's chosen font in the modal and on Journal cards, italic removed.
+  Chapter strip auto-centres the current chapter. Separately: the keyboard pass -- a page ScrollView was
+  eating the first tap inside anything typed into (fixed on 6 screens), 16 modals moved off the teleport,
+  Add a Prayer capped so its buttons can't be pushed off screen. Full detail + 5 traps in
+  SPEC_keyboard_modals.md.
 - 2026-07-25 **Prev Activity: delta explained + number kept fresh (device-confirmed).** The one two-sided
   recovery signal now carries a short word under the kcal difference (Balanced, then Lighter/Harder, then
   Much lighter/Much harder) so a "-93 kcal" no longer reads as bad while the bar sits green. Keyed off the
@@ -996,10 +1006,6 @@ are separate pre-submission checklists, NOT part of this menu.
   best-built of the three patterns -- they also shrink the card's maxHeight, which is what plain
   KeyboardAvoidingView gets wrong on tall cards. Fix is to animate the number they already compute, not
   to replace the approach. Grep `KbHeight|keyboardHeight` to find them all.
-- [surfaced 2026-07-25] **Bible "Today's Reflection" modal never got the modal polish pass.** Predates
-  ModalHeader: hand-rolled title, no X, no handle pill, no tap-outside-to-close, off-standard fonts and
-  buttons. Bring it in line with every other modal, and rename it to just "Reflection" (Justin's call --
-  it isn't only for today's verse). Keyboard behaviour on it is already fine.
 - [surfaced 2026-07-25] **Number-pad fields: audit for no-way-to-dismiss.** A number pad has no Return
   key, so a field on a screen with no other visible control can strand the user. `components/
   KeyboardDoneBar.tsx` is built and ready for these. Find them mechanically: grep `keyboardType` for

@@ -2054,31 +2054,41 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           visible={showTimePicker}
           transparent
           animationType="none"
-          onShow={() => Animated.timing(timePickerAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start()}
+          onShow={() => {
+            timePickerAnim.setValue(0);
+            Animated.spring(timePickerAnim, { toValue: 1, useNativeDriver: true, damping: 18, stiffness: 260 }).start();
+          }}
           onRequestClose={closeTimePicker}>
-          <Animated.View style={[styles.modalOverlay, { opacity: timePickerAnim }]}>
-            <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeTimePicker} />
-            <View style={[styles.modal, { paddingTop: 0, overflow: 'hidden' }]} pointerEvents="box-none">
+          <Animated.View style={[styles.pickerOverlay, { opacity: timePickerAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 1], extrapolate: 'clamp' }) }]}>
+            <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeTimePicker} />
+            <Animated.View style={[styles.pickerCard, { transform: [{ scale: timePickerAnim.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) }] }]}>
               <ModalHeader title="Time Logged" onClose={closeTimePicker} />
               <View style={{ alignItems: 'center' }}>
+                {/* Sized to the CARD, not the screen. The spinner is a native view that needs a real
+                    width, and the old screen-width figure was set when this was a full-width sheet. */}
                 <DateTimePicker
                   mode="time"
                   value={entryTime}
                   display="spinner"
                   textColor={theme.textPrimary}
-                  style={{ width: Dimensions.get('window').width - 48 }}
+                  style={{ width: Dimensions.get('window').width * 0.88 - 32 }}
                   onChange={(event, date) => {
                     if (date) { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEntryTime(date); setHasChanges(true); }
                   }}
                 />
               </View>
-              <TouchableOpacity style={{ padding: 16, alignItems: 'center', marginTop: 4 }} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeTimePicker(); }}>
-                <Text style={{ fontSize: 15, color: theme.accentGreen, fontFamily: Type.uiSemibold }}>Confirm</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={{ paddingBottom: 8, paddingTop: 4, alignItems: 'center' }} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeTimePicker(); }}>
-                <Text style={{ fontSize: 15, color: theme.textMuted, fontFamily: Type.uiMedium }}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
+              {/* One Done, in the accent. It replaces a Confirm/Cancel pair that both did exactly the
+                  same thing: the spinner applies the time as you scroll it, so Cancel never cancelled
+                  anything. Green is reserved for success and goal-hits in this app, not for a button
+                  that simply closes a picker. */}
+              <View style={{ paddingHorizontal: 16, paddingBottom: 16, paddingTop: 4 }}>
+                <PrimaryCTA
+                  label="Done"
+                  onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeTimePicker(); }}
+                  faceStyle={{ paddingVertical: 12, borderRadius: 8 }}
+                />
+              </View>
+            </Animated.View>
           </Animated.View>
         </Modal>
 
@@ -2095,34 +2105,49 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
   <Text style={styles.mealSelectorValue}>{getMealDisplayName(currentMeal, mealSlots, slotNameCache)} ▼</Text>
 </TouchableOpacity>
 
+{/* Centred card, not the slide-up sheet this used to be. Options are real selectable rows -- filled and
+    outlined in the accent when chosen -- rather than a bare list separated by hairlines, which read as
+    text you couldn't tell was tappable. The Cancel row is gone: the header X and tap-outside both close
+    it, and picking a slot closes it too, so a third dismiss was just noise. */}
 <Modal
   visible={showMealPicker}
   transparent
   animationType="none"
-  onShow={() => Animated.timing(mealDropdownAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start()}
+  onShow={() => {
+    mealDropdownAnim.setValue(0);
+    Animated.spring(mealDropdownAnim, { toValue: 1, useNativeDriver: true, damping: 18, stiffness: 260 }).start();
+  }}
   onRequestClose={closeMealPicker}>
-  <Animated.View style={[styles.modalOverlay, { opacity: mealDropdownAnim }]}>
-    <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeMealPicker} />
-    <View style={[styles.modal, { paddingTop: 0, overflow: 'hidden' }]} pointerEvents="box-none">
+  {/* Opacity is clamped: the spring overshoots past 1 on its way to settling, and an un-clamped
+      opacity would flicker as it does. */}
+  <Animated.View style={[styles.pickerOverlay, { opacity: mealDropdownAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 1], extrapolate: 'clamp' }) }]}>
+    <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeMealPicker} />
+    <Animated.View style={[styles.pickerCard, { transform: [{ scale: mealDropdownAnim.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) }] }]}>
       <ModalHeader title="Adding To" onClose={closeMealPicker} />
-      {mealSlots.map((slot) => (
-        <TouchableOpacity
-          key={slot.id}
-          style={[styles.mealOption, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
-          onPress={() => {
-            triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-            setCurrentMeal(slot.id);
-            setHasChanges(true);
-            closeMealPicker();
-          }}>
-          <Text style={[styles.mealOptionText, (currentMeal === slot.id || currentMeal === slot.name) && { color: theme.accentBlue, fontFamily: Type.uiSemibold }]}>{slot.name}</Text>
-          {(currentMeal === slot.id || currentMeal === slot.name) && <Ionicons name="checkmark" size={16} color={theme.accentBlue} />}
-        </TouchableOpacity>
-      ))}
-      <TouchableOpacity style={{ padding: 16, alignItems: 'center', marginTop: 4 }} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeMealPicker(); }}>
-        <Text style={{ fontSize: 15, color: theme.textMuted, fontFamily: Type.uiMedium }}>Cancel</Text>
-      </TouchableOpacity>
-    </View>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 8, gap: 8 }} showsVerticalScrollIndicator={false}>
+        {mealSlots.map((slot) => {
+          const selected = currentMeal === slot.id || currentMeal === slot.name;
+          return (
+            <TouchableOpacity
+              key={slot.id}
+              activeOpacity={0.8}
+              style={[styles.mealOptionRow, {
+                backgroundColor: selected ? theme.accentBlueBg : theme.bgInput,
+                borderColor: selected ? theme.accentBlueBorder : theme.borderInput,
+              }]}
+              onPress={() => {
+                triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+                setCurrentMeal(slot.id);
+                setHasChanges(true);
+                closeMealPicker();
+              }}>
+              <Text style={{ fontSize: 15, fontFamily: selected ? Type.uiSemibold : Type.uiMedium, color: selected ? theme.accentBlue : theme.textSecondary }}>{slot.name}</Text>
+              {selected && <Ionicons name="checkmark" size={16} color={theme.accentBlue} />}
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    </Animated.View>
   </Animated.View>
 </Modal>
 
@@ -2423,7 +2448,9 @@ const useStyles = (theme: any) => StyleSheet.create({
   mealSelector: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, padding: 12, marginBottom: 10 },
   mealSelectorLabel: { fontSize: 12, color: theme.textMuted, fontFamily: Type.ui },
   mealSelectorValue: { fontSize: 14, color: theme.accentBlue, fontFamily: Type.uiSemibold },
-  modalOverlay: { flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'flex-end' },
+  // (The old bottom-sheet `modalOverlay` / `modal` pair lived here. Both pickers on this screen are
+  // centred cards now, so the styles were removed rather than left lying around for someone to reuse
+  // and reintroduce a slide-up sheet.)
   // Centred floating card, the app's standard modal shape. Kept separate from modalOverlay/modal
   // above, which the meal and time pickers still use -- those weren't part of this change.
   centeredOverlay: { flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
@@ -2449,7 +2476,6 @@ const useStyles = (theme: any) => StyleSheet.create({
     overflow: 'hidden',
     shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 12,
   },
-  modal: { backgroundColor: theme.bgSheet, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, borderWidth: 1, borderColor: theme.borderCard },
   modalTitle: { fontSize: 18, color: theme.textPrimary, fontFamily: Type.uiSemibold, marginBottom: 16 },
   // A compact control on the right of its row, not a full-width panel. maxWidth keeps it from
   // swallowing the row when a serving name is long; the text inside clamps to two lines.
@@ -2467,7 +2493,15 @@ const useStyles = (theme: any) => StyleSheet.create({
   servingPickerLabel: { fontSize: 10, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 3 },
   servingPickerValue: { fontSize: 15, color: theme.textPrimary, fontFamily: Type.uiSemibold },
   servingPickerCal: { fontSize: 18, color: theme.accentGreen, fontFamily: Type.num },
-  mealOption: { padding: 16, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle, alignItems: 'center' },
+  // Centred picker card, shared by the meal-slot picker and the time picker. Both used to be slide-up
+  // sheets, which the project bans outright.
+  pickerOverlay: { flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' },
+  pickerCard: {
+    width: '88%', maxHeight: '80%', backgroundColor: theme.bgSheet, borderRadius: 16,
+    borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlue,
+    overflow: 'hidden',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 20,
+  },
+  mealOptionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1 },
   mealOptionActive: { backgroundColor: theme.accentGreenBg },
-  mealOptionText: { fontSize: 16, color: theme.textSecondary, fontFamily: Type.uiMedium },
 });

@@ -30,6 +30,24 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-26 **Otto + Halo: copy a reply, and thumbs-down that actually reports (device-confirmed).**
+  Replies (and your own messages) are now `selectable`, so a press-and-hold gives a one-press Copy
+  without going through the share sheet.
+  ⚠️ RECORDED SO NOBODY RETRIES IT: on iOS `selectable` selects the WHOLE message only -- drag handles
+  and partial selection are ANDROID behaviour. Getting partial selection on iOS means rendering the
+  reply as a READ-ONLY TEXTINPUT (a real UITextView underneath). That is clean for Otto, but it would
+  kill Halo's INLINE TAPPABLE SCRIPTURE REFERENCES, which is how you jump to a verse from a reply.
+  Justin's call 2026-07-26: leave it, whole-message copy is enough and consistent across both.
+  It also removed the need for a copy BUTTON, which would have required expo-clipboard -- a native
+  module, so a new dev build just to test it.
+  THUMBS-DOWN NOW REACHES JUSTIN. It used to append to a phone-only key that NOTHING ever read, so a
+  user flagged a bad answer, was told "this helps improve Otto", and it died on their device. Now writes
+  to the EXISTING app_feedback path, which already has a Cloud Function emailing it -- no new
+  collection, no security rule, no new function, no deploy. Tagged `Otto reply` / `Halo reply` so a
+  Gmail filter can handle it if it gets noisy; sends the QUESTION alongside the reply (a flagged answer
+  is meaningless without it) and, for Halo, the faith tier. THUMBS-UP deliberately left decorative
+  (Justin: just thumbs-down on its own is weird). privacy.html gained a section on exactly what a report
+  sends, stating plainly that we never see a conversation you have not reported.
 - 2026-07-26 **Manage Tags is a centred modal, plus a tag colour overhaul (device-confirmed).** The sheet
   used to translate itself up by the FULL keyboard height on focus, which shoved a tall sheet's top off
   the screen (title behind the status bar, most of the card unreachable). Converted to a centred card on
@@ -1141,24 +1159,6 @@ are separate pre-submission checklists, NOT part of this menu.
   DECISION: leave it. One line would fix it, but it changes sixteen already-signed-off modals for
   something that cannot be seen, and this project's rule is not to churn what nobody has complained
   about. Revisit ONLY if a specific modal is reported as feeling wrong.
-- [TOP, surfaced 2026-07-25, Justin's call to rank here. Explicitly NOT for the 2026-07-25 session.]
-  **Quick copy for Otto's and Halo's replies.** Today the only way to get text out of a reply is the
-  SHARE button, then copy from the share sheet. Two ways in, decide when picked up (they are not
-  exclusive): (a) a COPY icon on the message row next to share/thumbs, one tap, copies the whole reply,
-  fires a toast -- expo-clipboard, small, and it matches the icon row that already exists; (b) native
-  press-and-hold to SELECT part of a reply, which is what Justin actually reached for first. (b) is the
-  better UX and the bigger unknown: RN needs `selectable` on the Text, and that has to be checked against
-  the row's existing long-press/drag handling and the modal's drag-to-dismiss gesture before promising
-  it. Do the audit before scoping. Both chats share the same message-row shape, so whatever ships should
-  land in Otto and Halo together.
-  WHILE IN THERE, decide the fate of the THUMBS buttons (read 2026-07-25, this is what they actually do):
-  THUMBS UP does NOTHING. It toggles its own icon and fires a "Thanks for the feedback" toast. Nothing is
-  stored, nothing is sent. THUMBS DOWN appends the exchange to `pj_companion_reports` in local
-  AsyncStorage, and NOTHING in the codebase ever reads that key -- confirmed by grep, the only two hits
-  are the write itself. So the data sits on the user's own phone forever and Justin never sees it. Three
-  honest options: wire thumbs-down to actually reach Justin (Firestore, same shape as app feedback),
-  drop the buttons, or leave them as pure acknowledgement and accept they are decorative. Do not leave
-  this undecided while adding MORE buttons to the same row.
 - [PARKED 2026-07-25, low priority, only if it starts to bother anyone] **Floating save bars jump when
   the keyboard opens.** Everything else from the keyboard pass is done. What's left uses the hand-rolled
   pattern (a Keyboard listener storing the height in state) to position a floating SAVE BAR rather than a

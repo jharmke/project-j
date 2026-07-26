@@ -16,7 +16,9 @@ import { triggerHaptic, triggerHapticNotification } from '@/utils/haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { router } from 'expo-router';
-import { app } from '../firebaseConfig';
+import { app, auth, db } from '../firebaseConfig';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import Constants from 'expo-constants';
 import { CRISIS_RESPONSE, screenForCrisis } from '../utils/faithCrisis';
 import {
   extractReferences, validateStructure, verifyReferencesInText,
@@ -531,14 +533,25 @@ export default function CompanionChat({
     } catch {}
   };
 
-  // Thumbs-down is the content-report hook: save the flagged exchange locally (append-only,
-  // read-then-merge). No external send yet; wiring to a review sink is a deferred follow-up.
+  // Thumbs-down is the content-report hook, and it now actually REPORTS. It used to append to a
+  // phone-only key (`pj_halo_reports`) that nothing ever read, so a flagged reply died on the device
+  // while the toast claimed it helped. See the fuller note in AssistantChat.
+  // Reuses the existing app_feedback path (already watched by a Cloud Function that emails), so no new
+  // collection, rule, function or deploy. `tier` rides along because the same reply can be right for a
+  // Rooted user and wrong for someone Exploring -- without it a flag is hard to judge.
   const saveReport = async (userMessage: string, haloReply: string) => {
     try {
-      const raw = await AsyncStorage.getItem('pj_halo_reports');
-      const all = raw ? JSON.parse(raw) : [];
-      all.push({ ts: Date.now(), tier, userMessage, haloReply });
-      await AsyncStorage.setItem('pj_halo_reports', JSON.stringify(all));
+      if (!auth.currentUser) return;
+      await addDoc(collection(db, 'users', auth.currentUser.uid, 'app_feedback'), {
+        type: 'Halo reply',
+        description: `FAITH JOURNEY: ${tier}\n\nQUESTION:\n${userMessage || '(none captured)'}\n\nHALO'S REPLY:\n${haloReply}`,
+        photoUrl: null,
+        userName: auth.currentUser.displayName ?? '',
+        userEmail: auth.currentUser.email ?? '',
+        appVersion: Constants.expoConfig?.version ?? '1.0',
+        device: `${Platform.OS} ${Platform.Version}`,
+        timestamp: serverTimestamp(),
+      });
     } catch {}
   };
 
@@ -795,8 +808,12 @@ export default function CompanionChat({
                 // HER words wear the VOICE face; YOURS stay on interface. That contrast IS the point -- a
                 // companion who speaks in the same face as the app's chrome reads as the app talking to
                 // itself. Same rule as the coach surfaces (Home, Sleep, the summaries, EvR).
+                // selectable: iOS's own press-and-hold selection, so a verse or a line can be lifted out
+                // of a reply without going through the share sheet. See the fuller note in
+                // AssistantChat -- core Text prop, no package, no rebuild, and nothing competes for the
+                // long-press here.
                 const body = (
-                  <Text style={[styles.bubbleText, m.role !== 'user' && { fontFamily: Type.voice }, { color: theme.textPrimary }]}>
+                  <Text selectable style={[styles.bubbleText, m.role !== 'user' && { fontFamily: Type.voice }, { color: theme.textPrimary }]}>
                     {m.segments
                       ? m.segments.map((s, j) =>
                           s.type === 'ref' ? (

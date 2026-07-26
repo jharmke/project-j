@@ -14,7 +14,9 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic, triggerHapticNotification } from '@/utils/haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { app } from '../firebaseConfig';
+import { app, auth, db } from '../firebaseConfig';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { useMembership } from '../MembershipContext';
 import { CRISIS_RESPONSE, screenForCrisis } from '../utils/faithCrisis';
@@ -448,13 +450,32 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
     });
   };
 
-  // Thumbs-down saves the flagged exchange locally (append-only, read-then-merge). No external send.
+  // Thumbs-down sends the flagged exchange to Justin.
+  //
+  // It used to append to a phone-only key (`pj_companion_reports`) that NOTHING in the codebase ever
+  // read -- so a user flagged a bad answer, was told "this helps improve Otto", and it died on their
+  // device. The toast made a promise the code did not keep. That local write is gone.
+  //
+  // Reuses the EXISTING app_feedback path rather than a new collection: a Cloud Function already
+  // watches it and emails, so this needed no new collection, no security-rule change, no new function
+  // and no deploy. `type` is what makes these filterable in the inbox if they ever get noisy.
+  //
+  // The QUESTION is sent alongside the reply on purpose -- a flagged answer is meaningless without
+  // knowing what was asked. Fire-and-forget: a failed send must never block the UI or lose the tap,
+  // and the user has already been thanked.
   const saveReport = async (userMessage: string, reply: string) => {
     try {
-      const raw = await AsyncStorage.getItem('pj_companion_reports');
-      const all = raw ? JSON.parse(raw) : [];
-      all.push({ ts: Date.now(), userMessage, reply });
-      await AsyncStorage.setItem('pj_companion_reports', JSON.stringify(all));
+      if (!auth.currentUser) return;
+      await addDoc(collection(db, 'users', auth.currentUser.uid, 'app_feedback'), {
+        type: 'Otto reply',
+        description: `QUESTION:\n${userMessage || '(none captured)'}\n\nOTTO'S REPLY:\n${reply}`,
+        photoUrl: null,
+        userName: auth.currentUser.displayName ?? '',
+        userEmail: auth.currentUser.email ?? '',
+        appVersion: Constants.expoConfig?.version ?? '1.0',
+        device: `${Platform.OS} ${Platform.Version}`,
+        timestamp: serverTimestamp(),
+      });
     } catch {}
   };
 
@@ -688,7 +709,13 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
                 // HIS words wear the VOICE face; YOURS stay on interface. That contrast IS the point -- an
                 // assistant who speaks in the same face as the app's chrome reads as the app talking to
                 // itself. Same rule as Halo and the coach surfaces.
-                const body = <Text style={[styles.bubbleText, m.role !== 'user' && { fontFamily: Type.voice }, { color: theme.textPrimary }]}>{m.text}</Text>;
+                // `selectable` gives iOS's own press-and-hold selection (magnifier, Copy, Look Up), so a
+                // user can lift ONE sentence out of a reply instead of sharing the whole thing through
+                // the share sheet. Costs nothing: it is a core Text prop, no package and no new build,
+                // where a copy BUTTON would need expo-clipboard and therefore a native rebuild.
+                // Safe here because nothing competes for the long-press: the bubble is a plain View, and
+                // the panel's drag-to-dismiss wraps only the handle and header, not the message list.
+                const body = <Text selectable style={[styles.bubbleText, m.role !== 'user' && { fontFamily: Type.voice }, { color: theme.textPrimary }]}>{m.text}</Text>;
                 const isReply = m.role === 'assistant' && i > 0; // opening greeting gets no action row
                 if (!isReply) {
                   if (m.role === 'user') {

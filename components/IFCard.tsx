@@ -1,9 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/components/AppIcons';
+import { Text, TextInput } from '@/components/AppText';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Animated, Easing, StyleSheet, TouchableOpacity, View } from 'react-native';
 import PressableButton from './PressableButton';
 import ButtonShine from './ButtonShine';
 import TooltipIcon from './TooltipIcon';

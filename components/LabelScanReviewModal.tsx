@@ -1,8 +1,9 @@
 import * as Haptics from 'expo-haptics';
-import { Ionicons } from '@expo/vector-icons';
+import { Text, TextInput } from '@/components/AppText';
+import { Ionicons } from '@/components/AppIcons';
 import { triggerHaptic } from '@/utils/haptics';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Animated, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../theme';
 import KeyboardAwareCenter from './KeyboardAwareCenter';
 import { Type } from '../typography';

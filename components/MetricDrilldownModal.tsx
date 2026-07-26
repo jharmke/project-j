@@ -5,9 +5,10 @@
 // NutrientDrilldownModal pattern. SPEC_sleep.md Section 13.
 
 import { useRef, useState } from 'react';
+import { Text } from '@/components/AppText';
 import * as Haptics from 'expo-haptics';
-import { Ionicons } from '@expo/vector-icons';
-import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@/components/AppIcons';
+import { Animated, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle, Defs, Line, LinearGradient as SvgLinearGradient, Path, Polyline, Stop, Text as SvgText } from 'react-native-svg';
 import { useTheme } from '../theme';
 import { triggerHaptic } from '../utils/haptics';

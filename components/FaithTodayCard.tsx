@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Text } from '@/components/AppText';
 import {
-  Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View,
-  type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent,
+  Animated, ScrollView, StyleSheet, TouchableOpacity, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent,
 } from 'react-native';
 import { useFocusEffect, router } from 'expo-router';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@/components/AppIcons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { type DailyVerse } from '../data/verses';

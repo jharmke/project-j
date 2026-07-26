@@ -9,11 +9,12 @@
 // animated dim overlay, tap-outside dismiss, spring+opacity entrance fired in onShow, handle
 // pill, ToastRenderer INSIDE so the save toast shows above the modal. Adds an accent top border.
 
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/components/AppIcons';
+import { Text, TextInput } from '@/components/AppText';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../theme';
 import { useToast, ToastRenderer } from './Toast';

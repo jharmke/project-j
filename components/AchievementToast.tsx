@@ -1,9 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/components/AppIcons';
+import { Text } from '@/components/AppText';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
 import { triggerHapticNotification } from '@/utils/haptics';
-import { Animated, Dimensions, Easing, PanResponder, StyleSheet, Text, View } from 'react-native';
+import { Animated, Dimensions, Easing, PanResponder, StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Path, Stop } from 'react-native-svg';
 import { AchievementDef, AchievementDisplayTier } from '../achievementData';
 import { useTheme } from '../theme';

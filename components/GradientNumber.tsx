@@ -1,6 +1,7 @@
 import MaskedView from '@react-native-masked-view/masked-view';
+import { Text } from '@/components/AppText';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Text, TextStyle } from 'react-native';
+import { TextStyle } from 'react-native';
 
 // ─── GradientNumber ───────────────────────────────────────────────────────────
 // A hero number, MOLDED instead of painted. Same idea as PrimaryCTA: a flat fill reads as printed, a

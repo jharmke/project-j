@@ -1,16 +1,10 @@
 import * as Haptics from 'expo-haptics';
+import { Text } from '@/components/AppText';
 import { triggerHaptic } from '@/utils/haptics';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Animated,
-  Dimensions,
-  Easing,
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+  Animated, Dimensions, Easing, Pressable, StyleSheet, TouchableOpacity, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ActiveTutorialState } from '../context/TutorialContext';

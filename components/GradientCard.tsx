@@ -20,7 +20,7 @@
 // shadow) -- the matched corner radii on the gradient handle the clipping.
 
 import React from 'react';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/components/AppIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { View, ViewProps, ViewStyle } from 'react-native';
 import { useTheme } from '../theme';

@@ -7,9 +7,10 @@
 // theme is passed in: onboarding reads the STATIC base theme, it has no provider above it.
 
 import React from 'react';
-import { Modal, View, Text, StyleSheet } from 'react-native';
+import { Text } from '@/components/AppText';
+import { Modal, View, StyleSheet } from 'react-native';
 import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, runOnJS } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/components/AppIcons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import PrimaryCTA from './PrimaryCTA';

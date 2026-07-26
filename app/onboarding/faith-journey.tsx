@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { Text } from '@/components/AppText';
 import {
-  Animated, Dimensions, StyleSheet, Text,
-  TouchableOpacity, View,
+  Animated, Dimensions, StyleSheet, TouchableOpacity, View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -10,7 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from '../../utils/storage';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/components/AppIcons';
 import { isOnboardingPreview } from '../../utils/onboardingPreview';
 import { Type, numLine } from '../../typography';
 import { mix } from '../../theme';

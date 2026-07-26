@@ -1,10 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Text } from '@/components/AppText';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { triggerHaptic } from '@/utils/haptics';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Image, Platform, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Platform, TouchableOpacity, View } from 'react-native';
 import { deleteObject, ref } from 'firebase/storage';
 import { auth, storage } from '../firebaseConfig';
 import { storageSet } from '../utils/storage';

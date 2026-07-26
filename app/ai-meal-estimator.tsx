@@ -5,15 +5,15 @@
 //
 // Spec: SPEC_ai_meal_estimator.md (source of truth).
 
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/components/AppIcons';
+import { Text, TextInput } from '@/components/AppText';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActionSheetIOS, ActivityIndicator, Alert, Animated, Image, KeyboardAvoidingView,
-  Modal, Platform, ScrollView, Text, TextInput, TouchableOpacity, View,
+  ActionSheetIOS, ActivityIndicator, Alert, Animated, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, TouchableOpacity, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastRenderer, useToast } from '../components/Toast';

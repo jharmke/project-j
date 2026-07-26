@@ -8,7 +8,8 @@
 // everywhere it renders.
 
 import { useEffect } from 'react';
-import { Text, View } from 'react-native';
+import { Text } from '@/components/AppText';
+import { View } from 'react-native';
 import ReAnimated, {
   cancelAnimation,
   Easing as ReAnimEasing,

@@ -1,5 +1,6 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
-import { AntDesign } from '@expo/vector-icons';
+import { Text } from '@/components/AppText';
+import { AntDesign } from '@/components/AppIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CryptoJS from 'crypto-js';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
@@ -7,16 +8,7 @@ import { GoogleAuthProvider, OAuthProvider, fetchSignInMethodsForEmail, signInWi
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Animated,
-  Dimensions,
-  Image,
-  Linking,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+  ActivityIndicator, Alert, Animated, Dimensions, Image, Linking, StyleSheet, TouchableOpacity, View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';

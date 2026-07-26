@@ -1,6 +1,7 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/components/AppIcons';
+import { Text } from '@/components/AppText';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { Animated, Keyboard, PanResponder, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Keyboard, PanResponder, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../theme';
 import { Type } from '../typography';
 

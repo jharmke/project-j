@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
+import { Text, TextInput } from '@/components/AppText';
 import {
-  Alert, Animated, Easing, Keyboard, Linking, Modal, Platform, Pressable,
-  ScrollView, Share, StyleSheet, Text, TextInput, View,
+  Alert, Animated, Easing, Keyboard, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { barFillGradient } from '../utils/barGradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, runOnJS } from 'react-native-reanimated';
 import { GestureHandlerRootView, GestureDetector, Gesture } from 'react-native-gesture-handler';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/components/AppIcons';
 import ButtonShine from './ButtonShine';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic, triggerHapticNotification } from '@/utils/haptics';

@@ -1,14 +1,9 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/components/AppIcons';
+import { Text } from '@/components/AppText';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
-  Animated,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+  Animated, Modal, ScrollView, StyleSheet, TouchableOpacity, View,
 } from 'react-native';
 import { getTutorialsForTab } from '../data/tutorials';
 import { useTheme } from '../theme';

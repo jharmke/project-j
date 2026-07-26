@@ -1,6 +1,7 @@
 import MaskedView from '@react-native-masked-view/masked-view';
+import { Text } from '@/components/AppText';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Text, TextStyle } from 'react-native';
+import { TextStyle } from 'react-native';
 import { Type } from '../typography';
 
 // ─── DurationValue ────────────────────────────────────────────────────────────

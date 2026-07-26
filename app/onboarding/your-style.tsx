@@ -1,19 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
+import { Text, TextInput } from '@/components/AppText';
 import {
-  Animated, InputAccessoryView, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text,
-  TouchableOpacity, View
+  Animated, InputAccessoryView, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity, View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from '../../utils/storage';
-import { TextInput } from 'react-native';
+
 import { THEMES, mix } from '../../theme';
 import Svg, { Path, Line, Circle, Text as SvgText, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/components/AppIcons';
 import { isOnboardingPreview } from '../../utils/onboardingPreview';
 import { MODE_ACCENT, getModeAccentTints, setSessionStyleMode } from '../../utils/modeAccent';
 import { Type } from '../../typography';

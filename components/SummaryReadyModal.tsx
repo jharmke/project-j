@@ -10,9 +10,10 @@
 // Reuses the exported ScoreRing from DaySummaryModal so the Day modal is untouched.
 
 import React, { useEffect } from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Text } from '@/components/AppText';
+import { Modal, View, TouchableOpacity, StyleSheet } from 'react-native';
 import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, runOnJS, Easing, SharedValue } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/components/AppIcons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import TooltipIcon from './TooltipIcon';

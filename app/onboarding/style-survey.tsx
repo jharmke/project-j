@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
+import { Text } from '@/components/AppText';
 import {
-  Animated, ScrollView, StyleSheet, Text,
-  TouchableOpacity, View
+  Animated, ScrollView, StyleSheet, TouchableOpacity, View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -10,7 +10,7 @@ import { THEMES, mix } from '../../theme';
 import { getModeAccentTints } from '../../utils/modeAccent';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/components/AppIcons';
 import { isOnboardingPreview } from '../../utils/onboardingPreview';
 import { Type } from '../../typography';
 import BackgroundLayers from '../../components/BackgroundLayers';

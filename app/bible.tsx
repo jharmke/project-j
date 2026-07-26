@@ -1,4 +1,5 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/components/AppIcons';
+import { Text, TextInput } from '@/components/AppText';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic, triggerHapticNotification } from '@/utils/haptics';
@@ -6,8 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-    Alert, Animated, FlatList, KeyboardAvoidingView, Modal, Platform,
-    ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View
+  Alert, Animated, FlatList, KeyboardAvoidingView, Modal, Platform, ScrollView, Share, StyleSheet, TouchableOpacity, View,
 } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 import Reanimated, {

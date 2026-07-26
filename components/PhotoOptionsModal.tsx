@@ -1,9 +1,10 @@
 import MaskedView from '@react-native-masked-view/masked-view';
+import { Text } from '@/components/AppText';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useRef } from 'react';
-import { Animated, Modal as RNModal, Pressable, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Modal as RNModal, Pressable, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../theme';
 import { Type } from '../typography';
 import ButtonShine from './ButtonShine';

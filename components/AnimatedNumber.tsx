@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Text } from 'react-native';
+import { Text } from '@/components/AppText';
+import { Animated, Easing } from 'react-native';
 import type { TextStyle } from 'react-native';
 
 interface Props {

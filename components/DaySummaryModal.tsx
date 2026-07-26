@@ -10,10 +10,11 @@
 // journal/prayer/study/gratitude entry exists for the day).
 
 import React, { useEffect, useState } from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Text } from '@/components/AppText';
+import { Modal, View, TouchableOpacity, StyleSheet } from 'react-native';
 import Reanimated, { useSharedValue, useAnimatedStyle, useAnimatedProps, withTiming, withSpring, withDelay, withRepeat, cancelAnimation, runOnJS, Easing, SharedValue } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/components/AppIcons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import TooltipIcon from './TooltipIcon';

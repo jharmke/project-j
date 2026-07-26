@@ -1,6 +1,7 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/components/AppIcons';
+import { Text } from '@/components/AppText';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Modal, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Modal, TouchableOpacity, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { type Prayer } from '../utils/prayers';

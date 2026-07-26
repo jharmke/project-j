@@ -2,11 +2,12 @@
 // Self-contained: holds its OWN local set state so typing never re-renders the parent
 // DraggableFlatList, and persists up to the parent on blur / check / add / remove. Remount it
 // (key on date+exerciseId) to re-seed when the active day or exercise changes.
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/components/AppIcons';
+import { Text, TextInput } from '@/components/AppText';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Animated, TouchableOpacity, View } from 'react-native';
 import type { SetEntry } from '../workoutData';
 import { weightUnitHeader, formatHold, parseHoldInput } from '../workoutData';
 import { Type } from '../typography';

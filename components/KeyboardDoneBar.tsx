@@ -1,4 +1,5 @@
-import { InputAccessoryView, Keyboard, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { InputAccessoryView, Keyboard, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Text } from '@/components/AppText';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';

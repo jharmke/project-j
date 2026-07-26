@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
+import { Text } from '@/components/AppText';
 import {
-  Animated, StyleSheet, Text,
-  TouchableOpacity, View,
+  Animated, StyleSheet, TouchableOpacity, View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/components/AppIcons';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';

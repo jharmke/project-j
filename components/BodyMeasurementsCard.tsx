@@ -4,13 +4,14 @@
 // Each slot: value + label + delta from first logged entry. Fixed footer: Weight + Navy BF%.
 // Mindful strips delta color. See SPEC_body_measurements.md.
 
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/components/AppIcons';
+import { Text } from '@/components/AppText';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '../theme';
 import ButtonShine from './ButtonShine';

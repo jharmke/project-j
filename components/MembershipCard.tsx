@@ -1,6 +1,7 @@
 import React from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Text } from '@/components/AppText';
+import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@/components/AppIcons';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { triggerHaptic } from '@/utils/haptics';

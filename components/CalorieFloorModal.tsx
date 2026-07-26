@@ -6,9 +6,10 @@
 // Same centered-card pattern as DayScoreDisclaimerModal (mandatory choice, no tap-to-dismiss).
 
 import React from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Text } from '@/components/AppText';
+import { Modal, View, TouchableOpacity, StyleSheet } from 'react-native';
 import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, withSpring } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/components/AppIcons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { Type } from '../typography';

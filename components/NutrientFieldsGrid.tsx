@@ -1,8 +1,9 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/components/AppIcons';
+import { Text, TextInput } from '@/components/AppText';
 import { triggerHaptic } from '@/utils/haptics';
 import * as Haptics from 'expo-haptics';
 import { useRef, useState } from 'react';
-import { Animated, Easing, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Animated, Easing, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../theme';
 import { Type } from '../typography';
 import { DV_REFERENCE, amountToPercentDV, percentDVToAmount } from '../utils/nutrientDV';

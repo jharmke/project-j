@@ -13,11 +13,12 @@
 // its unread dots.
 
 import { useRef, useState } from 'react';
+import { Text } from '@/components/AppText';
 import {
-  Alert, Animated, Dimensions, Easing, Pressable, ScrollView, StyleSheet, Text, View,
+  Alert, Animated, Dimensions, Easing, Pressable, ScrollView, StyleSheet, View,
 } from 'react-native';
 import Reanimated, { FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/components/AppIcons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '../theme';

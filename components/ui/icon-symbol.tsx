@@ -37,5 +37,9 @@ export function IconSymbol({
   style?: StyleProp<TextStyle>;
   weight?: SymbolWeight;
 }) {
-  return <MaterialIcons color={color} size={size} name={MAPPING[name]} style={style} />;
+  // allowFontScaling={false} for the same reason as components/AppIcons.tsx: icons render from an icon
+  // FONT, so iOS Dynamic Type grows them like text. This file imports MaterialIcons via a SUBPATH
+  // ('@expo/vector-icons/MaterialIcons'), so it was correctly left alone by the import sweep and has to
+  // be handled here. IconSymbol is live -- the pencil on the Workout tab. See SPEC_accessibility.md.
+  return <MaterialIcons color={color} size={size} name={MAPPING[name]} style={style} allowFontScaling={false} />;
 }

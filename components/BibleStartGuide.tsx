@@ -1,6 +1,7 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/components/AppIcons';
+import { Text } from '@/components/AppText';
 import { useRef } from 'react';
-import { Animated, Modal, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Modal, TouchableOpacity, View } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';

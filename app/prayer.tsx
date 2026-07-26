@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Text } from '@/components/AppText';
 import {
-  ActivityIndicator, Alert, Animated, Easing, LayoutAnimation, Platform, ScrollView,
-  StyleSheet, Text, TouchableOpacity, UIManager, View,
+  ActivityIndicator, Alert, Animated, Easing, LayoutAnimation, Platform, ScrollView, StyleSheet, TouchableOpacity, UIManager, View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, router, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/components/AppIcons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic, triggerHapticNotification } from '@/utils/haptics';
 import AddPrayerModal from '../components/AddPrayerModal';

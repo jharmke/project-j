@@ -8,7 +8,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, AppState, Dimensions, InteractionManager, Keyboard, KeyboardAvoidingView, Modal, PanResponder, Platform, ScrollView, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { Alert, Animated, AppState, Dimensions, InteractionManager, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Reanimated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, runOnJS, FadeIn, FadeOut, FadeInDown } from 'react-native-reanimated';
@@ -31,11 +31,12 @@ import HeaderAvatar from '../../components/HeaderAvatar';
 import GradientTitle from '../../components/GradientTitle';
 import GradientNumber from '../../components/GradientNumber';
 import GradientIcon from '../../components/GradientIcon';
+import { barFillGradient } from '../../utils/barGradient';
 import ButtonShine from '../../components/ButtonShine';
 import FabDome from '../../components/FabDome';
 import PrimaryCTA from '../../components/PrimaryCTA';
 import { useHealthKit } from '../../useHealthKit';
-import { BLANK_DAY, DEFAULT_TAGS, DayProgram, Exercise, PRRecord, Routine, SetEntry, TAG_COLOR_PALETTE, WorkoutTag, PRESET_ROUTINES, weightUnitLabel, formatHold, parseHoldInput } from '../../workoutData';
+import { BLANK_DAY, DEFAULT_TAGS, DayProgram, Exercise, PRRecord, Routine, SetEntry, TAG_COLOR_PALETTE, TAG_PALETTE_VERSION, WorkoutTag, PRESET_ROUTINES, weightUnitLabel, formatHold, parseHoldInput } from '../../workoutData';
 import MuscleMap from '../../components/MuscleMap';
 import ExerciseSetRows from '../../components/ExerciseSetRows';
 import HRZoneModal, { HRZoneData } from '../../components/HRZoneModal';
@@ -394,7 +395,6 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
     }, [addTutorialExercise, deleteTutorialExercise, registerTutorialAction, unregisterTutorialAction])
   );
 
-  const manageTagsAnim = useSharedValue(600);
   const manageTagsOverlayAnim = useRef(new Animated.Value(0)).current;
 
   const addExerciseScale = useSharedValue(0.85);
@@ -451,57 +451,58 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   };
   
 
-  const manageTagsKeyboardOffset = useSharedValue(0);
-  const manageTagsKeyboardStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: manageTagsAnim.value - manageTagsKeyboardOffset.value }],
-  }));
+  // Manage Tags is a CENTRED CARD (converted 2026-07-26). It used to be a bottom sheet that translated
+  // itself up by the FULL keyboard height when the input focused -- and being a tall sheet, that shoved
+  // its top clean off the screen: the title ended up behind the status bar and most of the card was
+  // unreachable. Two rules broken at once: bottom sheets are banned outright (CLAUDE.md), and
+  // SPEC_keyboard_modals.md TRAP 3 says never move a card with a transform to dodge the keyboard.
+  // A centred card padded by KeyboardAwareCenter cannot overshoot, because it is laid out rather than
+  // pushed. Modelled on Home's Edit Layout modal (Justin's call) since that already hosts a
+  // drag-to-reorder list inside a height-bounded centred card.
+  // RN Animated, NOT Reanimated, and that is the whole point. The first version used Reanimated's
+  // withSpring with the same damping/stiffness numbers as the other centred modals, on the assumption
+  // that identical numbers give an identical feel. They do not -- the two engines resolve that config
+  // differently and Reanimated's lands visibly more underdamped, so this modal bounced more than every
+  // other modal in the app. Copy the ENGINE as well as the numbers when copying an animation.
+  // Config is character-for-character the same as NutrientDrilldownModal's.
+  const manageTagsCardScale = useRef(new Animated.Value(0.85)).current;
+  const manageTagsCardOpacity = useRef(new Animated.Value(0)).current;
 
   const openManageTags = () => {
     manageTagsOverlayAnim.setValue(0);
-    manageTagsAnim.value = 1200;
-    manageTagsKeyboardOffset.value = 0;
+    manageTagsCardScale.setValue(0.85);
+    manageTagsCardOpacity.setValue(0);
     setShowManageTagsModal(true);
   };
 
   const closeManageTags = () => {
     Keyboard.dismiss();
-    manageTagsKeyboardOffset.value = withTiming(0, { duration: 250 });
-    Animated.timing(manageTagsOverlayAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
-    manageTagsAnim.value = withTiming(600, { duration: 280 });
-    setTimeout(() => setShowManageTagsModal(false), 300);
+    Animated.parallel([
+      Animated.timing(manageTagsOverlayAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
+      Animated.timing(manageTagsCardScale,   { toValue: 0.94, duration: 160, useNativeDriver: true }),
+      Animated.timing(manageTagsCardOpacity, { toValue: 0,    duration: 140, useNativeDriver: true }),
+    ]).start(() => setShowManageTagsModal(false));
   };
-
-  useEffect(() => {
-    // Add Exercise's keyboard height now arrives already animated (useAnimatedKeyboardHeight); setting
-    // it as plain state here landed in one frame, so that modal snapped into position.
-    const show = Keyboard.addListener('keyboardWillShow', e => {
-      manageTagsKeyboardOffset.value = withTiming(e.endCoordinates.height, { duration: e.duration || 250 });
-    });
-    const hide = Keyboard.addListener('keyboardWillHide', e => {
-      manageTagsKeyboardOffset.value = withTiming(0, { duration: e.duration || 250 });
-    });
-    return () => { show.remove(); hide.remove(); };
-  }, []);
 
   useEffect(() => {
     const score = cardioLogs[activeDay]?.effortScore;
     effortLabelAnim.setValue(score ? 1 : 0);
   }, [activeDay]);
 
-  const manageTagsSheetStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: manageTagsAnim.value }],
-  }));
-  
-
-  const manageTagsPanResponder = useRef(PanResponder.create({
-    onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 8,
-    onPanResponderRelease: (_, g) => {
-      if (g.dy > 60) closeManageTags();
-    },
-  })).current;
+  // (manageTagsSheetStyle + manageTagsPanResponder removed 2026-07-26 with the bottom sheet -- a slide
+  // transform and drag-to-dismiss have no meaning on a centred card.)
   const [editingTag, setEditingTag] = useState<WorkoutTag | null>(null);
   const [tagLabelInput, setTagLabelInput] = useState('');
   const [tagColorInput, setTagColorInput] = useState(TAG_COLOR_PALETTE[0]);
+
+  // Drives the dim/active state of Save Changes. Compares against the tag as it was when the pencil was
+  // tapped, so opening an editor and saving without touching anything is not offered as an action.
+  // A LOCKED tag's label cannot change, so only its colour is worth comparing -- otherwise the button
+  // would sit permanently dim for the six defaults.
+  const tagHasChanges = !!editingTag && (
+    tagColorInput !== editingTag.color ||
+    (!editingTag.locked && tagLabelInput.trim() !== editingTag.label)
+  );
 const { activeCalories, appleWorkouts, fetchTodayData, fetchWorkoutHRByUUID, fetchSyncedWorkouts } = useHealthKit();
 
 // HR Zones per-workout modal
@@ -861,7 +862,18 @@ useEffect(() => {
         const s = settings ? JSON.parse(settings) : {};
         const savedTags: WorkoutTag[] = (s.workoutTags && Array.isArray(s.workoutTags)) ? s.workoutTags : [];
 
-        // Merge -- ensure all locked defaults always exist with correct data
+        // Merge -- the six locked defaults must always EXIST, but their colour is the user's.
+        //
+        // This used to force `color: def.color` on every single load, which quietly made locked
+        // colours unchangeable: an edit would be overwritten the next time tags were read, so the UI
+        // would have appeared to work and then silently reverted.
+        //
+        // Now the colour is re-seeded ONCE per device, gated on TAG_PALETTE_VERSION. That is what lets
+        // a palette change actually reach people: without it, dropping the every-load overwrite would
+        // mean new colours only ever appeared on FRESH INSTALLS, and every existing user (TestFlight
+        // included) would keep the old palette forever with no way to know. After the re-seed runs the
+        // marker is stored and colours are never touched again, so edits survive.
+        const paletteApplied = s.workoutTagPaletteVersion === TAG_PALETTE_VERSION;
         const mergedTags = [...savedTags];
         for (const def of DEFAULT_TAGS) {
           const existingIdx = mergedTags.findIndex(t => t.id === def.id);
@@ -869,13 +881,23 @@ useEffect(() => {
             // Missing entirely -- add at the front
             mergedTags.unshift({ ...def });
           } else {
-            // Exists -- force locked flag and correct color, preserve label if customized
-            mergedTags[existingIdx] = { ...mergedTags[existingIdx], locked: true, color: def.color };
+            // Exists -- force the locked flag (structural), preserve the label if customized, and take
+            // the default colour ONLY on the one-time re-seed.
+            mergedTags[existingIdx] = {
+              ...mergedTags[existingIdx],
+              locked: true,
+              ...(paletteApplied ? {} : { color: def.color }),
+            };
           }
         }
 
-        // Save merged tags back so storage stays clean
-        await storageSet('pj_settings', JSON.stringify({ ...s, workoutTags: mergedTags }));
+        // Save merged tags back so storage stays clean. READ-THEN-MERGE: spreads the existing settings
+        // object, only ever adding these two keys.
+        await storageSet('pj_settings', JSON.stringify({
+          ...s,
+          workoutTags: mergedTags,
+          workoutTagPaletteVersion: TAG_PALETTE_VERSION,
+        }));
         setTags(mergedTags);
 
         const libRaw = await AsyncStorage.getItem('pj_exercise_library');
@@ -2136,17 +2158,29 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
               style={{ padding: 10 }}
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openEditModal(activeDay, ex); }}
               hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
-              <Ionicons name="pencil" size={15} color={theme.textMuted} />
+              <GradientIcon name="pencil" size={15} color={theme.textMuted} />
             </TouchableOpacity>
             <TouchableOpacity
               style={{ padding: 10 }}
               onPress={() => removeExercise(activeDay, ex.id)}
               hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
-              <Ionicons name="trash" size={15} color={theme.accentRed} />
+              <GradientIcon name="trash" size={15} color={theme.accentRed} />
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.checkCircle, { borderColor: theme.borderCard }, isDone && { backgroundColor: theme.accentBlue, borderColor: theme.accentBlue }]}
+              style={[styles.checkCircle, { borderColor: theme.borderCard }, isDone && { borderColor: theme.accentBlue, overflow: 'hidden' }]}
               onPress={() => ex.isCardio ? toggleExercise(ex.id) : bulkToggleLift(ex, !isDone)}>
+              {/* Checked state is a MOLDED fill rather than a flat accent disc, matching how every other
+                  filled surface in the app is treated. overflow: hidden above is what keeps the gradient
+                  inside the circle. The tick stays flat -- a gradient on a 12pt glyph sitting on a
+                  gradient disc reads as muddy, not molded. */}
+              {isDone && (
+                <LinearGradient
+                  colors={barFillGradient(theme.accentBlue)}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                  style={StyleSheet.absoluteFill}
+                />
+              )}
               {isDone && <Text style={[styles.checkMark, { color: theme.bgPrimary }]}>✓</Text>}
             </TouchableOpacity>
           </View>
@@ -2420,7 +2454,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                 setShowLabelModal(true);
               }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <IconSymbol name="pencil" size={14} color={theme.textMuted} />
+                  <GradientIcon name="pencil" size={14} color={theme.textMuted} />
                   <Text style={[styles.progressLabel, { fontSize: 18, color: programs[activeDay]?.customLabel ? theme.textSecondary : theme.textDim, fontFamily: Type.uiSemibold, flex: 1 }]} numberOfLines={1} ellipsizeMode="tail">{programs[activeDay]?.customLabel || 'Add label...'}</Text>
                 </View>
               </TouchableOpacity>
@@ -2492,7 +2526,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                         </TouchableOpacity>
                       )}
                       <TouchableOpacity onPress={deleteAppleSession} style={{ padding: 4 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                        <Ionicons name="trash" size={15} color={theme.accentRed} />
+                        <GradientIcon name="trash" size={15} color={theme.accentRed} />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -3245,54 +3279,91 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
         </Modal>
       )}
 
-      {/* Manage Tags Modal */}
+      {/* Manage Tags Modal -- CENTRED CARD. See the note on manageTagsCardStyle for why it is no longer
+          a bottom sheet. Structure follows the Modal + list pattern in CLAUDE.md: the backdrop is its
+          own absolutely-positioned TouchableOpacity, and the card sits in a box-none container, so the
+          card is never wrapped in a touchable. */}
       <Modal visible={showManageTagsModal} transparent animationType="none" onRequestClose={closeManageTags} statusBarTranslucent hardwareAccelerated onShow={() => {
-        manageTagsAnim.value = 1200;
-        Animated.timing(manageTagsOverlayAnim, { toValue: 1, duration: 150, useNativeDriver: true }).start();
-        manageTagsAnim.value = withSpring(0, { damping: 80, stiffness: 600 });
+        Animated.parallel([
+          Animated.timing(manageTagsOverlayAnim,  { toValue: 1, duration: 150, useNativeDriver: true }),
+          Animated.timing(manageTagsCardOpacity,  { toValue: 1, duration: 150, useNativeDriver: true }),
+          Animated.spring(manageTagsCardScale,    { toValue: 1, useNativeDriver: true, damping: 22, stiffness: 300 }),
+        ]).start();
       }}>
-          <Animated.View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: theme.overlayBg, opacity: manageTagsOverlayAnim }}>
-            <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeManageTags(); }} />
-          </Animated.View>
+          <Animated.View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: theme.overlayBg, opacity: manageTagsOverlayAnim }} />
+          <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeManageTags(); }} />
           <ToastRenderer />
-          <View style={{ flex: 1, justifyContent: 'flex-end' }} pointerEvents="box-none">
-            <Reanimated.View style={[{
+          {/* Pads the centring box rather than moving the card, so the card re-centres in what is left
+              and can never be pushed off screen the way the old sheet was. */}
+          {/* paddingTop is the safe-area inset, and it is not cosmetic. The card centres in whatever
+              space is left after the keyboard claims its half; with a tall keyboard that space is short
+              enough that an 85% card centres high and slides under the status bar / Dynamic Island.
+              Padding the box means it centres within the USABLE area instead of the whole screen, and
+              since the card's height is a percentage OF that box it gives up a little height rather
+              than climbing. */}
+          <KeyboardAwareCenter
+            style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: insets.top + 8, paddingBottom: 8 }}
+            pointerEvents="box-none"
+          >
+            <Animated.View style={[{
+              width: '92%',
+              // PERCENTAGE of the (already keyboard-padded) box, never a pixel ceiling derived from the
+              // keyboard height -- SPEC_keyboard_modals.md TRAP 4.
+              maxHeight: '85%',
               backgroundColor: theme.bgSheet,
-              borderTopLeftRadius: 20,
-              borderTopRightRadius: 20,
-              borderTopWidth: 0.5,
+              borderRadius: 20,
+              borderWidth: 0.5,
               borderColor: theme.borderSheet,
-              paddingBottom: 40,
-            }, manageTagsKeyboardStyle]}>
-              <View style={{ maxHeight: '85%' }}>
-              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeManageTags(); }} {...manageTagsPanResponder.panHandlers} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 8 }}>
-                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
-              </TouchableOpacity>
+              borderTopWidth: 1.5,
+              borderTopColor: theme.accentBlueRaw,
+              paddingBottom: 20,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 10 },
+              shadowOpacity: 0.45,
+              shadowRadius: 28,
+              elevation: 24,
+              opacity: manageTagsCardOpacity,
+              transform: [{ scale: manageTagsCardScale }],
+            }]}>
+              {/* ModalHeader carries the handle pill and the X, same as every other centred modal. The
+                  pill is decorative here: a centred card has nowhere to be dragged to, and the old
+                  drag-to-dismiss PanResponder went with the sheet. */}
+              <ModalHeader title="Manage Tags" onClose={closeManageTags} />
               <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-              <View style={{ paddingHorizontal: 20 }}>
-                {/* Was 'MANAGE TAGS' in Type.num (number face) AND textPrimary (near-black -- breaks the
-                    no-black-titles rule). Draggable handle kept; X added for a clear close. */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                  <GradientTitle title="Manage Tags" color={theme.accentBlueRaw} style={{ fontSize: 20, fontFamily: Type.display, letterSpacing: 0.3 }} />
-                  <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeManageTags(); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                    <Ionicons name="close" size={22} color={theme.textMuted} />
-                  </TouchableOpacity>
-                </View>
+              <View style={{ paddingHorizontal: 20, flexShrink: 1 }}>
 
-                {/* Existing tags list */}
-                <View style={{ maxHeight: 280 }}>
+                {/* Existing tags list. flexShrink alongside the maxHeight so the list gives way when the
+                    keyboard shrinks the card -- with a fixed ceiling alone the list holds its height and
+                    the Create Tag button is what gets pushed out of reach. */}
+                <View style={{ maxHeight: 280, flexShrink: 1, marginHorizontal: -14 }}>
                   <DraggableFlatList
                     data={tags}
                     keyExtractor={t => t.id}
                     onDragEnd={({ data }) => saveTags(data)}
                     showsVerticalScrollIndicator={false}
                     scrollEnabled
+                    // ScaleDecorator SCALES the grabbed row up so it reads as lifted, and a full-width
+                    // row has nowhere to grow into -- it escaped past the card's edge. The list carries
+                    // its own horizontal padding so a lifted row has room; the negative margin above
+                    // cancels it at rest so nothing looks inset.
+                    // SIZING IT: room needed each side = rowWidth * (activeScale - 1) / 2. At ~330pt
+                    // wide and the library's 1.05 default that is ~8.3pt, so an 8 was fractionally
+                    // short and the overflow still showed. 14 leaves real headroom.
+                    // WHY IT LOOKED ONE-SIDED: both edges overflow equally, but the row's LEFT edge is
+                    // the transparent drag handle so its overflow is invisible, while the right edge is
+                    // the pill's coloured border. The six default tags are locked, so their Edit and
+                    // Delete buttons are not rendered and the pill runs the full width to that edge.
+                    contentContainerStyle={{ paddingHorizontal: 14 }}
                     renderItem={({ item: t, drag, isActive }: RenderItemParams<WorkoutTag>) => {
                       const isBeingEdited = editingTag?.id === t.id;
                       const displayLabel = isBeingEdited ? (tagLabelInput || t.label) : t.label;
                       const displayColor = isBeingEdited ? tagColorInput : t.color;
                       return (
-                        <ScaleDecorator>
+                        // activeScale is set EXPLICITLY and small. The library's default lift (1.05) made
+                        // a full-width row overflow the card on grab, and two rounds of widening the
+                        // gutter to make room only ever got close -- treating the symptom. A 2% lift
+                        // still reads as "picked up" and simply does not overflow.
+                        <ScaleDecorator activeScale={1.02}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 8, opacity: isActive ? 0.85 : 1 }}>
                             <TouchableOpacity onLongPress={drag} style={{ paddingHorizontal: 4, paddingVertical: 8 }}>
                               <Ionicons name="reorder-three-outline" size={18} color={theme.textDim} />
@@ -3301,12 +3372,20 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                               <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: '#ffffff', flex: 1 }}>{displayLabel.toUpperCase()}</Text>
                               {t.locked && <Ionicons name="lock-closed" size={10} color="rgba(255,255,255,0.6)" />}
                             </View>
-                            {!t.locked && (
-                              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditingTag(t); setTagLabelInput(t.label); setTagColorInput(t.color); }}
-                                style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: isBeingEdited ? theme.accentGreenBorder : theme.accentBlueBorder, backgroundColor: isBeingEdited ? theme.accentGreenBg : theme.accentBlueBg }}>
-                                <Text style={{ fontSize: 11, color: isBeingEdited ? theme.accentGreen : theme.accentBlue, fontFamily: Type.uiSemibold }}>{isBeingEdited ? 'Editing' : 'Edit'}</Text>
-                              </TouchableOpacity>
-                            )}
+                            {/* Pencil + trash, matching the exercise rows one screen over -- the app
+                                already uses exactly these two icons for edit and delete, so the old
+                                text buttons were the inconsistency. Icons also hand a lot of width back
+                                to the pill, and the active state is the pencil going accent rather than
+                                the word "Editing" in green (green means success/goal-hit here, not
+                                "currently editing"). LOCKED tags now get the pencil too: their name is
+                                protected, their COLOUR is not. */}
+                            <TouchableOpacity
+                              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditingTag(t); setTagLabelInput(t.label); setTagColorInput(t.color); }}
+                              hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+                              style={{ paddingHorizontal: 6, paddingVertical: 6 }}
+                            >
+                              <GradientIcon name="pencil" size={15} color={isBeingEdited ? theme.accentBlue : theme.textMuted} />
+                            </TouchableOpacity>
                             {!t.locked && (
                               <TouchableOpacity onPress={() => {
                                 triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
@@ -3314,8 +3393,8 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                                   { text: 'Cancel', style: 'cancel' },
                                   { text: 'Delete', style: 'destructive', onPress: () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy); saveTags(tags.filter(x => x.id !== t.id)); } },
                                 ]);
-                              }} style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: theme.accentRedBorder, backgroundColor: theme.accentRedBg }}>
-                                <Text style={{ fontSize: 11, color: theme.accentRed, fontFamily: Type.uiSemibold }}>Delete</Text>
+                              }} hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }} style={{ paddingHorizontal: 6, paddingVertical: 6 }}>
+                                <GradientIcon name="trash" size={15} color={theme.accentRed} />
                               </TouchableOpacity>
                             )}
                           </View>
@@ -3330,14 +3409,33 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                   <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.uiBold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>
                     {editingTag ? 'Edit Tag' : 'New Tag'}
                   </Text>
+                  {/* A LOCKED tag's name is structural (programs and the weekly template refer to these
+                      six), so it stays read-only -- only the colour is the user's. Shown dimmed rather
+                      than hidden so it is obvious WHICH tag is being recoloured. */}
                   <TextInput
-                    style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: Type.ui, marginBottom: 12 }}
+                    style={{
+                      backgroundColor: theme.bgInput,
+                      borderWidth: 1,
+                      borderColor: theme.borderInput,
+                      borderRadius: 8,
+                      color: editingTag?.locked ? theme.textMuted : theme.textPrimary,
+                      padding: 10,
+                      fontSize: 14,
+                      fontFamily: Type.ui,
+                      marginBottom: 12,
+                    }}
                     placeholder="Tag name (max 20 chars)"
                     placeholderTextColor={theme.textPlaceholder}
                     value={tagLabelInput}
                     onChangeText={v => setTagLabelInput(v.slice(0, 20))}
                     maxLength={20}
+                    editable={!editingTag?.locked}
                   />
+                  {editingTag?.locked && (
+                    <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.ui, marginTop: -6, marginBottom: 12 }}>
+                      Default tags keep their name. Pick any colour you like.
+                    </Text>
+                  )}
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
                     {TAG_COLOR_PALETTE.map(c => (
                       <TouchableOpacity key={c} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setTagColorInput(c); }}
@@ -3346,27 +3444,43 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                       </TouchableOpacity>
                     ))}
                   </View>
-                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {/* alignItems + a shared minHeight, because the two buttons are different components:
+                      Cancel is a plain touchable, while PrimaryCTA wraps its face in a glow container.
+                      With the row defaulting to stretch, Cancel grew to the row height while the primary
+                      button's FACE kept its own -- so Cancel rendered visibly larger than the primary
+                      action beside it. Matching minHeights makes them agree regardless of the two
+                      different label sizes (14 secondary vs 17 primary). */}
+                  <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
                     {editingTag && (
                       <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditingTag(null); setTagLabelInput(''); setTagColorInput(TAG_COLOR_PALETTE[0]); }}
-                        style={{ flex: 1, padding: 12, borderRadius: 8, borderWidth: 1, borderColor: theme.borderInput, backgroundColor: theme.bgInput, alignItems: 'center' }}>
+                        style={{ flex: 1, paddingVertical: 12, minHeight: 48, borderRadius: 8, borderWidth: 1, borderColor: theme.borderInput, backgroundColor: theme.bgInput, alignItems: 'center', justifyContent: 'center' }}>
                         <Text style={{ color: theme.textMuted, fontFamily: Type.uiSemibold, fontSize: 14 }}>Cancel</Text>
                       </TouchableOpacity>
                     )}
-                    {/* KEEPS the live tag colour -- the fill IS the preview of what you are picking, which is
-                        the one case where a CTA's colour is DATA rather than chrome (see PrimaryCTA's `fill`
-                        note). It gains the mould, the press-scale and the Interface label; the glow follows
-                        the tag colour too, so a red tag does not sit in an accent-blue glow. */}
+                    {/* CREATE keeps the live tag colour -- you are choosing a colour, so the button IS
+                        the preview of what you are about to make. SAVE CHANGES is always the accent: it
+                        is not choosing anything, and a green Save reads as confirm/success rather than
+                        save. Same component, different job, different rule (Justin, 2026-07-26). */}
                     <PrimaryCTA
                       wrapperStyle={{ flex: 1 }}
-                      faceStyle={{ paddingVertical: 12, borderRadius: 8 }}
-                      fill={tagColorInput}
+                      faceStyle={{ paddingVertical: 12, borderRadius: 8, minHeight: 48 }}
+                      fill={editingTag ? undefined : tagColorInput}
                       label={editingTag ? 'Save Changes' : 'Create Tag'}
-                      disabled={!tagLabelInput.trim()}
+                      // Editing dims until something ACTUALLY changed -- opening the pencil and saving
+                      // immediately is a no-op, and an always-live Save invites exactly that. Creating
+                      // only needs a name.
+                      disabled={editingTag ? !tagHasChanges : !tagLabelInput.trim()}
                       onPress={() => {
                         if (!tagLabelInput.trim()) return;
+                        // The work is done, so the keyboard goes with it -- otherwise it hangs over the
+                        // tag that was just created. Covers Save Changes too; same button in edit mode.
+                        Keyboard.dismiss();
                         if (editingTag) {
-                          saveTags(tags.map(t => t.id === editingTag.id ? { ...t, label: tagLabelInput.trim(), color: tagColorInput } : t));
+                          // A locked tag keeps its label even if the field were somehow changed -- the
+                          // read-only input is the UI guard, this is the data guard.
+                          saveTags(tags.map(t => t.id === editingTag.id
+                            ? { ...t, label: t.locked ? t.label : tagLabelInput.trim(), color: tagColorInput }
+                            : t));
                           setEditingTag(null);
                         } else {
                           if (tags.length >= 20) {
@@ -3386,9 +3500,8 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                 </View>
               </View>
               </TouchableWithoutFeedback>
-              </View>
-            </Reanimated.View>
-          </View>
+            </Animated.View>
+          </KeyboardAwareCenter>
         </Modal>
 
       {/* FAB backdrop */}

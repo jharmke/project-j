@@ -50,11 +50,15 @@ export default function PrimaryCTA({
   // match -- e.g. a Cancel/Confirm pair, where compact's own padding made the two buttons different
   // heights. Do not use it to restyle the fill; the mould is the whole point.
   faceStyle?: any;
-  // FILL override. Defaults to theme.accentBlue -- pass it ONLY when the button's colour is genuinely DATA
-  // rather than chrome: Manage Tags' Create Tag is filled with the tag colour you are picking, so the
-  // button IS the preview. Not an escape hatch for "a different colour here"; a screen's one primary
-  // action wears the accent. The mould is unaffected, and the GLOW follows the fill -- an accent glow
-  // under a red button would read as a bug.
+  // FILL override. Defaults to theme.accentBlue -- pass it ONLY when the button's colour is genuinely
+  // DATA rather than chrome. The one legitimate use: Manage Tags' CREATE TAG button is filled with the
+  // colour you are picking, so the button IS the preview of the tag you are about to make.
+  // NOT an escape hatch for "a different colour here"; a screen's one primary action wears the accent.
+  // ⚠️ That same button does NOT take a fill when EDITING (Justin, 2026-07-26). Create is choosing a
+  // colour, so previewing it is the point; Save Changes is just saving, and a green Save reads as
+  // confirm/success rather than save. Same component, different job, different rule.
+  // The mould is unaffected, and the GLOW follows the fill -- an accent glow under a red button would
+  // read as a bug.
   fill?: string;
   haptic?: Haptics.ImpactFeedbackStyle;
 }) {

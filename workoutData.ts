@@ -96,20 +96,39 @@ export interface Routine {
   isPreset?: boolean;
 }
 
+// Tag colours are a CODING SYSTEM, so near-duplicates are a real defect: two tags you cannot tell
+// apart at pill size defeat the point of colouring them. Cleaned 2026-07-26.
+// Changed: rose '#f43f5e' -> lime '#84cc16' (rose was a near-clone of the red beside it, and the
+// palette had no yellow-green at all), and emerald '#10b981' -> '#22c55e' (a purer green, so it reads
+// clearly apart from the teal).
+// STILL CLOSE, deliberately left for now: indigo '#6366f1' against violet '#8b5cf6', and amber
+// against orange. Flagged rather than changed so the first pass could be judged on device.
 export const TAG_COLOR_PALETTE = [
-  '#3b82f6', '#10b981', '#f59e0b', '#f97316',
+  '#3b82f6', '#22c55e', '#f59e0b', '#f97316',
   '#ef4444', '#8b5cf6', '#14b8a6', '#ec4899',
-  '#6366f1', '#06b6d4', '#f43f5e', '#64748b',
+  '#6366f1', '#06b6d4', '#84cc16', '#64748b',
 ];
 
+// The six defaults previously ran Legs amber / Core yellow / Cardio orange -- three adjacent hues in a
+// six-item colour code, which made half the set unreadable at a glance. Re-spread 2026-07-26 (Justin's
+// call): Pull takes purple, Legs takes the green Pull vacated. Now blue / purple / green / yellow /
+// orange / slate, which separates cleanly.
+// `locked` means the name and the tag's EXISTENCE are protected -- not its colour. Colour is cosmetic
+// and locking it protected nothing, so it is user-editable (see the tag merge in workout.tsx).
 export const DEFAULT_TAGS: WorkoutTag[] = [
   { id: 'tag_push',    label: 'Push',    color: '#3b82f6', locked: true },
-  { id: 'tag_pull',    label: 'Pull',    color: '#10b981', locked: true },
-  { id: 'tag_legs',    label: 'Legs',    color: '#f59e0b', locked: true },
+  { id: 'tag_pull',    label: 'Pull',    color: '#8b5cf6', locked: true },
+  { id: 'tag_legs',    label: 'Legs',    color: '#22c55e', locked: true },
   { id: 'tag_core',    label: 'Core',    color: '#eab308', locked: true },
   { id: 'tag_cardio',  label: 'Cardio',  color: '#f97316', locked: true },
   { id: 'tag_rest',    label: 'Rest',    color: '#64748b', locked: true },
 ];
+
+// Bumped whenever DEFAULT_TAGS colours change. Locked colours are re-seeded ONCE per device when the
+// stored marker does not match, then left alone forever so user edits survive. Without this, dropping
+// the old force-every-load overwrite would mean new colours only ever reached FRESH INSTALLS -- every
+// existing user, TestFlight included, would silently keep the old palette.
+export const TAG_PALETTE_VERSION = 2;
 
 export const BLANK_DAY: DayProgram = {
   type: 'unassigned',

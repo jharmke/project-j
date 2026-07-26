@@ -30,6 +30,28 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-26 **Manage Tags is a centred modal, plus a tag colour overhaul (device-confirmed).** The sheet
+  used to translate itself up by the FULL keyboard height on focus, which shoved a tall sheet's top off
+  the screen (title behind the status bar, most of the card unreachable). Converted to a centred card on
+  Home's Edit Layout pattern: KeyboardAwareCenter pads the centring box instead of moving the card, so
+  it cannot overshoot; safe-area padding stops it sliding under the Dynamic Island when the keyboard
+  takes half the screen. LESSON WORTH KEEPING: the first attempt used Reanimated's withSpring with the
+  SAME damping/stiffness numbers as the other modals and bounced visibly more -- copy the ENGINE as well
+  as the numbers. Drag-to-reorder kept; the library's 1.05 lift overflowed the card, and two rounds of
+  widening the gutter only got close, so the lift itself dropped to 1.02 (fix the cause, not the room).
+  COLOURS: Legs/Core/Cardio were three adjacent hues in a six-item colour code. Pull -> purple, Legs ->
+  green, and the palette lost its duplicate red (rose -> lime) and got a purer green. Locked tags are
+  now colour-editable (the NAME is what is structural, not the colour) with both a read-only field and a
+  data guard. The merge used to force locked colours on EVERY load, silently making edits impossible;
+  now a one-time re-seed gated on TAG_PALETTE_VERSION, which is also what lets a palette change reach
+  existing TestFlight users instead of only fresh installs. Edit/Delete became the pencil + red trash
+  already used on exercise rows. Create Tag keeps the live colour (it IS the preview); Save Changes is
+  always accent and dims until something actually changed.
+  ALSO, same session: every pencil + trash across the Workout tab and Exercise Library went GRADIENT and
+  SOLID (outline variants retired) -- exercise rows, Programs, Routines, the builder's remove-exercise
+  trash, synced Apple Health sessions, Manage Tags, and the "Add label" pencil (that one came through
+  IconSymbol/MaterialIcons rather than Ionicons, which is why it kept getting missed). The exercise
+  row's checked circle is a molded fill now rather than a flat accent disc.
 - 2026-07-26 **iOS large-text breakage FIXED app-wide (device-verified at max iOS text size).** System
   Dynamic Type scaled every piece of text and every icon without limit; at a near-max setting text ran
   enormous and content was cut off, worst on onboarding. Now killed at two chokepoints,
@@ -1078,16 +1100,6 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
-- [TOP, BUG, found 2026-07-26 by Justin while testing large text] **Manage Tags sheet flies to the top
-  of the screen when the keyboard opens.** Open Manage Tags (Workout tab > Tags), tap into NEW TAG, and
-  the whole sheet jumps to the top of the screen -- the title ends up behind the status bar and the
-  content is barely visible. NOT a font-scaling bug; it reproduces independently and was only noticed
-  during that pass.
-  ⚠️ FIX THE PATTERN, NOT THE SYMPTOM: this is a BOTTOM SHEET, and the house standard is centred
-  floating cards only (CLAUDE.md: "Modals: NO slide-up bottom sheets ever"). Justin's call 2026-07-26 --
-  convert it to a centred modal rather than patching the jump, since a sheet anchored to the bottom is
-  exactly what the keyboard fights. Read SPEC_keyboard_modals.md first; the traps there apply, and
-  TRAP 6 in particular explains why the obvious fixes do not animate on this stack.
 - [2026-07-26, text scaling CLOSED -- only these small leftovers remain] **Accessibility leftovers.**
   All four phases shipped and were device-verified (see RECENTLY SHIPPED; full detail in
   SPEC_accessibility.md). What is genuinely left:

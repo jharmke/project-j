@@ -28,6 +28,7 @@ import { groupSyncedWorkouts, loadSyncedLabels, saveSyncedLabel, summarizeSessio
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
 import ButtonShine from '../components/ButtonShine';
+import GradientIcon from '../components/GradientIcon';
 import GradientTitle from '../components/GradientTitle';
 import GradientNumber from '../components/GradientNumber';
 import FabDome from '../components/FabDome';
@@ -1618,7 +1619,7 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
                       </View>
                       <Text style={{ flex: 1, color: theme.textSecondary, fontSize: 13, fontFamily: Type.uiSemibold }}>{ex.name}</Text>
                       <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy); removeExercise(ex.id); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
-                        <Ionicons name="trash-outline" size={16} color={theme.accentRed} />
+                        <GradientIcon name="trash" size={16} color={theme.accentRed} />
                       </TouchableOpacity>
                     </View>
                     {!ex.isCardio ? (
@@ -2847,13 +2848,13 @@ export default function WorkoutLibraryScreen() {
                       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditingProgram(program); setShowBuilder(true); }}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       style={{ padding: 4 }}>
-                      <Ionicons name="pencil" size={15} color={theme.textMuted} />
+                      <GradientIcon name="pencil" size={15} color={theme.textMuted} />
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleDeleteProgram(program); }}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       style={{ padding: 4 }}>
-                      <Ionicons name="trash-outline" size={15} color={theme.accentRed} />
+                      <GradientIcon name="trash" size={15} color={theme.accentRed} />
                     </TouchableOpacity>
                     <TouchableOpacity onLongPress={drag} delayLongPress={150} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
                       <Ionicons name="reorder-three" size={18} color={theme.textDim} />
@@ -2939,11 +2940,11 @@ export default function WorkoutLibraryScreen() {
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditingRoutine(routine); setShowRoutineBuilder(true); }}
                             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
-                            <Ionicons name="pencil" size={15} color={theme.textMuted} />
+                            <GradientIcon name="pencil" size={15} color={theme.textMuted} />
                           </TouchableOpacity>
                           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleDeleteRoutine(routine); }}
                             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
-                            <Ionicons name="trash-outline" size={15} color={theme.accentRed} />
+                            <GradientIcon name="trash" size={15} color={theme.accentRed} />
                           </TouchableOpacity>
                         </View>
                       </View>

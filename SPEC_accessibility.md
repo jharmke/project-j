@@ -130,9 +130,93 @@ which then fails the `name` prop. And RN's Text/TextInput are each BOTH a value 
 (`useRef<TextInput>` throughout, needed by the multiline select-all fix). Statics are re-attached and
 the instance types re-exported for exactly these reasons.
 
-**Still open after phase 1:** nothing broken. Phases 2-4 below are OPTIONAL PRODUCT WORK now, not bug
-fixes -- the app renders correctly for every user at any system setting. Decide whether an in-app size
-setting is worth building on its own merits.
+---
+
+## PHASE 2 -- BUILT 2026-07-26, NEEDS THE AUDIT (phase 3) BEFORE IT IS DONE
+
+Our own text size control, since having refused the system's we owe users a way to size text.
+
+**Shape:** `FONT_SCALE_STEPS` in components/AppText.tsx -- `Default` (1.0) and `Large` (1.15).
+`FontScaleProvider` wraps the app in app/_layout.tsx, above everything that renders text. Stored in
+`pj_settings.fontScale` (read-then-merge). Settings > Accessibility, its own section rather than a row
+under Appearance, because text size is not a cosmetic preference and it is where VoiceOver / contrast /
+reduce-motion will land later.
+
+**WHY 1.15 AND NOT 1.1:** four percent apart is imperceptible. A step a user cannot see makes the whole
+setting feel broken, so the ladder gets fewer, clearly different rungs.
+
+**ADDING A STEP IS ONE LINE.** And step COUNT is free to verify -- only the MAXIMUM needs auditing,
+since nothing gets tighter as text shrinks, so every step below the ceiling is safe by definition.
+RAISING the ceiling means running the audit again. That is the only expensive move.
+
+**Three things in the implementation that are load-bearing:**
+- **Only explicitly-set sizes are scaled.** Injecting a fontSize where the code set none would break
+  NESTED text, which this app uses everywhere to style runs of text by inheritance.
+- **lineHeight scales with fontSize.** Growing glyphs inside an unchanged line box clips and overlaps
+  them. Invisible at 1.0, which is why it gets missed.
+- **Clamp on read.** An unknown stored id falls back to Default. Built in from day one deliberately: if
+  a step is ever removed, anyone holding it would sit at a size we no longer test, and retrofitting the
+  clamp later means guessing what values are out there on real devices.
+
+**Settings preview divides by the current scale on purpose.** Each row renders its own step's size, but
+every Text is ALREADY multiplied by the current setting on the way through the wrapper. Without the
+division the rows would grow whenever a larger size was picked.
+
+**Deliberately NOT scaled:** icons. Their size is set numerically by each caller and they mostly sit
+beside text rather than carrying meaning at small sizes; growing them risks breaking rows more than it
+helps. Revisit if 1.15 reads badly next to unchanged icons.
+
+---
+
+## PHASE 3 -- AUDIT DONE 2026-07-26 AT 1.15. ONE BUG IN THE WHOLE APP.
+
+Swept Settings, Stats, Home, Log, Workout, Faith, Report, Sleep, Workout Library and the modals.
+
+**The single failure: the Library header button clipped the descender on its own label.** Cause was
+`height: 32` hard-coded inline -- a fixed height minus its own vertical padding left less room than the
+15%-taller line box needed. Fixed on Log and Workout with `minHeight`. `components/HeaderIconButton.tsx`
+(shared, 10 files) went the same way, and both header rows moved to `alignItems: 'stretch'` so the text
+pill and the icon buttons beside it share one height at any step instead of each sizing independently.
+
+**THE PATTERN TO CHECK FIRST IF THE CEILING IS EVER RAISED: fixed heights.** 43 inline `height:` values
+sit on containers that hold text; exactly one broke at 1.15. Also greppable: 131 `numberOfLines={1}`
+(truncation -- concentrated in settings 20, report 10, stats 8, workout-library 7, sleep 7, workout 7),
+and only 2 real stack screens still lack scroll (sign-in, profile-photo-crop; sign-in matters, it is a
+new user's first screen).
+
+**Truncated NUMBERS matter more than truncated words** -- a clipped food name is ugly, a calorie value
+reading "1,2..." is an honest-numbers problem.
+
+**⚠️ ANYTHING ABOVE 1.15 IS UNTESTED, NOT KNOWN-BAD.** Do not record it as "does not work". Given one
+bug across the entire app at 1.15, a 1.3 step may well be fine -- it simply has not been swept.
+
+---
+
+## PHASE 4 -- AUTO-MATCH, BUILT 2026-07-26 (no prompt, no toast)
+
+**Real device readings (do not re-derive):** iOS default = **1.0**, one notch up = **1.118**, top of the
+regular range = **1.353**. Apple's separate *accessibility* sizes go past 2 and were not reached here.
+
+**THE RULE: snap DOWN to the nearest step at or below the system scale. Never give someone more than
+they asked for.** With today's ladder that means TWO notches to trigger: 1.118 stays Default (Justin's
+call, and correct -- nearest-step logic would have bumped that user to Large off a 3% difference), while
+1.2+ gets Large. Not an arbitrary cutoff; it falls out of the rule, and adding a step re-maps everyone
+automatically.
+
+**Re-evaluated EVERY launch, not once**, so someone who turns their phone text up months later still
+gets matched. `fontScaleSource: 'user'` locks that out permanently the moment they choose in Settings --
+without it, an explicit "Default" from someone with a large phone setting is indistinguishable from
+never having been asked, and auto-match would silently overrule them on the next launch.
+
+**NO PROMPT AND NO TOAST, deliberately.** An app showing larger text because the phone asked for larger
+text is the expected outcome, not an event. The message would also land mid-onboarding for a new user.
+The earlier "first-launch prompt" plan was dropped for this: a prompt asks permission to do the normal
+thing. ALSO: the original plan keyed the prompt to first INSTALL, which would have missed the person who
+reported the bug entirely -- he is an existing user.
+
+**Known limitation, accepted:** someone on Apple's accessibility sizes may be asking for 2x or more and
+gets 1.15. Better than the 1.0 they get otherwise, but partial. That is the real-world case that would
+justify a bigger step, and any complaint will come from there.
 
 ---
 

@@ -621,7 +621,20 @@ SETTINGS (reached via Profile > GEAR icon, top-right)
 ================================================================================
 Collapsible sections, confirmed names + subtitles:
 - APPEARANCE (Theme, Accent, Haptics): THEME (Light / Dark / Slate / Warm / Blush) + accent color.
-  Light + Dark free; Slate/Warm/Blush earned via a starter challenge. "Change theme/color" -> here.
+  ALL FIVE THEMES ARE FREE AND UNLOCKED FOR EVERYONE, and so is every accent within them. No theme is
+  ever paid or earned. (An earlier plan had three of them unlocked by a starter challenge; that was
+  dropped 2026-07-23. Never tell a user they have to earn a theme.) "Change theme/color" -> here.
+- ACCESSIBILITY (Text Size): the app-wide TEXT SIZE control, two options -- Default and Large.
+  WHY IT EXISTS, and this matters if a user asks why the app ignores their phone: GoodForge deliberately
+  does NOT follow the iOS system text size setting. Following it without limit broke layouts badly
+  (text ran off screen, content was cut off), so the app fixes its own size and offers this control
+  instead. This is the ONLY way to change text size in GoodForge -- changing it in the iOS Settings app
+  will not affect GoodForge, and telling someone to do that would be wrong.
+  AUTO-MATCH: if their phone's text size is turned up TWO notches or more above default, the app picks
+  Large on its own at launch, no prompt. One notch stays Default. The moment they choose a size here
+  themselves, that choice sticks permanently and the app stops auto-matching.
+  If someone says the app's text is too small or too big: send them HERE (Profile > gear > Accessibility
+  > Text Size), never to the iOS settings app.
 - GOALS (Fitness, Nutrition): calorie target, macro goals + macro presets, water goal, step goal,
   sleep goal. "Change macros / calorie / water / step / sleep goal" -> here. (Macros also via the
   Home Macros card gear, which deep-links here.)

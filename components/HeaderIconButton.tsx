@@ -21,7 +21,11 @@ export default function HeaderIconButton({ icon, onPress, size = 14, haptic = Ha
     <TouchableOpacity
       onPress={() => { triggerHaptic(haptic); onPress(); }}
       style={{
-        borderWidth: 1, borderRadius: 6, height: 32, paddingHorizontal: 12,
+        // minHeight, not height: this button sits in header rows beside the Library PILL, which carries
+        // TEXT and therefore grows with the user's text size setting. A fixed height cannot match it and
+        // the row ends up visibly uneven. The row sets alignItems: 'stretch' so every boxed button in it
+        // takes the tallest one's height; a fixed height here would override that and stay short.
+        borderWidth: 1, borderRadius: 6, minHeight: 32, paddingHorizontal: 12,
         alignItems: 'center', justifyContent: 'center',
         backgroundColor: bg ?? theme.accentBlueBg,
         // Border is the SAME accent tint on all four sides -- do NOT whiten the top edge: a white top border

@@ -1491,9 +1491,13 @@ export default function LogScreen() {
             </View>
           </View>
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        {/* stretch, not center: the Library pill carries TEXT so it grows with the user's text size
+            setting, while the icon buttons beside it do not. Centering each child independently leaves
+            the row visibly uneven. Stretch makes every boxed button take the tallest one's height, so
+            they stay matched at any step without hard-coding a number that goes stale. */}
+        <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: 10 }}>
           <TouchableOpacity
-              style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+              style={[styles.libraryBtn, { minHeight: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); returningFromChild.current = true; router.push({ pathname: '/add-food', params: { meal: 'browse', date: activeDate } }); }}>
               <ButtonShine radius={6} />
               <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>Library</Text>
@@ -1501,7 +1505,7 @@ export default function LogScreen() {
           <View ref={logEditLayoutBtnRef as any} collapsable={false}>
             <HeaderIconButton icon="grid" haptic={Haptics.ImpactFeedbackStyle.Medium} onPress={() => { openEditMeals(); }} />
           </View>
-          <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); showToolkit('log'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+          <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); showToolkit('log'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }} style={{ justifyContent: 'center' }}>
             <GradientIcon name="help-circle" size={22} color={theme.accentBlue} />
           </TouchableOpacity>
         </View>

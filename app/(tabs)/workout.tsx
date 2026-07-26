@@ -2263,12 +2263,14 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
               </Text>
             </View>
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/workout-library'); }} style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
+          {/* stretch, not center -- see the matching note on the Log tab's header row. The Library pill
+              grows with the text size setting; the icon buttons do not, so the row shares one height. */}
+          <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: 10 }}>
+            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/workout-library'); }} style={[styles.libraryBtn, { minHeight: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
               <ButtonShine radius={6} />
               <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>Library</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); showToolkit('workout'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); showToolkit('workout'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }} style={{ justifyContent: 'center' }}>
               <GradientIcon name="help-circle" size={22} color={theme.accentBlue} />
             </TouchableOpacity>
           </View>

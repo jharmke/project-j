@@ -190,7 +190,7 @@ pj_YYYY-MM-DD -- daily data (entries, water, weight, steps, activeCalories, calo
 pj_workout_state -- workout (checks, cardioComplete, programs, workoutNotes, cardioLogs, weeklyTemplate)
 pj_my_foods, pj_favorites, pj_recipes, pj_exercise_library
 pj_profile -- profile + waterPresets + waterGoal + stepGoal + sleepGoal
-pj_settings -- app settings: hapticsEnabled, cardOrder, cardVisible, theme, selectedAccent, workoutTags, styleMode (coaching mode: Discipline/Balanced/Mindful), faithJourney (Rooted/Exploring/NotRightNow), fitnessGoal, macroPreset, healthkitConnected, bibleFontFamily, bibleTextSize, bibleScrollSpeed, mealSlots (MealSlot[] up to 8), slotNameCache (never shrinks)
+pj_settings -- app settings: hapticsEnabled, cardOrder, cardVisible, theme, selectedAccent, workoutTags, styleMode (coaching mode: Discipline/Balanced/Mindful), faithJourney (Rooted/Exploring/NotRightNow), fitnessGoal, macroPreset, healthkitConnected, bibleFontFamily, bibleTextSize, bibleScrollSpeed, mealSlots (MealSlot[] up to 8), slotNameCache (never shrinks), fontScale (app-wide text size step id: 'default' | 'large'; clamped to a known step on read, unknown values fall back to 'default'), fontScaleSource ('auto' | 'user' -- 'user' means they picked it in Settings and auto-match must NEVER overrule it again)
 pj_bible_reflections -- all journal entries
 pj_verse_rotation -- shuffled verse rotation order and current index
 pj_bible_{BookName}_{chapterNum} -- cached KJV chapter verses

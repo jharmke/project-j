@@ -1,5 +1,5 @@
 import { Ionicons } from '@/components/AppIcons';
-import { Text, TextInput } from '@/components/AppText';
+import { Text, TextInput, FONT_SCALE_STEPS, useFontScale } from '@/components/AppText';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -481,6 +481,7 @@ export default function SettingsScreen() {
   const { theme, themeId, accentId, setTheme, setAccent } = useTheme();
   const { user, signOut } = useAuth();
   const { showToast } = useToast();
+  const { scaleId, scale, setScaleId } = useFontScale();
   // Mirrors auth.currentUser.providerData locally -- linking/unlinking a provider doesn't
   // reliably re-fire onAuthStateChanged (the uid never changes), so AuthContext's `user`
   // can go stale. Refreshed explicitly after every link/unlink so the UI is always correct.
@@ -1509,6 +1510,62 @@ export default function SettingsScreen() {
             </View>
             <ToggleSwitch value={hapticsEnabled} onValueChange={toggleHaptics} />
           </View>
+          <View style={{ paddingBottom: 4 }} />
+        </CollapsibleSection>
+
+        {/* ── Accessibility ── */}
+        {/* Its own section rather than a row inside Appearance: text size is not a cosmetic preference,
+            and this is where VoiceOver / contrast / reduce-motion will land as they come. See
+            SPEC_accessibility.md. The app refuses iOS's own Dynamic Type scaling app-wide (that shipped
+            broken and is why this exists), so this control is the ONLY way a user can size text -- which
+            makes it an obligation, not a nicety. */}
+        <CollapsibleSection
+          label="Accessibility"
+          subtitle={`Text Size · ${FONT_SCALE_STEPS.find(s => s.id === scaleId)?.label ?? 'Default'}`}
+          defaultOpen={deepLinkSection === 'accessibility'}
+          theme={theme}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 2 }}>
+            <Text style={[styles.rowSub, { color: theme.textMuted, flex: 1 }]}>
+              Sets the text size across the whole app.
+            </Text>
+            {/* The (i) carries the question this setting will actually be asked: why the app does not
+                follow the phone's own text size. See tooltipRegistry 'text_size'. */}
+            <TooltipIcon tooltipKey="text_size" />
+          </View>
+          {FONT_SCALE_STEPS.map(step => {
+            const isActive = scaleId === step.id;
+            return (
+              <TouchableOpacity
+                key={step.id}
+                style={[styles.row, { borderTopColor: theme.borderCard }]}
+                onPress={() => {
+                  if (isActive) return;
+                  triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+                  setScaleId(step.id);
+                  showToast('Text size saved', undefined, 'success');
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={{ flex: 1 }}>
+                  {/* Each label PREVIEWS its own step, so the choice is visible before committing to it
+                      instead of being an abstract word.
+                      The `/ scale` is not a typo and must stay: every Text in the app is already
+                      multiplied by the CURRENT setting on its way through the wrapper. Writing
+                      `14 * step.scale` here would get multiplied a second time, so every row would grow
+                      whenever the user picked a larger size. Dividing by the current scale first cancels
+                      the wrapper's pass and lands each row at exactly 14 * its own step. */}
+                  <Text style={[styles.rowTitle, {
+                    color: isActive ? theme.accentBlue : theme.textPrimary,
+                    fontSize: 14 * (step.scale / scale),
+                  }]}>
+                    {step.label}
+                  </Text>
+                </View>
+                {isActive && <Ionicons name="checkmark-circle" size={20} color={theme.accentBlue} />}
+              </TouchableOpacity>
+            );
+          })}
           <View style={{ paddingBottom: 4 }} />
         </CollapsibleSection>
 

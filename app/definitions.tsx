@@ -14,7 +14,11 @@ import BackgroundLayers from '../components/BackgroundLayers';
 import GradientNumber from '../components/GradientNumber';
 import ButtonShine from '../components/ButtonShine';
 
-const CATEGORIES = ['All', 'Nutrition', 'Fitness', 'Sleep & Recovery', 'Faith', 'Reports', 'Habits'] as const;
+// Hard-coded so the pill ORDER is deliberate rather than whatever order entries happen to be written
+// in. That means a new category in tooltipRegistry.ts must be added HERE too, or its entries render
+// only under "All" and the filter silently never appears. 'App' is last: it covers how GoodForge
+// itself behaves (text size, and the accessibility explainers to come) rather than a health domain.
+const CATEGORIES = ['All', 'Nutrition', 'Fitness', 'Sleep & Recovery', 'Faith', 'Reports', 'Habits', 'App'] as const;
 
 function DefinitionCard({ def, theme }: { def: TooltipDefinition; theme: any }) {
   const [expanded, setExpanded] = useState(false);

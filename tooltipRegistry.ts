@@ -1,6 +1,9 @@
 export interface TooltipDefinition {
   key: string;
-  category: 'Nutrition' | 'Fitness' | 'Sleep & Recovery' | 'Faith' | 'Reports' | 'Habits';
+  // 'App' is for how GoodForge itself behaves rather than a health domain -- text size lives here, and
+  // it is where the rest of the accessibility explainers (VoiceOver, contrast, reduce motion) belong as
+  // they arrive. See SPEC_accessibility.md.
+  category: 'Nutrition' | 'Fitness' | 'Sleep & Recovery' | 'Faith' | 'Reports' | 'Habits' | 'App';
   title: string;
   body: string;
   tutorialId?: string;
@@ -46,6 +49,17 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
       { term: 'What Lands Here', explanation: 'The hub only shows things that already happened and are worth a look: achievements, goal hits, records, summaries, and suggestions. Time based nudges (log your food, drink water) come through as normal phone notifications instead.' },
       { term: 'New Notifications', explanation: 'A dot on Otto\'s button and on the bell means something new is waiting. It clears once you open the list and actually see what is there. A stack you never expanded keeps its dot.' },
       { term: 'Stacks', explanation: 'Several of the same kind of event, say three achievements, collapse into one card with a count so the list never floods. Tap it to expand the individual items.' },
+    ],
+  },
+  {
+    key: 'text_size',
+    category: 'App',
+    title: 'Text Size',
+    body: 'Sets how large text appears everywhere in GoodForge. Default is the size the app was designed at. Large increases it across every screen.\n\nGoodForge does not follow your phone\'s own text size setting, and that is deliberate. Following it without any limit stretched layouts until content ran off the screen with no way to reach it, so the app holds its own size and gives you this control instead. Changing text size in your phone\'s settings will not change GoodForge.\n\nIf your phone is already set noticeably larger than standard, GoodForge picks Large for you the first time it opens, so you should not have to come looking for this. Once you choose a size here yourself, that choice sticks and the app stops adjusting it.',
+    definitions: [
+      { term: 'Default', explanation: 'The size every screen was designed and tested at.' },
+      { term: 'Large', explanation: 'Roughly 15 percent bigger, applied consistently across the whole app rather than screen by screen.' },
+      { term: 'Why not follow my phone?', explanation: 'Phone text settings go far beyond what any fixed layout can absorb. Rather than let the app break at the extremes, GoodForge sets its own range and matches your phone\'s intent within it.' },
     ],
   },
   {

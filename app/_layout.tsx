@@ -39,6 +39,7 @@ import { ToolkitRenderer } from '../components/ToolkitSheet';
 import LaunchSplash from '../components/LaunchSplash';
 import { TutorialProvider } from '../context/TutorialContext';
 import { ThemeProvider, useTheme } from '../theme';
+import { FontScaleProvider } from '@/components/AppText';
 import { AuthProvider, useAuth } from '../AuthContext';
 import { MembershipProvider } from '../MembershipContext';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
@@ -294,6 +295,9 @@ export default function RootLayout() {
     <AuthProvider>
     <MembershipProvider>
     <ThemeProvider>
+    {/* Outside everything that renders text, so the user's chosen text size reaches all of it.
+        See SPEC_accessibility.md. */}
+    <FontScaleProvider>
     <ToastProvider>
     <AchievementToastProvider>
     <TutorialProvider>
@@ -309,6 +313,7 @@ export default function RootLayout() {
     </TutorialProvider>
     </AchievementToastProvider>
     </ToastProvider>
+    </FontScaleProvider>
     </ThemeProvider>
     </MembershipProvider>
     </AuthProvider>

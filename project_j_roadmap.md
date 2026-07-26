@@ -1078,6 +1078,16 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
+- [TOP, BUG, found 2026-07-26 by Justin while testing large text] **Manage Tags sheet flies to the top
+  of the screen when the keyboard opens.** Open Manage Tags (Workout tab > Tags), tap into NEW TAG, and
+  the whole sheet jumps to the top of the screen -- the title ends up behind the status bar and the
+  content is barely visible. NOT a font-scaling bug; it reproduces independently and was only noticed
+  during that pass.
+  ⚠️ FIX THE PATTERN, NOT THE SYMPTOM: this is a BOTTOM SHEET, and the house standard is centred
+  floating cards only (CLAUDE.md: "Modals: NO slide-up bottom sheets ever"). Justin's call 2026-07-26 --
+  convert it to a centred modal rather than patching the jump, since a sheet anchored to the bottom is
+  exactly what the keyboard fights. Read SPEC_keyboard_modals.md first; the traps there apply, and
+  TRAP 6 in particular explains why the obvious fixes do not animate on this stack.
 - [surfaced 2026-07-26, PHASE 1 SHIPPED -- what is left is OPTIONAL PRODUCT WORK, not a bug]
   **In-app font size setting (SPEC_accessibility.md phases 2-4).** The breakage is FIXED (see RECENTLY
   SHIPPED): every user now renders at the designed size regardless of their iOS setting. NOTHING IS

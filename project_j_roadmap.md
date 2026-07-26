@@ -1126,14 +1126,21 @@ are separate pre-submission checklists, NOT part of this menu.
   a regression. Raise KB_FOLLOW toward 0.85 or 1.0 until it sits with the keyboard. One number, two
   files, keep them in step. Judge the DISMISS direction hardest; that is where every earlier version
   fell apart.
-- [surfaced 2026-07-25, real bug, deliberately not fixed blind] **The same easing bug is still live in
-  `useAnimatedKeyboardHeight()`**, which backs the sixteen modals converted in the keyboard sweep. It
-  eases DISMISS with `Easing.in(Easing.cubic)`, which barely moves for the first third of its duration,
-  so those modals stall on the way down exactly as Otto and Halo did before this fix. Justin caught it
-  on the chats; nobody has looked at the other sixteen with it in mind. FIX is one line
-  (`Easing.out(Easing.cubic)` both directions) but it changes sixteen already-signed-off modals at
-  once, so it wants its own pass and its own device check, not a drive-by. Consider folding in the
-  duration compensation (see the item above) at the same time.
+- [surfaced 2026-07-25, ASSESSED ON DEVICE 2026-07-26 -> NOT WORTH FIXING. Do not "fix" this.]
+  **The dismiss easing in `useAnimatedKeyboardHeight()` / `KeyboardAwareCenter`.** Both ease the DISMISS
+  with `Easing.in(Easing.cubic)`, which covers only ~4% of the distance in the first third of its
+  duration. On Otto and Halo that read as badly broken and was fixed there.
+  JUSTIN CHECKED THE CENTRED MODALS (Workout Library's Create/Edit Exercise, Add a Prayer, Settings >
+  Feedback) 2026-07-26 and called them fine: "not in sync with the keyboard but not obvious teleporting
+  issues like Otto was."
+  WHY THE SAME BUG READS SO DIFFERENTLY, worth knowing before anyone re-opens this: Otto/Halo's input
+  row is pinned to the BOTTOM of a full-height sheet, so it travels the FULL keyboard height (~340pt)
+  and any timing error is enormous. A CENTRED card only travels about HALF that, because centring splits
+  the difference, and less again since the card also shrinks. Same error, under half the distance, below
+  the threshold of noticing.
+  DECISION: leave it. One line would fix it, but it changes sixteen already-signed-off modals for
+  something that cannot be seen, and this project's rule is not to churn what nobody has complained
+  about. Revisit ONLY if a specific modal is reported as feeling wrong.
 - [TOP, surfaced 2026-07-25, Justin's call to rank here. Explicitly NOT for the 2026-07-25 session.]
   **Quick copy for Otto's and Halo's replies.** Today the only way to get text out of a reply is the
   SHARE button, then copy from the share sheet. Two ways in, decide when picked up (they are not

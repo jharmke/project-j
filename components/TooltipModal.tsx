@@ -203,7 +203,7 @@ export default function TooltipModal({ tooltipKey, visible, onClose, hideTour, f
             </Animated.View>
 
             {/* Body */}
-            <Animated.Text style={[
+            <Animated.Text allowFontScaling={false} style={[
               styles.body,
               {
                 color: theme.textSecondary,

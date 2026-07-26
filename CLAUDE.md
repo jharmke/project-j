@@ -286,6 +286,23 @@ Any screen showing health data, metrics, scores, or recommendations needs:
 - Inline micro disclaimer: "For informational purposes only. Not medical advice."
 - First-use modal before: calorie targets, BMR/TDEE, sleep scoring, HRV, VO2 Max, health ranges, weight loss projections
 
+**Text + Icon Imports -- NON NEGOTIABLE**
+- `import { Text, TextInput } from '@/components/AppText'` -- NEVER from `'react-native'`.
+- `import { Ionicons } from '@/components/AppIcons'` -- NEVER from `'@expo/vector-icons'`. Icons render
+  from an icon FONT, so iOS scales them exactly like text.
+- Those two files kill iOS Dynamic Type app-wide. Without them, a user with system text turned up gets
+  enormous text and cut-off content (this shipped broken; Justin's uncle found it on TestFlight).
+- **`Animated.Text` / `Reanimated.Text` CANNOT be fixed by the import** -- they wrap RN's own Text inside
+  the animation library. Every one needs `allowFontScaling={false}` passed BY HAND. The tab bar labels
+  were the last thing still growing for exactly this reason.
+- NOT affected, don't chase: react-native-svg text (chart/donut labels don't scale, verified) and native
+  `Alert` dialogs (iOS draws those).
+- The `Text.defaultProps.allowFontScaling` one-liner all over the internet is DEAD on React 19 + RN 0.81.
+- TESTING: changing AppText.tsx changes ~111 files that only import it, and Fast Refresh does NOT
+  reliably re-apply that -- you get a partial, incoherent result and hunt a pattern that isn't there.
+  Verify with a full app kill + `npx expo start -c`. A JS reload is not enough.
+- Full detail: SPEC_accessibility.md
+
 **Haptics**
 - Light: toggles, selections, minor interactions
 - Medium: confirms, saves, FAB tap

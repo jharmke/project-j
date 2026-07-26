@@ -90,6 +90,52 @@ Approximate -- the grep pattern was loose, confirm before scripting.
 
 ---
 
+## PHASE 1 -- SHIPPED 2026-07-26, DEVICE VERIFIED AT MAX iOS TEXT SIZE
+
+Everything below was learned doing it. Read before touching any of this again.
+
+**What shipped:** `components/AppText.tsx` (Text, TextInput) and `components/AppIcons.tsx` (Ionicons,
+MaterialCommunityIcons, AntDesign), with imports rewritten across 111 files, plus scroll on the three
+onboarding screens. Icons were folded into phase 1 rather than left as an open question: they render
+from an icon FONT, and capping text beside uncapped icons is worse than capping neither.
+
+**⚠️ THE BIGGEST TRAP, and it cost a whole debugging pass.** Changing AppText.tsx changes behaviour in
+~111 files that only IMPORT it, and **Fast Refresh does not reliably re-apply that**. Modules that did
+not themselves change keep running their old compiled version. The result looks like a partial,
+incoherent fix: some cards correct, some not, no pattern to it. A long stretch was spent hunting a
+"category" of broken component that did not exist -- the real answer was that a scattered set of
+modules were simply stale. **A full app kill + `npx expo start -c` fixed nearly all of it at once.**
+ALWAYS verify a chokepoint change that way. A JS reload is not enough and will lie to you.
+
+**⚠️ `Animated.Text` / `Reanimated.Text` CANNOT be reached by an import swap.** They wrap RN's own Text
+inside the animation library, so the file's imports say nothing about it. 13 instances were patched by
+hand (`allowFontScaling={false}`): the bottom tab bar (the genuinely last thing in the app still
+growing, since its labels animate on tab change), a stats tile, prayer's "Praise God", 6 in the
+achievement toast, 3 in the celebration overlay, 1 in the tooltip modal. Most only appear mid-animation,
+so browsing the app would never have found them. ANY NEW ONE NEEDS THE PROP BY HAND -- nothing enforces
+this from the wrapper.
+
+**RESOLVED, do not re-investigate:**
+- **SVG text does NOT scale.** 79 elements across 5 files (sleep, report, StatsGraphCard,
+  MetricDrilldownModal, onboarding/your-style). Verified on device at max text: chart axis labels, donut
+  values and graph numbers all held their size. The deferred "SVG decision" is CLOSED, nothing to build.
+- **Native `Alert` dialogs scale and that is correct.** 213 call sites. iOS draws them; no app code can
+  or should stop it. Verified they render fine at max size. Not a bug, do not report it as a miss.
+- **Icons: capped.** Included in phase 1. `components/ui/icon-symbol.tsx` imports MaterialIcons by
+  SUBPATH so the sweep correctly skipped it; handled directly (IconSymbol is live, the Workout pencil).
+
+**Wrapper fallout worth knowing if it is ever rewritten:** `Ionicons.glyphMap` is read in 9 places, so a
+bare function wrapper drops the statics and degrades `keyof typeof glyphMap` to `string|number|symbol`,
+which then fails the `name` prop. And RN's Text/TextInput are each BOTH a value and a type
+(`useRef<TextInput>` throughout, needed by the multiline select-all fix). Statics are re-attached and
+the instance types re-exported for exactly these reasons.
+
+**Still open after phase 1:** nothing broken. Phases 2-4 below are OPTIONAL PRODUCT WORK now, not bug
+fixes -- the app renders correctly for every user at any system setting. Decide whether an in-app size
+setting is worth building on its own merits.
+
+---
+
 ## PHASING
 
 **Phase 1 -- get safe.** The wrapper + the scripted import rewrite + the onboarding scroll fix.

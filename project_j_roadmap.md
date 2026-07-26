@@ -30,6 +30,18 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-26 **iOS large-text breakage FIXED app-wide (device-verified at max iOS text size).** System
+  Dynamic Type scaled every piece of text and every icon without limit; at a near-max setting text ran
+  enormous and content was cut off, worst on onboarding. Now killed at two chokepoints,
+  components/AppText.tsx and AppIcons.tsx, with imports rewritten across 111 files, plus scroll added to
+  the three onboarding screens that had none. THE ONE-LINER EVERYONE POSTS ONLINE IS DEAD on React 19 +
+  RN 0.81. Two traps worth the read in SPEC_accessibility.md: Fast Refresh does NOT reliably re-apply a
+  chokepoint change to the 111 files that merely import it (a partial, patternless result that sent a
+  whole debugging pass hunting a category that did not exist -- verify with a full kill +
+  `npx expo start -c`), and `Animated.Text` CANNOT be reached by an import swap, which is why the tab
+  bar labels were the last thing still growing (13 instances patched by hand). RESOLVED, do not
+  re-investigate: SVG chart/donut text does NOT scale, and native Alert dialogs do scale and should.
+  Rules now in CLAUDE.md so new code cannot silently reintroduce it.
 - 2026-07-25 **Otto's and Halo's input rows now follow the keyboard instead of teleporting
   (dev-confirmed, NEEDS A TESTFLIGHT CHECK -- see NEXT UP).** Four approaches were burned before the
   cause was understood, and the cause is bigger than these two files: **LayoutAnimation does not run on
@@ -1066,21 +1078,18 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
-- [TOP / LAUNCH QUALITY, surfaced 2026-07-26 by Justin's uncle on the current TestFlight]
-  **iOS large text breaks the app. SPEC_accessibility.md is the source of truth -- read it, don't
-  re-derive this.** With iOS system text size near max, text runs enormous and content is cut off; the
-  onboarding Faith Journey step clipped its verse behind the Continue button with no way to scroll.
-  TWO independent causes: nothing in the app caps scaling (`allowFontScaling`/`maxFontSizeMultiplier`
-  appear ZERO times), and three onboarding screens have no ScrollView at all.
-  ⚠️ THE ONE-LINE FIX EVERYONE POSTS ONLINE IS DEAD HERE: `Text.defaultProps.allowFontScaling` does
-  nothing on React 19 + RN 0.81 (verified in the installed source). A wrapper component plus a scripted
-  import rewrite is required. `react-native-svg` also exports `Text`, and the imports are multi-line
-  blocks -- a naive script breaks charts while looking like it worked.
-  PHASE 1 is self-contained and commits to nothing else: kill forced scaling (everyone renders at the
-  designed size), plus the onboarding scroll fix. Low risk -- anyone at the default system setting is
-  already at 1.0, so nothing changes for them. Phases 2-4 (our own stepped setting, the audit, the
-  first-launch prompt) and the full trap list are in the spec.
-  Probably the same root cause as the iPad layout item further down this list.
+- [surfaced 2026-07-26, PHASE 1 SHIPPED -- what is left is OPTIONAL PRODUCT WORK, not a bug]
+  **In-app font size setting (SPEC_accessibility.md phases 2-4).** The breakage is FIXED (see RECENTLY
+  SHIPPED): every user now renders at the designed size regardless of their iOS setting. NOTHING IS
+  BROKEN. What remains is a deliberate product choice: give users our OWN stepped size control
+  (Settings > Accessibility, discrete steps, never a slider), plus a first-launch prompt shown ONLY to
+  people whose phone is already set large. Trade-off to weigh honestly: today we ignore the system
+  setting entirely, which is a real accessibility regression for the people who need it most -- but
+  allowing ANY growth reopens an audit whose size is set by the maximum multiplier chosen. Decide on its
+  own merits, not as a bug fix. Test the MAX step only; everything below it is safe by definition.
+  ALSO CHECK when picked up: the iPad layout item further down (wrapped date on Home, oversized Otto
+  header) was guessed to be system text size. Phase 1 may already have closed it -- verify before
+  scoping that separately.
 - [TOP / NEXT TESTFLIGHT BUILD, 2026-07-25] **Re-tune the chat keyboard follow on a RELEASE build.**
   Otto's and Halo's input rows now animate with the keyboard (see RECENTLY SHIPPED), but the timing
   constant was tuned in a DEV build and cannot be trusted there. WHY: the animation drives a layout

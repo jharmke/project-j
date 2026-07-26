@@ -239,7 +239,7 @@ function DiamondCelebration({ def, label, onDismiss }: {
         <TouchableOpacity onPress={dismissAndNavigate} activeOpacity={0.9} style={{ alignItems: 'center' }}>
 
           {/* DIAMOND ACHIEVEMENT header */}
-          <Animated.Text style={{
+          <Animated.Text allowFontScaling={false} style={{
             opacity: titleOpacity,
             transform: [{ translateY: titleTransY }],
             fontSize: 12,
@@ -307,7 +307,7 @@ function DiamondCelebration({ def, label, onDismiss }: {
           </Animated.View>
 
           {/* Achievement name */}
-          <Animated.Text style={{
+          <Animated.Text allowFontScaling={false} style={{
             opacity: nameOpacity,
             transform: [{ translateY: nameTransY }],
             fontSize: 44,
@@ -325,7 +325,7 @@ function DiamondCelebration({ def, label, onDismiss }: {
           </Animated.Text>
 
           {/* Tap hint */}
-          <Animated.Text style={{
+          <Animated.Text allowFontScaling={false} style={{
             opacity: subtextOpacity,
             fontSize: 11,
             fontFamily: Type.uiMedium,

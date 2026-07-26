@@ -2131,7 +2131,7 @@ export default function StatsScreen() {
                             <View style={{ height: 14, justifyContent: 'center', alignItems: 'center', marginTop: 1 }}>
                               <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: Type.ui, position: 'absolute' }}>days</Text>
                               {flashId === s.id && (
-                                <Animated.Text style={{ fontSize: 9, color: tileColor, fontFamily: Type.uiSemibold, position: 'absolute', opacity: flashOpacity }}>
+                                <Animated.Text allowFontScaling={false} style={{ fontSize: 9, color: tileColor, fontFamily: Type.uiSemibold, position: 'absolute', opacity: flashOpacity }}>
                                   {'✓ LOGGED'}
                                 </Animated.Text>
                               )}

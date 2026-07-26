@@ -94,7 +94,7 @@ function LabelAnimated({ translate, opacity, label, color }: { translate: any, o
   const style = useAnimatedStyle(() => ({
     opacity: opacity.value,
   }));
-  return <Animated.Text style={[{ fontSize: 9, fontFamily: Type.uiSemibold, letterSpacing: 0.5, textTransform: 'uppercase', color }, style]}>{label}</Animated.Text>;
+  return <Animated.Text allowFontScaling={false} style={[{ fontSize: 9, fontFamily: Type.uiSemibold, letterSpacing: 0.5, textTransform: 'uppercase', color }, style]}>{label}</Animated.Text>;
 }
 
 function FaithButton({ isFocused, scale, faithPulse, labelOpacity, labelTranslate, onPress, fishColor, amber }: { isFocused: boolean, scale: any, faithPulse: any, labelOpacity: any, labelTranslate: any, onPress: () => void, fishColor: string, amber: string }) {

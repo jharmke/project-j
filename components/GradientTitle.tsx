@@ -91,7 +91,7 @@ export default function GradientTitle({
   // A theme token that isn't a plain hex (rgba(), a colour+alpha string) can't be sunk, so it renders
   // flat rather than wrong. No caller has to know or care.
   if (!rgb) {
-    return <Text {...shrink} style={[style, { color }]}>{title}</Text>;
+    return <Text allowFontScaling={false} {...shrink} style={[style, { color }]}>{title}</Text>;
   }
 
   const l = luma(rgb);
@@ -101,14 +101,14 @@ export default function GradientTitle({
 
   return (
     <MaskedView
-      maskElement={<Text {...shrink} style={[style, { color: '#000000' }]}>{title}</Text>}
+      maskElement={<Text allowFontScaling={false} {...shrink} style={[style, { color: '#000000' }]}>{title}</Text>}
     >
       <LinearGradient colors={stops} locations={[0, 0.52, 1]} start={START} end={END}>
         {/* An invisible copy of the title gives the gradient the exact size of the glyphs it is filling.
             Without it the gradient has no intrinsic height and the mask clips to nothing. adjustsFontSizeToFit
             runs independently on this copy and the mask copy -- both share the same text/style/width, so RN
             shrinks them to the same size in practice. */}
-        <Text {...shrink} style={[style, { opacity: 0 }]}>{title}</Text>
+        <Text allowFontScaling={false} {...shrink} style={[style, { opacity: 0 }]}>{title}</Text>
       </LinearGradient>
     </MaskedView>
   );

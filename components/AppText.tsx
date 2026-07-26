@@ -37,6 +37,21 @@ import {
  * `allowFontScaling` is placed BEFORE the prop spread on purpose: a caller that genuinely wants
  * scaling can still pass its own value and win.
  *
+ * ⚠️ WHAT THIS WRAPPER CANNOT REACH -- `Animated.Text` and `Reanimated.Text`.
+ * Those wrap React Native's OWN Text directly, so an import swap never touches them and they keep
+ * scaling. This is not theoretical: the bottom tab bar's labels render through `Animated.Text` and were
+ * the last thing in the app still growing after everything else was fixed. Every current instance
+ * (13 of them, across the tab bar, stats, prayer, the achievement toast, the celebration overlay and
+ * the tooltip modal) now passes `allowFontScaling={false}` by hand.
+ * ANY NEW `Animated.Text` MUST DO THE SAME. There is no way to enforce it from here.
+ *
+ * ⚠️ AND A WARNING ABOUT TESTING THIS: changing this file alters behaviour in ~111 files that only
+ * IMPORT it. Fast Refresh does not reliably re-apply that -- modules that did not themselves change can
+ * keep running their old compiled version, which looks exactly like a partial, incoherent fix (some
+ * cards right, some wrong, no pattern). A whole debugging pass was spent hunting a "category" that did
+ * not exist. VERIFY WITH A FULL RESTART: kill the app and run `npx expo start -c`. A JS reload is not
+ * enough.
+ *
  * Refs are forwarded. Non-negotiable -- the multiline select-all fix in the build standards relies on
  * `ref.current?.setNativeProps(...)` on TextInput, and it would break silently without this.
  */

@@ -52,18 +52,18 @@ export default function GradientNumber({
 
   // A theme token that is not a plain hex (rgba(), a colour+alpha string) can't be lifted or sunk, so it
   // renders flat rather than wrong. No caller has to know or care.
-  if (!rgb) return <Text style={[style, { color }]} numberOfLines={numberOfLines}>{value}</Text>;
+  if (!rgb) return <Text allowFontScaling={false} style={[style, { color }]} numberOfLines={numberOfLines}>{value}</Text>;
 
   const stops: [string, string, string] = [lift(rgb, LIGHT), color, sink(rgb, DARK)];
 
   return (
     <MaskedView
-      maskElement={<Text style={[style, { color: '#000000' }]} numberOfLines={numberOfLines}>{value}</Text>}
+      maskElement={<Text allowFontScaling={false} style={[style, { color: '#000000' }]} numberOfLines={numberOfLines}>{value}</Text>}
     >
       <LinearGradient colors={stops} locations={[0, 0.52, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}>
         {/* An invisible copy of the number gives the gradient the exact size of the glyphs it is filling.
             Without it the gradient has no intrinsic height and the mask clips to nothing. */}
-        <Text style={[style, { opacity: 0 }]} numberOfLines={numberOfLines}>{value}</Text>
+        <Text allowFontScaling={false} style={[style, { opacity: 0 }]} numberOfLines={numberOfLines}>{value}</Text>
       </LinearGradient>
     </MaskedView>
   );

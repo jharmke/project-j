@@ -386,7 +386,7 @@ function PrayerRow({
         style={[styles.pageBox, { backgroundColor: theme.bgCardFaith, borderColor: `rgba(${GOLD_RGB},0.28)`, borderTopColor: `rgba(${GOLD_RGB},0.45)`, shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity }]}
       >
         <View style={{ flex: 1 }}>
-          <Animated.Text style={[styles.pageText, { color: answered ? theme.textMuted : theme.accentAmber, opacity: textOpacity }]}>
+          <Animated.Text allowFontScaling={false} style={[styles.pageText, { color: answered ? theme.textMuted : theme.accentAmber, opacity: textOpacity }]}>
             {prayer.text}
           </Animated.Text>
           {answered && prayer.answeredAt != null && (
@@ -396,6 +396,7 @@ function PrayerRow({
           )}
           {celebrating && (
             <Animated.Text
+              allowFontScaling={false}
               style={[styles.praiseInline, { color: theme.accentAmber, opacity: praiseOpacity, transform: [{ translateY: praiseTranslate }] }]}
             >
               Praise God

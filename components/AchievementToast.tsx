@@ -325,13 +325,13 @@ function ToastCard({ def, onDone }: { def: AchievementDef; onDone: () => void })
             <MiniHexBadge def={def} size={44} />
           </Animated.View>
           <View style={{ flex: 1, justifyContent: 'center', paddingRight: 14 }}>
-            <Animated.Text style={[styles.label, { color: config.badgeColor, opacity: labelOpacity }]}>
+            <Animated.Text allowFontScaling={false} style={[styles.label, { color: config.badgeColor, opacity: labelOpacity }]}>
               ACHIEVEMENT UNLOCKED
             </Animated.Text>
-            <Animated.Text style={[styles.name, { color: '#ffffff', opacity: nameOpacity, transform: [{ translateY: nameTranslateY }] }]}>
+            <Animated.Text allowFontScaling={false} style={[styles.name, { color: '#ffffff', opacity: nameOpacity, transform: [{ translateY: nameTranslateY }] }]}>
               {def.name}
             </Animated.Text>
-            <Animated.Text style={[styles.tier, { color: theme.textMuted, opacity: labelOpacity }]}>
+            <Animated.Text allowFontScaling={false} style={[styles.tier, { color: theme.textMuted, opacity: labelOpacity }]}>
               {config.label}
             </Animated.Text>
           </View>
@@ -459,13 +459,13 @@ function DailyGoalToastCard({ name, count, icon, iconColor, onDone }: {
             <DailyGoalHexBadge icon={icon} iconColor={iconColor} size={44} />
           </Animated.View>
           <View style={{ flex: 1, justifyContent: 'center', paddingRight: 14 }}>
-            <Animated.Text style={[styles.label, { color: iconColor, opacity: labelOpacity }]}>
+            <Animated.Text allowFontScaling={false} style={[styles.label, { color: iconColor, opacity: labelOpacity }]}>
               GOAL MET
             </Animated.Text>
-            <Animated.Text style={[styles.name, { color: '#ffffff', opacity: nameOpacity, transform: [{ translateY: nameTranslateY }] }]}>
+            <Animated.Text allowFontScaling={false} style={[styles.name, { color: '#ffffff', opacity: nameOpacity, transform: [{ translateY: nameTranslateY }] }]}>
               {name}
             </Animated.Text>
-            <Animated.Text style={[styles.tier, { color: theme.textMuted, opacity: labelOpacity }]}>
+            <Animated.Text allowFontScaling={false} style={[styles.tier, { color: theme.textMuted, opacity: labelOpacity }]}>
               {count}× achieved
             </Animated.Text>
           </View>

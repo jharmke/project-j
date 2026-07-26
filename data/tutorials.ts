@@ -354,9 +354,9 @@ export const TUTORIALS: Tutorial[] = [
         targetKey: 'macros_card_main',
         title: 'MACROS TODAY',
         body: {
-          discipline: 'Macros are the three fuels your body runs on. Calories tell you how much. Macros tell you what. Both matter.',
-          balanced: 'Your macros card breaks your food down into the three key nutrients: protein, carbs, and fat.',
-          mindful: 'This card shows your three main nutrients. It\'s informational. No target you have to hit perfectly.',
+          discipline: 'Macros are the three fuels your body runs on. Calories tell you how much. Macros tell you what. Both matter. Tap any one of them to see which foods got you there, plus what that macro actually does and where to find it.',
+          balanced: 'Your macros card breaks your food down into the three key nutrients: protein, carbs, and fat. Tap any one to see which of your foods contributed, plus what it does in your body and the foods that carry it.',
+          mindful: 'This card shows your three main nutrients. It\'s informational. No target you have to hit perfectly. Tap any one to read what it does in your body and where it comes from.',
         },
       },
       {

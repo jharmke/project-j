@@ -30,6 +30,28 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-25 **Nutrient "Why It Matters" + "Food Sources" in the drilldown (device-confirmed).** All 33
+  tracked nutrients (3 macros + the 30 in Advanced Nutrition) now carry written educational content below
+  Today's Sources: two short paragraphs on what the nutrient does, then the everyday foods that carry it,
+  then the informational-purposes disclaimer. Sections show whether or not anything is logged (a nutrient
+  sitting at 0 is exactly when "why does this matter" is worth reading) and read identically in all three
+  coaching modes, since this is education and not a grade. ZERO call-site changes were needed: every
+  drilldown item already carried a stable non-display id (`nutrientKey` for the 30, `directField` for the
+  3 macros) and one shared modal serves both Log and Home, so all 36 entry points picked it up for free.
+  Content lives in utils/nutrientInfo.ts with the locked voice rules at the top. VOICE, set by a
+  5-mineral sample pass: paragraph 2 is where the value is (what interacts with it, why intake runs low),
+  and any term needing prior knowledge gets explained or cut -- "phytates loosen that grip" and "calcium
+  set tofu" were both cut for exactly that. Food Sources lists food a normal person has eaten this month;
+  an outlier only earns a spot when omitting it would be dishonest (oysters carry ~10x anything else for
+  zinc) and then it says why. VISUAL: the two new sections sit in cards, Today's Sources deliberately does
+  NOT (it already has its own bars, a box round it is a box in a box). Cards can't lean on fill -- on
+  Light, bgSheet and bgCard are BOTH pure white, and on Dark, bgSheet and bgInput are the same value, so
+  no single token separates in every theme and the contrast direction flips between them; border + shadow
+  is what makes them read. All three section headers moved off the 9/ls3/textMuted card-label spec to
+  12/ls1.5/textSecondary -- at 9pt under 13pt body they read smaller than the paragraph they introduced.
+  No accent on the cards, deliberately: the modal's cyan already means "your data" (top border, title,
+  number, bars) and the reference content isn't data. Otto's KB, the Advanced Nutrition tooltip, and the
+  Macros tutorial all updated the same session.
 - 2026-07-25 **Notifications settings: own page, 3 categories, per-notification switches
   (device-confirmed).** Moved out of Settings into app/notifications.tsx; Settings keeps a status card +
   Customize button and got SHORTER. Categories went 4 -> 3 (the app's own pillars): Fasting folded into
@@ -1159,11 +1181,6 @@ are separate pre-submission checklists, NOT part of this menu.
   values doesn't retroactively re-convert those stored numbers -- this was already true before unit choice
   existed (they were always "in whatever unit primary happens to be"), just now more visible. Not fixed,
   not blocking, noted for later.
-- [surfaced 2026-07-20] **Nutrient "Function" and "Sources" info, like Cronometer's nutrient detail
-  screens.** Cronometer's per-nutrient drill-down shows a plain-language "Function" blurb (what this nutrient
-  actually does in the body) and a "Sources" list (common foods that provide it), alongside the
-  consumed-vs-RDA bar. Our NutrientDrilldownModal currently only shows the user's own logged sources, no
-  general educational content. Not scoped yet, just captured so it isn't lost.
 - [surfaced 2026-07-20, faith, needs scoping discussion] **Smart keyword search for Reading Plans /
   Devotionals.** Idea: searching a term like "masturbation" or "lust" should surface relevant devotionals
   even when the actual title (e.g. "Sexual Integrity") doesn't contain the literal search word. This is a
@@ -1236,10 +1253,18 @@ are separate pre-submission checklists, NOT part of this menu.
 - [surfaced 2026-07-19, discuss next -- these were queued behind the Bible translation work] Still open
   from the original batch logged this session: **(2) Coach Insight card's EvR link with no eligibility
   check** (see next item below, already detailed), **(4) nudging Exploring/NRN users toward growth**
-  (needs real discussion, easy to violate the NRN opt-out), **(5) Gratitude card has no NRN-specific
-  version** (confirmed fine as-is per discussion, may just need a final decision to close), **(6) more
+  (needs real discussion, easy to violate the NRN opt-out), **(6) more
   Reading Plans/Devotionals?** (open-ended, no specific gap named yet), **(7) default home card order vs.
-  watch ownership** (discuss last, per Justin's own ordering).
+  watch ownership** (now PINNED for its own discussion, see below).
+  **(5) Gratitude card NRN version -- CLOSED 2026-07-25, no work needed.** Verified in code, not assumed:
+  the card takes faithJourney, Home passes it, and for NRN the scripture block AND the divider above it
+  are hidden so nothing sits orphaned. The rest of the card was already secular ("Gratitude Streak",
+  "What are you grateful for today?", "Log Gratitude"), and all 15 gratitude notification variations
+  across the 3 coaching modes contain zero faith wording. Card also ships defaultVisible: false, so an
+  NRN user only sees it if they add it themselves. ONE NOTE, not a bug today: the hide is keyed on
+  `variant === 'home'`, i.e. WHERE it renders, not WHO is looking. Equivalent today (the other two mount
+  points are the Faith tab and Bible, which NRN cannot reach), but if that card ever lands somewhere new,
+  scripture returns for NRN by default. One-line hardening if it ever matters: key it on the tier alone.
 - [surfaced 2026-07-19] **Coach Insight card links to EvR report with no eligibility check.** The Home
   card's "View in Effort vs Results" link always shows, even when the user hasn't hit the 7-day minimum to
   generate a report (confirmed on Megan's account: 1/14 days logged, card still links out). The report
@@ -1257,12 +1282,26 @@ are separate pre-submission checklists, NOT part of this menu.
 - [surfaced 2026-07-19, faith, needs discussion] **More Reading Plans / Devotionals?** Open-ended, no
   specific gap identified yet -- discuss whether the current plan/devotional library is thin somewhere
   specific before treating as a scoped task.
-- [surfaced 2026-07-19, discuss after the 3 items above] **Default home card order vs. watch ownership.**
-  Sleep/Recovery and other wearable-dependent cards sit high in every mode's default order, but for
-  non-watch-wearers (or inconsistent wearers) those cards may be a near-permanent empty-state eyesore. No
-  clean way to know at onboarding who's a watch-wearer without adding friction, though the existing
-  HealthKit opt-in step (declined / no sleep data granted) could double as a signal for default ordering.
-  Needs its own design session.
+- [PINNED 2026-07-25 -- Justin's call: needs a real discussion first, he has more in his head than what's
+  written here. Do NOT start building off this item as written.] **Default home card order vs. watch
+  ownership.** Sleep/Recovery and other wearable-dependent cards sit high in every mode's default order,
+  but for non-watch-wearers (or inconsistent wearers) those cards may be a near-permanent empty-state
+  eyesore. Needs its own design session.
+  GROUNDWORK DONE 2026-07-25 (read from code, so the discussion starts ahead):
+  - The problem is SMALLER than this item's original wording. "Wearable-dependent cards" is really ONE
+    card: Sleep & Recovery. STEPS IS NOT WATCH-DEPENDENT -- the iPhone counts steps by itself.
+  - Current rank of Sleep & Recovery: 6th in DEFAULT_ORDER, 4th in DISCIPLINE_ORDER, **2nd in
+    MINDFUL_ORDER**. Mindful is the worst case: a non-wearer gets an empty card in slot 2 of the calmest
+    mode.
+  - The signal already exists and is already honest: `hasHealthData` in useHealthKit.ts is true only once
+    a real value has actually come back, and its comment explains why the permission flag lies (iOS
+    resolves requestAuthorization even when the user denied). `sleepHours` alone is the SHARPER signal --
+    someone can have an iPhone feeding steps and no watch feeding sleep.
+  - CORRECTION: CLAUDE.md documents a `healthkitConnected` key in pj_settings, but NOTHING in the
+    codebase reads or writes it. It does not exist. Do not plan around it.
+  - The real fork to decide is design, not tech: REORDER at onboarding off a detected signal, vs. LEAVE
+    the card in place and let it quietly step down after N days of no data. The second is less magical,
+    reversible, and doesn't require guessing about a user at the moment they've told us the least.
 
 - [found 2026-07-18, follow-on to the bar gradient above] **Ring/donut gradient pass.** Same molded
   3-stop recipe (`utils/barGradient.ts`), applied to SVG stroke arcs instead of flat View fills. 6 real

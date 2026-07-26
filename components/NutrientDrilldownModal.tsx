@@ -10,6 +10,7 @@ import ModalHeader from './ModalHeader';
 import GradientNumber from './GradientNumber';
 import ButtonShine from './ButtonShine';
 import { barFillGradient } from '../utils/barGradient';
+import { getNutrientInfo, NUTRIENT_DISCLAIMER } from '../utils/nutrientInfo';
 
 // Recipe-logged entries store extended nutrients as FLAT fields (e.fiber, e.sodium, ...),
 // already scaled to the logged portion, NOT inside foodNutrients. Map readable names to those
@@ -167,6 +168,10 @@ export default function NutrientDrilldownModal({ visible, onClose, item, entries
   const color    = item ? valueColor(displayTotal, item.direction, item.goal, theme.accentBlue) : theme.accentBlue;
   const goalPct  = item?.goal ? Math.min((displayTotal / item.goal) * 100, 100) : 0;
 
+  // Educational content. Deliberately independent of whether anything was logged today -- a
+  // nutrient sitting at 0 is exactly when "why does this matter" is worth reading.
+  const info = getNutrientInfo(item?.nutrientKey, item?.directField);
+
   return (
     <Modal visible={visible} transparent animationType="none" onShow={open} onRequestClose={closeWithHaptic}>
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -256,7 +261,7 @@ export default function NutrientDrilldownModal({ visible, onClose, item, entries
             contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
             showsVerticalScrollIndicator={false}
           >
-            <Text style={{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, fontFamily: Type.uiBold, marginBottom: 12 }}>
+            <Text style={{ fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', color: theme.textSecondary, fontFamily: Type.uiBold, marginBottom: 12 }}>
               Today's Sources
             </Text>
             {contributions.length === 0 ? (
@@ -295,6 +300,81 @@ export default function NutrientDrilldownModal({ visible, onClose, item, entries
                   </View>
                 </View>
               ))
+            )}
+
+            {/* Why It Matters / Food Sources. Identical in all three coaching modes -- this is
+                education, not a grade, so the want-less nutrients describe rather than scold. */}
+            {info && (
+              <>
+                <View style={{ height: 0.5, backgroundColor: theme.borderCard, marginTop: 22, marginBottom: 18 }} />
+
+                {/* Section headers, NOT card labels -- deliberately off the 9/ls3/textMuted card-label
+                    spec. At 9pt under 13pt body copy they read as smaller than the paragraph they
+                    introduce, which is backwards. Size + contrast do the work here; Type.uiBold is
+                    already the heaviest UI weight, so there was no weight left to add. All three
+                    section headers in this modal share this style, Today's Sources included.
+                    CARDS: the reference content sits in cards, Today's Sources list deliberately does
+                    NOT (Justin's call -- that list already carries its own bars and percentages, a box
+                    around it is a box around a box). The card CANNOT lean on fill alone: on Light,
+                    bgSheet and bgCard are BOTH pure white, and on Dark, bgSheet and bgInput are the
+                    same value -- neither token separates in every theme, and the contrast direction
+                    flips between them. Border + shadow is what actually makes it read as a card in all
+                    five, which is the Visual Philosophy rule anyway (cards float above background). */}
+                <Text style={{ fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', color: theme.textSecondary, fontFamily: Type.uiBold, marginBottom: 10 }}>
+                  Why It Matters
+                </Text>
+                <View style={{
+                  backgroundColor: theme.bgCard,
+                  borderWidth: 0.5,
+                  borderColor: theme.borderCard,
+                  borderRadius: 14,
+                  padding: 16,
+                  shadowColor: theme.cardShadow,
+                  shadowOpacity: theme.cardShadowOpacity,
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowRadius: 12,
+                  elevation: 6,
+                }}>
+                  {info.whyItMatters.map((para, i) => (
+                    <Text
+                      key={i}
+                      style={{
+                        fontSize: 13,
+                        lineHeight: 20,
+                        color: theme.textSecondary,
+                        fontFamily: Type.ui,
+                        marginBottom: i < info.whyItMatters.length - 1 ? 12 : 0,
+                      }}
+                    >
+                      {para}
+                    </Text>
+                  ))}
+                </View>
+
+                <Text style={{ fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', color: theme.textSecondary, fontFamily: Type.uiBold, marginTop: 22, marginBottom: 10 }}>
+                  Food Sources
+                </Text>
+                <View style={{
+                  backgroundColor: theme.bgCard,
+                  borderWidth: 0.5,
+                  borderColor: theme.borderCard,
+                  borderRadius: 14,
+                  padding: 16,
+                  shadowColor: theme.cardShadow,
+                  shadowOpacity: theme.cardShadowOpacity,
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowRadius: 12,
+                  elevation: 6,
+                }}>
+                  <Text style={{ fontSize: 13, lineHeight: 20, color: theme.textSecondary, fontFamily: Type.ui }}>
+                    {info.foodSources}
+                  </Text>
+                </View>
+
+                <Text style={{ fontSize: 10, lineHeight: 15, color: theme.textDim, fontFamily: Type.ui, marginTop: 18 }}>
+                  {NUTRIENT_DISCLAIMER}
+                </Text>
+              </>
             )}
           </ScrollView>
 

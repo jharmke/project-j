@@ -2822,16 +2822,43 @@ export default function HomeScreen() {
     const recZone = homeRecoveryScore !== null ? recoveryZone(homeRecoveryScore) : null;
     const recColor = recZone ? (recZone.zoneColor === 'good' ? theme.statusGood : recZone.zoneColor === 'warn' ? theme.statusWarn : theme.statusBad) : theme.textDim;
     const recDonutSize = 120, recDonutStroke = 14, recDonutRadius = (recDonutSize - recDonutStroke) / 2, recDonutCirc = 2 * Math.PI * recDonutRadius;
-    // Shared empty-state for both carousel faces (recovery + sleep) so they read
-    // identically. Centered icon-in-circle + title + subtitle, stretched to the
-    // measured carousel height (minus header/padding) so the card fills, never
-    // leaving dead space under the text.
+    // Shared empty-state for both carousel faces (recovery + sleep) so they read identically.
+    //
+    // TWO SIZES, and which one is used depends on whether the OTHER face has anything:
+    //
+    // - ONE face empty (they slept but no recovery score yet, or vice versa): stretch to the measured
+    //   carousel height so the empty face matches the full one. Without this the short face leaves a
+    //   gap beside its neighbour, which is what the original fill-to-height was for.
+    //
+    // - BOTH faces empty: go COMPACT. Nothing is driving the height, so filling to 200+ points means
+    //   reserving a quarter of the screen to say "there is nothing here". That is what a non-wearer
+    //   sees every single day -- and it is worst in Mindful, which puts this card second on purpose.
+    //
+    // Deliberately NOT solved by moving or hiding the card: nothing reorders, nothing disappears, the
+    // user's layout is untouched. And it self-corrects with no state to maintain -- the moment sleep
+    // exists, from a watch, a ring, or typed in by hand, the card is full size again that day.
+    // (Sleep can be logged MANUALLY, so "did they connect Apple Health" tells us nothing about whether
+    // this card will ever fill. Actual data is the only trustworthy signal.)
+    const bothFacesEmpty = homeRecoveryScore === null && displaySleep === null;
     const renderCardEmptyState = (icon: any, color: string, title: string, subtitle: string) => (
-      <View style={{ minHeight: Math.max(200, carouselHeight - 64), alignItems: 'center', justifyContent: 'center', paddingVertical: 16 }}>
-        <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: color + '1A', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
-          <Ionicons name={icon} size={28} color={color} />
+      <View style={{
+        minHeight: bothFacesEmpty ? 0 : Math.max(200, carouselHeight - 64),
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: bothFacesEmpty ? 22 : 16,
+      }}>
+        <View style={{
+          width: bothFacesEmpty ? 38 : 56,
+          height: bothFacesEmpty ? 38 : 56,
+          borderRadius: bothFacesEmpty ? 19 : 28,
+          backgroundColor: color + '1A',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: bothFacesEmpty ? 10 : 14,
+        }}>
+          <Ionicons name={icon} size={bothFacesEmpty ? 19 : 28} color={color} />
         </View>
-        <Text style={{ fontSize: 15, color: theme.textSecondary, fontFamily: Type.uiBold, marginBottom: 6, textAlign: 'center' }}>{title}</Text>
+        <Text style={{ fontSize: bothFacesEmpty ? 13 : 15, color: theme.textSecondary, fontFamily: Type.uiBold, marginBottom: 6, textAlign: 'center' }}>{title}</Text>
         <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, lineHeight: 17, textAlign: 'center', paddingHorizontal: 24 }}>{subtitle}</Text>
       </View>
     );

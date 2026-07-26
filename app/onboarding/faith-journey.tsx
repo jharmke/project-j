@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Text } from '@/components/AppText';
 import {
-  Animated, Dimensions, StyleSheet, TouchableOpacity, View,
+  Animated, Dimensions, ScrollView, StyleSheet, TouchableOpacity, View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -350,10 +350,19 @@ export default function FaithJourneyScreen() {
         </View>
       </View>
 
-      {/* Fixed frame, NO scroll -- there is not enough here to earn one. It has to fit, so the budget below
-          is tight on purpose: the longest verse (2 Corinthians, on Not Right Now) is what everything has to
-          clear. If a verse gets longer than that one, this breaks again. */}
-      <View style={[styles.content, { paddingTop: insets.top + 66, paddingBottom: insets.bottom + 104 }]}>
+      {/* WAS a fixed frame with NO scroll, on the reasoning that there was not enough here to earn one and
+          the content had to fit. Its own comment predicted the failure: "if a verse gets longer than that
+          one, this breaks again". What actually broke it was not a longer verse but LARGER TEXT -- with
+          iOS Dynamic Type turned up, the verse was clipped behind the Continue button with no way to reach
+          it (SPEC_accessibility.md). A fixed frame is a bet that content can never grow, and that bet is
+          not ours to make. Now scrolls.
+          THIS SCREEN ESPECIALLY: onboarding runs BEFORE the user can reach any setting of ours, so it has
+          to survive on its own. The footer is absolute, so it stays put and content passes under it. */}
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={{ paddingTop: insets.top + 66, paddingBottom: insets.bottom + 104 }}
+        showsVerticalScrollIndicator={false}
+      >
 
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
           <Text style={[styles.screenLabel, { color: 'rgba(232,160,32,0.45)' }]}>STEP 4 OF 6</Text>
@@ -385,7 +394,7 @@ export default function FaithJourneyScreen() {
 
         <VerseBlock selected={selected} />
 
-      </View>
+      </ScrollView>
 
       {/* Footer. Frosted dark, absolute -- content passes under it instead of stopping at an opaque slab. */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16, borderTopColor: 'rgba(232,160,32,0.14)' }]}>

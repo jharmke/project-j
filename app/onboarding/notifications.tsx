@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Text } from '@/components/AppText';
 import {
-  Animated, StyleSheet, TouchableOpacity, View,
+  Animated, ScrollView, StyleSheet, TouchableOpacity, View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@/components/AppIcons';
@@ -170,8 +170,16 @@ export default function NotificationsScreen() {
         </View>
       </View>
 
-      {/* Content */}
-      <View style={[styles.content, { paddingTop: insets.top + 66 }]}>
+      {/* Scrolls. Was a static frame, which is a bet that the content can never grow -- and it can: with
+          iOS Dynamic Type turned up, onboarding content ran off the bottom with no way to reach it
+          (SPEC_accessibility.md). Onboarding runs BEFORE the user can reach any setting of ours, so these
+          screens have to survive on their own. The footer is absolute and stays put; the bottom padding
+          is what keeps the last row from hiding under it. */}
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={{ paddingTop: insets.top + 66, paddingBottom: insets.bottom + 104 }}
+        showsVerticalScrollIndicator={false}
+      >
 
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
           <Text style={[styles.screenLabel, { color: theme.textMuted }]}>STEP 6 OF 6</Text>
@@ -221,7 +229,7 @@ export default function NotificationsScreen() {
           </Text>
         </Animated.View>
 
-      </View>
+      </ScrollView>
 
       {/* Footer. Frosted chrome (blur + chromeFill), absolute, like every other screen in the flow. */}
       <Animated.View style={[

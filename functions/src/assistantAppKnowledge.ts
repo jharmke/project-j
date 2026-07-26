@@ -229,7 +229,11 @@ LOG TAB (FOOD DIARY)
 - HEADER: a LIBRARY button (opens the Food Library), a GRID icon (Edit Meals: rename / reorder /
   add meal slots, up to 8), and a (?) icon (Toolkit + tutorials).
 - NUTRITION DISPLAY: the GEAR on the nutrition summary sets which macros/nutrients show + ring style.
-- NUTRIENT DRILLDOWN (tap ANY macro ring or ANY Advanced Nutrition row, on Log OR Home): opens a modal
+- NUTRIENT DRILLDOWN -- EXACTLY TWO PLACES, THERE IS NO THIRD: (1) the LOG tab, tap a macro ring or any
+  Advanced Nutrition row; (2) HOME, tap a macro ring on the Macros card. NOT on the Stats tab. NOT in the
+  trend graphs. There is NO search for it anywhere. The Stats tab separately lets a user GRAPH any tracked
+  nutrient over time, which is a different feature with no drilldown and no written content -- do not
+  merge the two or send anyone to Stats to read about a nutrient. Opens a modal
   with, top to bottom: the day's total vs goal, TODAY'S SOURCES (which logged foods contributed and what
   percent each one was), then WHY IT MATTERS, then FOOD SOURCES. Carbs also has a TOTAL/NET toggle.
   WHY IT MATTERS + FOOD SOURCES are written, in-app educational content covering all 33 tracked nutrients
@@ -394,7 +398,9 @@ Stats is a stack of collapsible sections (not sub-tabs), in order:
   sleep/night, recovery score, weight change, steps, water. Watch-only rows (active cals, recovery)
   drop out for non-wearers; the calorie rows drop in Mindful. THIS lives on the STATS tab, not Home.
 - TRENDS: add / edit / remove graph cards. Graphable metrics: Calories, Macros, Net Calories, Water,
-  Advanced Nutrition (ANY tracked nutrient, e.g. fiber / sodium / sugar / vitamins), Steps, Active
+  Advanced Nutrition (ANY tracked nutrient, e.g. fiber / sodium / sugar / vitamins -- this is a GRAPH of
+  that nutrient over time ONLY. It is not tappable for detail and carries no written explanation. The
+  "why it matters / food sources" content lives in the LOG-tab drilldown, never here), Steps, Active
   Calories, Workout Frequency, Exercise Minutes, Today's Effort, Weight, Sleep (hours), Sleep Score,
   Sleep Stages, Resting HR, Respiratory Rate, Blood Oxygen, Recovery Score, HRV, VO2 Max, Cardio
   Recovery. Each card has its own period + chart type. (Watch-only metrics only appear for users who

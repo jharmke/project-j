@@ -1066,6 +1066,21 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
+- [TOP / LAUNCH QUALITY, surfaced 2026-07-26 by Justin's uncle on the current TestFlight]
+  **iOS large text breaks the app. SPEC_accessibility.md is the source of truth -- read it, don't
+  re-derive this.** With iOS system text size near max, text runs enormous and content is cut off; the
+  onboarding Faith Journey step clipped its verse behind the Continue button with no way to scroll.
+  TWO independent causes: nothing in the app caps scaling (`allowFontScaling`/`maxFontSizeMultiplier`
+  appear ZERO times), and three onboarding screens have no ScrollView at all.
+  ⚠️ THE ONE-LINE FIX EVERYONE POSTS ONLINE IS DEAD HERE: `Text.defaultProps.allowFontScaling` does
+  nothing on React 19 + RN 0.81 (verified in the installed source). A wrapper component plus a scripted
+  import rewrite is required. `react-native-svg` also exports `Text`, and the imports are multi-line
+  blocks -- a naive script breaks charts while looking like it worked.
+  PHASE 1 is self-contained and commits to nothing else: kill forced scaling (everyone renders at the
+  designed size), plus the onboarding scroll fix. Low risk -- anyone at the default system setting is
+  already at 1.0, so nothing changes for them. Phases 2-4 (our own stepped setting, the audit, the
+  first-launch prompt) and the full trap list are in the spec.
+  Probably the same root cause as the iPad layout item further down this list.
 - [TOP / NEXT TESTFLIGHT BUILD, 2026-07-25] **Re-tune the chat keyboard follow on a RELEASE build.**
   Otto's and Halo's input rows now animate with the keyboard (see RECENTLY SHIPPED), but the timing
   constant was tuned in a DEV build and cannot be trusted there. WHY: the animation drives a layout

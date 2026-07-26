@@ -1088,18 +1088,21 @@ are separate pre-submission checklists, NOT part of this menu.
   convert it to a centred modal rather than patching the jump, since a sheet anchored to the bottom is
   exactly what the keyboard fights. Read SPEC_keyboard_modals.md first; the traps there apply, and
   TRAP 6 in particular explains why the obvious fixes do not animate on this stack.
-- [surfaced 2026-07-26, PHASE 1 SHIPPED -- what is left is OPTIONAL PRODUCT WORK, not a bug]
-  **In-app font size setting (SPEC_accessibility.md phases 2-4).** The breakage is FIXED (see RECENTLY
-  SHIPPED): every user now renders at the designed size regardless of their iOS setting. NOTHING IS
-  BROKEN. What remains is a deliberate product choice: give users our OWN stepped size control
-  (Settings > Accessibility, discrete steps, never a slider), plus a first-launch prompt shown ONLY to
-  people whose phone is already set large. Trade-off to weigh honestly: today we ignore the system
-  setting entirely, which is a real accessibility regression for the people who need it most -- but
-  allowing ANY growth reopens an audit whose size is set by the maximum multiplier chosen. Decide on its
-  own merits, not as a bug fix. Test the MAX step only; everything below it is safe by definition.
-  ALSO CHECK when picked up: the iPad layout item further down (wrapped date on Home, oversized Otto
-  header) was guessed to be system text size. Phase 1 may already have closed it -- verify before
-  scoping that separately.
+- [2026-07-26, text scaling CLOSED -- only these small leftovers remain] **Accessibility leftovers.**
+  All four phases shipped and were device-verified (see RECENTLY SHIPPED; full detail in
+  SPEC_accessibility.md). What is genuinely left:
+  (a) **NOT SEEN ON DEVICE YET:** the header-row height fix (the Library pill and the icon buttons
+  beside it now share one height) and the new Text Size tooltip + the "App" pill on the definitions
+  screen. Small and low risk, just unconfirmed.
+  (b) **A lint rule so this cannot come back.** Nothing stops new code importing Text/TextInput from
+  'react-native' or icons from '@expo/vector-icons' and silently reintroducing the whole bug. The rules
+  are in CLAUDE.md and Claude memory, so today it depends on remembering. A no-restricted-imports rule
+  makes it impossible to get wrong. Minutes of work; offered and not yet taken.
+  (c) **A bigger step, only if anyone asks.** Above 1.15 is UNTESTED, not known-bad -- one bug in the
+  whole app at 1.15 suggests 1.3 may be fine. Costs one line plus another sweep at the new ceiling.
+  Any complaint will come from users on Apple's ACCESSIBILITY sizes (past 2x), who currently get 1.15.
+  (d) **CHECK THE iPAD ITEM further down this list** (wrapped date on Home, oversized Otto header). It
+  was guessed to be system text size; phase 1 may have already closed it. Verify before scoping it.
 - [TOP / NEXT TESTFLIGHT BUILD, 2026-07-25] **Re-tune the chat keyboard follow on a RELEASE build.**
   Otto's and Halo's input rows now animate with the keyboard (see RECENTLY SHIPPED), but the timing
   constant was tuned in a DEV build and cannot be trusted there. WHY: the animation drives a layout

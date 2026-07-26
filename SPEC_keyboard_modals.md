@@ -126,11 +126,73 @@ editor did not and regressed. Copy Feedback's shape.
 
 ---
 
+## TRAP 6 -- On iOS + New Architecture, LayoutAnimation is dead, so KeyboardAvoidingView cannot animate
+
+**This is the trap underneath all the others, and it explains why this file exists at all.**
+
+`newArchEnabled: true` in app.json. Under Fabric on iOS, **LayoutAnimation does not run.** React Native
+says so in its own source (`Libraries/LayoutAnimation/LayoutAnimation.js`): *"LayoutAnimations may
+possibly be disabled for now on iOS (Fabric)"*, and the Fabric branch is unconditionally enabled for
+ANDROID only.
+
+`KeyboardAvoidingView` has exactly one animation mechanism: it calls `LayoutAnimation.configureNext`
+with the keyboard event's own duration and curve. So on this app's platform config, KAV positions
+correctly and **animates never**. That is the real reason `KeyboardAwareCenter` was written here, and
+the reason the ~19 KAV sites teleport. Nobody had written the cause down, only the symptom.
+
+**Consequence: a JS-driven animation is the ONLY thing that animates a layout property in this app on
+iOS.** Do not "fix" a teleport by reaching for KeyboardAvoidingView. It cannot work.
+
+Four approaches were burned on Otto/Halo before this was understood. In order, so nobody repeats one:
+
+1. **`Keyboard.addListener` -> `useState` height -> paddingBottom.** No animation configured at all.
+   Teleports both ways.
+2. **`useAnimatedKeyboardHeight()`** (RN Animated, `useNativeDriver: false`). Animates, positions
+   correctly, but see the CURVE note below -- it felt broken for a reason that was not the thread.
+3. **Reanimated `useAnimatedKeyboard()`** (UI thread). WORSE: no animation plus a late jump. These
+   chats live inside an RN `<Modal>`, which is a **separate native window**, and Reanimated's keyboard
+   tracking does not follow into one. Do not reach for it while a Modal is in the tree.
+4. **`KeyboardAvoidingView`.** Teleports, for the reason above. It also needs
+   `keyboardVerticalOffset` here: KAV measures its own frame via `onLayout`, which is **relative to its
+   parent**, and pads by `frame.y + frame.height - keyboardTop`. That only works at the ROOT of a full
+   screen. Inside a sheet pushed down by `marginTop: insets.top + 96`, it under-pads by exactly that
+   gap and the input row parks UNDER the keyboard. Symptom worth recognising: rises, but stops short by
+   the height of the space above the panel.
+
+### The two things that actually made it feel right
+
+**THE CURVE, not the thread.** `useAnimatedKeyboardHeight` eases the DISMISS with
+`Easing.in(Easing.cubic)`. An ease-IN barely moves for the first third of its duration, so across the
+keyboard's ~250ms the field sits nearly still while the keyboard travels, then lunges at the end. That
+reads exactly as "the keyboard finished before the field even started", and no amount of moving
+threads would have fixed it. **`Easing.out(Easing.cubic)` in BOTH directions.**
+⚠️ **This bug is still live in `useAnimatedKeyboardHeight`**, which backs the sixteen converted modals.
+Deliberately not changed under them untested. See NEXT UP.
+
+**RUN SHORTER THAN THE KEYBOARD'S REPORTED DURATION.** The keyboard starts moving natively at t=0, but
+a JS animation cannot start until JS *receives* the event. Run the full reported duration from a late
+start and you finish late by that same margin -- the keyboard settles while the field is still visibly
+travelling. The head start is unrecoverable, so pull the finish in: `duration * 0.7`, clamped to
+120-250ms. Both chats expose this as a single `KB_FOLLOW` constant.
+⚠️ **`KB_FOLLOW = 0.7` was tuned in a DEV build**, where event dispatch latency is inflated by Metro.
+On a release build that latency drops and this may want to move back toward 0.85 or 1.0. Expect it to
+feel slightly fast on the first TestFlight and treat that as expected, not a regression.
+
+**Do not use a transform to dodge all this.** See Trap 3.
+
+---
+
 ## KNOWN GAPS (not yet done -- see NEXT UP in the roadmap)
 
 - **Hand-rolled modals still teleport** in a few places. Grep `KbHeight|keyboardHeight`. Workout
   Library's Create/Edit Exercise is converted; Add Exercise on the Workout tab, Journal's edit path,
   Profile, Settings and Stats are not.
+  ⚠️ **THAT GREP IS NOT SUFFICIENT.** Justin found Otto's and Halo's chats teleporting on 2026-07-25,
+  after the sweep. Both used the hand-rolled pattern but named the variable `kb`, so neither
+  `KbHeight` nor `keyboardHeight` matched. This is the same failure mode as the original
+  KeyboardAvoidingView-only sweep: greping for ONE spelling reports "done" while sites survive.
+  Search for the BEHAVIOUR, not a name: `Keyboard.addListener` + `endCoordinates` is what actually
+  identifies this pattern. Both chats are now fixed -- see TRAP 6 for what it took.
 - **Three sites deliberately skipped in the sweep.** Add a Prayer is top-anchored, so bottom padding
   does nothing for it. Weight History's edit and Recipe Builder's ingredient amount wrap a box that
   isn't full height, where the padding maths would over-shift. Each needs its own look.

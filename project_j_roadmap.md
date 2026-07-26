@@ -30,6 +30,22 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-25 **Otto's and Halo's input rows now follow the keyboard instead of teleporting
+  (dev-confirmed, NEEDS A TESTFLIGHT CHECK -- see NEXT UP).** Four approaches were burned before the
+  cause was understood, and the cause is bigger than these two files: **LayoutAnimation does not run on
+  iOS under the New Architecture**, which this app has on, so KeyboardAvoidingView positions correctly
+  and animates never. That is the real reason KeyboardAwareCenter exists and why the ~19 KAV sites
+  teleport; only the symptom had ever been written down. A JS-driven animation is the ONLY thing that
+  animates a layout property here. Also ruled out: Reanimated's useAnimatedKeyboard, which does not
+  track inside an RN <Modal> (separate native window). The two things that actually fixed it: the
+  **curve** (the shared hook eases DISMISS with Easing.in, which stalls for the first third of its
+  duration and reads exactly as "the keyboard finished before the field started" -- now
+  Easing.out(Easing.cubic) both ways), and **running shorter than the keyboard's reported duration**,
+  since a JS animation cannot start until JS receives the event and so finishes late by that margin.
+  Full write-up as TRAP 6 in SPEC_keyboard_modals.md, including the four dead ends in order.
+  Separately fixed on the way: the spec's own documented grep (`KbHeight|keyboardHeight`) never would
+  have found these two, since both named the variable `kb` -- search the BEHAVIOUR
+  (`Keyboard.addListener` + `endCoordinates`), not a name.
 - 2026-07-25 **Nutrient "Why It Matters" + "Food Sources" in the drilldown (device-confirmed).** All 33
   tracked nutrients (3 macros + the 30 in Advanced Nutrition) now carry written educational content below
   Today's Sources: two short paragraphs on what the nutrient does, then the everyday foods that carry it,
@@ -1050,6 +1066,43 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
+- [TOP / NEXT TESTFLIGHT BUILD, 2026-07-25] **Re-tune the chat keyboard follow on a RELEASE build.**
+  Otto's and Halo's input rows now animate with the keyboard (see RECENTLY SHIPPED), but the timing
+  constant was tuned in a DEV build and cannot be trusted there. WHY: the animation drives a layout
+  property, so it runs on the JS thread by necessity (the native driver cannot carry padding), and it
+  is compensating for event-dispatch latency -- the exact thing Metro inflates. `KB_FOLLOW = 0.7` in
+  BOTH components/CompanionChat.tsx and components/AssistantChat.tsx runs the animation at 70% of the
+  keyboard's reported duration to hide that latency.
+  ON TESTFLIGHT: latency drops, so expect it to feel slightly FAST. That is the expected direction, not
+  a regression. Raise KB_FOLLOW toward 0.85 or 1.0 until it sits with the keyboard. One number, two
+  files, keep them in step. Judge the DISMISS direction hardest; that is where every earlier version
+  fell apart.
+- [surfaced 2026-07-25, real bug, deliberately not fixed blind] **The same easing bug is still live in
+  `useAnimatedKeyboardHeight()`**, which backs the sixteen modals converted in the keyboard sweep. It
+  eases DISMISS with `Easing.in(Easing.cubic)`, which barely moves for the first third of its duration,
+  so those modals stall on the way down exactly as Otto and Halo did before this fix. Justin caught it
+  on the chats; nobody has looked at the other sixteen with it in mind. FIX is one line
+  (`Easing.out(Easing.cubic)` both directions) but it changes sixteen already-signed-off modals at
+  once, so it wants its own pass and its own device check, not a drive-by. Consider folding in the
+  duration compensation (see the item above) at the same time.
+- [TOP, surfaced 2026-07-25, Justin's call to rank here. Explicitly NOT for the 2026-07-25 session.]
+  **Quick copy for Otto's and Halo's replies.** Today the only way to get text out of a reply is the
+  SHARE button, then copy from the share sheet. Two ways in, decide when picked up (they are not
+  exclusive): (a) a COPY icon on the message row next to share/thumbs, one tap, copies the whole reply,
+  fires a toast -- expo-clipboard, small, and it matches the icon row that already exists; (b) native
+  press-and-hold to SELECT part of a reply, which is what Justin actually reached for first. (b) is the
+  better UX and the bigger unknown: RN needs `selectable` on the Text, and that has to be checked against
+  the row's existing long-press/drag handling and the modal's drag-to-dismiss gesture before promising
+  it. Do the audit before scoping. Both chats share the same message-row shape, so whatever ships should
+  land in Otto and Halo together.
+  WHILE IN THERE, decide the fate of the THUMBS buttons (read 2026-07-25, this is what they actually do):
+  THUMBS UP does NOTHING. It toggles its own icon and fires a "Thanks for the feedback" toast. Nothing is
+  stored, nothing is sent. THUMBS DOWN appends the exchange to `pj_companion_reports` in local
+  AsyncStorage, and NOTHING in the codebase ever reads that key -- confirmed by grep, the only two hits
+  are the write itself. So the data sits on the user's own phone forever and Justin never sees it. Three
+  honest options: wire thumbs-down to actually reach Justin (Firestore, same shape as app feedback),
+  drop the buttons, or leave them as pure acknowledgement and accept they are decorative. Do not leave
+  this undecided while adding MORE buttons to the same row.
 - [PARKED 2026-07-25, low priority, only if it starts to bother anyone] **Floating save bars jump when
   the keyboard opens.** Everything else from the keyboard pass is done. What's left uses the hand-rolled
   pattern (a Keyboard listener storing the height in state) to position a floating SAVE BAR rather than a

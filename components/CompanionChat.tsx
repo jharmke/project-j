@@ -349,7 +349,38 @@ export default function CompanionChat({
 
   const [messages, setMessages] = useState<Msg[]>(() => [{ role: 'halo', text: pickGreeting() }]);
   const [input, setInput] = useState('');
-  const [kb, setKb] = useState(0); // keyboard height when shown
+  // KEYBOARD FOLLOWING. Fourth approach; every dead end is recorded here so nobody retries one.
+  //  1. Keyboard listener -> useState height -> paddingBottom. No animation configured at all, so the
+  //     layout change landed in a single frame. The row TELEPORTED, open and dismiss.
+  //  2. useAnimatedKeyboardHeight() (RN Animated, useNativeDriver: false). Animated, but it REPLAYS a
+  //     guess: it takes the duration iOS reports and then plays its OWN cubic curve for that long, on
+  //     the JS thread. paddingBottom is a layout prop, so every frame is a layout pass over a ScrollView
+  //     full of messages, on the thread Metro already saturates. The keyboard finished before the field
+  //     started moving.
+  //  3. Reanimated useAnimatedKeyboard (UI thread). WORSE, not better: no animation at all plus a late
+  //     jump. This chat lives inside an RN <Modal>, which is a SEPARATE NATIVE WINDOW, and Reanimated's
+  //     keyboard tracking does not follow into it. Do not reach for it while the Modal is here.
+  //  4. KeyboardAvoidingView. Positioned correctly once keyboardVerticalOffset compensated for the
+  //     panel's top margin, but STILL teleported, and the reason is decisive: KAV's only animation
+  //     mechanism is LayoutAnimation, and **LayoutAnimation is disabled on iOS under the New
+  //     Architecture**, which this app has on (`newArchEnabled: true`). React Native's own source says
+  //     so -- "LayoutAnimations may possibly be disabled for now on iOS (Fabric)", with the Fabric
+  //     branch unconditionally enabled for ANDROID only. This is also exactly why KeyboardAwareCenter
+  //     was written for this codebase in the first place; its doc comment describes this same teleport.
+  // CONCLUSION: on iOS + Fabric, a JS-driven animation is the ONLY thing that animates a layout
+  // property. So this is approach 2 again, with the actual bug in it fixed.
+  // THE BUG IN APPROACH 2 WAS THE CURVE, NOT THE THREAD. The shared hook eases the DISMISS with
+  // Easing.in(Easing.cubic). An ease-IN barely moves for the first third of its duration, so over the
+  // keyboard's ~250ms the field sits nearly still while the keyboard travels, then lunges at the end.
+  // That is precisely "the keyboard finishes before the field starts", and no thread would have saved
+  // it. Both directions now use the standard approximation of iOS's own keyboard curve, which starts
+  // moving immediately, and the duration comes from the keyboard event itself.
+  // Kept LOCAL rather than pushed into useAnimatedKeyboardHeight on purpose: that hook backs sixteen
+  // other modals Justin has already signed off, and this curve should not change under them untested.
+  const kbPad = useRef(new Animated.Value(0)).current;
+  // Boolean only, for the disclaimer's own padding -- the container is already padded by the keyboard
+  // height, so the safe-area inset would double up underneath it.
+  const [kbUp, setKbUp] = useState(false);
   const [sending, setSending] = useState(false);
   const [tier, setTier] = useState<'rooted' | 'exploring'>('exploring');
   const [attachedContext, setAttachedContext] = useState<{ ref: string; note?: string } | null>(null); // verse/passage brought in as context
@@ -422,18 +453,41 @@ export default function CompanionChat({
   }, [messages]);
 
   useEffect(() => {
+    // Drives the padding, the disclaimer flag, and the re-scroll. The latest message has to clear the
+    // keyboard when it REOPENS -- content size does not change here (only the bottom padding does), so
+    // onContentSizeChange would not fire on its own; scroll after a beat so the new padding lays out.
     const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const s = Keyboard.addListener(showEvt, e => {
-      setKb(e.endCoordinates?.height ?? 0);
-      // Re-scroll so the latest message clears the keyboard when it REOPENS. The content
-      // size does not change here (only the bottom padding does), so onContentSizeChange
-      // would not fire on its own; scroll after a beat so the new padding lays out first.
+
+    // WHY THIS RUNS SHORTER THAN THE KEYBOARD'S OWN DURATION, on purpose:
+    // the keyboard starts moving natively at t=0, but this animation cannot start until JS RECEIVES
+    // the event, which is already some milliseconds later. Run for the full reported duration from a
+    // late start and you necessarily FINISH late by that same margin -- the keyboard settles while the
+    // field is still visibly travelling. There is no way to recover the lost head start, so the finish
+    // is pulled in instead, and the curve front-loads the movement so whatever tail remains is too
+    // small to read as lag.
+    // KB_FOLLOW is the one number to touch if this still feels off: LOWER is faster/snappier.
+    const KB_FOLLOW = 0.7;
+    const travel = (to: number, duration?: number) => {
+      Animated.timing(kbPad, {
+        toValue: to,
+        duration: Math.min(Math.max((duration || 250) * KB_FOLLOW, 120), 250),
+        easing: Easing.out(Easing.cubic), // front-loaded: most of the distance is covered early.
+        useNativeDriver: false, // paddingBottom is a layout prop; the native driver cannot carry it.
+      }).start();
+    };
+
+    const s = Keyboard.addListener(showEvt, (e: any) => {
+      setKbUp(true);
+      travel(e?.endCoordinates?.height ?? 0, e?.duration);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
     });
-    const h = Keyboard.addListener(hideEvt, () => setKb(0));
+    const h = Keyboard.addListener(hideEvt, (e: any) => {
+      setKbUp(false);
+      travel(0, e?.duration);
+    });
     return () => { s.remove(); h.remove(); };
-  }, []);
+  }, [kbPad]);
 
   const close = () => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
@@ -683,7 +737,11 @@ export default function CompanionChat({
               0.55 it read as a solid orange wash instead of a tint. Lower opacity approximates the same
               muting without needing a whole separate pastel-amber token. */}
           <LinearGradient colors={[theme.accentAmber, theme.gradientEnd]} style={[StyleSheet.absoluteFill, { opacity: 0.25 }]} pointerEvents="none" />
-          <View style={{ flex: 1, paddingBottom: kb }}>
+          {/* Padding the container by the RAW keyboard height is correct here and needs no offset: the
+              panel's bottom edge is the screen's bottom edge. (KeyboardAvoidingView needed a
+              keyboardVerticalOffset only because it derives the number from its own onLayout frame,
+              which is measured relative to its parent, so the panel's top margin threw its maths off.) */}
+          <Animated.View style={{ flex: 1, paddingBottom: kbPad }}>
             {/* Top strip: drag down to dismiss, tap the handle to close. */}
             <GestureDetector gesture={dragGesture}>
               <View>
@@ -866,10 +924,10 @@ export default function CompanionChat({
               </Pressable>
             </View>
 
-            <Text style={[styles.disclaimer, { color: theme.textDim, paddingBottom: kb > 0 ? 10 : insets.bottom + 8 }]}>
+            <Text style={[styles.disclaimer, { color: theme.textDim, paddingBottom: kbUp ? 10 : insets.bottom + 8 }]}>
               Halo is AI and can make mistakes. Not a substitute for prayer, a pastor, or professional help.
             </Text>
-          </View>
+          </Animated.View>
         </Animated.View>
         </Reanimated.View>
 

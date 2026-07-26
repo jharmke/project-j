@@ -320,7 +320,15 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
 
   const [messages, setMessages] = useState<Msg[]>(() => [{ role: 'assistant', text: pickGreeting() }]);
   const [input, setInput] = useState('');
-  const [kb, setKb] = useState(0);
+  // Keyboard following. Identical to Halo's -- the full history of what failed and why lives in
+  // CompanionChat and is worth reading before touching this. Short version: a useState height
+  // teleported; Reanimated's useAnimatedKeyboard does not track inside an RN <Modal>;
+  // KeyboardAvoidingView cannot animate at all here because LayoutAnimation is disabled on iOS under
+  // the New Architecture. A JS-driven animation is the only mechanism left, and the thing that made
+  // the earlier one feel broken was its CURVE (an ease-in stalls at the start), not its thread.
+  const kbPad = useRef(new Animated.Value(0)).current;
+  // Boolean only, for the disclaimer -- the container is already padded by the keyboard height.
+  const [kbUp, setKbUp] = useState(false);
   const [sending, setSending] = useState(false);
   const [quota, setQuota] = useState<{ used: number; cap: number } | null>(null);
 
@@ -351,15 +359,37 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
   }, [visible]);
 
   useEffect(() => {
+    // Drives the padding, the disclaimer flag, and re-scrolling the latest message clear of the
+    // keyboard on reopen.
     const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const s = Keyboard.addListener(showEvt, e => {
-      setKb(e.endCoordinates?.height ?? 0);
+
+    // Runs SHORTER than the keyboard's own reported duration on purpose: this cannot start until JS
+    // receives the event, which is already after the keyboard began moving, so running the full
+    // duration from a late start finishes late by that same margin. The finish is pulled in instead,
+    // and the curve front-loads the travel so any remaining tail is too small to read as lag.
+    // KB_FOLLOW is the one number to touch: LOWER is faster. Keep this in step with CompanionChat.
+    const KB_FOLLOW = 0.7;
+    const travel = (to: number, duration?: number) => {
+      Animated.timing(kbPad, {
+        toValue: to,
+        duration: Math.min(Math.max((duration || 250) * KB_FOLLOW, 120), 250),
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false, // paddingBottom is a layout prop; the native driver cannot carry it.
+      }).start();
+    };
+
+    const s = Keyboard.addListener(showEvt, (e: any) => {
+      setKbUp(true);
+      travel(e?.endCoordinates?.height ?? 0, e?.duration);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
     });
-    const h = Keyboard.addListener(hideEvt, () => setKb(0));
+    const h = Keyboard.addListener(hideEvt, (e: any) => {
+      setKbUp(false);
+      travel(0, e?.duration);
+    });
     return () => { s.remove(); h.remove(); };
-  }, []);
+  }, [kbPad]);
 
   const [notifOpen, setNotifOpen] = useState(false);
   const { unread } = useNotifications();
@@ -598,7 +628,11 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
               gentle wash, not the full-strength page gradient (chat bubbles are subtle, so the bg carries
               more weight here). Clipped by the panel's overflow:hidden rounded corners. */}
           <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={[StyleSheet.absoluteFill, { opacity: 0.55 }]} pointerEvents="none" />
-          <View style={{ flex: 1, paddingBottom: kb }}>
+          {/* Padding by the RAW keyboard height is correct and needs no offset: the panel's bottom edge
+              is the screen's bottom edge. (KeyboardAvoidingView needed a keyboardVerticalOffset only
+              because it derives its number from its own onLayout frame, measured relative to its
+              parent, so the panel's top margin threw the maths off and it parked under the keyboard.) */}
+          <Animated.View style={{ flex: 1, paddingBottom: kbPad }}>
             <GestureDetector gesture={dragGesture}>
               <View>
                 <Pressable onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); close(); }} hitSlop={10} style={styles.handleWrap}>
@@ -775,10 +809,10 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
               </Pressable>
             </View>
 
-            <Text style={[styles.disclaimer, { color: theme.textDim, paddingBottom: kb > 0 ? 10 : insets.bottom + 8 }]}>
+            <Text style={[styles.disclaimer, { color: theme.textDim, paddingBottom: kbUp ? 10 : insets.bottom + 8 }]}>
               Otto is AI and can make mistakes. Not a substitute for a doctor or professional.
             </Text>
-          </View>
+          </Animated.View>
         </Animated.View>
         </Reanimated.View>
 

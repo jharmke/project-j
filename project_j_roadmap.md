@@ -30,6 +30,20 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-27 **Edit Entry knows a custom food is custom (device-confirmed).** Opening a logged entry, the
+  screen was never told the food was one of Justin's, so it built no serving list and INVENTED one --
+  labelled with the food's own name and weighing whatever serving was actually picked. Hence "3 oz. · 1 g"
+  on a gram log and "1 bun · 28.3 g" on an ounce log. It also meant a logged entry's serving dropdown
+  offered only the invention, so you could not switch it to another serving.
+  Fixed by resolving the My Food record on the screen itself (the Log tab has no access to it, and this
+  screen was already doing that lookup for the Edit Food modal). Reads "g" / 110 and "oz" / 1 now, and
+  the dropdown lists the food's real servings.
+  ⚠️ CAUGHT IN TESTING, worth remembering: removing the invented serving hid the Serving Size AND Amount
+  rows entirely for custom foods -- the selected serving is chosen ONCE at first render, before the async
+  food lookup lands, and the invention had been silently catching that fall. `effectiveServing` now falls
+  back to the food's real default. A logged entry you can see but cannot edit is the failure signature.
+  Old entries deliberately untouched: nutrients on the edit screen still come only from the number the
+  entry carries, so a pre-fix entry reads the same everywhere instead of disagreeing with its day totals.
 - 2026-07-27 **Extended nutrients now scale against the right serving (device-confirmed).** Entries
   record at log time how much of their nutrient block was eaten, instead of ten screens reverse-
   engineering it from calories and a serving-size field that meant something else. Text-searched
@@ -1150,7 +1164,13 @@ WINS. Items graduate UP here from the backlog sections so good ideas don't rot d
 ships it leaves this list. Always offer at least one QUICK WIN when Justin asks what's next, and pull a
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
-- [SMALL, surfaced 2026-07-27] **The Edit Entry serving label reads "3 oz. · 1 g" and means nothing.**
+- [SMALL, surfaced 2026-07-27] **A meal card names a unit-serving log by weight, not by what was picked.**
+  Log a bun as 1 oz and the card reads "Hot Dog Buns · 28.3g". The app HAS the mechanism for this
+  (`displayUnit`/`displayAmount`, which already make a card read "11 oz" instead of "11g") but it only
+  fires when the unit is changed on the AMOUNT row. Units used to live in their own dropdown there and
+  were later merged into the Serving Size picker; the naming logic still only watches the old one. Fix:
+  when the selected serving IS a plain unit (oz/kg/lb/mL), treat that as the chosen display unit.
+- [FIXED 2026-07-27, see RECENTLY SHIPPED] **The Edit Entry serving label read "3 oz. · 1 g".**
   It prints two unrelated things side by side: the food's DEFAULT serving name (`servingLabelText`,
   always taken from the food record) next to the grams of the serving the user actually PICKED
   (`servingGrams`). Log 110 g of an 84 g custom food by switching the picker to grams and you get the

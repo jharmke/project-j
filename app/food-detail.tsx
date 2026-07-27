@@ -248,14 +248,30 @@ const isTutorialMode = tutorialMode === 'true';
   // can see it: the Edit Entry route never pre-fetches servings, so that math had no list to call
   // "the default" and fell through to whatever serving happened to be selected.
   const [fetchedServings, setFetchedServings] = useState<any[]>([]);
-  const myFoodAdditionalServings: Array<{ label: string; grams: number }> = food?.myFoodData?.additionalServings || [];
-  const baseServingSize = food?.myFoodData?.servingSize || parseFloat(food?.existingAmount || '100') || 100;
+  const isEditRouteEarly = entryIndex !== undefined && entryIndex !== '';
+  // Opening a LOGGED entry, the Log tab hands over about forty loose fields but not the food record
+  // itself -- so this screen never knew a custom food was custom, built no serving list for it, and
+  // invented a single fake serving instead. That fake serving borrowed the food's name ("3 oz.", "1
+  // bun") and the weight of whatever serving was actually picked, producing labels like "1 bun · 28.3 g"
+  // for a 43 g bun. It also meant a logged entry's serving dropdown offered only that invention, so you
+  // could not switch a logged entry to another of its servings.
+  // Resolved here rather than passed through the route: the Log tab has no access to My Foods, and this
+  // screen was already looking the record up for the Edit Food modal (see the 2026-07-15 note below).
+  const [resolvedMyFood, setResolvedMyFood] = useState<any>(null);
+  const [myFoodLookupDone, setMyFoodLookupDone] = useState(false);
+  const effectiveMyFood = food?.myFoodData ?? resolvedMyFood;
+  const myFoodAdditionalServings: Array<{ label: string; grams: number }> = effectiveMyFood?.additionalServings || [];
+  const baseServingSize = effectiveMyFood?.servingSize || parseFloat(food?.existingAmount || '100') || 100;
   // The size a custom food's own foodNutrients block actually describes: the serving it was CREATED
   // with. Deliberately NOT baseServingSize, which falls back to the logged amount when the My Food
   // record hasn't loaded -- a different number that happens to sit in the same variable. Null when we
   // genuinely don't know, and callers then leave the old behaviour alone rather than guess.
   const nutrientBasisSize: number | null = (() => {
-    if (food?.myFoodData?.servingSize && food.myFoodData.servingSize > 0) return food.myFoodData.servingSize;
+    // NOT effectiveMyFood on the edit route, deliberately. Knowing the food record means we COULD now
+    // compute correct nutrients for entries logged before nutrientScale existed -- but their day totals
+    // would still read the old way, so the same entry would show two different numbers depending on the
+    // screen. Justin's call: old entries stay consistently as they are, everywhere. One clean line.
+    if (!isEditRouteEarly && effectiveMyFood?.servingSize > 0) return effectiveMyFood.servingSize;
     // REOPENING a logged entry: myFoodData isn't attached, so the line above finds nothing. But an entry
     // saved with a nutrientScale carries enough to recover the basis -- it ate `existingAmount` and that
     // was `nutrientScale` of the block, so the block describes existingAmount / nutrientScale. For the
@@ -277,10 +293,12 @@ const isTutorialMode = tutorialMode === 'true';
   // 49 kcal per 100 g (rounded at creation), and 49 x 325 / 100 rounds back to 159. The label said
   // 160, so every screen must say 160. Only trusted when the base serving IS this record's serving,
   // so the numbers can never describe a size they don't belong to.
-  const exactLabel = (food?.myFoodData && (food.myFoodData.servingSize ?? baseServingSize) === baseServingSize)
-    ? food.myFoodData
+  const exactLabel = (effectiveMyFood && (effectiveMyFood.servingSize ?? baseServingSize) === baseServingSize)
+    ? effectiveMyFood
     : null;
-  const customServings = (food?.isCustom && (food?.calPer100g ?? 0) > 0)
+  // `food.isCustom` never arrives on the edit route -- the entry knows it came from a My Food, but not
+  // that the food is one of yours. Resolving the record answers that directly.
+  const customServings = ((food?.isCustom || !!effectiveMyFood) && (food?.calPer100g ?? 0) > 0)
     ? [
         {
           label: food.servingUnit || `${baseServingSize}${unitLabel(food.servingUnitType || 'g')}`,
@@ -414,7 +432,14 @@ const isTutorialMode = tutorialMode === 'true';
       isDefault: true,
     };
   })();
-  const effectiveServing = selectedServing ?? syntheticServing;
+  // `defaultFsServing` in the middle is load-bearing. selectedServing is chosen ONCE, at first render,
+  // and on the Edit Entry route for a custom food nothing ever sets it afterwards -- the FatSecret
+  // resolver that normally would is skipped for foods that aren't FatSecret's. It used to not matter
+  // because the invented serving caught the fall. With that gone, this was null, which meant no
+  // per-unit rates, which meant no unit servings, which hid the Serving Size AND Amount rows entirely:
+  // a logged entry you could look at but not change. This picks the food's real default the moment the
+  // record resolves, and the restore effect then swaps in the serving actually logged.
+  const effectiveServing = selectedServing ?? defaultFsServing ?? syntheticServing;
 
   // Per-gram rates derived from effective serving -- used for manual gram input scaling
   const servingRates = effectiveServing && effectiveServing.grams > 0 ? {
@@ -518,6 +543,10 @@ const isTutorialMode = tutorialMode === 'true';
   const loggedServingRestored = useRef(false);
   useEffect(() => {
     if (!isEditRoute || loggedServingRestored.current) return;
+    // Wait for the My Food lookup. Without this the invented serving wins the race: it is prepended to
+    // the list and weighs exactly what the entry saved, so it matches first, latches the ref, and the
+    // real serving never gets a look in even once it arrives.
+    if (!myFoodLookupDone) return;
     const target = Number(food?.servingGrams);
     if (!(target > 0)) return;
     const match = [...namedServings, ...unitServings]
@@ -526,7 +555,7 @@ const isTutorialMode = tutorialMode === 'true';
       loggedServingRestored.current = true;
       setSelectedServing(match);
     }
-  }, [isEditRoute, food?.servingGrams, namedServings.length, unitServings.length]);
+  }, [isEditRoute, food?.servingGrams, namedServings.length, unitServings.length, myFoodLookupDone]);
 
   useEffect(() => {
     const resolveServings = async () => {
@@ -584,17 +613,20 @@ const isTutorialMode = tutorialMode === 'true';
   // button appeared, the modal opened, and all 26 extended fields came back blank. Calories and the 3
   // macros survived only because they alone have an `|| src.existingCal` fallback; nothing else does.
   // So: resolve the My Food here too, and let openEditFoodModal fall back to it. Read-only -- no writes.
-  const [resolvedMyFood, setResolvedMyFood] = useState<any>(null);
+  // State lives further up now (the serving list needs it); this effect fills it.
+  // `myFoodLookupDone` must be set on EVERY path, including the early bail-outs -- the serving-restore
+  // effect below waits on it, and a path that never sets it would leave a logged entry stuck.
   useEffect(() => {
-    if (food?.myFoodData) return;                       // already attached (the add-food route)
+    if (food?.myFoodData) { setMyFoodLookupDone(true); return; }   // already attached (the add-food route)
     const myFoodId = (food as any)?.myFoodId;
-    if (!myFoodId && !food?.description) return;
+    if (!myFoodId && !food?.description) { setMyFoodLookupDone(true); return; }
     AsyncStorage.getItem('pj_my_foods').then(saved => {
-      if (!saved) return;
+      if (!saved) { setMyFoodLookupDone(true); return; }
       const myFoods = JSON.parse(saved);
       const match = myFoods.find((f: any) => myFoodId ? f.id === myFoodId : f.name === food.description);
       if (match) setResolvedMyFood(match);
-    }).catch(() => {});
+      setMyFoodLookupDone(true);
+    }).catch(() => setMyFoodLookupDone(true));
   }, []);
 
   useEffect(() => {

@@ -1961,6 +1961,7 @@ export default function LogScreen() {
                             // handover meant a correctly-saved entry reopened showing its raw base
                             // serving, then jumped to 84x that the moment the amount was touched.
                             nutrientScale: (entry as any).nutrientScale ?? undefined,
+                            recipeId: (entry as any).recipeId ?? undefined,
                             servingUnit: (entry as any).servingLabelText || undefined,
                             aiEstimated: (entry as any).aiEstimated || false,
                             servingOnly,

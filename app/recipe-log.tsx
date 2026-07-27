@@ -15,7 +15,8 @@ import { storageSet } from '../utils/storage';
 import { resolveRecipePhoto, uploadRecipePhoto, purgeRecipePhoto, recipePhotoKey } from '../utils/recipePhotos';
 import { cancelFoodLogNotification } from '../services/notifications';
 import { useTheme } from '../theme';
-import { DEFAULT_MEAL_SLOTS, MealSlot, loadMealSlots } from '../utils/mealSlots';
+import { DEFAULT_MEAL_SLOTS, MealSlot, loadMealSlots, getMealDisplayName } from '../utils/mealSlots';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { ACHIEVEMENTS, checkAndUnlock, loadAchievements, checkMomentumAchievements, checkNutritionAchievements, getCelebTier } from '../achievementData';
 import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
@@ -32,7 +33,7 @@ import ModalHeader from '../components/ModalHeader';
 // One meal option in the "Add to Which Meal?" picker. Press feedback is the app standard -- scale 0.97
 // on press in, 1.0 on press out, TIMING not spring. PressableButton would have been the quick way to get
 // scale + haptic together, but it springs to 0.94, which reads as bouncy on a list row.
-function MealOptionRow({ label, onPress }: { label: string; onPress: () => void }) {
+function MealOptionRow({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
   const { theme } = useTheme();
   const styles = useStyles(theme);
   const scale = useRef(new Animated.Value(1)).current;
@@ -42,8 +43,13 @@ function MealOptionRow({ label, onPress }: { label: string; onPress: () => void 
       onPressIn={() => { to(0.97); triggerHaptic(Haptics.ImpactFeedbackStyle.Light); }}
       onPressOut={() => to(1)}
       onPress={onPress}>
-      <Animated.View style={[styles.mealOptionRow, { transform: [{ scale }] }]}>
-        <Text style={styles.mealOptionText}>{label}</Text>
+      <Animated.View style={[styles.mealOptionRow, {
+        transform: [{ scale }],
+        backgroundColor: selected ? theme.accentBlueBg : theme.bgInput,
+        borderColor: selected ? theme.accentBlueBorder : theme.borderInput,
+      }]}>
+        <Text style={[styles.mealOptionText, selected && { color: theme.accentBlue, fontFamily: Type.uiSemibold }]}>{label}</Text>
+        {selected && <Ionicons name="checkmark" size={16} color={theme.accentBlue} />}
       </Animated.View>
     </Pressable>
   );
@@ -68,13 +74,25 @@ export default function RecipeLogScreen() {
   // Typing unit for the portion box, defaults to the recipe's own unit. Never persisted onto the recipe.
   const [weightUnit, setWeightUnit] = useState<string>(normalizeUnitKey(paramRecipe?.totalWeightUnit));
   const [showMealPicker, setShowMealPicker] = useState(false);
-  const [selectedMeal, setSelectedMeal] = useState(meal || 'ms_lunch');
+  // Honours the meal you arrived with. Tapping + on Dinner sends 'Dinner'; the Library button sends
+  // 'browse', meaning nothing was chosen. Foods have always respected this; recipes ignored it and asked
+  // again in a modal, so choosing a meal and then being asked which meal was the normal experience.
+  // Same fallback rule as the food screen.
+  const [selectedMeal, setSelectedMeal] = useState(meal === 'browse' || !meal ? 'ms_morning' : meal);
+  // Recipes could not set a logged time at all -- they stamped whenever the button was tapped. Foods
+  // have had this row since forever.
+  const [entryTime, setEntryTime] = useState(new Date());
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const timePickerAnim = useRef(new Animated.Value(0)).current;
   const [mealSlots, setMealSlots] = useState<MealSlot[]>(DEFAULT_MEAL_SLOTS);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [showPhotoFullscreen, setShowPhotoFullscreen] = useState(false);
 
+  // slotNameCache too, not just the slots -- getMealDisplayName needs it to name a slot that has since
+  // been renamed or removed, exactly as the food screen does.
+  const [slotNameCache, setSlotNameCache] = useState<Record<string, string>>({});
   useEffect(() => {
-    loadMealSlots().then(({ mealSlots: slots }) => setMealSlots(slots));
+    loadMealSlots().then(({ mealSlots: slots, slotNameCache: cache }) => { setMealSlots(slots); setSlotNameCache(cache); });
   }, []);
 
   const paramRecipeId = paramRecipe?.id;
@@ -114,6 +132,11 @@ export default function RecipeLogScreen() {
   const closeMealPicker = () => {
     Animated.timing(fadeAnim, { toValue: 0, duration: 160, useNativeDriver: true }).start(() => {
       setShowMealPicker(false);
+    });
+  };
+  const closeTimePicker = () => {
+    Animated.timing(timePickerAnim, { toValue: 0, duration: 160, useNativeDriver: true }).start(() => {
+      setShowTimePicker(false);
     });
   };
 
@@ -318,7 +341,13 @@ export default function RecipeLogScreen() {
         ...(recipe.totalPotassium   ? { potassium:          Math.round((recipe.totalPotassium  || 0) * multiplier) } : {}),
         ...(recipe.totalCalcium     ? { calcium:            Math.round((recipe.totalCalcium    || 0) * multiplier) } : {}),
         ...(recipe.totalIron        ? { iron:               Math.round((recipe.totalIron       || 0) * multiplier * 10) / 10 } : {}),
-        timestamp: Date.now(),
+        // Which recipe this came from. Entries used to store only `isRecipe: true` and the name, so
+        // nothing linked a logged meal back to its recipe -- which is why the Edit Entry screen could
+        // not show the recipe's photo, and why "every day I ate this" had nothing to work with.
+        // Additive: entries logged before this simply have no id and behave as they always did.
+        recipeId: recipe.id,
+        // The time from the row above, not "whenever the button was tapped".
+        timestamp: entryTime.getTime(),
       };
       entries.push(newEntry);
       await storageSet(`pj_${date}`, JSON.stringify({ ...current, entries }));
@@ -580,11 +609,28 @@ export default function RecipeLogScreen() {
           </View>
         </View>
 
+        {/* Time logged + Adding to, matching the food Edit Entry screen exactly. Recipes had NEITHER:
+            no way to set the time, and the meal was asked for in a modal AFTER you had already chosen it
+            by tapping a meal's +. Hidden when building a recipe out of another recipe, where there is no
+            meal or time to speak of. */}
+        {date !== 'recipe' && (
+          <>
+            <TouchableOpacity style={styles.mealSelector} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); timePickerAnim.setValue(0); setShowTimePicker(true); }}>
+              <Text style={styles.mealSelectorLabel}>Time logged</Text>
+              <Text style={styles.mealSelectorValue}>{entryTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ▼</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.mealSelector} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openMealPicker(); }}>
+              <Text style={styles.mealSelectorLabel}>Adding to</Text>
+              <Text style={styles.mealSelectorValue}>{getMealDisplayName(selectedMeal, mealSlots, slotNameCache)} ▼</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
         {/* Add to Diary. Molded + ACCENT (was flat accentGreen): green means success/goal-hit, and this
             starts an action rather than reporting an outcome. Same call as Food Detail's twin of this. */}
         <PrimaryCTA
           label={date === 'recipe' ? 'Add to Recipe' : 'Add to Diary'}
-          onPress={date === 'recipe' ? () => logRecipe('recipe') : openMealPicker}
+          onPress={date === 'recipe' ? () => logRecipe('recipe') : () => logRecipe(selectedMeal)}
           disabled={!calories}
         />
 
@@ -612,15 +658,58 @@ export default function RecipeLogScreen() {
           <Animated.View
             style={[styles.modal, { padding: 0, overflow: 'hidden', alignItems: 'stretch' }, { transform: [{ scale: fadeAnim.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) }] }]}
             pointerEvents="box-none">
-            <ModalHeader title="Add to Which Meal?" onClose={closeMealPicker} />
+            <ModalHeader title="Adding To" onClose={closeMealPicker} />
             {/* Identical to the "Adding To" picker on the food Edit Entry screen -- same rows, same
-                padding, same type. Press feedback is the app standard: scale 0.97, TIMING not spring.
-                Deliberately NOT PressableButton, which springs to 0.94 and reads as bouncy on a row. */}
+                padding, same type, and the current meal filled + check-marked. It used to be titled "Add
+                to Which Meal?" and each row LOGGED the recipe on tap, which is why it appeared even when
+                the meal was already known. It selects now; Add to Diary does the logging.
+                Press feedback is the app standard: scale 0.97, TIMING not spring. Deliberately NOT
+                PressableButton, which springs to 0.94 and reads as bouncy on a row. */}
             <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 8, gap: 8 }} showsVerticalScrollIndicator={false}>
               {mealSlots.map(slot => (
-                <MealOptionRow key={slot.id} label={slot.name} onPress={() => logRecipe(slot.id)} />
+                <MealOptionRow
+                  key={slot.id}
+                  label={slot.name}
+                  selected={selectedMeal === slot.id || selectedMeal === slot.name}
+                  onPress={() => { setSelectedMeal(slot.id); closeMealPicker(); }}
+                />
               ))}
             </ScrollView>
+          </Animated.View>
+        </Animated.View>
+      </Modal>
+
+      {/* Time picker -- same card, same spring, same single Done as the food screen's. */}
+      <Modal
+        visible={showTimePicker}
+        transparent
+        animationType="none"
+        onShow={() => {
+          timePickerAnim.setValue(0);
+          Animated.spring(timePickerAnim, { toValue: 1, useNativeDriver: true, damping: 18, stiffness: 260 }).start();
+        }}
+        onRequestClose={closeTimePicker}>
+        <Animated.View style={[styles.modalOverlay, { opacity: timePickerAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 1], extrapolate: 'clamp' }) }]}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeTimePicker} />
+          <Animated.View style={[styles.modal, { padding: 0, overflow: 'hidden', alignItems: 'stretch' }, { transform: [{ scale: timePickerAnim.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) }] }]}>
+            <ModalHeader title="Time Logged" onClose={closeTimePicker} />
+            <View style={{ alignItems: 'center' }}>
+              <DateTimePicker
+                mode="time"
+                value={entryTime}
+                display="spinner"
+                textColor={theme.textPrimary}
+                style={{ width: Dimensions.get('window').width * 0.88 - 32 }}
+                onChange={(event, d) => { if (d) { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEntryTime(d); } }}
+              />
+            </View>
+            <View style={{ paddingHorizontal: 16, paddingBottom: 16, paddingTop: 4 }}>
+              <PrimaryCTA
+                label="Done"
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeTimePicker(); }}
+                faceStyle={{ paddingVertical: 12, borderRadius: 8 }}
+              />
+            </View>
           </Animated.View>
         </Animated.View>
       </Modal>
@@ -732,8 +821,12 @@ const useStyles = (theme: any) => StyleSheet.create({
   handlePill: { width: 36, height: 4, backgroundColor: theme.borderCard, borderRadius: 2, marginBottom: 16 },
   modalTitle: { fontSize: 18, color: theme.accentBlueRaw, fontFamily: Type.display, letterSpacing: 0.3, marginBottom: 16 },
   // Matches mealOptionRow on the food Edit Entry screen so the two meal pickers read as one control.
-  mealOptionRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1, backgroundColor: theme.bgInput, borderColor: theme.borderInput },
+  mealOptionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1 },
   mealOptionText: { fontSize: 15, color: theme.textSecondary, fontFamily: Type.uiMedium },
+  // Same three as the food Edit Entry screen's Time logged / Adding to rows.
+  mealSelector: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, padding: 12, marginBottom: 10 },
+  mealSelectorLabel: { fontSize: 12, color: theme.textMuted, fontFamily: Type.ui },
+  mealSelectorValue: { fontSize: 14, color: theme.accentBlue, fontFamily: Type.uiSemibold },
   cancelBtn: { width: '100%', padding: 14, alignItems: 'center', marginTop: 4 },
   cancelBtnText: { color: theme.accentRed, fontSize: 14, fontFamily: Type.uiMedium },
 });

@@ -21,6 +21,7 @@ import * as FileSystem from 'expo-file-system';
 import { Directory, File as FSFile, Paths } from 'expo-file-system/next';
 import * as ImagePicker from 'expo-image-picker';
 import { resolveFoodPhoto, uploadFoodPhoto, deleteFoodPhotoCloud } from '../utils/foodPhotos';
+import { resolveRecipePhoto, uploadRecipePhoto, deleteRecipePhotoCloud, recipePhotoKey } from '../utils/recipePhotos';
 import { ACHIEVEMENTS, checkAndUnlock, loadAchievements, checkMomentumAchievements, checkNutritionAchievements, getCelebTier } from '../achievementData';
 import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
@@ -242,6 +243,13 @@ const isTutorialMode = tutorialMode === 'true';
   const [refreshedFood, setRefreshedFood] = useState<any>(null);
   const food = refreshedFood ?? paramFood;
   const foodId: string | null = food?.myFoodData?.id || (food as any)?.myFoodId || food?.fsId || null;
+  // A logged recipe has no food id, so the photo slot never rendered for one at all. Recipe photos are
+  // their own store (utils/recipePhotos.ts, keyed by recipe id) but the API is the same shape, so the
+  // slot behaves EXACTLY as it does for a food: tap empty to add, tap filled to view, long-press to
+  // remove. photoTargetId is whichever id this entry actually has.
+  const recipeId: string | null = (food as any)?.recipeId || null;
+  const isRecipePhoto = !foodId && !!recipeId;
+  const photoTargetId: string | null = foodId || recipeId;
   const fsServings: any[] = food?.fsServings || [];
   // FatSecret's serving list when it had to be fetched on this screen rather than arriving with the
   // food. Declared up here (not with the other state below) so the default-serving math further down
@@ -645,12 +653,14 @@ const isTutorialMode = tutorialMode === 'true';
   }, []);
 
   useEffect(() => {
-    if (!foodId) return;
+    if (!photoTargetId) return;
     (async () => {
       try {
         // Resolves the local cache, or re-downloads from cloud on a reinstall, or
         // backfills a legacy local-only photo up to the cloud. Returns a local uri.
-        const local = await resolveFoodPhoto(foodId);
+        const local = isRecipePhoto
+          ? await resolveRecipePhoto(photoTargetId)
+          : await resolveFoodPhoto(photoTargetId);
         if (local) setPhotoUri(local);
       } catch {}
     })();
@@ -1605,10 +1615,10 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
   };
 
   const savePhoto = async (sourceUri: string) => {
-    if (!foodId) return;
+    if (!photoTargetId) return;
     try {
-      const safeId = foodId.replace(/[^a-zA-Z0-9_-]/g, '_');
-      const photoDir = new Directory(Paths.document, 'food_photos');
+      const safeId = photoTargetId.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const photoDir = new Directory(Paths.document, isRecipePhoto ? 'recipe_photos' : 'food_photos');
       if (!photoDir.exists) photoDir.create();
       const destUri = `${photoDir.uri}${safeId}.jpg`;
       const destFile = new FSFile(destUri);
@@ -1621,15 +1631,20 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
       showToast('Photo saved', undefined, 'success');
       // Upload to cloud so it survives a reinstall; store the cloud URL (falls back to
       // the local path if offline / not signed in -- the next load backfills it).
-      const { url } = await uploadFoodPhoto(foodId, destUri);
-      await AsyncStorage.setItem(`pj_food_photo_${foodId}`, url || destUri);
+      const { url } = isRecipePhoto
+        ? await uploadRecipePhoto(photoTargetId, destUri)
+        : await uploadFoodPhoto(photoTargetId, destUri);
+      await AsyncStorage.setItem(
+        isRecipePhoto ? recipePhotoKey(photoTargetId) : `pj_food_photo_${photoTargetId}`,
+        url || destUri,
+      );
     } catch (e: any) {
       showToast('Photo save failed', e?.message || 'Please try again', 'error');
     }
   };
 
   const handlePhotoRemove = () => {
-    if (!foodId || !photoUri) return;
+    if (!photoTargetId || !photoUri) return;
     Alert.alert('Remove Photo', 'Remove this photo?', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -1638,8 +1653,9 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           try {
             const file = new FSFile(photoUri);
             if (file.exists) file.delete();
-            await AsyncStorage.removeItem(`pj_food_photo_${foodId}`);
-            deleteFoodPhotoCloud(foodId).catch(() => {}); // remove the cloud copy too
+            await AsyncStorage.removeItem(isRecipePhoto ? recipePhotoKey(photoTargetId) : `pj_food_photo_${photoTargetId}`);
+            // Remove the cloud copy too.
+            (isRecipePhoto ? deleteRecipePhotoCloud(photoTargetId) : deleteFoodPhotoCloud(photoTargetId)).catch(() => {});
             setPhotoUri(null);
             setShowPhotoFullscreen(false);
             showToast('Photo removed', undefined, 'success');
@@ -1736,7 +1752,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
               <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: Type.uiMedium }}>{food.brand || food.description?.split(' · ')[1]}</Text>
             )}
           </View>
-          {foodId && (
+          {photoTargetId && (
             <TouchableOpacity
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); photoUri ? setShowPhotoFullscreen(true) : handlePhotoAdd(); }}
               style={{ width: 64, height: 64 }}

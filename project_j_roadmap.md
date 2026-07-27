@@ -30,6 +30,18 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-27 **Logging a recipe now works exactly like logging a food (device-confirmed).** Recipes had
+  no "Time logged" and no "Adding to" row -- the timestamp was whenever you tapped the button, and the
+  meal was asked for in a modal AFTER you had already chosen it by tapping that meal's +. (Foods have
+  always honoured the meal you arrive with: a + sends its slot id, the Library button sends 'browse'.)
+  Both rows added, the meal you arrived with is respected, and the modal became a SELECTOR titled
+  "Adding To" with the current meal filled + check-marked -- it only opens when you tap the row.
+  Its rows were also rebuilt to match the food picker: they were bare text with hairlines that stopped
+  short of the card edges, and they shrank to their own text so every row was a different width.
+  Recipe entries now also store `recipeId`, so a logged meal finally links back to its recipe -- which
+  is what makes the photo slot work on a recipe entry, behaving identically to a food's (tap to add, tap
+  to view, long-press to remove), using the recipe photo store. Forward-only: entries logged earlier
+  carry no recipeId and still show no slot.
 - 2026-07-27 **`npm run test:nutrients` -- the detail screen and the day totals can no longer disagree.**
   25 assertions. The three ★ tests round-trip each food type (custom / barcode / text-searched / recipe)
   and assert the number the Food Detail screen shows EQUALS the number that lands in the day's totals --
@@ -1172,38 +1184,15 @@ WINS. Items graduate UP here from the backlog sections so good ideas don't rot d
 ships it leaves this list. Always offer at least one QUICK WIN when Justin asks what's next, and pull a
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
-- [QUICK WIN, surfaced 2026-07-27] **The "Add to Which Meal?" modal on recipe-log is bare and doesn't
-  match the app.** Plain text rows, hairline dividers that don't span the card, no selected state. The
-  correct pattern already exists and Justin found it himself: the "Adding To" modal on the food Edit
-  Entry screen -- full-width bordered pill rows, filled + checkmark on the current one. Copy that.
-- [surfaced 2026-07-27] **A logged recipe entry does not record WHICH recipe it came from, and shows no
-  photo on Edit Entry.** OPEN DESIGN Q before building the photo half: on a food, tapping the slot sets
-  that food's photo. On a recipe entry it would be editing the RECIPE's photo from inside the diary --
-  probably display-only, not tappable. Decide before wiring. The recipeId half is safe either way. Justin noticed the missing photo slot; the photo is the visible half of a bigger
-  gap. NOT an age thing -- a recipe logged today behaves identically. Two parts:
-  (1) The Edit Entry photo slot only renders when `foodId` resolves (myFoodData.id / myFoodId / fsId). A
-  recipe entry has none of those, so the slot never appears at all. Food photos and recipe photos are
-  also SEPARATE systems (utils/foodPhotos.ts keyed by food id vs utils/recipePhotos.ts keyed by recipe
-  id) and this screen only knows the first.
-  (2) The deeper one: `recipe-log.tsx`'s newEntry stores `isRecipe: true` and the recipe's NAME, but no
-  recipe id. So nothing links a logged meal back to its recipe -- not just the photo, but "every day I
-  ate this", jumping from an entry to the recipe, or re-costing an entry when the recipe changes. Adding
-  `recipeId` to the entry is the enabling fix and is additive (old entries simply won't have it).
-- [SMALL, surfaced 2026-07-27] **A meal card names a unit-serving log by weight, not by what was picked.**
-  Log a bun as 1 oz and the card reads "Hot Dog Buns · 28.3g". The app HAS the mechanism for this
-  (`displayUnit`/`displayAmount`, which already make a card read "11 oz" instead of "11g") but it only
-  fires when the unit is changed on the AMOUNT row. Units used to live in their own dropdown there and
-  were later merged into the Serving Size picker; the naming logic still only watches the old one. Fix:
-  when the selected serving IS a plain unit (oz/kg/lb/mL), treat that as the chosen display unit.
-- [FIXED 2026-07-27, see RECENTLY SHIPPED] **The Edit Entry serving label read "3 oz. · 1 g".**
-  It prints two unrelated things side by side: the food's DEFAULT serving name (`servingLabelText`,
-  always taken from the food record) next to the grams of the serving the user actually PICKED
-  (`servingGrams`). Log 110 g of an 84 g custom food by switching the picker to grams and you get the
-  food's "3 oz." label welded to the gram serving's "1 g". Purely cosmetic since 2026-07-27 -- nutrient
-  maths no longer reads servingGrams at all -- but it is the same "one field doing two jobs" confusion
-  that caused the real bug, and Justin has flagged it twice. Fix is to remember what the user picked and
-  show THAT on reopen, matching what the pre-log screen already displays.
-- [DONE 2026-07-27 except history, see RECENTLY SHIPPED] **Extended nutrients scale against the WRONG serving size.**
+- [ONLY THE HISTORY REPAIR IS LEFT -- everything else DONE 2026-07-27, see RECENTLY SHIPPED]
+  **Extended nutrients scaled against the WRONG serving size.**
+  REMAINING: entries logged before 2026-07-27 keep their wrong nutrients. Justin's call was fix forward;
+  delete + re-log fixes one. A repair IS feasible for CUSTOM-food entries specifically (they record which
+  My Food they came from, so the real base serving can be looked up) -- not for database foods, where a
+  barcode entry and a text-searched one are indistinguishable after the fact. Caveat if ever built:
+  EditFoodModal can change a My Food's base serving after entries were logged against it, so a repair
+  cannot blindly trust today's serving sizes.
+  Everything below is the diagnosis, kept because it explains the shape of the whole class:
   Found live: a 110 g log of a custom 84 g food reported 82,500 mg sodium. Calories and macros are
   CORRECT everywhere and always were -- this is detailed nutrients only.
   ROOT CAUSE: an entry stores its nutrients as one block, but four different conventions exist for what

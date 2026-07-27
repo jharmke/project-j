@@ -1955,6 +1955,12 @@ export default function LogScreen() {
                             isMyFood: (entry as any).isMyFood || false,
                             brand: (entry as any).brand || null,
                             servingGrams: (entry as any).servingGrams || undefined,
+                            // How much of its nutrient block this entry ate, recorded at log time. The
+                            // edit screen cannot recover it any other way -- servingGrams is the serving
+                            // the user PICKED, which is a different number -- so leaving it out of this
+                            // handover meant a correctly-saved entry reopened showing its raw base
+                            // serving, then jumped to 84x that the moment the amount was touched.
+                            nutrientScale: (entry as any).nutrientScale ?? undefined,
                             servingUnit: (entry as any).servingLabelText || undefined,
                             aiEstimated: (entry as any).aiEstimated || false,
                             servingOnly,

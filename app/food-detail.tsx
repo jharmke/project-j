@@ -250,6 +250,22 @@ const isTutorialMode = tutorialMode === 'true';
   const [fetchedServings, setFetchedServings] = useState<any[]>([]);
   const myFoodAdditionalServings: Array<{ label: string; grams: number }> = food?.myFoodData?.additionalServings || [];
   const baseServingSize = food?.myFoodData?.servingSize || parseFloat(food?.existingAmount || '100') || 100;
+  // The size a custom food's own foodNutrients block actually describes: the serving it was CREATED
+  // with. Deliberately NOT baseServingSize, which falls back to the logged amount when the My Food
+  // record hasn't loaded -- a different number that happens to sit in the same variable. Null when we
+  // genuinely don't know, and callers then leave the old behaviour alone rather than guess.
+  const nutrientBasisSize: number | null = (() => {
+    if (food?.myFoodData?.servingSize && food.myFoodData.servingSize > 0) return food.myFoodData.servingSize;
+    // REOPENING a logged entry: myFoodData isn't attached, so the line above finds nothing. But an entry
+    // saved with a nutrientScale carries enough to recover the basis -- it ate `existingAmount` and that
+    // was `nutrientScale` of the block, so the block describes existingAmount / nutrientScale. For the
+    // chicken: 110 g logged at 1.31 of a serving means the block is 84 g. Entries logged before
+    // nutrientScale existed return null here and keep the old behaviour.
+    const ns = (food as any)?.nutrientScale;
+    const logged = parseFloat(food?.existingAmount || '0');
+    if (typeof ns === 'number' && isFinite(ns) && ns > 0 && logged > 0) return logged / ns;
+    return null;
+  })();
   // NOT gated on myFoodAdditionalServings.length > 0 -- a custom food with no EXTRA named serving
   // still has its own base serving (the label/servingUnit + calPer100g it was created with). That
   // gate used to treat "no extra servings" as "no default serving at all", so labelCal/Recent's
@@ -381,10 +397,14 @@ const isTutorialMode = tutorialMode === 'true';
     const loggedGrams = parseFloat(food.existingAmount);
     const ratio = loggedGrams > 0 ? baseGrams / loggedGrams : 1;
     return {
-      calories: Math.round(food.existingCal * ratio),
-      protein: Math.round((food.existingProtein || 0) * ratio * 10) / 10,
-      carbs: Math.round((food.existingCarbs || 0) * ratio * 10) / 10,
-      fat: Math.round((food.existingFat || 0) * ratio * 10) / 10,
+      // NOT rounded, same rule the unit servings already follow: rounding happens once, on screen,
+      // never before the maths. When the base serving is 1 g this was catastrophic -- a 110 g / 210 kcal
+      // entry became "1 g = 2 kcal" (1.909 rounded up), and touching the stepper multiplied that back
+      // out to 220 kcal. The user watched calories climb 10 by nudging the amount up and back down.
+      calories: food.existingCal * ratio,
+      protein: (food.existingProtein || 0) * ratio,
+      carbs: (food.existingCarbs || 0) * ratio,
+      fat: (food.existingFat || 0) * ratio,
       grams: baseGrams,
       unit: isServingOnly ? 'serving' : (food.servingUnitType || 'g'),
       label: isServingOnly ? 'serving' : ((food.servingUnit && /\d/.test(food.servingUnit)) ? food.servingUnit : `${baseGrams}${unitLabel(food.servingUnitType || 'g')}`),
@@ -972,7 +992,17 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
     const n = food.foodNutrients?.find((fn: any) => fn.nutrientName === nutrientName);
     if (n) {
       let scale: number;
-      if (useExisting) scale = 1;
+      // A custom food's foodNutrients are its LABEL values for its own base serving. This used to
+      // divide by the SELECTED serving instead, so switching the picker to grams (a 1 g serving) made
+      // every nutrient 84x too big on an 84 g food -- visible on screen before you even logged it.
+      // The base serving is the only correct reference, whatever the picker says.
+      // Basis FIRST, before useExisting. useExisting means "show the stored numbers" and for calories
+      // and macros that is right -- they're stored as the logged portion. But foodNutrients is NOT: it
+      // describes one base serving. Applying a scale of 1 to it showed a 110 g entry its 84 g nutrients
+      // while the calories beside them read 110 g. Whenever the basis is known, the honest answer is
+      // always the same: how much of that block was eaten.
+      if (!food?.fsId && nutrientBasisSize) scale = grams / nutrientBasisSize;
+      else if (useExisting) scale = 1;
       else if (!food?.fsId && effectiveServing && effectiveServing.grams > 0)
         scale = useServingBased ? servingCount : grams / effectiveServing.grams;
       else scale = multiplier;
@@ -1162,9 +1192,19 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           { nutrientName: 'Trans Fat',                    unitName: 'G',   key: 'transFat' },
           { nutrientName: 'Vitamin D',                    unitName: 'MCG', key: 'vitaminD' },
         ];
+        // Normalised to PER 100, not left as the selected serving's absolute values. A FatSecret food
+        // that arrived by barcode already carries these per 100, and every reader assumes that -- but a
+        // TEXT-SEARCH result carries only the four macros, so these got filled in from whatever serving
+        // happened to be selected and were then read as if per 100. Logging the yogurt by the gram
+        // stored sodium as 0.38 and reported it as 0.38; logging its 170 g serving would have reported
+        // 1.7x too much. Writing them in the same basis as the barcode path removes the ambiguity at
+        // the source rather than teaching ten readers about a second convention.
+        const evGrams = (effectiveServing as any).grams;
         extMap.forEach(({ nutrientName, unitName, key }) => {
           if (!baseNutrients.find(n => n.nutrientName === nutrientName)) {
-            baseNutrients.push({ nutrientName, unitName, value: (effectiveServing as any)[key] || 0 });
+            const raw = (effectiveServing as any)[key] || 0;
+            const per100 = evGrams > 0 ? (raw / evGrams) * 100 : raw;
+            baseNutrients.push({ nutrientName, unitName, value: per100 });
           }
         });
       }
@@ -1196,8 +1236,23 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           }
         }
       }
+      // THE FIX for "extended nutrients scale against the wrong serving". Readers used to reverse-
+      // engineer this from calories and servingGrams, but servingGrams records the serving the user
+      // PICKED while foodNutrients describes something else entirely -- per 100 for database foods, the
+      // food's own base serving for custom ones. Pick grams from the serving dropdown on an 84 g custom
+      // food and the two disagreed by a factor of 84.
+      // Here, at save time, we simply know: this is how much of that block was eaten. One number, no
+      // inference. Entries saved before this carry no such number and keep reading exactly as they did.
+      const loggedUnits = parseFloat(amount) || 0;
+      const nutrientScale = (() => {
+        if (isServingOnly || loggedUnits <= 0) return undefined; // no weight to reason about
+        if (food.fsId) return loggedUnits / 100;                       // block is per 100, incl. the push above
+        if (nutrientBasisSize) return loggedUnits / nutrientBasisSize; // custom: block is one base serving
+        return undefined;                                              // unknown basis -- leave readers as-is
+      })();
       const newEntry = {
   ...rescaledFlat,
+  ...(nutrientScale !== undefined ? { nutrientScale } : {}),
   // Serving-only recipe entries rebuild the name in servings (amount tracks the serving count), so an
   // edited count is reflected; everything else rebuilds from the edited amount + unit.
   name: isServingOnlyRecipe ? `${food.description} (${amount} ${amount === '1' ? 'serving' : 'servings'})` : `${food.description} (${nameAmount}${unitLabel(amountBaseUnit)})`,

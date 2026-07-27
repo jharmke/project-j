@@ -30,6 +30,17 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-27 **Extended nutrients now scale against the right serving (device-confirmed).** Entries
+  record at log time how much of their nutrient block was eaten, instead of ten screens reverse-
+  engineering it from calories and a serving-size field that meant something else. Text-searched
+  FatSecret foods now store their nutrients per 100 like barcode foods already did, killing that
+  convention at the source. Verified: 110 g of an 84 g custom food reads 982 mg sodium (was 82,500),
+  holds through the stepper, and holds on reopen.
+  Two more found while testing: reopening an entry never received the new number (the Log tab hands the
+  edit screen a hand-written field list and it wasn't on it), and the synthetic serving rounded its
+  values BEFORE the maths -- with a 1 g serving that turned 1.909 kcal into 2, so nudging the amount up
+  and back down inflated a 210 kcal entry to 220. Rounding now happens once, on screen.
+  NOT repaired: entries logged before this keep their old numbers. Delete and re-log to fix one.
 - 2026-07-27 **Recipes finally count everywhere + nutrient scaling consolidated (device-confirmed).**
   Day Detail, Home/Stats net carbs, the Stats graphs, weekly + monthly summaries and Smart Tips all
   silently read recipe entries as ZERO nutrients -- only the Log tab, drilldown and EvR knew how. Now one
@@ -1139,7 +1150,15 @@ WINS. Items graduate UP here from the backlog sections so good ideas don't rot d
 ships it leaves this list. Always offer at least one QUICK WIN when Justin asks what's next, and pull a
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
-- [NOW, surfaced + half-fixed 2026-07-27] **Extended nutrients scale against the WRONG serving size.**
+- [SMALL, surfaced 2026-07-27] **The Edit Entry serving label reads "3 oz. · 1 g" and means nothing.**
+  It prints two unrelated things side by side: the food's DEFAULT serving name (`servingLabelText`,
+  always taken from the food record) next to the grams of the serving the user actually PICKED
+  (`servingGrams`). Log 110 g of an 84 g custom food by switching the picker to grams and you get the
+  food's "3 oz." label welded to the gram serving's "1 g". Purely cosmetic since 2026-07-27 -- nutrient
+  maths no longer reads servingGrams at all -- but it is the same "one field doing two jobs" confusion
+  that caused the real bug, and Justin has flagged it twice. Fix is to remember what the user picked and
+  show THAT on reopen, matching what the pre-log screen already displays.
+- [DONE 2026-07-27 except history, see RECENTLY SHIPPED] **Extended nutrients scale against the WRONG serving size.**
   Found live: a 110 g log of a custom 84 g food reported 82,500 mg sodium. Calories and macros are
   CORRECT everywhere and always were -- this is detailed nutrients only.
   ROOT CAUSE: an entry stores its nutrients as one block, but four different conventions exist for what

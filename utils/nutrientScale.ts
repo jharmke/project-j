@@ -22,6 +22,10 @@
  * which callers already treat as "contributes nothing".
  */
 export function entryNutrientScale(e: any): number {
+  // Recorded at save time by whoever actually knew the answer. Everything below this line is the old
+  // guesswork, kept only for entries logged before that number existed.
+  if (typeof e?.nutrientScale === 'number' && isFinite(e.nutrientScale)) return e.nutrientScale;
+
   if (e?.fsId) {
     return (e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0;
   }

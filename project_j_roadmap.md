@@ -1118,6 +1118,22 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
+- [TOP / EXPLORATION, opened 2026-07-26. NOTHING LOCKED -- read SPEC_celebrations.md before touching.]
+  **Celebration overhaul.** Started from an unreadable achievement -- the centre text is hardcoded white
+  with no backdrop, invisible on Light (it dates from when the app was dark by default; the confetti was
+  made theme-aware and the text never was). Justin's call is to survey what we have AND what we could
+  have before altering anything: *"I'm okay with ripping up the roots if it's truly premium."* He is
+  explicitly open to new packages and a new dev build.
+  ONLY LOCKED: Mindful celebrations are IDENTICAL to every other mode (do not propose a quieter variant);
+  daily goals keep a celebration; everything must be skippable; diamond keeps its signature blue; and
+  PROTOTYPE BEFORE SPECCING THE DESIGN.
+  ⚠️ "Drop the centre text on small" was said and then explicitly RE-OPENED. It is NOT decided.
+  Findings already in the spec: 31 trigger sites across 8 files all calling one 3-arg function (that is
+  the blast radius); tiers are 26 small / 24 medium / 46 LARGE / 1 diamond, so "large" is the default
+  experience not the special one; the tiers differ in SIZE not in KIND, which is likely why medium and
+  large do not feel bigger; and LARGE is the only tier with no dismiss control despite being the most
+  common. Dev tools are accurate for all four tiers, but cannot fire a realistic LONG achievement name,
+  which is exactly where layout breaks.
 - [2026-07-26, text scaling CLOSED -- only these small leftovers remain] **Accessibility leftovers.**
   All four phases shipped and were device-verified (see RECENTLY SHIPPED; full detail in
   SPEC_accessibility.md). What is genuinely left:

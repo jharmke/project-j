@@ -5,7 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActionSheetIOS, Alert, Animated, Dimensions, Image, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActionSheetIOS, Alert, Animated, Dimensions, Image, Modal, Pressable, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Directory, File as FSFile, Paths } from 'expo-file-system/next';
 import * as ImagePicker from 'expo-image-picker';
 import { useToast, ToastRenderer } from '../components/Toast';
@@ -28,6 +28,26 @@ import { convertUnit, convertibleUnitsFor, normalizeUnitKey, unitLabel } from '.
 import UnitPickerButton from '../components/UnitPickerButton';
 import PrimaryCTA from '../components/PrimaryCTA';
 import ModalHeader from '../components/ModalHeader';
+
+// One meal option in the "Add to Which Meal?" picker. Press feedback is the app standard -- scale 0.97
+// on press in, 1.0 on press out, TIMING not spring. PressableButton would have been the quick way to get
+// scale + haptic together, but it springs to 0.94, which reads as bouncy on a list row.
+function MealOptionRow({ label, onPress }: { label: string; onPress: () => void }) {
+  const { theme } = useTheme();
+  const styles = useStyles(theme);
+  const scale = useRef(new Animated.Value(1)).current;
+  const to = (v: number) => Animated.timing(scale, { toValue: v, duration: 100, useNativeDriver: true }).start();
+  return (
+    <Pressable
+      onPressIn={() => { to(0.97); triggerHaptic(Haptics.ImpactFeedbackStyle.Light); }}
+      onPressOut={() => to(1)}
+      onPress={onPress}>
+      <Animated.View style={[styles.mealOptionRow, { transform: [{ scale }] }]}>
+        <Text style={styles.mealOptionText}>{label}</Text>
+      </Animated.View>
+    </Pressable>
+  );
+}
 
 export default function RecipeLogScreen() {
   const insets = useSafeAreaInsets();
@@ -575,25 +595,33 @@ export default function RecipeLogScreen() {
         visible={showMealPicker}
         transparent
         animationType="none"
-        onShow={() => Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start()}
+        onShow={() => {
+          fadeAnim.setValue(0);
+          Animated.spring(fadeAnim, { toValue: 1, useNativeDriver: true, damping: 18, stiffness: 260 }).start();
+        }}
         onRequestClose={closeMealPicker}>
-        <Animated.View style={[styles.modalOverlay, { opacity: fadeAnim }]}>
+        {/* Opacity is clamped: the spring overshoots past 1 on its way to settling, and an un-clamped
+            opacity would flicker as it does. */}
+        <Animated.View style={[styles.modalOverlay, { opacity: fadeAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 1], extrapolate: 'clamp' }) }]}>
           <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeMealPicker} />
           {/* ModalHeader owns the pill, the title and the X -- which makes the Cancel at the bottom a second
               close control on one modal, so it goes. Body padding moves inside so the header owns the top. */}
-          <View style={[styles.modal, { padding: 0, overflow: 'hidden' }]} pointerEvents="box-none">
+          {/* alignItems stretch, overriding the centre alignment styles.modal uses for its other content.
+              Centred children shrink to their own text, which is why these rows first came out as narrow
+              pills of differing widths instead of matching the full-width picker. */}
+          <Animated.View
+            style={[styles.modal, { padding: 0, overflow: 'hidden', alignItems: 'stretch' }, { transform: [{ scale: fadeAnim.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) }] }]}
+            pointerEvents="box-none">
             <ModalHeader title="Add to Which Meal?" onClose={closeMealPicker} />
-            <View style={{ paddingHorizontal: 24, paddingBottom: 24, paddingTop: 4 }}>
+            {/* Identical to the "Adding To" picker on the food Edit Entry screen -- same rows, same
+                padding, same type. Press feedback is the app standard: scale 0.97, TIMING not spring.
+                Deliberately NOT PressableButton, which springs to 0.94 and reads as bouncy on a row. */}
+            <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 8, gap: 8 }} showsVerticalScrollIndicator={false}>
               {mealSlots.map(slot => (
-                <TouchableOpacity
-                  key={slot.id}
-                  style={styles.mealOption}
-                  onPress={() => logRecipe(slot.id)}>
-                  <Text style={styles.mealOptionText}>{slot.name}</Text>
-                </TouchableOpacity>
+                <MealOptionRow key={slot.id} label={slot.name} onPress={() => logRecipe(slot.id)} />
               ))}
-            </View>
-          </View>
+            </ScrollView>
+          </Animated.View>
         </Animated.View>
       </Modal>
 
@@ -703,8 +731,9 @@ const useStyles = (theme: any) => StyleSheet.create({
   },
   handlePill: { width: 36, height: 4, backgroundColor: theme.borderCard, borderRadius: 2, marginBottom: 16 },
   modalTitle: { fontSize: 18, color: theme.accentBlueRaw, fontFamily: Type.display, letterSpacing: 0.3, marginBottom: 16 },
-  mealOption: { width: '100%', padding: 14, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle, alignItems: 'center' },
-  mealOptionText: { fontSize: 16, color: theme.textSecondary, fontFamily: Type.uiMedium },
+  // Matches mealOptionRow on the food Edit Entry screen so the two meal pickers read as one control.
+  mealOptionRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1, backgroundColor: theme.bgInput, borderColor: theme.borderInput },
+  mealOptionText: { fontSize: 15, color: theme.textSecondary, fontFamily: Type.uiMedium },
   cancelBtn: { width: '100%', padding: 14, alignItems: 'center', marginTop: 4 },
   cancelBtnText: { color: theme.accentRed, fontSize: 14, fontFamily: Type.uiMedium },
 });

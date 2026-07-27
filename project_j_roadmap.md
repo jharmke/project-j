@@ -30,6 +30,16 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-27 **Achievement toast overhaul + tier re-tier (device-confirmed).** Toast card grows to fit a
+  two-line name instead of crushing its own padding; tier name moved up into the coloured header line and
+  the bottom row now carries the achievement's criteria; platinum is silver-white and diamond keeps the
+  blue and the navy card (they were twins); bronze is copper instead of a second amber. Fixed a real bug:
+  the toast's bottom row used a theme colour on a card that is always dark, so it washed out on Light.
+  Re-tiered 9 achievements (365 steps/water -> diamond, weight 25 -> gold, 50/75 -> platinum, 100 ->
+  diamond, workout 100 -> platinum), renamed 3 (two were duplicate names colliding on screen: Undeniable,
+  Proven, and The Summit for goal weight). Challenge completion no longer fires a celebration overlay --
+  the Complete card already said it. Dev tools: Long Name toggle + all five toast tiers now firable.
+  Full inventory in CELEBRATION_TIER_AUDIT.md.
 - 2026-07-26 **Otto + Halo: copy a reply, and thumbs-down that actually reports (device-confirmed).**
   Replies (and your own messages) are now `selectable`, so a press-and-hold gives a one-press Copy
   without going through the share sheet.

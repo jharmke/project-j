@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
+import { useCelebrationActive } from '../utils/assistantFab';
 import { useTheme } from '../theme';
 
 // "Halo": the faith companion's floating button. Flat and iconographic: a gold disc
@@ -36,6 +37,7 @@ export default function CompanionFAB({ onPress, bottom = 18, tutorialKey }: { on
   const breath = useRef(new Animated.Value(0)).current;
   const press  = useRef(new Animated.Value(1)).current;
   const tutRef = useTutorialTarget(tutorialKey ?? 'companion_fab_unused');
+  const celebrationActive = useCelebrationActive(); // diamond only -- see CelebrationOverlay
 
   // Tier gate: present for Rooted and Exploring, hidden entirely for Not Right Now.
   useEffect(() => {
@@ -63,7 +65,7 @@ export default function CompanionFAB({ onPress, bottom = 18, tutorialKey }: { on
     return () => loop.stop();
   }, []);
 
-  if (!visible) return null;
+  if (!visible || celebrationActive) return null;
 
   const breathScale = breath.interpolate({ inputRange: [0, 1], outputRange: [1, 1.07] });
   const buttonScale = Animated.multiply(press, breathScale);

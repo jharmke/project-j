@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Dimensions, Easing, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Path, Stop } from 'react-native-svg';
 import { AchievementDef } from '../achievementData';
+import { setCelebrationActive } from '../utils/assistantFab';
 import { useTheme } from '../theme';
 import { Type } from '../typography';
 
@@ -401,6 +402,16 @@ export default function CelebrationOverlay({ visible, tier, accentColor, label, 
       shape: (Math.random() > 0.5 ? 'circle' : 'rect') as 'circle' | 'rect',
     }));
   }, [tier, accentColor]);
+
+  // Hide the floating assistant button, DIAMOND ONLY. Diamond is the one tier that dims the screen and
+  // takes it over, so a lit FAB on top of it is wrong. small/medium/large deliberately float over a
+  // live, still-usable screen -- every other FAB stays put there, so hiding this one would be the odd
+  // one out. Unwinds on unmount so an early dismiss still restores the button.
+  useEffect(() => {
+    if (!visible || tier !== 'diamond') return;
+    setCelebrationActive(true);
+    return () => setCelebrationActive(false);
+  }, [visible, tier]);
 
   useEffect(() => {
     if (!visible) return;

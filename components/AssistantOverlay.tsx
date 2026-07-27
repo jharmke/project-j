@@ -8,7 +8,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import AssistantFAB from './AssistantFAB';
 import AssistantChat from './AssistantChat';
 import { useAuth } from '../AuthContext';
-import { useCameraActive } from '../utils/assistantFab';
+import { useCameraActive, useCelebrationActive } from '../utils/assistantFab';
 import { useFloatingBarHeight } from '../utils/floatingBar';
 import { useTooltip } from '../useTooltip';
 import { useTheme } from '../theme';
@@ -52,6 +52,7 @@ export default function AssistantOverlay() {
   const segments = useSegments() as string[];
   const insets = useSafeAreaInsets();
   const cameraActive = useCameraActive();
+  const celebrationActive = useCelebrationActive();
   const floatingBarHeight = useFloatingBarHeight();
   const { theme } = useTheme();
   const { seen, markSeen } = useTooltip('companion_fab'); // first-use callout, shown once
@@ -89,6 +90,7 @@ export default function AssistantOverlay() {
   const hidden =
     !user ||
     cameraActive ||
+    celebrationActive ||
     isFaithTab ||
     segments.some(s => HIDE_SEGMENTS.has(s));
 

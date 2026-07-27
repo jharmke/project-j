@@ -1179,13 +1179,10 @@ export default function HomeScreen() {
           const ch = await loadActiveChallenge();
           if (ch && challengeStatus(ch) === 'ended' && !ch.acknowledged) {
             const cp = await computeChallengeProgress(ch);
-            const settingsRaw = await AsyncStorage.getItem('pj_settings');
-            const mindful = settingsRaw ? JSON.parse(settingsRaw).styleMode === 'mindful' : false;
-            if (cp.won) {
-              showCelebration(cp.tier === 'perfect' ? 'large' : 'medium', mindful ? 'CHALLENGE COMPLETE' : (cp.tier === 'perfect' ? 'PERFECT' : 'CHALLENGE WON'));
-            } else {
-              showCelebration('small', mindful ? 'NICE WORK' : 'CHALLENGE DONE');
-            }
+            // No celebration overlay here on purpose. The Complete card already announces the result
+            // and stays until the user taps Done -- a full-screen confetti on top of it was the same
+            // news twice, and it was the only place a large celebration fired with no achievement
+            // behind it. Any "you won" moment for challenges belongs inline on the card.
             const acked: Challenge = { ...ch, acknowledged: true };
             await saveActiveChallenge(acked);
             await appendChallengeHistory(acked);

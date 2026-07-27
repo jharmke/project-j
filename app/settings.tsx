@@ -20,7 +20,7 @@ import CelebrationOverlay from '../components/CelebrationOverlay';
 import FeedbackModal from '../components/FeedbackModal';
 import { requestRatingPrompt, resetRatePromptBudget } from '../utils/ratingPrompt';
 import { showAchievementToast } from '../components/AchievementToast';
-import { ACHIEVEMENTS, loadAchievements, checkAndUnlock, loadGoalHitCounts, checkSleepAchievements, checkNutritionAchievements, checkMomentumAchievements, checkWorkoutAchievements, checkFaithAchievements, getWeightMilestonesCrossed, isGoalWeightHit } from '../achievementData';
+import { ACHIEVEMENTS, AchievementDef, loadAchievements, checkAndUnlock, loadGoalHitCounts, checkSleepAchievements, checkNutritionAchievements, checkMomentumAchievements, checkWorkoutAchievements, checkFaithAchievements, getWeightMilestonesCrossed, isGoalWeightHit } from '../achievementData';
 import { collection, getDocs } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app, auth, db, saveToFirebase } from '../firebaseConfig';
@@ -97,6 +97,37 @@ import GradientTitle from '../components/GradientTitle';
 import GradientNumber from '../components/GradientNumber';
 import GradientIcon from '../components/GradientIcon';
 import BackgroundLayers from '../components/BackgroundLayers';
+
+// Dev tools only. Real achievements pass their full name into the celebration overlay, so the longest
+// name in the roster is the true worst case for the layout. Derived rather than hardcoded so it stays
+// correct as achievements are added.
+const DEV_LONG_CELEB_NAME = ACHIEVEMENTS.reduce((a, b) => (b.name.length > a.length ? b.name : a), '');
+
+// Dev tools only. The achievement toast styles itself off the BADGE tier (bronze/silver/gold/platinum/
+// diamond), not off the celebration tier, and the old dev tool only ever fired one achievement -- a
+// diamond -- so the other four were invisible. These pick a real achievement per badge tier so all five
+// can be previewed. Mirrors getDisplayTier(); kept local so a dev tool never drags shared code around.
+type DevBadgeTier = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
+const DEV_BADGE_TIERS: DevBadgeTier[] = ['bronze', 'silver', 'gold', 'platinum', 'diamond'];
+
+function devBadgeTier(def: AchievementDef): DevBadgeTier {
+  if (def.displayTier) return def.displayTier as DevBadgeTier;
+  if (def.tier === 'small')   return 'bronze';
+  if (def.tier === 'medium')  return 'silver';
+  if (def.tier === 'diamond') return 'diamond';
+  return 'gold';
+}
+
+// Long Name on -> the longest real name at that tier (the layout's worst case). Off -> the shortest,
+// which is the everyday case. Between them they bracket what the card actually has to hold.
+function devToastDef(tier: DevBadgeTier, long: boolean): AchievementDef | undefined {
+  const pool = ACHIEVEMENTS.filter(a => devBadgeTier(a) === tier);
+  if (pool.length === 0) return undefined;
+  return pool.reduce((best, a) => {
+    if (long) return a.name.length > best.name.length ? a : best;
+    return a.name.length < best.name.length ? a : best;
+  }, pool[0]);
+}
 
 // Same lift/sink recipe as GradientNumber -- an icon glyph is roughly square like a number glyph, not
 // a wide word, so GradientNumber's tuning fits it better than GradientTitle's.
@@ -542,6 +573,7 @@ export default function SettingsScreen() {
   const [devCelebVisible, setDevCelebVisible] = useState(false);
   const [devCelebTier, setDevCelebTier] = useState<'small' | 'medium' | 'large' | 'diamond'>('small');
   const [devCelebLabel, setDevCelebLabel] = useState<string | undefined>(undefined);
+  const [devCelebLongName, setDevCelebLongName] = useState(false);
   const [devTapCount, setDevTapCount] = useState(0);
   const [devUnlocked, setDevUnlocked] = useState(false);
   const [devForceSleepManual, setDevForceSleepManual] = useState(false);
@@ -3921,11 +3953,20 @@ export default function SettingsScreen() {
               <Ionicons name="refresh-circle-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>
 
+            <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Long Name</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Worst-case text for everything below. Celebrations use the longest real achievement name instead of a short label; each toast switches from its shortest name to its longest.</Text>
+              </View>
+              <ToggleSwitch value={devCelebLongName} onValueChange={v => { setDevCelebLongName(v); triggerHaptic(Haptics.ImpactFeedbackStyle.Light); }} />
+            </View>
+
             {(['small', 'medium', 'large', 'diamond'] as const).map(tier => (
               <TouchableOpacity key={tier} style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
                 triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
                 setDevCelebTier(tier);
-                setDevCelebLabel(tier === 'small' ? 'NICE WORK' : tier === 'medium' ? 'MILESTONE' : tier === 'diamond' ? undefined : 'GOAL WEIGHT');
+                const shortLabel = tier === 'small' ? 'NICE WORK' : tier === 'medium' ? 'MILESTONE' : tier === 'diamond' ? undefined : 'GOAL WEIGHT';
+                setDevCelebLabel(tier === 'diamond' ? undefined : (devCelebLongName ? DEV_LONG_CELEB_NAME : shortLabel));
                 setDevCelebVisible(true);
               }}>
                 <View style={{ flex: 1 }}>
@@ -3936,17 +3977,21 @@ export default function SettingsScreen() {
               </TouchableOpacity>
             ))}
 
-            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
-              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-              const testDef = ACHIEVEMENTS.find(a => a.id === 'weight_goal');
-              if (testDef) showAchievementToast(testDef);
-            }}>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Fire Achievement Toast</Text>
-                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Tests the slide-in achievement notification.</Text>
-              </View>
-              <Ionicons name="trophy-outline" size={18} color={theme.accentBlue} />
-            </TouchableOpacity>
+            {DEV_BADGE_TIERS.map(bt => {
+              const toastDef = devToastDef(bt, devCelebLongName);
+              return (
+                <TouchableOpacity key={bt} style={[styles.row, { borderTopColor: theme.borderCard }]} disabled={!toastDef} onPress={() => {
+                  triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+                  if (toastDef) showAchievementToast(toastDef);
+                }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Fire {bt.charAt(0).toUpperCase() + bt.slice(1)} Toast</Text>
+                    <Text style={[styles.rowSub, { color: theme.textMuted }]}>{toastDef ? toastDef.name : 'No achievement at this tier'}</Text>
+                  </View>
+                  <Ionicons name="trophy-outline" size={18} color={theme.accentBlue} />
+                </TouchableOpacity>
+              );
+            })}
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
               triggerHaptic(Haptics.ImpactFeedbackStyle.Light);

@@ -41,12 +41,15 @@ interface TierConfig {
 }
 
 const TIER_CONFIG: Record<AchievementDisplayTier, TierConfig> = {
+  // Copper, not amber. The old bronze sat within a few degrees of gold's hue and the two tiers were
+  // indistinguishable side by side. Pushed redder and darker so bronze reads as the lower metal.
+  // Kept in lockstep with TIER_CONFIG in AchievementToast.
   bronze: {
     label: 'Bronze',
-    badgeColor:     '#cd7f32',
-    badgeColorDark: '#8b5220',
-    borderColor:    'rgba(205,127,50,0.6)',
-    glowColor:      'rgba(205,127,50,0.35)',
+    badgeColor:     '#b26a3c',
+    badgeColorDark: '#6b3a1d',
+    borderColor:    'rgba(178,106,60,0.6)',
+    glowColor:      'rgba(178,106,60,0.35)',
     iconColor:      '#fff8f0',
   },
   silver: {
@@ -65,12 +68,14 @@ const TIER_CONFIG: Record<AchievementDisplayTier, TierConfig> = {
     glowColor:      'rgba(212,134,10,0.40)',
     iconColor:      '#fff8e0',
   },
+  // Cool silver-white, no blue. Kept in lockstep with TIER_CONFIG in AchievementToast -- platinum has
+  // to be the same metal in both places or the badge and its toast look like two different tiers.
   platinum: {
     label: 'Platinum',
-    badgeColor:     '#bfdbfe',
-    badgeColorDark: '#60a5c8',
-    borderColor:    'rgba(191,219,254,0.7)',
-    glowColor:      'rgba(191,219,254,0.45)',
+    badgeColor:     '#e8edf2',
+    badgeColorDark: '#8f9bab',
+    borderColor:    'rgba(232,237,242,0.7)',
+    glowColor:      'rgba(232,237,242,0.45)',
     iconColor:      '#ffffff',
   },
   diamond: {

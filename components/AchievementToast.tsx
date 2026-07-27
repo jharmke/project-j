@@ -72,14 +72,17 @@ interface TierConfig {
 }
 
 const TIER_CONFIG: Record<AchievementDisplayTier, TierConfig> = {
+  // Copper, not amber. The old bronze sat within a few degrees of gold's hue, so the lowest and the
+  // middle tier were near-identical browns. Pushed redder and darker. Still bright enough to read at
+  // 8px on the dark card, just visibly beneath gold. Kept in lockstep with achievements.tsx.
   bronze: {
     label:           'Bronze',
-    badgeColor:      '#cd7f32',
-    badgeColorDark:  '#8b5220',
-    borderColor:     'rgba(205,127,50,0.5)',
-    glowColor:       'rgba(205,127,50,0.4)',
+    badgeColor:      '#b26a3c',
+    badgeColorDark:  '#6b3a1d',
+    borderColor:     'rgba(178,106,60,0.5)',
+    glowColor:       'rgba(178,106,60,0.4)',
     iconColor:       '#fff8f0',
-    leftBorderColor: '#cd7f32',
+    leftBorderColor: '#b26a3c',
   },
   silver: {
     label:           'Silver',
@@ -99,14 +102,17 @@ const TIER_CONFIG: Record<AchievementDisplayTier, TierConfig> = {
     iconColor:       '#fff8e0',
     leftBorderColor: '#d4860a',
   },
+  // Platinum is a METAL: cool silver-white, no blue in it. It used to be a pale blue, which made it a
+  // near-twin of diamond -- the two top tiers read as two shades of the same idea. Blue now belongs to
+  // diamond alone. Platinum still outranks gold visibly via the shimmer ring and the stronger glow.
   platinum: {
     label:           'Platinum',
-    badgeColor:      '#bfdbfe',
-    badgeColorDark:  '#60a5c8',
-    borderColor:     'rgba(191,219,254,0.6)',
-    glowColor:       'rgba(191,219,254,0.6)',
+    badgeColor:      '#e8edf2',
+    badgeColorDark:  '#8f9bab',
+    borderColor:     'rgba(232,237,242,0.6)',
+    glowColor:       'rgba(232,237,242,0.55)',
     iconColor:       '#ffffff',
-    leftBorderColor: '#93c5fd',
+    leftBorderColor: '#cbd5e1',
   },
   diamond: {
     label:           'Diamond',
@@ -310,7 +316,9 @@ function ToastCard({ def, onDone }: { def: AchievementDef; onDone: () => void })
   return (
     <Animated.View style={{ transform: [{ translateX: slideX }], opacity: cardOpacity }} {...panResponder.panHandlers}>
       <View style={[styles.card, {
-        backgroundColor: isPlat ? 'rgba(18,25,55,0.97)' : 'rgba(15,15,20,0.96)',
+        // The navy card is DIAMOND'S alone. Platinum used to share it, which was half of why the two
+        // looked alike. Platinum keeps the stronger glow and the shimmer ring to stay above gold.
+        backgroundColor: tier === 'diamond' ? 'rgba(18,25,55,0.97)' : 'rgba(15,15,20,0.96)',
         borderColor: config.borderColor,
         shadowColor: config.glowColor,
         shadowOpacity: isPlat ? 0.7 : 0.5,
@@ -326,13 +334,16 @@ function ToastCard({ def, onDone }: { def: AchievementDef; onDone: () => void })
           </Animated.View>
           <View style={{ flex: 1, justifyContent: 'center', paddingRight: 14 }}>
             <Animated.Text allowFontScaling={false} style={[styles.label, { color: config.badgeColor, opacity: labelOpacity }]}>
-              ACHIEVEMENT UNLOCKED
+              {config.label.toUpperCase()} ACHIEVEMENT UNLOCKED
             </Animated.Text>
             <Animated.Text allowFontScaling={false} style={[styles.name, { color: '#ffffff', opacity: nameOpacity, transform: [{ translateY: nameTranslateY }] }]}>
               {def.name}
             </Animated.Text>
-            <Animated.Text allowFontScaling={false} style={[styles.tier, { color: theme.textMuted, opacity: labelOpacity }]}>
-              {config.label}
+            {/* The tier name moved up into the coloured line above, so this row now carries what the
+                user actually DID. Sentence case as authored -- these are sentences, and the old spaced
+                small-caps treatment was unreadable at this size. */}
+            <Animated.Text allowFontScaling={false} numberOfLines={2} style={[styles.sub, { opacity: labelOpacity }]}>
+              {def.criteria}
             </Animated.Text>
           </View>
         </View>
@@ -465,7 +476,7 @@ function DailyGoalToastCard({ name, count, icon, iconColor, onDone }: {
             <Animated.Text allowFontScaling={false} style={[styles.name, { color: '#ffffff', opacity: nameOpacity, transform: [{ translateY: nameTranslateY }] }]}>
               {name}
             </Animated.Text>
-            <Animated.Text allowFontScaling={false} style={[styles.tier, { color: theme.textMuted, opacity: labelOpacity }]}>
+            <Animated.Text allowFontScaling={false} style={[styles.sub, { opacity: labelOpacity }]}>
               {count}× achieved
             </Animated.Text>
           </View>
@@ -548,7 +559,9 @@ const styles = StyleSheet.create({
   },
   card: {
     width: CARD_WIDTH,
-    height: CARD_HEIGHT,
+    // minHeight, not height. A two-line achievement name used to eat the padding and shove the top
+    // label into the card edge. The card now grows to fit and short toasts are unchanged.
+    minHeight: CARD_HEIGHT,
     borderRadius: 12,
     borderWidth: 0.5,
     shadowOffset: { width: 0, height: 6 },
@@ -559,6 +572,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 12,
   },
   label: {
     fontSize: 8,
@@ -573,10 +587,15 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     marginBottom: 2,
   },
-  tier: {
-    fontSize: 9,
+  // The card is hardcoded dark on EVERY theme, so its text colours must be fixed light values. This row
+  // used to take the theme's muted token, which meant Light theme painted dark grey on a near-black
+  // card and the line washed out. Same class of bug as the celebration overlay's white-on-cream text.
+  sub: {
+    fontSize: 11,
     fontFamily: Type.uiMedium,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
+    letterSpacing: 0.2,
+    lineHeight: 14,
+    color: 'rgba(255,255,255,0.60)',
+    marginTop: 1,
   },
 });

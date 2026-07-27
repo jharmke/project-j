@@ -236,14 +236,14 @@ HYDRATION (hit your water goal N times): First Sip 1, Hydrated 10, Bathtub 30, H
 STEPS (hit your step goal N times): First Step 1, Getting Moving 10, Heating Up 30, Well Worn 50,
   No Quit 75, Triple Digits 100, Road Warrior 200, Full Circle 365.
 WEIGHT LOSS (lose N lbs from start): Showed Up (first weigh-in), Just a Little Off the Top 5,
-  Picking Up Speed 10, Not a Fluke 25, The Big Five-Oh 50, Can't Stop Won't Stop 75,
-  The Century Mark 100. Plus There It Is (reach goal weight).
+  Picking Up Speed 10, Undeniable 25, The Big Five-Oh 50, Can't Stop Won't Stop 75,
+  The Century Mark 100. Plus The Summit (reach goal weight).
 WEIGHT GAIN (gain N lbs from start): Loading 5, Heavy Hitter 10, Bulk Season 25, Built Different 50,
   Iron Will 75, The Gain Train 100.
 MOMENTUM (log N days in a row): Day One 1, On a Roll 3, Week Warrior 7, Not a Fluke 14,
   Unstoppable 30, Sixty Strong 60, All In 90, Six Months Strong 180, Unbroken 365.
 WORKOUT (work out N days): First Rep 1, Getting After It 10, Not a Phase 30, Committed 50,
-  Built for This 75, Triple Digits 100, Still Standing 200, "365" 365. Plus Following the Plan
+  Built for This 75, Proven 100, Still Standing 200, "365" 365. Plus Following the Plan
   (load first program) and The Blueprint (save first routine).
 NUTRITION (hit your calorie goal N times): On Point 1, Calibrated 10, By the Numbers 30,
   On the Dot 50, The Standard 75, Optimized 100, Unrelenting 200, No Cheat Days 365.

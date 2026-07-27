@@ -43,3 +43,35 @@ export function useCameraActive(): boolean {
   }, []);
   return active;
 }
+
+// ─── Celebration suppression ─────────────────────────────────────────────────
+//
+// Same idea, separate count: the FAB must not sit lit on top of a celebration overlay. The overlay
+// itself owns the signal (not the renderer) so BOTH paths are covered -- the real queued celebration
+// and the Settings dev-tool copy, which renders the overlay directly and bypasses the renderer.
+
+let celebCount = 0;
+const celebListeners = new Set<(active: boolean) => void>();
+
+function notifyCeleb() {
+  const active = celebCount > 0;
+  celebListeners.forEach(l => l(active));
+}
+
+/** Call with true when a celebration overlay appears, false when it goes away. */
+export function setCelebrationActive(active: boolean) {
+  celebCount = Math.max(0, celebCount + (active ? 1 : -1));
+  notifyCeleb();
+}
+
+/** Subscribe hook: true while any celebration overlay is on screen. */
+export function useCelebrationActive(): boolean {
+  const [active, setActive] = useState(celebCount > 0);
+  useEffect(() => {
+    const l = (a: boolean) => setActive(a);
+    celebListeners.add(l);
+    setActive(celebCount > 0);
+    return () => { celebListeners.delete(l); };
+  }, []);
+  return active;
+}

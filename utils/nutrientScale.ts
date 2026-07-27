@@ -77,6 +77,91 @@ export const FLAT_NUTRIENT_KEY: Record<string, string> = {
   'Thiamin':                      'thiamin',
 };
 
+// ─── The Food Detail screen's own version ────────────────────────────────────
+//
+// Lifted verbatim out of app/food-detail.tsx so it can be TESTED. It used to live inside the screen,
+// reading a dozen pieces of component state directly, which meant the number a user saw before logging
+// could not be checked against the number their day totals would produce -- and those two disagreeing is
+// precisely the bug class that ate 2026-07-27. The screen now builds this context object and calls in.
+//
+// Deliberately NOT merged with entryNutrientScale above. That one answers "how much of a SAVED entry's
+// block was eaten"; this one answers "what should the screen show for the portion currently dialled in",
+// which depends on which serving is selected and whether the user has touched anything yet. They must
+// AGREE at the moment of saving -- that is what the test asserts -- but they are not the same question.
+
+export interface DetailNutrientCtx {
+  /** Calories currently displayed. Only used for the recipe flat-field rescale. */
+  calories: number;
+  /** Amount currently dialled in, in the food's base unit. */
+  grams: number;
+  /** grams / 100 -- the legacy per-100g path, used when nothing better is known. */
+  multiplier: number;
+  /** How many of the selected serving. */
+  servingCount: number;
+  /** True when the portion is expressed as N x the selected serving rather than a typed weight. */
+  useServingBased: boolean;
+  /** True when the screen is showing the entry's STORED values (nothing touched yet). */
+  useExisting: boolean;
+  /** The size the food's own foodNutrients block describes. Null when genuinely unknown. */
+  nutrientBasisSize: number | null;
+  /** The serving currently selected, with its own absolute nutrient values. */
+  effectiveServing: any | null;
+  /** Per-single-unit rates derived from that serving. */
+  servingRates: any | null;
+}
+
+export function computeDetailNutrient(
+  food: any,
+  servingKey: string,
+  nutrientName: string,
+  ctx: DetailNutrientCtx,
+): number | null {
+  const { calories, grams, multiplier, servingCount, useServingBased, useExisting,
+          nutrientBasisSize, effectiveServing, servingRates } = ctx;
+
+  const sk = effectiveServing ? (effectiveServing as any)[servingKey] : null;
+  if (food?.fsId && effectiveServing && sk != null) {
+    if (useServingBased) return Math.round(sk * servingCount * 10) / 10;
+    if (servingRates && (servingRates as any)[servingKey] != null)
+      return Math.round((servingRates as any)[servingKey] * grams * 10) / 10;
+    return Math.round(sk * 10) / 10;
+  }
+
+  const n = food?.foodNutrients?.find((fn: any) => fn.nutrientName === nutrientName);
+  if (n) {
+    let scale: number;
+    // A custom food's foodNutrients are its LABEL values for its own base serving. This used to divide
+    // by the SELECTED serving instead, so switching the picker to grams (a 1 g serving) made every
+    // nutrient 84x too big on an 84 g food -- visible on screen before you even logged it.
+    // Basis FIRST, before useExisting. useExisting means "show the stored numbers", which is right for
+    // calories and macros because those ARE stored as the logged portion. foodNutrients is not: it
+    // describes one base serving, so a scale of 1 showed a 110 g entry its 84 g nutrients while the
+    // calories beside them read 110 g.
+    if (!food?.fsId && nutrientBasisSize) scale = grams / nutrientBasisSize;
+    else if (useExisting) scale = 1;
+    else if (!food?.fsId && effectiveServing && effectiveServing.grams > 0)
+      scale = useServingBased ? servingCount : grams / effectiveServing.grams;
+    else scale = multiplier;
+    return Math.round((n.value || 0) * scale * 10) / 10;
+  }
+
+  if (effectiveServing && sk != null && sk > 0) {
+    const raw = useServingBased ? sk * servingCount
+      : servingRates ? (servingRates as any)[servingKey] * grams : sk;
+    return Math.round(raw * 10) / 10;
+  }
+
+  // Recipe entries carry extended nutrients as flat fields (already scaled to the logged portion) with
+  // no foodNutrients. Fall back to them, rescaled if the amount was edited.
+  const flat = (food as any)?.[servingKey];
+  if (typeof flat === 'number' && flat !== 0) {
+    const baseCal = food.existingCal || food.cal || 0;
+    const scale = baseCal > 0 ? calories / baseCal : 1;
+    return Math.round(flat * scale * 10) / 10;
+  }
+  return null;
+}
+
 /** A recipe-style flat value for this nutrient, or null when the entry carries none. */
 export function entryFlatNutrient(e: any, nutrientName: string): number | null {
   const key = FLAT_NUTRIENT_KEY[nutrientName];

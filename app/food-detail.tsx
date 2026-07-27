@@ -30,7 +30,7 @@ import { storageSet } from '../utils/storage';
 import { cancelFoodLogNotification } from '../services/notifications';
 import { useTheme } from '../theme';
 import { DEFAULT_MEAL_SLOTS, MealSlot, loadMealSlots, getMealDisplayName } from '../utils/mealSlots';
-import { FLAT_NUTRIENT_KEY } from '../utils/nutrientScale';
+import { FLAT_NUTRIENT_KEY, computeDetailNutrient } from '../utils/nutrientScale';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { TUTORIAL_CHICKEN_BREAST } from '../data/tutorialFood';
@@ -1013,47 +1013,16 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
 
   // Helper: compute a scaled extended nutrient value for the current serving/amount state.
   // Returns null when no data is available at all for this nutrient.
-  const computeExtended = (servingKey: string, nutrientName: string): number | null => {
-    const sk = effectiveServing ? (effectiveServing as any)[servingKey] : null;
-    if (food?.fsId && effectiveServing && sk != null) {
-      if (useServingBased) return Math.round(sk * servingCount * 10) / 10;
-      if (servingRates && (servingRates as any)[servingKey] != null)
-        return Math.round((servingRates as any)[servingKey] * grams * 10) / 10;
-      return Math.round(sk * 10) / 10;
-    }
-    const n = food.foodNutrients?.find((fn: any) => fn.nutrientName === nutrientName);
-    if (n) {
-      let scale: number;
-      // A custom food's foodNutrients are its LABEL values for its own base serving. This used to
-      // divide by the SELECTED serving instead, so switching the picker to grams (a 1 g serving) made
-      // every nutrient 84x too big on an 84 g food -- visible on screen before you even logged it.
-      // The base serving is the only correct reference, whatever the picker says.
-      // Basis FIRST, before useExisting. useExisting means "show the stored numbers" and for calories
-      // and macros that is right -- they're stored as the logged portion. But foodNutrients is NOT: it
-      // describes one base serving. Applying a scale of 1 to it showed a 110 g entry its 84 g nutrients
-      // while the calories beside them read 110 g. Whenever the basis is known, the honest answer is
-      // always the same: how much of that block was eaten.
-      if (!food?.fsId && nutrientBasisSize) scale = grams / nutrientBasisSize;
-      else if (useExisting) scale = 1;
-      else if (!food?.fsId && effectiveServing && effectiveServing.grams > 0)
-        scale = useServingBased ? servingCount : grams / effectiveServing.grams;
-      else scale = multiplier;
-      return Math.round((n.value || 0) * scale * 10) / 10;
-    }
-    if (effectiveServing && sk != null && sk > 0) {
-      const raw = useServingBased ? sk * servingCount : servingRates ? (servingRates as any)[servingKey] * grams : sk;
-      return Math.round(raw * 10) / 10;
-    }
-    // Recipe entries carry extended nutrients as flat fields (already scaled to the logged
-    // portion) with no foodNutrients. Fall back to them, rescaled if the amount was edited.
-    const flat = (food as any)[servingKey];
-    if (typeof flat === 'number' && flat !== 0) {
-      const baseCal = food.existingCal || food.cal || 0;
-      const scale = baseCal > 0 ? calories / baseCal : 1;
-      return Math.round(flat * scale * 10) / 10;
-    }
-    return null;
-  };
+  // The maths itself now lives in utils/nutrientScale.ts so it can be tested against the day-totals
+  // side. The screen showing one number while the day's totals produce another is the entire bug class
+  // of 2026-07-27, and it was untestable while this lived inside the component. This is just the wiring
+  // that hands it the screen's current state.
+  const computeExtended = (servingKey: string, nutrientName: string): number | null =>
+    computeDetailNutrient(food, servingKey, nutrientName, {
+      calories, grams, multiplier, servingCount, useServingBased, useExisting,
+      nutrientBasisSize, effectiveServing, servingRates,
+    });
+
 
   // True when this entry carries recipe-style flat extended nutrients (so the edit screen
   // shows them instead of the "no detailed nutrition data" line).

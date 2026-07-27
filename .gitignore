@@ -57,6 +57,9 @@ google-services.json
 # Unit conversion test build output (npm run test:units)
 .units-test/
 
+# Nutrient scaling test build output (npm run test:nutrients)
+.nutrients-test/
+
 app-example
 
 # generated native folders

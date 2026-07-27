@@ -30,6 +30,14 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-27 **`npm run test:nutrients` -- the detail screen and the day totals can no longer disagree.**
+  25 assertions. The three ★ tests round-trip each food type (custom / barcode / text-searched / recipe)
+  and assert the number the Food Detail screen shows EQUALS the number that lands in the day's totals --
+  the exact disagreement behind the 82,500 mg sodium bug. Also pins the legacy fallback (a pre-2026-07-27
+  entry must still produce its historical 82,894.7, so "tidying up" that branch can't silently rewrite
+  history), the 29-nutrient recipe map (it shipped covering 12), and degenerate input yielding 0 rather
+  than Infinity. Required lifting computeExtended out of food-detail.tsx into utils/nutrientScale.ts --
+  verbatim, no logic change, device-verified on the chicken (982.1) and the buns (131.9).
 - 2026-07-27 **Edit Entry knows a custom food is custom (device-confirmed).** Opening a logged entry, the
   screen was never told the food was one of Justin's, so it built no serving list and INVENTED one --
   labelled with the food's own name and weighing whatever serving was actually picked. Hence "3 oz. · 1 g"

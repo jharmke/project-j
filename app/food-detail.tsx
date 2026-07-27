@@ -1248,10 +1248,16 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
       // native unit is already oz/mL (logged with no switch) AND portions switched to a sibling unit.
       // Grams stays canonical (loggedAmount/calPer100g/totals unchanged); these display-only fields
       // drive the meal card + Edit reopen so it reads "11 oz"/"240 mL" instead of a stale "11g".
-      const amtShowUnit = amountFamily.length > 0 && amountEntryUnit !== 'g';
-      const amtDisplayAmount = amountEntryUnit === amountBaseUnit
+      // Picking "oz" in the SERVING picker counts as choosing ounces, same as typing them on the Amount
+      // row. Units used to be their own dropdown on that row and were later merged into the serving
+      // picker, but this only ever watched the old one -- so logging a bun as 1 oz produced a meal card
+      // reading "Hot Dog Buns 28.3g", the weight instead of what was actually chosen.
+      const pickedUnitKey = (effectiveServing as any)?.isUnit ? (effectiveServing as any).unitKey : null;
+      const amtEntryUnit = pickedUnitKey ?? amountEntryUnit;
+      const amtShowUnit = amountFamily.length > 0 && amtEntryUnit !== 'g';
+      const amtDisplayAmount = amtEntryUnit === amountBaseUnit
         ? nameAmount
-        : String(Math.round(((convertUnit(parseFloat(amount), amountBaseUnit, amountEntryUnit) ?? 0)) * 100) / 100);
+        : String(Math.round(((convertUnit(parseFloat(amount), amountBaseUnit, amtEntryUnit) ?? 0)) * 100) / 100);
       // Editing a RECIPE entry's portion updated its calories and macros but left its nutrients at the
       // OLD portion: those live as flat fields on the entry, and this save never rewrote them. The
       // screen above already shows the rescaled figures, so the entry disagreed with what you just
@@ -1310,7 +1316,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
   // Preserve the food's serving NAME ("1 Cup", "1 scoop") so re-opening the entry shows it under
   // Servings instead of falling back to the raw amount+unit.
   servingLabelText: food.servingUnit || null,
-  displayUnit: amtShowUnit ? amountEntryUnit : null,
+  displayUnit: amtShowUnit ? amtEntryUnit : null,
   displayAmount: amtShowUnit ? amtDisplayAmount : null,
   servingGrams: effectiveServing?.grams,
   foodNutrients: baseNutrients,

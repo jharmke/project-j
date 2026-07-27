@@ -12,36 +12,16 @@ import GradientNumber from './GradientNumber';
 import ButtonShine from './ButtonShine';
 import { barFillGradient } from '../utils/barGradient';
 import { getNutrientInfo, NUTRIENT_DISCLAIMER } from '../utils/nutrientInfo';
+import { entryNutrientScale, FLAT_NUTRIENT_KEY } from '../utils/nutrientScale';
 
 // Recipe-logged entries store extended nutrients as FLAT fields (e.fiber, e.sodium, ...),
 // already scaled to the logged portion, NOT inside foodNutrients. Map readable names to those
 // flat keys so recipe nutrients show in the drilldown source list + net-carb math.
 // NOTE: this same map is mirrored in log.tsx and utils/diagnosticReport.ts -- centralize later.
-const FLAT_NUTRIENT_KEY: Record<string, string> = {
-  'Fiber, total dietary': 'fiber',
-  'Sugars, total including NLEA': 'sugar',
-  'Sodium, Na': 'sodium',
-  'Cholesterol': 'cholesterol',
-  'Fatty acids, total saturated': 'saturatedFat',
-  'Polyunsaturated Fat': 'polyunsaturatedFat',
-  'Monounsaturated Fat': 'monounsaturatedFat',
-  'Added Sugars': 'addedSugars',
-  'Trans Fat': 'transFat',
-  'Vitamin A': 'vitaminA',
-  'Vitamin C': 'vitaminC',
-  'Vitamin D': 'vitaminD',
-};
 
 export function computeNetCarbsForEntry(e: any): number {
   const carbs = e.carbs || 0;
-  let scale: number;
-  if (e.fsId) {
-    scale = (e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0;
-  } else {
-    const sg = e.servingGrams;
-    const servingCal = sg && (e.calPer100g ?? 0) > 0 ? (e.calPer100g ?? 0) * sg / 100 : 0;
-    scale = servingCal > 0 ? e.cal / servingCal : 0;
-  }
+  const scale = entryNutrientScale(e);
   const fiberN = e.foodNutrients?.find((fn: any) => fn.nutrientName === 'Fiber, total dietary');
   const sacarN = e.foodNutrients?.find((fn: any) => fn.nutrientName === 'Sugar Alcohols');
   // Recipe entries: fiber lives in the flat field, already portion-scaled.
@@ -137,15 +117,7 @@ export default function NutrientDrilldownModal({ visible, onClose, item, entries
           if (flatVal <= 0) continue;
           value = Math.round(flatVal * 10) / 10;
         } else {
-          let scale: number;
-          if (e.fsId) {
-            scale = (e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0;
-          } else {
-            const sg = e.servingGrams;
-            const servingCal = sg && (e.calPer100g ?? 0) > 0 ? (e.calPer100g ?? 0) * sg / 100 : 0;
-            scale = servingCal > 0 ? e.cal / servingCal : 0;
-          }
-          value = Math.round((n.value || 0) * scale * 10) / 10;
+          value = Math.round((n.value || 0) * entryNutrientScale(e) * 10) / 10;
         }
       } else if (item.directField) {
         value = Math.round(((e as any)[item.directField] || 0) * 10) / 10;

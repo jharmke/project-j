@@ -30,6 +30,7 @@ import { storageSet } from '../utils/storage';
 import { cancelFoodLogNotification } from '../services/notifications';
 import { useTheme } from '../theme';
 import { DEFAULT_MEAL_SLOTS, MealSlot, loadMealSlots, getMealDisplayName } from '../utils/mealSlots';
+import { FLAT_NUTRIENT_KEY } from '../utils/nutrientScale';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { TUTORIAL_CHICKEN_BREAST } from '../data/tutorialFood';
@@ -919,8 +920,12 @@ const [showTimePicker, setShowTimePicker] = useState(false);
     setAmountDraft(undefined);
   }, [amountBaseUnit]);
   const [servingCountTouched, setServingCountTouched] = useState(false);
+  // A FRACTION of a serving is a real thing to have logged (half a recipe, 0.74 of a portion). This
+  // used to clamp to a minimum of 1, so reopening such an entry showed "1" in the amount box while the
+  // card above it correctly said 0.74 servings -- and saving from that screen silently rounded the
+  // entry UP to a full serving. Only guard against zero/NaN, which would make the stepper unusable.
   const initialServingCount = resolvedServingGrams > 0 && food?.existingAmount
-    ? Math.max(1, parseFloat(food.existingAmount) / resolvedServingGrams)
+    ? (parseFloat(food.existingAmount) / resolvedServingGrams) || 1
     : 1;
   const [servingCount, setServingCount] = useState(initialServingCount);
   const [servingCountStr, setServingCountStr] = useState(initialServingCount.toString());
@@ -942,8 +947,13 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
   // When async My Foods lookup resolves, update servingCount to match the real base serving
   useEffect(() => {
     if (resolvedServingGrams > 0 && food?.existingAmount && !servingCountTouched) {
-      const count = Math.max(1, parseFloat(food.existingAmount) / resolvedServingGrams);
+      // Same fraction rule as initialServingCount above -- zero/NaN guarded, fractions preserved.
+      const count = (parseFloat(food.existingAmount) / resolvedServingGrams) || 1;
       setServingCount(count);
+      // The VISIBLE box reads servingCountStr, which this effect never updated. So even once the count
+      // was right, the field kept showing whatever it was built with -- the second half of why a 0.74
+      // entry displayed "1". Round for display only; servingCount keeps full precision for the maths.
+      setServingCountStr(count % 1 === 0 ? count.toString() : String(Math.round(count * 100) / 100));
     }
   }, [resolvedServingGrams]);
 
@@ -1170,7 +1180,24 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
       const amtDisplayAmount = amountEntryUnit === amountBaseUnit
         ? nameAmount
         : String(Math.round(((convertUnit(parseFloat(amount), amountBaseUnit, amountEntryUnit) ?? 0)) * 100) / 100);
+      // Editing a RECIPE entry's portion updated its calories and macros but left its nutrients at the
+      // OLD portion: those live as flat fields on the entry, and this save never rewrote them. The
+      // screen above already shows the rescaled figures, so the entry disagreed with what you just
+      // looked at. Rescale by the same calorie ratio the display uses. Non-recipe entries carry no flat
+      // fields, so this object stays empty for them and nothing changes.
+      const rescaledFlat: Record<string, number> = {};
+      if (isEditing) {
+        const baseCal = food.existingCal || food.cal || 0;
+        if (baseCal > 0 && calories !== baseCal) {
+          const ratio = calories / baseCal;
+          for (const key of Object.values(FLAT_NUTRIENT_KEY)) {
+            const v = (food as any)[key];
+            if (typeof v === 'number' && v !== 0) rescaledFlat[key] = Math.round(v * ratio * 10) / 10;
+          }
+        }
+      }
       const newEntry = {
+  ...rescaledFlat,
   // Serving-only recipe entries rebuild the name in servings (amount tracks the serving count), so an
   // edited count is reflected; everything else rebuilds from the edited amount + unit.
   name: isServingOnlyRecipe ? `${food.description} (${amount} ${amount === '1' ? 'serving' : 'servings'})` : `${food.description} (${nameAmount}${unitLabel(amountBaseUnit)})`,

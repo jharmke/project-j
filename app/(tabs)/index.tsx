@@ -27,6 +27,7 @@ import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, weig
 import { fireRatingTrigger } from '../../utils/ratingPrompt';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
+import { entryNutrient } from '../../utils/nutrientScale';
 import { barFillGradient } from '../../utils/barGradient';
 import { wakeMsFromStored, computeWaterPace, paceTone, pacePinTone, paceToneColor, paceLabel } from '../../utils/waterPace';
 import { runAfterLaunchSplash } from '../../utils/launchSplashGate';
@@ -1805,22 +1806,10 @@ export default function HomeScreen() {
             setTotalProtein(Math.round(clean.reduce((s: number, e: any) => s + (e.protein||0), 0) * 10) / 10);
             setTotalCarbs(  Math.round(clean.reduce((s: number, e: any) => s + (e.carbs  ||0), 0) * 10) / 10);
             setTotalFat(    Math.round(clean.reduce((s: number, e: any) => s + (e.fat    ||0), 0) * 10) / 10);
-            setTotalFiber(  Math.round(clean.reduce((s: number, e: any) => {
-              const n = e.foodNutrients?.find((fn: any) => fn.nutrientName === 'Fiber, total dietary');
-              if (!n) return s;
-              const scale = e.fsId
-                ? ((e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0)
-                : (() => { const sc = e.servingGrams && (e.calPer100g ?? 0) > 0 ? (e.calPer100g ?? 0) * e.servingGrams / 100 : 0; return sc > 0 ? e.cal / sc : 0; })();
-              return s + (n.value || 0) * scale;
-            }, 0) * 10) / 10);
-            setTotalSugarAlcohols(Math.round(clean.reduce((s: number, e: any) => {
-              const n = e.foodNutrients?.find((fn: any) => fn.nutrientName === 'Sugar Alcohols');
-              if (!n) return s;
-              const scale = e.fsId
-                ? ((e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0)
-                : (() => { const sc = e.servingGrams && (e.calPer100g ?? 0) > 0 ? (e.calPer100g ?? 0) * e.servingGrams / 100 : 0; return sc > 0 ? e.cal / sc : 0; })();
-              return s + (n.value || 0) * scale;
-            }, 0) * 10) / 10);
+            setTotalFiber(  Math.round(clean.reduce((s: number, e: any) =>
+              s + entryNutrient(e, 'Fiber, total dietary'), 0) * 10) / 10);
+            setTotalSugarAlcohols(Math.round(clean.reduce((s: number, e: any) =>
+              s + entryNutrient(e, 'Sugar Alcohols'), 0) * 10) / 10);
             setTodayEntries(clean);
           }
           setCaloriesBurned(parseInt(data.caloriesBurned)||0);

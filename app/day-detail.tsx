@@ -10,6 +10,7 @@ import { useTheme } from '../theme';
 import { storageSet } from '../utils/storage';
 import { DEFAULT_MEAL_SLOTS, MealSlot, findSlotForMeal, loadMealSlots, getMealDisplayName } from '../utils/mealSlots';
 import { resolveMealPhoto } from '../utils/mealPhotos';
+import { entryNutrient } from '../utils/nutrientScale';
 import { calcSleepScore, sleepScoreColor as getSleepScoreColor } from '../utils/sleepScore';
 import { recoveryZone } from '../utils/recoveryScore';
 import { Type, PAGE_TITLE } from '../typography';
@@ -192,14 +193,8 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
   const runningBmr = isToday && profileBmr > 0 ? Math.round((profileBmr / 1440) * minutesToday) : profileBmr;
   const netcals = totalCals - caloriesBurned - runningBmr;
 
-  const getEntryNutrient = (name: string, round = 10) => Math.round(entries.reduce((s: number, e: any) => {
-    const n = e.foodNutrients?.find((fn: any) => fn.nutrientName === name);
-    if (!n) return s;
-    const scale = e.fsId
-      ? ((e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0)
-      : (() => { const sc = e.servingGrams && (e.calPer100g ?? 0) > 0 ? (e.calPer100g ?? 0) * e.servingGrams / 100 : 0; return sc > 0 ? e.cal / sc : 0; })();
-    return s + (n.value || 0) * scale;
-  }, 0) * round) / round;
+  const getEntryNutrient = (name: string, round = 10) =>
+    Math.round(entries.reduce((s: number, e: any) => s + entryNutrient(e, name), 0) * round) / round;
   const totalFiber          = getEntryNutrient('Fiber, total dietary');
   const totalSodium         = Math.round(getEntryNutrient('Sodium, Na', 1));
   const totalSugar          = getEntryNutrient('Sugars, total including NLEA');

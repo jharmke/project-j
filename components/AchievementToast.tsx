@@ -127,8 +127,12 @@ const TIER_CONFIG: Record<AchievementDisplayTier, TierConfig> = {
 
 function getDisplayTier(def: AchievementDef): AchievementDisplayTier {
   if (def.displayTier) return def.displayTier;
-  if (def.tier === 'small')  return 'bronze';
-  if (def.tier === 'medium') return 'silver';
+  if (def.tier === 'small')   return 'bronze';
+  if (def.tier === 'medium')  return 'silver';
+  // Without this, an achievement whose REAL tier is diamond but which carries no displayTier flag falls
+  // through to gold. Sleep Legend is exactly that: a diamond badge on the achievements page and a gold
+  // toast. The page's copy of this function always had the branch; this one did not.
+  if (def.tier === 'diamond') return 'diamond';
   return 'gold';
 }
 

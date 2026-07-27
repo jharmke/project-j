@@ -30,6 +30,18 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-27 **Recipes finally count everywhere + nutrient scaling consolidated (device-confirmed).**
+  Day Detail, Home/Stats net carbs, the Stats graphs, weekly + monthly summaries and Smart Tips all
+  silently read recipe entries as ZERO nutrients -- only the Log tab, drilldown and EvR knew how. Now one
+  shared calculation (utils/nutrientScale.ts) replaces fourteen copy-pasted ones, so every screen agrees.
+  The recipe lookup also covered only 12 of the 24 nutrients a recipe stores, so recipe B vitamins,
+  magnesium, zinc, copper, caffeine and vitamins E/K read as zero even where recipes DID count.
+  Logged recipes now also store potassium/calcium/iron (tracked and displayed, silently dropped on save
+  -- future logs only). Editing a recipe's portion now rewrites its nutrients instead of leaving them at
+  the old portion. And a fractional serving count no longer clamps to 1 on reopen, which meant a 0.74
+  entry showed "1" and re-saving silently rounded it UP.
+  VERIFIED: Day Detail now matches the Log tab nutrient for nutrient (sodium 83,860 -> 84,477, fibre
+  8 -> 8.9, vitamin A 911 -> 1331); Log tab sodium/fibre did NOT move, which was the control.
 - 2026-07-27 **Achievement toast overhaul + tier re-tier (device-confirmed).** Toast card grows to fit a
   two-line name instead of crushing its own padding; tier name moved up into the coloured header line and
   the bottom row now carries the achievement's criteria; platinum is silver-white and diamond keeps the
@@ -1127,6 +1139,25 @@ WINS. Items graduate UP here from the backlog sections so good ideas don't rot d
 ships it leaves this list. Always offer at least one QUICK WIN when Justin asks what's next, and pull a
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
+- [NOW, surfaced + half-fixed 2026-07-27] **Extended nutrients scale against the WRONG serving size.**
+  Found live: a 110 g log of a custom 84 g food reported 82,500 mg sodium. Calories and macros are
+  CORRECT everywhere and always were -- this is detailed nutrients only.
+  ROOT CAUSE: an entry stores its nutrients as one block, but four different conventions exist for what
+  size that block describes. Barcode foods = per 100 g. Text-searched FatSecret foods = per whatever
+  serving was selected at save. Custom foods = per the food's own base serving. Recipes = per the exact
+  portion. Every reader assumes one convention, so it is wrong exactly where the assumption misses.
+  BROKEN: custom foods (both on the Food Detail screen and in day totals) and text-searched FatSecret
+  foods (day totals only -- the detail screen is fine, verified on device). CLEAN: barcode foods and
+  recipes, both verified on device by switching servings and checking every nutrient scaled with calories.
+  DONE 2026-07-27: the scaling was consolidated out of fourteen copies into utils/nutrientScale.ts, with
+  behaviour deliberately unchanged, so the correction now happens in ONE place. See RECENTLY SHIPPED.
+  REMAINING (Step B): record on each new entry what size its nutrient block describes, and read from
+  that instead of guessing. Additive -- existing entries keep reading exactly as they do today.
+  HISTORY: not repairable blind. Old entries carry no marker saying which convention they used, so a
+  barcode entry and a text-searched one are indistinguishable after the fact. Justin's call was fix
+  forward; a specific bad entry is fixed by deleting and re-logging it. Note EditFoodModal can change a
+  My Food's base serving AFTER entries were logged against it, so any future repair cannot trust today's
+  serving sizes either.
 
 - [TOP / EXPLORATION, opened 2026-07-26. NOTHING LOCKED -- read SPEC_celebrations.md before touching.]
   **Celebration overhaul.** Started from an unreadable achievement -- the centre text is hardcoded white

@@ -7,6 +7,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from './storage';
 import { GOAL_DEFICITS, loadCalorieTargets } from './calorieTarget';
+import { entryNutrient } from './nutrientScale';
 import { calcSleepScore } from './sleepScore';
 import { RULE_COPY, pickVariant, fillSlots } from './smartTipsCopy';
 
@@ -246,17 +247,7 @@ function parseIfTargetHours(method: string | null): number | null {
 }
 
 function getEntryNutrient(entry: any, name: string): number {
-  const n = entry.foodNutrients?.find((fn: any) => fn.nutrientName === name);
-  if (!n) return 0;
-  let scale: number;
-  if (entry.fsId) {
-    scale = (entry.calPer100g && entry.calPer100g > 0) ? (entry.cal / entry.calPer100g) : 0;
-  } else {
-    const sg = entry.servingGrams;
-    const servingCal = sg && entry.calPer100g > 0 ? entry.calPer100g * sg / 100 : 0;
-    scale = servingCal > 0 ? entry.cal / servingCal : 0;
-  }
-  return (n.value || 0) * scale;
+  return entryNutrient(entry, name);
 }
 
 function computeNet(day: WindowDay, burnAccuracyPct: number): number {

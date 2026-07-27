@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from './storage';
 import { addNotification } from './notifications';
+import { entryNutrient } from './nutrientScale';
 import { DayScore } from './dayScore';
 import { loadCalorieTargets } from './calorieTarget';
 import { effectiveExerciseMinutes } from './exerciseMinutes';
@@ -98,19 +99,7 @@ function avgFloat(values: number[], decimals = 1): number | null {
 }
 
 function advancedNutrient(entries: any[], nutrientName: string): number {
-  return entries.reduce((s: number, e: any) => {
-    const n = (e.foodNutrients as any[])?.find((fn: any) => fn.nutrientName === nutrientName);
-    if (!n) return s;
-    let scale: number;
-    if (e.fsId) {
-      scale = (e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0;
-    } else {
-      const sg = e.servingGrams;
-      const servingCal = sg && (e.calPer100g ?? 0) > 0 ? (e.calPer100g ?? 0) * sg / 100 : 0;
-      scale = servingCal > 0 ? e.cal / servingCal : 0;
-    }
-    return s + (n.value || 0) * scale;
-  }, 0);
+  return entries.reduce((s: number, e: any) => s + entryNutrient(e, nutrientName), 0);
 }
 
 function dateKeyFromMonthDay(year: number, month: number, day: number): string {

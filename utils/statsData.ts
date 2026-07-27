@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ADVANCED_NUTRIENTS } from '../statsCardRegistry';
 import { calcSleepScore } from './sleepScore';
+import { entryNutrient } from './nutrientScale';
 import { effectiveExerciseMinutes } from './exerciseMinutes';
 
 export type TrendData = {
@@ -145,19 +146,7 @@ export function computeDayNet(
 }
 
 function getEntryNutrient(entries: any[], nutrientName: string): number {
-  return Math.round(entries.reduce((s: number, e: any) => {
-    const n = e.foodNutrients?.find((fn: any) => fn.nutrientName === nutrientName);
-    if (!n) return s;
-    let scale: number;
-    if (e.fsId) {
-      scale = (e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0;
-    } else {
-      const sg = e.servingGrams;
-      const servingCal = sg && e.calPer100g > 0 ? e.calPer100g * sg / 100 : 0;
-      scale = servingCal > 0 ? e.cal / servingCal : 0;
-    }
-    return s + (n.value || 0) * scale;
-  }, 0) * 10) / 10;
+  return Math.round(entries.reduce((s: number, e: any) => s + entryNutrient(e, nutrientName), 0) * 10) / 10;
 }
 
 export const fetchTrendData = async (days: number, workoutState: any, sleepGoal = 8): Promise<TrendData> => {

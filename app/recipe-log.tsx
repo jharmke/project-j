@@ -209,6 +209,9 @@ export default function RecipeLogScreen() {
           ...(recipe.totalMonoFat    ? { monounsaturatedFat: Math.round((recipe.totalMonoFat    || 0) * multiplier * 10) / 10 } : {}),
           ...(recipe.totalAddedSugars ? { addedSugars:       Math.round((recipe.totalAddedSugars || 0) * multiplier * 10) / 10 } : {}),
           ...(recipe.totalTransFat   ? { transFat:           Math.round((recipe.totalTransFat   || 0) * multiplier * 10) / 10 } : {}),
+          ...(recipe.totalPotassium  ? { potassium:          Math.round((recipe.totalPotassium  || 0) * multiplier) } : {}),
+          ...(recipe.totalCalcium    ? { calcium:            Math.round((recipe.totalCalcium    || 0) * multiplier) } : {}),
+          ...(recipe.totalIron       ? { iron:               Math.round((recipe.totalIron       || 0) * multiplier * 10) / 10 } : {}),
           ...(recipe.totalVitaminA   ? { vitaminA:           Math.round((recipe.totalVitaminA   || 0) * multiplier) } : {}),
           ...(recipe.totalVitaminC   ? { vitaminC:           Math.round((recipe.totalVitaminC   || 0) * multiplier * 10) / 10 } : {}),
           ...(recipe.totalVitaminD   ? { vitaminD:           Math.round((recipe.totalVitaminD   || 0) * multiplier * 10) / 10 } : {}),
@@ -289,6 +292,12 @@ export default function RecipeLogScreen() {
         ...(recipe.totalZinc        ? { zinc:               Math.round((recipe.totalZinc       || 0) * multiplier * 10) / 10 } : {}),
         ...(recipe.totalCopper      ? { copper:             Math.round((recipe.totalCopper     || 0) * multiplier * 10) / 10 } : {}),
         ...(recipe.totalCaffeine    ? { caffeine:           Math.round((recipe.totalCaffeine   || 0) * multiplier) } : {}),
+        // Potassium, calcium and iron were tracked on the recipe and SHOWN on this screen, but never
+        // written onto the logged entry -- so every day's totals read them as zero for recipes, and no
+        // amount of fixing the readers could recover them. Recipes logged before this stay without them.
+        ...(recipe.totalPotassium   ? { potassium:          Math.round((recipe.totalPotassium  || 0) * multiplier) } : {}),
+        ...(recipe.totalCalcium     ? { calcium:            Math.round((recipe.totalCalcium    || 0) * multiplier) } : {}),
+        ...(recipe.totalIron        ? { iron:               Math.round((recipe.totalIron       || 0) * multiplier * 10) / 10 } : {}),
         timestamp: Date.now(),
       };
       entries.push(newEntry);

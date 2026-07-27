@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from './storage';
 import { offsetToDateKey } from './statsData';
+import { entryNutrient } from './nutrientScale';
 import { calcSleepScore } from './sleepScore';
 import { loadCalorieTargets } from './calorieTarget';
 import { computeEvrRecoveryFindings, EvrRecoveryFinding } from './smartTipsEngine';
@@ -205,33 +206,8 @@ export async function deleteReport(id: string): Promise<void> {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-// Recipe-logged entries store extended nutrients as FLAT fields (e.fiber, e.sodium, ...),
-// already scaled to the logged portion, NOT inside foodNutrients. Map the names we read to
-// those flat keys so recipe fiber/sodium aren't silently counted as 0.
-const FLAT_NUTRIENT_KEY: Record<string, string> = {
-  'Fiber, total dietary': 'fiber',
-  'Sodium, Na': 'sodium',
-};
-
 function getEntryNutrient(entries: any[], nutrientName: string): number {
-  return Math.round(entries.reduce((s: number, e: any) => {
-    const n = e.foodNutrients?.find((fn: any) => fn.nutrientName === nutrientName);
-    if (!n) {
-      // Fallback to the flat field (recipe entries). It's already the portion total -- no scaling.
-      const flatKey = FLAT_NUTRIENT_KEY[nutrientName];
-      if (flatKey && typeof e[flatKey] === 'number') return s + e[flatKey];
-      return s;
-    }
-    let scale: number;
-    if (e.fsId) {
-      scale = (e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0;
-    } else {
-      const sg = e.servingGrams;
-      const servingCal = sg && e.calPer100g > 0 ? e.calPer100g * sg / 100 : 0;
-      scale = servingCal > 0 ? e.cal / servingCal : 0;
-    }
-    return s + (n.value || 0) * scale;
-  }, 0) * 10) / 10;
+  return Math.round(entries.reduce((s: number, e: any) => s + entryNutrient(e, nutrientName), 0) * 10) / 10;
 }
 
 function avg(arr: number[]): number {

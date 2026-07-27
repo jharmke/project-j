@@ -17,6 +17,7 @@ import { useHealthKit, restoreAppleWorkoutHistory } from '../useHealthKit';
 import { useAuth } from '../AuthContext';
 import { BLANK_DAY, WorkoutTag } from '../workoutData';
 import CelebrationOverlay from '../components/CelebrationOverlay';
+import CelebrationVariant, { CelebVariant } from '../components/CelebrationVariants';
 import FeedbackModal from '../components/FeedbackModal';
 import { requestRatingPrompt, resetRatePromptBudget } from '../utils/ratingPrompt';
 import { showAchievementToast } from '../components/AchievementToast';
@@ -574,6 +575,7 @@ export default function SettingsScreen() {
   const [devCelebTier, setDevCelebTier] = useState<'small' | 'medium' | 'large' | 'diamond'>('small');
   const [devCelebLabel, setDevCelebLabel] = useState<string | undefined>(undefined);
   const [devCelebLongName, setDevCelebLongName] = useState(false);
+  const [devCelebStyle, setDevCelebStyle] = useState<'current' | CelebVariant>('current');
   const [devTapCount, setDevTapCount] = useState(0);
   const [devUnlocked, setDevUnlocked] = useState(false);
   const [devForceSleepManual, setDevForceSleepManual] = useState(false);
@@ -3953,6 +3955,37 @@ export default function SettingsScreen() {
               <Ionicons name="refresh-circle-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>
 
+            <View style={[styles.row, { borderTopColor: theme.borderCard, flexDirection: 'column', alignItems: 'stretch' }]}>
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Celebration Style</Text>
+              <Text style={[styles.rowSub, { color: theme.textMuted, marginBottom: 10 }]}>Which overlay the Small/Medium/Large buttons play. Prototypes only: nothing in the app fires these yet, and Current is always here to compare against. Diamond ignores this.</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {([
+                  { id: 'current', label: 'Current' },
+                  { id: 'refined', label: 'A · Confetti' },
+                  { id: 'badge',   label: 'C · Badge' },
+                  { id: 'bloom',   label: 'D · Light' },
+                ] as const).map(opt => {
+                  const on = devCelebStyle === opt.id;
+                  return (
+                    <TouchableOpacity
+                      key={opt.id}
+                      onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setDevCelebStyle(opt.id); }}
+                      style={{
+                        paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1,
+                        backgroundColor: on ? 'rgba(59,130,246,0.15)' : 'transparent',
+                        borderColor: on ? 'rgba(59,130,246,0.5)' : theme.borderCard,
+                      }}>
+                      <Text style={{
+                        fontSize: 12,
+                        fontFamily: on ? Type.uiBold : Type.uiMedium,
+                        color: on ? theme.accentBlue : theme.textMuted,
+                      }}>{opt.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
             <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Long Name</Text>
@@ -4248,14 +4281,26 @@ export default function SettingsScreen() {
         />
       )}
 
-      <CelebrationOverlay
-        visible={devCelebVisible}
-        tier={devCelebTier}
-        accentColor={theme.accentBlueRaw}
-        label={devCelebLabel}
-        def={devCelebTier === 'diamond' ? ACHIEVEMENTS.find(a => a.id === 'weight_goal') : undefined}
-        onDismiss={() => setDevCelebVisible(false)}
-      />
+      {/* Diamond always uses the real overlay -- it is not being redesigned and has no prototype. */}
+      {devCelebVisible && devCelebStyle !== 'current' && devCelebTier !== 'diamond' ? (
+        <CelebrationVariant
+          variant={devCelebStyle}
+          tier={devCelebTier}
+          accentColor={theme.accentBlueRaw}
+          label={devCelebLabel}
+          def={ACHIEVEMENTS.find(a => a.name === devCelebLabel)}
+          onDismiss={() => setDevCelebVisible(false)}
+        />
+      ) : (
+        <CelebrationOverlay
+          visible={devCelebVisible}
+          tier={devCelebTier}
+          accentColor={theme.accentBlueRaw}
+          label={devCelebLabel}
+          def={devCelebTier === 'diamond' ? ACHIEVEMENTS.find(a => a.id === 'weight_goal') : undefined}
+          onDismiss={() => setDevCelebVisible(false)}
+        />
+      )}
 
       <FeedbackModal visible={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
 

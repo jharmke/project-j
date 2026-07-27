@@ -34,6 +34,7 @@ import BodyMeasurementsCard from '../../components/BodyMeasurementsCard';
 import { ToastRenderer, useToast } from '../../components/Toast';
 import { EMPTY_TREND_DATA, TrendData, fetchTrendData as fetchTrendDataUtil, offsetToDateKey, computeDayNet, buildDailyBmrMap } from '../../utils/statsData';
 import { loadMetricPresence, seedMetricPresenceOnce, PresenceMap, PresenceMetric } from '../../utils/metricPresence';
+import { entryNutrient } from '../../utils/nutrientScale';
 import { evaluateCalorieGoalHit, paceTargetFromWeightGoal } from '../../utils/goalHit';
 import { StatsGraphCard, GRAPH_SWATCHES, MACRO_PROTEIN, MACRO_CARBS, MACRO_FAT } from '../../components/StatsGraphCard';
 import { StatsCardEditModal } from '../../components/StatsCardEditModal';
@@ -560,22 +561,10 @@ export default function StatsScreen() {
             totalProtein += data.entries.reduce((s: number, e: any) => s + (e.protein || 0), 0);
             totalCarbs   += data.entries.reduce((s: number, e: any) => s + (e.carbs || 0), 0);
             totalFat     += data.entries.reduce((s: number, e: any) => s + (e.fat || 0), 0);
-            totalFiber   += data.entries.reduce((s: number, e: any) => {
-              const n = e.foodNutrients?.find((fn: any) => fn.nutrientName === 'Fiber, total dietary');
-              if (!n) return s;
-              const scale = e.fsId
-                ? ((e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0)
-                : (() => { const sc = e.servingGrams && (e.calPer100g ?? 0) > 0 ? (e.calPer100g ?? 0) * e.servingGrams / 100 : 0; return sc > 0 ? e.cal / sc : 0; })();
-              return s + (n.value || 0) * scale;
-            }, 0);
-            totalSugarAlcohols += data.entries.reduce((s: number, e: any) => {
-              const n = e.foodNutrients?.find((fn: any) => fn.nutrientName === 'Sugar Alcohols');
-              if (!n) return s;
-              const scale = e.fsId
-                ? ((e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0)
-                : (() => { const sc = e.servingGrams && (e.calPer100g ?? 0) > 0 ? (e.calPer100g ?? 0) * e.servingGrams / 100 : 0; return sc > 0 ? e.cal / sc : 0; })();
-              return s + (n.value || 0) * scale;
-            }, 0);
+            totalFiber   += data.entries.reduce((s: number, e: any) =>
+              s + entryNutrient(e, 'Fiber, total dietary'), 0);
+            totalSugarAlcohols += data.entries.reduce((s: number, e: any) =>
+              s + entryNutrient(e, 'Sugar Alcohols'), 0);
             if (calTgt > 0) {
               const result = evaluateCalorieGoalHit({
                 consumed: dayCal,

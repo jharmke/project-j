@@ -744,7 +744,41 @@ Currently beta-inflated (see REVERT list). Final caps:
   Bebas Neue on the big amounts) + native polish (shadows/animations/haptics) + the real gold sprout (not emoji).
   Justin approved the layout 2026-07-11 ("fine, can tweak more when it's actually built").
 
-## UPSELL TOUCHPOINTS (low stakes -- only ~2 real ones)
+## UPSELL TOUCHPOINTS -- ✅ **BUILT. VERIFIED IN CODE 2026-07-28.**
+⚠️ THIS SECTION READ AS A TO-DO LIST UNTIL 2026-07-28 AND IT IS NOT ONE. Everything below is shipped, with
+the locked copy in place and "Supporter" wording throughout (no leftover "Pro" in any user-facing string).
+Reading this section as a plan sent a session down the wrong path -- it produced advice to "go build the
+conversion touchpoints" when they had been built for weeks. CHECK THE CODE BEFORE TRUSTING ANY "PLANNED"
+FRAMING IN THIS FILE.
+
+WHAT IS LIVE (every one of these routes to /support):
+- Custom Reports -- locked screen "Custom Reports is a Supporter feature" + "Become a Supporter →"
+  (app/reports.tsx), plus a lock icon on the Stats card that routes straight to Support.
+- Comparison / Day-vs-Day -- locked screen "Comparison is a Supporter feature" + "Become a Supporter →"
+  (app/comparison-report.tsx). Guards the screen itself, so it covers EVERY entry point, not just the card.
+- Effort vs Results (app/diagnostic-report-view.tsx) -- the most developed of them: free users get the FIRST
+  insight card in full, the rest frost behind a BlurView with an unlock CTA, and Patterns are fully locked.
+  Titles are deliberately hidden too (showing them crisp gave the finding away and made the lock pointless).
+- AI Meal Estimator at the limit -- "Become a Supporter to keep going →" (app/ai-meal-estimator.tsx).
+- Otto at the wall -- "Supporters get more time with Otto each day. Become a Supporter →"
+  (components/AssistantChat.tsx). Free users only, only at 1-left/none-left, never mid-conversation.
+- Halo -- shows the remaining count and NOTHING ELSE. No upsell, ever. Faith is not upcharged, and the code
+  comment says so explicitly. LOWERING HALO'S CAP NEEDS NO COPY CHANGE: the cap and the remaining-count
+  label already exist, so changing 50 -> 25 changes a number and nothing else.
+- MembershipCard (Profile + Settings) -- permanent, status-aware entry.
+
+THE ONE REAL GAP: `REPORTS_BETA_OPEN = true` in app/reports.tsx forces Reports open for EVERYONE regardless
+of entitlement. History: the flag was added 2026-07-07 when Reports shipped and no purchase system existed;
+the lock + RevenueCat both landed 2026-07-12 and the flag was left on so testers kept access. It is now
+redundant if testers are comped in RevenueCat (comping is manual/per-account, so it is really a safety net
+against a missed comp).
+⚠️ CONSEQUENCE WORTH KNOWING: because the flag bypasses the entitlement check entirely, THE REPORTS LOCKED
+SCREEN HAS NEVER BEEN SEEN BY ANYONE, including Justin. The "Force Free State" dev toggle does NOT reveal it
+(the flag is OR'd in ahead of isPro). Same class of blind spot already bit the EvR locked card, which has
+never had a shadow on iOS -- found by reading the code, not by looking at the screen, precisely because an
+entitled account never renders the locked state. Flip the flag false to eyeball these before launch.
+
+--- original planning notes, kept for the COPY (which is what shipped) ---
 Because 95% is free, there are very few walls. Keep every one honest + non-naggy, no core-flow interruption:
 - AI Estimator limit reached (INLINE on the estimator screen + a "Support the Mission" link/button beneath it,
   NOT a modal -- calmer, non-naggy). COPY LOCKED 2026-07-11: "You've used all your free estimates this month.

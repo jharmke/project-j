@@ -726,9 +726,37 @@ TWO CARVE-OUTS THAT ARE NOT ARBITRARY:
 - The macro/nutrition gate is barely a paywall in practice: four presets cover what most people need, so a
   free user is not locked out of eating properly, only out of precision.
 
+### DOWNGRADE BEHAVIOUR (PRINCIPLE AGREED 2026-07-28 -- applies to EVERY limit above)
+
+This is a PREREQUISITE, not a detail. Nothing above can ship until it is settled, because it governs
+ordinary churn (a card expires, someone cancels) as well as any trial or taste-then-step-down scheme.
+
+**THE PRINCIPLE: downgrading removes the ability to CREATE or CHANGE. It never removes the thing itself.**
+
+So a user with 40 custom foods who drops to a free limit of 20:
+- All 40 STAY. Visible, searchable, loggable, completely unchanged.
+- They cannot add a 41st until they are back under the limit.
+- Nothing is deleted, hidden, greyed out, or made read-only-looking.
+
+CUSTOM MACROS / NUTRITION GOALS -- THE IMPORTANT CARVE-OUT: their numbers STAY. They simply cannot change
+them again without resubscribing. Do NOT revert anyone to a preset. Silently moving someone's calorie or
+macro targets because their card expired would change what the app tells them to eat, through no action of
+their own. That is hostile, and it is the single worst thing this feature could do.
+
+This is the same line the section above already draws: cap creation, never touch data they already made.
+
+TELL THEM, ONCE, GRACEFULLY. Silence is worse -- they would hit a wall weeks later with no idea why. One
+gentle notice when the membership lapses. No guilt, no urgency, no countdown, never repeated.
+DRAFT COPY (not locked, Justin to refine):
+  "Your Supporter membership has ended. Everything you created while supporting is still yours and stays
+   exactly where it is. The only change is that adding new custom foods is paused until you are back under
+   the free limit. If you ever want to pick it back up, the door is open."
+Tone target: thank them for what they gave, be clear about what changed, ask for nothing.
+
 BUILD COST, stated honestly so it is not a surprise: eight separate limits, each needing a count, a check at
-the moment of creation, a locked state with its own copy, and the Supporter branch. Justin's words: "i know
-it will be a bitch to build and test but so be it." Nothing here has been built yet.
+the moment of creation, a locked state with its own copy, the Supporter branch, AND the over-limit state
+above (someone can legitimately be above a free cap without having done anything wrong). Justin's words:
+"i know it will be a bitch to build and test but so be it." Nothing here has been built yet.
 
 EXPECTATION SETTING: none of these sells a subscription on its own. Nobody pays $9.99/month for more recipe
 slots. What they do is make the bundle feel like a real product rather than "AI limits", at the moment

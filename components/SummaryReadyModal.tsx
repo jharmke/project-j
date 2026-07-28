@@ -20,6 +20,9 @@ import TooltipIcon from './TooltipIcon';
 import { scoreLabel } from '../utils/dayScore';
 import { periodSummaryLines } from '../utils/daySummaryCopy';
 import { ScoreRing } from './DaySummaryModal';
+// Keep in step with DaySummaryModal: the verdict label and the three category scores are gradient in both.
+// The hero ring number needs nothing here -- ScoreRing is shared, so fixing it there fixed it here too.
+import GradientNumber from './GradientNumber';
 import { Type, numLine } from '../typography';
 import ButtonShine from './ButtonShine';
 import GradientTitle from './GradientTitle';
@@ -162,9 +165,11 @@ export default function SummaryReadyModal({
             {/* Hero composite ring + label + context line */}
             <View style={{ alignItems: 'center', marginTop: 12 }}>
               <ScoreRing value={composite} color={heroColor} theme={theme} celebrate={celebrate} />
-              <Text style={{ fontSize: 20, letterSpacing: 2, fontFamily: Type.num, color: heroColor, marginTop: 8 }}>
-                {scoreLabel(shownComposite, styleMode).toUpperCase()}
-              </Text>
+              <GradientNumber
+                value={scoreLabel(shownComposite, styleMode).toUpperCase()}
+                color={heroColor}
+                style={{ fontSize: 20, letterSpacing: 2, fontFamily: Type.num, marginTop: 8 }}
+              />
               <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.ui, fontStyle: 'italic', marginTop: 4 }}>{contextLine}</Text>
             </View>
 
@@ -176,9 +181,11 @@ export default function SummaryReadyModal({
                     <Ionicons name={p.icon} size={10} color={theme.textMuted} />
                     <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: Type.uiBold }}>{p.label}</Text>
                   </View>
-                  <Text style={{ fontSize: 24, lineHeight: numLine(24), fontFamily: Type.num, color: p.val !== null ? theme.textSecondary : theme.textDim, marginTop: 2 }}>
-                    {p.val !== null ? Math.round(p.val) : '--'}
-                  </Text>
+                  <GradientNumber
+                    value={p.val !== null ? String(Math.round(p.val)) : '--'}
+                    color={p.val !== null ? theme.textSecondary : theme.textDim}
+                    style={{ fontSize: 24, lineHeight: numLine(24), fontFamily: Type.num, marginTop: 2 }}
+                  />
                   <View style={{ width: '100%', height: 5, borderRadius: 3, backgroundColor: barColor(p.val) + '33', marginTop: 6, overflow: 'hidden' }}>
                     <PillBar value={p.val} color={barColor(p.val)} progress={barProgress} />
                   </View>

@@ -30,6 +30,19 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-28 **Summary modals, faith bars and delete icons.** Day/Weekly/Monthly summary MODALS: verdict
+  label + the three category scores now gradient, and the hero ring number un-muted (it always used
+  GradientNumber, but an `opacity: 0.92` was washing the moulding out and leaving it flat next to the
+  summary PAGES, which were already right). ScoreRing is shared, so the Day fix carried to Weekly/Monthly.
+  The win line ("Every set checked off. Done.") LEFT AS IS on Justin's call -- worth knowing it is earned,
+  not random (it picks your best-performing sub-score), but there is exactly ONE sentence per category and a
+  single fixed line that overrides everything for a Rooted user who logged faith that day, so a consistent
+  user sees the same sentence indefinitely. Home Faith card progress bars matched to the Faith tab's (the
+  giveaway was a missing amber hairline border, plus a fill sitting flush instead of inset). Plans and
+  Devotionals delete icons now red instead of grey, matching every other delete in the app. Faith bars on
+  the Plans/Devotional PAGES deliberately left alone (not on warm cards). The remaining Home-vs-Faith-tab
+  difference is the TILE, not the bar: 6% vs ~8.6% amber wash plus Home's 3px orange left stripe -- Justin
+  looked and chose to leave it.
 - 2026-07-27 **Celebrations are RISING MOTES now, not confetti (device-confirmed).** Soft points of light
   drifting up and fading. 42 / 68 / 100 for small / medium / large; diamond untouched. Same colour rule
   as the old confetti (60% accent, 25% off-white, 15% gold, with gold taking over if the accent is too
@@ -1242,12 +1255,6 @@ are separate pre-submission checklists, NOT part of this menu.
   NOT PROVEN EITHER -- it is the best remaining explanation, not a confirmed one.
   Note `uploadAllLocal` on background is supposed to catch stragglers; whether it ran is unknown.
   Settings already has "Backup Verify (read-only)" + "Upload All Data", which is the manual safety net.
-- [NEW 2026-07-28] Home Faith card progress bars are still the wrong color -- they don't match the
-  Faith tab's bars. Also verify every other faith bar (Plans, Devotionals, Reading Plans, etc.).
-- [NEW 2026-07-28] Day Summary modal: the hero number in the donut (94) is flat green, not gradient.
-  And "Every set checked off. Done." renders in the plain body font, looks cheap -- (1) fix the font,
-  (2) decide whether that line earns its place at all. Verify Weekly + Monthly summaries got the
-  same treatment.
 - [NEW 2026-07-28] Notification landing audit -- where each type actually drops you, not just which tab.
   Two types checked so far on 2026-07-28:
   - ❌ WEIGHT: opens the Home tab but drops you mid-scroll with the weight card half-hidden under the

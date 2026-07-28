@@ -687,6 +687,53 @@ noise against a $6,000 cost base, and non-recurring.
 NEXT STEP IS MEASUREMENT, NOT MORE DECISIONS. Then the caps conversation (levers 1-3: Halo's free cap, the
 caching fix, and free cap levels generally). Price was lever 4 and is done.
 
+## NON-AI SUPPORTER PERKS (DIRECTION AGREED 2026-07-28 -- ⚠️ EVERY FREE-TIER NUMBER IS TBD)
+
+WHY THIS EXISTS. Justin's long-standing worry -- "there isn't a huge reason to buy a Supporter plan because
+there isn't much behind the paywall" -- was still true. The unit-economics pass on 2026-07-28 made it urgent
+for a second reason: the whole subscription case rested on AI, and AI is the one thing that COSTS money to
+deliver. Gating more AI saves cost but shrinks the product. These perks do the opposite: they cost NOTHING
+per user to serve, so every one of them adds subscription value with no bill attached. That is the point.
+
+THE ORGANISING RULE, and Justin's own instinct on it: **LIMIT, don't paywall.** Free users get a generous
+amount and hit a wall once they are invested. Someone who has built 20 custom foods has a real reason to
+pay; someone who was never allowed to build one never discovered why they would want to. Limits also read
+as fairer -- you got to use the thing, you just used a lot of it. That is the difference between a
+conversion moment and a wall people bounce off.
+
+THE OTHER LINE, from the same conversation -- capping CREATION is normal and nobody blinks (every major
+fitness app does it). Restricting access to data a user already logged is hostile and would be read as
+hostile. Everything below caps creation. Nothing below touches anyone's existing data.
+
+| Perk | Free | Supporter |
+|---|---|---|
+| Custom foods | **TBD** | Unlimited |
+| Custom recipes | **TBD** | Unlimited |
+| Custom exercise library entries | **TBD** | Unlimited |
+| Custom stats graph cards | **TBD** | Unlimited |
+| Meal slots | **TBD** (of 8) | 8 |
+| Custom macro goals | Presets only (High Protein / Balanced / Low Carb / Performance) | Custom split |
+| Custom nutrition goals | Presets only | Custom |
+| Data export | None | Yes |
+
+⚠️ **NO FREE-TIER NUMBER IS LOCKED.** Justin explicitly wants to discuss each one; do not treat any figure
+as decided. Starting points floated in conversation (25 foods / 10 recipes / 15 exercises / 2 graphs /
+5 meal slots) were guesses to react to, not proposals, and are deliberately NOT recorded in the table.
+
+TWO CARVE-OUTS THAT ARE NOT ARBITRARY:
+- CUSTOM CALORIE GOAL STAYS FREE. Only the MACRO SPLIT is gated. If someone's calculated target is wrong
+  and they cannot correct it, the app reads as broken rather than gated.
+- The macro/nutrition gate is barely a paywall in practice: four presets cover what most people need, so a
+  free user is not locked out of eating properly, only out of precision.
+
+BUILD COST, stated honestly so it is not a surprise: eight separate limits, each needing a count, a check at
+the moment of creation, a locked state with its own copy, and the Supporter branch. Justin's words: "i know
+it will be a bitch to build and test but so be it." Nothing here has been built yet.
+
+EXPECTATION SETTING: none of these sells a subscription on its own. Nobody pays $9.99/month for more recipe
+slots. What they do is make the bundle feel like a real product rather than "AI limits", at the moment
+someone is already deciding. The AI remains the actual reason to subscribe.
+
 ## PERKS LIST (what Supporter unlocks -- exact caps in LOCKED DECISIONS #3)
 - AI Meal Estimator: free 5/month; Supporter 100/month (Sonnet; most defensible paid line -- real $/call).
 - Otto (appCompanion): free 10/day; Supporter 25/day (Haiku).

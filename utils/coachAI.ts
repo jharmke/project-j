@@ -33,7 +33,16 @@ const COACH_TIP_KEY = 'pj_coach_tip';
 // out on the client and every coach tip fell back to the 1-sentence template, even though the Anthropic
 // call succeeded server-side. Raised to 20s to match the feed voicer's proven budget (voiceDiagnosticCards).
 const API_TIMEOUT_MS = 20000;
-const MODEL = 'claude-sonnet-4-6';
+// Haiku since 2026-07-28 (was Sonnet). Safe because this model does NO analysis: the RULEBOOK below tells
+// it "the app's brain has already done all the work... your only job is to phrase that verdict". Every
+// number, finding and verdict is computed deterministically in code and handed over, so the model cannot
+// make a tip wrong -- only less well written. Cuts roughly 78% off Smart Coach's cost (~14% of the app's
+// whole AI bill) at zero risk to accuracy.
+// WHAT TO WATCH: the rulebook is long and strict (no dashes, no jargon, no AI-isms, a different opening per
+// coaching mode, one time-window per tip). Haiku follows long style rules less reliably than Sonnet, so if
+// anything degrades it will be STYLE, not content. Revert this one line if the writing drops off.
+// NOTE: the model must also be in ALLOWED_MODELS in functions/src/aiProxy.ts or the relay rejects the call.
+const MODEL = 'claude-haiku-4-5';
 
 // ── RULEBOOK ──────────────────────────────────────────────────────────────────
 

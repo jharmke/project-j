@@ -23,7 +23,10 @@ const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
 
 // Only the model these two features actually use. Anything else is rejected so the relay cannot be
 // repurposed to call arbitrary (for example, more expensive) models on our key.
-const ALLOWED_MODELS = new Set(['claude-sonnet-4-6']);
+// Smart Coach moved to Haiku 2026-07-28 (it only PHRASES a verdict the app already computed, so there is
+// no accuracy risk -- see the note on MODEL in utils/coachAI.ts). The estimator stays on Sonnet: it does
+// real vision work identifying food, which is exactly the kind of task the cheaper model would hurt.
+const ALLOWED_MODELS = new Set(['claude-sonnet-4-6', 'claude-haiku-4-5']);
 
 const MAX_TOKENS_CEILING = 2000; // coach uses <= 1100, estimator 1500; hard ceiling on cost.
 

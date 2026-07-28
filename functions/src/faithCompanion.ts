@@ -38,7 +38,8 @@ const SUPPORTER_DAILY_CAP = 25;
 
 // Dev/test accounts that bypass the daily cap (effectively unlimited). Empty this before
 // public launch. Currently just Justin's uid for testing.
-const DEV_UNLIMITED_UIDS = ['zLZOx2aqiKXcl3tlg7LNmkwbGxH3'];
+// EMPTIED 2026-07-28 alongside Otto's list -- same reasoning, must be EMPTY at launch.
+const DEV_UNLIMITED_UIDS: string[] = [];
 
 // Cheap, fast model (Justin's intentional cost choice; tune up to Sonnet 4.6 if quality
 // needs it). Alias form, no date suffix.

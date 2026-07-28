@@ -2270,8 +2270,13 @@ export default function StatsScreen() {
             if (section.systemKey === 'reports') return (
               <View key={section.id} onLayout={e => { reportsLayoutY.current = e.nativeEvent.layout.y; }}>
               <CollapsibleSection label={section.label} subtitle="Custom Reports, Summaries, Comparison and Effort vs. Results" defaultOpen={isFirst} theme={theme} first={isFirst} forceOpen={reportsSectionForceOpen} entering={FadeInDown.delay(idx * 60).springify()}>
-                {/* Custom Reports (Pro; beta-open to all testers) -- build-your-own report */}
-                <TouchableOpacity activeOpacity={0.8} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push(reportsLocked ? '/support' : '/reports'); }}
+                {/* Custom Reports (Supporter-gated) -- build-your-own report.
+                    Always routes to /reports, even when locked. It used to jump straight to /support, which
+                    LEAPT OVER the locked screen reports.tsx already renders ("Custom Reports is a Supporter
+                    feature" + "Become a Supporter →") -- so that screen existed but nobody could ever reach
+                    it, and a free user got thrown at a sales page with no explanation of what they were
+                    missing. Comparison already behaves the right way; this matches it. */}
+                <TouchableOpacity activeOpacity={0.8} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/reports'); }}
                   style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 13 }]}>
                   <CardWatermark name="documents" color={theme.accentBlueRaw} size={120} />
                   <View style={{ width: 42, height: 42, borderRadius: 11, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, alignItems: 'center', justifyContent: 'center' }}>

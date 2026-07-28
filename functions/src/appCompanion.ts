@@ -49,7 +49,10 @@ const SUPPORTER_DAILY_CAP = 30;
 
 // Dev/test accounts that bypass the daily cap (effectively unlimited). Empty this before public
 // launch. Currently just Justin's uid for testing (same uid Halo whitelists).
-const DEV_UNLIMITED_UIDS = ['zLZOx2aqiKXcl3tlg7LNmkwbGxH3'];
+// EMPTIED 2026-07-28 (Justin's own uid removed) so he experiences the real caps like any other user --
+// he found the unreachable Reports locked screen precisely by being on the free path. Add a uid back here
+// temporarily if heavy Otto testing needs it; must be EMPTY at launch either way.
+const DEV_UNLIMITED_UIDS: string[] = [];
 
 // Cheap, fast model (matches Halo). Alias form, no date suffix.
 const MODEL = 'claude-haiku-4-5';

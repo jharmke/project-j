@@ -797,14 +797,31 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
             {/* Otto's free-user nudge. Copy locked in SPEC_monetization. Shown ONLY to a free user and
                 ONLY at the wall (1 left / none left) -- never mid-conversation, never to a Supporter, and
                 never on Halo (faith is never upcharged). This is the whole "never nag" rule in one place:
-                the ask appears at the moment it's actually useful information, and nowhere else. */}
+                the ask appears at the moment it's actually useful information, and nowhere else.
+                Closes Otto BEFORE navigating (same fade-then-route pattern as openRoute above). It used to
+                push /support with the sheet still mounted, leaving the chat sitting on top of the page it
+                had just sent you to.
+                The CTA half is bold + underlined because at the wall the quota line ALSO turns accent
+                (deliberately, so the wall isn't abrupt) -- so without this the two lines are identical in
+                colour, size and weight and read as one paragraph with nothing to suggest a tap target.
+                paddingVertical (not hitSlop) grows the row to ~44pt: hitSlop would have reached down into
+                the input bar and stolen taps from the send button. */}
             {showQuota && quotaLow && !isSupporter && (
               <Pressable
-                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/support' as any); }}
-                hitSlop={{ top: 6, bottom: 6, left: 12, right: 12 }}
+                onPress={() => {
+                  triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+                  Keyboard.dismiss();
+                  Animated.timing(anim, { toValue: 0, duration: 180, useNativeDriver: false }).start(() => {
+                    onClose();
+                    router.push('/support' as any);
+                  });
+                }}
+                style={{ paddingVertical: 10 }}
+                hitSlop={{ top: 2, bottom: 2, left: 12, right: 12 }}
               >
-                <Text style={[styles.quota, { color: accent, marginTop: 2 }]}>
-                  Supporters get more time with Otto each day. Become a Supporter →
+                <Text style={[styles.quota, { color: accent, paddingTop: 0, paddingBottom: 0 }]}>
+                  Supporters get more time with Otto each day.{' '}
+                  <Text style={{ fontFamily: Type.uiBold, textDecorationLine: 'underline' }}>Become a Supporter →</Text>
                 </Text>
               </Pressable>
             )}

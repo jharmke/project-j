@@ -378,6 +378,7 @@ export default function StatsScreen() {
   const [daySummariesOpen, setDaySummariesOpen] = useState(false);
   const [evrCardOpen, setEvrCardOpen] = useState(false);
   const [comparisonCardOpen, setComparisonCardOpen] = useState(false);
+  const [reportsCardOpen, setReportsCardOpen] = useState(false);
   const [weeklyCardOpen, setWeeklyCardOpen] = useState(false);
   // Weekly Summaries card: loaded from storage, grouped by month.
   const [weeklySummaries, setWeeklySummaries] = useState<WeeklySummaryData[]>([]);
@@ -2270,19 +2271,22 @@ export default function StatsScreen() {
             if (section.systemKey === 'reports') return (
               <View key={section.id} onLayout={e => { reportsLayoutY.current = e.nativeEvent.layout.y; }}>
               <CollapsibleSection label={section.label} subtitle="Custom Reports, Summaries, Comparison and Effort vs. Results" defaultOpen={isFirst} theme={theme} first={isFirst} forceOpen={reportsSectionForceOpen} entering={FadeInDown.delay(idx * 60).springify()}>
-                {/* Custom Reports (Supporter-gated) -- build-your-own report.
-                    Always routes to /reports, even when locked. It used to jump straight to /support, which
-                    LEAPT OVER the locked screen reports.tsx already renders ("Custom Reports is a Supporter
-                    feature" + "Become a Supporter →") -- so that screen existed but nobody could ever reach
-                    it, and a free user got thrown at a sales page with no explanation of what they were
-                    missing. Comparison already behaves the right way; this matches it. */}
-                <TouchableOpacity activeOpacity={0.8} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/reports'); }}
-                  style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 13 }]}>
-                  <CardWatermark name="documents" color={theme.accentBlueRaw} size={120} />
-                  <View style={{ width: 42, height: 42, borderRadius: 11, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, alignItems: 'center', justifyContent: 'center' }}>
-                    <Ionicons name="document-text" size={22} color={theme.accentBlue} />
-                  </View>
-                  <View style={{ flex: 1 }}>
+                {/* ── Custom Reports (launch card) ──
+                    Rebuilt 2026-07-28 to match Comparison exactly. It used to be a navigate-straight-in card
+                    with a 42pt icon tile and a chevron -- the ONLY non-collapsible item in a section where
+                    everything else collapses, which is why it never looked like it belonged. The icon went
+                    with it (nothing else here has one).
+                    Locked behaviour now matches Comparison too: the card explains the feature in place, so
+                    the button goes straight to /support rather than to the locked page. The locked page in
+                    reports.tsx is still the real access GUARD on the tool and is still reached from the FAB
+                    shortcut, which does not check entitlement. */}
+                <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginBottom: 12 }]}>
+                  {reportsCardOpen && <CardWatermark name="documents" color={theme.accentBlueRaw} />}
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setReportsCardOpen(o => !o); }}
+                    style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: reportsCardOpen ? 8 : 0 }}
+                  >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <Text style={[styles.cardLabel, { color: theme.textMuted }]}>CUSTOM REPORTS</Text>
                       {/* Lock ONLY -- no "SUPPORTER" chip. Styled like a badge, that word reads as a
@@ -2290,10 +2294,29 @@ export default function StatsScreen() {
                           names the tier. */}
                       {reportsLocked && <Ionicons name="lock-closed" size={12} color={theme.textMuted} />}
                     </View>
-                    <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textSecondary, lineHeight: 18, marginTop: 4 }}>Build your own: pick a date range and the blocks you care about.</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
-                </TouchableOpacity>
+                    <Ionicons name={reportsCardOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textMuted} />
+                  </TouchableOpacity>
+                  {reportsCardOpen && (
+                    <>
+                      <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textSecondary, lineHeight: 20, marginBottom: 14 }}>
+                        Build your own: pick a date range and the blocks you care about.
+                      </Text>
+                      <TouchableOpacity
+                        activeOpacity={0.85}
+                        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push(reportsLocked ? '/support' : '/reports'); }}
+                        style={{
+                          flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+                          backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
+                          borderRadius: 8, paddingVertical: 12,
+                        }}
+                      >
+                        <ButtonShine radius={8} />
+                        <Ionicons name={reportsLocked ? 'lock-open' : 'document-text'} size={14} color={theme.accentBlue} />
+                        <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>{reportsLocked ? 'Become a Supporter' : 'Open Custom Reports'}</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
                 <View style={[styles.card, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginTop: 12 }]}>
                   {evrCardOpen && <CardWatermark name="analytics" color={theme.accentBlueRaw} />}
                   <TouchableOpacity

@@ -25,6 +25,11 @@ import ScreenHeader from '../components/ScreenHeader';
 import BackgroundLayers from '../components/BackgroundLayers';
 import PrimaryCTA from '../components/PrimaryCTA';
 import GradientNumber from '../components/GradientNumber';
+// GradientTitle's own note says it is wired through ScreenHeader/ModalHeader rather than called from a
+// screen -- that is about not duplicating TITLE wiring, and this is a card headline, not a page title.
+// MembershipCard already uses it the same way.
+import GradientTitle from '../components/GradientTitle';
+import GradientIcon from '../components/GradientIcon';
 
 // ✅ FLIPPED FALSE 2026-07-28. Reports is now genuinely Supporter-gated, as designed.
 // History: this flag was born 2026-07-07 when Reports shipped and no purchase system existed -- it was the
@@ -77,13 +82,18 @@ export default function ReportsHub() {
     return (
       <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
         <ScreenHeader title="Reports" />
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <View style={{ backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 14, padding: 20, alignItems: 'center', shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
-            {/* Lock only -- the headline right below already names the tier. */}
+        {/* Sits in the upper third, not dead centre: centred in a full-height container it floated with a
+            screen's worth of nothing above it and read as lost rather than deliberate. */}
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-start', paddingTop: 40, paddingHorizontal: 24, paddingBottom: 24 }}>
+          {/* borderTopColor matches every card on the Stats tab -- without it this looked like it came from
+              a different app. */}
+          <View style={{ backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.accentBlueBorder, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, borderRadius: 14, padding: 20, alignItems: 'center', shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
+            {/* Lock only -- the headline right below already names the tier. Gradient-masked to match the
+                headline; a flat glyph above gradient text read as two different design languages. */}
             <View style={{ marginBottom: 12 }}>
-              <Ionicons name="lock-closed" size={20} color={theme.textMuted} />
+              <GradientIcon name="lock-closed" size={20} color={theme.textSecondary} />
             </View>
-            <Text style={{ fontSize: 17, color: theme.textSecondary, fontFamily: Type.uiBold, textAlign: 'center', marginBottom: 8 }}>Custom Reports is a Supporter feature</Text>
+            <GradientTitle title="Custom Reports is a Supporter feature" color={theme.textSecondary} style={{ fontSize: 17, fontFamily: Type.uiBold, textAlign: 'center', marginBottom: 8 }} />
             <Text style={{ fontSize: 14, color: theme.textMuted, fontFamily: Type.ui, lineHeight: 21, textAlign: 'center', marginBottom: 18 }}>
               Build your own report from any period, with the stats that matter most to you.
             </Text>

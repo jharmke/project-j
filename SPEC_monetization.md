@@ -707,18 +707,49 @@ hostile. Everything below caps creation. Nothing below touches anyone's existing
 
 | Perk | Free | Supporter |
 |---|---|---|
-| Custom foods | **TBD** | Unlimited |
-| Custom recipes | **TBD** | Unlimited |
-| Custom exercise library entries | **TBD** | Unlimited |
-| Custom stats graph cards | **TBD** | Unlimited |
-| Meal slots | **TBD** (of 8) | 8 |
+| Custom foods | **20** | Unlimited |
+| Custom recipes | **5** | Unlimited |
+| Custom exercise library entries | **15** | Unlimited |
+| Custom stats graph cards | **1** | Unlimited |
+| Meal slots | **4** (the defaults, all renameable) | 8 |
 | Custom macro goals | Presets only (High Protein / Balanced / Low Carb / Performance) | Custom split |
 | Custom nutrition goals | Presets only | Custom |
 | Data export | None | Yes |
 
-⚠️ **NO FREE-TIER NUMBER IS LOCKED.** Justin explicitly wants to discuss each one; do not treat any figure
-as decided. Starting points floated in conversation (25 foods / 10 recipes / 15 exercises / 2 graphs /
-5 meal slots) were guesses to react to, not proposals, and are deliberately NOT recorded in the table.
+NUMBERS LOCKED 2026-07-28 (revisit once there is real data on what people actually create). The rule they
+were set by: **the limit should bite the COMMITTED user, never the casual one.** A casual user hitting a
+wall is someone annoyed who was never going to pay; a committed user hitting one is invested and it is a
+real conversion moment. Aim for roughly the top 10-20% of users reaching each.
+
+WHY EACH NUMBER:
+- CUSTOM FOODS 20. The only limit on this list where hitting the wall degrades the CORE JOB of the app
+  rather than removing a nicety: anyone who cooks at home or shops regionally hits missing database entries
+  constantly, and without custom foods they cannot log accurately at all. Justin opened at 10-15, Claude
+  argued 30 then 20; 20 agreed. **Do not take this below 15** -- 10 could be gone inside a fortnight for a
+  real home cook, and at that point the app stops doing the thing it exists to do.
+- CUSTOM RECIPES 5. Failing here is an inconvenience, not a blocker: ingredients can always be logged
+  individually. Far more effort per item so far fewer get made.
+- CUSTOM EXERCISES 15. Justin's call over Claude's 10, and his reasoning was better: a frequent lifter with
+  a few specific machines burns 10 quickly.
+- CUSTOM STATS GRAPHS 1. The app already ships SEVEN default graph cards (Weight, Calories, Macros, Steps,
+  Active Calories, Sleep, Workout Frequency) plus six system cards, so free users are already well covered.
+  Anything beyond those is a niche metric by definition. One free lets someone build it, see the value, and
+  want a second. Zero would be a hard paywall and would lose that moment.
+- MEAL SLOTS 4 (a full paywall on extras, Justin's instinct, agreed). Four covers virtually everyone and all
+  four are renameable, so free users still get customisation -- just not more slots. The least core item on
+  the list.
+
+⚠️ **EVERY LIMIT IS CONCURRENT, NOT LIFETIME.** It counts how many you HAVE right now, not how many you
+have ever created. Delete one and the slot frees up.
+  WHY, because "they could just delete and rebuild" looks like abuse and is not: the value of the paid tier
+  is seeing MANY AT ONCE. Someone swapping their single graph between Recovery and Fiber still only ever
+  sees one; a Supporter sees five simultaneously. Swapping is also high-friction (rebuild the whole config
+  each time) and nobody sustains that to dodge $9.99.
+  THE LIFETIME MODEL HAS A GENUINELY BAD FAILURE: build a graph, mistype the label, delete it to start over,
+  and you can never build another. That earns an angry one-star review and the user would be right. Same
+  logic kills it for custom foods -- deleting a food you entered wrong must not permanently cost a slot.
+  It is also the only model consistent with the downgrade rule below ("removes the ability to create, never
+  the thing itself"); a lifetime count has no coherent answer to what "over the limit" means.
 
 TWO CARVE-OUTS THAT ARE NOT ARBITRARY:
 - CUSTOM CALORIE GOAL STAYS FREE. Only the MACRO SPLIT is gated. If someone's calculated target is wrong

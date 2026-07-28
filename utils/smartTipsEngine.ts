@@ -307,6 +307,25 @@ async function saveSmartTipsStore(store: SmartTipsStore): Promise<void> {
 
 // ── Window loading ────────────────────────────────────────────────────────────
 
+// A cheap signature of the coaching window's underlying data, used to decide whether a cached packet is
+// still trustworthy. Deliberately covers three failure shapes:
+//   - days APPEARING or DISAPPEARING (count changes) -- the case that caused the 2026-07-28 bug, where a
+//     half-restored storage made days invisible and the window silently slid ~9 days back into mid-July;
+//   - the window SLIDING (newest present date changes);
+//   - any EDIT to any day in the window (total raw length changes), e.g. correcting an old entry.
+// One multiGet of the same keys loadWindowDays reads, so the cost is negligible next to the AI call it
+// protects. Never throws: on failure it returns a value that will simply force a recompute.
+export async function windowFingerprint(todayKey: string, startOffset: number = 1): Promise<string> {
+  const keys: string[] = [];
+  for (let i = startOffset; i < startOffset + WINDOW_SIZE; i++) keys.push(`pj_${keyForOffset(todayKey, i)}`);
+  let pairs: readonly [string, string | null][] = [];
+  try { pairs = await AsyncStorage.multiGet(keys); } catch { return `err:${Date.now()}`; }
+  const present = pairs.filter(([, raw]) => !!raw);
+  const totalLen = present.reduce((s, [, raw]) => s + (raw?.length ?? 0), 0);
+  const newest = present[0]?.[0]?.slice(3) ?? '';
+  return `${present.length}:${newest}:${totalLen}`;
+}
+
 export async function loadWindowDays(
   todayKey: string,
   ctx: EngineContext,
@@ -1734,6 +1753,11 @@ export interface CoachPacket {
   previousTip: string;
   faithTier: string;
   computedDate: string;
+  // Cheap signature of the DATA the packet was computed from. The cache used to be keyed on
+  // computedDate alone, which meant a packet built from broken or half-restored storage was locked in
+  // for the rest of the day with no way to notice the data had changed underneath it. See
+  // windowFingerprint() for what goes into it.
+  windowFp?: string;
   fallbackTitle: string;
   fallbackBody: string;
   // Data density fields (multi-day surfaces: evr, weekly, monthly)
@@ -2809,11 +2833,18 @@ export async function computeCoachPacket(
   try { recentTopicHist = topicHistRaw ? (JSON.parse(topicHistRaw) || []) : []; } catch { recentTopicHist = []; }
   const recentTopics = surface === 'home' ? recentTopicHist : [];
 
-  // Return cache if already computed today for this surface
+  // Return cache if already computed today for this surface AND from the same data.
+  // The windowFp check is what stops a packet built from broken storage sticking for the rest of the day:
+  // on 2026-07-28 a packet was computed minutes after an Expo install had rebuilt local storage from the
+  // cloud, saw days that were not there yet, slid its window back into mid-July, and then refused to
+  // recompute all day because the DATE still matched. An existing cache with no windowFp (written before
+  // this field existed) fails the comparison and recomputes once, which is the desired migration.
+  const fp = await windowFingerprint(todayKey);
   if (
     existing &&
     existing.packet.computedDate === todayKey &&
-    existing.packet.surface === surface
+    existing.packet.surface === surface &&
+    existing.packet.windowFp === fp
   ) {
     return existing;
   }
@@ -2951,6 +2982,7 @@ export async function computeCoachPacket(
     fallbackUsed: false,
   };
 
+  packet.windowFp = fp;   // stamp what this packet was actually computed from
   const savePromises = [
     saveCoachTipCache(cache),
     AsyncStorage.setItem(coachLastRuleKey, JSON.stringify({ ruleId: packet.ruleId })),

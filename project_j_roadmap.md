@@ -30,6 +30,24 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-28 **Coach tip cache no longer trusts a date alone (device-verified).** Justin's Home Smart Tip and
+  every EvR report were showing "protein averaged 119g over the last 7 days, falling short on 4 of them"
+  while his real last 7 days were [140,140,158,168,162,167,144] -- avg 154g, ZERO days under target, so the
+  protein rule should not have fired at all. Proved with the Dev Tools "Dump Home Coach Candidates" dump,
+  which recomputes fresh and correctly selected `weight_infrequent`. CAUSE: `computeCoachPacket` reused a
+  cached packet whenever `packet.computedDate === todayKey`. That packet was computed minutes after the Expo
+  install rebuilt local storage from the cloud (see the sync entries in NEXT UP) -- storage was still
+  incomplete, and `loadWindowDays` SKIPS missing days rather than leaving gaps, so the 7-day window silently
+  slid ~9 days back into mid-July, where 119g/4-days-short/143g-goal were all genuinely true. It then stamped
+  today's date and refused to recompute for the rest of the day even after the data came back. The stale goal
+  (143 vs today's 145) was the giveaway that this was cached data, not an AI fabrication.
+  FIX: packets now also carry `windowFp` -- a cheap signature of the window (day count + newest date + total
+  raw size) computed by the new `windowFingerprint()`. Reuse requires date AND surface AND fingerprint to
+  match, so days appearing, the window sliding, or any edit to a day all force a recompute. A pre-existing
+  cache has no fingerprint and rebuilds once, which is the migration.
+  ⚠️ NOT the AI and NOT the Haiku switch -- the model only phrases a verdict the engine computes, and it was
+  handed the stale numbers. Old EvR reports keep the wrong text on purpose: reports snapshot their insight at
+  generation time so history is not rewritten.
 - 2026-07-28 **Summary modals, faith bars and delete icons.** Day/Weekly/Monthly summary MODALS: verdict
   label + the three category scores now gradient, and the hero ring number un-muted (it always used
   GradientNumber, but an `opacity: 0.92` was washing the moulding out and leaving it flat next to the

@@ -757,6 +757,66 @@ TWO CARVE-OUTS THAT ARE NOT ARBITRARY:
 - The macro/nutrition gate is barely a paywall in practice: four presets cover what most people need, so a
   free user is not locked out of eating properly, only out of precision.
 
+### THE MILESTONE ASK (AGREED 2026-07-28) -- an Otto hub card, never an interruption
+
+WHY IT EXISTS: today the app only asks at WALLS. Someone has to run out of Otto messages or tap a locked
+feature to learn Supporter exists, and most people never hit either. This is the one ask that reaches people
+who are happy, rather than people who are blocked.
+
+DELIVERY: a card in **Otto's notification hub** (the bell), exactly like the Rate Us fallback card in
+utils/ottoPrompts.ts. NOT a modal, NOT a popup, NOT Apple-dialog-style. A trigger PLACES the card and does
+nothing else; the user sees a red dot and reads it when they choose to. This is deliberately gentler than
+Rate Us, whose triggers fire Apple's review dialog directly -- asking for money should cost less of
+someone's attention than asking for thirty seconds, not more. `replace` lifecycle so it can never stack.
+
+TRIGGERS: **all nine existing Rate Us triggers**, reused as-is. water goal, gratitude, reading plan,
+devotional, protein, weight milestone, weight goal, manual workout completion, challenge win.
+⚠️ Claude first proposed cutting this to the three "big" moments (weight goal, weight milestone, challenge
+win) on the theory that a money ask should follow a real achievement. Justin rejected that, correctly:
+weight goal may fire once ever, challenge win may fire never, and a trigger that rare means the card never
+appears at all. TWO THINGS DISSOLVE THE ORIGINAL CONCERN: (1) the copy never references the trigger, so
+nobody ever sees "great job on your water goal, now pay me" -- the trigger decides WHEN the card is placed,
+not what it says; (2) **the BUDGET controls how often someone is asked, not the trigger list.** More
+triggers only means it lands sooner, never more often. Being stingy with triggers only risks it never
+landing. Reuse the existing `fireRatingTrigger()`-style 3s delay so it never fights the celebration or
+toast from the same action.
+
+TIMING (Supporter ask vs the existing Rate Us numbers):
+| | Rate Us (existing) | Support ask |
+|---|---|---|
+| Minimum account age | 7 days | **14 days** |
+| Cooldown between asks | 30 days | **60 days** |
+| Lifetime cap | 3 | **4** |
+- 14 days, not 7, puts a full week between the step-down notice (day 7) and the first money ask. Asking in
+  the same week as "your free week ended" would feel choreographed.
+- 60 days, not 30: a review costs thirty seconds, a subscription is recurring. Every other month reads as
+  patient; monthly reads as pestering.
+- 4, not 3: roughly one ask every two months across the first year, then permanently quiet.
+- Own budget, separate from Rate Us. Note the codebase already REJECTED merging Rate Us + Feedback into one
+  shared budget (ottoPrompts.ts) because one running out would silence the other. Same reasoning here.
+- **14-day hold-back either side of a Rate Us ask**, so the two never read as a pair. (Precedent:
+  `FEEDBACK_HOLD_BACK_AFTER_RATE_ASK_DAYS = 5` already does this for the Feedback card.)
+- Never during the 7-day taste. Never for existing Supporters. Free users only.
+- **The step-down notice BEATS the Rate Us prompt 100% of the time** (see the first-week section below).
+
+COPY (agreed after ~15 drafts; the rejected directions matter as much as the winner):
+  Title: More of GoodForge
+  Body:  Unlimited photo estimates, more time with Otto each day, custom reports, custom goals, and limits
+         lifted app wide.
+         See what's included.
+⚠️ DIRECTIONS JUSTIN EXPLICITLY REJECTED, do not re-propose them:
+  - "Pay so other people don't have to" / covering the cost for everyone else. Disliked the vibe outright.
+  - "Help keep GoodForge free" in any phrasing.
+  - The "one person built this all by myself" angle -- reads as self-congratulation.
+  - "What Supporters get" as a title -- reads cheap and amateur, like a pricing page header.
+  He wanted SELLING, but humble: state the perks plainly, no pleading, no mission speech, no boasting.
+LEAD WITH THE ESTIMATOR -- it is the strongest single selling point (see the first-week section).
+The closing line is Justin's call and is deliberately functional, not persuasive. Note the Rate Us card has
+no closing line; this one does.
+ACCURACY NOTE: "limits lifted app wide" is honest because every gated limit is either removed or raised.
+The one exception is HALO, which stays 25/day for free and Supporter alike. A user would have to go looking
+to notice, and "faith is never upcharged" is a good answer if they do.
+
 ### THE FIRST WEEK: A 7-DAY TASTE, THEN STEP DOWN (AGREED 2026-07-28)
 
 New accounts run on FULL SUPPORTER limits for 7 days, then step down to free. Announced up front, never

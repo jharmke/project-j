@@ -33,7 +33,8 @@ import ScreenHeader from '../components/ScreenHeader';
 import BackgroundLayers from '../components/BackgroundLayers';
 import GradientNumber from '../components/GradientNumber';
 import GradientTitle from '../components/GradientTitle';
-import GradientIcon from '../components/GradientIcon';
+// Flat gold, never foil -- see the note in app/reports.tsx. Kept identical to the Reports locked screen.
+import { GOLD_BASE } from '../components/SupporterFoil';
 import ButtonShine from '../components/ButtonShine';
 
 
@@ -306,7 +307,7 @@ export default function ComparisonReportScreen() {
           <View style={{ backgroundColor: theme.bgCard, borderWidth: 1, borderColor: `${accent}40`, borderTopWidth: 1.5, borderTopColor: accent, borderRadius: 14, padding: 20, alignItems: 'center', shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 }}>
             {/* Lock only -- the headline right below already names the tier. */}
             <View style={{ marginBottom: 12 }}>
-              <GradientIcon name="lock-closed" size={20} color={theme.textSecondary} />
+              <Ionicons name="lock-closed" size={20} color={GOLD_BASE} />
             </View>
             <GradientTitle title="Comparison is a Supporter feature" color={theme.textSecondary} style={{ fontSize: 17, fontFamily: Type.uiBold, textAlign: 'center', marginBottom: 8 }} />
             <Text style={{ fontSize: 14, color: theme.textMuted, fontFamily: Type.ui, lineHeight: 21, textAlign: 'center', marginBottom: 18 }}>

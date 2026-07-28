@@ -13,6 +13,8 @@ import TooltipIcon from '../components/TooltipIcon';
 import { CardWash } from '../components/GradientCard';
 import GradientTitle from '../components/GradientTitle';
 import GradientNumber from '../components/GradientNumber';
+// Supporter locks are FLAT gold, never foil -- see the note in app/reports.tsx.
+import { GOLD_BASE } from '../components/SupporterFoil';
 import { LinearGradient } from 'expo-linear-gradient';
 import { barFillGradient } from '../utils/barGradient';
 import { useTheme } from '../theme';
@@ -474,29 +476,15 @@ function SkeletonFeedCard({ theme, shadowStyle, pulse }: { theme: any; shadowSty
 
 // ── Smart Tip cards ────────────────────────────────────────────────────────────
 
-function InsightTipCard({ tip, isBlurred, theme, shadowStyle }: { tip: StoredTip; isBlurred: boolean; theme: any; shadowStyle: any }) {
+// Locked/blurred Smart Tips are LockedInsightCard's job, not this component's. An earlier blurred branch
+// lived here (SUPPORTER chip beside the lock, crisp title, grey skeleton bars) and was superseded but never
+// deleted -- its only call site passes isBlurred={false}, so it had been unreachable for some time.
+// Removed 2026-07-28 because it actively contradicted two decisions recorded a few lines below: no
+// "SUPPORTER" chip (styled as a badge it reads as a status you HAVE, not a requirement) and never show the
+// title crisp (it gave the finding away for free and made the lock pointless). Dead code that argues with
+// the live design is worse than no code.
+function InsightTipCard({ tip, theme, shadowStyle }: { tip: StoredTip; theme: any; shadowStyle: any }) {
   const chipLabel = tip.positive ? 'CORRELATION: POSITIVE' : 'CORRELATION: INSIGHT';
-  if (isBlurred) {
-    return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <ChipLabel label="INSIGHT" theme={theme} />
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Ionicons name="lock-closed" size={12} color={theme.textMuted} />
-            <View style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
-              <Text style={{ fontSize: 8, fontFamily: Type.uiBold, letterSpacing: 2, color: theme.accentBlueRaw }}>SUPPORTER</Text>
-            </View>
-          </View>
-        </View>
-        <GradientTitle title={tip.title} color={theme.textSecondary} style={{ fontSize: 14, fontFamily: Type.uiSemibold, lineHeight: 20, marginBottom: 10 }} />
-        <View style={{ gap: 6 }}>
-          <View style={{ height: 10, backgroundColor: theme.textMuted + '30', borderRadius: 4, width: '100%' }} />
-          <View style={{ height: 10, backgroundColor: theme.textMuted + '30', borderRadius: 4, width: '82%' }} />
-          <View style={{ height: 10, backgroundColor: theme.textMuted + '20', borderRadius: 4, width: '65%' }} />
-        </View>
-      </View>
-    );
-  }
   return (
     <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
       <View style={{ marginBottom: 10 }}>
@@ -592,11 +580,16 @@ function LockedInsightCard({ topic, accent, title, body, theme, shadowStyle, isD
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <ChipLabel label={topic.toUpperCase()} theme={theme} />
           {/* Lock only. A "SUPPORTER" chip styled like a badge reads as a status you HAVE, not a
-              requirement -- the lock says gated, and "Unlock" below names the action. */}
-          <Ionicons name="lock-closed" size={13} color={theme.textMuted} />
+              requirement -- the lock says gated, and the CTA below names the action. */}
+          <Ionicons name="lock-closed" size={13} color={GOLD_BASE} />
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
-          <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: theme.accentBlueRaw }}>Unlock</Text>
+          {/* Was "Unlock", changed 2026-07-28. In a fitness app full of achievements, challenges and
+              streaks, "Unlock" reads as "log more and this reveals itself" -- a free user could never tell
+              this was a Supporter thing, so the ask was invisible AND mildly confusing. Naming the tier
+              says the action and the requirement at once, and matches every other locked state in the app
+              (Reports, Comparison, the Otto nudge, the meal estimator all say exactly this). */}
+          <Text style={{ fontSize: 12, fontFamily: Type.uiSemibold, color: theme.accentBlueRaw }}>Become a Supporter</Text>
           <Ionicons name="arrow-forward" size={12} color={theme.accentBlueRaw} />
         </View>
       </View>
@@ -1002,7 +995,7 @@ export default function DiagnosticReportViewScreen() {
                           />
                         );
                       }
-                      return <InsightTipCard key={tip.id} tip={tip} isBlurred={false} theme={t} shadowStyle={shadowStyle} />;
+                      return <InsightTipCard key={tip.id} tip={tip} theme={t} shadowStyle={shadowStyle} />;
                     })}
                   </View>
                 );

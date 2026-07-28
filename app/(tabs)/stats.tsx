@@ -22,6 +22,8 @@ import { useMembership } from '../../MembershipContext';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import GradientTitle from '../../components/GradientTitle';
 import GradientNumber from '../../components/GradientNumber';
+// Supporter locks are FLAT gold, never foil -- see the note in app/reports.tsx.
+import { GOLD_BASE } from '../../components/SupporterFoil';
 import GradientIcon from '../../components/GradientIcon';
 import HeaderIconButton from '../../components/HeaderIconButton';
 import PrimaryCTA from '../../components/PrimaryCTA';
@@ -2292,7 +2294,7 @@ export default function StatsScreen() {
                       {/* Lock ONLY -- no "SUPPORTER" chip. Styled like a badge, that word reads as a
                           status you HAVE, not a requirement. The lock says gated; the CTA underneath
                           names the tier. */}
-                      {reportsLocked && <Ionicons name="lock-closed" size={12} color={theme.textMuted} />}
+                      {reportsLocked && <Ionicons name="lock-closed" size={12} color={GOLD_BASE} />}
                     </View>
                     <Ionicons name={reportsCardOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textMuted} />
                   </TouchableOpacity>
@@ -2361,7 +2363,7 @@ export default function StatsScreen() {
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <Text style={[styles.cardLabel, { color: theme.textMuted }]}>COMPARISON</Text>
-                      {!isPro && <Ionicons name="lock-closed" size={12} color={theme.textMuted} />}
+                      {!isPro && <Ionicons name="lock-closed" size={12} color={GOLD_BASE} />}
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                       <TooltipIcon tooltipKey="comparison_report" />

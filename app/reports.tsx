@@ -29,7 +29,10 @@ import GradientNumber from '../components/GradientNumber';
 // screen -- that is about not duplicating TITLE wiring, and this is a card headline, not a page title.
 // MembershipCard already uses it the same way.
 import GradientTitle from '../components/GradientTitle';
-import GradientIcon from '../components/GradientIcon';
+// Supporter locks are FLAT gold, never foil. Foil means "you have this" (the Supporter mark); a lock means
+// "you could have this". Same colour family, different symbol, opposite meanings. Foil also needs size to
+// read as metal (three gradient stops) and turns to mush at icon sizes.
+import { GOLD_BASE } from '../components/SupporterFoil';
 
 // ✅ FLIPPED FALSE 2026-07-28. Reports is now genuinely Supporter-gated, as designed.
 // History: this flag was born 2026-07-07 when Reports shipped and no purchase system existed -- it was the
@@ -91,7 +94,7 @@ export default function ReportsHub() {
             {/* Lock only -- the headline right below already names the tier. Gradient-masked to match the
                 headline; a flat glyph above gradient text read as two different design languages. */}
             <View style={{ marginBottom: 12 }}>
-              <GradientIcon name="lock-closed" size={20} color={theme.textSecondary} />
+              <Ionicons name="lock-closed" size={20} color={GOLD_BASE} />
             </View>
             <GradientTitle title="Custom Reports is a Supporter feature" color={theme.textSecondary} style={{ fontSize: 17, fontFamily: Type.uiBold, textAlign: 'center', marginBottom: 8 }} />
             <Text style={{ fontSize: 14, color: theme.textMuted, fontFamily: Type.ui, lineHeight: 21, textAlign: 'center', marginBottom: 18 }}>

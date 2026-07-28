@@ -11,6 +11,7 @@ import { useTheme } from '../theme';
 import { useToast } from '../components/Toast';
 import SproutIcon from '../components/SproutIcon';
 import PrimaryCTA from '../components/PrimaryCTA';
+import GradientNumber from '../components/GradientNumber';
 import { GoldIconRow } from '../components/MembershipCard';
 import { FoilChip, FoilEdge, GOLD_BASE, GOLD_DEEP, GOLD_EDGE, GOLD_ENGRAVE, GOLD_HI, GOLD_TINT } from '../components/SupporterFoil';
 import { useMembership } from '../MembershipContext';
@@ -38,11 +39,52 @@ const PERKS: Perk[] = [
 ];
 
 type Tip = { label: string; amount: string; gold?: boolean; productId: string };
+
+// The perk list, ONE definition rendered in both states. It used to live inline in the free-state pitch
+// only, so a paying Supporter had no way to see what they were paying for -- which is exactly the
+// question someone asks the month their annual renewal is due. Extracted rather than copied: a second
+// inline copy is how the two Today's Message cards drifted apart, and the two weight-achievement paths,
+// and the fourteen copies of the nutrient maths.
+function PerksList({ t }: { t: any }) {
+  return (
+    <View style={styles.perks}>
+      {PERKS.map((p) => (
+        <View key={p.title} style={styles.perk}>
+          {/* "Custom Badge & Icon" promises TWO things, so it shows two: the real gold foil badge AND the
+              real gold app icon. A free user sees exactly what they'd get, not an approximation of half
+              of it. Every other perk shows its single accent glyph. */}
+          {/* ONE icon per row, same 30px slot as every other perk, so all four titles line up without any
+              layout trickery. This row used to render the sprout badge AND the app icon side by side --
+              two icons where every other row has one, which threw the alignment off and then looked
+              broken when they were overlapped to fix it. The gold app icon alone says it. */}
+          {p.gold ? (
+            <Image
+              source={require('../assets/images/icon-gold.png')}
+              style={[styles.perkIcon, { borderColor: GOLD_EDGE }]}
+            />
+          ) : (
+            <View style={[styles.perkIcon, { backgroundColor: t.accentBlueBg, borderColor: t.accentBlueBorder }]}>
+              <Ionicons name={p.icon as any} size={15} color={t.accentBlue} />
+            </View>
+          )}
+          <View style={styles.perkText}>
+            <Text style={[styles.perkTitle, { color: t.textSecondary }]}>{p.title}</Text>
+            <Text style={[styles.perkBody, { color: t.textSecondary }]}>{p.body}</Text>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
 const TIPS: Tip[] = [
   { label: 'Pitch in', amount: '$2.99', productId: 'tip_pitchin' },
   { label: 'Add some fuel', amount: '$4.99', productId: 'tip_addfuel' },
   { label: 'Power it forward', amount: '$9.99', productId: 'tip_powerforward' },
-  { label: 'Back the mission', amount: '$24.99', gold: true, productId: 'tip_backmission' },
+  { label: 'Back the mission', amount: '$24.99', productId: 'tip_backmission' },
+  // The gold foil marks the TOP tip, so it moved here when Founder was added -- two gold tiles would
+  // cancel each other out and mark nothing. The amount is only a fallback while the store loads; the
+  // real price comes from App Store Connect via tipPrice(), so it can never drift from what Apple charges.
+  { label: 'Founder', amount: '$49.99', gold: true, productId: 'tip_founder' },
 ];
 
 // Press-scale wrapper: dips to 0.97 on press-in, back to 1 on release (timing, not spring --
@@ -294,6 +336,17 @@ export default function SupportScreen() {
 
               {/* The gold icon is theirs -- point them at the switch (which lives in Appearance). */}
               <GoldIconRow />
+
+              {/* What they're paying for. The card was a receipt -- plan, dates, icon -- which is fine on
+                  day one and useless eleven months later when the renewal is about to land and they
+                  wonder what they're actually getting. Same list as the pitch, stated rather than sold:
+                  "What you get", not "As a thank you, Supporters get". */}
+              <View style={[styles.memberPerks, { borderTopColor: t.borderCard }]}>
+                {/* `eyebrow`, the same small uppercase label every card in the app uses for a section.
+                    This was sentence-case body text, which read as a stray line rather than a heading. */}
+                <Text style={[styles.eyebrow, { color: t.textMuted, marginBottom: 16 }]}>Included with your support</Text>
+                <PerksList t={t} />
+              </View>
             </View>
           </View>
         ) : (
@@ -302,41 +355,7 @@ export default function SupportScreen() {
           <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw }]}>
             <Text style={[styles.heading, { color: t.textSecondary }]}>Become a Supporter</Text>
             <Text style={[styles.sub, { color: t.textMuted }]}>As a thank you, Supporters get:</Text>
-
-            <View style={styles.perks}>
-              {PERKS.map((p) => (
-                <View key={p.title} style={styles.perk}>
-                  {/* "Custom Badge & Icon" promises TWO things, so it shows two: the real gold foil badge
-                      AND the real gold app icon. A free user sees exactly what they'd get, not an
-                      approximation of half of it. Every other perk shows its single accent glyph. */}
-                  {p.gold ? (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 1 }}>
-                      <View style={[styles.perkIcon, { backgroundColor: 'transparent', borderColor: GOLD_EDGE, marginTop: 0 }]}>
-                        <LinearGradient
-                          colors={[GOLD_HI, GOLD_BASE, GOLD_DEEP]}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                          style={StyleSheet.absoluteFill}
-                        />
-                        <SproutIcon size={20} color={GOLD_ENGRAVE} />
-                      </View>
-                      <Image
-                        source={require('../assets/images/icon-gold.png')}
-                        style={{ width: 30, height: 30, borderRadius: 9, borderWidth: 1, borderColor: GOLD_EDGE }}
-                      />
-                    </View>
-                  ) : (
-                    <View style={[styles.perkIcon, { backgroundColor: t.accentBlueBg, borderColor: t.accentBlueBorder }]}>
-                      <Ionicons name={p.icon as any} size={15} color={t.accentBlue} />
-                    </View>
-                  )}
-                  <View style={styles.perkText}>
-                    <Text style={[styles.perkTitle, { color: t.textSecondary }]}>{p.title}</Text>
-                    <Text style={[styles.perkBody, { color: t.textSecondary }]}>{p.body}</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
+            <PerksList t={t} />
 
             {/* Price selection -- LIVE priceString from the store, not hardcoded. */}
             <View style={styles.prices}>
@@ -347,7 +366,7 @@ export default function SupportScreen() {
                   backgroundColor: plan === 'monthly' ? t.accentBlueBg : t.bgInset,
                 }]}
               >
-                <Text style={[styles.priceAmt, { color: t.textSecondary }]}>{monthlyPrice}</Text>
+                <GradientNumber value={monthlyPrice} color={t.textSecondary} style={styles.priceAmt} />
                 <Text style={[styles.pricePer, { color: plan === 'monthly' ? t.accentBlue : t.textMuted }]}>per month</Text>
               </PressScale>
               <PressScale
@@ -357,7 +376,7 @@ export default function SupportScreen() {
                   backgroundColor: plan === 'annual' ? t.accentBlueBg : t.bgInset,
                 }]}
               >
-                <Text style={[styles.priceAmt, { color: t.textSecondary }]}>{annualPrice}</Text>
+                <GradientNumber value={annualPrice} color={t.textSecondary} style={styles.priceAmt} />
                 <Text style={[styles.pricePer, { color: plan === 'annual' ? t.accentBlue : t.textMuted }]}>per year</Text>
               </PressScale>
             </View>
@@ -380,7 +399,8 @@ export default function SupportScreen() {
             <Text style={[styles.heading, { color: t.textSecondary }]}>A one-time chip in</Text>
             <Text style={[styles.sub, { color: t.textMuted }]}>No subscription, no commitment. Every bit helps.</Text>
 
-            {/* 2x2 grid: all four tiles equal size/format; the $24.99 stays gold as an option, not a push. */}
+            {/* Wrapping grid, every tile the same size whatever the count; the top tip is gold as an
+                option, not a push. An odd count leaves the last tile centred, not stretched. */}
             <View style={styles.tipTiles}>
               {TIPS.map((tip) => (
                 <PressScale
@@ -411,7 +431,7 @@ export default function SupportScreen() {
                   <Text style={[styles.tipLabel, { color: t.textMuted }]}>{tip.label}</Text>
                   {busy === tip.productId
                     ? <ActivityIndicator size="small" color={t.accentBlue} style={styles.tipSpinner} />
-                    : <Text style={[styles.tipAmt, { color: t.textSecondary }]}>{tipPrice(tip.productId, tip.amount)}</Text>}
+                    : <GradientNumber value={tipPrice(tip.productId, tip.amount)} color={t.textSecondary} style={styles.tipAmt} />}
                 </PressScale>
               ))}
             </View>
@@ -462,6 +482,9 @@ const styles = StyleSheet.create({
   sub: { fontSize: 12.5, fontFamily: Type.uiSemibold, marginTop: 4, marginBottom: 16 },
 
   perks: { gap: 14, marginBottom: 18 },
+  // Separated from the plan/dates block above by a rule, so the card reads as receipt-then-benefits
+  // rather than one long undifferentiated list. Negative bottom margin cancels `perks`' own 18.
+  memberPerks: { marginTop: 16, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth, marginBottom: -18 },
   perk: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   perkIcon: { width: 30, height: 30, borderRadius: 9, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginTop: 1, overflow: 'hidden' },
   perkText: { flex: 1 },
@@ -498,8 +521,13 @@ const styles = StyleSheet.create({
   ctaText: { fontSize: 19, fontFamily: Type.uiBold, letterSpacing: 1.2, color: '#ffffff' },
   supporterState: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, borderRadius: 13, borderWidth: 1, paddingVertical: 13, paddingHorizontal: 16 },
 
-  tipTiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, marginTop: 0, marginBottom: 10 },
-  tipTileWrap: { flexBasis: '47%', flexGrow: 1 },
+  // justifyContent centre so an ODD number of tips leaves the last one centred rather than left-hung.
+  // Full rows are unaffected: two tiles at 47% plus the gap already fill the width.
+  tipTiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, marginTop: 0, marginBottom: 10, justifyContent: 'center' },
+  // flexGrow is set per-tile now. It used to be 1 for everything, which was invisible while the count was
+  // even -- add a fifth tip and the lone tile stretched to the full width, making the most expensive ask
+  // the biggest object on the page. Every tile is the same size regardless of how many there are.
+  tipTileWrap: { flexBasis: '47%' },
   tipTile: { borderRadius: 14, borderWidth: 1, paddingVertical: 11, paddingHorizontal: 6, alignItems: 'center', gap: 2, overflow: 'hidden' },
   tipLabel: { fontSize: 11, fontFamily: Type.uiSemibold, textAlign: 'center', lineHeight: 14, minHeight: 15 },
   tipAmt: { fontSize: 23, fontFamily: Type.num, letterSpacing: 0.5 },

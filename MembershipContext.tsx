@@ -95,6 +95,10 @@ export function MembershipProvider({ children }: { children: React.ReactNode }) 
   const [entitled, setEntitled] = useState(false);
   const [details, setDetails] = useState<MembershipDetails | null>(null);
   const [devOverride, setDevOverride] = useState(false);
+  // The mirror image of devOverride. Once you hold a REAL entitlement, turning the Supporter toggle off
+  // does nothing -- `entitled` is true on its own -- so there was no way to look at the free-user pitch
+  // again without cancelling your own subscription. This forces the free state in dev regardless.
+  const [devForceFree, setDevForceFree] = useState(false);
   const [loading, setLoading] = useState(true);
   const [offering, setOffering] = useState<PurchasesOffering | null>(null);
   const [tipProducts, setTipProducts] = useState<PurchasesStoreProduct[]>([]);
@@ -112,7 +116,11 @@ export function MembershipProvider({ children }: { children: React.ReactNode }) 
     if (!__DEV__) return;
     try {
       const raw = await AsyncStorage.getItem('pj_settings');
-      if (raw) setDevOverride(!!JSON.parse(raw).devProUnlocked);
+      if (raw) {
+        const s = JSON.parse(raw);
+        setDevOverride(!!s.devProUnlocked);
+        setDevForceFree(!!s.devForceFree);
+      }
     } catch {}
   }, []);
 
@@ -226,7 +234,8 @@ export function MembershipProvider({ children }: { children: React.ReactNode }) 
     }
   }, [applyCustomerInfo]);
 
-  const isSupporter = entitled || (__DEV__ && devOverride);
+  // Force-free wins over everything in dev, including a real entitlement -- that is its whole purpose.
+  const isSupporter = (__DEV__ && devForceFree) ? false : (entitled || (__DEV__ && devOverride));
 
   // LAPSE GUARD, app-wide. The gold app icon is a Supporter perk, so a lapsed Supporter must not keep
   // wearing it. This lives HERE, not on the Settings screen: it was originally in Settings' effect, which

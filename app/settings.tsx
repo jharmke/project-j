@@ -581,6 +581,7 @@ export default function SettingsScreen() {
   const [devUnlocked, setDevUnlocked] = useState(false);
   const [devForceSleepManual, setDevForceSleepManual] = useState(false);
   const [devProUnlocked, setDevProUnlocked] = useState(false);
+  const [devForceFree, setDevForceFree] = useState(false);
   // Real Supporter status from RevenueCat (drives the Membership row copy). devProUnlocked below is the
   // DEV-ONLY test toggle that, in dev, feeds this via MembershipContext's override.
   const { isSupporter } = useMembership();
@@ -1058,6 +1059,7 @@ export default function SettingsScreen() {
           if (data.hrZoneModel === 'maxhr' || data.hrZoneModel === 'hrr') setHrZoneModel(data.hrZoneModel);
           if (data.devForceSleepManual !== undefined) setDevForceSleepManual(data.devForceSleepManual);
           if (data.devProUnlocked !== undefined) setDevProUnlocked(data.devProUnlocked);
+          if (data.devForceFree !== undefined) setDevForceFree(data.devForceFree);
         }
         // Load notification settings
         const ns = await loadNotificationSettings();
@@ -4130,6 +4132,24 @@ export default function SettingsScreen() {
                 onValueChange={(val) => {
                   setDevProUnlocked(val);
                   saveSetting('devProUnlocked', val);
+                  triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+                }}
+              />
+            </View>
+
+            {/* The mirror of the toggle above. Once you hold a REAL subscription, switching Pro OFF does
+                nothing -- the entitlement stands on its own -- so there was no way to look at the free
+                pitch again short of cancelling. This forces the free state over everything, dev only. */}
+            <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentAmber }]}>Force Free State</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Pretend you have no subscription, even if you really do. For checking the Become a Supporter pitch. Overrides the toggle above.</Text>
+              </View>
+              <ToggleSwitch
+                value={devForceFree}
+                onValueChange={(val) => {
+                  setDevForceFree(val);
+                  saveSetting('devForceFree', val);
                   triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
                 }}
               />

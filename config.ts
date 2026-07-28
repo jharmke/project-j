@@ -12,4 +12,4 @@ export const REVENUECAT_IOS_KEY = 'appl_ERlhWDvhjeFzEczUcOgBiOyAGER';
 export const SUPPORTER_ENTITLEMENT_ID = 'supporter';
 
 // The 4 one-time consumable tip product IDs (App Store Connect + RevenueCat), low -> high.
-export const TIP_PRODUCT_IDS = ['tip_pitchin', 'tip_addfuel', 'tip_powerforward', 'tip_backmission'] as const;
+export const TIP_PRODUCT_IDS = ['tip_pitchin', 'tip_addfuel', 'tip_powerforward', 'tip_backmission', 'tip_founder'] as const;

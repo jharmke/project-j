@@ -528,7 +528,28 @@ STRATEGIC -- THE BIG OPEN QUESTION (resolve BEFORE finalizing the Supporter card
 
 ---
 
-## CURRENT STATE IN CODE (verified 2026-07-10 -- what actually exists)
+## CURRENT STATE IN CODE (re-verified 2026-07-27 -- THE MONEY LAYER IS BUILT)
+
+⚠️ **The section below this line was written 2026-07-10 and went stale.** It said there was no purchase
+system at all, which sent a whole session down the wrong path on 2026-07-27 -- Claude read it, told Justin
+he had no way to take money, and Justin (correctly) pushed back that he thought it was built. It is.
+**Verify against the code before trusting any "current state" note in this file.**
+
+WHAT IS ACTUALLY BUILT (2026-07-27):
+- `react-native-purchases` (RevenueCat) is a real dependency and is configured at runtime.
+- `MembershipContext.tsx` is the live membership layer: `Purchases.configure`, `getOfferings`,
+  `getProducts`, `purchasePackage` (the subscription), `purchaseTip` (consumables), `restore`, plus a
+  graceful no-op path for when the native module isn't present (before a rebuild).
+- FOUR consumable tip products exist, low -> high, in `config.ts` as `TIP_PRODUCT_IDS`:
+  `tip_pitchin`, `tip_addfuel`, `tip_powerforward`, `tip_backmission`.
+- `app/support.tsx` is the Support screen, wired to all of the above.
+- Prices are NOT in the codebase -- they live in App Store Connect per product.
+
+WHAT ACTUALLY REMAINS is the launch checklist, not construction: products + prices configured in App Store
+Connect, the `devProUnlocked` override and toggle removed, and the raised TestFlight caps reverted. See
+REVERT BEFORE LAUNCH in the roadmap.
+
+--- historical, from 2026-07-10, KEPT ONLY FOR THE REASONING; the state claims are WRONG now ---
 There is NO paywall screen, NO purchase flow, NO real subscription system. "Pro" is entirely faked by a dev
 toggle. A real user who hits a wall today CANNOT upgrade -- the paying half was never built. So adopting any of
 this reframe costs nothing to tear out; we are building the money layer for the FIRST time.
@@ -588,6 +609,12 @@ Three layers:
    a weird fake $20 feature tier: you're openly saying "give what you want, when you want," not pretending more
    money buys more app. Optionally bumps the badge / adds them to a thank-you list.
    [LOCKED 2026-07-11: $2.99/$4.99/$9.99 + set-apart $24.99; Concept C hybrid screen; first-person voice. See DECISIONS #4.]
+   [ADDED 2026-07-27: a fifth tip, `tip_founder` at $49.99, labelled "Founder". The GOLD FOIL MOVED to it
+   from "Back the mission" -- two gold tiles mark nothing. Apple allows no open-ended/user-entered amount
+   (fixed price points only), so a higher fixed tier IS the answer to "someone wants to give more".
+   ⚠️ STILL OPEN, and it is an App Store review risk this file already warned about: `purchaseTip` grants
+   NOTHING. It runs the purchase, shows a thank-you toast, and stores nothing -- no badge bump, no record.
+   Apple can push back on tips that give literally nothing. Applies to all five tips, not just the new one.]
    - OPTIONAL FUTURE: a recurring "Patron" tier (higher price, SAME perks + a shinier badge/recognition),
      framed as gratitude not features, self-selected. Lead with the one-time tip first; only add Patron if
      there's demand. Do NOT ship an arbitrary higher feature tier.

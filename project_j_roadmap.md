@@ -1244,8 +1244,6 @@ are separate pre-submission checklists, NOT part of this menu.
   Settings already has "Backup Verify (read-only)" + "Upload All Data", which is the manual safety net.
 - [NEW 2026-07-28] Home Faith card progress bars are still the wrong color -- they don't match the
   Faith tab's bars. Also verify every other faith bar (Plans, Devotionals, Reading Plans, etc.).
-- [NEW 2026-07-28, IDEA] A weekly reading/devotional/"something" for Faith users -- a verse or chapter
-  plus a question. Pairs with the eventual community aspect: see each other's answers.
 - [NEW 2026-07-28] Day Summary modal: the hero number in the donut (94) is flat green, not gradient.
   And "Every set checked off. Done." renders in the plain body font, looks cheap -- (1) fix the font,
   (2) decide whether that line earns its place at all. Verify Weekly + Monthly summaries got the

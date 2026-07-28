@@ -570,7 +570,10 @@ function PlanRow({
         </PressScale>
         {onDrop && (
           <TouchableOpacity onPress={onDrop} style={styles.dropBtn} hitSlop={8} activeOpacity={0.7}>
-            <Ionicons name="trash-outline" size={18} color={theme.textMuted} />
+            {/* Red, matching every other delete icon in the app (Home, Log). It was textMuted here, which
+                read as a neutral action on a warm amber card rather than a destructive one. Outline, not
+                filled -- the app's delete affordance is a red outline glyph everywhere else too. */}
+            <Ionicons name="trash-outline" size={18} color={theme.accentRed} />
           </TouchableOpacity>
         )}
       </View>

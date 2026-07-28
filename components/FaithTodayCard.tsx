@@ -101,9 +101,13 @@ function TileBar({ pct, theme }: { pct: number; theme: Theme }) {
     Animated.timing(w, { toValue: pct, duration: 600, useNativeDriver: false }).start();
   }, [pct]);
   const width = w.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
+  // Matched EXACTLY to the Faith tab's tileBarTrack/tileBarFill (app/(tabs)/faith.tsx). Both always shared
+  // the same track colour and the same amber gradient fill -- what made this one read GREY was the missing
+  // amber hairline border, plus a fill sitting flush to the track edge instead of inset. The border is
+  // doing almost all of the work.
   return (
-    <View style={[styles.barTrack, { backgroundColor: theme.bgProgressTrack }]}>
-      <Animated.View style={{ width, height: '100%', borderRadius: 2, overflow: 'hidden' }}>
+    <View style={[styles.barTrack, { backgroundColor: theme.bgProgressTrack, borderColor: theme.accentAmber + '38' }]}>
+      <Animated.View style={{ width, height: 5, borderRadius: 3, overflow: 'hidden' }}>
         <LinearGradient colors={barFillGradient(theme.accentAmber)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }} />
       </Animated.View>
     </View>
@@ -410,7 +414,7 @@ const styles = StyleSheet.create({
   tileTop: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4 },
   tileName: { flex: 1, fontSize: 12, fontFamily: 'Lora_500Medium' },
   tileRef: { fontSize: 10, fontFamily: Type.ui },
-  barTrack: { height: 4, borderRadius: 2, overflow: 'hidden', marginBottom: 4 },
+  barTrack: { height: 6, borderRadius: 3, overflow: 'hidden', borderWidth: 0.5, marginBottom: 4 },
   tileCaptionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
   tileCaption: { fontSize: 10, fontFamily: Type.ui },
   prayerBox: { borderRadius: 10, borderWidth: 1, borderLeftWidth: 3, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 7 },

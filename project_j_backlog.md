@@ -68,6 +68,10 @@
 - Gratitude before meals -- one-tap give thanks before logging a meal. Unapologetically Christian. No spec yet.
 - Faith-based fasting -- spiritual fasting with prayer log, separate from 16:8 IF. No spec yet.
 - Challenges/Missions layer -- full spec in SMART_COACH_SPEC.md. Parked behind Faith AI track.
+- Weekly reading / devotional "something of the week" (parked here 2026-07-28, Justin's call -- not spending
+  time on it now). A verse or chapter plus a QUESTION, once a week, for Faith users. The question is the
+  point: it is the piece that pairs with an eventual community layer, where people could see each other's
+  answers. No spec yet, no format decided (verse vs chapter, where it lives, how it is delivered).
 
 ---
 

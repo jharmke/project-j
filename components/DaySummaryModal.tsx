@@ -106,7 +106,10 @@ export function ScoreRing({ value, color, theme, celebrate }: { value: number; c
       </Svg>
       <Reanimated.View style={[{ alignItems: 'center' }, pulseStyle]}>
         <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
-          <GradientNumber value={String(Math.round(value))} color={color} style={{ fontSize: 54, lineHeight: numLine(54), fontFamily: Type.num, opacity: 0.92 }} />
+          {/* No opacity here. It used to carry opacity: 0.92, which washed out the gradient's own
+              highlight and shadow and left the hero reading flat next to the summary PAGES, which look
+              right. The colour is already the tier colour; muting it only cost the moulding. */}
+          <GradientNumber value={String(Math.round(value))} color={color} style={{ fontSize: 54, lineHeight: numLine(54), fontFamily: Type.num }} />
         </View>
         <Text style={{ fontSize: 8, letterSpacing: 2, fontFamily: Type.uiBold, color, opacity: 0.55, marginTop: -2 }}>OUT OF 100</Text>
       </Reanimated.View>
@@ -229,9 +232,11 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
             {/* Hero composite ring + label + context line */}
             <View style={{ alignItems: 'center', marginTop: 12 }}>
               <ScoreRing value={score.composite} color={heroColor} theme={theme} celebrate={celebrate} />
-              <Text style={{ fontSize: 20, letterSpacing: 2, fontFamily: Type.num, color: heroColor, marginTop: 8 }}>
-                {scoreLabel(Math.round(score.composite), styleMode).toUpperCase()}
-              </Text>
+              <GradientNumber
+                value={scoreLabel(Math.round(score.composite), styleMode).toUpperCase()}
+                color={heroColor}
+                style={{ fontSize: 20, letterSpacing: 2, fontFamily: Type.num, marginTop: 8 }}
+              />
               {!!contextLine && (
                 <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.ui, fontStyle: 'italic', marginTop: 4 }}>{contextLine}</Text>
               )}
@@ -245,9 +250,11 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
                     <Ionicons name={p.icon} size={10} color={theme.textMuted} />
                     <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: Type.uiBold }}>{p.label}</Text>
                   </View>
-                  <Text style={{ fontSize: 24, lineHeight: numLine(24), fontFamily: Type.num, color: p.val !== null ? theme.textSecondary : theme.textDim, marginTop: 2 }}>
-                    {p.val !== null ? Math.round(p.val) : '--'}
-                  </Text>
+                  <GradientNumber
+                    value={p.val !== null ? String(Math.round(p.val)) : '--'}
+                    color={p.val !== null ? theme.textSecondary : theme.textDim}
+                    style={{ fontSize: 24, lineHeight: numLine(24), fontFamily: Type.num, marginTop: 2 }}
+                  />
                   <View style={{ width: '100%', height: 5, borderRadius: 3, backgroundColor: barColor(p.val) + '33', marginTop: 6, overflow: 'hidden' }}>
                     <PillBar value={p.val} color={barColor(p.val)} progress={barProgress} />
                   </View>

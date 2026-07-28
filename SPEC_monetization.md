@@ -754,6 +754,21 @@ MOMENT A -- THE MEMBERSHIP ENDS. A one-time CENTRED MODAL (house pattern; never 
 app open after the entitlement lapses. MembershipContext already tracks entitlement, so the client can
 detect the entitled -> not-entitled transition. Deliberately NOT Otto: he is a helper, and having him
 deliver billing news muddies what he is for. Shown ONCE. No guilt, no urgency, no countdown, never repeated.
+
+⚠️ IT MUST DEFER, NOT COMPETE (Justin spotted this 2026-07-28). A subscription lapses overnight, so the very
+next launch is exactly when a Day/Week/Month Summary is most likely to fire -- the collision is likely, not
+theoretical. RULE: it RETRIES on every launch and takes the first opening where nothing else is on screen.
+Summary wins; the notice waits. It is a once-ever message that is not time-sensitive, so being a day late
+costs nothing, whereas stacking two modals on someone the moment their membership ends is a bad first
+impression of the free tier. It carries its own "shown" flag so it can still only ever appear once.
+DO NOT build a general modal queue for this -- roughly ten lines of deference, not a framework.
+
+⚠️ KNOWN GAP, NOT URGENT, WILL BITE AGAIN: there is NO cross-system modal coordination in the app. What
+exists today is local: the summaries self-limit via `pj_last_summary_shown` (one per day, and only ONE kind
+of day/week/month ever fires) and wait for the launch splash via `runAfterLaunchSplash`; Rate Us has its own
+independent budget (3 asks ever, 7-day minimum account age, cooldowns) in utils/ratingPrompt.ts. They do not
+collide today because they trigger at different moments, not because anything prevents it. Every future
+launch-time modal inherits this problem and the current answer is "hope they don't overlap."
 Copy stays GENERAL -- do not enumerate every gated feature, it gets long and reads like a punishment list.
 DRAFT COPY (not locked, Justin to refine):
   "Your Supporter membership has ended. Everything you created is still yours and stays exactly where it

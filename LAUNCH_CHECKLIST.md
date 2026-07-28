@@ -100,7 +100,10 @@ Every one of these is currently making the app more generous than it should be a
         product limit. Verified on device: a free account correctly showed "9 of 10 messages left today".
       - [x] `faithCompanion.ts` — **25 / 25** (deployed). Verified on device: "24 of 25 messages left today".
         No copy change was needed — the cap and its label already existed, only the number moved.
-      - [ ] `services/aiMealEstimator.ts` — `FREE_LIMIT = 100` → **5**, `PRO_LIMIT = 9999` → **100**. STILL OPEN.
+      - [x] `services/aiMealEstimator.ts` — **5 free / 100 Supporter** (done 2026-07-28; client-side, ships with
+        the next build, no redeploy). Justin chose 5 over the 3 the original code used. NOT VERIFIABLE IN A DEV
+        BUILD: `DEV_UNLIMITED_ESTIMATES = __DEV__` grants unlimited whenever `__DEV__` is true, so this cap can
+        only be exercised on TestFlight or release.
       ALSO SHIPPED alongside: the remaining-messages counter now stays hidden until **5 or fewer** are left
       (`QUOTA_VISIBLE_AT` in AssistantChat + CompanionChat). Always-on it read as a fuel gauge and made a
       helpful companion feel metered.
@@ -113,10 +116,10 @@ Every one of these is currently making the app more generous than it should be a
 - [ ] **2.3 — Remove the dev Pro toggle.** `app/settings.tsx:3743` (the toggle), `:457`/`:815` (its state), and
       the `__DEV__ && devOverride` override in `MembershipContext.tsx:228`. Grep `devProUnlocked` — it must
       return nothing outside comments.
-- [~] **2.4 — Empty the AI whitelists. TWO OF THREE DONE + DEPLOYED 2026-07-28.**
+- [x] **2.4 — Empty the AI whitelists. ALL THREE DONE + DEPLOYED 2026-07-28.**
       - [x] `functions/src/appCompanion.ts` — emptied.
       - [x] `functions/src/faithCompanion.ts` — emptied.
-      - [ ] `functions/src/aiProxy.ts` (Smart Coach + estimator) — STILL HAS Justin's uid. *Needs redeploy.*
+      - [x] `functions/src/aiProxy.ts` (Smart Coach + estimator) — emptied.
       Justin's call was to leave the companion ones empty from now on rather than restore them after testing,
       so he experiences the real caps like any other user. That decision immediately paid for itself: being on
       the free path is how the unreachable Reports locked screen in 2.2 was found. Ask him if he wants a uid

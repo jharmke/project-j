@@ -26,16 +26,15 @@ const API_TIMEOUT_MS = 30000; // vision on a complex plate can be slow
 // ── Quota ───────────────────────────────────────────────────────────────────
 
 export const QUOTA_KEY = 'pj_ai_estimator_quota';
-// 🚨 BETA HACK (2026-07-01) -- raised from 3 to 100 so email-invited TestFlight testers can
-// actually exercise the estimator (3/mo made it untestable). Cost is bounded: each estimate is
-// ~1-3 cents, the key is now server-side (aiProxy), and aiProxy enforces a 60/day per-user
-// backstop. REVERT to the real free-tier cap (3, or whatever monetization decides) before App
-// Store launch. See the REVERT-BEFORE-LAUNCH banner in the roadmap.
-export const FREE_LIMIT = 100;
-// 🚨 TESTFLIGHT HACK (2026-06-24) -- raised from 30 so devProUnlocked = effectively
-// unlimited estimates for Justin's trip (TestFlight, where __DEV__ is false). REVERT to
-// the real cap before App Store launch. See the REVERT-BEFORE-LAUNCH banner in the roadmap.
-export const PRO_LIMIT = 9999;
+// ✅ REVERTED TO THE REAL CAPS 2026-07-28 (was a 100 / 9999 beta hack). Justin's call: 5 free, not the 3
+// the original code used -- 3 was punitive enough that you would burn it just trying the feature out.
+// Each estimate is ~1-3 cents, so free at 5/month is roughly 8 cents per user per month: this number is
+// not what moves the economics. It is deliberately the tightest free cap in the app because the estimator
+// is the most defensible paid line -- it is the one feature with a real per-use cost.
+// aiProxy still enforces a separate 60/day per-user abuse backstop underneath this.
+export const FREE_LIMIT = 5;
+// Supporter tier -- a clean 10x the free allowance.
+export const PRO_LIMIT = 100;
 
 // DEV testing: unlimited estimates in the dev build only. __DEV__ is false in
 // release/TestFlight builds, so the real FREE_LIMIT/PRO_LIMIT caps apply there

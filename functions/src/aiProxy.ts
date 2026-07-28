@@ -34,8 +34,10 @@ const DAILY_CAPS: Record<string, number> = {
   estimator: 60,
 };
 
-// Dev/test accounts that bypass the safety cap. Same uid Otto/Halo whitelist. Empty before launch.
-const DEV_UNLIMITED_UIDS = ['zLZOx2aqiKXcl3tlg7LNmkwbGxH3'];
+// Dev/test accounts that bypass the safety cap. EMPTIED 2026-07-28, last of the three lists (Otto's and
+// Halo's went the same day). Justin runs on the real caps from here so he sees what users see -- that is
+// how the unreachable Reports locked screen got found. Must stay EMPTY at launch.
+const DEV_UNLIMITED_UIDS: string[] = [];
 
 function todayKey(): string {
   return new Date().toISOString().slice(0, 10); // server UTC date; not client-spoofable

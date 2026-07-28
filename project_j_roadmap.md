@@ -1216,6 +1216,18 @@ are separate pre-submission checklists, NOT part of this menu.
   is the actual problem, and it got worse the moment the Founder tier shipped.
   DISCUSS BEFORE BUILDING: what the acknowledgment should be (badge tier? thank-you list? a one-off
   message from Justin?), whether it is retroactive, and whether it scales with the amount.
+  ALSO IN THIS PASS -- verify the store side is actually correct, not just the code:
+  - RevenueCat shows **"Could not check" on EVERY product**, including ones created 2026-07-12 that
+    demonstrably work. That is RevenueCat unable to validate against App Store Connect -- almost certainly
+    the App Store Connect API key isn't connected in RevenueCat. It does NOT break purchases (Justin's own
+    subscription is live), but it means product validation and revenue reporting are running blind. Worth
+    connecting properly before launch so the numbers can be trusted.
+  - Confirm all five tips + both Supporter products have correct prices, availability and localisation,
+    and that the tips carry NO entitlement while the two subs carry theirs (correct as of 2026-07-27).
+  - `tip_founder` was created 2026-07-27 and rides the TestFlight build for review. Confirm it actually
+    returns a live price in that build rather than the hardcoded fallback -- the fallback string is also
+    "$49.99", so the screen looks identical either way and cannot be judged by eye. Temporarily changing
+    the fallback to something obviously wrong is the only way to tell.
 - [PARKED 2026-07-27 -- Justin's call, do not raise unprompted] **The app ignores iOS Reduce Motion.**
   Confirmed by search: zero references to `AccessibilityInfo` / `isReduceMotionEnabled` anywhere. People
   turn Reduce Motion on because animation makes them physically ill (vestibular disorders, migraine), so

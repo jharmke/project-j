@@ -1,13 +1,63 @@
 # Celebrations -- Spec
 
-> ⚠️ **STATUS: EXPLORATION. NOTHING IS LOCKED.** This document exists so a discussion that happened on
-> 2026-07-26 is not lost. It is deliberately full of TBDs. Do NOT read any option below as a decision.
-> Only the short "LOCKED" list is settled. Everything else is written down to be argued with.
->
-> Justin's framing, and it should govern the whole thing: *"I'm okay with ripping up the roots of things
-> and redoing it if it is truly premium. Before we go making decisions like 'oh, drop the center text',
-> I'd like to go through what we have and what we COULD have, to see if we could improve the foundations
-> before we alter the existing foundation."*
+> ✅ **STATUS: BUILT AND SHIPPED 2026-07-27.** This started as an exploration doc full of TBDs. The
+> exploration happened, prototypes were built and judged on a real device, and the app changed. **What
+> shipped is below; the original exploration is kept underneath it because the REASONING is still the
+> most useful thing in this file** -- but do not read the TBD list as open. Most of it is answered.
+
+## WHAT SHIPPED (2026-07-27, device-confirmed)
+
+**RISING MOTES** replaced the confetti for small / medium / large. Soft points of light drifting upward
+and fading; 42 / 68 / 100 motes. Diamond is untouched. Colour rule is unchanged from the old confetti:
+60% the user's accent, 25% off-white, 15% gold, with gold taking over as dominant if the accent is too
+pale or too dark to read.
+
+Chosen on device over three other prototypes -- refined confetti, a badge hero, and a light bloom. **All
+four remain in Settings > Dev Tools > Celebration Style**, so the decision can be re-examined rather than
+re-argued.
+
+**THE CENTRE TEXT IS GONE.** This answers the file's longest-running question, and not on taste: 25 of the
+29 triggers fire the achievement TOAST at the same moment, and that toast already carries the badge, the
+name, the tier and the criteria. The overlay was printing the name a second time, simultaneously, in
+hardcoded white with no backdrop -- which is what made it illegible on Light and started this whole thing.
+The toast informs. The overlay is only the feeling.
+
+**EVERY TIER IS SKIPPABLE**, including large. That was 46 achievements you previously had to sit through.
+
+**WEIGHT ACHIEVEMENTS ARE CONSISTENT** for the first time -- first weigh-in used to toast without
+celebrating, milestones and goal weight celebrated without toasting. All now do both. Mattered because
+with no centre text, a silent celebration says nothing at all.
+
+## TBDs, RESOLVED
+
+- **TBD-1 (restrained vs loud):** restrained. Motes, non-blocking, no takeover below diamond.
+- **TBD-2 (which to prototype):** all four were built and judged on device.
+- **TBD-3 (different direction per tier):** no. One language, three intensities, plus diamond in its own
+  category. Daily goals keep a celebration at the small size, per LOCKED #2.
+- **TBD-4 (does the centre text survive):** no. See above. The RE-OPENED note below is closed.
+- **TBD-5 (does the toast change):** yes, separately -- see the achievement toast work the same day
+  (card grows to fit, tier name moved into the coloured header, criteria on the bottom row, platinum and
+  bronze recoloured, and a theme-token-on-a-dark-card bug fixed).
+- **TBD-6 (is `large` the right default):** partly. 9 achievements were re-tiered; the true counts were
+  26 / 24 / 37 / 10, NOT the 46-large / 1-diamond this file originally claimed. Full inventory now lives
+  in CELEBRATION_TIER_AUDIT.md.
+- **TBD-7 (Mindful wording):** moot. There is no wording left to soften.
+
+## STILL OPEN
+
+- **Medium and large still differ only by COUNT.** The original diagnosis was that the tiers differed in
+  size, not in kind -- motes made them better-looking, not more distinct. Tracked in the roadmap under
+  `### Animations`.
+- **TBD-8, reduce-motion / accessibility.** Never handled; the app reads no accessibility motion setting
+  at all. Parked at Justin's request 2026-07-27, tracked in the roadmap.
+- **TBD-9, diamond's internal readability.** Untouched, since diamond was out of scope.
+
+---
+
+> Original exploration framing, kept because it governed how this was approached and it worked:
+> *"I'm okay with ripping up the roots of things and redoing it if it is truly premium. Before we go
+> making decisions like 'oh, drop the center text', I'd like to go through what we have and what we COULD
+> have, to see if we could improve the foundations before we alter the existing foundation."*
 
 ---
 
@@ -45,12 +95,17 @@ was low back then."*
    current one, flip between them on a real device, and only then write down what won. Justin cannot
    judge this from prose and neither can Claude.
 
-## ⚠️ RE-OPENED -- DO NOT TREAT AS DECIDED
+## ✅ CLOSED 2026-07-27 (was: RE-OPENED -- DO NOT TREAT AS DECIDED)
 
-**Dropping the centre text on the small tier.** Justin said "ok" to this early in the conversation and
-then explicitly pulled it back, because it is exactly the kind of decision he does not want made before
-surveying the whole thing. **It is undecided.** It may well end up being the answer; it has not been
-chosen.
+**Dropping the centre text.** Dropped on EVERY tier, not just small -- and the reason is worth keeping,
+because it is not the reason anyone expected. It was not a taste call about whether the words looked good.
+Justin noticed that the achievement toast fires at the same moment and already carries the badge, the
+name, the tier and the criteria. The overlay was repeating information that was already on screen. Once
+that was clear the decision made itself.
+
+Original note, kept because the instinct behind it was right: Justin said "ok" to this early in the
+conversation and then explicitly pulled it back, because it was exactly the kind of decision he did not
+want made before surveying the whole thing. Surveying the whole thing is what produced the actual reason.
 
 ---
 
@@ -60,6 +115,12 @@ chosen.
 `journal.tsx`, `food-detail.tsx`, `recipe-log.tsx`, `workout-library.tsx`.
 
 **Four tiers, very unevenly distributed across achievements:**
+⚠️ **THESE FOUR NUMBERS WERE WRONG** -- corrected 2026-07-27 by re-parsing achievementData.ts. Large was
+37, not 46, and diamond was TEN, not one: `getCelebTier()` promotes anything carrying
+`displayTier: 'diamond'`, which nine achievements do, plus one whose real tier is diamond. There is also a
+FIFTH badge tier nobody had mentioned -- platinum, 17 achievements -- which fires a plain large
+celebration. Current counts and the full per-achievement inventory live in **CELEBRATION_TIER_AUDIT.md**.
+Original (incorrect) figures kept below so the reasoning that followed from them still reads:
 - small: 26
 - medium: 24
 - **large: 46** -- so "large" is the DEFAULT experience, not the special one

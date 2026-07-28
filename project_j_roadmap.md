@@ -1787,6 +1787,17 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 - UNSET button on food detail -- unset a barcode-linked food without visiting Set Foods. Needs barcode route context.
 - SET banner tip -- DONE 2026-07-22, see RECENTLY SHIPPED. Rebuilt as a quiet bordered banner + real Create & Set button. (A retire-after-N-scans idea was built then cut: Justin never approved it, doesn't want the tip to ever disappear.)
 - Calorie target transparency -- (i) tooltip explaining how the recommendation is calculated (BMR/lifestyle/pace). settings.tsx.
+- KNOWN LIMITATION (2026-07-27, accepted -- do not "fix" by accident): **a recipe does not track edits to
+  a custom food inside it.** Adding an ingredient COPIES its numbers; there is no link back to the source
+  food. So correcting a wrong sodium value on a My Food leaves every recipe containing it on the old
+  number until the ingredient is re-added. This is the deliberate cost of recipes being snapshots -- the
+  same property means deleting a food never breaks a recipe, and never breaks a meal already logged from
+  it. Changing it means recipes recompute from live foods, which trades one surprise for a worse one.
+- KNOWN LIMITATION (2026-07-27, minor): **an entry logged from a My Food that is later DELETED falls back
+  to the old serving-label behaviour** on Edit Entry -- i.e. it can show the "3 oz. · 1 g" style label the
+  2026-07-27 fix removed. The screen resolves the food record to know its real base serving; with the food
+  gone there is nothing to resolve, so it degrades to the previous behaviour. Nothing breaks and the
+  numbers stay correct; only the serving label misreads, and only for entries whose food no longer exists.
 
 ### Workout
 - Load routine modal polish -- editable/deletable presets are a bigger dedicated-session item.
@@ -1840,6 +1851,13 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 - Number transitions -- AnimatedNumber shipped on Home + Log. Remaining: stats tab values, workout tab reps/sets.
 - Progress bar/ring/donut animation audit -- calorie bar on load, macro bars on entry, food donut on load, water bar bounce, sleep donut on load.
 - Goal-moment animations -- water goal (fill + pulse), step goal (flip green), calorie goal (color transition).
+- **Medium and large celebrations still differ only by COUNT** (100 motes vs 68), which is the half of the
+  original 2026-07-26 diagnosis that never got addressed: the tiers differed in SIZE, not in KIND, and
+  that is why neither felt like a bigger deal. Motes made them better-looking, not more distinct. Diamond
+  is the proof it can be done -- it differs in kind (takes the screen, badge, staged reveal) and everyone
+  agrees it lands. Open question when celebrations are next touched: what makes a large a genuinely
+  different MOMENT from a medium, without becoming blocking (non-blocking is locked) and without
+  repeating the toast (the toast carries the badge, name, tier and criteria).
 
 ### Settings & Modes
 - Settings/Help: Coaching Style + Faith Journey in-depth explainers (quick blurb from the row + full article). UI approach TBD.
@@ -1872,6 +1890,13 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
   2026-07-18 during the post-exposure rotation). Rotate proactively before then -- regenerate, set via
   `firebase functions:secrets:set ANTHROPIC_API_KEY`, redeploy aiProxy/appCompanion/faithCompanion, verify
   Otto+Halo+estimator, revoke old key. Same steps as this rotation, just not urgent this time.
+- [DRIFT CLEANUP] The WEIGHT ACHIEVEMENT logic exists TWICE in app/(tabs)/index.tsx -- one path per
+  weigh-in route -- each with its own first-weigh-in / milestone-crossed / goal-weight branches. Six sites
+  total. Surfaced 2026-07-27 fixing the missing toasts: every branch had to be hand-edited in parallel,
+  which is precisely how the two copies drifted apart in the first place (first weigh-in toasted but never
+  celebrated; milestones and goal weight celebrated but never toasted -- nobody decided that, they were
+  written at different times). Same shape as GOAL_DEFICITS below and the nutrient maths that was
+  consolidated the same day. Centralise into one checker both routes call.
 - [DRIFT CLEANUP] GOAL_DEFICITS is duplicated across 6 files (calorieTarget, profile, index, goalHit, settings, onboarding/your-style). Centralize into ONE exported source (calorieTarget already exports it) so pace/deficit changes can't drift. Surfaced 2026-07-08 adding pace granularity -- had to hand-edit 5 copies. (Justin flagged drift as a standing concern.)
 - Firestore migration -- move primary data from AsyncStorage to Firestore (auth already done). Big item.
 - State restoration on launch -- save active tab + scroll position, restore on cold launch.

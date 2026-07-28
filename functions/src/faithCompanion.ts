@@ -28,10 +28,13 @@ const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
 // free user does, and Halo never nudges anyone to pay. That is a product rule, not an oversight.
 // The tier lookup exists anyway so the shape matches Otto and can't drift.
 //
-// 🚨 BETA HACK (2026-07-01): raised so email-invited TestFlight testers can exercise Halo freely.
-// REVERT AT LAUNCH to 25 / 25. See LAUNCH_CHECKLIST.md (2.1).
-const FREE_DAILY_CAP = 50;
-const SUPPORTER_DAILY_CAP = 50;
+// ✅ REVERTED TO THE REAL CAPS 2026-07-28 (was a 50/50 beta hack from 2026-07-01 so TestFlight testers
+// could exercise Halo freely; Justin's call to drop it early -- testers barely touch the companions, and
+// real caps are more useful to test than fake ones). 25 for BOTH tiers is deliberate and permanent: faith
+// is never upcharged, so a Supporter gets exactly what a free user gets. No copy change was needed for
+// this -- the cap and the remaining-count label already existed, so only the number moved.
+const FREE_DAILY_CAP = 25;
+const SUPPORTER_DAILY_CAP = 25;
 
 // Dev/test accounts that bypass the daily cap (effectively unlimited). Empty this before
 // public launch. Currently just Justin's uid for testing.

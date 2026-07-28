@@ -35,12 +35,17 @@ const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
 // by a direct RevenueCat lookup on a miss) and NEVER taken from the client -- a client that could simply
 // claim "I'm a Supporter" would let anyone run up the Anthropic bill. See membership.ts.
 //
-// 🚨 BETA HACK (2026-07-01): both tiers are raised so email-invited TestFlight testers can exercise Otto
-// freely. REVERT AT LAUNCH to the locked caps: FREE 10 / SUPPORTER 25. See LAUNCH_CHECKLIST.md (2.1).
-// They're deliberately EQUAL during beta so no tester is worse off than another while entitlements are
-// still being granted.
-const FREE_DAILY_CAP = 100;
-const SUPPORTER_DAILY_CAP = 100;
+// ✅ REVERTED TO THE REAL CAPS 2026-07-28 (was a 100/100 beta hack from 2026-07-01 so TestFlight testers
+// could exercise Otto freely; dropped early on Justin's call).
+// SUPPORTER IS 30, NOT THE 25 THE SPEC ORIGINALLY LOCKED -- deliberate change 2026-07-28. 3x the free tier
+// makes the perk read as real, and it functions as a runaway backstop rather than a product limit (if 10 is
+// rare for a free user, 30 is unreachable for a paying one). The tail exposure is accepted knowingly: a
+// Supporter who genuinely maxed 30/day would cost more than they pay, but they would have to max Halo and
+// the estimator too for the scary combined number, and that user does not exist.
+// FREE IS 10 by Justin's call -- new users are the heaviest Otto users and they are all free, so this is
+// the number to revisit first if onboarding feedback says people hit a wall while learning the app.
+const FREE_DAILY_CAP = 10;
+const SUPPORTER_DAILY_CAP = 30;
 
 // Dev/test accounts that bypass the daily cap (effectively unlimited). Empty this before public
 // launch. Currently just Justin's uid for testing (same uid Halo whitelists).

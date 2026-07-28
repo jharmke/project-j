@@ -16,12 +16,12 @@ import { useMembership } from '../MembershipContext';
 import { useHealthKit, restoreAppleWorkoutHistory } from '../useHealthKit';
 import { useAuth } from '../AuthContext';
 import { BLANK_DAY, WorkoutTag } from '../workoutData';
-import CelebrationOverlay from '../components/CelebrationOverlay';
+import CelebrationOverlay, { showCelebration } from '../components/CelebrationOverlay';
 import CelebrationVariant, { CelebVariant } from '../components/CelebrationVariants';
 import FeedbackModal from '../components/FeedbackModal';
 import { requestRatingPrompt, resetRatePromptBudget } from '../utils/ratingPrompt';
 import { showAchievementToast } from '../components/AchievementToast';
-import { ACHIEVEMENTS, AchievementDef, loadAchievements, checkAndUnlock, loadGoalHitCounts, checkSleepAchievements, checkNutritionAchievements, checkMomentumAchievements, checkWorkoutAchievements, checkFaithAchievements, getWeightMilestonesCrossed, isGoalWeightHit } from '../achievementData';
+import { ACHIEVEMENTS, AchievementDef, getCelebTier, loadAchievements, checkAndUnlock, loadGoalHitCounts, checkSleepAchievements, checkNutritionAchievements, checkMomentumAchievements, checkWorkoutAchievements, checkFaithAchievements, getWeightMilestonesCrossed, isGoalWeightHit } from '../achievementData';
 import { collection, getDocs } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app, auth, db, saveToFirebase } from '../firebaseConfig';
@@ -576,6 +576,7 @@ export default function SettingsScreen() {
   const [devCelebLabel, setDevCelebLabel] = useState<string | undefined>(undefined);
   const [devCelebLongName, setDevCelebLongName] = useState(false);
   const [devCelebStyle, setDevCelebStyle] = useState<'current' | CelebVariant>('current');
+  const [devFireBoth, setDevFireBoth] = useState(false);
   const [devTapCount, setDevTapCount] = useState(0);
   const [devUnlocked, setDevUnlocked] = useState(false);
   const [devForceSleepManual, setDevForceSleepManual] = useState(false);
@@ -3960,10 +3961,13 @@ export default function SettingsScreen() {
               <Text style={[styles.rowSub, { color: theme.textMuted, marginBottom: 10 }]}>Which overlay the Small/Medium/Large buttons play. Prototypes only: nothing in the app fires these yet, and Current is always here to compare against. Diamond ignores this.</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {([
-                  { id: 'current', label: 'Current' },
+                  // "Live" is the real overlay, which IS the motes now. The rest are the rejected
+                  // prototypes, kept so a decision made once can be re-examined rather than re-argued.
+                  { id: 'current', label: 'Live · Motes' },
                   { id: 'refined', label: 'A · Confetti' },
-                  { id: 'badge',   label: 'C · Badge' },
-                  { id: 'bloom',   label: 'D · Light' },
+                  { id: 'edge',    label: 'C · Edge' },
+                  { id: 'badge',   label: 'D · Badge' },
+                  { id: 'bloom',   label: 'E · Light' },
                 ] as const).map(opt => {
                   const on = devCelebStyle === opt.id;
                   return (
@@ -4010,15 +4014,30 @@ export default function SettingsScreen() {
               </TouchableOpacity>
             ))}
 
+            {/* The real thing is a toast AND a celebration at the same moment -- that is what 25 of the
+                29 trigger sites do, and it is the pairing that matters now the celebration carries no
+                text of its own. Firing them separately never showed how they read together. */}
+            <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Toast + Celebration</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Fires both together, exactly as unlocking a real achievement does. Off, the buttons below fire the toast alone.</Text>
+              </View>
+              <ToggleSwitch value={devFireBoth} onValueChange={v => { setDevFireBoth(v); triggerHaptic(Haptics.ImpactFeedbackStyle.Light); }} />
+            </View>
+
             {DEV_BADGE_TIERS.map(bt => {
               const toastDef = devToastDef(bt, devCelebLongName);
               return (
                 <TouchableOpacity key={bt} style={[styles.row, { borderTopColor: theme.borderCard }]} disabled={!toastDef} onPress={() => {
                   triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-                  if (toastDef) showAchievementToast(toastDef);
+                  if (!toastDef) return;
+                  showAchievementToast(toastDef);
+                  // Through the real emitter, not the local copy of the overlay -- so this exercises the
+                  // actual queue the app uses, including the launch-splash hold.
+                  if (devFireBoth) showCelebration(getCelebTier(toastDef), toastDef.name, toastDef);
                 }}>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Fire {bt.charAt(0).toUpperCase() + bt.slice(1)} Toast</Text>
+                    <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Fire {bt.charAt(0).toUpperCase() + bt.slice(1)} {devFireBoth ? 'Unlock' : 'Toast'}</Text>
                     <Text style={[styles.rowSub, { color: theme.textMuted }]}>{toastDef ? toastDef.name : 'No achievement at this tier'}</Text>
                   </View>
                   <Ionicons name="trophy-outline" size={18} color={theme.accentBlue} />

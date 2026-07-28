@@ -2076,7 +2076,9 @@ export default function HomeScreen() {
             store = updatedStore;
             setAchievementStore(store);
             const d = ACHIEVEMENTS.find(a => a.id === 'weight_first');
-            if (d) showAchievementToast(d);
+            // The mirror image of the gap below: this one toasted but never celebrated. Three weight
+            // branches sat in this function each doing something different; all three now do both.
+            if (d) { showAchievementToast(d); showCelebration(getCelebTier(d), d.name, d); }
           }
         }
         const crossed = getWeightMilestonesCrossed(earliest, current, goalWeight ?? 0, store);
@@ -2086,6 +2088,10 @@ export default function HomeScreen() {
             store = updatedStore;
             setAchievementStore(store);
             const def = ACHIEVEMENTS.find(a => a.id === crossed[0]);
+            // Toast AND celebration, like the other 25 triggers. The weight paths were written apart
+            // from the achievement checkers and never got a toast, so losing 50 lbs celebrated without
+            // ever saying what for -- which matters more now the celebration carries no text at all.
+            if (def) showAchievementToast(def);
             showCelebration(def ? getCelebTier(def) : 'medium', def?.name, def ?? undefined);
             fireRatingTrigger(tutorialActiveState);
           }
@@ -2102,6 +2108,7 @@ export default function HomeScreen() {
             setAchievementStore(store);
             const isFirst = updatedStore['weight_goal'].count === 1;
             const gd = ACHIEVEMENTS.find(a => a.id === 'weight_goal');
+            if (gd) showAchievementToast(gd);
             showCelebration(isFirst ? 'diamond' : 'large', gd?.name ?? 'GOAL WEIGHT', isFirst ? gd : undefined);
             fireRatingTrigger(tutorialActiveState);
           }
@@ -2142,7 +2149,7 @@ export default function HomeScreen() {
         store = updatedStore;
         setAchievementStore(store);
         const firstDef = ACHIEVEMENTS.find(a => a.id === 'weight_first');
-        if (firstDef) showAchievementToast(firstDef);
+        if (firstDef) { showAchievementToast(firstDef); showCelebration(getCelebTier(firstDef), firstDef.name, firstDef); }
       }
     }
 
@@ -2156,6 +2163,8 @@ export default function HomeScreen() {
           store = updatedStore;
           setAchievementStore(store);
           const def = ACHIEVEMENTS.find(a => a.id === crossed[0]);
+          // Toast AND celebration -- see the note on the other weight path above.
+          if (def) showAchievementToast(def);
           showCelebration(def ? getCelebTier(def) : 'medium', def?.name, def ?? undefined);
           fireRatingTrigger(tutorialActiveState);
         }
@@ -2176,6 +2185,7 @@ export default function HomeScreen() {
         setAchievementStore(store);
         const isFirstEarn = updatedStore['weight_goal'].count === 1;
         const weightGoalDef = ACHIEVEMENTS.find(a => a.id === 'weight_goal');
+        if (weightGoalDef) showAchievementToast(weightGoalDef);
         showCelebration(isFirstEarn ? 'diamond' : 'large', weightGoalDef?.name ?? 'GOAL WEIGHT', isFirstEarn ? weightGoalDef : undefined);
         fireRatingTrigger(tutorialActiveState);
       }

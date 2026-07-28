@@ -383,24 +383,33 @@ interface Particle {
 }
 
 export default function CelebrationOverlay({ visible, tier, accentColor, label, def, onDismiss }: Props) {
-  const duration = tier === 'small' ? 2200 : tier === 'medium' ? 2800 : 3500;
-  const pillOpacity = useRef(new Animated.Value(0)).current;
-  const textScale = useRef(new Animated.Value(0)).current;
-  const textOpacity = useRef(new Animated.Value(0)).current;
+  const duration = tier === 'small' ? 2200 : tier === 'medium' ? 2800 : 3400;
+  const pillOpacity  = useRef(new Animated.Value(0)).current;
+  // The whole field fades together at the end. Motes are staggered and take seconds to cross, so some
+  // are always still mid-flight when the overlay unmounts -- without this they were cut off mid-rise and
+  // vanished in a single frame.
+  const fieldOpacity = useRef(new Animated.Value(1)).current;
+  const FADE_OUT = 600;
 
-  // Create particles synchronously so they exist on first render
-  const particles = useMemo(() => {
-    const count = tier === 'small' ? 60 : tier === 'medium' ? 80 : 120; // diamond falls through to large
-    const freshColors = getParticleColors(accentColor);
-    return Array.from({ length: count }, (_, i) => ({
-      x: new Animated.Value(0),
-      y: new Animated.Value(0),
-      opacity: new Animated.Value(0),
-      scale: new Animated.Value(0),
-      color: freshColors[i % freshColors.length],
-      size: tier === 'small' ? Math.random() * 5 + 3 : tier === 'medium' ? Math.random() * 6 + 3 : Math.random() * 8 + 4,
-      shape: (Math.random() > 0.5 ? 'circle' : 'rect') as 'circle' | 'rect',
-    }));
+  const motes = useMemo(() => {
+    const count = tier === 'small' ? 42 : tier === 'medium' ? 68 : 100;
+    const palette = getParticleColors(accentColor);
+    return Array.from({ length: count }, (_, i) => {
+      const depth = i % 3 === 0 ? 1 : i % 3 === 1 ? 0.75 : 0.55;
+      return {
+        t:      new Animated.Value(0),
+        color:  palette[i % palette.length],
+        size:   (Math.random() * 6 + 4) * depth,
+        depth,
+        startX: Math.random() * SW,
+        // Travel is NOT scaled by depth -- doing that kept the smaller motes pinned to the bottom of the
+        // screen and bunched the whole field into the lower half. Depth belongs to size and opacity.
+        rise:   (Math.random() * 0.45 + 0.8) * SH,
+        sway:   (Math.random() * 2 - 1) * 60,
+        delay:  Math.random() * (duration * 0.45),
+        dur:    (Math.random() * 1000 + 1800),
+      };
+    });
   }, [tier, accentColor]);
 
   // Hide the floating assistant button, DIAMOND ONLY. Diamond is the one tier that dims the screen and
@@ -414,118 +423,26 @@ export default function CelebrationOverlay({ visible, tier, accentColor, label, 
   }, [visible, tier]);
 
   useEffect(() => {
-    if (!visible) return;
-    // Diamond has its own component -- skip all legacy animation logic
-    if (tier === 'diamond') return;
+    if (!visible || tier === 'diamond') return;   // diamond has its own component
 
-    // Reset all particle values before animating
-    particles.forEach(p => { p.x.setValue(0); p.y.setValue(0); p.opacity.setValue(0); p.scale.setValue(0); });
-
-    textScale.setValue(0);
-    textOpacity.setValue(0);
+    motes.forEach(m => m.t.setValue(0));
+    fieldOpacity.setValue(1);
     pillOpacity.setValue(0);
 
-    // Fire particles
-    const fireWave = (waveParticles: Particle[], waveDelay: number) => {
-      setTimeout(() => {
-        const anims = waveParticles.map((p) => {
-          const angle = (Math.random() * 180) * (Math.PI / 180);
-          const distance = Math.random() * SH * (tier === 'large' ? 1.1 : tier === 'medium' ? 0.85 : 0.65) + SH * 0.2;
-          const targetX = Math.cos(angle) * (Math.random() * SW * (tier === 'large' ? 1.8 : tier === 'medium' ? 1.5 : 0.8));
-          const targetY = Math.sin(angle) * distance * -1;
-          const delay = Math.random() * 250;
-          const waveDuration = duration - waveDelay;
+    Animated.parallel(motes.map(m => Animated.sequence([
+      Animated.delay(m.delay),
+      Animated.timing(m.t, { toValue: 1, duration: m.dur, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+    ]))).start();
 
-          return Animated.sequence([
-            Animated.delay(delay),
-            Animated.parallel([
-              Animated.timing(p.opacity, { toValue: 1, duration: 150, useNativeDriver: true }),
-              Animated.timing(p.scale, { toValue: 1, duration: 200, useNativeDriver: true }),
-              Animated.timing(p.x, { toValue: targetX, duration: waveDuration - delay, useNativeDriver: true }),
-              Animated.sequence([
-                Animated.timing(p.y, { toValue: targetY, duration: (waveDuration - delay) * 0.6, useNativeDriver: true }),
-                Animated.timing(p.y, { toValue: targetY + 80, duration: (waveDuration - delay) * 0.4, useNativeDriver: true }),
-              ]),
-              Animated.sequence([
-                Animated.delay((waveDuration - delay) * 0.5),
-                Animated.timing(p.opacity, { toValue: 0, duration: (waveDuration - delay) * 0.5, useNativeDriver: true }),
-              ]),
-            ]),
-          ]);
-        });
-        Animated.parallel(anims).start();
-      }, waveDelay);
-    };
+    Animated.timing(pillOpacity, { toValue: 1, duration: 400, delay: 400, useNativeDriver: true }).start();
 
-    if (tier === 'large') {
-      const third = Math.floor(particles.length / 3);
-      fireWave(particles.slice(0, third), 0);
-      fireWave(particles.slice(third, third * 2), 500);
-      fireWave(particles.slice(third * 2), 1000);
-    } else {
-      const anims = particles.map((p) => {
-        const angle = (Math.random() * 180) * (Math.PI / 180);
-        const distance = Math.random() * SH * (tier === 'medium' ? 0.85 : 0.65) + SH * 0.2;
-        const targetX = Math.cos(angle) * (Math.random() * SW * (tier === 'medium' ? 1.5 : 0.8));
-        const targetY = Math.sin(angle) * distance * -1;
-        const delay = Math.random() * 300;
-
-        return Animated.sequence([
-          Animated.delay(delay),
-          Animated.parallel([
-            Animated.timing(p.opacity, { toValue: 1, duration: 150, useNativeDriver: true }),
-            Animated.timing(p.scale, { toValue: 1, duration: 200, useNativeDriver: true }),
-            Animated.timing(p.x, { toValue: targetX, duration: duration - delay, useNativeDriver: true }),
-            Animated.sequence([
-              Animated.timing(p.y, { toValue: targetY, duration: (duration - delay) * 0.6, useNativeDriver: true }),
-              Animated.timing(p.y, { toValue: targetY + 80, duration: (duration - delay) * 0.4, useNativeDriver: true }),
-            ]),
-            Animated.sequence([
-              Animated.delay((duration - delay) * 0.5),
-              Animated.timing(p.opacity, { toValue: 0, duration: (duration - delay) * 0.5, useNativeDriver: true }),
-            ]),
-          ]),
-        ]);
-      });
-      Animated.parallel(anims).start();
-    }
-
-    // Slam text for medium and large; gentle fade label for small (when a label is provided)
-    if (tier === 'medium' || tier === 'large') {
-      setTimeout(() => {
-        Animated.parallel([
-          Animated.spring(textScale, { toValue: 1, friction: 4, tension: 180, useNativeDriver: true }),
-          Animated.timing(textOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-        ]).start();
-        setTimeout(() => {
-          Animated.timing(textOpacity, { toValue: 0, duration: 400, useNativeDriver: true }).start();
-        }, duration - 600);
-      }, 300);
-    } else if (tier === 'small' && label) {
-      textScale.setValue(1);
-      setTimeout(() => {
-        Animated.timing(textOpacity, { toValue: 1, duration: 500, useNativeDriver: true }).start();
-        setTimeout(() => {
-          Animated.timing(textOpacity, { toValue: 0, duration: 500, useNativeDriver: true }).start();
-        }, duration - 800);
-      }, 500);
-    }
-
-    // Dismiss pill for small/medium -- slight delay then fade in
-    if (tier !== 'large') {
-      pillOpacity.setValue(0);
-      setTimeout(() => {
-        Animated.timing(pillOpacity, { toValue: 1, duration: 500, useNativeDriver: true }).start();
-      }, 400);
-    }
-
-    // Auto dismiss -- fade everything out then dismiss
+    // Starts the fade BEFORE the overlay goes, so whatever is still rising dims out on its way up.
     const timer = setTimeout(() => {
       Animated.parallel([
-        Animated.timing(pillOpacity, { toValue: 0, duration: 400, useNativeDriver: true }),
-        Animated.timing(textOpacity, { toValue: 0, duration: 400, useNativeDriver: true }),
+        Animated.timing(fieldOpacity, { toValue: 0, duration: FADE_OUT, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(pillOpacity,  { toValue: 0, duration: 400, useNativeDriver: true }),
       ]).start(() => onDismiss?.());
-    }, duration);
+    }, duration - FADE_OUT);
 
     return () => clearTimeout(timer);
   }, [visible]);
@@ -537,81 +454,49 @@ export default function CelebrationOverlay({ visible, tier, accentColor, label, 
     return <DiamondCelebration def={def} label={label} onDismiss={onDismiss} />;
   }
 
-  const originX = SW / 2;
-  const originY = SH * 0.85;
-
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-      {/* Particle layer -- non-interactive */}
-      <View style={StyleSheet.absoluteFill} pointerEvents="none">
-        {particles.map((p, i) => (
-          <Animated.View
-            key={i}
-            style={{
+      <Animated.View style={[StyleSheet.absoluteFill, { opacity: fieldOpacity }]} pointerEvents="none">
+        {motes.map((m, i) => {
+          const translateY = m.t.interpolate({ inputRange: [0, 1], outputRange: [0, -m.rise] });
+          // Sways left then settles, so the field breathes instead of marching straight up.
+          const translateX = m.t.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, m.sway, m.sway * 0.3] });
+          const opacity = m.t.interpolate({ inputRange: [0, 0.1, 0.8, 1], outputRange: [0, m.depth, m.depth * 0.9, 0] });
+          const scale = m.t.interpolate({ inputRange: [0, 0.15, 1], outputRange: [0.5, 1, 0.85] });
+          return (
+            <Animated.View key={i} style={{
               position: 'absolute',
-              left: originX,
-              top: originY,
-              width: p.size,
-              height: p.shape === 'rect' ? p.size * 1.6 : p.size,
-              borderRadius: p.shape === 'circle' ? p.size / 2 : 2,
-              backgroundColor: p.color,
-              transform: [
-                { translateX: p.x },
-                { translateY: p.y },
-                { scale: p.scale },
-              ],
-              opacity: p.opacity,
-            }}
-          />
-        ))}
+              // Just off the bottom edge, so motes drift INTO frame rather than appearing in it.
+              left: m.startX, top: SH * 1.02,
+              width: m.size, height: m.size, borderRadius: m.size,
+              backgroundColor: m.color,
+              shadowColor: m.color, shadowOffset: { width: 0, height: 0 },
+              shadowOpacity: 1, shadowRadius: m.size * 2.2,
+              opacity,
+              transform: [{ translateX }, { translateY }, { scale }],
+            }} />
+          );
+        })}
+      </Animated.View>
 
-        {(tier === 'medium' || tier === 'large' || (tier === 'small' && !!label)) && (
-          <Animated.View style={{
-            position: 'absolute',
-            top: SH * 0.35,
-            left: 0,
-            right: 0,
-            alignItems: 'center',
-            opacity: textOpacity,
-            transform: (tier === 'medium' || tier === 'large') ? [{ scale: textScale }] : [],
-          }}>
-            <Text style={{
-              fontSize: tier === 'large' ? 52 : tier === 'medium' ? 38 : 22,
-              fontFamily: Type.num,
-              color: '#ffffff',
-              letterSpacing: 4,
-              textShadowColor: accentColor,
-              textShadowOffset: { width: 0, height: 0 },
-              textShadowRadius: 20,
-            }}>
-              {label ?? (tier === 'large' ? 'MILESTONE' : 'NICE WORK')}
-            </Text>
-          </Animated.View>
-        )}
-      </View>
+      {/* NO CENTRE TEXT. 25 of the 29 triggers fire the achievement TOAST at the same moment, and that
+          toast already carries the badge, the name, the tier and what you did. Printing the name in the
+          middle of the screen as well was the same information twice, simultaneously -- and it was the
+          bit that was illegible on Light, because it was hardcoded white with no backdrop. The toast
+          informs; this just makes the moment feel like something. */}
 
-      {/* Dismiss pill -- tappable, appears at 1.2s, fades in cleanly */}
-      {tier !== 'large' && (
-        <Animated.View
-          pointerEvents="box-none"
-          style={{
-            position: 'absolute',
-            bottom: 120,
-            right: 24,
-            opacity: pillOpacity,
-          }}>
-          <TouchableOpacity
-            onPress={() => onDismiss?.()}
-            style={{
-              backgroundColor: 'rgba(0,0,0,0.65)',
-              borderRadius: 20,
-              paddingHorizontal: 14,
-              paddingVertical: 8,
-            }}>
-            <Text style={{ color: '#ffffff', fontSize: 12, fontFamily: Type.uiSemibold }}>Tap to dismiss</Text>
-          </TouchableOpacity>
-        </Animated.View>
-      )}
+      {/* Dismiss pill on EVERY tier now. `large` used to be the only one you could not skip, which was
+          46 achievements' worth of celebration you had to sit through. */}
+      <Animated.View
+        pointerEvents="box-none"
+        style={{ position: 'absolute', bottom: 120, right: 24, opacity: pillOpacity }}>
+        <TouchableOpacity
+          onPress={() => onDismiss?.()}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          style={{ backgroundColor: 'rgba(0,0,0,0.65)', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8 }}>
+          <Text style={{ color: '#ffffff', fontSize: 12, fontFamily: Type.uiSemibold }}>Tap to dismiss</Text>
+        </TouchableOpacity>
+      </Animated.View>
     </View>
   );
 }

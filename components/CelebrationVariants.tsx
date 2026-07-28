@@ -29,7 +29,26 @@ const { width: SW, height: SH } = Dimensions.get('window');
 const GOLD  = '#d4860a';
 const WHITE = '#f0f0f0';
 
-export type CelebVariant = 'refined' | 'badge' | 'bloom';
+// EXACTLY the ratio the shipped confetti uses -- 60% the user's accent, 25% off-white, 15% gold -- and
+// crucially the same guard: an accent that is nearly white or nearly black cannot be the dominant colour,
+// because the pieces vanish against a light theme or a dark background. An earlier version of this file
+// kept the ratio and dropped the guard, which would have thrown invisible confetti at anyone on a pale
+// accent. Copied rather than imported: CelebrationOverlay keeps its own private copy, and these are
+// prototypes that must not perturb it.
+function getLuminance(hex: string): number {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return 0.299 * r + 0.587 * g + 0.114 * b;
+}
+function particlePalette(accent: string): string[] {
+  const lum = getLuminance(accent);
+  const dominant = (lum > 230 || lum < 25) ? GOLD : accent;
+  return Array.from({ length: 20 }, (_, i) =>
+    i < 12 ? dominant : i < 17 ? WHITE : GOLD);
+}
+
+export type CelebVariant = 'refined' | 'motes' | 'edge' | 'badge' | 'bloom';
 
 interface VariantProps {
   variant: CelebVariant;
@@ -91,14 +110,13 @@ function hexPath(size: number): string {
 // things real confetti has: rotation, tumble, three depth planes at different sizes and speeds,
 // sideways drift on the way down, and a genuine gravity arc rather than an up-then-down two-parter.
 
-function RefinedConfetti({ tier, accentColor, label, onDismiss }: Omit<VariantProps, 'variant' | 'def'>) {
+function RefinedConfetti({ tier, accentColor, onDismiss }: Omit<VariantProps, 'variant' | 'def' | 'label'>) {
   const duration = tier === 'large' ? 3400 : tier === 'medium' ? 2800 : 2200;
   const pillOpacity = useRef(new Animated.Value(0)).current;
-  const textOpacity = useRef(new Animated.Value(0)).current;
 
   const pieces = useMemo(() => {
     const count = tier === 'large' ? 90 : tier === 'medium' ? 64 : 44;
-    const palette = [accentColor, accentColor, accentColor, WHITE, GOLD];
+    const palette = particlePalette(accentColor);
     return Array.from({ length: count }, (_, i) => {
       // Three depth planes. Near pieces are bigger, faster and more opaque; far pieces are small and
       // slow. This is what gives the burst volume instead of reading as one flat sheet.
@@ -133,14 +151,11 @@ function RefinedConfetti({ tier, accentColor, label, onDismiss }: Omit<VariantPr
       ]),
     ]))).start();
 
-    Animated.timing(textOpacity, { toValue: 1, duration: 320, delay: 200, useNativeDriver: true }).start();
     Animated.timing(pillOpacity, { toValue: 1, duration: 400, delay: 400, useNativeDriver: true }).start();
 
     const timer = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(textOpacity, { toValue: 0, duration: 400, useNativeDriver: true }),
-        Animated.timing(pillOpacity, { toValue: 0, duration: 400, useNativeDriver: true }),
-      ]).start(() => onDismiss?.());
+      Animated.timing(pillOpacity, { toValue: 0, duration: 400, useNativeDriver: true })
+        .start(() => onDismiss?.());
     }, duration);
     return () => clearTimeout(timer);
   }, []);
@@ -159,10 +174,21 @@ function RefinedConfetti({ tier, accentColor, label, onDismiss }: Omit<VariantPr
             inputRange:  [0, 1],
             outputRange: [0, Math.cos(p.angle) * launch * 1.1 + p.drift],
           });
-          const translateY = p.t.interpolate({
-            inputRange:  [0, 0.32, 1],
-            outputRange: [0, Math.sin(p.angle) * launch, Math.sin(p.angle) * launch * 0.15 + SH * 0.55],
-          });
+          // A REAL parabola, sampled. Three points gave constant speed up, an instant turn, then constant
+          // speed down -- which is exactly the "hits a ceiling and drops" Justin saw. Gravity decelerates
+          // into the apex and accelerates out of it, so the path is sampled at 12 points from
+          // y = v0*t - 0.5*g*t^2 and the interpolation traces the curve instead of a V.
+          const v0 = -Math.sin(p.angle) * launch * 4.2;   // upward launch velocity (screen units/sec)
+          const g  = v0 * 2.4;                            // tuned so the fall clears the screen
+          const STEPS = 12;
+          const ys: number[] = [];
+          const ts: number[] = [];
+          for (let s = 0; s <= STEPS; s++) {
+            const tt = s / STEPS;
+            ts.push(tt);
+            ys.push(-(v0 * tt - 0.5 * g * tt * tt));
+          }
+          const translateY = p.t.interpolate({ inputRange: ts, outputRange: ys });
           const opacity = p.t.interpolate({
             inputRange:  [0, 0.08, 0.7, 1],
             outputRange: [0, p.depth, p.depth * 0.9, 0],
@@ -185,22 +211,10 @@ function RefinedConfetti({ tier, accentColor, label, onDismiss }: Omit<VariantPr
         })}
       </View>
 
-      {!!label && (
-        <View style={{ position: 'absolute', top: SH * 0.34, left: 0, right: 0, alignItems: 'center' }} pointerEvents="none">
-          <Animated.View style={{ opacity: textOpacity }}>
-            <TextPlate>
-              <Text style={{
-                fontSize: tier === 'large' ? 30 : 24,
-                fontFamily: Type.uiBold,
-                color: '#ffffff',
-                letterSpacing: 0.5,
-                textAlign: 'center',
-              }}>{label}</Text>
-            </TextPlate>
-          </Animated.View>
-        </View>
-      )}
-
+      {/* No centre text. 25 of the 29 triggers fire the achievement TOAST at the same moment, and that
+          toast already carries the badge, the name, the tier and the criteria. Repeating the name in the
+          middle of the screen was the same information twice, simultaneously. The toast informs; this
+          just makes the moment feel like something. */}
       <DismissPill opacity={pillOpacity} onPress={() => onDismiss?.()} />
     </View>
   );
@@ -339,20 +353,7 @@ function BadgeHero({ tier, accentColor, label, def, onDismiss }: Omit<VariantPro
           </View>
         </Animated.View>
 
-        {!!label && (
-          <Animated.View style={{ opacity: textOpacity, transform: [{ translateY: textY }] }}>
-            <TextPlate>
-              <Text style={{
-                fontSize: 9, letterSpacing: 3, textTransform: 'uppercase',
-                fontFamily: Type.uiBold, color: accentColor, marginBottom: 6,
-              }}>Achievement Unlocked</Text>
-              <Text style={{
-                fontSize: tier === 'large' ? 26 : 22,
-                fontFamily: Type.uiBold, color: '#ffffff', textAlign: 'center', letterSpacing: 0.4,
-              }}>{label}</Text>
-            </TextPlate>
-          </Animated.View>
-        )}
+        {/* No centre text -- the toast already carries the name. See the note in RefinedConfetti. */}
       </Animated.View>
 
       <DismissPill opacity={pillOpacity} onPress={() => onDismiss?.()} />
@@ -465,22 +466,153 @@ function LightBloom({ tier, accentColor, label, onDismiss }: Omit<VariantProps, 
         })}
       </View>
 
-      {!!label && (
-        <View style={{ position: 'absolute', top: cy - 40, left: 0, right: 0, alignItems: 'center' }} pointerEvents="none">
-          <Animated.View style={{ opacity: textOpacity, transform: [{ scale: textScale }] }}>
-            <TextPlate>
-              <Text style={{
-                fontSize: tier === 'large' ? 28 : 23,
-                fontFamily: Type.uiBold,
-                color: '#ffffff',
-                letterSpacing: 0.5,
-                textAlign: 'center',
-              }}>{label}</Text>
-            </TextPlate>
-          </Animated.View>
-        </View>
-      )}
+      {/* No centre text -- the toast already carries the name. See the note in RefinedConfetti. */}
 
+      <DismissPill opacity={pillOpacity} onPress={() => onDismiss?.()} />
+    </View>
+  );
+}
+
+// ─── RISING MOTES ────────────────────────────────────────────────────────────
+//
+// Soft points of light drifting UPWARD and fading, like embers or dust in a sunbeam. No gravity, no
+// tumbling, no objects -- the opposite energy to confetti while doing the same job: carry the feeling and
+// leave the words to the toast. Sways as it rises so it never reads as a straight line of dots.
+
+function RisingMotes({ tier, accentColor, onDismiss }: Omit<VariantProps, 'variant' | 'def' | 'label'>) {
+  const duration = tier === 'large' ? 3400 : tier === 'medium' ? 2800 : 2200;
+  const pillOpacity = useRef(new Animated.Value(0)).current;
+  // The whole field fades together at the end. Motes are staggered across most of the duration and take
+  // seconds to cross, so a good number are always still mid-flight when the overlay unmounts -- without
+  // this they were cut off mid-rise and vanished in one frame.
+  const fieldOpacity = useRef(new Animated.Value(1)).current;
+  const FADE_OUT = 600;
+
+  const motes = useMemo(() => {
+    const count = tier === 'large' ? 100 : tier === 'medium' ? 68 : 42;
+    const palette = particlePalette(accentColor);
+    return Array.from({ length: count }, (_, i) => {
+      const depth = i % 3 === 0 ? 1 : i % 3 === 1 ? 0.75 : 0.55;
+      return {
+        t:      new Animated.Value(0),
+        color:  palette[i % palette.length],
+        size:   (Math.random() * 6 + 4) * depth,
+        depth,
+        startX: Math.random() * SW,
+        // Travel is NOT scaled by depth. It used to be, so the smaller motes barely left the bottom of
+        // the screen and the whole field bunched into the lower half. Depth belongs to size and opacity;
+        // every mote should be capable of crossing the screen.
+        rise:   (Math.random() * 0.45 + 0.8) * SH,
+        sway:   (Math.random() * 2 - 1) * 60,
+        // Staggered across the first half only, so the tail end of the field is already well on its way
+        // when the fade-out starts rather than only just launching.
+        delay:  Math.random() * (duration * 0.45),
+        dur:    (Math.random() * 1000 + 1800),
+      };
+    });
+  }, [tier, accentColor]);
+
+  useEffect(() => {
+    motes.forEach(m => m.t.setValue(0));
+    Animated.parallel(motes.map(m => Animated.sequence([
+      Animated.delay(m.delay),
+      Animated.timing(m.t, { toValue: 1, duration: m.dur, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+    ]))).start();
+    Animated.timing(pillOpacity, { toValue: 1, duration: 400, delay: 400, useNativeDriver: true }).start();
+
+    // Start fading the field BEFORE the overlay goes, so whatever is still rising dims out on its way
+    // up instead of being deleted underneath the user.
+    const timer = setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(fieldOpacity, { toValue: 0, duration: FADE_OUT, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(pillOpacity,  { toValue: 0, duration: 400, useNativeDriver: true }),
+      ]).start(() => onDismiss?.());
+    }, duration - FADE_OUT);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      <Animated.View style={[StyleSheet.absoluteFill, { opacity: fieldOpacity }]} pointerEvents="none">
+        {motes.map((m, i) => {
+          const translateY = m.t.interpolate({ inputRange: [0, 1], outputRange: [0, -m.rise] });
+          // Sways left then right on the way up, so the field breathes instead of marching.
+          const translateX = m.t.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, m.sway, m.sway * 0.3] });
+          // Holds full brightness most of the way up rather than fading from a third of the way in --
+          // the earlier curve made an already-sparse field look like it was dying before it arrived.
+          const opacity = m.t.interpolate({ inputRange: [0, 0.1, 0.8, 1], outputRange: [0, m.depth, m.depth * 0.9, 0] });
+          const scale = m.t.interpolate({ inputRange: [0, 0.15, 1], outputRange: [0.5, 1, 0.85] });
+          return (
+            <Animated.View key={i} style={{
+              position: 'absolute',
+              // Starts just off the bottom edge so motes drift INTO frame instead of appearing in it.
+              left: m.startX, top: SH * 1.02,
+              width: m.size, height: m.size, borderRadius: m.size,
+              backgroundColor: m.color,
+              shadowColor: m.color, shadowOffset: { width: 0, height: 0 },
+              shadowOpacity: 1, shadowRadius: m.size * 2.2,
+              opacity,
+              transform: [{ translateX }, { translateY }, { scale }],
+            }} />
+          );
+        })}
+      </Animated.View>
+      <DismissPill opacity={pillOpacity} onPress={() => onDismiss?.()} />
+    </View>
+  );
+}
+
+// ─── EDGE BLOOM ──────────────────────────────────────────────────────────────
+//
+// The screen's edges glow and fade. Nothing in the middle at all, so it can never sit on top of whatever
+// you were reading -- the most restrained of the options, and the only one that leaves the content
+// completely untouched. Four gradient bands rather than one big overlay, so the centre stays perfectly
+// clear instead of being tinted.
+
+function EdgeBloom({ tier, accentColor, onDismiss }: Omit<VariantProps, 'variant' | 'def' | 'label'>) {
+  const duration = tier === 'large' ? 2600 : tier === 'medium' ? 2200 : 1700;
+  const depth = tier === 'large' ? 190 : tier === 'medium' ? 150 : 110;
+  const peak = tier === 'large' ? 0.85 : tier === 'medium' ? 0.7 : 0.55;
+
+  const glow = useRef(new Animated.Value(0)).current;
+  const pillOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Two pulses on the big tiers, one on small -- a heartbeat rather than a single flash, which is what
+    // keeps it from reading as a screenshot flare.
+    const pulse = (to: number, ms: number) =>
+      Animated.timing(glow, { toValue: to, duration: ms, easing: Easing.inOut(Easing.quad), useNativeDriver: true });
+    const seq = tier === 'small'
+      ? [pulse(peak, 420), pulse(0, duration - 420)]
+      : [pulse(peak, 380), pulse(peak * 0.45, 420), pulse(peak * 0.9, 380), pulse(0, duration - 1180)];
+    Animated.sequence(seq).start();
+    Animated.timing(pillOpacity, { toValue: 1, duration: 400, delay: 300, useNativeDriver: true }).start();
+
+    const timer = setTimeout(() => {
+      Animated.timing(pillOpacity, { toValue: 0, duration: 350, useNativeDriver: true }).start(() => onDismiss?.());
+    }, duration);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const band = (key: string, style: any, start: { x: number; y: number }, end: { x: number; y: number }) => (
+    <Animated.View key={key} style={[{ position: 'absolute', opacity: glow }, style]}>
+      <LinearGradient
+        colors={[accentColor, 'rgba(0,0,0,0)']}
+        start={start}
+        end={end}
+        style={{ flex: 1 }}
+      />
+    </Animated.View>
+  );
+
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        {band('top',    { top: 0, left: 0, right: 0, height: depth },   { x: 0.5, y: 0 }, { x: 0.5, y: 1 })}
+        {band('bottom', { bottom: 0, left: 0, right: 0, height: depth }, { x: 0.5, y: 1 }, { x: 0.5, y: 0 })}
+        {band('left',   { top: 0, bottom: 0, left: 0, width: depth * 0.8 }, { x: 0, y: 0.5 }, { x: 1, y: 0.5 })}
+        {band('right',  { top: 0, bottom: 0, right: 0, width: depth * 0.8 }, { x: 1, y: 0.5 }, { x: 0, y: 0.5 })}
+      </View>
       <DismissPill opacity={pillOpacity} onPress={() => onDismiss?.()} />
     </View>
   );
@@ -490,6 +622,8 @@ function LightBloom({ tier, accentColor, label, onDismiss }: Omit<VariantProps, 
 
 export default function CelebrationVariant({ variant, ...rest }: VariantProps) {
   if (variant === 'refined') return <RefinedConfetti {...rest} />;
+  if (variant === 'motes')   return <RisingMotes {...rest} />;
+  if (variant === 'edge')    return <EdgeBloom {...rest} />;
   if (variant === 'badge')   return <BadgeHero {...rest} />;
   return <LightBloom {...rest} />;
 }

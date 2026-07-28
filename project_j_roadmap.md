@@ -30,6 +30,23 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-27 **Celebrations are RISING MOTES now, not confetti (device-confirmed).** Soft points of light
+  drifting up and fading. 42 / 68 / 100 for small / medium / large; diamond untouched. Same colour rule
+  as the old confetti (60% accent, 25% off-white, 15% gold, with gold taking over if the accent is too
+  pale or too dark to read). Chosen over refined confetti, a badge hero and a light bloom -- all four are
+  still in the dev picker so the decision can be re-examined rather than re-argued.
+  **The centre text is GONE.** 25 of the 29 triggers fire the achievement toast at the same moment, and
+  it already carries the badge, name, tier and criteria -- the overlay was printing the name a second
+  time, simultaneously, in hardcoded white with no backdrop (illegible on Light). The toast informs; the
+  overlay is now purely the feeling. That also closes SPEC_celebrations' longest-running open question.
+  **Every tier is skippable**, including large -- 46 achievements you previously had to sit through.
+  **The weight achievements are consistent for the first time.** Three branches sat in one function each
+  doing something different: first weigh-in toasted but never celebrated, milestones and goal weight
+  celebrated but never toasted. Nobody decided that -- they were written at different times. All three
+  now do both, in both copies of the logic. Mattered more once the celebration stopped carrying text:
+  losing 50 lbs would have celebrated in total silence.
+  Dev tools: a "Toast + Celebration" toggle fires the real pairing through the real queue, because
+  firing them separately never showed how they read together.
 - 2026-07-27 **Logging a recipe now works exactly like logging a food (device-confirmed).** Recipes had
   no "Time logged" and no "Adding to" row -- the timestamp was whenever you tapped the button, and the
   meal was asked for in a modal AFTER you had already chosen it by tapping that meal's +. (Foods have

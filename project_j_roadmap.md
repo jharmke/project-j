@@ -1201,6 +1201,17 @@ WINS. Items graduate UP here from the backlog sections so good ideas don't rot d
 ships it leaves this list. Always offer at least one QUICK WIN when Justin asks what's next, and pull a
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
+- [NEW 2026-07-28] Home Faith card progress bars are still the wrong color -- they don't match the
+  Faith tab's bars. Also verify every other faith bar (Plans, Devotionals, Reading Plans, etc.).
+- [NEW 2026-07-28, IDEA] A weekly reading/devotional/"something" for Faith users -- a verse or chapter
+  plus a question. Pairs with the eventual community aspect: see each other's answers.
+- [NEW 2026-07-28] Day Summary modal: the hero number in the donut (94) is flat green, not gradient.
+  And "Every set checked off. Done." renders in the plain body font, looks cheap -- (1) fix the font,
+  (2) decide whether that line earns its place at all. Verify Weekly + Monthly summaries got the
+  same treatment.
+- [NEW 2026-07-28] Weight notification lands badly. Tapping this morning's weight notification opens
+  the Home tab but drops you mid-scroll with the weight card half-hidden under the header, and does
+  not open weight entry. Audit where every notification type actually lands, not just which tab.
 - [TOP -- DISCUSS FIRST, surfaced 2026-07-27] **Tips grant literally nothing, and the plan always said
   they should.** `purchaseTip` in MembershipContext runs the purchase, fires a thank-you toast, and stores
   NOTHING -- no badge change, no history, no record anywhere. Nothing notifies Justin either; he'd only
@@ -1729,6 +1740,16 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
   leaving those. STILL OPEN: fresh EAS dev build needed for the iOS permission-prompt strings to actually
   show the new text on-device (pure JS parts already correct on next reload).
 - App Store Connect setup -- privacy label, age rating, URLs, description, screenshots, review notes. No code. Do after name is locked.
+- IN-APP PURCHASE METADATA (all 7 products: 5 tips + supporter_monthly + supporter_annual). Apple requires a
+  REVIEW SCREENSHOT on every IAP before the first App Store submission, and the first app version must be
+  submitted with at least one IAP attached. As of 2026-07-28 NONE of the 7 have a screenshot. TestFlight and
+  sandbox do NOT enforce this, so it will look fine right up until submission. Also confirm LOCALIZATION
+  (display name + description) on all 7 while you're in there -- `tip_founder` shipped 2026-07-27 with no
+  localization, which silently made Apple treat the product as invalid: the app asked the store for it, the
+  store returned nothing, and the tile toasted "Tips aren't available right now." The status column read
+  "Prepare for Submission" the whole time, identical to the four working tips, so the list view will NOT
+  warn you. Product IDs themselves were verified correct across config.ts, support.tsx, App Store Connect
+  and RevenueCat.
 - Verification scan -- production build, device install, all flows confirmed before submitting.
 - Anthropic account spend limit -- hard monthly spend cap in the console so AI cost can never run away (the final "sleep at night" switch on top of per-user daily caps).
 - [RESOLVED IN CODE + DEVICE-VERIFIED 2026-07-01] Security #6: move ALL direct third-party API calls behind Cloud Functions. DONE (Anthropic + FatSecret). Same two tails as REVERT #1 (next build + key rotation).

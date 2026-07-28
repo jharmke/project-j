@@ -698,6 +698,22 @@ Because 95% is free, there are very few walls. Keep every one honest + non-naggy
   is why the tip jar and the badge reinforce each other.
 - Need: subscription product(s) + consumable tip products, restore-purchases, receipt validation, graceful
   offline/lapsed handling, and the Anthropic console spend cap as the backstop.
+- ⚠️ THE LOCALIZATION GOTCHA (cost an hour on 2026-07-28, WILL happen again on any new IAP). Every in-app
+  purchase needs a LOCALIZATION in App Store Connect -- the display name + description Apple shows in the
+  purchase sheet. `tip_founder` was created 2026-07-27 without one. Apple then treats the product as INVALID
+  and silently omits it from the app's product fetch: no error, no warning, the ID just isn't in the response.
+  The Support screen had nothing to sell for that tile, so it toasted "Tips aren't available right now" while
+  the other four tips worked fine.
+  WHY IT BURNS TIME: App Store Connect does NOT flag it. The list view showed Founder as "Prepare for
+  Submission", byte-identical to the four working tips -- not "Missing Metadata", no warning icon. Every other
+  visible signal (product IDs, type, RevenueCat entry, entitlement wiring) was correct, so everything said it
+  should work. RevenueCat's status column is no help either: it reads "Could not check" on ALL products
+  because the App Store Connect API key isn't connected.
+  IF A NEW IAP EVER RETURNS NOTHING: check localization FIRST, before suspecting code. Then price/availability
+  territories. Only then consider propagation (a genuinely new product can take hours to become fetchable).
+  Verified correct on 2026-07-28 and NOT worth re-checking: product IDs match across config.ts, support.tsx,
+  App Store Connect and RevenueCat; entitlement id is `supporter`; offering `default` is current with
+  `$rc_monthly`/`$rc_annual` packages; both subs sit in one subscription group.
 
 ---
 

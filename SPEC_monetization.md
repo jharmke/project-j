@@ -642,9 +642,23 @@ WHAT WAS MEASURED (real):
 - Otto + Halo run on Haiku 4.5 ($1 in / $5 out per million tokens). AI Meal Estimator + Smart Coach run on
   Sonnet ($3 / $15).
 - Prompt caching IS wired up on both companions (cache_control present in appCompanion.ts + faithCompanion.ts).
-- ⚠️ UNVERIFIED, WORTH CHECKING: Haiku 4.5 will not cache a prefix under 4,096 tokens -- it silently does
-  nothing, no error. Halo's system prompt looks like it lands UNDER that line, which would mean its
-  cache_control marker does nothing and every Halo message pays full price. Cheap to verify, cheap to fix.
+- ✅ CHECKED 2026-07-28, and the answer is "mostly fine, don't chase it":
+  OTTO IS TEXTBOOK CORRECT. appCompanion.ts splits `system` into a stable block (identity + rules +
+  ASSISTANT_APP_KNOWLEDGE) carrying cache_control, and a volatile block (user context + data snapshot)
+  placed AFTER it, uncached. That is exactly right for a prefix-match cache, and Otto is the expensive one
+  (~18k tokens/message vs Halo's ~2.6k). No change needed.
+  HALO SITS ON THE THRESHOLD. Haiku 4.5 will not cache a prefix under 4,096 tokens -- silently, no error.
+  Measured: BASE 2,351 tok + ROOTED 78 + FAITH_ACTIONS 216 = ~2,645 tok with NO catalog (below the line,
+  does not cache); with FAITH_CONTENT_RULES + a full 6,000-char catalog it reaches ~4,519 tok (above the
+  line, does cache). The cutoff lands at roughly a 4,300-char catalog, so whether Halo caches depends on
+  what the CLIENT sends that request. Two consequences: (a) it is unpredictable, and (b) the catalog lives
+  INSIDE the cached block, so any variation between requests splits the cache into separate entries and you
+  pay writes without collecting reads.
+  NOT WORTH FIXING FOR COST. Halo is ~2.6k input tokens on Haiku -- about a quarter of a cent a message.
+  Perfect caching saves ~$0.0024/message. Real, but ~1/7th of Otto's per-message input cost, and Otto
+  already caches. Revisit only if Halo's prompt grows or its cap goes up.
+  ⚠️ THE COST MODEL BELOW ALREADY ASSUMED CACHING WORKS. This check did not make the numbers better or
+  worse -- it confirmed there is no hidden savings hiding behind a caching bug.
 
 WHAT WAS ASSUMED (light usage -- deliberately generous to the model):
 ~3 companion conversations/week at ~3 messages each (~36 messages/month), 2 meal estimates/month, Smart Coach
@@ -699,9 +713,16 @@ Currently beta-inflated (see REVERT list). Final caps:
   self-facing, FLAT (no dollar-ranked tiers). Supporters AND tip-givers get it. Faith skin = gold cross for
   Rooted. Cosmetic "gold thread" = gold app icon + avatar ring + badge (tasteful, never a skins store).
 - Faith audiences especially respond to being THANKED, not just charged. NOT a status flex over free users.
-- THANK-YOU EMAIL (was parked; now the LAUNCH plan = Option 1): RevenueCat webhook -> alert Justin -> he
-  hand-writes a personal thank-you. Apple IAP does NOT give the buyer's email, but Firebase auth email (incl. the
-  Apple Hide-My-Email relay, which forwards) covers most; an in-app "note from the maker" is the post-launch upgrade.
+- THANK-YOU EMAIL -- ✅ **BUILT AND VERIFIED 2026-07-25**, not a plan anymore. `functions/src/revenueCatWebhook.ts`
+  is live: RevenueCat webhook -> Cloud Function -> email to Justin on both INITIAL_PURCHASE (new Supporter) and
+  NON_RENEWING_PURCHASE (a tip). Subject is tagged [SANDBOX] on test purchases. Confirmed working off a real
+  sandbox tip. The email carries product name + id, price, store, country, timestamp, the Firebase UID, and the
+  buyer's Apple Hide-My-Email relay address (which forwards to their real inbox), so Justin can hand-write a
+  personal thank-you exactly as planned.
+  ⚠️ THIS KILLS ONE OF THE THREE ARGUMENTS FOR AN IN-APP TIP RECORD. "You can't thank someone you can't see"
+  is FALSE -- he can see every giver already. What survives is the GIVER's side: they pay, get a toast, and the
+  app then holds no evidence it happened. Decide the acknowledgment on that basis alone, not on Justin's
+  visibility. An in-app "note from the maker" remains the post-launch upgrade.
 
 ## THE "SUPPORT THE MISSION" SCREEN (the paywall, reframed)
 - Replaces the generic "Unlock Pro" concept. Warm, gratitude-forward, universal (non-faith) mission line, then

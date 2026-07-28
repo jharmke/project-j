@@ -1227,8 +1227,15 @@ are separate pre-submission checklists, NOT part of this menu.
   Every remaining type still needs checking.
 - [TOP -- DISCUSS FIRST, surfaced 2026-07-27] **Tips grant literally nothing, and the plan always said
   they should.** `purchaseTip` in MembershipContext runs the purchase, fires a thank-you toast, and stores
-  NOTHING -- no badge change, no history, no record anywhere. Nothing notifies Justin either; he'd only
-  see it in RevenueCat or App Store Connect sales.
+  NOTHING **IN THE APP** -- no badge change, no history, no record the giver can ever see again.
+  ✅ CORRECTION 2026-07-28: an earlier version of this entry said nothing notifies Justin. That was WRONG.
+  `functions/src/revenueCatWebhook.ts` is live and emails Justin on both INITIAL_PURCHASE (new Supporter)
+  and NON_RENEWING_PURCHASE (a tip), subject-tagged [SANDBOX] in test. Verified working 2026-07-25 off a
+  real sandbox tip from Justin's dad. The email carries product, price, store, country, timestamp, the
+  Firebase UID, and the buyer's Apple relay email (which forwards to their real inbox).
+  SO THE JUSTIN-SIDE VISIBILITY PROBLEM DOES NOT EXIST -- he can already see and personally thank every
+  giver. What remains is purely the GIVER's side: they pay, get a toast, and ten seconds later the app
+  holds no evidence it ever happened.
   SPEC_monetization has said since 2026-07-11 that a tip should "bump the badge / add them to a thank-you
   list", but it was written as OPTIONAL, never locked, and never built. So this is a spec-to-code gap, not
   a missed risk.

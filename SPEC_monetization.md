@@ -757,6 +757,72 @@ TWO CARVE-OUTS THAT ARE NOT ARBITRARY:
 - The macro/nutrition gate is barely a paywall in practice: four presets cover what most people need, so a
   free user is not locked out of eating properly, only out of precision.
 
+### THE FIRST WEEK: A 7-DAY TASTE, THEN STEP DOWN (AGREED 2026-07-28)
+
+New accounts run on FULL SUPPORTER limits for 7 days, then step down to free. Announced up front, never
+silent. This is deliberately NOT an Apple free trial: no card, no commitment, no cancellation, nobody can
+ever be billed by accident. It exists to create CONTRAST, which is what actually converts -- a limit only
+means something to someone who has felt what it is like without it.
+
+HOW IT IS BUILT -- and it is far less work than it first looks. A trial IS Supporter status with a known end
+date, exactly like a monthly sub someone cancelled in iPhone settings (entitled, `periodEnd` set,
+`willRenew: false`). The app already renders that shape. So: grant a **7-day RevenueCat PROMOTIONAL
+ENTITLEMENT** on onboarding completion -- the same mechanism already used to comp testers, just time-boxed
+and granted programmatically. `REVENUECAT_SECRET_KEY` is already wired into the Cloud Functions.
+Everything then falls out for free: every gate opens because `isSupporter` is genuinely true; the Membership
+card and Support screen show the end date with no new code; it expires on its own so there is no timer or
+scheduled job; it is SERVER-SIDE so a reinstall cannot farm it; and the lapse is detectable through the same
+path as a real subscription ending, so the notice reuses the same modal.
+(Claude initially called this a "third membership state" and a real bit of plumbing. Justin pushed back --
+correctly -- that it is just Supporter with an end date. Do not rebuild it as a separate state.)
+
+LENGTH: 7 DAYS. Justin's ceiling was "definitely not more than 7", and 3 was rejected as actively pointless:
+days 1-3 of a fitness app are setup (profile, goals, finding things), so a 3-day taste passes unnoticed --
+you pay for it and get no contrast. A week is the minimum where someone uses the app enough to feel a
+difference, and it covers a weekend, when eating patterns change.
+
+⚠️ WHAT THIS IS ACTUALLY FOR -- IT IS AN ESTIMATOR TASTE. Free Otto is 10/day and most people send one or
+two, so for the vast majority the taste gives them nothing they notice and the step-down takes nothing away.
+The AI MEAL ESTIMATOR is where it bites: free is 5/MONTH, and a curious new user photographing meals can
+burn 5 in two days. Going from "photograph everything" to "five a month" is a difference someone genuinely
+feels. LEAD WITH THE ESTIMATOR in both the onboarding announcement and the step-down copy -- Justin's read
+is that it is the biggest single selling point of Supporter, and the numbers agree.
+
+ANNOUNCE IT UP FRONT, on the final onboarding screen, naming exactly what they get. Being quietly generous
+and then taking it away is a rug pull; saying it plainly makes the step-down a promise KEPT.
+
+SHOW THE END DATE PASSIVELY -- no countdown. A daily countdown creates low-level anxiety and nags. Instead
+the end date appears where membership status already appears: the Membership card (Profile + Settings) and
+the Support screen, reading like a cancelled sub ("Full version until 4 August"). Findable if curious,
+invisible if not. This comes free with the promotional-entitlement approach above.
+
+THE STEP-DOWN NOTICE: same centred modal + same deferral rules as MOMENT A below (retries each launch, takes
+the first opening, own once-ever flag). Frame it as a promise kept, not something taken away -- they never
+paid, so there is nothing to thank them for. NAME THE ACTUAL NUMBERS; vague copy ("some limits now apply")
+makes people imagine something harsher than the truth.
+DRAFT COPY (Justin: "fine to put in there", to be refined):
+  "Your first week is up
+   You've had the full version for seven days. From here, photo estimates drop to 5 a month and Otto to 10
+   messages a day. Everything you've logged and created stays exactly where it is.
+   If you'd like to keep the full version, becoming a Supporter is what keeps this going."
+   [Become a Supporter] [Got it]
+
+⚠️ THE STEP-DOWN NOTICE BEATS THE RATE US PROMPT, 100% OF THE TIME (Justin, explicit). These are scheduled
+to collide for EVERY user, by design: utils/ratingPrompt.ts has `MIN_ACCOUNT_AGE_DAYS = 7` and the trial ends
+at day 7, so both become eligible on the same launch. The step-down explains why the app just changed
+behaviour and must land first; a review request can wait a day. Asking for a review in the same breath as
+telling someone their free week ended is bad timing regardless.
+
+RULES SETTLED:
+- CLOCK STARTS AT ONBOARDING COMPLETION, not install. Someone who installs and does not return for ten days
+  must not have burned the week without using it.
+- NEW ACCOUNTS ONLY, from the day this ships. Moot for the current TestFlight group (all comped a year of
+  Supporter), but it stops every existing user being handed a free week for nothing.
+- ALREADY A SUPPORTER (comped tester, or subscribes during onboarding): SKIP ENTIRELY. No announcement, no
+  step-down notice.
+- OVER-LIMIT AFTERWARDS is already solved by the concurrent rule + downgrade principle above: build 25 custom
+  foods during the week, step down to 20, keep all 25, simply cannot add more. No deletions.
+
 ### DOWNGRADE BEHAVIOUR (PRINCIPLE AGREED 2026-07-28 -- applies to EVERY limit above)
 
 This is a PREREQUISITE, not a detail. Nothing above can ship until it is settled, because it governs

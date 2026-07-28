@@ -41,7 +41,7 @@ import { loadReadingPlanProgress } from '../../utils/readingPlansProgress';
 import { loadDevotionalProgress, getDevotionalProgress, getNextDay } from '../../utils/devotionals';
 // The warm ink ladder moved to theme.tsx: FaithTodayCard (the Home faith hub) and GratitudeStreakCard need
 // the same rungs, and it had already been copy-pasted twice before it earned a shared home.
-import { useTheme, faithInk, faithInkBody, faithInkMuted, type Theme } from '../../theme';
+import { useTheme, faithInk, faithInkBody, faithInkMuted, faithTintBg, faithTintBorder, type Theme } from '../../theme';
 import { Type, DISPLAY_CAPS, DISPLAY_TRACKING, displaySize } from '../../typography';
 
 /**
@@ -325,14 +325,14 @@ function VotdCard({ verse, theme, onReflect }: { verse: DailyVerse | null; theme
       {theme.id !== 'dark' && <LinearGradient colors={[theme.accentAmber + '2E', theme.accentAmber + '00']} locations={[0, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 64, borderTopLeftRadius: 14, borderTopRightRadius: 14 }} pointerEvents="none" />}
       <View style={[styles.verseLabelRow, { justifyContent: 'space-between' }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Ionicons name="sunny-outline" size={11} color={faithInkMuted(theme)} />
+          <Ionicons name="sunny-outline" size={14} color={theme.accentAmber} />
           <Text style={[styles.verseLabel, { color: faithInkMuted(theme) }]}>TODAY'S MESSAGE</Text>
         </View>
         {/* (i) stays on the left, the gear takes the right corner. */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <TooltipIcon tooltipKey="todays_message" color={theme.accentAmber} />
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setManageOpen(true); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <GradientIcon name="settings" size={15} color={theme.accentAmber} />
+            <GradientIcon name="settings" size={16} color={theme.accentAmber} />
           </TouchableOpacity>
         </View>
       </View>
@@ -344,7 +344,10 @@ function VotdCard({ verse, theme, onReflect }: { verse: DailyVerse | null; theme
       {onReflect && (
         <TouchableOpacity
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); onReflect!(); }}
-          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: 'rgba(212,134,10,0.10)', borderColor: 'rgba(212,134,10,0.30)', borderWidth: 1, borderRadius: 6, paddingVertical: 9, paddingHorizontal: 12, minHeight: 44, marginTop: 10 }}
+          // Was hardcoded rgba(212,134,10,...) -- DARK's amber baked in, so this button wore the wrong
+          // amber on the other four themes while the text beside it used each theme's own. Home's copy
+          // of this card was fixed months ago; this one never was. Same helpers, same geometry now.
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: faithTintBg(theme), borderColor: faithTintBorder(theme), borderWidth: 1, borderRadius: 6, paddingVertical: 9, paddingHorizontal: 12, minHeight: 44, marginTop: 10, marginBottom: 8 }}
         >
           {/* The gloss is white, so it reads the same over amber as over the accent tint everywhere else --
               nothing in ButtonShine is accent-specific. */}
@@ -708,7 +711,7 @@ function TileBar({ pct, theme }: { pct: number; theme: Theme }) {
   }, [pct]);
   const width = w.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
   return (
-    <View style={[styles.tileBarTrack, { backgroundColor: theme.bgProgressTrack }]}>
+    <View style={[styles.tileBarTrack, { backgroundColor: theme.bgProgressTrack, borderColor: theme.accentAmber + '38' }]}>
       <Animated.View style={[styles.tileBarFill, { width, overflow: 'hidden' }]}>
         <LinearGradient colors={barFillGradient(theme.accentAmber)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }} />
       </Animated.View>
@@ -813,7 +816,9 @@ const styles = StyleSheet.create({
   verseCard:     { borderWidth: 2, borderRadius: 14, padding: 16, marginBottom: 12 },
   verseLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
   verseLabel:    { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: Type.uiBold },
-  verseText:     { fontSize: 14, lineHeight: 22, marginBottom: 10, fontFamily: 'Lora_500Medium', textAlign: 'center' },
+  // Matched to components/FaithTodayCard's verseText (Home's copy of this card). It was 14/22 here and
+  // 17/27 there, so the same verse read as a footnote on the Faith tab and as the headline on Home.
+  verseText:     { fontSize: 17, lineHeight: 27, marginBottom: 12, fontFamily: 'Lora_500Medium', textAlign: 'center' },
   verseRef:      { fontSize: 9, fontFamily: Type.uiBold, textAlign: 'center', letterSpacing: 2, textTransform: 'uppercase' },
   header:      { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 0.5 },
   headerTitle: { fontSize: displaySize(27), fontFamily: Type.display, letterSpacing: DISPLAY_TRACKING, ...(DISPLAY_CAPS ? { textTransform: 'uppercase' as const } : {}) },
@@ -868,7 +873,11 @@ const styles = StyleSheet.create({
   tileChip:        { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   // NOT Lora -- see bibleContinueRef. "The Gospels" is a product name, not scripture.
   tileName:        { flex: 1, fontSize: 13, fontFamily: Type.uiSemibold, lineHeight: 17 },
-  tileBarTrack:    { height: 5, borderRadius: 3, overflow: 'hidden' },
+  // A 5px track with no edge is mush on any card close to its own tone -- chasing the fill colour per
+  // theme never fixes that, it just moves which theme looks wrong (Light was too heavy, Warm vanished).
+  // A hairline in the card's own amber defines the bar's shape, so an EMPTY bar still reads as a bar and
+  // the track colour stops having to do the work alone.
+  tileBarTrack:    { height: 6, borderRadius: 3, overflow: 'hidden', borderWidth: 0.5 },
   tileBarFill:     { height: 5, borderRadius: 3 },
   tileCaptionRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 5, gap: 6 },
   tileCaption:     { fontSize: 10, fontFamily: Type.uiBold },

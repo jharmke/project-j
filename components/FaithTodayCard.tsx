@@ -18,6 +18,7 @@ import ButtonShine from './ButtonShine';
 import { LinearGradient } from 'expo-linear-gradient';
 import { barFillGradient } from '../utils/barGradient';
 import GradientIcon from './GradientIcon';
+import TooltipIcon from './TooltipIcon';
 import VersePoolModal from './VersePoolModal';
 import { Type } from '../typography';
 
@@ -45,9 +46,12 @@ type RowItem = { id: string; icon: string; name: string; pct: number; completed:
 
 // Each page's own state title is the single card label (no separate "FAITH TODAY" line;
 // the card is named Faith Today in the edit-layout list). Page 1 also carries the journal door.
-function PageHeader({ title, icon, theme, withJournal, onJournal, withGear, onGear }: {
+// `withInfo` replaced a journal shortcut 2026-07-27. The Faith tab's copy of this card carried the (i)
+// and Home's carried the journal door, so the same card explained itself on one screen and not the other.
+// The two are now identical; the journal is still reachable from the Faith tab.
+function PageHeader({ title, icon, theme, withInfo, infoKey, withGear, onGear }: {
   title: string; icon: ReactNode; theme: Theme;
-  withJournal?: boolean; onJournal?: () => void; withGear?: boolean; onGear?: () => void;
+  withInfo?: boolean; infoKey?: string; withGear?: boolean; onGear?: () => void;
 }) {
   return (
     <View style={styles.header}>
@@ -55,12 +59,10 @@ function PageHeader({ title, icon, theme, withJournal, onJournal, withGear, onGe
         {icon}
         <Text style={[styles.title, { color: faithInkMuted(theme) }]}>{title}</Text>
       </View>
-      {(withJournal || withGear) && (
+      {(withInfo || withGear) && (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-          {withJournal && (
-            <TouchableOpacity onPress={onJournal} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="journal" size={16} color={theme.accentAmber} />
-            </TouchableOpacity>
+          {withInfo && infoKey && (
+            <TooltipIcon tooltipKey={infoKey} color={theme.accentAmber} />
           )}
           {withGear && (
             <TouchableOpacity onPress={onGear} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -223,7 +225,6 @@ export default function FaithTodayCard({ verse, theme }: Props) {
   const goVerse = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/bible', params: { verseRef: sv?.reference ?? '', verseText: sv?.text ?? '' } }); };
   const goFaithPlans = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/faith', params: { scrollTo: 'bible_plans' } }); };
   const goFaithPrayer = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/faith', params: { scrollTo: 'prayer' } }); };
-  const goJournal = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); };
   const goReflectWithHalo = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/faith', params: { openHalo: String(Date.now()), haloVerseRef: sv?.reference ?? '', haloVerseText: sv?.text ?? '' } }); };
   const goAskForPrayer = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/prayer', params: { autoOpenRequest: '1' } }); };
 
@@ -272,8 +273,8 @@ export default function FaithTodayCard({ verse, theme }: Props) {
               title="Today's Message"
               icon={<Ionicons name="sunny-outline" size={14} color={theme.accentAmber} style={{ marginRight: 6 }} />}
               theme={theme}
-              withJournal
-              onJournal={goJournal}
+              withInfo
+              infoKey="todays_message"
               withGear
               onGear={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setManageOpen(true); }}
             />

@@ -1201,6 +1201,15 @@ WINS. Items graduate UP here from the backlog sections so good ideas don't rot d
 ships it leaves this list. Always offer at least one QUICK WIN when Justin asks what's next, and pull a
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
+- [PARKED 2026-07-27 -- Justin's call, do not raise unprompted] **The app ignores iOS Reduce Motion.**
+  Confirmed by search: zero references to `AccessibilityInfo` / `isReduceMotionEnabled` anywhere. People
+  turn Reduce Motion on because animation makes them physically ill (vestibular disorders, migraine), so
+  they currently get every mote, spring, bar fill and expand at full strength. NOT an App Store blocker.
+  SAME SHAPE AS THE DYNAMIC TYPE BUG: an iOS accessibility setting the app never read, shipped, and found
+  by a real person on TestFlight (Justin's uncle). Reading the setting is trivial -- one call plus a
+  listener behind a hook; the work is deciding what each animation becomes. Do celebrations FIRST if this
+  is ever picked up (largest amount of motion): toast still slides, motes replaced by a brief static glow
+  or nothing. Then sweep the rest opportunistically rather than as one job. Also SPEC_celebrations TBD-8.
 - [ONLY THE HISTORY REPAIR IS LEFT -- everything else DONE 2026-07-27, see RECENTLY SHIPPED]
   **Extended nutrients scaled against the WRONG serving size.**
   REMAINING: entries logged before 2026-07-27 keep their wrong nutrients. Justin's call was fix forward;

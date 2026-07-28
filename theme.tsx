@@ -379,7 +379,10 @@ const light: Theme = {
   // recess; on the page the BORDER draws the edge instead of the fill. If these ever go faint again, reach
   // for the border, not the fill.
   bgInput:          '#f5f5fa',
-  bgProgressTrack:  '#ccd2e2',
+  // Lightened 2026-07-27 from #ccd2e2. Every theme's track leans toward that theme's accent, and Light's
+  // leaned blue AND dark -- which read as a cold grey slab against the warm cream faith cards. Lighter and
+  // less saturated: still clearly a track behind a part-filled bar, no longer the heaviest thing on a card.
+  bgProgressTrack:  '#e3e7f0',
   bgSheet:          '#ffffff',
   // Same value + same reason as bgInput above (they are the same idea: a recess).
   bgInset:          '#f5f5fa',

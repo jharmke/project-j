@@ -130,15 +130,18 @@ export default function TutorialsScreen() {
                     paddingHorizontal: 14,
                     paddingVertical: 7,
                     borderRadius: 20,
-                    backgroundColor: active ? theme.accentBlue : theme.bgCard,
-                    borderWidth: 0.5,
-                    borderColor: active ? theme.accentBlue : theme.borderCard,
+                    // The app's selected state everywhere else is a TINTED accent fill with accent text
+                    // and a matching border, not a solid accent slab with white text. This pill row was
+                    // the odd one out.
+                    backgroundColor: active ? theme.accentBlueBg : theme.bgCard,
+                    borderWidth: 1,
+                    borderColor: active ? theme.accentBlueBorder : theme.borderCard,
                     minHeight: 34,
                     justifyContent: 'center',
                   }}
                   activeOpacity={0.7}
                 >
-                  <Text style={{ fontSize: 12, fontFamily: active ? Type.uiBold : Type.ui, color: active ? '#ffffff' : theme.textMuted }}>
+                  <Text style={{ fontSize: 12, fontFamily: active ? Type.uiBold : Type.ui, color: active ? theme.accentBlue : theme.textMuted }}>
                     {filter}
                   </Text>
                 </TouchableOpacity>
@@ -149,7 +152,9 @@ export default function TutorialsScreen() {
       } />
 
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24 }}
+        // paddingTop so the first card isn't hugging the header. Everything below the filter row was
+        // butted straight against it.
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: insets.bottom + 24 }}
         showsVerticalScrollIndicator={false}
       >
         {filtered.length === 0 ? (

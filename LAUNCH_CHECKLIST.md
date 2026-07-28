@@ -92,20 +92,35 @@ Phase 2. Revert those before granting entitlements and every tester drops to the
 
 Every one of these is currently making the app more generous than it should be at launch.
 
-- [ ] **2.1 — Real AI caps.** Blocked on 1.1 (there is no Supporter tier to revert *to* until the server can
-      tell who's a Supporter).
-      - `functions/src/appCompanion.ts:37` — `FREE_DAILY_CAP = 100` → **10** (Supporter 25). *Needs redeploy.*
-      - `functions/src/faithCompanion.ts:29` — `FREE_DAILY_CAP = 50` → **25** (Supporter 25 — faith is never
-        upcharged, so both tiers are equal). *Needs redeploy.*
-      - `services/aiMealEstimator.ts:34,38` — `FREE_LIMIT = 100` → **5**, `PRO_LIMIT = 9999` → **100**.
-- [ ] **2.2 — Lock Custom Reports.** `app/reports.tsx:25` — `REPORTS_BETA_OPEN = true` → **false**. One line; the
-      whole gate is already built and dormant behind it.
+- [~] **2.1 — Real AI caps. COMPANIONS DONE + DEPLOYED + DEVICE-VERIFIED 2026-07-28. Estimator still open.**
+      Was marked blocked on 1.1; that turned out to be stale — the Supporter lookup shipped 2026-07-13 and the
+      `supporter ? SUPPORTER_CAP : FREE_CAP` branch already existed, it was just that both constants were equal.
+      - [x] `appCompanion.ts` — **10 free / 30 Supporter** (deployed). NOTE: 30, not the 25 originally locked —
+        deliberate 2026-07-28. 3x free makes the perk read as real and it acts as a runaway backstop, not a
+        product limit. Verified on device: a free account correctly showed "9 of 10 messages left today".
+      - [x] `faithCompanion.ts` — **25 / 25** (deployed). Verified on device: "24 of 25 messages left today".
+        No copy change was needed — the cap and its label already existed, only the number moved.
+      - [ ] `services/aiMealEstimator.ts` — `FREE_LIMIT = 100` → **5**, `PRO_LIMIT = 9999` → **100**. STILL OPEN.
+      ALSO SHIPPED alongside: the remaining-messages counter now stays hidden until **5 or fewer** are left
+      (`QUOTA_VISIBLE_AT` in AssistantChat + CompanionChat). Always-on it read as a fuel gauge and made a
+      helpful companion feel metered.
+- [x] **2.2 — Lock Custom Reports. DONE 2026-07-28.** `REPORTS_BETA_OPEN` → **false**.
+      ⚠️ AND A REAL BUG FOUND DOING IT: the Stats card sent locked users straight to `/support`, which LEAPT
+      OVER the locked screen `reports.tsx` already renders — so that screen was built but unreachable, and a
+      free user got thrown at a sales page with no explanation of what they were missing. The card now always
+      routes to `/reports`, matching how Comparison already behaved. Found only because Justin was on the free
+      path — a good argument for keeping 2.4 permanently done (below).
 - [ ] **2.3 — Remove the dev Pro toggle.** `app/settings.tsx:3743` (the toggle), `:457`/`:815` (its state), and
       the `__DEV__ && devOverride` override in `MembershipContext.tsx:228`. Grep `devProUnlocked` — it must
       return nothing outside comments.
-- [ ] **2.4 — Empty the AI whitelists.** `DEV_UNLIMITED_UIDS = ['zLZOx2aqiKXcl3tlg7LNmkwbGxH3']` appears in
-      **three** places and bypasses every cap: `functions/src/aiProxy.ts:38`, `appCompanion.ts:41`,
-      `faithCompanion.ts:33`. Its own comment says "Empty before launch." *Needs redeploy.*
+- [~] **2.4 — Empty the AI whitelists. TWO OF THREE DONE + DEPLOYED 2026-07-28.**
+      - [x] `functions/src/appCompanion.ts` — emptied.
+      - [x] `functions/src/faithCompanion.ts` — emptied.
+      - [ ] `functions/src/aiProxy.ts` (Smart Coach + estimator) — STILL HAS Justin's uid. *Needs redeploy.*
+      Justin's call was to leave the companion ones empty from now on rather than restore them after testing,
+      so he experiences the real caps like any other user. That decision immediately paid for itself: being on
+      the free path is how the unreachable Reports locked screen in 2.2 was found. Ask him if he wants a uid
+      re-added temporarily for heavy Otto testing; must be EMPTY at launch either way.
 - [ ] **2.5 — Remove the dev tools from Settings.** The 7-tap hidden Dev Tools section (app/settings.tsx:2193+):
       seed tools, the Weight-History self-test, "Seed under-logged test day", Vacation Mode dev reset, the
       local-data wipe, etc. They're safe, but they should not ship visible.

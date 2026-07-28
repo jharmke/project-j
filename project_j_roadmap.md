@@ -1201,6 +1201,21 @@ WINS. Items graduate UP here from the backlog sections so good ideas don't rot d
 ships it leaves this list. Always offer at least one QUICK WIN when Justin asks what's next, and pull a
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
+- [TOP -- DISCUSS FIRST, surfaced 2026-07-27] **Tips grant literally nothing, and the plan always said
+  they should.** `purchaseTip` in MembershipContext runs the purchase, fires a thank-you toast, and stores
+  NOTHING -- no badge change, no history, no record anywhere. Nothing notifies Justin either; he'd only
+  see it in RevenueCat or App Store Connect sales.
+  SPEC_monetization has said since 2026-07-11 that a tip should "bump the badge / add them to a thank-you
+  list", but it was written as OPTIONAL, never locked, and never built. So this is a spec-to-code gap, not
+  a missed risk.
+  TWO REASONS TO FIX, and the second is the stronger one:
+  (1) Review risk. Apple can push back on IAPs that give nothing. Real but NOT a certainty -- plenty of
+  apps ship tip jars exactly like this and pass. External TestFlight goes through App Review, so the
+  2026-07-27 build is the first real test of it.
+  (2) PRODUCT. Someone who gives $49.99 gets the identical silent toast as someone who gives $2.99. That
+  is the actual problem, and it got worse the moment the Founder tier shipped.
+  DISCUSS BEFORE BUILDING: what the acknowledgment should be (badge tier? thank-you list? a one-off
+  message from Justin?), whether it is retroactive, and whether it scales with the amount.
 - [PARKED 2026-07-27 -- Justin's call, do not raise unprompted] **The app ignores iOS Reduce Motion.**
   Confirmed by search: zero references to `AccessibilityInfo` / `isReduceMotionEnabled` anywhere. People
   turn Reduce Motion on because animation makes them physically ill (vestibular disorders, migraine), so

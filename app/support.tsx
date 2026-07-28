@@ -116,8 +116,8 @@ export default function SupportScreen() {
   // LIVE prices from the store, never hardcoded: if a price ever changes in App Store Connect, a
   // hardcoded string would keep showing the old number while Apple charged the new one.
   // Falls back to the known price only while the offering is still loading.
-  const monthlyPrice = offering?.monthly?.product?.priceString ?? '$6.99';
-  const annualPrice = offering?.annual?.product?.priceString ?? '$69.99';
+  const monthlyPrice = offering?.monthly?.product?.priceString ?? '$9.99';
+  const annualPrice = offering?.annual?.product?.priceString ?? '$89.99';
   const tipPrice = (productId: string, fallback: string) =>
     tipProducts.find(p => p.identifier === productId)?.priceString ?? fallback;
 

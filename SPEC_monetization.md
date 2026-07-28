@@ -592,8 +592,19 @@ Three layers:
    NOT boosting the free tier beyond its already-generous state (decided 2026-07-10 -- 95% free IS the
    generosity; leave the gates where they are).
 
-2. SUPPORTER / MEMBER (one cheap recurring sub, ~$5-10/mo, price TBD): the ONLY recurring paid tier. Reframed
-   as "Support the Mission." Perks (a thank-you, not the reason):
+2. SUPPORTER / MEMBER (**PRICE LOCKED 2026-07-28: $9.99/month, $89.99/year**): the ONLY recurring paid tier.
+   Reframed as "Support the Mission." Perks (a thank-you, not the reason):
+   PRICE RATIONALE (from the unit-economics pass run 2026-07-28 -- see COST MODEL section below):
+   - Raised from $6.99/$69.99. At $6.99 the app needed ~8-9% of active users subscribing just to cover its own
+     AI bill; $9.99 drops that to ~6%. Typical for a soft "support the mission" pitch is 1-5%, so this does not
+     fix the model on its own -- it buys headroom while the free-tier caps get sorted.
+   - ANNUAL IS DELIBERATELY CHEAP relative to monthly (25% off, "three months free", not the old 17%). An
+     annual subscriber nets ~$70 upfront and guaranteed; a monthly subscriber nets $6.99 and churns in ~4-6
+     months, so realistically collects $28-42. Annual is worth roughly DOUBLE. The discount exists to steer
+     people into the plan that actually sustains the app, not to be consistent with the monthly price.
+   - $89.99 also stays under the $100 psychological wall, which matters more for a purchase framed as SUPPORT
+     than for a tool someone needs. Confidence on that specific point is moderate, not high -- revisit with
+     real conversion data.
    - Unlimited (or greatly raised) AI Meal Estimator.
    - Unlimited (or greatly raised) Otto + Halo messages.
    - Custom Reports access.
@@ -618,6 +629,49 @@ Three layers:
    - OPTIONAL FUTURE: a recurring "Patron" tier (higher price, SAME perks + a shinier badge/recognition),
      framed as gratitude not features, self-selected. Lead with the one-time tip first; only add Patron if
      there's demand. Do NOT ship an arbitrary higher feature tier.
+
+## COST MODEL / UNIT ECONOMICS (run 2026-07-28 -- THE UNCOMFORTABLE ONE, read before touching caps)
+⚠️ ESTIMATE, NOT MEASUREMENT. Prompt sizes and API pricing are real; per-user usage frequency was assumed.
+The single number that decides whether this app is viable is AVERAGE AI CALLS PER ACTIVE USER PER DAY, and it
+has never been measured. TestFlight users are generating it right now -- pull it from the Anthropic console
+and the Cloud Function logs before acting on anything in this section.
+
+WHAT WAS MEASURED (real):
+- Otto's knowledge base (functions/src/assistantAppKnowledge.ts) is ~72KB, roughly 18,000 tokens, sent on
+  EVERY message. Halo's (faithSystemPrompt.ts) is ~14KB.
+- Otto + Halo run on Haiku 4.5 ($1 in / $5 out per million tokens). AI Meal Estimator + Smart Coach run on
+  Sonnet ($3 / $15).
+- Prompt caching IS wired up on both companions (cache_control present in appCompanion.ts + faithCompanion.ts).
+- ⚠️ UNVERIFIED, WORTH CHECKING: Haiku 4.5 will not cache a prefix under 4,096 tokens -- it silently does
+  nothing, no error. Halo's system prompt looks like it lands UNDER that line, which would mean its
+  cache_control marker does nothing and every Halo message pays full price. Cheap to verify, cheap to fix.
+
+WHAT WAS ASSUMED (light usage -- deliberately generous to the model):
+~3 companion conversations/week at ~3 messages each (~36 messages/month), 2 meal estimates/month, Smart Coach
+weekly. NOTE: the free caps ALLOW 1,050 companion messages/month (Otto 10/day + Halo 25/day). So the model
+assumed users consuming 3-4% of what they are permitted.
+
+THE RESULT: ~$0.40/month per active user (~$5/year). A user who MAXES the free caps costs ~$6.40/month --
+more than a Supporter pays. At 5% of installs still active at day 30 and 3% of those subscribing, EVERY
+install scenario from 300 to 25,000 loses money, and the losses grow with scale:
+  300 installs -> -$171/yr | 1,500 -> -$342 | 4,000 -> -$707 | 8,000 -> -$1,375 | 25,000 -> -$4,168
+(those were computed at the OLD $6.99; $9.99 improves them but does not flip any of them positive)
+
+SENSITIVITY IS BRUTAL: at 5 companion messages/day -- still only ~15% of the cap, a totally ordinary number --
+cost goes to ~$1.80/month/user, 4.5x the estimate, and break-even conversion passes 25%. The model above is
+the GENEROUS version, not the pessimistic one.
+
+THE ACTUAL PROBLEM: this is not a pricing problem, it is a COST-PER-FREE-USER problem. Cost scales with ALL
+users; revenue scales with the ~3% who pay. Every free user costs ~$5/year and returns nothing. Halo at
+25/day for EVERY free user is the single most expensive line in the app and is deliberately never paywalled
+-- that is a values decision, not an economics one, but it should be made with this number visible.
+
+TIPS ARE NOT A REVENUE STRATEGY, CONFIRMED: at 25,000 installs, with generous assumptions (5% of actives
+tipping once a year, ~$6 average), tips produce ~$262/year after Apple's cut. Real, meaningful as a gesture,
+noise against a $6,000 cost base, and non-recurring.
+
+NEXT STEP IS MEASUREMENT, NOT MORE DECISIONS. Then the caps conversation (levers 1-3: Halo's free cap, the
+caching fix, and free cap levels generally). Price was lever 4 and is done.
 
 ## PERKS LIST (what Supporter unlocks -- exact caps in LOCKED DECISIONS #3)
 - AI Meal Estimator: free 5/month; Supporter 100/month (Sonnet; most defensible paid line -- real $/call).

@@ -1201,6 +1201,15 @@ WINS. Items graduate UP here from the backlog sections so good ideas don't rot d
 ships it leaves this list. Always offer at least one QUICK WIN when Justin asks what's next, and pull a
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
+- [NEW 2026-07-28 -- JUSTIN'S ACTION, App Store Connect + RevenueCat] **Supporter price raised: $9.99/month,
+  $89.99/year** (was $6.99/$69.99). Locked 2026-07-28 off the unit-economics pass -- see the COST MODEL
+  section in SPEC_monetization.md. Code side is DONE (fallback price strings in app/support.tsx). STILL TO DO:
+  change both subscription prices in App Store Connect. Nothing breaks in the meantime -- the app reads live
+  prices from the store, so it will show whatever Apple says until then.
+  ⚠️ SEPARATE AND UNRESOLVED: raising the price does NOT fix the model. At $9.99 the app still needs ~6% of
+  active users subscribing to cover its own AI bill (typical is 1-5%), and every install scenario still loses
+  money. The real problem is cost-per-FREE-user. Levers 1-3 (Halo's free cap, the Haiku caching fix, free cap
+  levels) are still open and were deliberately not touched. MEASURE REAL AI USAGE FIRST.
 - [NEW 2026-07-28] Home Faith card progress bars are still the wrong color -- they don't match the
   Faith tab's bars. Also verify every other faith bar (Plans, Devotionals, Reading Plans, etc.).
 - [NEW 2026-07-28, IDEA] A weekly reading/devotional/"something" for Faith users -- a verse or chapter
@@ -1209,9 +1218,13 @@ are separate pre-submission checklists, NOT part of this menu.
   And "Every set checked off. Done." renders in the plain body font, looks cheap -- (1) fix the font,
   (2) decide whether that line earns its place at all. Verify Weekly + Monthly summaries got the
   same treatment.
-- [NEW 2026-07-28] Weight notification lands badly. Tapping this morning's weight notification opens
-  the Home tab but drops you mid-scroll with the weight card half-hidden under the header, and does
-  not open weight entry. Audit where every notification type actually lands, not just which tab.
+- [NEW 2026-07-28] Notification landing audit -- where each type actually drops you, not just which tab.
+  Two types checked so far on 2026-07-28:
+  - ❌ WEIGHT: opens the Home tab but drops you mid-scroll with the weight card half-hidden under the
+    header, and does not open weight entry. The route is right, the landing is wrong.
+  - ✅ DAILY VERSE: opens the Bible page scrolled to the correct highlighted verse. Correct, no change
+    needed. Use this one as the reference for what "landed properly" looks like.
+  Every remaining type still needs checking.
 - [TOP -- DISCUSS FIRST, surfaced 2026-07-27] **Tips grant literally nothing, and the plan always said
   they should.** `purchaseTip` in MembershipContext runs the purchase, fires a thank-you toast, and stores
   NOTHING -- no badge change, no history, no record anywhere. Nothing notifies Justin either; he'd only

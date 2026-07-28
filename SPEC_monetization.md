@@ -902,6 +902,19 @@ their own. That is hostile, and it is the single worst thing this feature could 
 
 This is the same line the section above already draws: cap creation, never touch data they already made.
 
+⚠️ DAY-ONE MIGRATION: EXISTING USERS WILL BE OVER THE LIMIT THE MOMENT THIS SHIPS. This is the same shape as
+a downgrade but it is NOT the same event, and it hits far more people. Anyone who has already built 40 custom
+foods is instantly over a 20 cap, having never been a Supporter and having done nothing wrong. The rule above
+handles it correctly (keep all 40, cannot add a 41st), but two things follow that are easy to get wrong:
+- THE WALL COPY MUST NOT READ AS AN ACCUSATION. "You have exceeded the limit" is false and insulting here --
+  they did not exceed anything, the limit arrived underneath them. Wording has to work for BOTH a user who
+  filled 20 slots normally and a user who woke up at 40.
+- THESE USERS GET NO LAPSE NOTICE (nothing lapsed), so the first they learn of it is the wall itself. Decide
+  deliberately whether that is acceptable or whether the migration deserves its own one-time note. NOT YET
+  DECIDED -- raised 2026-07-28, flagged rather than resolved.
+Do not treat this as an edge case. On the day these limits ship it is the MOST common way anyone encounters
+them, because every long-standing user meets it at once while brand-new users meet it never.
+
 TELL THEM, ONCE, GRACEFULLY. Silence is worse -- they would hit a wall weeks later with no idea why.
 
 ⚠️ THESE ARE TWO SEPARATE MOMENTS. Do not write one piece of copy for both (the first draft did, and read

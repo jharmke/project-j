@@ -745,13 +745,26 @@ their own. That is hostile, and it is the single worst thing this feature could 
 
 This is the same line the section above already draws: cap creation, never touch data they already made.
 
-TELL THEM, ONCE, GRACEFULLY. Silence is worse -- they would hit a wall weeks later with no idea why. One
-gentle notice when the membership lapses. No guilt, no urgency, no countdown, never repeated.
+TELL THEM, ONCE, GRACEFULLY. Silence is worse -- they would hit a wall weeks later with no idea why.
+
+⚠️ THESE ARE TWO SEPARATE MOMENTS. Do not write one piece of copy for both (the first draft did, and read
+as if custom foods were the only thing affected):
+
+MOMENT A -- THE MEMBERSHIP ENDS. A one-time CENTRED MODAL (house pattern; never a bottom sheet) on the next
+app open after the entitlement lapses. MembershipContext already tracks entitlement, so the client can
+detect the entitled -> not-entitled transition. Deliberately NOT Otto: he is a helper, and having him
+deliver billing news muddies what he is for. Shown ONCE. No guilt, no urgency, no countdown, never repeated.
+Copy stays GENERAL -- do not enumerate every gated feature, it gets long and reads like a punishment list.
 DRAFT COPY (not locked, Justin to refine):
-  "Your Supporter membership has ended. Everything you created while supporting is still yours and stays
-   exactly where it is. The only change is that adding new custom foods is paused until you are back under
-   the free limit. If you ever want to pick it back up, the door is open."
+  "Your Supporter membership has ended. Everything you created is still yours and stays exactly where it
+   is. A few things are paused for now, like adding new custom items and editing your custom goals. If you
+   ever want to pick it back up, the door is open."
 Tone target: thank them for what they gave, be clear about what changed, ask for nothing.
+
+MOMENT B -- THEY HIT A SPECIFIC WALL LATER (trying to add the 41st custom food). THAT is where the copy
+names the specific thing, in the existing locked-state pattern. It must also handle the case where the user
+is legitimately ABOVE the free cap through no fault of their own, so the wording cannot imply they did
+something wrong.
 
 BUILD COST, stated honestly so it is not a surprise: eight separate limits, each needing a count, a check at
 the moment of creation, a locked state with its own copy, the Supporter branch, AND the over-limit state

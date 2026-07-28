@@ -1210,6 +1210,38 @@ are separate pre-submission checklists, NOT part of this menu.
   active users subscribing to cover its own AI bill (typical is 1-5%), and every install scenario still loses
   money. The real problem is cost-per-FREE-user. Levers 1-3 (Halo's free cap, the Haiku caching fix, free cap
   levels) are still open and were deliberately not touched. MEASURE REAL AI USAGE FIRST.
+- [NEW 2026-07-28, DATA INTEGRITY -- PRE-LAUNCH] **A second device on the same account never pulls from the
+  cloud, so it sits permanently stale.** REPRODUCED ON DEVICE 2026-07-28 (phone + iPad, throwaway account):
+  logged food on the phone, opened the iPad, and the iPad had no idea it existed.
+  CAUSE (read in services/syncService.ts, `_runRestoreGate`): the gate handles exactly two cases -- account
+  switch (owner !== uid, which DOES pull the cloud and works correctly) and fresh install (not onboarded,
+  which also pulls). A third case, "same account + already onboarded", short-circuits with "local is
+  authoritative, don't overwrite it" and turns sync on WITHOUT ever downloading. That assumption is right for
+  your daily device and wrong for a second one, where local is stale rather than newer.
+  WHAT WAS **NOT** PROVEN: the first theory was that the stale device then overwrites the cloud (syncKey uses
+  setDoc, a full replace). The device test did NOT reproduce that -- the cloud survived. Do not repeat that
+  claim without new evidence.
+  ⚠️ TEST-DESIGN NOTE so this isn't re-run wrong: you CANNOT detect cloud damage by looking at an existing
+  install, because it never reads the cloud either -- it shows local. Force a real download first by signing
+  out and into another account and back.
+  MANUAL WORKAROUND THAT WORKS TODAY: signing out and back in forces a full cloud restore, because the
+  account-switch path is the one that pulls. Repairs any stale device.
+  AGREED FIX (option 2 of 3, not yet built): record on each device when it last successfully pushed to the
+  cloud; on sign-in, pull anything the cloud changed after that and take the cloud's version. Fails safe --
+  if the cloud is unreachable it behaves exactly as today. Accepted tradeoff: an offline edit loses to an
+  online edit of the same key. Options 1 (fill only missing keys) and 3 (timestamp every local write, needs
+  the 26 raw AsyncStorage writes routed through storageSet first) were considered and set aside.
+- [NEW 2026-07-28, DATA INTEGRITY -- PRE-LAUNCH, LIKELIER CAUSE OF THE ACTUAL LOSS] **A failed cloud sync is
+  silently swallowed and never retried.** `syncKey` catches and discards the error on purpose ("sync failure
+  must never break local saves") -- correct as far as it goes, but there is no retry, no flag, and no record
+  that a key never made it. Everything looks perfect locally right up until a reinstall.
+  WHY THIS IS THE LEADING SUSPECT for 2026-07-28's real loss: Justin's Expo dev build REPLACES the TestFlight
+  app (he cannot have both installed), so it came up as a genuinely fresh install, restored from the cloud,
+  and showed exactly what the cloud held -- everything except that morning's 4 food logs + 3 water logs. The
+  iPad was blamed first; the device test cleared it. Entries that never reached the cloud fits the evidence.
+  NOT PROVEN EITHER -- it is the best remaining explanation, not a confirmed one.
+  Note `uploadAllLocal` on background is supposed to catch stragglers; whether it ran is unknown.
+  Settings already has "Backup Verify (read-only)" + "Upload All Data", which is the manual safety net.
 - [NEW 2026-07-28] Home Faith card progress bars are still the wrong color -- they don't match the
   Faith tab's bars. Also verify every other faith bar (Plans, Devotionals, Reading Plans, etc.).
 - [NEW 2026-07-28, IDEA] A weekly reading/devotional/"something" for Faith users -- a verse or chapter

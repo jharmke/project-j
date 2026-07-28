@@ -26,9 +26,16 @@ import BackgroundLayers from '../components/BackgroundLayers';
 import PrimaryCTA from '../components/PrimaryCTA';
 import GradientNumber from '../components/GradientNumber';
 
-// 🚧 BETA HACK (revert before App Store launch): Reports is a Pro feature, but every TestFlight user gets
-// full access during beta. Flip to false (or gate on the real subscription) before public release.
-export const REPORTS_BETA_OPEN = true;
+// ✅ FLIPPED FALSE 2026-07-28. Reports is now genuinely Supporter-gated, as designed.
+// History: this flag was born 2026-07-07 when Reports shipped and no purchase system existed -- it was the
+// only way anyone could see the feature. RevenueCat and the locked screen both landed 2026-07-12 and the
+// flag was simply left on so testers kept access. It is redundant now that testers are comped in RevenueCat.
+// ⚠️ WHY THIS MATTERED: because the flag was OR'd in AHEAD of the entitlement check, it forced access on for
+// everyone -- which means the locked screen below had NEVER been rendered by anyone, including Justin, and
+// the "Force Free State" dev toggle could not reveal it either. Same blind spot already bit the EvR locked
+// card (no shadow on iOS, found by reading the code rather than looking at the screen). Any tester who was
+// never comped loses Reports on the next build, so confirm comps in RevenueCat before shipping one.
+export const REPORTS_BETA_OPEN = false;
 
 export default function ReportsHub() {
   const { theme } = useTheme();

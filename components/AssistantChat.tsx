@@ -66,6 +66,8 @@ const pickGreeting = () => GREETINGS[Math.floor(Math.random() * GREETINGS.length
 // cannot read the server's ai_usage_companion counter, which is locked down by the rules). The
 // date is the server's UTC day, so a stale cache self-expires at the daily reset.
 const QUOTA_KEY = 'pj_companion_quota';
+// Remaining-messages count stays hidden until this many are left. Keep in sync with CompanionChat.
+const QUOTA_VISIBLE_AT = 5;
 const utcDay = () => new Date().toISOString().slice(0, 10);
 const localTodayKey = () => {
   const d = new Date();
@@ -528,7 +530,9 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
   const canSend = input.trim().length > 0 && !sending;
 
   const remaining = quota ? Math.max(0, quota.cap - quota.used) : null;
-  const showQuota = !!quota && quota.used <= quota.cap;
+  // Only surface the counter once it is actually useful information. Always-on, it reads as a fuel gauge
+  // and makes a helpful assistant feel metered; at 5 left it reads as a heads-up. Same rule on Halo.
+  const showQuota = !!quota && quota.used <= quota.cap && remaining !== null && remaining <= QUOTA_VISIBLE_AT;
   const quotaLow = remaining !== null && remaining <= 1;
   const quotaLabel =
     remaining === null ? ''

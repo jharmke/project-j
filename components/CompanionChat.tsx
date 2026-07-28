@@ -66,6 +66,8 @@ const openerFor = (ctx?: { ref: string; note?: string } | null): string =>
 // client cannot read the server's ai_usage counter, which is locked down by the rules).
 // The date is the server's UTC day, so a stale cache self-expires at the daily reset.
 const QUOTA_KEY = 'pj_halo_quota';
+// Remaining-messages count stays hidden until this many are left. Keep in sync with AssistantChat.
+const QUOTA_VISIBLE_AT = 5;
 const utcDay = () => new Date().toISOString().slice(0, 10);
 
 // Compact catalog of the app's reading plans + devotionals, built from the LIVE data so it never
@@ -612,7 +614,9 @@ export default function CompanionChat({
   // for unlimited/dev accounts (where used climbs past cap). Goes gold at the last message
   // so the daily wall is never abrupt.
   const remaining = quota ? Math.max(0, quota.cap - quota.used) : null;
-  const showQuota = !!quota && quota.used <= quota.cap;
+  // Only surface the counter once it is actually useful information. Always-on, it reads as a fuel gauge
+  // and makes a helpful companion feel metered; at 5 left it reads as a heads-up. Same rule on Otto.
+  const showQuota = !!quota && quota.used <= quota.cap && remaining !== null && remaining <= QUOTA_VISIBLE_AT;
   const quotaLow = remaining !== null && remaining <= 1;
   const quotaLabel =
     remaining === null ? ''

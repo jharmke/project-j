@@ -6,12 +6,21 @@
 // summary generators, the Effort vs Results report and Smart Tips), which is how a single wrong
 // assumption ended up living in all of them at once.
 //
-// ⚠️ THIS IS A VERBATIM MOVE, NOT A FIX. The logic below is character-for-character what those call
-// sites already did, including its known bug: an entry's `servingGrams` records the serving the user
-// PICKED, while `foodNutrients` describes the food's own base serving, and those are only the same
-// thing when the user left the serving picker alone. Custom foods and text-searched FatSecret foods
-// therefore scale against the wrong reference. Consolidating first, correcting second, so the
-// consolidation can be verified by "no number moved anywhere".
+// HISTORY, and read this before you describe the state of this bug to anyone. This file landed as a
+// VERBATIM MOVE -- fourteen copies of the same maths, bug included, consolidated so the consolidation
+// could be verified by "no number moved anywhere". THE FIX LANDED IMMEDIATELY AFTER, on the same day:
+// see the `nutrientScale` short-circuit at the top of entryNutrientScale below. New entries record at
+// save time how much of their nutrient block was eaten, so nothing infers it any more.
+//
+// THE BUG, PAST TENSE: an entry's `servingGrams` recorded the serving the user PICKED, while
+// `foodNutrients` describes the food's own base serving, and those only matched when the user left the
+// serving picker alone -- so custom foods and text-searched FatSecret foods scaled against the wrong
+// reference. That inference survives below ONLY as a fallback for entries logged before 2026-07-27.
+// Those old entries are knowingly left wrong (Justin's call: fix forward, not repairable blind).
+//
+// ⚠️ This paragraph used to describe the bug in the PRESENT tense and was never updated when the fix
+// landed eleven lines below it. On 2026-07-29 that comment was read, believed, and a closed bug was
+// reported to Justin as still open. If you change how this works, change these words in the same edit.
 //
 // See CELEBRATION-adjacent note: nothing here touches calories, protein, carbs or fat. Those are
 // stored on the entry directly and read straight back; they never went through this maths.

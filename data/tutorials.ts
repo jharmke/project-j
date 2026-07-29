@@ -1768,9 +1768,9 @@ export const TUTORIALS: Tutorial[] = [
         noTabBarOffset: true,
         title: 'NET CARBS MODE',
         body: {
-          discipline: 'Flip this on and the entire app counts carbs as total carbs minus fiber. Your carb goal below becomes a net carb target. Useful if you track keto or low carb. Off by default.',
-          balanced: 'Turn this on to show net carbs (total carbs minus fiber) everywhere in the app instead of total carbs. Your carb goal then represents net carbs.',
-          mindful: 'Net Carbs mode shows carbs as total minus fiber across the app. Helpful for some eating styles. Entirely optional.',
+          discipline: 'Flip this on and carbs count as total carbs minus fiber and sugar alcohols on your Home macro card, throughout your food log and in Stats. Your carb goal below becomes a net carb target. Useful if you track keto or low carb. Off by default.',
+          balanced: 'Turn this on to show net carbs, meaning total carbs minus fiber and sugar alcohols, on your Home macro card, throughout your food log and in Stats. Your carb goal then represents net carbs.',
+          mindful: 'Net Carbs mode shows carbs as total minus fiber and sugar alcohols on your Home macro card, in your food log and in Stats. Helpful for some eating styles. Entirely optional.',
         },
       },
       {

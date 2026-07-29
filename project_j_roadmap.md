@@ -39,10 +39,12 @@ actually reads every session.
   everywhere. ⚠️ KNOWN, ACCEPTED, DO NOT "FIX" IN ISOLATION: the meal total clamps at zero once at the end
   while each food clamps on its own, so a single food with fiber+sugar-alcohols exceeding its carbs can put
   the rows a gram above their meal total. Real labels can do this (keto bar: 20 g carbs / 9 g fiber / 12 g
-  sugar alcohols, independent rounding), but the LIKELIER cause in this app is the still-open extended
-  nutrient scaling bug, since carbs and fiber are scaled by different code. Removing it properly means one
-  clamp convention across Log + Home + Day Detail + Stats; Justin's call was to leave it and revisit after
-  the scaling bug closes. PRESS FEEL: components/PressableButton.tsx sprang to 0.94, so all 10 buttons using
+  sugar alcohols, independent rounding), and that is the ONLY cause for anything logged from 2026-07-27
+  onward -- so it is rare and cosmetic. ✅ CORRECTION, same day: this first said the extended nutrient
+  scaling bug was the likelier cause and was "still open". Both wrong. Step B shipped 2026-07-27, so new
+  entries scale correctly; that mechanism can only affect entries logged BEFORE then. Removing the
+  discrepancy properly means one clamp convention across Log + Home + Day Detail + Stats. Justin's call
+  was to leave it -- not worth the four-screen pass for a keto-bar rounding case. PRESS FEEL: components/PressableButton.tsx sprang to 0.94, so all 10 buttons using
   it were bouncy (Home + Log water cards, the Home weight card's Log button, the IF card's "Tap when you eat
   your first meal"). Fixed AT THE SOURCE to the house 0.97 on a 100 ms timing curve rather than patching the
   one button -- the Recipe Log meal picker rows and the photo options modal had both already hand-rolled
@@ -1374,18 +1376,19 @@ are separate pre-submission checklists, NOT part of this menu.
   size that block describes. Barcode foods = per 100 g. Text-searched FatSecret foods = per whatever
   serving was selected at save. Custom foods = per the food's own base serving. Recipes = per the exact
   portion. Every reader assumes one convention, so it is wrong exactly where the assumption misses.
-  BROKEN: custom foods (both on the Food Detail screen and in day totals) and text-searched FatSecret
-  foods (day totals only -- the detail screen is fine, verified on device). CLEAN: barcode foods and
-  recipes, both verified on device by switching servings and checking every nutrient scaled with calories.
-  DONE 2026-07-27: the scaling was consolidated out of fourteen copies into utils/nutrientScale.ts, with
-  behaviour deliberately unchanged, so the correction now happens in ONE place. See RECENTLY SHIPPED.
-  REMAINING (Step B): record on each new entry what size its nutrient block describes, and read from
-  that instead of guessing. Additive -- existing entries keep reading exactly as they do today.
-  ➕ 2026-07-29, RECHECK THIS WHEN STEP B LANDS: a food's carbs come from a flat field while its fiber
-  comes from the detailed nutrient block, and the two are scaled by DIFFERENT code -- so a wrongly-scaled
-  fiber against a correctly-scaled carb count can make fiber+sugar-alcohols exceed carbs and push net carbs
-  to a clamped 0. That is the suspected real-world cause of the Log tab's rows-vs-total gram discrepancy
-  (see RECENTLY SHIPPED). Mechanism only -- NOT observed on a live entry, do not state it as confirmed.
+  WAS BROKEN (all fixed for NEW entries by Step B below; old entries still carry it): custom foods (both on
+  the Food Detail screen and in day totals) and text-searched FatSecret foods (day totals only -- the detail
+  screen was fine, verified on device). WAS ALWAYS CLEAN: barcode foods and recipes, both verified on device
+  by switching servings and checking every nutrient scaled with calories.
+  DONE 2026-07-27, STEP A: the scaling was consolidated out of fourteen copies into utils/nutrientScale.ts,
+  with behaviour deliberately unchanged, so the correction happens in ONE place. See RECENTLY SHIPPED.
+  DONE 2026-07-27, STEP B -- ✅ **BUILT AND LIVE, verified in code 2026-07-29.** app/food-detail.tsx writes
+  `nutrientScale` onto every new entry at save time (the one place that actually knows how much of the
+  block was eaten), and `entryNutrientScale` in utils/nutrientScale.ts returns it before anything else.
+  The old inference is now a FALLBACK that only fires for entries logged before this existed.
+  ⚠️ THIS PARAGRAPH USED TO READ "REMAINING (Step B)" AND CONTRADICTED THIS ENTRY'S OWN HEADING. That cost
+  real time on 2026-07-29: the body was read, trusted over the heading, and a fixed bug was described to
+  Justin as still open. If you are about to describe this bug's state, read the CODE, not this file.
   HISTORY: not repairable blind. Old entries carry no marker saying which convention they used, so a
   barcode entry and a text-searched one are indistinguishable after the fact. Justin's call was fix
   forward; a specific bad entry is fixed by deleting and re-logging it. Note EditFoodModal can change a

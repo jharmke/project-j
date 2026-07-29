@@ -1232,6 +1232,18 @@ WINS. Items graduate UP here from the backlog sections so good ideas don't rot d
 ships it leaves this list. Always offer at least one QUICK WIN when Justin asks what's next, and pull a
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
+- [NEW 2026-07-28 -- FIRST THING TOMORROW, Justin's call] **The Log button on the Home weight card uses the
+  bouncy spring press animation.** Must be the house click scale: 0.97 with TIMING, never spring. Justin's
+  words: "unacceptable." ⚠️ THE TRAP IS KNOWN: components/PressableButton.tsx springs at 0.94, so anything
+  reaching for that component inherits the wrong feel. Check whether the weight card's button uses it.
+- [NEW 2026-07-28 -- FIRST THING TOMORROW, Justin's call] **Meal-time macro amounts should show NET carbs
+  when the user has net carbs selected.** They appear to show total carbs regardless of the setting, while
+  the Home Calories/Macros cards correctly honour it -- whatever reads the setting for those cards is the
+  reference implementation. ⚠️ Justin mentioned a screenshot but none came through, so the exact surface is
+  unconfirmed -- ask WHICH screen before starting (the Log tab's meal rows are the likely one).
+- [NEW 2026-07-28] More entries in the Stats > RECORDS section. Confirmed wants: **highest recovery score**
+  and **highest sleep score**. Justin was not sure what else belongs there, so propose a short candidate
+  list when this is picked up rather than guessing at it.
 - [NEW 2026-07-28 -- JUSTIN'S ACTION, App Store Connect + RevenueCat] **Supporter price raised: $9.99/month,
   $89.99/year** (was $6.99/$69.99). Locked 2026-07-28 off the unit-economics pass -- see the COST MODEL
   section in SPEC_monetization.md. Code side is DONE (fallback price strings in app/support.tsx). STILL TO DO:
@@ -1502,6 +1514,22 @@ are separate pre-submission checklists, NOT part of this menu.
   or tested for iPad -- likely cause is either the iPad's system text-size (accessibility "Larger Text")
   setting being bigger than the phone's, or simply no iPad-specific layout existing at all, but this is a
   guess, not confirmed by reading code yet. Needs its own look.
+  ⚠️ JUSTIN'S FOLLOW-UP QUESTION 2026-07-28: his phone is an iPhone 16 Plus (430pt wide). If the iPad is
+  wrong, are SMALLER iPhones wrong too? That would be far worse than an iPad quirk.
+  ANSWER, from a code scan (NOT a device test): **almost certainly no, small iPhones are fine.** The two are
+  different failure modes and one does not imply the other. The iPad problem is a PHONE layout stretched
+  across a tablet -- sparse and awkward, not broken. A small-phone problem would be cramping or overflow,
+  and nothing supports that:
+  - The widest hardcoded widths in the whole app are 310-320pt modal cards. The narrowest current iPhone is
+    375pt (SE / 13 mini), so those still clear it with ~27pt of margin each side.
+  - No `minWidth` sits in a row where several could sum past 375pt (the largest are single elements at
+    120 / 160 / 220).
+  - Layouts are flex-based throughout, which adapts DOWN correctly by default, and 23 files already read
+    `Dimensions`.
+  - There is no small-screen branching anywhere (no `isSmall`, no `width < 375` checks) -- which is the
+    RIGHT default here, not a gap.
+  ⚠️ THIS IS STATIC ANALYSIS AND CANNOT PROVE IT. The real check is 5 minutes in the iOS simulator at
+  iPhone SE size. Do that before believing this entry.
 - [surfaced 2026-07-20, data-integrity] **Firebase auth identity edge cases -- 2 test scenarios still open.**
   Main build fully shipped and device-tested (see RECENTLY SHIPPED for the one-liner, archive for full
   detail): sign-in-time handling for `account-exists-with-different-credential`, Connected Accounts

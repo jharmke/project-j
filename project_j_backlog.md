@@ -84,7 +84,12 @@
 
 ## PRO / MONETIZATION
 
-- Premium / Pro system -- free tier good, Pro unlocks: PDF, full EvR, full Smart Tips, extended history, non-standard stats charts. $4.99/mo or $39.99/yr, RevenueCat, 7-day trial. Themes stay achievement-unlock only. Dedicated design + architecture session before any build.
+- ❌ DEAD 2026-07-29, DO NOT BUILD FROM THIS. The original entry read: "Premium / Pro system -- free tier
+  good, Pro unlocks: PDF, full EvR, full Smart Tips, extended history, non-standard stats charts. $4.99/mo
+  or $39.99/yr, RevenueCat, 7-day trial. Themes stay achievement-unlock only." Every part of that is now
+  wrong: the price is $9.99/mo or $89.99/yr, the tier is called SUPPORTER not Pro, there is no free trial
+  (a 7-day full-access TASTE replaces it, which is a different mechanic), and themes were made free by
+  default 2026-07-23. Source of truth is SPEC_monetization.md, plus SPEC_otto.md for the Otto split.
 - PDF export -- daily/weekly summaries as PDF. expo-print + expo-sharing, light-themed, toggleable sections. Build after Reports section ships.
 
 ---

@@ -841,12 +841,18 @@ days 1-3 of a fitness app are setup (profile, goals, finding things), so a 3-day
 you pay for it and get no contrast. A week is the minimum where someone uses the app enough to feel a
 difference, and it covers a weekend, when eating patterns change.
 
-⚠️ WHAT THIS IS ACTUALLY FOR -- IT IS AN ESTIMATOR TASTE. Free Otto is 10/day and most people send one or
-two, so for the vast majority the taste gives them nothing they notice and the step-down takes nothing away.
-The AI MEAL ESTIMATOR is where it bites: free is 5/MONTH, and a curious new user photographing meals can
-burn 5 in two days. Going from "photograph everything" to "five a month" is a difference someone genuinely
-feels. LEAD WITH THE ESTIMATOR in both the onboarding announcement and the step-down copy -- Justin's read
-is that it is the biggest single selling point of Supporter, and the numbers agree.
+⚠️ SUPERSEDED 2026-07-29 BY SPEC_otto.md -- THIS IS NO LONGER JUST AN ESTIMATOR TASTE.
+The paragraph below was written when Otto's ONLY Supporter perk was a higher message cap, which nobody
+notices. Otto is now being split free vs Supporter (advice free, artifacts paid), so the taste becomes:
+for seven days Otto knows your numbers, builds your workouts, and builds your meals -- then he stops.
+That is a real before-and-after, and it is the mechanic the free tier's acceptability now RESTS on. Lead
+with the estimator AND Otto now, not the estimator alone. Read SPEC_otto.md before writing either copy.
+
+THE ORIGINAL REASONING, kept because the estimator half is still true: Free Otto is 10/day and most people
+send one or two, so for the vast majority the message cap alone gives them nothing they notice and the
+step-down takes nothing away. The AI MEAL ESTIMATOR is where it bites: free is 5/MONTH, and a curious new
+user photographing meals can burn 5 in two days. Going from "photograph everything" to "five a month" is a
+difference someone genuinely feels.
 
 ANNOUNCE IT UP FRONT, on the final onboarding screen, naming exactly what they get. Being quietly generous
 and then taking it away is a rug pull; saying it plainly makes the step-down a promise KEPT.
@@ -860,12 +866,18 @@ THE STEP-DOWN NOTICE: same centred modal + same deferral rules as MOMENT A below
 the first opening, own once-ever flag). Frame it as a promise kept, not something taken away -- they never
 paid, so there is nothing to thank them for. NAME THE ACTUAL NUMBERS; vague copy ("some limits now apply")
 makes people imagine something harsher than the truth.
+⚠️ THE DRAFT COPY BELOW IS OUT OF DATE -- it names only the estimator and Otto's message cap, because it
+predates the Otto split. It must also cover what Otto STOPS doing: reading their numbers, building
+workouts, building meals. Rewrite alongside SPEC_otto.md, not before it.
 DRAFT COPY (Justin: "fine to put in there", to be refined):
   "Your first week is up
    You've had the full version for seven days. From here, photo estimates drop to 5 a month and Otto to 10
    messages a day. Everything you've logged and created stays exactly where it is.
    If you'd like to keep the full version, becoming a Supporter is what keeps this going."
    [Become a Supporter] [Got it]
+⚠️ "Everything you've logged and created stays exactly where it is" is a PROMISE, and SPEC_otto.md open
+item #2 has not yet confirmed the app keeps it. Workouts and meals Otto built during the taste must
+survive the step-down. Resolve that before this copy ships or the modal is lying.
 
 ⚠️ THE STEP-DOWN NOTICE BEATS THE RATE US PROMPT, 100% OF THE TIME (Justin, explicit). These are scheduled
 to collide for EVERY user, by design: utils/ratingPrompt.ts has `MIN_ACCOUNT_AGE_DAYS = 7` and the trial ends

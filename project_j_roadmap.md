@@ -1312,6 +1312,23 @@ are separate pre-submission checklists, NOT part of this menu.
   is nothing, but a countdown halfway through someone working out something heavy with Halo is the one place
   in the app where it can read as a hand on the shoulder pushing them toward the door. If it ever feels that
   way, drop it to 3 for Halo only. Judge it on device; do not reason about it from here.
+- [✅ APP STORE CONNECT STATE, set 2026-07-29. Recorded so nobody re-does or re-decides it.]
+  **DSA trader status: declared NON-TRADER / not distributing in the EU.** The red compliance banner is
+  gone and a Digital Services Act row now shows 27 countries, Active. ⚠️ This was a DELIBERATE tradeoff:
+  declaring trader would have published Justin's home address on the App Store product page (the developer
+  account address is his apartment). Non-trader avoids that but blocks EU distribution. Fully reversible
+  later with a PO box or virtual business address -- revisit if the app takes off.
+  **App Availability: 5 countries -- US, Canada, UK, Australia, New Zealand.** Chosen over "all 175 minus
+  the 27 EU" because the app is English-only, unlocalised and run by one person; reviews and support in
+  languages Justin cannot read are a cost, not a win. Expanding later is just checking more boxes.
+  **App price: Free** (revenue is IAP only). **Mac (Apple Silicon) and Vision Pro availability: OFF** --
+  phone-sensor fitness app, a Mac install would earn one-star reviews. **Distribution: Public.**
+  ⚠️ Distribution method CANNOT be changed after approval. Confirm it still reads Public before submitting.
+  AGREEMENTS DELIBERATELY LEFT AT "ALL COUNTRIES" -- they are the legal contract for where you MAY sell,
+  not the app's availability. Same for the IAPs' own availability: an IAP can never reach further than the
+  app, so leaving them broad means they follow automatically if the country list ever grows.
+  **Anthropic spend limit: $50/month, with alerts already set at $25 and $40.** Raise toward $100 at launch
+  -- the cap is a catastrophe backstop, not a budget, and hitting it kills AI for every user at once.
 - [⏳ WAITING ON APPLE -- JUSTIN'S ACTION, DATED. Not a code task.] **App Store Small Business Program
   enrollment has been submitted TWICE with no response.** Submitted 2026-07-13 (confirmation email received)
   and again 2026-07-29 (second confirmation received). Mail searched back 60 days on 2026-07-29: there is NO

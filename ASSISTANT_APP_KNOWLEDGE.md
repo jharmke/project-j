@@ -107,6 +107,18 @@ LOG TAB (FOOD DIARY)
 - HEADER: a LIBRARY button (opens the Food Library), a GRID icon (Edit Meals: rename / reorder /
   add meal slots, up to 8), and a (?) icon (Toolkit + tutorials).
 - NUTRITION DISPLAY: the GEAR on the nutrition summary sets which macros/nutrients show + ring style.
+- NET CARBS MODE (off by default): shows carbs as TOTAL CARBS MINUS FIBER **AND SUGAR ALCOHOLS**. Both are
+  subtracted -- never say "minus fiber" alone. TWO switches, same setting: Profile > gear > Goals ("Net
+  Carbs Mode"), or the GEAR on the Home Macros card ("Net Carbs"). With it on the carb GOAL becomes a net
+  carb target and labels read "Net Carbs".
+  APPLIES ON: Home Macros card, the Log tab summary + every meal row + every food row, Day Detail, the
+  Stats carb card, Custom Reports, and Weekly/Monthly Summary.
+  DELIBERATELY DOES **NOT** APPLY ON, do not call these bugs: Recipe Log / Recipe Builder show a recipe's
+  TOTAL carbs (a recipe is a food, not a day's intake), and Food Detail shows total carbs as the macro
+  while listing Net Carbs as its own line, the way a nutrition label reads.
+  Weekly/Monthly summaries generated before 2026-07-29 keep showing TOTAL carbs under an "Avg Carbs" label,
+  because the net figure did not exist when they were frozen. Settings has Regenerate Weekly / Monthly
+  Summaries to rebuild them.
 - INTERMITTENT FASTING: an IF tracker card on the Log tab (fasting-window countdown, start/end your
   fast, target hours). Enable/disable and set the window in the card itself; state stores per day.
 - Meals: log food into meal slots (configurable, up to 8). TWO ways to add food to a meal:
@@ -318,6 +330,7 @@ COMMON "HOW DO I..." QUICK INDEX
 - Change theme/color: Profile > gear > Appearance.
 - Change calorie/macro/water/step/sleep goals: Profile > gear > Goals (macros also via the Home
   Macros card gear).
+- Turn Net Carbs on/off: Profile > gear > Goals, or the gear on the Home Macros card.
 - Change coaching style (Discipline/Balanced/Mindful): Profile > gear > Faith & Style.
 - Turn faith features on/off: Profile > gear > Faith & Style.
 - Turn Apple Health access on/off or change permissions: the iOS SETTINGS APP > Privacy & Security >

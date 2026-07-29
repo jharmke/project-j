@@ -1280,6 +1280,28 @@ WINS. Items graduate UP here from the backlog sections so good ideas don't rot d
 ships it leaves this list. Always offer at least one QUICK WIN when Justin asks what's next, and pull a
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
+- [⏳ WAITING ON APPLE -- JUSTIN'S ACTION, DATED. Not a code task.] **App Store Small Business Program
+  enrollment has been submitted TWICE with no response.** Submitted 2026-07-13 (confirmation email received)
+  and again 2026-07-29 (second confirmation received). Mail searched back 60 days on 2026-07-29: there is NO
+  approval and NO denial, only the two "we've received your request" emails. The duplicate submission is
+  harmless.
+  ➡️ **IF NOTHING BY 2026-08-05, CONTACT APPLE DEVELOPER SUPPORT** (developer.apple.com/contact, membership /
+  App Store Connect topic). Three weeks from the original submission is long enough to ask.
+  WHY IT MATTERS: 30% -> 15% Apple cut, i.e. roughly **21% more revenue per subscription** with no code, no
+  price change, no product work. It moves the unit economics more than every AI optimisation considered on
+  2026-07-29 combined, and the COST MODEL projections in SPEC_monetization.md still assume 30%.
+  TIMING: the reduced rate starts 15 days after the end of the fiscal month in which enrolment is APPROVED,
+  so an approval in July lands mid-August. Nothing has been lost by the delay -- there is no revenue yet, so
+  nothing has been billed at 30% in the meantime.
+  ⚠️ DEAD ENDS ALREADY CHECKED, do not re-walk them: enrolment status is NOT shown on developer.apple.com/
+  account (that only shows the base "Apple Developer Program, Individual" membership), NOT in App Store
+  Connect > Business, and the enrol page just serves the form again rather than reporting a pending request.
+  Support is the only way to see the real state.
+  ✅ NOT A PROBLEM, in case it is ever re-questioned: being enrolled as an INDIVIDUAL rather than a company
+  does not disqualify you. The only real test is the $1M threshold.
+  ALSO OUTSTANDING on the same App Store Connect screen: the red **DSA trader status** banner. EU
+  distribution is blocked until it is declared, and the agreements cover all 175 countries. Unknown whether
+  it can hold up an enrolment review -- clear it anyway before contacting support.
 - [NET CARBS SWEEP -- ✅ COMPLETE 2026-07-29, all four surfaces shipped and device-verified. Kept here ONLY
   for the two deliberate non-bugs; delete this entry once they stop being re-reported.]
   Honouring the Net Carbs setting today: Home Calories/Macros card, Log tab summary card, Log tab meal rows

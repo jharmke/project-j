@@ -229,6 +229,18 @@ LOG TAB (FOOD DIARY)
 - HEADER: a LIBRARY button (opens the Food Library), a GRID icon (Edit Meals: rename / reorder /
   add meal slots, up to 8), and a (?) icon (Toolkit + tutorials).
 - NUTRITION DISPLAY: the GEAR on the nutrition summary sets which macros/nutrients show + ring style.
+- NET CARBS MODE (off by default): shows carbs as TOTAL CARBS MINUS FIBER **AND SUGAR ALCOHOLS**. Both are
+  subtracted -- never say "minus fiber" alone. TWO switches, same setting: Profile > Settings > Goals ("Net
+  Carbs Mode"), or the GEAR on the Home Macros card ("Net Carbs"). With it on the carb GOAL becomes a net
+  carb target and labels read "Net Carbs".
+  APPLIES ON: Home Macros card, the Log tab summary + every meal row + every food row, Day Detail, the
+  Stats carb card, Custom Reports, and Weekly/Monthly Summary.
+  DELIBERATELY DOES **NOT** APPLY ON, do not call these bugs: Recipe Log / Recipe Builder show a recipe's
+  TOTAL carbs (a recipe is a food, not a day's intake), and Food Detail shows total carbs as the macro
+  while listing Net Carbs as its own line, the way a nutrition label reads.
+  Weekly/Monthly summaries generated before 2026-07-29 keep showing TOTAL carbs under an "Avg Carbs" label,
+  because the net figure did not exist when they were frozen. Settings has Regenerate Weekly / Monthly
+  Summaries to rebuild them.
 - NUTRIENT DRILLDOWN -- EXACTLY TWO PLACES, THERE IS NO THIRD: (1) the LOG tab, tap a macro ring or any
   Advanced Nutrition row; (2) HOME, tap a macro ring on the Macros card. NOT on the Stats tab. NOT in the
   trend graphs. There is NO search for it anywhere. The Stats tab separately lets a user GRAPH any tracked
@@ -769,6 +781,7 @@ COMMON "HOW DO I..." QUICK INDEX
 - Change theme/color: Profile > Settings > Appearance.
 - Change calorie/macro/water/step/sleep goals: Profile > Settings > Goals (macros also via the Home
   Macros card gear).
+- Turn Net Carbs on/off: Profile > Settings > Goals, or the gear on the Home Macros card.
 - Change coaching style (Discipline/Balanced/Mindful): Profile > Settings > Faith & Style.
 - Turn faith features on/off: Profile > Settings > Faith & Style.
 - Turn Apple Health access on/off or change permissions: the iOS SETTINGS APP > Privacy & Security >

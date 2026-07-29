@@ -1754,7 +1754,7 @@ export default function SettingsScreen() {
                 <View style={{ flex: 1, paddingRight: 12 }}>
                   <Text style={[styles.goalLabel, { color: theme.textMuted, marginBottom: 2 }]}>Net Carbs Mode</Text>
                   <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui, lineHeight: 15 }}>
-                    Shows total carbs minus fiber everywhere in the app.
+                    Shows carbs as total minus fiber and sugar alcohols. Matches the same switch on the Home Macros card gear.
                   </Text>
                 </View>
                 <ToggleSwitch value={showNetCarbs} onValueChange={v => { setShowNetCarbs(v); saveSetting('showNetCarbs', v); triggerHaptic(Haptics.ImpactFeedbackStyle.Light); }} />

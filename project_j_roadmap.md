@@ -1333,7 +1333,11 @@ are separate pre-submission checklists, NOT part of this menu.
      just Otto knowing the calorie-floor thresholds?
 
   **B. OTTO FREE/PAID SPLIT** -- direction locked in SPEC_otto.md, prompt/KB work, small once A is done.
-  **C. NON-AI WALLS / PAYWALLS / LIMITS** -- Justin's own list item; not yet specced anywhere.
+  **C. NON-AI WALLS / PAYWALLS / LIMITS** -- ✅ ALREADY DESIGN-LOCKED with real numbers (2026-07-28), see
+     SPEC_monetization.md -> NON-AI SUPPORTER PERKS. Custom foods 20, recipes 5, exercise library 15, stats
+     cards 1, meal slots 4 (vs 8), macro + nutrition goals presets-only, no data export. Organising rule:
+     **LIMIT, don't paywall** -- cap CREATION, never access to data someone already logged. READY TO BUILD,
+     no design needed. (An earlier version of this plan wrongly said it was unspecced.)
   **D. 7-DAY TASTE** -- specced in SPEC_monetization.md, NOT built. ⚠️ HARD DEPENDENCY of B: free Otto is
      only acceptable *because* users get the taste first. B should not ship without it.
   **E. WORKOUT BUILDER** -- needs a full spec + visualisation before any build.
@@ -1345,6 +1349,15 @@ are separate pre-submission checklists, NOT part of this menu.
      4.7% -> ~2.5%. Invisible to users.
      ⚠️ DO NOT call this optional. It was framed that way once and it was wrong -- this is the direct fix
      to the cost problem that drove the whole 2026-07-29 session.
+
+  📊 **READINESS -- what each item actually needs, so nothing is picked up expecting the wrong thing:**
+  - READY TO BUILD, design already done: **C** (numbers locked), **D** (specced), **G** (design locked)
+  - DISCUSSION ONLY, no code: **A** (six open questions)
+  - READY once A and D are done: **B**
+  - BLANK PAGE, needs a real design session before any build: **E**, **F**, and **H**
+  ⚠️ E and F have NOTHING written anywhere. "Attack them" means designing from scratch, not building.
+  F (meal builder) is the riskiest thing on this list -- food matching is genuinely unsolved and it could
+  be much bigger than it looks. Worth learning that early rather than late.
 
   **LAST, and Justin does not want it raised before then:** IAP review screenshots (7 products) and the
   App Store listing (description, screenshots, privacy label, age rating, review notes). These genuinely

@@ -48,6 +48,7 @@ export default function ReportScreen() {
   const [bodyCtx, setBodyCtx] = useState<{ entries: any[]; unit: MeasurementUnit }>({ entries: [], unit: 'in' });
   const [achieveStore, setAchieveStore] = useState<AchievementsStore>({});
   const [challengeRows, setChallengeRows] = useState<{ id: string; title: string; startKey: string; endKey: string; won: boolean; tier: string }[]>([]);
+  const [showNetCarbs, setShowNetCarbs] = useState(false);
   const [loading, setLoading] = useState(true);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -80,6 +81,9 @@ export default function ReportScreen() {
         const ws = wsRaw ? JSON.parse(wsRaw) : {};
         let sleepGoal = 8;
         try { const p = await AsyncStorage.getItem('pj_profile'); if (p) sleepGoal = JSON.parse(p).sleepGoal || 8; } catch {}
+        // Read live, not snapshotted with the report: a report's DATA is refetched every time it opens
+        // (only its written insight is frozen), so carbs should follow whatever the setting says today.
+        try { const s = await AsyncStorage.getItem('pj_settings'); if (s) setShowNetCarbs(!!JSON.parse(s).showNetCarbs); } catch {}
         // Fetch a DOUBLE window and split on the current period's start, so each block can show the
         // current period AND the one right before it (the "vs prior" trend arrows).
         const { days, startKey, endKey } = resolveRange(report.range);
@@ -271,7 +275,7 @@ export default function ReportScreen() {
               {activeBlocks.map((b, i) => (
                 <BlockCard key={b.id} block={b} data={data} prior={prior} foodDays={foodDays} workoutState={workoutState}
                   mealSlots={mealCtx.slots} slotCache={mealCtx.cache} bodyEntries={bodyCtx.entries} bodyUnit={bodyCtx.unit}
-                  achieveStore={achieveStore} challengeRows={challengeRows} startKey={rangeBounds.startKey} endKey={rangeBounds.endKey} theme={theme}
+                  achieveStore={achieveStore} challengeRows={challengeRows} startKey={rangeBounds.startKey} endKey={rangeBounds.endKey} theme={theme} showNetCarbs={showNetCarbs}
                   collapsed={collapsed.has(b.id)} onToggle={() => toggleCollapse(b.id)}
                   editMode={libraryOpen} isFirst={i === 0} isLast={i === activeBlocks.length - 1}
                   onUp={() => moveBlock(b.id, -1)} onDown={() => moveBlock(b.id, 1)} onRemove={() => toggleBlock(b.id)} />
@@ -373,11 +377,11 @@ interface BlockCardProps {
   block: ReportBlock; data: TrendData; prior: TrendData; foodDays: FoodDay[]; workoutState: any;
   mealSlots: any[]; slotCache: any; bodyEntries: any[]; bodyUnit: MeasurementUnit; achieveStore: AchievementsStore;
   challengeRows: { id: string; title: string; startKey: string; endKey: string; won: boolean; tier: string }[];
-  startKey: string; endKey: string; theme: any;
+  startKey: string; endKey: string; theme: any; showNetCarbs: boolean;
   collapsed: boolean; onToggle: () => void; editMode: boolean; isFirst: boolean; isLast: boolean;
   onUp: () => void; onDown: () => void; onRemove: () => void;
 }
-function BlockCard({ block, data, prior, foodDays, workoutState, mealSlots, slotCache, bodyEntries, bodyUnit, achieveStore, challengeRows, startKey, endKey, theme, collapsed, onToggle, editMode, isFirst, isLast, onUp, onDown, onRemove }: BlockCardProps) {
+function BlockCard({ block, data, prior, foodDays, workoutState, mealSlots, slotCache, bodyEntries, bodyUnit, achieveStore, challengeRows, startKey, endKey, theme, showNetCarbs, collapsed, onToggle, editMode, isFirst, isLast, onUp, onDown, onRemove }: BlockCardProps) {
   // For a trend block, surface its latest value in the header (clean) instead of floating it in the chart.
   const trendLatest = block.form === 'lineTrend' ? latestOf(seriesFor(block.dataKey, data)) : null;
   return (
@@ -406,8 +410,8 @@ function BlockCard({ block, data, prior, foodDays, workoutState, mealSlots, slot
       {!collapsed && (
         <>
           {block.form === 'lineTrend' && <LineTrend series={seriesFor(block.dataKey, data)} theme={theme} />}
-          {block.form === 'statTiles' && <StatTiles blockId={block.id} data={data} prior={prior} theme={theme} />}
-          {block.form === 'macroSplit' && <MacroSplit data={data} theme={theme} />}
+          {block.form === 'statTiles' && <StatTiles blockId={block.id} data={data} prior={prior} theme={theme} showNetCarbs={showNetCarbs} />}
+          {block.form === 'macroSplit' && <MacroSplit data={data} theme={theme} showNetCarbs={showNetCarbs} />}
           {block.form === 'topFoods' && <TopFoods foodDays={foodDays} theme={theme} />}
           {block.form === 'foodLog' && <FoodLog foodDays={foodDays} theme={theme} />}
           {block.form === 'records' && <Records workoutState={workoutState} theme={theme} />}
@@ -966,12 +970,17 @@ function splitTrend(full: TrendData, startKey: string): { cur: TrendData; prev: 
 const fmtHrs = (v: number) => { const h = Math.floor(v); const m = Math.round((v - h) * 60); return `${h}:${String(m).padStart(2, '0')}`; };
 
 // Stat-tiles form: number-forward "headline" numbers + a trend arrow vs the prior period.
-type TileSpec = { label: string; pick: (d: TrendData) => number[]; fmt: (v: number) => string; better: 'up' | 'down' | 'none' };
+// netLabel/netPick are the Net Carbs variant: when the setting is on, the tile swaps to them so a report
+// never disagrees with the number the rest of the app is showing. Only the carbs tile defines them.
+type TileSpec = { label: string; pick: (d: TrendData) => number[]; fmt: (v: number) => string; better: 'up' | 'down' | 'none'; netLabel?: string; netPick?: (d: TrendData) => number[] };
 const HEADLINES: Record<string, TileSpec[]> = {
   nutrition_headline: [
     { label: 'Avg Calories', pick: d => d.cal.map(x => x.cal).filter(v => v > 0), fmt: v => Math.round(v).toLocaleString('en-US'), better: 'none' },
     { label: 'Avg Protein', pick: d => d.macro.map(x => x.protein).filter(v => v > 0), fmt: v => Math.round(v) + ' g', better: 'up' },
-    { label: 'Avg Carbs', pick: d => d.macro.map(x => x.carbs).filter(v => v > 0), fmt: v => Math.round(v) + ' g', better: 'none' },
+    { label: 'Avg Carbs', pick: d => d.macro.map(x => x.carbs).filter(v => v > 0), fmt: v => Math.round(v) + ' g', better: 'none',
+      // Not filtered on > 0 like the others: a genuine zero net carb day is real information on a keto
+      // diet, and dropping it would quietly inflate the average.
+      netLabel: 'Avg Net Carbs', netPick: d => d.macro.map(x => x.netCarbs ?? 0) },
     { label: 'Avg Fat', pick: d => d.macro.map(x => x.fat).filter(v => v > 0), fmt: v => Math.round(v) + ' g', better: 'none' },
   ],
   activity_headline: [
@@ -1003,17 +1012,20 @@ function DeltaChip({ cur, prev, better, theme }: { cur: number; prev: number; be
   );
 }
 
-function StatTiles({ blockId, data, prior, theme }: { blockId: string; data: TrendData; prior: TrendData; theme: any }) {
+function StatTiles({ blockId, data, prior, theme, showNetCarbs }: { blockId: string; data: TrendData; prior: TrendData; theme: any; showNetCarbs: boolean }) {
   const specs = HEADLINES[blockId] || [];
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
       {specs.map(spec => {
-        const cv = spec.pick(data); const pv = spec.pick(prior);
+        const useNet = showNetCarbs && !!spec.netPick;
+        const pick = useNet ? spec.netPick! : spec.pick;
+        const label = useNet ? (spec.netLabel ?? spec.label) : spec.label;
+        const cv = pick(data); const pv = pick(prior);
         const cur = cv.length ? avg(cv) : null;
         const prev = pv.length ? avg(pv) : null;
         return (
           <View key={spec.label} style={{ width: '47.6%', flexGrow: 1, backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, paddingVertical: 11, paddingHorizontal: 12 }}>
-            <Text style={{ fontSize: 8.5, letterSpacing: 1.3, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textMuted, marginBottom: 5 }}>{spec.label}</Text>
+            <Text style={{ fontSize: 8.5, letterSpacing: 1.3, textTransform: 'uppercase', fontFamily: Type.uiBold, color: theme.textMuted, marginBottom: 5 }}>{label}</Text>
             <GradientNumber value={cur != null ? spec.fmt(cur) : '—'} color={theme.textSecondary} style={{ fontSize: 20, fontFamily: Type.uiBold }} />
             {cur != null && prev != null && <DeltaChip cur={cur} prev={prev} better={spec.better} theme={theme} />}
           </View>
@@ -1024,9 +1036,15 @@ function StatTiles({ blockId, data, prior, theme }: { blockId: string; data: Tre
 }
 
 // Macro-split form: average protein/carbs/fat as a stacked bar + legend.
-function MacroSplit({ data, theme }: { data: TrendData; theme: any }) {
+function MacroSplit({ data, theme, showNetCarbs }: { data: TrendData; theme: any; showNetCarbs: boolean }) {
   const p = Math.round(avg(data.macro.map(d => d.protein).filter(v => v > 0)));
-  const c = Math.round(avg(data.macro.map(d => d.carbs).filter(v => v > 0)));
+  // ⚠️ TRADEOFF, deliberate: the bar is a CALORIE share (protein x4, carbs x4, fat x9), so feeding it net
+  // carbs means the fiber calories drop out and the slices no longer sum to the day's real energy. Chosen
+  // anyway because a report that contradicts every other carb number in the app is the worse problem, and
+  // the legend names what it is. Revert this one line if the energy reading matters more.
+  const c = Math.round(showNetCarbs
+    ? avg(data.macro.map(d => d.netCarbs ?? 0))
+    : avg(data.macro.map(d => d.carbs).filter(v => v > 0)));
   const f = Math.round(avg(data.macro.map(d => d.fat).filter(v => v > 0)));
   const pC = p * 4, cC = c * 4, fC = f * 9;
   const total = pC + cC + fC || 1;
@@ -1041,7 +1059,7 @@ function MacroSplit({ data, theme }: { data: TrendData; theme: any }) {
         <View style={{ flex: fC || 0.01, backgroundColor: COL.fat }} />
       </View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 12 }}>
-        {([['Protein', p, pct(pC), COL.protein], ['Carbs', c, pct(cC), COL.carbs], ['Fat', f, pct(fC), COL.fat]] as [string, number, number, string][]).map(([name, g, percent, col]) => (
+        {([['Protein', p, pct(pC), COL.protein], [showNetCarbs ? 'Net Carbs' : 'Carbs', c, pct(cC), COL.carbs], ['Fat', f, pct(fC), COL.fat]] as [string, number, number, string][]).map(([name, g, percent, col]) => (
           <View key={name} style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
             <View style={{ width: 11, height: 11, borderRadius: 3.5, backgroundColor: col }} />
             <View>

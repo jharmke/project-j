@@ -10,7 +10,10 @@ export type TrendData = {
   steps: { date: string; value: number }[];
   activeCal: { date: string; value: number }[];
   sleep: { date: string; value: number }[];
-  macro: { date: string; protein: number; carbs: number; fat: number }[];
+  // netCarbs rides alongside carbs rather than replacing it, so a reader can show either without
+  // recomputing and without this file needing to know the user's Net Carbs setting. Purely additive:
+  // `carbs` still means exactly what it always did.
+  macro: { date: string; protein: number; carbs: number; fat: number; netCarbs: number }[];
   workoutDay: { date: string; hadWorkout: boolean }[];
   // Extended
   water: { date: string; value: number }[];
@@ -210,16 +213,18 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
             const p = data.entries.reduce((s: number, e: any) => s + (e.protein || 0), 0);
             const c = data.entries.reduce((s: number, e: any) => s + (e.carbs || 0), 0);
             const f = data.entries.reduce((s: number, e: any) => s + (e.fat || 0), 0);
-            if (p + c + f > 0) mh.push({ date: dateKey, protein: Math.round(p), carbs: Math.round(c), fat: Math.round(f) });
+            const fiberVal = getEntryNutrient(data.entries, 'Fiber, total dietary');
+            const saVal = getEntryNutrient(data.entries, 'Sugar Alcohols');
+            // Same shape as every other net carbs calculation in the app: subtract the day's summed
+            // fiber and sugar alcohols, then clamp once at the end.
+            if (p + c + f > 0) mh.push({ date: dateKey, protein: Math.round(p), carbs: Math.round(c), fat: Math.round(f), netCarbs: Math.max(0, Math.round(c - fiberVal - saVal)) });
             // Net needs BMR; skip plotting BMR-0 days (no resolvable weight) so the net
             // graph never shows a wrong, overstated point.
             const ncBmr = bmrMap[dateKey] ?? 0;
             if (ncBmr > 0) ncH.push({ date: dateKey, value: computeDayNet(total, data, ncBmr, burnAccuracyPct, dateKey === todayKey, minutesNow) });
-            const fiberVal = getEntryNutrient(data.entries, 'Fiber, total dietary');
             const sodiumVal = getEntryNutrient(data.entries, 'Sodium, Na');
             const choVal = getEntryNutrient(data.entries, 'Cholesterol');
             const sfVal = getEntryNutrient(data.entries, 'Fatty acids, total saturated');
-            const saVal = getEntryNutrient(data.entries, 'Sugar Alcohols');
             if (fiberVal > 0) fbH.push({ date: dateKey, value: fiberVal });
             if (sodiumVal > 0) sodH.push({ date: dateKey, value: sodiumVal });
             if (choVal > 0) choH.push({ date: dateKey, value: choVal });

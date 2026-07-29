@@ -1507,25 +1507,36 @@ are separate pre-submission checklists, NOT part of this menu.
   insights / coaches -- wherever it fits).** Surface timing effects: eating too much too late can disrupt
   deep sleep, etc., with varied examples of what each thing affects. Possibly fold in caffeine levels, late
   workouts, and water timing too. Unscoped.
-- [surfaced 2026-07-20 · ✅ **NOT A BUG -- CAUSE FOUND 2026-07-28. This is a product decision now, not a
-  defect.**] **"iPad layout looks broken."** Symptoms were real: on Justin's iPad, Home's date wrapped to a
-  second line and Otto's chat header rendered larger/squished versus his phone.
-  ACTUAL CAUSE: `app.json` has `"ios": { "supportsTablet": false }`. iOS therefore runs GoodForge in
-  **iPhone COMPATIBILITY MODE** on an iPad -- a letterboxed iPhone-sized window scaled up onto a larger,
-  denser display. Justin confirmed the giveaway on 2026-07-28: "the ipad is small on the ipads screen like
-  an iphone size. it wasnt full screen." Every symptom follows from the scaling. Nothing is broken; the app
-  is doing exactly what it is configured to do.
-  EARLIER GUESSES WERE WRONG, do not revisit them: it is not the iPad's accessibility text-size setting, and
-  it is not a missing iPad layout misbehaving.
-  THE REAL QUESTION: do we want to support iPad at all? Flipping the flag to `true` is one line, but that is
-  the START of the work, not the end -- it means designing genuine tablet layouts for every screen, and it
-  needs a NEW NATIVE BUILD to take effect. Until then, iPhone compatibility mode is a perfectly reasonable
-  place to be.
+- [surfaced 2026-07-20 · ⚠️ **CONFIRMED A REAL BUG 2026-07-28 -- and it is NOT iPad-only.**]
+  **The tab headers break at narrower widths.** Device-confirmed on two separate devices:
+  - Justin's iPad (iPhone compatibility window): Home's "TUESDAY, JULY 28" wraps with "28" alone on a
+    second line, and on Food Log the ‹ › day arrows collide with / tuck under the Library pill.
+  - **His wife's iPhone** (notch-era, ~375-390pt vs Justin's 16 Plus at 430pt): the same Food Log header is
+    visibly cramped, arrows jammed against the date. NO iPad INVOLVED. Real phones are affected.
+  MECHANISM: the header is one row with a left block (avatar + title + date + prev/next arrows) and a right
+  block (Library pill + grid + help). Neither shrinks or wraps gracefully, so as width drops the date wraps
+  and the arrows end up under the buttons. See app/(tabs)/log.tsx around the `Food Log` GradientTitle and
+  the `dateNavRef` row for the exact structure; Home's header has the same shape.
+  ⚠️ TWO WRONG CALLS ON THIS, RECORDED SO THEY ARE NOT REPEATED:
+  (1) A code scan for hardcoded widths / minWidths found nothing and concluded "small iPhones are almost
+      certainly fine." WRONG -- this is a FLEX row running out of room, which a width grep cannot see.
+  (2) On learning the iPad runs in compatibility mode (`app.json` -> `"ios": { "supportsTablet": false }`,
+      which IS true and does explain the small letterboxed window), it was written off as "not a bug."
+      WRONG -- the window being iPhone-sized is the CAUSE of the narrow width, not an excuse for the header
+      failing at it.
+  THE LESSON: static analysis cannot answer responsive-layout questions. Run the iOS simulator at iPhone SE
+  size, which was recommended and not done before the wrong conclusions were published.
+  SCOPE WHEN PICKED UP: every tab header, not just Food Log. Needs a real responsive pass -- let the title
+  block shrink, keep the date on one line (or move the arrows), and make sure the right-hand buttons cannot
+  overlap anything.
+  SEPARATE AND STILL OPEN (do not conflate): whether to support iPad properly at all. Flipping
+  `supportsTablet` to `true` is one line but starts genuine tablet-layout work for every screen and needs a
+  new native build. Fixing the header does not require it.
   ⚠️ JUSTIN'S FOLLOW-UP QUESTION 2026-07-28: his phone is an iPhone 16 Plus (430pt wide). If the iPad is
-  wrong, are SMALLER iPhones wrong too? That would be far worse than an iPad quirk.
-  ANSWER: **no.** Two independent reasons. First and decisive: the iPad symptom was compatibility-mode
-  SCALING (above), never a layout failure, so it says nothing at all about how the app lays out on a
-  narrower phone. Second, a code scan found nothing that would cramp or overflow a small phone:
+  wrong, are SMALLER iPhones wrong too?
+  ANSWER: **YES for the headers** -- confirmed on his wife's phone, see above. The scan below found no
+  hardcoded width that OVERFLOWS, and that part still holds, but it missed the actual failure because a
+  flex row running out of room is invisible to a width grep. Kept for what it does rule out:
   - The widest hardcoded widths in the whole app are 310-320pt modal cards. The narrowest current iPhone is
     375pt (SE / 13 mini), so those still clear it with ~27pt of margin each side.
   - No `minWidth` sits in a row where several could sum past 375pt (the largest are single elements at

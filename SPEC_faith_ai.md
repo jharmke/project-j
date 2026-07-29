@@ -85,8 +85,14 @@ The conceptual architecture above (AI voices, code verifies) gets its concrete t
 
 ### Daily allowance (resolves the open fork)
 - The unit is a MESSAGE = any single user turn (a question OR a discussion reply); each one counts. Not "questions," not "conversations."
-- Free = 5 messages/day. Pro = about 50 messages/day, "effectively unlimited" via a high BACKSTOP cap rather than truly infinite, so even a Pro user hammering it (or a looping bug) cannot run up unbounded cost. Marketed as unlimited; a sane ceiling under the hood.
-- Both numbers are STARTING VALUES, tune after TestFlight. Never a lifetime cap (the compute-gated-not-faith-gated carve-out).
+- ⚠️ SUPERSEDED 2026-07-29. LIVE VALUES ARE **free 10/day, Supporter 30/day** (functions/src/faithCompanion.ts),
+  matched to Otto's. The code is the truth; treat any number in this doc as history.
+- ❌ **"MARKETED AS UNLIMITED" IS DEAD — DO NOT REVIVE IT.** This line used to read "Marketed as unlimited; a
+  sane ceiling under the hood." Justin explicitly rejected that framing on 2026-07-29: nothing in the app may
+  claim or imply Halo is unlimited, because it is not. What we DO promise, and what stays true forever, is
+  that faith is NEVER PAYWALLED -- Halo is free for everyone, every day, and a Supporter merely gets a bigger
+  daily allowance. Promise the access, never the volume.
+- Never a lifetime cap (the compute-gated-not-faith-gated carve-out). That part still holds.
 
 ### Limit-hit behavior in-app (never a silent stop)
 Two designed cases, both communicated (consistent with the app's error-state standard and the offline-fallback philosophy):

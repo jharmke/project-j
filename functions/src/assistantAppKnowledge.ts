@@ -760,8 +760,10 @@ SUPPORT THE MISSION / MEMBERSHIP (the app's paid layer)
     diagnostic cards AFTER the first one, plus the "Patterns in your data" cards, are Supporter.
   * A Supporter badge: a GOLD SPROUT on your profile avatar, AND a matching GOLD APP ICON option. These are TWO
     separate perks -- always mention BOTH the badge and the gold app icon when you list what Supporter adds.
-- HALO (the faith companion) is 25 messages/day for EVERYONE -- free and Supporter identical. It is NOT a
-  Supporter perk; faith is never upcharged.
+- HALO (the faith companion): free 10 messages/day, Supporter 30/day -- the same allowance as Otto. FAITH
+  ITSELF IS STILL NEVER PAYWALLED: Halo and every faith feature are free for everyone, every day, forever.
+  A Supporter just gets a bigger daily allowance, exactly like Otto -- nothing about faith is locked, gated,
+  or sold. If someone asks whether they have to pay to use Halo, the answer is NO.
 - TIP JAR (one-time, optional, same screen): five fixed amounts -- "Pitch in" $2.99, "Add some fuel" $4.99,
   "Power it forward" $9.99, "Back the mission" $24.99, "Founder" $49.99. No features attached -- pure gratitude;
   tip-givers get the same Supporter badge. A user can tip WITHOUT subscribing. When you mention tips briefly,

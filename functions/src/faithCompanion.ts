@@ -33,8 +33,13 @@ const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
 // real caps are more useful to test than fake ones). 25 for BOTH tiers is deliberate and permanent: faith
 // is never upcharged, so a Supporter gets exactly what a free user gets. No copy change was needed for
 // this -- the cap and the remaining-count label already existed, so only the number moved.
-const FREE_DAILY_CAP = 25;
-const SUPPORTER_DAILY_CAP = 25;
+// Matched to Otto's on 2026-07-29 (free 10 / Supporter 30). Free was 25 and Supporter was ALSO 25, which
+// meant a paying user got literally nothing extra on Halo. Faith is still never paywalled -- Halo is free
+// for everyone, every day, forever; a Supporter just gets a bigger daily allowance, exactly like Otto.
+// 10 was chosen over 5 because Halo's unit is a CONVERSATION, not a question: 5 cuts someone off mid-way,
+// at precisely the moment that matters most. 10 buys one complete conversation a day.
+const FREE_DAILY_CAP = 10;
+const SUPPORTER_DAILY_CAP = 30;
 
 // Dev/test accounts that bypass the daily cap (effectively unlimited). Empty this before
 // public launch. Currently just Justin's uid for testing.

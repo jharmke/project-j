@@ -1280,6 +1280,30 @@ WINS. Items graduate UP here from the backlog sections so good ideas don't rot d
 ships it leaves this list. Always offer at least one QUICK WIN when Justin asks what's next, and pull a
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
+- [DECIDED 2026-07-29, NOT BUILT -- ⚠️ THE WORDING AUDIT MUST HAPPEN FIRST OR SHIP IN THE SAME BREATH]
+  **Companion daily caps: Halo free 25 -> 10, Halo Supporter 25 -> 30.** Two constants in
+  functions/src/faithCompanion.ts, then a redeploy. Otto is UNCHANGED (10 free / 30 Supporter).
+  RESULTING SHAPE, deliberately symmetrical: **free = 10/day with each companion, Supporter = 30/day with
+  each.** The old 10/30/25/25 was not a design, it was two features built at different times, and 25-vs-30
+  is a difference nobody can explain.
+  ⚠️ **DO NOT DEPLOY THE CAP CHANGE BEFORE THE COPY IS FIXED.** If any user-facing string promises Halo is
+  unlimited/uncapped, this deploy makes the app lie to people who already installed it -- worse than the cap.
+  THE AUDIT (agreed, NOT yet run): find every user-facing string implying Halo is unlimited or uncapped.
+  "Faith features are never paywalled" MUST survive -- it stays true. "Unlimited" must go.
+  ➕ SAME AUDIT, second item: **how the cap is explained in the UI.** Justin asked whether the limit counts
+  the companion's replies too. It does NOT -- appCompanion.ts increments once per function call, before the
+  Anthropic call, so it counts USER messages only and 10/day means 10 sent + 10 received. That is the
+  friendly answer, but the copy does not currently make it clear.
+  WHY THIS IS WORTH DOING AT ALL (it is NOT a saving -- do not expect the projections to move):
+  the cost model assumes users consume 3-4% of their cap, so a cap change does not alter what a typical user
+  costs. What it does is (a) truncate the heavy tail, which is what actually drives the real-world average
+  since AI usage is power-law, and (b) create a real Supporter benefit on Halo, where today a paying user
+  gets literally NOTHING extra (25 free vs 25 Supporter).
+  ✅ Justin's call 2026-07-29, explicitly: not worried about users maxing caps daily, it is too rare to model.
+  Halo free was NOT cut to 5 on purpose: Halo's unit is a CONVERSATION, not a question, and 5 cuts someone
+  off mid-conversation -- at exactly the moment that matters most. 10 buys one complete conversation a day.
+  Otto was NOT cut to 5 on purpose either: Otto carries onboarding (better than the tutorials), and a
+  first-week user genuinely may ask 8-9 questions in a sitting. Hitting a wall there loses the user.
 - [⏳ WAITING ON APPLE -- JUSTIN'S ACTION, DATED. Not a code task.] **App Store Small Business Program
   enrollment has been submitted TWICE with no response.** Submitted 2026-07-13 (confirmation email received)
   and again 2026-07-29 (second confirmation received). Mail searched back 60 days on 2026-07-29: there is NO

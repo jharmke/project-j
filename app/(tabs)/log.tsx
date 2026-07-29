@@ -1789,7 +1789,16 @@ export default function LogScreen() {
         const mealEntries = entries.filter(e => e.meal === slot.id || e.meal === slot.name);
         const mealTotal = mealEntries.reduce((s, e) => s + e.cal, 0);
         const mealProtein = Math.round(mealEntries.reduce((s, e) => s + (e.protein || 0), 0));
-        const mealCarbs = Math.round(mealEntries.reduce((s, e) => s + (e.carbs || 0), 0));
+        // Honours the Net Carbs setting, same as the summary card at the top of this screen -- the rows
+        // used to always show TOTAL carbs, so a net-carbs user saw rows that didn't add up to their header.
+        // Deliberately mirrors the summary's SHAPE (sum carbs, subtract summed fiber + sugar alcohols,
+        // clamp once at the end) rather than clamping each entry, so the rows still sum to the header.
+        const mealRawCarbs = mealEntries.reduce((s, e) => s + (e.carbs || 0), 0);
+        const mealCarbs = Math.round(showNetCarbs
+          ? Math.max(0, mealRawCarbs
+              - mealEntries.reduce((s, e) => s + entryNutrient(e, 'Fiber, total dietary'), 0)
+              - mealEntries.reduce((s, e) => s + entryNutrient(e, 'Sugar Alcohols'), 0))
+          : mealRawCarbs);
         const mealFat = Math.round(mealEntries.reduce((s, e) => s + (e.fat || 0), 0));
         const isExpanded = expandedMeals[slot.id];
 
@@ -2001,7 +2010,11 @@ export default function LogScreen() {
                                   </View>
                                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                                     <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#c47d1a' }} />
-                                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.ui }}>{entry.carbs ?? 0}g</Text>
+                                    {/* Follows the Net Carbs setting, same as the meal row above and the
+                                        summary card at the top. computeNetCarbsForEntry is the shared
+                                        per-food helper the nutrient drill-down already uses, so a food
+                                        reads the same number everywhere you can see it. */}
+                                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: Type.ui }}>{showNetCarbs ? computeNetCarbsForEntry(entry) : (entry.carbs ?? 0)}g</Text>
                                   </View>
                                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                                     <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#a83232' }} />

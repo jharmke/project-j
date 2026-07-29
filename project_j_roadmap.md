@@ -30,6 +30,23 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-29 **The Log tab now honours Net Carbs all the way down, and the bouncy press is dead
+  (both device-verified).** NET CARBS: the Log tab's summary card was correctly showing 56 g net while the
+  meal rows underneath added to 101 g -- the rows only ever summed raw carbs. Meal rows now mirror the
+  summary card's SHAPE (sum carbs, subtract summed fiber + sugar alcohols, clamp once at the end) so rows
+  still add up to the header, and individual food rows inside an expanded meal use the shared
+  `computeNetCarbsForEntry` the nutrient drill-down already used, so one food reads the same number
+  everywhere. ⚠️ KNOWN, ACCEPTED, DO NOT "FIX" IN ISOLATION: the meal total clamps at zero once at the end
+  while each food clamps on its own, so a single food with fiber+sugar-alcohols exceeding its carbs can put
+  the rows a gram above their meal total. Real labels can do this (keto bar: 20 g carbs / 9 g fiber / 12 g
+  sugar alcohols, independent rounding), but the LIKELIER cause in this app is the still-open extended
+  nutrient scaling bug, since carbs and fiber are scaled by different code. Removing it properly means one
+  clamp convention across Log + Home + Day Detail + Stats; Justin's call was to leave it and revisit after
+  the scaling bug closes. PRESS FEEL: components/PressableButton.tsx sprang to 0.94, so all 10 buttons using
+  it were bouncy (Home + Log water cards, the Home weight card's Log button, the IF card's "Tap when you eat
+  your first meal"). Fixed AT THE SOURCE to the house 0.97 on a 100 ms timing curve rather than patching the
+  one button -- the Recipe Log meal picker rows and the photo options modal had both already hand-rolled
+  that exact fix to avoid importing this component, which is how the trap survived so long.
 - 2026-07-28 **Coach tip cache no longer trusts a date alone (device-verified).** Justin's Home Smart Tip and
   every EvR report were showing "protein averaged 119g over the last 7 days, falling short on 4 of them"
   while his real last 7 days were [140,140,158,168,162,167,144] -- avg 154g, ZERO days under target, so the
@@ -1232,15 +1249,22 @@ WINS. Items graduate UP here from the backlog sections so good ideas don't rot d
 ships it leaves this list. Always offer at least one QUICK WIN when Justin asks what's next, and pull a
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
-- [NEW 2026-07-28 -- FIRST THING TOMORROW, Justin's call] **The Log button on the Home weight card uses the
-  bouncy spring press animation.** Must be the house click scale: 0.97 with TIMING, never spring. Justin's
-  words: "unacceptable." ⚠️ THE TRAP IS KNOWN: components/PressableButton.tsx springs at 0.94, so anything
-  reaching for that component inherits the wrong feel. Check whether the weight card's button uses it.
-- [NEW 2026-07-28 -- FIRST THING TOMORROW, Justin's call] **Meal-time macro amounts should show NET carbs
-  when the user has net carbs selected.** They appear to show total carbs regardless of the setting, while
-  the Home Calories/Macros cards correctly honour it -- whatever reads the setting for those cards is the
-  reference implementation. ⚠️ Justin mentioned a screenshot but none came through, so the exact surface is
-  unconfirmed -- ask WHICH screen before starting (the Log tab's meal rows are the likely one).
+- [NEW 2026-07-29 -- what's LEFT of the net carbs sweep; Log tab DONE 2026-07-29, see RECENTLY SHIPPED]
+  **Three surfaces still show TOTAL carbs regardless of the Net Carbs setting.** Found by audit 2026-07-29
+  while fixing the Log tab. Honouring it correctly today: Home Calories/Macros card, Log tab summary card,
+  Log tab meal rows + individual food rows, Day Detail, Stats carb card. Still WRONG:
+  - **Weekly Summary** "AVG CARBS" tile
+  - **Monthly Summary** "AVG CARBS" tile
+  - **Effort vs Results report** -- both the "Avg Carbs" metric and the macro-split stacked bar
+  ⚠️ WEEKLY/MONTHLY ARE THE HARD ONES, do not scope them as a one-liner: they are write-once snapshots, so
+  making them read the setting leaves already-generated summaries showing the old number until a force
+  regenerate, and flipping the setting later will never retroactively change one. The clean version stores
+  BOTH numbers in the snapshot and lets the display pick at view time -- but old snapshots hold no net
+  value, so they still show total. EvR is the easy one of the three.
+  DELIBERATELY JUDGED **NOT** BUGS (do not "fix" these): Recipe Log / Recipe Builder show a recipe's total
+  carbs -- a recipe is a food, not a day's intake, and net carbs there would need fiber per ingredient. Food
+  Detail shows total carbs as the macro but already lists Net Carbs as its own line in the breakdown, which
+  is how a real nutrition label reads.
 - [NEW 2026-07-28] More entries in the Stats > RECORDS section. Confirmed wants: **highest recovery score**
   and **highest sleep score**. Justin was not sure what else belongs there, so propose a short candidate
   list when this is picked up rather than guessing at it.
@@ -1357,6 +1381,11 @@ are separate pre-submission checklists, NOT part of this menu.
   behaviour deliberately unchanged, so the correction now happens in ONE place. See RECENTLY SHIPPED.
   REMAINING (Step B): record on each new entry what size its nutrient block describes, and read from
   that instead of guessing. Additive -- existing entries keep reading exactly as they do today.
+  ➕ 2026-07-29, RECHECK THIS WHEN STEP B LANDS: a food's carbs come from a flat field while its fiber
+  comes from the detailed nutrient block, and the two are scaled by DIFFERENT code -- so a wrongly-scaled
+  fiber against a correctly-scaled carb count can make fiber+sugar-alcohols exceed carbs and push net carbs
+  to a clamped 0. That is the suspected real-world cause of the Log tab's rows-vs-total gram discrepancy
+  (see RECENTLY SHIPPED). Mechanism only -- NOT observed on a live entry, do not state it as confirmed.
   HISTORY: not repairable blind. Old entries carry no marker saying which convention they used, so a
   barcode entry and a text-searched one are indistinguishable after the fact. Justin's call was fix
   forward; a specific bad entry is fixed by deleting and re-logging it. Note EditFoodModal can change a

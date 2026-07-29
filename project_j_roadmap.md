@@ -1507,19 +1507,25 @@ are separate pre-submission checklists, NOT part of this menu.
   insights / coaches -- wherever it fits).** Surface timing effects: eating too much too late can disrupt
   deep sleep, etc., with varied examples of what each thing affects. Possibly fold in caffeine levels, late
   workouts, and water timing too. Unscoped.
-- [surfaced 2026-07-20, found during iPad auth testing] **iPad layout looks broken -- wrapped date, oversized
-  text.** On Justin's iPad (not previously tested on this app), Home's "MONDAY, JULY 20" date wraps to a
-  second line under the greeting, and Otto's chat header ("Wellness and App Guide" subtitle) renders visibly
-  larger/squished compared to the same screens on Justin's phone. App has never been specifically designed
-  or tested for iPad -- likely cause is either the iPad's system text-size (accessibility "Larger Text")
-  setting being bigger than the phone's, or simply no iPad-specific layout existing at all, but this is a
-  guess, not confirmed by reading code yet. Needs its own look.
+- [surfaced 2026-07-20 · ✅ **NOT A BUG -- CAUSE FOUND 2026-07-28. This is a product decision now, not a
+  defect.**] **"iPad layout looks broken."** Symptoms were real: on Justin's iPad, Home's date wrapped to a
+  second line and Otto's chat header rendered larger/squished versus his phone.
+  ACTUAL CAUSE: `app.json` has `"ios": { "supportsTablet": false }`. iOS therefore runs GoodForge in
+  **iPhone COMPATIBILITY MODE** on an iPad -- a letterboxed iPhone-sized window scaled up onto a larger,
+  denser display. Justin confirmed the giveaway on 2026-07-28: "the ipad is small on the ipads screen like
+  an iphone size. it wasnt full screen." Every symptom follows from the scaling. Nothing is broken; the app
+  is doing exactly what it is configured to do.
+  EARLIER GUESSES WERE WRONG, do not revisit them: it is not the iPad's accessibility text-size setting, and
+  it is not a missing iPad layout misbehaving.
+  THE REAL QUESTION: do we want to support iPad at all? Flipping the flag to `true` is one line, but that is
+  the START of the work, not the end -- it means designing genuine tablet layouts for every screen, and it
+  needs a NEW NATIVE BUILD to take effect. Until then, iPhone compatibility mode is a perfectly reasonable
+  place to be.
   ⚠️ JUSTIN'S FOLLOW-UP QUESTION 2026-07-28: his phone is an iPhone 16 Plus (430pt wide). If the iPad is
   wrong, are SMALLER iPhones wrong too? That would be far worse than an iPad quirk.
-  ANSWER, from a code scan (NOT a device test): **almost certainly no, small iPhones are fine.** The two are
-  different failure modes and one does not imply the other. The iPad problem is a PHONE layout stretched
-  across a tablet -- sparse and awkward, not broken. A small-phone problem would be cramping or overflow,
-  and nothing supports that:
+  ANSWER: **no.** Two independent reasons. First and decisive: the iPad symptom was compatibility-mode
+  SCALING (above), never a layout failure, so it says nothing at all about how the app lays out on a
+  narrower phone. Second, a code scan found nothing that would cramp or overflow a small phone:
   - The widest hardcoded widths in the whole app are 310-320pt modal cards. The narrowest current iPhone is
     375pt (SE / 13 mini), so those still clear it with ~27pt of margin each side.
   - No `minWidth` sits in a row where several could sum past 375pt (the largest are single elements at

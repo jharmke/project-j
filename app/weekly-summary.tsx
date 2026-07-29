@@ -147,6 +147,7 @@ export default function WeeklySummaryScreen() {
   const [dayModalVisible, setDayModalVisible] = useState(false);
   const [faithJourney, setFaithJourney] = useState<'rooted' | 'exploring' | 'notrightnow'>('rooted');
   const [activeCalGoal, setActiveCalGoal] = useState<number>(500);
+  const [showNetCarbs, setShowNetCarbs] = useState(false);
 
   // Was '#000' @0.12 on a tight 2/6 blur -- about a third of a normal card, the wrong hue on Light (whose
   // shadow is navy) and invisible on Dark. Nothing clips these, so it always rendered; just weak.
@@ -175,6 +176,7 @@ export default function WeeklySummaryScreen() {
         setIsMindful(mode === 'mindful');
         setFaithJourney((settings.faithJourney ?? 'rooted') as 'rooted' | 'exploring' | 'notrightnow');
         setActiveCalGoal(parseInt(profile.activeCalGoal) || 500);
+        setShowNetCarbs(!!settings.showNetCarbs);
 
         if (raw) {
           const weekEnd = raw.weekEnd;
@@ -230,7 +232,7 @@ export default function WeeklySummaryScreen() {
 
   const { avgComposite, avgNutritionScore, avgActivityScore, avgSleepScore, daysScored, days,
     avgCalories, calTarget, avgNet, avgProtein, proteinGoal, avgWater, waterGoal, daysLoggedNutrition,
-    avgCarbs, avgFat, avgFiber, avgSodium, daysCalorieGoalHit,
+    avgCarbs, avgNetCarbs, avgFat, avgFiber, avgSodium, daysCalorieGoalHit,
     avgActiveCalories, avgSteps, workoutDays, avgExerciseMinutes, avgActiveCalScore, avgWorkoutScore, weekHadWorkouts,
     stepGoalDays, cardioDays, liftDays,
     avgRecoveryScore, avgHRV, avgSleepHours, avgSleepCategoryScore, sleepGoal, avgRestingHR, avgRespiratoryRate, avgPrevActivity, avgBloodOxygen, weekVo2Max, weekCardioRecovery,
@@ -434,8 +436,13 @@ export default function WeeklySummaryScreen() {
                 left={{ label: 'DAYS LOGGED', value: `${daysLoggedNutrition} of 7` }}
                 right={{ label: 'CAL GOAL DAYS', value: `${daysCalorieGoalHit} of 7` }}
               />
+              {/* A summary generated before 2026-07-29 has no avgNetCarbs at all, so it can only report
+                  the total it froze. Those keep the honest "AVG CARBS" label rather than being dressed
+                  up as net. Summaries written from now on carry both and follow the setting. */}
               <SubBlock
-                left={{ label: 'AVG CARBS', value: avgCarbs !== null ? `${formatNumber(avgCarbs)}g` : '--' }}
+                left={showNetCarbs && avgNetCarbs != null
+                  ? { label: 'AVG NET CARBS', value: `${formatNumber(avgNetCarbs)}g` }
+                  : { label: 'AVG CARBS', value: avgCarbs !== null ? `${formatNumber(avgCarbs)}g` : '--' }}
                 right={{ label: 'AVG FAT', value: avgFat !== null ? `${formatNumber(avgFat)}g` : '--' }}
               />
               <SubBlock

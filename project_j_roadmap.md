@@ -30,6 +30,18 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-07-29 **Weekly + Monthly Summary honour Net Carbs, which CLOSES the net carbs sweep
+  (device-verified).** Both generators now also collect Sugar Alcohols (they only gathered fiber) and store
+  `avgNetCarbs` ALONGSIDE the existing `avgCarbs`. The tile reads the setting at VIEW time and relabels to
+  "AVG NET CARBS". Storing both is what makes that possible: a summary is written once and frozen, but the
+  setting can be toggled any time after, so the generator must not bake in an answer.
+  `avgNetCarbs` is OPTIONAL on both types on purpose -- a summary generated before today has no such field,
+  and the display falls back to the total under an honest "AVG CARBS" label rather than showing a zero.
+  ⚠️ Justin's call: NO force-regenerate was built, and old summaries are NOT repaired. He accepted that a
+  pre-change summary reads ~36 g/day higher than a post-change one and can look like carbs jumped. Reason
+  it is fine: Settings ALREADY has "Regenerate Weekly Summaries" / "Regenerate Monthly Summaries" dev tools
+  that rebuild the whole archive from logged data, so for Justin it is one tap; real users just age out of
+  it. He is also confident no test user has opened Reports.
 - 2026-07-29 **Custom Reports honours the Net Carbs setting (device-verified).** The "Avg Carbs" tile
   relabels to "Avg Net Carbs" and the Macro Split bar + legend follow. TrendData.macro now carries a
   `netCarbs` per day alongside `carbs`, computed in utils/statsData.ts where fiber and sugar alcohols were
@@ -1268,28 +1280,17 @@ WINS. Items graduate UP here from the backlog sections so good ideas don't rot d
 ships it leaves this list. Always offer at least one QUICK WIN when Justin asks what's next, and pull a
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
-- [NEW 2026-07-29 -- what's LEFT of the net carbs sweep; Log tab + Custom Reports DONE, see RECENTLY SHIPPED]
-  **Weekly and Monthly Summary still show TOTAL carbs regardless of the Net Carbs setting.** Found by audit
-  2026-07-29 while fixing the Log tab. Honouring it correctly today: Home Calories/Macros card, Log tab
-  summary card, Log tab meal rows + individual food rows, Day Detail, Stats carb card, Custom Reports.
-  Still WRONG: the **"AVG CARBS" tile on Weekly Summary and on Monthly Summary**.
-  ⚠️ NAMING, this cost time on 2026-07-29: app/report.tsx is **CUSTOM REPORTS** (templates + blocks), NOT
-  the Effort vs Results diagnostic report. EvR is app/diagnostic-report*.tsx and shows NO carbs anywhere,
-  so it needs nothing. An earlier version of this entry called Custom Reports "the EvR report" and Justin
-  was sent to the wrong screen to test.
-  ⚠️ THESE ARE THE HARD ONES, do not scope as a one-liner: they are write-once snapshots, so making them
-  read the setting leaves already-generated summaries showing the old number until a force regenerate, and
-  flipping the setting later will never retroactively change one. Neither generator collects sugar alcohols
-  today, only fiber, so that has to be added too.
-  ✅ APPROACH APPROVED BY JUSTIN 2026-07-29, not yet built: store BOTH numbers in the snapshot going forward
-  and let the display pick at view time. Summaries generated before this carry no net value and keep showing
-  total, labelled honestly rather than mislabelled. Matches his standing call: don't care about history as
-  long as the future is correct. (Rejected: recomputing carbs live at view time -- it fixes old summaries
-  but makes one number live while every number around it stays frozen.)
+- [NET CARBS SWEEP -- ✅ COMPLETE 2026-07-29, all four surfaces shipped and device-verified. Kept here ONLY
+  for the two deliberate non-bugs; delete this entry once they stop being re-reported.]
+  Honouring the Net Carbs setting today: Home Calories/Macros card, Log tab summary card, Log tab meal rows
+  AND individual food rows, Day Detail, Stats carb card, Custom Reports, Weekly Summary, Monthly Summary.
   DELIBERATELY JUDGED **NOT** BUGS (do not "fix" these): Recipe Log / Recipe Builder show a recipe's total
   carbs -- a recipe is a food, not a day's intake, and net carbs there would need fiber per ingredient. Food
   Detail shows total carbs as the macro but already lists Net Carbs as its own line in the breakdown, which
   is how a real nutrition label reads.
+  ⚠️ NAMING, this cost real time on 2026-07-29: app/report.tsx is **CUSTOM REPORTS** (templates + blocks),
+  NOT the Effort vs Results diagnostic report. EvR is app/diagnostic-report*.tsx and shows NO carbs
+  anywhere. Justin was sent to the wrong screen to test off that mix-up.
 - [NEW 2026-07-28] More entries in the Stats > RECORDS section. Confirmed wants: **highest recovery score**
   and **highest sleep score**. Justin was not sure what else belongs there, so propose a short candidate
   list when this is picked up rather than guessing at it.

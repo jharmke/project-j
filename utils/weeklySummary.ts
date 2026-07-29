@@ -54,6 +54,9 @@ export interface WeeklySummaryData {
   avgProteinScore: number | null;
   avgWaterScore: number | null;
   avgCarbs: number | null;
+  // OPTIONAL on purpose: summaries generated before 2026-07-29 have no such field, and a reader must
+  // treat that as "this summary predates net carbs" and fall back to avgCarbs, NOT as a zero.
+  avgNetCarbs?: number | null;
   avgFat: number | null;
   avgFiber: number | null;
   avgSodium: number | null;
@@ -231,6 +234,7 @@ export async function generateWeeklySummary(weekStart: string): Promise<WeeklySu
     if (r) { const d = JSON.parse(r); prevDayBeforeWeekActive = d.activeCalories || d.caloriesBurned || 0; }
   } catch {}
   const carbsList: number[] = [];
+  const netCarbsList: number[] = [];
   const fatList: number[] = [];
   const fiberList: number[] = [];
   const sodiumList: number[] = [];
@@ -272,9 +276,16 @@ export async function generateWeeklySummary(weekStart: string): Promise<WeeklySu
       const fat = Math.round(entries.reduce((s: number, e: any) => s + (e.fat || 0), 0));
       const fiber = Math.round(advancedNutrient(entries, 'Fiber, total dietary'));
       const sodium = Math.round(advancedNutrient(entries, 'Sodium, Na'));
+      // Sugar alcohols are collected ONLY to compute net carbs -- they are not surfaced on their own
+      // anywhere in a summary, so they get no list of their own.
+      const sugarAlc = Math.round(advancedNutrient(entries, 'Sugar Alcohols'));
       caloriesList.push(cal);
       proteinList.push(prot);
       carbsList.push(carbs);
+      // Stored ALONGSIDE total carbs, never instead of it, so the display can show either without this
+      // generator needing to know the user's Net Carbs setting -- which matters because a summary is
+      // written once and frozen, while the setting can be toggled any time afterwards.
+      netCarbsList.push(Math.max(0, carbs - fiber - sugarAlc));
       fatList.push(fat);
       if (fiber > 0) fiberList.push(fiber);
       if (sodium > 0) sodiumList.push(sodium);
@@ -409,6 +420,7 @@ export async function generateWeeklySummary(weekStart: string): Promise<WeeklySu
     avgProteinScore: avg(protScoreList),
     avgWaterScore: avg(waterScoreList),
     avgCarbs: avg(carbsList),
+    avgNetCarbs: avg(netCarbsList),
     avgFat: avg(fatList),
     avgFiber: avg(fiberList),
     avgSodium: avg(sodiumList),

@@ -221,6 +221,7 @@ export default function MonthlySummaryScreen() {
   const [dayModalVisible, setDayModalVisible] = useState(false);
   const [faithJourney, setFaithJourney] = useState<'rooted' | 'exploring' | 'notrightnow'>('rooted');
   const [prevData, setPrevData] = useState<MonthlySummaryData | null>(null);
+  const [showNetCarbs, setShowNetCarbs] = useState(false);
 
   // Was '#000' @0.12 on a tight 2/6 blur -- about a third of a normal card, the wrong hue on Light (whose
   // shadow is navy) and invisible on Dark. Nothing clips these, so it always rendered; just weak.
@@ -248,6 +249,7 @@ export default function MonthlySummaryScreen() {
         setStyleMode(mode);
         setIsMindful(mode === 'mindful');
         setFaithJourney((settings.faithJourney ?? 'rooted') as 'rooted' | 'exploring' | 'notrightnow');
+        setShowNetCarbs(!!settings.showNetCarbs);
 
         if (raw && !TIPS_GATED) {
           const homeRuleId = homeCache?.packet.ruleId ?? null;
@@ -302,7 +304,7 @@ export default function MonthlySummaryScreen() {
   const {
     avgComposite, avgNutritionScore, avgActivityScore, avgSleepScore, daysScored, days, daysInMonth,
     avgCalories, calTarget, avgNet, avgProtein, proteinGoal, avgWater, waterGoal, daysLoggedNutrition,
-    avgCarbs, avgFat, avgFiber, avgSodium, daysCalorieGoalHit,
+    avgCarbs, avgNetCarbs, avgFat, avgFiber, avgSodium, daysCalorieGoalHit,
     avgActiveCalories, activeCalGoal, avgSteps, workoutDays, avgExerciseMinutes,
     avgActiveCalScore, avgWorkoutScore, monthHadWorkouts, stepGoalDays, totalCardioSessions, totalLiftSessions,
     avgRecoveryScore, avgHRV, avgSleepHours, avgSleepCategoryScore, sleepGoal, avgRestingHR, avgRespiratoryRate, avgPrevActivity, avgBloodOxygen, monthVo2Max, monthCardioRecovery,
@@ -503,8 +505,13 @@ export default function MonthlySummaryScreen() {
                 left={{ label: 'DAYS LOGGED', value: `${daysLoggedNutrition} of ${daysInMonth}` }}
                 right={{ label: 'CAL GOAL DAYS', value: `${daysCalorieGoalHit} of ${daysInMonth}` }}
               />
+              {/* A summary generated before 2026-07-29 has no avgNetCarbs at all, so it can only report
+                  the total it froze. Those keep the honest "AVG CARBS" label rather than being dressed
+                  up as net. Summaries written from now on carry both and follow the setting. */}
               <SubBlock
-                left={{ label: 'AVG CARBS', value: avgCarbs !== null ? `${formatNumber(avgCarbs)}g` : '--' }}
+                left={showNetCarbs && avgNetCarbs != null
+                  ? { label: 'AVG NET CARBS', value: `${formatNumber(avgNetCarbs)}g` }
+                  : { label: 'AVG CARBS', value: avgCarbs !== null ? `${formatNumber(avgCarbs)}g` : '--' }}
                 right={{ label: 'AVG FAT', value: avgFat !== null ? `${formatNumber(avgFat)}g` : '--' }}
               />
               <SubBlock

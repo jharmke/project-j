@@ -1312,6 +1312,44 @@ are separate pre-submission checklists, NOT part of this menu.
   is nothing, but a countdown halfway through someone working out something heavy with Halo is the one place
   in the app where it can read as a hand on the shoulder pushing them toward the door. If it ever feels that
   way, drop it to 3 for Halo only. Judge it on device; do not reason about it from here.
+- 🗺️ **THE PLAN (set 2026-07-29). READ THIS BEFORE PICKING UP ANYTHING BELOW.** Everything here ships
+  BEFORE launch -- Justin's call, emphatically. There is no v1/v2 and no phase 2. Do NOT put version
+  numbers, phases or time estimates in front of him; he decides what waits.
+  ⚠️ NOTHING IS BUILT YET. Every item is spec-or-discuss first. He was clear: *"it needs to be specced and
+  discussed and fully alligned before we fucking do it."* That applies to all of it, not just the routing.
+
+  **A. RESOLVE THE 6 OPEN OTTO ITEMS** (conversations, not code -- they block everything downstream).
+     Full detail in SPEC_otto.md -> OPEN ITEMS. Summary:
+     1. Don't send the data snapshot to free users (agreed in principle, UNVERIFIED it breaks nothing)
+     2. Do artifacts built during the 7-day taste survive day 8? (Justin asked to be walked through this;
+        it is still owed him, and SPEC_monetization's step-down copy already PROMISES they survive)
+     3. Exercise library: expand the pool, Otto pulls from it, can create on the fly if asked (his
+        proposal, never refined)
+     4. Otto must not pitch to existing Supporters, and at most once per conversation to anyone else
+     5. Meal-builder food matching (the unsolved part)
+     6. Two backlog items that may be cheaper as Otto capabilities: "calorie periodization" and
+        "protein timing badge"
+     PLUS the open decision at the top of SPEC_otto.md: is the undereating safeguard its own trigger, or
+     just Otto knowing the calorie-floor thresholds?
+
+  **B. OTTO FREE/PAID SPLIT** -- direction locked in SPEC_otto.md, prompt/KB work, small once A is done.
+  **C. NON-AI WALLS / PAYWALLS / LIMITS** -- Justin's own list item; not yet specced anywhere.
+  **D. 7-DAY TASTE** -- specced in SPEC_monetization.md, NOT built. ⚠️ HARD DEPENDENCY of B: free Otto is
+     only acceptable *because* users get the taste first. B should not ship without it.
+  **E. WORKOUT BUILDER** -- needs a full spec + visualisation before any build.
+  **F. MEAL BUILDER** -- needs a full spec + visualisation. The riskiest item; food matching is unsolved.
+  **G. CALORIE FLOOR** -- SPEC_calorie_floor.md, DESIGN LOCKED since 2026-07-08, still not built.
+  **H. COST ROUTING** -- ⚠️ NEEDS ITS OWN SPEC AND FULL ALIGNMENT BEFORE ANY CODE. Design sketch and the
+     two make-or-break rules are in SPEC_otto.md -> COST OPTIMISATION. Send Otto only the knowledge a
+     question needs instead of all 18k tokens. Otto ~$0.21 -> ~$0.08/user/month; break-even conversion
+     4.7% -> ~2.5%. Invisible to users.
+     ⚠️ DO NOT call this optional. It was framed that way once and it was wrong -- this is the direct fix
+     to the cost problem that drove the whole 2026-07-29 session.
+
+  **LAST, and Justin does not want it raised before then:** IAP review screenshots (7 products) and the
+  App Store listing (description, screenshots, privacy label, age rating, review notes). These genuinely
+  block submission but need no design and can be done immediately before submitting. He was explicit that
+  putting them at the top of a plan is not helpful.
 - [✅ APP STORE CONNECT STATE, set 2026-07-29. Recorded so nobody re-does or re-decides it.]
   **DSA trader status: declared NON-TRADER / not distributing in the EU.** The red compliance banner is
   gone and a Digital Services Act row now shows 27 countries, Active. ⚠️ This was a DELIBERATE tradeoff:

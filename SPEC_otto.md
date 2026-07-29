@@ -141,7 +141,26 @@ If they keep pushing: state the path once more, plainly, move on. No escalation,
 
 ---
 
-## THE UNDEREATING SAFEGUARD (direction agreed, thresholds inherited)
+## THE UNDEREATING SAFEGUARD (⚠️ OPEN DECISION -- NOT agreed, NOT scrapped)
+
+⚠️ READ THIS FIRST. An earlier draft of this section presented this as decided. It is not. Justin's
+reaction, fairly: *"wtf is this undereating safeguard? We have the guards up when making the calorie goal
+and then the logic will be added to Otto right? Are we making a new feature or something?"*
+
+**THE DECISION TO MAKE:** is this a separate trigger, or does Otto just know the calorie-floor thresholds?
+
+**THE CASE FOR IT BEING SEPARATE (the gap):** `SPEC_calorie_floor.md` fires on the RECOMMENDED TARGET. It
+never fires if the target is healthy. Someone with a perfectly normal 1,800 target who logs 900 a day for
+a week trips nothing at all -- the app watches it happen and says nothing.
+
+**THE CASE AGAINST:** it is arguably one condition check and a message, not a feature, and Otto knowing the
+thresholds may cover enough of it.
+
+**IF BUILT, the proposal is deliberately small:** same thresholds as the floor spec, different trigger --
+net intake under the MODAL line (1,000 women / 1,200 men) on 4+ of the last 7 logged days. Fires a message,
+never blocks. The app already computes net calories and 7-day averages, so there is no new machinery.
+
+Everything below applies IF this is built. Thresholds and philosophy are inherited either way.
 
 ⚠️ SEPARATE FROM, BUT MUST MATCH, `SPEC_calorie_floor.md`.
 

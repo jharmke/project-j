@@ -1319,7 +1319,7 @@ are separate pre-submission checklists, NOT part of this menu.
   discussed and fully alligned before we fucking do it."* That applies to all of it, not just the routing.
 
   **A. RESOLVE THE 6 OPEN OTTO ITEMS** (conversations, not code -- they block everything downstream).
-     **PROGRESS: 2 of the 6 done (questions 1 and 2), PLUS the safeguard decision. All on 2026-07-30.**
+     **PROGRESS: 3 of the 6 done (questions 1, 2 and 3), PLUS the safeguard decision. All on 2026-07-30.**
      Full detail in SPEC_otto.md -> OPEN ITEMS. Summary:
      1. ✅ RESOLVED 2026-07-30 -- **HARD GATE LOCKED.** Free users are never sent the snapshot or the 5
         gated attachments (PRs, workouts, food history, sleep, body measurements). Profile/goals, the
@@ -1333,8 +1333,15 @@ are separate pre-submission checklists, NOT part of this menu.
         was verified safe in code (entries store a slot ID; `slotNameCache` never shrinks; the app already
         ships this exact behaviour on manual slot deletion). Full detail in SPEC_otto.md.
         ⚠️ The exercise-library cap was deliberately held for question 3.
-     3. Exercise library: expand the pool, Otto pulls from it, can create on the fly if asked (his
-        proposal, never refined)
+     3. ✅ RESOLVED 2026-07-30 -- **Otto may create exercises, but ONLY when the user asks, and never
+        silently.** Asked for a routine with no movement named, he builds from the pool. Three-layer
+        duplicate check (code-level name match, Otto suggests near matches, USER is the tiebreaker).
+        The offer to add one is SUPPORTER-ONLY (otherwise he walks a free user into his own wall). He fills
+        muscles (validated against the 22 real keys), instructions, tags and default sets/reps/rest, but
+        NEVER a weight. Marked with one quiet line in the exercise detail: "Muscle map and steps added by
+        Otto." Full detail in SPEC_otto.md.
+        ➡️ Spawned THREE new plan items: **I** (exercise editor), **J** (expand the pool), **K** (lift-name
+        aliases), plus three constraints on **E**.
      4. Otto must not pitch to existing Supporters, and at most once per conversation to anyone else
      5. Meal-builder food matching (the unsolved part)
      6. Two backlog items that may be cheaper as Otto capabilities: "calorie periodization" and
@@ -1385,6 +1392,16 @@ are separate pre-submission checklists, NOT part of this menu.
   **D. 7-DAY TASTE** -- specced in SPEC_monetization.md, NOT built. ⚠️ HARD DEPENDENCY of B: free Otto is
      only acceptable *because* users get the taste first. B should not ship without it.
   **E. WORKOUT BUILDER** -- needs a full spec + visualisation before any build.
+     ⚠️ **THREE THINGS LANDED ON E FROM ITEM A QUESTION 3 (2026-07-30), do not re-decide them:**
+     1. **CONSTRAINT: routines are PREVIEWED AND ACCEPTED, never written straight into the Workout tab.**
+        Accepting the routine IS the confirmation for any exercise Otto created for it. Decline = nothing
+        was created. Also catches wrong exercises / set counts before they are in the app.
+     2. **Otto has NO IDEA what equipment the user has.** Nothing in the app captures it, so he will build a
+        hack squat and a sled push for someone training in a garage with dumbbells. Probably needs a PROFILE
+        field before E can be any good.
+     3. **The builder needs real programming logic**, not plausible picks from a muscle group: movement
+        pattern balance, compounds before isolation, sensible volume. This does not fall out for free.
+     ⚠️ Depends on **I**, **J** and **K**.
   **F. MEAL BUILDER** -- needs a full spec + visualisation. The riskiest item; food matching is unsolved.
   **G. CALORIE FLOOR** -- SPEC_calorie_floor.md, DESIGN LOCKED since 2026-07-08. ⚠️ **"NOT BUILT" WAS
      WRONG (corrected 2026-07-30).** Already built AND wired: `utils/calorieFloor.ts` (+ a test file),
@@ -1407,11 +1424,113 @@ are separate pre-submission checklists, NOT part of this menu.
      ⚠️ DO NOT call this optional. It was framed that way once and it was wrong -- this is the direct fix
      to the cost problem that drove the whole 2026-07-29 session.
 
+  **I. EXERCISE EDITOR (instructions + muscle map)** -- NEW 2026-07-30, came out of item A question 3.
+     ⚠️ **TODAY NOBODY CAN EDIT EITHER.** The add/edit exercise form only handles name, type and tags. So a
+     user-created exercise has NO muscle diagram and NO instructions, permanently, and there is no way to
+     add them. That is also why this blocks Otto: if he pre-fills muscles/instructions on an exercise he
+     creates and gets one wrong, the user is stuck with a confidently wrong diagram forever.
+     **This editor is the seatbelt that makes Otto pre-filling safe**, and it is worth building on its own
+     merits regardless of Otto (Justin's instinct, and he was right -- an earlier framing had this backwards).
+     BUILD NOTES:
+     • **Instructions:** simple editable step list (the built-ins run ~4 short lines each).
+     • **Muscle picker: THREE states per muscle** (off / primary / secondary) because the data and the
+       diagram distinguish them. Agreed shape: TAP CYCLES once=primary, twice=secondary, again=clear.
+       Clarity is the whole risk, so: colour the chip states to MATCH the diagram's own primary/secondary
+       shading, LABEL the state on the chip ("Chest, primary") so it never depends on colour alone, a small
+       legend line above the list, and the muscle map sits above and **updates live as you tap**.
+     • **Covers ALL exercises, including the 79 built-ins**, because it is the user's library. Safe because
+       the defaults live in CODE (`DEFAULT_LIBRARY` in app/workout-library.tsx), so a built-in always gets a
+       **"Restore original"** that puts back the real curated instructions + map. (Better than "ask Otto to
+       rebuild it", which only returns his guess.) Custom exercises have nothing to revert to.
+     • **NO muscle picker for cardio.**
+     ⚠️ **DECIDE AT BUILD TIME:** the checklist offers 22 muscle keys but the SVG only has ~14 regions, so
+     some keys share a picture (chest/upper_chest/lower_chest all draw chest; the three delts all draw
+     deltoids; lats+rhomboids both draw upper-back; hip_flexors draws abs; hip_abductors+hip_adductors both
+     draw adductors). Tapping a second key in the same group changes NOTHING on screen and reads as a bug.
+     Either group those keys visually or trim the list to what the diagram can draw.
+     ✅ VERIFIED NON-ISSUES, do not re-chase: clearing all muscles survives the app-update patch (it only
+     fills fields that are MISSING, and an empty array is not missing), and the library saves through the
+     synced write path so edits are backed up like everything else.
+     ✅ Editing is not creating, so a free user over the 15-custom-exercise cap can still edit everything
+     they have. Consistent with the content rule from item A question 2.
+
+  **J. EXPAND THE EXERCISE LIBRARY (79 -> ~143)** -- NEW 2026-07-30, came out of item A question 3.
+     WHY: every exercise that ships curated is one Otto never has to invent. This is the cheapest way to
+     make the workout builder (E) safe. It also fixes real holes that exist today.
+     ⚠️ **THE TWO GLARING OMISSIONS: there is no PUSH-UP and no DUMBBELL LATERAL RAISE.** Nothing bodyweight
+     at all, so anyone training at home has almost nothing to pick from. And traps are on the muscle diagram
+     with no direct movement anywhere in the library (no shrugs).
+     **THE WORK IS NOT THE NAMES.** Each entry needs 4 short instruction steps + primary/secondary muscle
+     mapping, in the existing voice and format (`DEFAULT_LIBRARY` in app/workout-library.tsx). ~64 of those
+     is a real chunk of work. Valid muscle keys are the 22 in components/MuscleMap.tsx. Cardio entries do
+     not need muscles.
+     ⚠️ **SOURCING RULE:** exercise NAMES and which muscles a movement works are facts, so using other
+     libraries/open datasets to spot what is MISSING is fine. **Never copy another app's written
+     instructions or images** -- that is their protected content, and a scraped dataset would not match our
+     voice anyway. Write the instructions ourselves.
+     **CANDIDATE LIST (64, approved by Justin 2026-07-30, cut freely at build time):**
+     • CHEST (8): Push-Up, Incline Push-Up, Decline Push-Up, Dumbbell Fly, Floor Press, Landmine Press,
+       Cable Chest Press, Smith Machine Bench Press
+     • SHOULDERS (6): Dumbbell Lateral Raise, Arnold Press, Front Raise, Reverse Pec Deck, Barbell Shrug,
+       Dumbbell Shrug
+     • TRICEPS (4): Tricep Kickback, Bench Dip, Diamond Push-Up, Single Arm Pushdown
+     • BACK (8): Close Grip Lat Pulldown, Straight Arm Pulldown, Chest Supported Row, Inverted Row,
+       Assisted Pull-Up, Rack Pull, Dumbbell Pullover, Trap Bar Deadlift
+     • BICEPS (2): Reverse Curl, Spider Curl
+     • FOREARMS (3): Dead Hang (a time-tracked HOLD -- the PR system already supports those), Wrist Roller,
+       Plate Pinch. (Only Wrist Curl + Reverse Wrist Curl exist today, so forearms are thin.)
+     • LEGS (12): Front Squat, Goblet Squat, Hack Squat, Bodyweight Squat, Step-Up, Glute Bridge,
+       Good Morning, Single Leg RDL, Nordic Curl, Wall Sit, Calf Press on Leg Press, Box Jump
+     • CORE (6): Crunch, Sit-Up, Mountain Climber, Bird Dog, Superman, Pallof Press
+     • FULL BODY / FUNCTIONAL (9): Kettlebell Swing, Farmer's Carry, Thruster, Burpee, Sled Push,
+       Battle Ropes, Clean and Press, Turkish Get-Up, Medicine Ball Slam
+       (⚠️ easiest section to cut if the app stays gym-focused rather than CrossFit-adjacent)
+     • CARDIO (6): Hiking, Outdoor Cycling, Stair Climbing, Yoga, Pilates, Sports
+
+  **K. LIFT-NAME ALIASES (renaming an exercise must not split its PR history)** -- NEW 2026-07-30, found
+     while walking item A question 3.
+     **THE PROBLEM (verified in utils/liftPR.ts):** PR records are keyed by `normalizeLiftName(name)`, and
+     the three history lookups (`computeLiftBest`, `dayHasLoggedLift`, `liftSessionHistory`) do NOT use the
+     library at all -- they walk past days and match the exercise NAME stored inside each day's program.
+     Every training day stores the name as it was THAT day. So renaming an exercise silently splits its PR
+     history: old sessions stay under the old name, new ones start fresh.
+     ⚠️ Matters more once Otto creates exercises (E): he picks the name, and users will rename to whatever
+     they actually call it a week later.
+     ❌ **DO NOT "fix" this by rewriting the name in historical programs.** That is a real migration on
+     pj_workout_state AND it falsifies history that was true when it was logged -- the same reason meal-slot
+     history is never rewritten. Past days stay honest.
+     ✅ **THE FIX: an ALIAS SET.** Store previous names on the library exercise; the lookups accept the
+     current name OR any alias instead of a single string. Same principle as `slotNameCache`: never rewrite
+     the past, keep a translation.
+     ⚠️ **THREE RULES THAT MUST BE NAILED BEFORE ANY CODE:**
+     1. **Collisions.** Renaming onto a name that already has a PR record means two records want one key.
+        Needs an explicit merge rule (probably keep the better of the two). Careless merging silently eats a
+        record.
+     2. **Name reuse.** Rename X to Y, later create a NEW exercise also called Y -> Y's history would pick up
+        X's old sessions. Rule: a live exercise's real name always beats another exercise's alias.
+     3. **Alias chains accumulate.** A -> B -> C must keep all three, never replace.
+     **PLUMBING COST:** aliases live on the library exercise, but the lookups read day PROGRAMS, so every
+     caller has to load the library and pass it in. A handful of call sites (utils/companionPRs.ts already
+     loads it; others do not). Not hard, but not one file either.
+     **SIZE: medium.** Not an afternoon.
+     ❌ **CHEAP OPTION EXPLICITLY REJECTED BY JUSTIN 2026-07-30:** just warning on rename ("this starts a
+     fresh PR history"). He would rather take the time and do it properly. Do not re-propose it.
+     **SEQUENCE:** alongside or before **I** (renaming lives in that editor), and before **E** makes
+     exercise creation common.
+
   📊 **READINESS -- what each item actually needs, so nothing is picked up expecting the wrong thing:**
   - READY TO BUILD, design already done: **C** (numbers locked), **D** (specced), **G** (design locked)
   - DISCUSSION ONLY, no code: **A** (six open questions)
   - READY once A and D are done: **B**
   - BLANK PAGE, needs a real design session before any build: **E**, **F**, and **H**
+  - DESIGN MOSTLY DONE, needs a build: **I** (exercise editor -- shape agreed 2026-07-30, one open call at
+    build time about the 22-keys-vs-14-regions overlap). ⚠️ **I gates part of E**: Otto pre-filling muscles
+    and instructions on exercises he creates is only safe once the user can fix them.
+  - NO DESIGN NEEDED, pure content work: **J** (expand the library; the 64-name list is already approved,
+    the work is writing instructions + muscle mappings). **J makes E safer** -- every curated exercise is
+    one Otto never has to invent.
+  - NEEDS ITS 3 RULES AGREED, THEN BUILD: **K** (lift-name aliases). Medium size. Pairs with **I** and
+    should land before **E**.
   ⚠️ E and F have NOTHING written anywhere. "Attack them" means designing from scratch, not building.
   F (meal builder) is the riskiest thing on this list -- food matching is genuinely unsolved and it could
   be much bigger than it looks. Worth learning that early rather than late.

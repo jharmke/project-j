@@ -1,9 +1,10 @@
 # SPEC: Otto (the general companion) -- free vs Supporter
 
 Status: **DIRECTION LOCKED 2026-07-29, NOTHING BUILT.** Otto today is fully free with no tiering.
-Last updated 2026-07-30. TWO things resolved that day: **OPEN ITEM 1** (the hard gate is LOCKED, see OPEN
-ITEMS) and **THE UNDEREATING SAFEGUARD** (was the open decision at the top of this spec; app-side detection,
-Otto is the only voice, he never speaks first).
+Last updated 2026-07-30. FOUR things resolved that day: **OPEN ITEMS 1, 2 and 3** (the hard gate is LOCKED;
+artifacts survive a downgrade; Otto may create exercises only when asked) and **THE UNDEREATING SAFEGUARD**
+(app-side detection, Otto is the only voice, he never speaks first). Question 3 also spawned three new items
+in THE PLAN: I (exercise editor), J (expand the pool), K (lift-name aliases).
 
 ⚠️ THIS IS THE FIRST SPEC OTTO HAS EVER HAD. `SPEC_otto_notifications.md` is the notification HUB,
 not the companion. Halo has had `SPEC_faith_ai.md` since June; Otto, the bigger feature, had nothing.
@@ -727,10 +728,121 @@ The line is **content vs screen layout**, not "made vs given".
   one-off.
 - Item C's cap MESSAGING is undesigned (Justin leans a toast). Recorded in the roadmap under item C.
 
-### 3. Exercise library / on-the-fly creation -- JUSTIN'S PROPOSAL, NEEDS REFINING
-Expand the exercise library, have Otto build routines by pulling from that pool. But if a user asks for
-a specific movement not in the pool, Otto should be able to create it on the spot and include it.
-Not yet pushed on or refined.
+### 3. ✅ RESOLVED 2026-07-30 -- Otto may create exercises, but ONLY when asked, and never silently.
+
+**THE GOVERNING RULE: Otto never creates an exercise on his own initiative. Every creation traces back to
+something the user asked for.** Asked for a routine with no specific movement named, he builds from the
+pool, full stop.
+
+#### THE POOL TODAY (verified)
+79 built-in exercises, seeded on first run into `pj_exercise_library`. Each carries name, type, tags,
+default sets/reps/rest, primary + secondary muscles, and ~4 instruction steps. Users can add their own from
+the Workout Library screen. ⚠️ Item C's "exercise library 15" cap means 15 **user-created** exercises, not
+15 total (confirmed with Justin).
+➡️ **THE POOL IS BEING EXPANDED 79 -> ~143: see THE PLAN item J.** Every curated exercise is one Otto never
+has to invent, so J directly reduces the risk here. (Glaring holes found: there is no PUSH-UP, no DUMBBELL
+LATERAL RAISE, nothing bodyweight at all, and no shrugs despite traps being on the muscle diagram.)
+
+#### WHEN HE MAY CREATE (three cases, all user-initiated)
+1. **Direct ask.** "Add cable crossover to my library."
+2. **The user describes something he doesn't recognise** as part of their training.
+3. **Mid-build, but ONLY if the user named that specific movement.** Never because he wanted a movement the
+   pool lacks.
+❌ **NOT a creation trigger: asking ABOUT an exercise.** "How do I do a Jefferson curl?" is a question. He
+answers it and creates nothing. Talking about a movement and adding it to a library are different things.
+➡️ He MAY offer ("want me to add that to your library?") -- but see the free-user catch below.
+
+#### ⚠️ THE OFFER IS SUPPORTER-ONLY
+If a free user asks how to do a movement and Otto offers to add it, they say yes and hit a wall Otto himself
+walked them into. **Free users get the answer with no offer.** A free user who directly asks to add one is
+hitting a CAPABILITY wall: attribution clause applies, and it counts toward the three walls that unlock a
+pitch (see open item 4).
+
+#### DUPLICATE PREVENTION (three layers -- the model never rules on it alone)
+Without this the library slowly fills with near-duplicates AND the PR history splits across two names for
+the same lift.
+1. **A plain text match in CODE, not the model.** Lowercase, strip punctuation and parenthetical bits,
+   compare. Catches "cable fly high to low" vs "Cable Fly (High to Low)" every time, no judgement.
+2. **Otto SUGGESTS near matches, he does not decide.** He already has the user's full exercise-name list.
+3. **The user is the tiebreaker.** He never creates silently. Approved wording:
+   > "I don't see a Cable Crossover in your library. Closest thing you've got is Cable Fly, High to Low.
+   > Want to use that one, or should I add Cable Crossover as its own exercise?"
+   And with no near match at all: *"I don't see a Copenhagen Plank in your library. Want me to add it?"*
+⚠️ **THIS DEPENDS ON A KNOWN BUG WE ALREADY LOGGED.** The exercise-name list rides inside the PR attachment,
+which returns null early when the user has NO logged PRs -- so a brand-new user, the person most likely to
+be building their library out, is exactly the one whose duplicate check silently would not run. Decoupling
+the name list from PRs is already in the item-1 build notes for B; **duplicate checking makes it load-bearing,
+not a nicety.**
+
+#### ⚠️ CONSTRAINT ON ITEM E: ROUTINES ARE PREVIEWED AND ACCEPTED, NOT WRITTEN STRAIGHT IN
+This is a constraint on E, not a decision inside it. E still designs what the preview looks like.
+The mid-build problem (does he stop and ask, or build then confess?) is solved by making **accepting the
+routine BE the confirmation**: he builds the whole thing including the new movement, shows it, nothing is
+saved yet. Accept -> the routine lands AND the exercise joins the library. Decline -> nothing was created.
+Beyond this item, it also means a wrong exercise, bad set counts or a movement their gym doesn't have get
+caught BEFORE they are in the app, and nothing Otto builds ever appears without the user agreeing to it.
+Cost: one extra tap. Worth it.
+
+#### WHAT OTTO FILLS IN WHEN HE CREATES
+He gets muscles and instructions from his own general knowledge (commodity fitness knowledge, not user data).
+- **Muscles.** ⚠️ The app must hand him the exact valid keys and DROP anything not on the list before saving,
+  or a hallucinated "pecs" silently breaks the diagram. **The complete list is the 22 keys in
+  components/MuscleMap.tsx:** chest, upper_chest, lower_chest, front_delt, side_delt, rear_delt, triceps,
+  biceps, forearms, lats, rhomboids, traps, lower_back, abs, obliques, hip_flexors, quads, hamstrings,
+  glutes, hip_abductors, hip_adductors, calves.
+  ℹ️ Several collapse onto the same drawing (all 3 chest keys -> chest; all 3 delts -> deltoids; lats +
+  rhomboids -> upper-back; hip_flexors -> abs; both hip_ab/adductors -> adductors), so ~14 regions actually
+  light up and small precision errors are invisible.
+- **Instructions.** ~4 short steps, matching the built-ins' format.
+- **Tags.** ⚠️ Found in code: the manual add form will not save without at least one tag, so tags are not
+  optional in the data. Otto must assign them **from the user's own tag list**, never invented, which means
+  he needs `workoutTags` in context.
+- **Default sets / reps / rest.** Every built-in has these. If he omits them his exercise behaves worse than
+  the ones that shipped.
+- ❌ **NO WEIGHT.** A pre-filled number invites someone to load it without thinking, and he has no idea how
+  the last session went or how they feel today. Weight is the one field where being wrong hurts someone.
+  When ASKED, he answers from real history instead -- *"Your last three bench sessions topped out at 205 for
+  6. Start at 195 and see how the first set moves."* Which a free user cannot get, so it demonstrates the
+  split rather than creating an awkward gap.
+- **RELIABILITY, honestly:** mainstream movements he will get right essentially always. Niche, regional or
+  invented names he will guess at, confidently. The realistic failure is a missed secondary muscle, not
+  labelling a squat as chest.
+- ➡️ **SAFETY VALVE:** if he cannot confidently name a primary muscle, he creates it WITHOUT a diagram or
+  instructions. An absent diagram beats a confidently wrong one, and that is already the standard for
+  manually-added exercises.
+
+#### AFTER CREATION
+- It is a normal custom exercise: usable anywhere, editable, deletable. Nothing locked.
+- Counts against the 15 custom cap; **grandfathered on downgrade** as CONTENT (see open item 2).
+- **He can fix anything he created on request** ("actually that's more triceps than chest") -- ⚠️ but he may
+  **NEVER edit the 79 built-ins.** Those are curated content.
+- **He announces the ability once per conversation** in which he creates something (not once per exercise),
+  because otherwise nobody discovers it. Approved copy:
+  > One: *"Added Cable Crossover to your library, with the muscle map and steps filled in. If anything looks
+  > off, tell me and I'll fix it."*
+  > Several: *"Three of those weren't in your library, so I added them with muscle maps and steps. If any of
+  > them look off, tell me and I'll fix them."*
+  ⚠️ It must be general ("if anything looks off"), NOT "if I got the muscles wrong" -- several fields could
+  be wrong.
+- **MARKER.** Store it as a real FIELD (not inferred), and leave it in place even after the user edits.
+  Shown as ONE quiet line in the exercise DETAIL view, under the muscle map: **"Muscle map and steps added by
+  Otto."** Nothing in the list rows -- those already carry a type pill, name, subtitle and star, and another
+  pill would be noise on every scroll.
+  ❌ Do NOT append "tap to edit": the line isn't tappable and the modal already has a real Edit button.
+  ℹ️ Optional later: an "Added by Otto" filter in the library's filter menu. Nice quiet discovery path --
+  someone finds the filter, wonders what it means, and learns he can build exercises without being told.
+
+#### DEPENDENCIES THIS ITEM CREATED (all now in THE PLAN)
+- **I -- exercise editor.** Today NOBODY can edit instructions or the muscle map (the form only handles name,
+  type, tags), so a wrong diagram would be permanent. **The editor is the seatbelt that makes Otto
+  pre-filling safe**, and it is worth building on its own merits regardless of Otto.
+- **J -- expand the pool 79 -> ~143.**
+- **K -- lift-name aliases.** Renaming an exercise currently splits its PR history.
+- ⚠️ **NOTE FOR E: Otto has no idea what equipment the user has.** Nothing in the app captures it, so he will
+  happily build a hack squat and a sled push for someone training in a garage with dumbbells. This probably
+  needs a PROFILE field before E can be any good.
+- ⚠️ **NOTE FOR E: the builder needs real programming logic**, not plausible picks from a muscle group.
+  Movement-pattern balance, compounds before isolation, sensible volume. It does not fall out for free.
 
 ### 4. Otto must not pitch to existing Supporters -- CALLED "BIG", NOT TOUCHED
 He has to know not to mention Supporter to someone who already pays, and to say it at most once per

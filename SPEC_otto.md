@@ -1,7 +1,7 @@
 # SPEC: Otto (the general companion) -- free vs Supporter
 
 Status: **DIRECTION LOCKED 2026-07-29, NOTHING BUILT.** Otto today is fully free with no tiering.
-Last updated 2026-07-29.
+Last updated 2026-07-30 (OPEN ITEM 1 resolved: the hard gate is LOCKED -- see OPEN ITEMS).
 
 ⚠️ THIS IS THE FIRST SPEC OTTO HAS EVER HAD. `SPEC_otto_notifications.md` is the notification HUB,
 not the companion. Halo has had `SPEC_faith_ai.md` since June; Otto, the bigger feature, had nothing.
@@ -110,6 +110,13 @@ That is the entire list. Three things, all about calories and weight loss.
   protein-heavy meal with what you've got." State the food, not the target.
 
 **Supporter buys the same thing in all three modes.**
+
+⚠️ **PLAN LIMITS AND MODE BEHAVIOUR ARE TWO INDEPENDENT AXES. Do not read this section as contradicting the
+free tier** (added 2026-07-30 with the OPEN ITEM 1 resolution). Mindful withholds PRESCRIPTIONS and deficit
+math; it never withheld someone's own logged number, which is a fact. The free wall is not a mode decision
+and applies identically to all three modes. So: a PAID Mindful user asking "how many calories did I eat
+today" gets a straight answer with no Balanced redirect, and a FREE Mindful user hits the same wall a free
+Balanced user hits. The Balanced redirect below exists ONLY for prescription questions.
 
 More Mindful detail will be needed once the two builders are actually specced; this is the vibe, not
 the final word.
@@ -302,12 +309,203 @@ straight downgrade with nothing to offset it.
 
 ## OPEN ITEMS
 
-### 1. Do not send the data snapshot to free users at all (agreed in principle, unverified)
-Instructing Otto to "know but not say" is unreliable -- LLMs leak. Structural gating is not: if the
-snapshot is never sent, he cannot reference it. Also slightly cheaper.
-Consequence: free Otto genuinely cannot answer "how much protein today" and needs a clean, non-apologetic
-response pointing at the Log tab.
-⚠️ NOT YET VERIFIED that removing it breaks nothing else.
+### 1. ✅ RESOLVED 2026-07-30 -- HARD GATE, LOCKED. Free users are never sent their logged data.
+
+**THE DECISION:** structural gating, not instructions. Free users are not sent the data snapshot or the
+gated on-demand attachments at all. "Know but don't say" was rejected: models cave when pushed, and a wall
+made of willpower is not a wall. If the numbers were never sent there is nothing to leak, and no prompt
+trick, roleplay or rephrasing can extract them.
+
+⚠️ **This is a CONVERSION move, not a cost move.** The snapshot is ~1,200 tokens. The real cost lever is
+item H (routing), where the 18k app map is ~38% of the entire AI bill. Do not expect savings here.
+
+**✅ THE SPEC'S OLD CAVEAT IS NOW CLOSED.** "Not verified that removing it breaks anything else" -- verified
+2026-07-30. Only TWO things build the snapshot: `components/AssistantChat.tsx` (Otto) and a dev-tools row in
+`app/settings.tsx` that dumps it for inspection. Halo does not use it. Smart Coach does not use it. Nothing
+else consumes it. Removing it for free users breaks nothing anywhere.
+
+#### There are THREE pipes carrying user data to Otto, not one
+1. **The always-on snapshot** (`utils/companionStats.ts`) -- today's nutrition vs goals, 7-day averages,
+   sodium/sugar, last night's sleep, weight, steps, and HealthKit recovery signals.
+2. **Profile + goals** (built in `AssistantChat.loadUserContext`) -- name, calorie target, macro goals,
+   water/step/sleep goals, goal weight, pace, PLUS coaching mode and faith tier.
+3. **Seven on-demand attachments** that only fire when the message looks relevant.
+
+#### FREE OTTO KEEPS
+- **Pipe 2 in full.** Rule: **"Otto knows what you SET. He doesn't know what you DID."** Targets and goals
+  sit on the user's own Profile screen; selling someone their own settings back is petty, and free Otto's
+  main job (app help) is much better when he knows what their target actually is.
+  ⚠️ Coaching mode + faith tier must ALWAYS be sent or he behaves wrong for Mindful / Not Right Now users.
+- **The exercise-name list** (currently bundled inside the PR attachment). It is what stops Otto implying a
+  made-up exercise is real. Not a perk, a guardrail.
+- **Achievements** (#6) -- earned badges AND progress counters.
+- **Journal + prayers** (#7) -- in full.
+- All app knowledge, and all general nutrition / training / sleep guidance.
+
+#### FREE OTTO LOSES
+The snapshot, plus attachments #1-#5: lift PRs, recent workouts, food log history, sleep + recovery, body
+measurements. (Current weight goes with the snapshot; goal weight stays, see the oddity note below.)
+
+#### The seven attachments, decided one at a time
+| # | Attachment | Call | Why |
+|---|---|---|---|
+| 1 | Lift PRs + session history | **CUT** (keep the exercise-name list) | Numbers are the perk; the name list is a guardrail |
+| 2 | Recent workouts, 30 days | **CUT** | Biggest attachment (7,000-char budget), the clearest "your logged behaviour" |
+| 3 | Food log history (+ water) | **CUT** | This is what the paid meal builder (F) runs on. Structural, not just tidy |
+| 4 | Sleep + recovery | **CUT** | Value is uneven: users without Apple Health have almost nothing in this pipe |
+| 5 | Body measurements | **CUT** | Smallest pipe, saves almost nothing, but consistency beats a carve-out |
+| 6 | Achievements | **FREE** | The retention engine, and it points at new (i.e. free) users |
+| 7 | Journal + prayers | **FREE** | Faith is never paywalled |
+
+**Water was considered for a carve-out and CUT.** One exception makes the rule fuzzy for almost no gain,
+and water sits on the Home card anyway.
+
+**#6 is NOT a workaround for the workout wall (verified).** `messageWantsAchievements` requires badge /
+milestone language or a very specific goal-day tally phrasing. "How many days have I worked out" does NOT
+reach it -- that pulls the (cut) workout pipe and walls correctly. The only leak left is the phrasing "how
+many workout goal days do I have", which is narrow enough to ignore.
+➡️ RULE FOR B: Otto STATES a counter, he never INTERPRETS it. "62 workout days, the 100 badge is next" is
+fine. "62 days, you've been really consistent" is a verdict about behaviour he cannot see (62 days could be
+four straight months or two scattered years).
+
+**#7 was NOT split by category.** Keeping the faith categories free and gating Personal/Study/Fitness was
+rejected: same journal, same week, half of it remembered is arbitrary and the user would have to learn a
+rule about their own diary. Note this pipe is ALREADY faith-tier gated for "Not Right Now" users; that gate
+is unrelated to membership and stays.
+
+#### NO DEPTH CAP on free Otto's general answers
+Considered (mirroring the max-2-exercises rule) and rejected. The gap is already enormous without one, the
+model complies unreliably with length limits so it would fire on some answers and not others (reads as
+broken, not tiered), and the saving is a couple hundred output tokens.
+⚠️ Free Otto must NEVER interrogate the user for data he cannot see ("what's been going on lately?"). That
+burns one of their 10 daily messages to collect something he still cannot verify.
+
+#### THE FOUR TRAPS
+**Trap 1 -- THE HALF PICTURE (the important one).** Free Otto knows the target and not the behaviour, and
+the danger is he reasons across the gap. "You're set to 150g, so you're in good shape" treats a target as
+an intake. **A setting is NEVER evidence of behaviour.** Fix is three parts:
+1. **The APP states what it withheld, in every request.** A fact in front of him on every message beats a
+   policy he must remember 30 turns in. Same principle as the app supplying real numbers.
+2. **ONE general principle in his instructions, not a per-subject list.** A list teaches him the list is
+   the whole job. (A rule like this half-exists already: his prompt tells him to say he doesn't have a
+   metric rather than guess when it is absent from the snapshot. This extends it.)
+3. **A test list, written BEFORE the change** (see TESTING below).
+   FALLBACKS if testing fails: narrow the free side further (cut goal weight), or take the wording out of
+   his hands for the failing question shapes -- the crisis pattern, where the model detects and the APP
+   supplies fixed copy.
+
+**Trap 2 -- THE [[stat:key]] PLACEHOLDER. VERIFIED SAFE, no decision needed.** `substituteStats()` in
+AssistantChat.tsx STRIPS unknown keys; raw bracket code can never render. Worst case is a hole in a
+sentence ("Your protein has averaged, a bit under target"). Unknown keys are logged to
+`pj_companion_stat_flags` (last 100).
+➡️ BUILD NOTE: free Otto's instructions OMIT the placeholder rules entirely. Not "don't use it" -- absent.
+A "don't do X" rule keeps X in his head.
+➡️ TESTING WIN: that flags log is the OBJECTIVE measure. Run the test list as a free user, then read the
+log. Empty means he never once reached for a number he didn't have. Beats eyeballing 20 answers.
+⚠️ UNVERIFIED: whether an in-app dev row exists to READ that log. If not, it is a small tool worth building
+before testing.
+
+**Trap 3 -- MINDFUL vs THE FREE WALL. Resolved: NO CARVE-OUT (option A).**
+The confusion here is that plan limits and mode behaviour are **two independent axes**. Mindful never
+withheld someone's own logged number (that is a FACT); it withholds prescriptions and deficit math. A PAID
+Mindful user asking "how many calories did I eat today" gets a straight answer with NO Balanced redirect.
+A FREE Mindful user hits the same wall a free Balanced user hits, for a reason that has nothing to do with
+their mode.
+⚠️ Option B (today's numbers free, history paid) was genuinely defensible -- "he sees what's on your Home
+screen, not your history" is a clean line, not a slope. REJECTED because it forces the placeholder system
+to stay ON for free users, keeping the leak surface and creating a second partial data-honesty variant to
+maintain. Trap 2 gets messier, not simpler.
+❌ Option C (Mindful-only carve-out) rejected on sight: data access varying by coaching style is strange
+and anyone could switch modes to unlock it.
+
+**Trap 4 -- DAY 8 OF THE TASTE.** Separate from open item 2 (do ARTIFACTS survive); this is about Otto
+still KNOWING them. He has no memory between messages, so without help day 8 reads as "Otto broke", not
+"my week ended". The APP knows the taste ended, so the app supplies the flag.
+- **Fires on the first WALL after the step-down, not the first message.** An app-help question on day 8
+  gets answered normally with no mention of anything.
+- **Fires ONCE, ever.** After that, walls get the normal short decline.
+- **NO pre-check on whether they used the data side during their week.** Justin's call: for someone who
+  never noticed, finding out they had the full version reads as intrigue and is a fair sales moment.
+- Copy direction (final wording lands in B):
+  > "Your first week came with the Supporter plan on us, and reading your log was part of that. I'm on the
+  > free version now, but Tuesday's meals are still sitting on your Log tab whenever you want them."
+  Both jump buttons: Log tab + Support the Mission.
+
+**⚠️ TRAP 4b -- THE LAPSED SUPPORTER (found while walking the timeline).** A Supporter who cancels hits the
+identical wall, and the day-8 message would tell a four-month paying customer about a free week from March.
+**Two separate one-time messages, tracked separately**: "taste ended" and "plan ended".
+- Lapsed copy direction: *"Reading your log came with the Supporter plan, and yours has ended. Tuesday's
+  meals are still on your Log tab whenever you need them."* No re-explaining what the plan is (they bought
+  it once), no "we miss you", no pitch.
+- ⚠️ **Fire on ENTITLEMENT actually ending, NOT on the cancel event.** Apple subscriptions run to the end of
+  the paid period, and billing retry / grace periods make someone look cancelled while still entitled.
+  Keying off real entitlement state also means a cancel-then-resubscribe before expiry correctly fires
+  nothing at all.
+- ⚠️ The message can land WEEKS after the lapse (whenever they next hit a wall), so the copy must be
+  timing-neutral. Never "just ended" or "this week".
+
+#### FREE-TIER VOICE (direction; final copy is B)
+- Free Otto keeps his personality. He must never read as broken or thin.
+- **ATTRIBUTION IN EVERY DECLINE.** One factual clause, e.g. "on the free plan". No price, no CTA. A silent
+  limit reads as Otto being weak; a named limit reads as there being a better version. (Same reasoning
+  already locked for the 2-exercise cap.)
+- ⚠️ Warmth must NEVER slide into implying he saw data. "Looked like a solid week" while blind is a
+  fabricated verdict.
+- Declines need a per-mode pass: Discipline flatter, Mindful carries no performance framing.
+- ⚠️ **NEVER write "Supporter" bare.** Always "the Supporter plan" / "Supporter membership" / "Supporter
+  tier". And any message that references the membership carries a Support the Mission jump button.
+- **A wall is any moment Otto can't do something BECAUSE they are free.** Two kinds: DATA walls (the six cut
+  pipes) and CAPABILITY walls (the builders, and the 2-exercise cap). A question needing no personal data
+  is NOT a wall and gets no attribution line -- attribution appears when he can't do something, never as a
+  tagline.
+
+#### CARRIED INTO ITEM 4 (the pitch rules)
+- One real pitch per conversation MAX, fired by EITHER the user asking for more OR their **third wall in
+  that conversation**. Justin was on the fence that "asks for more" alone means most users never hear a
+  pitch at all; the counterweight is that Otto is one of six conversion surfaces, not the closer.
+- **The APP counts the walls and passes a flag** saying a pitch is allowed. Otto has no memory between
+  messages and would guess.
+- ⚠️ Week two is when wall-hits SPIKE, right after the app has already announced the step-down. Consider
+  suppressing the pitch trigger for a window after the step-down or it reads as nagging.
+- Still open there: never pitching existing Supporters, and the exact wording.
+
+#### BUILD NOTES FOR B
+- **Day Detail jump button that opens a specific date.** No such route exists today (Otto's route pills
+  cover Settings sections, Sleep, Achievements, Challenges, Comparison, EvR, Bible, Prayer, Plans, Journal,
+  Mission, Body, PR home and the six tabs). Needed because a vague "what did I do yesterday" attaches
+  training + food + sleep at once, so gating them individually would give a free user THREE STACKED WALLS.
+  Fix is one clean in-character line plus the jump button.
+- **Decouple the exercise-name list from PRs.** `buildPRContextIfRelevant` returns null when the user has no
+  backed PRs, so the name list never ships for a brand-new user or anyone who only does cardio -- exactly
+  the people most likely to ask about an exercise they half-remember. Pre-existing, but our guardrail leans
+  on it.
+- **Free Otto's data-honesty block is its own variant**: no placeholder rules, no personal numbers, point at
+  the app instead.
+- **"Describe, never rank"** applies to BOTH tiers, not just free: Otto explains how a food behaves and never
+  calls it good or bad, and never ranks or judges a body. This is a content rule, not a tiering rule -- a
+  Supporter asking "is white rice bad" carries the same risk. Assembling foods into a meal or a day is an
+  ARTIFACT and stays paid on both tiers until F exists.
+- **Walls COUNT against the 10/day cap.** Considered making them free; rejected because a wall reply is
+  still a real API call, so free walls create an uncapped cost path, and a wall still answers them and hands
+  over the right screen.
+
+#### ACCEPTED LOOPHOLE
+A free user can TYPE their own numbers into the message ("my arms are 15.2, up 0.8 since March") and get
+personalised advice. Not a leak -- the app revealed nothing. Left open, same call as the accepted rephrasing
+loophole. Artifacts stay locked regardless.
+
+#### KNOWN ODDITY, ACCEPTED
+Goal weight stays free (pipe 2) while current weight is cut (snapshot), so Otto knows the destination and
+not the position. Consistent with "knows what you set", and the clearest example of why trap 1's rule
+matters.
+
+#### TESTING (non-negotiable -- Justin is the ONLY tester)
+All 11 TestFlight testers hold the granted yearly `supporter` entitlement, so **not one of them can see the
+free tier**. Justin tests both states himself across two accounts (jtharmke, justin.harmke).
+➡️ The test list is the ONLY verification this will ever get. ~20 questions spanning food, sleep, training,
+weight, measurements, achievements and faith, run on BOTH tiers, written BEFORE the change so it isn't
+shaped to pass. Include the pushy ones: *"roughly where am I at?"*, *"just ballpark it"*, *"you know me,
+guess."* Those are where it breaks if it breaks. Then read `pj_companion_stat_flags`.
 
 ### 2. Artifacts created during the 7-day taste -- NEEDS WALKING THROUGH
 Someone builds three workouts and a meal plan during their week. Day 8 arrives. Does that workout stay

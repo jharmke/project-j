@@ -1319,8 +1319,12 @@ are separate pre-submission checklists, NOT part of this menu.
   discussed and fully alligned before we fucking do it."* That applies to all of it, not just the routing.
 
   **A. RESOLVE THE 6 OPEN OTTO ITEMS** (conversations, not code -- they block everything downstream).
-     Full detail in SPEC_otto.md -> OPEN ITEMS. Summary:
-     1. Don't send the data snapshot to free users (agreed in principle, UNVERIFIED it breaks nothing)
+     **1 of 6 DONE (2026-07-30).** Full detail in SPEC_otto.md -> OPEN ITEMS. Summary:
+     1. ✅ RESOLVED 2026-07-30 -- **HARD GATE LOCKED.** Free users are never sent the snapshot or the 5
+        gated attachments (PRs, workouts, food history, sleep, body measurements). Profile/goals, the
+        exercise-name list, achievements and journal/prayers STAY FREE. Verified nothing else consumes the
+        snapshot. Full write-up (7 attachments, 4 traps + the lapsed-Supporter one, free-tier voice, build
+        notes for B, solo-tester test plan) is in SPEC_otto.md.
      2. Do artifacts built during the 7-day taste survive day 8? (Justin asked to be walked through this;
         it is still owed him, and SPEC_monetization's step-down copy already PROMISES they survive)
      3. Exercise library: expand the pool, Otto pulls from it, can create on the fly if asked (his

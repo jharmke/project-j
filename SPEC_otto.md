@@ -1,7 +1,9 @@
 # SPEC: Otto (the general companion) -- free vs Supporter
 
 Status: **DIRECTION LOCKED 2026-07-29, NOTHING BUILT.** Otto today is fully free with no tiering.
-Last updated 2026-07-30 (OPEN ITEM 1 resolved: the hard gate is LOCKED -- see OPEN ITEMS).
+Last updated 2026-07-30. TWO things resolved that day: **OPEN ITEM 1** (the hard gate is LOCKED, see OPEN
+ITEMS) and **THE UNDEREATING SAFEGUARD** (was the open decision at the top of this spec; app-side detection,
+Otto is the only voice, he never speaks first).
 
 ⚠️ THIS IS THE FIRST SPEC OTTO HAS EVER HAD. `SPEC_otto_notifications.md` is the notification HUB,
 not the companion. Halo has had `SPEC_faith_ai.md` since June; Otto, the bigger feature, had nothing.
@@ -148,32 +150,170 @@ If they keep pushing: state the path once more, plainly, move on. No escalation,
 
 ---
 
-## THE UNDEREATING SAFEGUARD (⚠️ OPEN DECISION -- NOT agreed, NOT scrapped)
+## THE UNDEREATING SAFEGUARD -- ✅ RESOLVED 2026-07-30 (was the open decision at the top of this spec)
 
-⚠️ READ THIS FIRST. An earlier draft of this section presented this as decided. It is not. Justin's
-reaction, fairly: *"wtf is this undereating safeguard? We have the guards up when making the calorie goal
-and then the logic will be added to Otto right? Are we making a new feature or something?"*
+**THE ANSWER: BOTH, split by job.** The DETECTION is app-side, deterministic, no model involved. The VOICE
+is Otto and Otto only -- there is no card, no notification, no other surface. **He never speaks first.**
 
-**THE DECISION TO MAKE:** is this a separate trigger, or does Otto just know the calorie-floor thresholds?
+⚠️ It is NOT "just Otto knowing the thresholds". Since OPEN ITEM 1, free Otto cannot see a single day of
+food, so a knowledge-only version would protect paying users and nobody else. Unacceptable for a safety
+feature. The app detects and hands Otto **ONE LINE** (a flag: this user's logged intake has been under the
+line on 4+ of the last 7 qualifying days, plus the two numbers the copy needs). That is a flag, not their
+food history -- it does NOT reopen the gated pipes, and it works identically on both tiers.
 
-**THE CASE FOR IT BEING SEPARATE (the gap):** `SPEC_calorie_floor.md` fires on the RECOMMENDED TARGET. It
-never fires if the target is healthy. Someone with a perfectly normal 1,800 target who logs 900 a day for
-a week trips nothing at all -- the app watches it happen and says nothing.
+### THE GAP (why this exists at all)
+`SPEC_calorie_floor.md` guards the target the app RECOMMENDS. Someone whose target comes out at a perfectly
+healthy 1,800 and who then logs 900, 850, 1,000, 900, 780 across a week trips **nothing**. The app watches
+the entire week happen and says nothing. That hole is the whole reason for this.
 
-**THE CASE AGAINST:** it is arguably one condition check and a message, not a feature, and Otto knowing the
-thresholds may cover enough of it.
+### ⚠️ THE TWO WOMEN PROBLEM (the thing that nearly sinks it -- Justin raised this, it is the core risk)
+- **Woman A** logs everything and genuinely eats 900 a day.
+- **Woman B** logs breakfast and lunch, cooks dinner, eats it, never reopens the app. She eats 2,200 and is
+  completely fine.
 
-**IF BUILT, the proposal is deliberately small:** same thresholds as the floor spec, different trigger --
-net intake under the MODAL line (1,000 women / 1,200 men) on 4+ of the last 7 logged days. Fires a message,
-never blocks. The app already computes net calories and 7-day averages, so there is no new machinery.
+**In the totals they are the SAME PERSON.** Any rule that looks only at calories per day warns them both,
+and warning Woman B is worse than saying nothing -- she gets an eating-disorder message for being bad at
+homework.
 
-Everything below applies IF this is built. Thresholds and philosophy are inherited either way.
+**FOUR SIGNALS ALREADY IN THE DATA that separate them** (verified: every food entry stores its `meal` slot
+and usually a `timestamp`):
+1. **Meal coverage -- the big one.** Woman B has ZERO dinner entries 6 days out of 7. Woman A still logs
+   something at night, because the reason she is logging at all is that she cares about the number. A blank
+   dinner slot every single day is a LOGGING pattern, not an EATING pattern.
+2. **Time of the last entry.** Woman B's day stops at 1pm like a switch. Woman A's entries run into the evening.
+3. **Weight -- the one that cannot be argued with.** 900 against an 1,800 target is a huge deficit and drops
+   roughly 1.5-2 lb/week. A flat scale across 3-4 weeks means the log is wrong. Physics settles it. Use as
+   CONFIRMATION, not as a trigger: not everyone logs weight and it is noisy week to week.
+4. **Logging density.** Two entries a day vs five.
 
-⚠️ SEPARATE FROM, BUT MUST MATCH, `SPEC_calorie_floor.md`.
+**BUT THE REAL ANSWER IS SIMPLER: THE APP NEVER ASSERTS THAT ANYONE IS UNDEREATING.** It cannot know that.
+It knows what the log says. So the message is a QUESTION, not a warning. The four signals decide whether to
+speak at all and which way the follow-up leans -- they are not needed to make the question safe.
 
+### TRIGGER (decided)
+- Fires on the **MODAL line** from `utils/calorieFloor.ts` (read from code 2026-07-30, matches the spec):
+  **male whisper 1500 / modal 1200 · female whisper 1200 / modal 1000.** Sex unset -> female (stricter).
+- **4+ of the last 7 QUALIFYING days.**
+- ⚠️ **GROSS intake, NOT net.** The original proposal said net (food minus exercise) and that is WRONG:
+  someone eating 2,500 and burning 1,200 has a net of 1,300 and would trip the female whisper line while
+  eating plenty. Heavy exercisers would be flagged constantly.
+- **A day does NOT qualify if:** it has NO food logged at all (⚠️ biggest false-positive source by far --
+  counting an empty day as zero would flag every user who forgets to log for four days), it is marked
+  EXCLUDED from averaging, or Vacation Mode covers it. The app already has those mechanisms; reuse them.
+- **MINIMUM HISTORY:** at least 5 to 7 fully logged days in the window before the check may fire at all, so
+  a user three days into the app never trips it.
+- **NO INTERMITTENT-FASTING EXEMPTION.** Considered and rejected. 16:8 users eat normal totals inside their
+  window and never trip it anyway; the ones who would trip it are doing genuinely long fasts, and asking
+  that person once is fair. Exempting on a settings toggle would silently switch the safeguard off for a
+  group who may need it. The conversation handles it (see branch 4).
+
+### HOW IT SURFACES (decided -- Justin was firm: Otto never says anything unprompted)
+**He does NOT speak first.** The flag sits there quietly and he raises it only when the conversation has
+ALREADY gone near food, energy or the scale.
+- ✅ SURFACES: "how am I doing on calories this week", "why am I so tired lately" (undereating is a real
+  answer to that question, so raising it is not a swerve), "why isn't the scale moving", "what should I eat
+  tonight".
+- ❌ DOES NOT SURFACE: "how do I change my step goal", "how's my bench trending", or literally anything
+  else. Ask him about the Bible reader and he says nothing about her food, ever.
+- ⚠️ ACCEPTED CONSEQUENCE, stated once and settled: **somebody who never talks to Otto never hears
+  anything.** That is the price of him never speaking unprompted, and Justin took that trade knowingly.
+- 👍 This also removes a build: Otto has NO way to speak first today, and now he does not need one.
+
+### THE WORDING (decided: fixed core, improvised lead-in)
+Improvising the whole thing produces the normal range of model output, and on this subject one in ten being
+wrong is too many. Real examples of what improvisation gives you: *"you should probably eat more"* (a
+prescription, which Mindful bans outright), *"that's really low, are you okay?"* (alarm), *"you're probably
+fine"* (false reassurance, which this spec explicitly forbids).
+
+**THE FIXED SENTENCE (app-supplied, word for word, numbers already filled in by the app):**
+> "Your log's been coming in around [N] a day this past week. Is that close to what you're actually eating,
+> or are some meals not making it in?"
+
+Otto writes the LEAD-IN so it fits whatever they asked; the moment he is on the subject, the words are the
+app's. He may not shorten, soften or add to the fixed half. Examples of the lead-in doing its job:
+- "Before I get into that, one thing. *[fixed sentence]*"
+- "There's a version of this where the answer isn't what you'd expect, so let me ask first. *[fixed]*"
+- "Could be a few things, and one of them's worth ruling out first. *[fixed]*"
+
+✅ **NO MODE VARIANTS NEEDED.** The fixed sentence deliberately mentions no target and no comparison, so it
+reads identically in Discipline, Balanced and Mindful. One sentence, three modes.
+
+⚠️ **HOW THE NUMBERS GET IN, and this matters:** free Otto has no snapshot and no `[[stat:key]]` system, so
+he cannot put a real number in a sentence. The APP renders the numbers into the copy before Otto ever sees
+it. He receives a finished sentence and repeats it. Nothing about the OPEN ITEM 1 wall changes and no
+tokens come back for free users.
+
+### THE EIGHT BRANCHES (what actually comes back)
+**FIXED COPY (app-supplied) -- only these two, because they carry medical-adjacent content:**
+1. **"No, that's real."**
+   > "Thanks for telling me. For context, your body runs through around [BMR] a day just keeping the lights
+   > on, before you move at all. Eating under that for a stretch usually means coming up short on nutrients,
+   > not only calories. Nothing to fix this second, it's just worth knowing."
+   Then it STOPS. It does not ask why. It does not tell her to eat more. It does not circle back tomorrow.
+5. **"Is that bad? Should I be worried?"** (the most dangerous branch -- she is asking for a VERDICT)
+   > "Honestly, that's not mine to call. What I can tell you is the plain number. Your body runs through
+   > about [BMR] a day before you move at all, and your log's been closer to [N]. A stretch like that
+   > usually means falling short on nutrients as much as calories. If that's accurate and it keeps going,
+   > it's worth a conversation with a doctor or a dietitian."
+   ⚠️ Cannot diagnose her, and cannot falsely reassure her either -- "no, you're fine!" is as much a verdict
+   as "yes, too much."
+
+**RULES, NOT SCRIPTS (a scripted "got it, thanks for telling me" would sound worse than something he writes):**
+2. **"I don't log dinner."** Back off. ONE line, framed as what SHE loses, never as what the app wants:
+   missing meals drag her averages, Day Score, weekly/monthly summaries and EvR report down with them, so
+   the app ends up telling her a story about a week she did not have. Direction: *"Good to know. Worth
+   mentioning that missing dinners will drag your averages and your Day Score down with them, so the app
+   ends up telling you a story about a week you didn't actually have. No pressure either way."* No follow-up,
+   no reminder to log tonight, no asking again tomorrow.
+3. **"I'm cutting on purpose."** She is an informed adult and `SPEC_calorie_floor.md` explicitly respects
+   that ("warn + consent, NEVER hard-block"). State the floor fact ONCE, no argument, no talking her out of
+   it, done.
+4. **"I've been sick / traveling / fasting."** Back off completely. No cleverness, no follow-up.
+   ⚠️ A FASTING answer buys a MUCH longer quiet period than the others -- her answer is not going to change
+   next month.
+6. **"Why do you care?"** Drop it instantly. Do not defend the question, do not explain why he asked.
+7. **She ignores it and asks her original question.** Answer her question. Never mention it again.
+8. **Anything that trips CRISIS SCREENING.** The existing crisis path takes over completely and this whole
+   thing stops. ⚠️ Note explicitly: the safeguard NEVER escalates on its own. Someone saying "yes that's
+   real" is not a crisis, it is an adult describing her week. Only her own words may trigger the crisis path.
+
+### COOLDOWN (decided)
+- **Spent when SHOWN, not when answered.** She sees it once, the cooldown starts either way, and he never
+  repeats it in that conversation or the next.
+- **Re-arms once the cooldown expires IF the pattern is still there.** Ignoring it is not an answer, so it
+  should not buy permanent silence -- but it is not permission to nag either.
+- A safeguard that asks again next Tuesday is nagging, and nagging is how someone starts hiding their
+  logging from the app.
+
+### DISCLAIMER -- ✅ ALREADY SATISFIED, no work needed (checked 2026-07-30)
+Otto's chat already carries a permanent inline disclaimer under every message: *"Otto is AI and can make
+mistakes. Not a substitute for a doctor or professional."* The build standard's inline requirement is met,
+and a first-use MODAL is not appropriate in a chat. Do not add one.
+
+### ⚠️ STILL TO DECIDE: WHERE THIS LIVES IN THE PLAN
+The detection is app-side code, so this is no longer purely an Otto item. It is NOT part of G (that guards
+the recommended TARGET; this guards actual INTAKE), though it inherits G's thresholds and philosophy.
+It needs a home: either folded into B or given its own letter. Not decided.
+
+### DOC SYNC (standing rule, do not batch)
+This is exactly the kind of quiet feature that gets missed. When it ships, `tooltipRegistry.ts`,
+`data/tutorials.ts` and Otto's knowledge base (`functions/src/assistantAppKnowledge.ts`, redeployed) all
+need to know about it in the SAME session.
+
+⚠️ STILL OPEN, inherited from the original draft: the exact threshold and wording deserve a dietitian's
+eyes. This is an App Store consideration as well as an ethical one -- Apple's guidelines have provisions
+about apps that could encourage disordered eating, and a calorie tracker with an AI coach sits squarely in
+that territory.
+
+### RELATIONSHIP TO `SPEC_calorie_floor.md` (separate feature, shared numbers)
 That spec (DESIGN LOCKED 2026-07-08) guards the **target the app RECOMMENDS** -- it fires when the
 calculation would suggest e.g. 915 kcal to a small woman on an aggressive pace. It does NOT cover what
-someone actually EATS. Otto's case is that gap: logging ~900/day for a week regardless of target.
+someone actually EATS. This safeguard is that gap: logging ~900/day for a week regardless of target.
+
+⚠️ **G IS MOSTLY BUILT** (discovered 2026-07-30): `utils/calorieFloor.ts` + tests + `CalorieFloorModal.tsx`
+exist and the Profile tab is wired. Only ONBOARDING is missing, and it currently SILENTLY CLAMPS at 1,200
+instead. See THE PLAN item G in the roadmap. The thresholds below were read from that working code, not
+from a spec.
 
 **Reuse its thresholds. Do not invent new ones.** Consistency matters more than precision:
 - MEN: whisper below 1500 · modal below 1200
@@ -182,6 +322,7 @@ someone actually EATS. Otto's case is that gap: logging ~900/day for a week rega
 
 Independently corroborated 2026-07-29: these are the NIH figures, and MyFitnessPal enforces 1200/1500 as
 a goal floor and warns at 1000/1200 NET. See sources at the bottom.
+⚠️ We deliberately do NOT copy MFP's use of NET here -- see the TRIGGER section above for why.
 
 **Inherit its philosophy too, which also settles the "is Otto too soft" argument:**
 > "warn + consent, NEVER hard-block. The real number always shows. An informed adult who deliberately
@@ -192,35 +333,17 @@ never withhold, never lecture.
 ### Two different things, do not conflate them (this caused real confusion in session)
 1. **Someone ASKS "am I eating enough?"** -> a normal question. Answer it plainly with their real
    numbers, no eggshells, no swerve, in any mode. Usually the most genuine "I want to do better"
-   question there is.
-2. **A sustained PATTERN nobody asked about** -> the rare case warranting care.
+   question there is. ⚠️ Note this is a SUPPORTER answer now -- a free user asking it hits the OPEN ITEM 1
+   wall and gets pointed at the Stats tab.
+2. **A sustained PATTERN nobody asked about** -> the rare case warranting care, and the subject of
+   everything above.
 
 Only #2 needs the careful treatment. Making Otto precious about #1 is the failure mode.
 
-### Trigger (proposed, NOT locked)
-Fire on a PATTERN, not a single day: net intake under the modal line on 4+ of the last 7 logged days.
-One low day is nothing (sick, busy, fasting). MyFitnessPal fires per-day on completing an entry, which
-is noisy; a trend trigger fits how this app already thinks and matches the Smart Coach engine.
-Uses net calories (food minus exercise), which the app already computes.
-
-### Who says it (RECOMMENDED: fixed copy, not improvised)
-This is the single most sensitive message in the app. Otto has already confabulated a wrong tab position
-and a wrong iOS settings path -- harmless there, not here.
-Use the same pattern as the crisis path: the model detects the situation, the APP supplies fixed wording.
-Live numbers come from the existing `[[stat:key]]` token system, so hardcoded copy never goes stale.
-
-Draft framing (nourishment, not weight; facts, not diagnosis):
-> "Your body needs roughly [[stat:bmr]] a day just to run its basic functions. You've been logging closer
-> to [[stat:calories_7d_avg]] over the past week. Eating under that for a stretch usually means falling
-> short on the nutrients your body's working with, not just the calories."
-
-⚠️ STILL OPEN: the exact threshold and wording deserve a dietitian's eyes. This is also an App Store
-consideration, not only an ethical one -- Apple's guidelines have provisions about apps that could
-encourage disordered eating, and a calorie tracker with an AI coach sits squarely in that territory.
-
 ⚠️ WORTH SITTING WITH: Mindful is exactly the mode someone with a difficult relationship to food would
 choose. The users most likely to need Otto to say something are the ones whose mode tells him not to.
-That is why the safeguard overrides the mode, the same way crisis detection does.
+That is why the safeguard overrides the mode, the same way crisis detection does. (In practice the fixed
+sentence needs no mode variant at all, because it mentions no target and no comparison.)
 
 ---
 

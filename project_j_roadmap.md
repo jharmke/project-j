@@ -1333,8 +1333,15 @@ are separate pre-submission checklists, NOT part of this menu.
      5. Meal-builder food matching (the unsolved part)
      6. Two backlog items that may be cheaper as Otto capabilities: "calorie periodization" and
         "protein timing badge"
-     PLUS the open decision at the top of SPEC_otto.md: is the undereating safeguard its own trigger, or
-     just Otto knowing the calorie-floor thresholds?
+     PLUS ✅ RESOLVED 2026-07-30 -- the undereating safeguard: **BOTH, split by job.** Detection is
+     APP-SIDE (deterministic, works on both tiers, hands Otto a one-line flag rather than reopening the
+     data pipes). Otto is the ONLY voice -- no card, no notification -- and **he never speaks first**; he
+     raises it only when the conversation already went near food, energy or the scale. Fires on GROSS
+     intake (not net) under the modal line on 4+ of 7 QUALIFYING days (empty / excluded / vacation days do
+     not qualify; minimum 5-7 logged days of history). Never asserts undereating, asks a question. Fixed
+     app-supplied sentence + improvised lead-in. Full detail in SPEC_otto.md.
+     ⚠️ Still needs a HOME in this plan (it is app-side code now, and it is NOT part of G): fold into B or
+     give it its own letter.
 
   **B. OTTO FREE/PAID SPLIT** -- direction locked in SPEC_otto.md, prompt/KB work, small once A is done.
   **C. NON-AI WALLS / PAYWALLS / LIMITS** -- ✅ ALREADY DESIGN-LOCKED with real numbers (2026-07-28), see
@@ -1346,7 +1353,20 @@ are separate pre-submission checklists, NOT part of this menu.
      only acceptable *because* users get the taste first. B should not ship without it.
   **E. WORKOUT BUILDER** -- needs a full spec + visualisation before any build.
   **F. MEAL BUILDER** -- needs a full spec + visualisation. The riskiest item; food matching is unsolved.
-  **G. CALORIE FLOOR** -- SPEC_calorie_floor.md, DESIGN LOCKED since 2026-07-08, still not built.
+  **G. CALORIE FLOOR** -- SPEC_calorie_floor.md, DESIGN LOCKED since 2026-07-08. ⚠️ **"NOT BUILT" WAS
+     WRONG (corrected 2026-07-30).** Already built AND wired: `utils/calorieFloor.ts` (+ a test file),
+     `components/CalorieFloorModal.tsx`, and the Profile tab fires the modal when a target change drops
+     below the line. Do NOT rebuild any of that.
+     ➡️ **THE ONE THING LEFT: ONBOARDING.** `app/onboarding/your-style.tsx` never runs the floor check. It
+     SILENTLY CLAMPS instead -- `setSuggestedCals(Math.max(1200, ...))` -- so a new user whose math lands at
+     915 is quietly shown 1,200 and never told. That is the exact behaviour the spec rejects ("warn +
+     consent, NEVER hard-block, the real number always shows") and it breaks honest-numbers too, since the
+     displayed target is not what the calculation produced. Fix = replace the clamp with the real check so
+     the true number shows and the modal fires, same as Profile already does. Wiring + a deletion, no new
+     design.
+     ⚠️ Also note the clamp is a flat 1,200 for everyone, which does not match the spec's thresholds at all
+     (men whisper 1500 / modal 1200; women whisper 1200 / modal 1000), so a man can currently be handed
+     1,200 with no warning of any kind.
   **H. COST ROUTING** -- ⚠️ NEEDS ITS OWN SPEC AND FULL ALIGNMENT BEFORE ANY CODE. Design sketch and the
      two make-or-break rules are in SPEC_otto.md -> COST OPTIMISATION. Send Otto only the knowledge a
      question needs instead of all 18k tokens. Otto ~$0.21 -> ~$0.08/user/month; break-even conversion

@@ -630,10 +630,102 @@ weight, measurements, achievements and faith, run on BOTH tiers, written BEFORE 
 shaped to pass. Include the pushy ones: *"roughly where am I at?"*, *"just ballpark it"*, *"you know me,
 guess."* Those are where it breaks if it breaks. Then read `pj_companion_stat_flags`.
 
-### 2. Artifacts created during the 7-day taste -- NEEDS WALKING THROUGH
-Someone builds three workouts and a meal plan during their week. Day 8 arrives. Does that workout stay
-in their Workout tab? It has to -- taking it away is worse than never giving it. But it means the taste
-leaves permanent value behind, which is either a feature or a leak depending how you see it. UNRESOLVED.
+### 2. ✅ RESOLVED 2026-07-30 -- artifacts SURVIVE a downgrade, permanently. But the CAPS need splitting.
+
+**THE DECISION: anything Otto built is theirs permanently.** A downgrade never removes it, hides it, or
+locks it. This covers BOTH ways someone lands on free: the 7-day taste ending, and a paying Supporter
+cancelling months later. Same rule.
+
+**WHAT AN ARTIFACT IS:** a thing Otto MADE that persists in storage after the conversation ends -- a workout
+in the Workout tab (a day's program, or saved into the weekly template), meals in the log or the saved-meals
+catalog, and possibly a custom exercise (see open item 3). **What it is NOT:** anything he merely SAYS.
+Advice, explanations, a couple of exercise suggestions. Those vanish with the conversation, which is exactly
+the line THE CORE PRINCIPLE already draws.
+
+**WHY IT ISN'T REALLY A DEBATE:** the betrayal rule (adding capability later is fine, taking it away is
+not), SPEC_monetization's step-down copy already PROMISES it in writing, the DATA INTEGRITY rule, and above
+all it would be incoherent. Otto builds her a push day Wednesday. Thursday she performs it and logs every
+set, and her top bench set becomes a PR. To claw that artifact back on day 8 you would delete a workout she
+already did, orphaning the sets logged against it and possibly the PR that came out of it. Nobody would
+design that.
+
+⚠️ **SURVIVING IS NOT THE SAME AS BEING ABLE TO MAKE MORE.** On day 8 she keeps everything and Otto stops
+building. That part is clean. What is NOT clean is what happens when things built during her week exceed
+the free CREATION caps (item C), and that needed splitting into two categories.
+
+#### THE SPLIT (this is the actual output of this item)
+**CONTENT she logs with -> GRANDFATHERED.** Recipes (5), saved meals (5), custom foods (20). She keeps ALL
+of it, over cap or not. Everything stays usable, editable and deletable. The ONLY thing blocked is creating
+NEW ones until she is back under the cap. This is just item C's own rule ("LIMIT creation, never access").
+
+**LAYOUT limits -> REVERT to the free cap.** Meal slots (8 -> 4) and stats cards (4 -> 1). The extras go
+DORMANT, top of the user's own order down to the cap; the rest are stored but not displayed, and come back
+exactly as they were if she subscribes again.
+
+⚠️ These two were briefly handled inconsistently (slots reverting, stats cards grandfathered) on a reason
+that did not hold -- she configured the stats cards just as deliberately as the slots. Justin caught it.
+The line is **content vs screen layout**, not "made vs given".
+
+#### PER-CAP WALKTHROUGH
+- **Recipes (5).** Otto builds 6 during her week -> she keeps 6, all usable. Add Recipe tells her she is at
+  6 of 5 and must delete first. ⚠️ Mechanical quirk, accepted: "cannot add while AT or OVER the cap" means at
+  a cap of 5 she must get to 4 to add a new one. Feels odd the first time, standard cap behaviour.
+- **Custom foods (20).** Mostly theoretical. VERIFIED: only Add Food, Food Detail, Settings and
+  CustomFoodCreator write `pj_my_foods`. The AI meal estimator does NOT -- it pushes straight into the day's
+  `entries` with the nutrition baked in (app/ai-meal-estimator.tsx). It also has its own separate cap and is
+  not part of this one.
+  ➡️ **RULE: Otto only ever creates a saved custom food on an EXPLICIT request.** Never on his own, never as
+  a side effect of building a meal. He follows the estimator's precedent: log the entry, do not mint a food.
+  ⚠️ A logged food ENTRY is never capped and never may be -- capping logging is capping her own data.
+- **Saved meals (5) -- NEW CAP, added 2026-07-30.** `pj_saved_meals` (utils/savedMeals.ts + RepeatMealModal)
+  is a shipped feature that was MISSING from item C's cap list entirely. **This is where Otto's meal builder
+  (F) writes**, and those count against the cap. (A worry that a cap of 5 hides the catalog search box was
+  checked and dropped: search/sort tools appear at 6+, but every saved meal always shows from the first one.)
+- **Stats cards (1).** Reverts. Top card in her order survives, the rest go dormant.
+- **Meal slots (4 vs 8).** Reverts. Top 4 in her order survive, the rest go dormant. See below -- this one
+  was verified in code.
+
+#### MEAL SLOTS -- VERIFIED IN CODE, and the app ALREADY does this
+- Entries store a slot **ID**, not a name. `getMealDisplayName()` resolves in three steps: current slots ->
+  `slotNameCache` -> the raw value. **The cache is built to never shrink.** So removing a slot from the
+  active list does NOT break history: June 20 still renders "Pre Workout" on its entries, correctly named.
+  Summaries, Day Detail and Custom Reports all resolve the same way and need NO changes.
+- **The behaviour is already shipped for manual deletion.** `deleteMealSlot` in log.tsx warns, word for word:
+  *"This slot has entries logged today. They won't be erased from your history, but they won't appear in
+  your log going forward."* A downgrade uses the same path.
+- ⚠️ **DEACTIVATE, DO NOT DELETE.** Keep the slot definitions stored and mark them inactive, so they return
+  intact on resubscribe instead of her rebuilding them.
+- **NOTHING EVER MOVES.** Do not migrate old entries into a surviving slot: rewriting June 20's "Pre Workout"
+  entries into "Dinner" falsifies history that was true when she logged it, and would silently change her
+  past day summaries. The name cache already displays them correctly.
+- **Surface count (verified):** 9 files touch the slot system. FIVE let you PICK a slot and must use the
+  ACTIVE list (Log tab, Add Food, AI Meal Estimator, Recipe Log, Food Detail). THREE only DISPLAY a name and
+  need nothing (Day Detail, Custom Reports/report.tsx, utils/companionFood.ts).
+- **Slot management lives entirely in the LOG TAB, not Settings** -- 4 write points in log.tsx (add, delete,
+  rename, drag-reorder). That is where the cap is enforced and where the toast fires.
+
+#### TIMING -- how a downgrade lands (solves the "food vanished off my screen" problem)
+- **CAPABILITIES drop immediately** when the entitlement ends: Otto's data access, building things, message
+  caps. Nothing on screen changes, so there is no reason to delay them.
+- **LAYOUT CHANGES wait for the next LOCAL DAY BOUNDARY**: slots, stats cards, anything visual. So she can
+  lose Otto's data access at 2pm Tuesday and her Log tab stays exactly as it is until Wednesday morning.
+- **Why this rule and not "the taste ends at midnight":** the taste is a 7-day RevenueCat PROMOTIONAL
+  ENTITLEMENT granted at onboarding completion, so expiry is a TIMESTAMP, not midnight. And for a cancelled
+  Supporter, Apple owns the expiry moment entirely -- you do not control it. The day-boundary rule handles
+  both cases without needing to control either.
+- ✅ Side effect: at a day boundary the new day has NO entries yet, so there is never anything stranded and
+  no migration to build.
+- ⚠️ **CHECK AT BUILD TIME:** whether the RevenueCat promo grant can be given a custom end date so it lands
+  on local midnight anyway. Nice to have, NOT required -- the day-boundary rule already covers it.
+- ⚠️ Accepted edge, deliberately not built for: food logged to a FUTURE date in a slot that goes dormant
+  before she gets there. It stays in her history and totals; the row just is not shown. Justin: "who does
+  that lol."
+
+#### STILL OPEN FROM THIS ITEM
+- **The exercise library cap (15)** was deliberately HELD for open item 3, because it cannot be answered
+  before deciding whether Otto creates exercises at all, how often, and whether they are permanent or
+  one-off.
+- Item C's cap MESSAGING is undesigned (Justin leans a toast). Recorded in the roadmap under item C.
 
 ### 3. Exercise library / on-the-fly creation -- JUSTIN'S PROPOSAL, NEEDS REFINING
 Expand the exercise library, have Otto build routines by pulling from that pool. But if a user asks for

@@ -1319,14 +1319,20 @@ are separate pre-submission checklists, NOT part of this menu.
   discussed and fully alligned before we fucking do it."* That applies to all of it, not just the routing.
 
   **A. RESOLVE THE 6 OPEN OTTO ITEMS** (conversations, not code -- they block everything downstream).
-     **1 of 6 DONE (2026-07-30).** Full detail in SPEC_otto.md -> OPEN ITEMS. Summary:
+     **PROGRESS: 2 of the 6 done (questions 1 and 2), PLUS the safeguard decision. All on 2026-07-30.**
+     Full detail in SPEC_otto.md -> OPEN ITEMS. Summary:
      1. ✅ RESOLVED 2026-07-30 -- **HARD GATE LOCKED.** Free users are never sent the snapshot or the 5
         gated attachments (PRs, workouts, food history, sleep, body measurements). Profile/goals, the
         exercise-name list, achievements and journal/prayers STAY FREE. Verified nothing else consumes the
         snapshot. Full write-up (7 attachments, 4 traps + the lapsed-Supporter one, free-tier voice, build
         notes for B, solo-tester test plan) is in SPEC_otto.md.
-     2. Do artifacts built during the 7-day taste survive day 8? (Justin asked to be walked through this;
-        it is still owed him, and SPEC_monetization's step-down copy already PROMISES they survive)
+     2. ✅ RESOLVED 2026-07-30 -- **artifacts SURVIVE permanently**, on both downgrade paths (taste ending
+        AND a Supporter cancelling). Nothing Otto built is ever removed, hidden or locked. The real output
+        was splitting the caps: CONTENT (recipes / saved meals / custom foods) is grandfathered over-cap;
+        LAYOUT (meal slots, stats cards) reverts to the free cap with the extras dormant. Meal-slot history
+        was verified safe in code (entries store a slot ID; `slotNameCache` never shrinks; the app already
+        ships this exact behaviour on manual slot deletion). Full detail in SPEC_otto.md.
+        ⚠️ The exercise-library cap was deliberately held for question 3.
      3. Exercise library: expand the pool, Otto pulls from it, can create on the fly if asked (his
         proposal, never refined)
      4. Otto must not pitch to existing Supporters, and at most once per conversation to anyone else
@@ -1346,9 +1352,36 @@ are separate pre-submission checklists, NOT part of this menu.
   **B. OTTO FREE/PAID SPLIT** -- direction locked in SPEC_otto.md, prompt/KB work, small once A is done.
   **C. NON-AI WALLS / PAYWALLS / LIMITS** -- ✅ ALREADY DESIGN-LOCKED with real numbers (2026-07-28), see
      SPEC_monetization.md -> NON-AI SUPPORTER PERKS. Custom foods 20, recipes 5, exercise library 15, stats
-     cards 1, meal slots 4 (vs 8), macro + nutrition goals presets-only, no data export. Organising rule:
-     **LIMIT, don't paywall** -- cap CREATION, never access to data someone already logged. READY TO BUILD,
-     no design needed. (An earlier version of this plan wrongly said it was unspecced.)
+     cards 1, meal slots 4 (vs 8), macro + nutrition goals presets-only, no data export.
+     ➡️ **NEW 2026-07-30: SAVED MEALS, cap 5 free.** `pj_saved_meals` (utils/savedMeals.ts + the Repeat Meal
+     modal) is a real shipped feature that was MISSING from this cap list entirely. Justin's call: 5, same
+     over-cap logic as recipes. (A worry that 5 hides the catalog search box was checked and dropped: the
+     search/sort tools appear at 6+ but every saved meal always shows from the first one, so a free user
+     sees all their meals and just never gets a search box they would not need.)
+     ⚠️ This is also where Otto's meal builder (F) writes: a meal he builds lands in the saved meals catalog
+     and counts against the cap. Otto only ever creates a saved CUSTOM FOOD on an explicit request -- never
+     as a side effect of building a meal (the AI estimator already sets this precedent: it writes a one-off
+     day entry with the nutrition baked in and never mints a saved food).
+     Organising rule:
+     **LIMIT, don't paywall** -- cap CREATION, never access to data someone already logged.
+     ⚠️ **"NO DESIGN NEEDED" IS NOT QUITE TRUE (added 2026-07-30).** The NUMBERS are locked; the MESSAGING
+     is not, and nothing is built -- there are no caps, counters or gates anywhere in the app today.
+     Undecided: does a user see a running count as they approach a cap, or only find out when they hit it?
+     Toast, inline line, or a disabled button? Same pattern everywhere, or per feature?
+     ➡️ **Justin leans a TOAST** (2026-07-30): easy, and universal across all five caps.
+     ⚠️ Two things to square with that when C is picked up: a toast only fires AFTER the tap, so it warns
+     nobody in advance; and the build standard's dim/inactive button rule suggests the Add button should
+     already be disabled at the cap, with the toast explaining WHY on tap. The only existing precedent in
+     the app is the AI chats' "5 messages left today" counter (QUOTA_VISIBLE_AT = 5).
+     ➡️ **DOWNGRADE RULE, decided 2026-07-30 with item A question 2. TWO CATEGORIES, do not treat them the
+     same (they briefly were, and it was wrong):**
+     • **CONTENT they log with (recipes, saved meals, custom foods) = GRANDFATHERED.** Someone who ends the
+       free week or cancels while holding MORE than the free cap KEEPS ALL OF IT, usable. Only NEW creation
+       is blocked until they are back under.
+     • **LAYOUT limits (meal slots 8->4, stats cards 4->1) = REVERT to the free cap.** Extras go DORMANT,
+       top of the user's own order survives. Nothing is deleted; everything returns on resubscribe.
+     • **TIMING:** capabilities drop the instant the entitlement ends; LAYOUT changes wait for the next local
+       day boundary, so nothing ever vanishes off a screen mid-day. See SPEC_otto.md + SPEC_monetization.md.
   **D. 7-DAY TASTE** -- specced in SPEC_monetization.md, NOT built. ⚠️ HARD DEPENDENCY of B: free Otto is
      only acceptable *because* users get the taste first. B should not ship without it.
   **E. WORKOUT BUILDER** -- needs a full spec + visualisation before any build.

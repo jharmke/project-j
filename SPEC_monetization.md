@@ -875,9 +875,33 @@ DRAFT COPY (Justin: "fine to put in there", to be refined):
    messages a day. Everything you've logged and created stays exactly where it is.
    If you'd like to keep the full version, becoming a Supporter is what keeps this going."
    [Become a Supporter] [Got it]
-⚠️ "Everything you've logged and created stays exactly where it is" is a PROMISE, and SPEC_otto.md open
-item #2 has not yet confirmed the app keeps it. Workouts and meals Otto built during the taste must
-survive the step-down. Resolve that before this copy ships or the modal is lying.
+✅ **RESOLVED 2026-07-30 (SPEC_otto.md open item 2): the promise holds, with ONE wording fix needed.**
+Everything Otto BUILT survives permanently -- workouts, meals, recipes -- on both downgrade paths (taste
+ending AND a Supporter cancelling). Content she logs with (recipes, saved meals, custom foods) is
+GRANDFATHERED even when over the free cap; only NEW creation is blocked until she is back under.
+⚠️ BUT two things DO step down, so "everything stays exactly where it is" is not literally true: **meal
+slots revert 8 -> 4 and stats cards revert 4 -> 1** (extras go dormant, top of her own order survives,
+nothing is deleted, all of it returns on resubscribe). The copy must not promise more than that. Full
+detail and the reasoning is in SPEC_otto.md open item 2.
+➡️ **FIX: make that line CONDITIONAL, not a blanket warning (decided 2026-07-30).** `DEFAULT_MEAL_SLOTS` is
+exactly 4 (Morning, Lunch, Dinner, Snacks), so the free cap and the default are the SAME -- only someone who
+deliberately added extras during their week is affected, which is a minority. So:
+- NOT over either cap -> leave the copy as it is. It is completely true for them.
+- OVER on slots or stats cards -> add ONE sentence, roughly: *"Your extra meal slots and stats cards go back
+  to the standard layout. They're saved, and they'll be right there if you come back."*
+Nobody gets warned about a loss they are not taking, and the person who IS taking it hears it from the app
+rather than discovering it Wednesday morning when their Log tab looks different.
+
+### ⚠️ WHEN A DOWNGRADE ACTUALLY LANDS (decided 2026-07-30 -- applies to the taste AND to any cancellation)
+- **CAPABILITIES drop immediately** when the entitlement ends (Otto's data access, building things, message
+  caps). Nothing on screen changes, so there is no reason to delay them.
+- **LAYOUT CHANGES wait for the next LOCAL DAY BOUNDARY** (meal slots, stats cards, anything visual).
+- **WHY:** the taste is a 7-day RevenueCat promotional entitlement granted at onboarding completion, so its
+  expiry is a TIMESTAMP, not midnight -- and for a real cancellation Apple owns the moment entirely. Without
+  this rule someone who logged lunch into slot 7 would watch that row vanish off the screen mid-afternoon.
+  With it, the new day starts empty, so nothing is ever stranded and no data migration is needed.
+- ⚠️ CHECK AT BUILD TIME whether the promo grant can carry a custom end date so it lands on local midnight
+  anyway. Nice to have, not required.
 
 ⚠️ THE STEP-DOWN NOTICE BEATS THE RATE US PROMPT, 100% OF THE TIME (Justin, explicit). These are scheduled
 to collide for EVERY user, by design: utils/ratingPrompt.ts has `MIN_ACCOUNT_AGE_DAYS = 7` and the trial ends

@@ -1376,6 +1376,13 @@ are separate pre-submission checklists, NOT part of this menu.
      give it its own letter.
 
   **B. OTTO FREE/PAID SPLIT** -- direction locked in SPEC_otto.md, prompt/KB work, small once A is done.
+     ✅ **THE DATA GATE IS BUILT + DEVICE-VERIFIED 2026-07-31** (batch 2). Free users no longer receive their
+     snapshot, PRs, workout history, food history, sleep or body measurements; achievements, journal/prayers
+     and the exercise-name list still come through. Enforced on BOTH the client and the server. Full build
+     record in SPEC_otto.md -> OPEN ITEMS -> item 1.
+     ⚠️ STILL TO BUILD IN B: the pitch rules + wall counting (open item 4), the Day Detail jump button, and
+     the per-mode decline pass. ⚠️ `DEV_UNLIMITED_UIDS` currently holds Justin's uid for testing and MUST be
+     emptied at launch.
   **C. NON-AI WALLS / PAYWALLS / LIMITS** -- ✅ ALREADY DESIGN-LOCKED with real numbers (2026-07-28), see
      SPEC_monetization.md -> NON-AI SUPPORTER PERKS. Custom foods 20, recipes 5, exercise library 15, stats
      cards 1, **meal slots 5 (vs 8)**, macro + nutrition goals presets-only, no data export.

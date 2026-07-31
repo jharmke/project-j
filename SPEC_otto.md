@@ -441,7 +441,38 @@ straight downgrade with nothing to offset it.
 
 ## OPEN ITEMS -- ✅ ALL SIX RESOLVED 2026-07-30 (kept in place as the record of what was decided and why)
 
-### 1. ✅ RESOLVED 2026-07-30 -- HARD GATE, LOCKED. Free users are never sent their logged data.
+### 1. ✅ RESOLVED 2026-07-30 -- HARD GATE, LOCKED. ✅ **BUILT + DEVICE-VERIFIED 2026-07-31.**
+
+> **BUILD RECORD (batch 2 of THE PLAN item B).** Verified on device in BOTH directions, which is the part
+> that actually needed proving: free users lose the right things and Supporters lose nothing.
+> - **ENFORCED TWICE.** `components/AssistantChat.tsx` does not BUILD the snapshot or the five gated
+>   attachments for a non-Supporter, and `functions/src/appCompanion.ts` discards `dataSnapshot` again using
+>   the SERVER's own membership record. Trusting the client here would hand out a paid feature.
+> - ⚠️ **THE FREE EXTRAS TRAVEL IN THEIR OWN FIELD (`freeContext`), NOT INSIDE `dataSnapshot`.** The first
+>   attempt had the server discarding the whole data block for free users, which also stripped ACHIEVEMENTS
+>   and JOURNAL -- the two things this item deliberately keeps free. Caught before deploy. Anything that must
+>   survive for free users cannot be smuggled inside the gated field.
+> - **The exercise-name list is now decoupled from PRs** (`buildExerciseNamesIfRelevant` in
+>   utils/companionPRs.ts). It used to vanish for anyone with no logged PRs -- brand-new users and
+>   cardio-only users, exactly the people most likely to ask about a half-remembered exercise. This item had
+>   already flagged that as needed; it is done.
+> - **`statValueMap` is deliberately EMPTY for free users**, so `substituteStats` strips any stray
+>   `[[stat:key]]` rather than rendering a wrong number. Belt and braces behind the prompt rules.
+> - ⚠️ **TRAP 2 HAPPENED, EXACTLY AS PREDICTED, AND THE FIX IS AN INSTRUCTION NOT MACHINERY.** Otto wrote
+>   "Your target is per day" and "Your target is," -- a placeholder with nothing to substitute, deleted,
+>   leaving a hole. Cause: goals stay FREE (they live in the CONTEXT block), but Otto applied the snapshot's
+>   placeholder rule to them. Fix: the free-tier block now says the placeholder rule applies ONLY to the
+>   snapshot, that goals are plain text to be read straight out, and shows him the failure so he knows what
+>   he is avoiding. **DO NOT wire the placeholder system up for free users** -- this item removed it on
+>   purpose so there is nothing for him to reach for.
+> - **The free-tier block lives in the VOLATILE half** and is written as the second BRANCH of the data rules,
+>   not as an override of them. A block that contradicts an earlier instruction is a coin flip; a block the
+>   earlier instruction explicitly hands off to is not. It also keeps ONE cached copy for all users
+>   (SPEC_otto_routing.md).
+> - ⚠️ **`DEV_UNLIMITED_UIDS` temporarily holds Justin's uid** so free-tier testing is not capped at 10
+>   messages. It lifts the CAP only, not entitlement. **MUST BE EMPTY AT LAUNCH** (already on the checklist).
+
+**Free users are never sent their logged data.**
 
 **THE DECISION:** structural gating, not instructions. Free users are not sent the data snapshot or the
 gated on-demand attachments at all. "Know but don't say" was rejected: models cave when pushed, and a wall

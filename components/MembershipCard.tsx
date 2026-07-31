@@ -31,8 +31,17 @@ export default function MembershipCard() {
   const periodEnd = details?.periodEnd
     ? details.periodEnd.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
     : null;
+  // ⚠️ THE 7-DAY TASTE KEEPS THE GOLD, ONLY THE WORDS CHANGE (SPEC_monetization.md). Showing someone exactly
+  // what the paid state looks like is the entire point of the week. But calling them a Supporter would not be
+  // true -- they have not supported anything yet -- and it quietly cheapens the word for people who actually
+  // pay. "Ends" is also the cancelled-subscription voice and reads like a punishment seven days into a gift.
+  const isFirstWeek = !!details?.isFirstWeek;
   // "Renews" is a promise. If they've cancelled, this date is when access ENDS -- say that instead.
-  const dateLine = periodEnd ? `${details?.willRenew ? 'Renews' : 'Ends'} ${periodEnd}` : null;
+  const dateLine = periodEnd
+    ? isFirstWeek
+      ? `Free week ends ${periodEnd}`
+      : `${details?.willRenew ? 'Renews' : 'Ends'} ${periodEnd}`
+    : null;
 
   return (
     // The shadow rides a WRAPPER. The card must clip (the tint layer and the 2.5px top edge strip both run
@@ -91,7 +100,7 @@ export default function MembershipCard() {
 
       <View style={{ flex: 1 }}>
         <GradientTitle
-          title={isSupporter ? "You're a Supporter" : 'Support the Mission'}
+          title={isSupporter ? (isFirstWeek ? 'Your First Week' : "You're a Supporter") : 'Support the Mission'}
           color={isSupporter ? theme.textSecondary : theme.accentBlue}
           numberOfLines={1}
           style={{ fontSize: 20, fontFamily: Type.num, letterSpacing: 0.8, lineHeight: numLine(20) }}
@@ -147,7 +156,10 @@ export function GoldIconRow() {
         router.push('/settings?section=appearance' as any);
       }}
       style={{
-        flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12,
+        // No top margin of its own -- the perk list above already ends with 18pt, and stacking another 12
+        // on top left this floating well clear of the "Custom Badge & Icon" line it belongs to. Spacing is
+        // the parent's job.
+        flexDirection: 'row', alignItems: 'center', gap: 12,
         backgroundColor: GOLD_TINT, borderWidth: 1, borderColor: GOLD_EDGE,
         borderRadius: 10, paddingVertical: 11, paddingHorizontal: 12,
       }}

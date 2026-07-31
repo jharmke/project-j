@@ -30,10 +30,15 @@ import BackgroundLayers from '../components/BackgroundLayers';
 
 type Perk = { icon: string; title: string; body: string; gold?: boolean; sprout?: boolean };
 
+// ⚠️ KEEP IN STEP WITH THE ONBOARDING FREE-WEEK BLOCK (app/onboarding/all-set.tsx) AND THE STEP-DOWN NOTICE.
+// All three describe the same tier, and a user reads them a week apart -- if the numbers or the wording drift,
+// the step-down stops reading as a promise kept. Rewritten 2026-07-31 after item A: the two Otto lines are new
+// and go FIRST, because building things is now the actual reason to subscribe.
 const PERKS: Perk[] = [
-  { icon: 'sparkles', title: 'More AI Room', body: 'Big bumps to your Otto and meal-estimate limits.' },
-  { icon: 'bar-chart', title: 'Custom Reports', body: 'Built from the stats that matter most to you.' },
-  { icon: 'swap-horizontal', title: 'Comparison', body: 'Pick your time frames, line them up side by side, and see exactly how you compared.' },
+  { icon: 'sparkles', title: 'Otto Gets To Work', body: "He works from everything you've logged, and builds workouts into your Workout tab and meals from food you actually eat." },
+  { icon: 'chatbubbles', title: 'More AI Room', body: '30 messages a day with Otto and Halo, and 100 meal estimates a month.' },
+  { icon: 'bar-chart', title: 'Deeper Reports', body: 'Custom Reports, Comparison, and your full Effort vs Results.' },
+  { icon: 'albums', title: 'Room To Build', body: 'Higher limits on custom foods, recipes, saved meals and your exercise library.' },
   // sprout: renders the real gold Supporter sprout (the actual badge), not an Ionicon -- previews the exact perk.
   { icon: 'leaf', sprout: true, title: 'Custom Badge & Icon', body: 'A token of thanks for helping keep this going.', gold: true },
 ];
@@ -271,7 +276,9 @@ export default function SupportScreen() {
               {/* Emblem on the RIGHT, like a hallmark. On the left it shoved the heading inward, so this
                   was the one card whose title didn't start on the same left edge as the others. */}
               <View style={styles.memberHead}>
-                <Text style={[styles.heading, { color: t.textSecondary, marginBottom: 0 }]}>You're a Supporter</Text>
+                <Text style={[styles.heading, { color: t.textSecondary, marginBottom: 0 }]}>
+                  {details?.isFirstWeek ? 'Your First Week' : "You're a Supporter"}
+                </Text>
                 <FoilChip size={36} />
               </View>
 
@@ -285,21 +292,37 @@ export default function SupportScreen() {
                       </Text>
                     </View>
                   )}
-                  {fmtDate(details.memberSince) && (
+                  {/* Hidden during the free week: "Member since" today is noise when the END date is on the
+                      very next line, and they are not a member yet anyway. */}
+                  {!details.isFirstWeek && fmtDate(details.memberSince) && (
                     <View style={styles.memberRow}>
                       <Text style={[styles.memberLabel, { color: t.textMuted }]}>Member since</Text>
                       <Text style={[styles.memberValue, { color: t.textSecondary }]}>{fmtDate(details.memberSince)}</Text>
                     </View>
                   )}
                   {/* Cancelled but still inside the paid period: this date is when access ENDS, not a
-                      renewal. Saying "Renews on" to someone who just cancelled would be a lie. */}
+                      renewal. Saying "Renews on" to someone who just cancelled would be a lie.
+                      ⚠️ And the 7-day taste is a THIRD case: it also does not renew, but "Ends on" is the
+                      cancelled-subscription voice and reads like a punishment to someone mid-gift. */}
+                  {/* ⚠️ ONE LINE DURING THE TASTE, not a label/value row. The two-column layout only reads as a
+                      table because the paid state stacks THREE rows into a column. On its own, a single label
+                      sits stranded on the left with the date all the way across the card and a canyon between
+                      them. As one sentence there is nothing to strand. */}
                   {fmtDate(details.periodEnd) && (
-                    <View style={styles.memberRow}>
-                      <Text style={[styles.memberLabel, { color: t.textMuted }]}>
-                        {details.willRenew ? 'Renews on' : 'Ends on'}
-                      </Text>
-                      <Text style={[styles.memberValue, { color: t.textSecondary }]}>{fmtDate(details.periodEnd)}</Text>
-                    </View>
+                    details.isFirstWeek ? (
+                      <View style={styles.memberRow}>
+                        <Text style={[styles.memberValue, { color: t.textSecondary }]}>
+                          Free week ends: {fmtDate(details.periodEnd)}
+                        </Text>
+                      </View>
+                    ) : (
+                      <View style={styles.memberRow}>
+                        <Text style={[styles.memberLabel, { color: t.textMuted }]}>
+                          {details.willRenew ? 'Renews on' : 'Ends on'}
+                        </Text>
+                        <Text style={[styles.memberValue, { color: t.textSecondary }]}>{fmtDate(details.periodEnd)}</Text>
+                      </View>
+                    )
                   )}
                 </View>
               )}
@@ -334,9 +357,6 @@ export default function SupportScreen() {
                 </PressScale>
               )}
 
-              {/* The gold icon is theirs -- point them at the switch (which lives in Appearance). */}
-              <GoldIconRow />
-
               {/* What they're paying for. The card was a receipt -- plan, dates, icon -- which is fine on
                   day one and useless eleven months later when the renewal is about to land and they
                   wonder what they're actually getting. Same list as the pitch, stated rather than sold:
@@ -344,8 +364,31 @@ export default function SupportScreen() {
               <View style={[styles.memberPerks, { borderTopColor: t.borderCard }]}>
                 {/* `eyebrow`, the same small uppercase label every card in the app uses for a section.
                     This was sentence-case body text, which read as a stray line rather than a heading. */}
-                <Text style={[styles.eyebrow, { color: t.textMuted, marginBottom: 16 }]}>Included with your support</Text>
+                {/* During the 7-day taste there is no support to be included with, so say what is true.
+                    Still STATED rather than sold, same as the paid version. */}
+                <Text style={[styles.eyebrow, { color: t.textMuted, marginBottom: 16 }]}>
+                  {details?.isFirstWeek ? "What's included this week" : 'Included with your support'}
+                </Text>
                 <PerksList t={t} />
+
+                {/* The gold icon is theirs -- point them at the switch (which lives in Appearance).
+                    Sits UNDER the perk list, directly below the "Custom Badge & Icon" line it acts on.
+                    Above the list it broke the card in half between the dates and what you get.
+                    ⚠️ The wrapper's marginBottom cancels memberPerks' own -18, which was fine when the perk
+                    list ended this block but clips whatever sits last now. */}
+                <View style={{ marginBottom: 22 }}>
+                  <GoldIconRow />
+
+                  {/* Last thing on the card, as a footnote. The pitch card and the price boxes are hidden
+                      while they are entitled, so during the taste a motivated user goes looking to subscribe
+                      and finds nothing. Deliberate -- buying on day two throws away days they already have --
+                      but silence reads as a dead end, so say why. */}
+                  {details?.isFirstWeek && (
+                    <Text style={[styles.memberNote, { color: t.textMuted }]}>
+                      Subscription options open up when your week ends.
+                    </Text>
+                  )}
+                </View>
               </View>
             </View>
           </View>
@@ -396,7 +439,7 @@ export default function SupportScreen() {
         {/* Tip jar */}
         <View style={[styles.cardShadow, { shadowColor: t.cardShadow, shadowOpacity: t.cardShadowOpacity }]}>
           <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw }]}>
-            <Text style={[styles.heading, { color: t.textSecondary }]}>A one-time chip in</Text>
+            <Text style={[styles.heading, { color: t.textSecondary }]}>A One-Time Chip In</Text>
             <Text style={[styles.sub, { color: t.textMuted }]}>No subscription, no commitment. Every bit helps.</Text>
 
             {/* Wrapping grid, every tile the same size whatever the count; the top tip is gold as an
@@ -484,7 +527,10 @@ const styles = StyleSheet.create({
   perks: { gap: 14, marginBottom: 18 },
   // Separated from the plan/dates block above by a rule, so the card reads as receipt-then-benefits
   // rather than one long undifferentiated list. Negative bottom margin cancels `perks`' own 18.
-  memberPerks: { marginTop: 16, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth, marginBottom: -18 },
+  // marginTop 4, not 16: the rows above already carry 9pt of their own vertical padding, so 16 on top of
+  // that left the date row sitting hard against the divider above it and floating away from the one below.
+  // 4 matches memberRows' own paddingTop, so the block is symmetric whether it holds one row or three.
+  memberPerks: { marginTop: 4, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth, marginBottom: -18 },
   perk: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   perkIcon: { width: 30, height: 30, borderRadius: 9, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginTop: 1, overflow: 'hidden' },
   perkText: { flex: 1 },
@@ -505,6 +551,7 @@ const styles = StyleSheet.create({
   memberRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 9 },
   memberLabel: { fontSize: 13, fontFamily: Type.ui },
   memberValue: { fontSize: 14, fontFamily: Type.uiSemibold },
+  memberNote: { fontSize: 12, fontFamily: Type.ui, lineHeight: 17, paddingTop: 12, textAlign: 'center' },
   changePlan: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     borderWidth: 1, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14,

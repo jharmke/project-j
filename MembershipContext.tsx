@@ -32,6 +32,12 @@ export interface MembershipDetails {
   memberSince: Date | null;   // first purchase of the entitlement
   periodEnd: Date | null;     // end of the current paid period
   willRenew: boolean;         // false once they cancel -> periodEnd is when access ENDS, not a renewal
+  // TRUE while the 7-day taste is what is unlocking the app (SPEC_monetization.md -> THE FIRST WEEK).
+  // ⚠️ You CANNOT detect this from willRenew: that reads false for a free week AND for a cancelled
+  // subscription, so it cannot tell them apart. The entitlement's SOURCE is the only honest signal.
+  // Someone who buys mid-taste flips to false immediately, because RevenueCat serves whichever
+  // entitlement reaches furthest and a real subscription always outlasts the days left.
+  isFirstWeek: boolean;
 }
 
 interface MembershipValue {
@@ -80,11 +86,17 @@ function readDetails(info: CustomerInfo | null | undefined): MembershipDetails |
     const ent = info?.entitlements?.active?.[SUPPORTER_ENTITLEMENT_ID];
     if (!ent) return null;
     const product = ent.productIdentifier || '';
+    // RevenueCat reports the source as PROMOTIONAL for a granted entitlement, and its product id is
+    // machine-generated with an rc_promo_ prefix. Checking both means neither a store rename nor a field
+    // we are reading slightly wrong can silently turn a free week into "You're a Supporter".
+    const store = String((ent as unknown as { store?: unknown }).store ?? '').toUpperCase();
+    const isFirstWeek = store === 'PROMOTIONAL' || product.startsWith('rc_promo_');
     return {
       plan: product.includes('annual') ? 'annual' : product.includes('monthly') ? 'monthly' : null,
       memberSince: toDate(ent.originalPurchaseDate),
       periodEnd: toDate(ent.expirationDate),
       willRenew: !!ent.willRenew,
+      isFirstWeek,
     };
   } catch {
     return null;

@@ -1,8 +1,9 @@
 # SPEC: Otto (the general companion) -- free vs Supporter
 
 Status: **DIRECTION LOCKED 2026-07-29, NOTHING BUILT.** Otto today is fully free with no tiering.
-Last updated 2026-07-30. FIVE things resolved that day: **OPEN ITEMS 1, 2, 3 and 4** (the hard gate is
-LOCKED; artifacts survive a downgrade; Otto may create exercises only when asked; the full pitch ruleset)
+Last updated 2026-07-30. SIX things resolved that day: **OPEN ITEMS 1, 2, 3, 4 and 5** (the hard gate is
+LOCKED; artifacts survive a downgrade; Otto may create exercises only when asked; the full pitch ruleset;
+meal-builder food matching)
 and **THE UNDEREATING SAFEGUARD** (app-side detection, Otto is the only voice, he never speaks first).
 Question 3 also spawned three new items in THE PLAN: I (exercise editor), J (expand the pool), K (lift-name
 aliases). ⚠️ OPEN ITEM 4 supersedes the HOW OTTO SELLS section on any conflict.
@@ -971,16 +972,111 @@ jump button.
   rules, caps and edge cases, and anyone who wants to tip finds it on the Support the Mission screen the jump
   button already goes to.
 
-### 5. Meal builder design (Justin: ships before launch, but the hard parts are unsolved)
-- Generic meal plans FAIL: people eat what is in the fridge, not what an AI imagined.
-- Suggesting from their own logged foods is better -- real nutrition data attached, no brand ambiguity,
-  and only this app can do it. But: what if they ate out once and logged it, or ran out of an ingredient?
-- PARTIAL FIX: frequency filter. Only suggest foods logged repeatedly. A restaurant meal logged once
-  never qualifies; a shake logged forty times is clearly a staple. Does NOT solve "I ran out."
-- Justin's alternative: user tells Otto what they have on hand. Works, but it is friction.
-- Not yet resolved. `SPEC_ai_meal_estimator.md` already turns a text description into nutrition, so the
-  hard technical part may already exist.
-- Backlog item "Restaurant menu lookup" is a real dependency if users eat out.
+### 5. ✅ RESOLVED 2026-07-30 -- the meal builder's food matching.
+
+**SCOPE, LOCKED: it is a MEAL builder, not a MEAL PLAN builder.** One meal, or a couple, on request.
+- The saved-meals catalog already exists (`pj_saved_meals` + RepeatMealModal), so a built meal has somewhere
+  to go. A meal PLAN has nowhere to go, so it would mean building a whole scheduling feature first.
+- "What should I have for dinner" gets asked daily. A 7-day plan gets read once and abandoned by Wednesday.
+- One meal is correctable; day four of a plan is wrong on Thursday and the whole thing is dead.
+- It also makes F buildable instead of a blank page.
+➡️ Meal PLANS go to the backlog as a separate idea if ever wanted.
+
+**HARD-GATED FROM FREE ENTIRELY.** Free Otto gives general nutrition guidance (what to prioritise, why
+protein at breakfast helps, what a good dinner looks like in principle) and **never names a food with an
+amount attached.** Assembling foods into a meal is an ARTIFACT. Consistent with open item 1.
+
+#### THE PROBLEM, PRECISELY
+Generic meal plans fail because people eat what is in their kitchen, and a generic plan is exactly the
+commodity ChatGPT gives away free. The unique thing this app has is **months of what this person actually
+eats, hand-logged, with real nutrition attached.**
+⚠️ **But "just use their logged foods" breaks three ways:** they ate out once and logged it, they ran out of
+an ingredient, and a new user has no history at all. Plus **brand ambiguity** -- Justin has two boxes of
+white rice in his pantry right now with different nutrition.
+
+#### WHICH LOGGED FOODS QUALIFY
+- **Favourited foods ALWAYS qualify**, no threshold. An explicit signal the app already collects, and it
+  stops a light logger from facing an empty grid.
+- **Otherwise: logged 5+ times in the last 30 days.** That kills the restaurant problem by itself (a burrito
+  eaten once in April never gets near it) and kills foods they stopped buying.
+- ⚠️ **NO filter can solve "I ran out."** Only asking solves that -- hence the grid below.
+
+#### ⚠️ THE KEY MOVE: THE CONVERSATION GETS THE MEAL, THE UI GETS THE PRODUCTS
+Justin's concern, and it is the right one: **Otto's own API cost and the daily message cap.** An early draft
+of this flow took FOUR turns to build one dinner (ask, "I don't have chicken", "what have you got", "80/20 or
+93/7"). That is four messages of their thirty and four API calls to pick rice.
+**Chat costs money and messages. An inline card costs neither.** So:
+1. **A "what have you got?" GRID, rendered inline in the chat**, before he builds. ~15 of their qualifying
+   foods as tappable toggles, plus a free-text field for anything not listed. No typing, no extra message.
+   ⚠️ A brand-new user sees an empty grid and just types -- that is the fallback, and it works.
+   ✅ **REUSE, DO NOT REBUILD: that free-text field is exactly what `SPEC_ai_meal_estimator.md` already does**
+   (turn a text description into nutrition). Someone typing "leftover lasagna" should route through the
+   existing estimator machinery. This also quietly carries the new-user case, where they type everything.
+2. **He builds ONCE**, from exactly what was selected.
+3. **The preview card handles everything else.** Per-line swap and amount controls. Replacing his generic
+   jasmine rice with the box in your pantry is two taps and costs nothing.
+➡️ **RENDER BOTH INLINE IN THE CHAT, as interactive message cards** (same pattern as his existing jump
+buttons / tutorial launchers). ❌ NOT a modal over the chat panel -- that is modal-over-modal and feels
+cheap. Bonus: the conversation becomes the record, so you can scroll back and see what you said you had and
+what he built from it.
+⚠️ ONE EXCEPTION: tapping "swap" needs a real food search, which is legitimately bigger than a chat bubble.
+That may open the existing picker.
+
+#### FOOD SOURCES, AND MARKING THEM
+- **Their own logged foods** = exact nutrition, their real products. Preferred, always.
+- **Generic database entries** = used only to fill a gap, and **MARKED AS A STAND-IN** so the user knows
+  which line is theirs and which is a guess. Otto says so plainly: *"That one's from the database rather
+  than your log, so double check it against your package when you log it."*
+- ❌ **He does NOT quiz the user on product specifics.** "80/20 or 93/7?" has a dozen answers and costs a
+  message. He picks a reasonable generic, marks it, and the card handles the swap if they care.
+- ✅ **Because swaps happen BEFORE saving, a meal saved to the catalog contains THEIR products** -- which
+  answers Justin's "saving a meal is pointless if the brand changes" worry.
+
+#### MEAL SIZE, CONSTRAINTS AND ADJUSTMENTS
+- **Meal size is DERIVED, never asked.** He knows the daily target and what is already logged. Breakfast with
+  nothing logged aims at roughly a quarter to a third of the day, NOT the whole 1,700. Later in the day he
+  works from what is left. One line states the assumption: *"Built this around 450, which leaves you room for
+  the rest of the day."* ⚠️ In MINDFUL he builds the identical meal and simply does not narrate the maths.
+- **Constraints work** ("high protein, low sodium, high carb"). ⚠️ He is NOT a solver: "exactly 50g protein"
+  gets CLOSE, not exact, so he must always show the real numbers rather than claim he hit a target. Justin is
+  fine with close.
+- **Two kinds of adjustment, and they must not be confused:**
+  • "Make it 400 calories" / "less rice" = a PORTION change -> the card does it, no API call, instant.
+  • "Less sodium" / "swap the carb" = changes WHAT is in the meal -> a rebuild, costs a message.
+- "Just make me a meal" (no grid selections) -> he builds from favourites + frequent foods and fills gaps
+  with marked generics. **The grid is an offer, not a gate.**
+- **GRAMS.** Entries already store nutrition per 100g, so grams are native to the data, not a fake
+  conversion. Should be a PREFERENCE set once, not a question every time.
+
+#### WHAT A BUILT MEAL BECOMES
+- **Logged as individual entries in a meal slot**, exactly like anything else, so nothing downstream treats
+  it specially. The slot defaults sensibly (time of day, or what they asked for) and is changeable on the
+  card before committing.
+- **Saving to the catalog is a DELIBERATE action, not automatic.** Every built meal auto-saving would clutter
+  the catalog fast and most dinners are a one-off. The card offers both: log it, save it, or both.
+- Counts against the saved-meals cap (5 free), and is grandfathered on downgrade per open item 2.
+
+#### EATING OUT -- simpler than it looks
+FatSecret carries restaurant items, so **if the user says where they are, the MENU becomes the pantry.** No
+grid (they are not picking from their fridge), no frequency problem (restaurant food never qualifies through
+history anyway). The "restaurant menu lookup" backlog dependency is really a question of whether the database
+coverage is good enough, which is a data question, not a design one.
+
+#### ⚠️ HARD PREREQUISITE FOR F: ALLERGIES / DIETARY RESTRICTIONS
+**Nothing in the app captures what someone does not eat.** So Otto will cheerfully build a shellfish dinner
+for someone with a shellfish allergy, or put chicken in front of a vegetarian. Same shape as the equipment
+gap on E, except the consequences are worse.
+➡️ **F cannot ship without this.** The field itself is PROFILE work (and would help the AI meal estimator
+too, not just Otto). Design it there; treat it as a blocker here.
+
+#### STILL OPEN
+- **Should saved RECIPES be candidate components?** They already carry full nutrition and are a real thing the
+  user makes, so arguably the best possible component. Wants deciding properly, not assuming.
+- **Portion sizes from their history** (if they always log 150g of chicken, build around 150g rather than a
+  textbook 200g). Justin likes it; work it out when F is designed.
+- Otto's own cost for a build call is roughly 2-3x a normal message, since the candidate foods and their
+  nutrition have to be sent. Acceptable: it is ONE call instead of four, Supporter-only, capped at 30/day,
+  and it is the thing people would actually be paying for.
 
 ### 6. Backlog items that may be cheaper as Otto capabilities
 "Calorie periodization -- higher calories on workout days" and "Protein timing badge" were both scoped as

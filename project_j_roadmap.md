@@ -1319,7 +1319,7 @@ are separate pre-submission checklists, NOT part of this menu.
   discussed and fully alligned before we fucking do it."* That applies to all of it, not just the routing.
 
   **A. RESOLVE THE 6 OPEN OTTO ITEMS** (conversations, not code -- they block everything downstream).
-     **PROGRESS: 4 of the 6 done (questions 1, 2, 3 and 4), PLUS the safeguard decision. All 2026-07-30.**
+     **PROGRESS: 5 of the 6 done (questions 1-5), PLUS the safeguard decision. All on 2026-07-30.**
      Full detail in SPEC_otto.md -> OPEN ITEMS. Summary:
      1. ✅ RESOLVED 2026-07-30 -- **HARD GATE LOCKED.** Free users are never sent the snapshot or the 5
         gated attachments (PRs, workouts, food history, sleep, body measurements). Profile/goals, the
@@ -1350,7 +1350,12 @@ are separate pre-submission checklists, NOT part of this menu.
         Supporter could be pitched (pitching must default to silence and needs a third "unknown" state), and
         tier-dependent instructions must live in the VOLATILE prompt block or they split the cache and make
         Otto more expensive. Full detail in SPEC_otto.md.
-     5. Meal-builder food matching (the unsolved part)
+     5. ✅ RESOLVED 2026-07-30 -- **meal-builder food matching.** MEAL builder, not a meal PLAN builder.
+        Hard-gated from free. Candidates = favourites + logged 5+ times in 30 days; an inline chat GRID asks
+        what they actually have (which is the only thing that solves "I ran out"); generics fill gaps and are
+        marked as stand-ins; the CARD handles swaps so picking products costs no messages. Meal size derived,
+        never asked. ⚠️ Allergies/dietary restrictions are a HARD PREREQUISITE and need a profile field.
+        Full detail in SPEC_otto.md.
      6. Two backlog items that may be cheaper as Otto capabilities: "calorie periodization" and
         "protein timing badge"
      PLUS ✅ RESOLVED 2026-07-30 -- the undereating safeguard: **BOTH, split by job.** Detection is
@@ -1409,7 +1414,18 @@ are separate pre-submission checklists, NOT part of this menu.
      3. **The builder needs real programming logic**, not plausible picks from a muscle group: movement
         pattern balance, compounds before isolation, sensible volume. This does not fall out for free.
      ⚠️ Depends on **I**, **J** and **K**.
-  **F. MEAL BUILDER** -- needs a full spec + visualisation. The riskiest item; food matching is unsolved.
+  **F. MEAL BUILDER** -- needs a full spec + visualisation. ✅ **FOOD MATCHING IS NO LONGER UNSOLVED**
+     (item A question 5, 2026-07-30 -- full detail in SPEC_otto.md). Locked: it is a MEAL builder, NOT a meal
+     plan builder. Hard-gated from free. Candidate foods = favourites (no threshold) + anything logged 5+
+     times in 30 days. An inline "what have you got?" GRID in the chat replaces a back-and-forth that would
+     otherwise cost 4 messages and 4 API calls. Generic database entries only fill gaps and are MARKED as
+     stand-ins. Meal size is DERIVED from the day's target and what is already logged, never asked. Logs as
+     normal entries in a meal slot; saving to the catalog is deliberate, not automatic. Restaurants work by
+     the MENU becoming the pantry.
+     ⚠️ **HARD PREREQUISITE: allergies / dietary restrictions.** Nothing in the app captures what someone
+     does NOT eat, so Otto would build a shellfish dinner for someone allergic. Needs a PROFILE field (which
+     would help the AI meal estimator too). **F cannot ship without it.**
+     ⚠️ Render the grid + preview as INLINE CHAT CARDS, never a modal over Otto's panel (modal-over-modal).
   **G. CALORIE FLOOR** -- SPEC_calorie_floor.md, DESIGN LOCKED since 2026-07-08. ⚠️ **"NOT BUILT" WAS
      WRONG (corrected 2026-07-30).** Already built AND wired: `utils/calorieFloor.ts` (+ a test file),
      `components/CalorieFloorModal.tsx`, and the Profile tab fires the modal when a target change drops

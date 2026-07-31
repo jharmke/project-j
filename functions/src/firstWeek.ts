@@ -1,0 +1,139 @@
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import * as admin from 'firebase-admin';
+import { REVENUECAT_SECRET_KEY } from './membership';
+
+// ─── THE 7-DAY TASTE ─────────────────────────────────────────────────────────
+// New accounts run on FULL Supporter limits for their first week, then step down. Design + reasoning:
+// SPEC_monetization.md -> "THE FIRST WEEK: A 7-DAY TASTE, THEN STEP DOWN".
+//
+// It is NOT a third membership state and must never be built as one. A taste IS Supporter status with a
+// known end date -- exactly the shape of a monthly sub someone cancelled. So we grant a RevenueCat
+// PROMOTIONAL entitlement (the same mechanism used to comp testers) and every gate in the app opens on its
+// own, because `isSupporter` is genuinely true.
+//
+// ⚠️ THE GRANT MUST BE SERVER-SIDE. A client that could grant itself Supporter could run up the Anthropic
+// bill, which is the one place in this system where a lie costs real money.
+
+const SUPPORTER_ENTITLEMENT_ID = 'supporter';
+const RC_BASE = 'https://api.revenuecat.com/v1';
+
+// Server-only. Records that this account has HAD its week, which is doing two jobs at once:
+//   1. it stops the retry (see grantFirstWeek's caller) granting twice, and
+//   2. it stops a REINSTALL farming a second week -- `pj_onboarding_complete` is LOCAL, so a reinstall
+//      re-runs onboarding and would otherwise ask for another one.
+// Load-bearing, not a nice-to-have.
+const firstWeekDoc = (uid: string) => admin.firestore().collection('firstWeek').doc(uid);
+
+export interface FirstWeekRecord {
+  grantedAtMs: number;
+  endsAtMs: number;
+  revokedAtMs?: number;   // dev-tool revoke only; the record itself is NEVER deleted
+}
+
+// How many whole local days the taste covers, on top of whatever is left of the day they finish onboarding.
+// So finishing at 11pm still gets a full week rather than an hour and six days.
+const TASTE_DAYS = 7;
+
+// End of the taste = LOCAL MIDNIGHT, so the week never expires at some random hour of the afternoon.
+// RevenueCat takes an arbitrary `end_time_ms`, so we are not stuck with its fixed duration buckets.
+//
+// The client sends `Date.getTimezoneOffset()` verbatim (minutes to ADD to local time to reach UTC, so it is
+// POSITIVE west of Greenwich). We only ever use it for this calculation -- it cannot buy anyone extra
+// access beyond a day's worth, so it is not worth defending against.
+function endOfTasteMs(nowMs: number, tzOffsetMinutes: number): number {
+  const offsetMs = tzOffsetMinutes * 60_000;
+  const localNow = nowMs - offsetMs;
+  const localMidnightToday = Math.floor(localNow / 86_400_000) * 86_400_000;
+  const localEnd = localMidnightToday + (TASTE_DAYS + 1) * 86_400_000;
+  return localEnd + offsetMs;
+}
+
+async function revenueCat(path: string, key: string): Promise<Response> {
+  return fetch(`${RC_BASE}${path}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({}),
+  });
+}
+
+// ─── GRANT ───────────────────────────────────────────────────────────────────
+// Returns { granted: false, reason: 'already' } rather than throwing when the account has had its week.
+// That is a normal outcome (a retry, a reinstall), not an error.
+export const grantFirstWeek = onCall(
+  { secrets: [REVENUECAT_SECRET_KEY], maxInstances: 10 },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Please sign in.');
+    }
+    const uid = request.auth.uid;
+
+    const data = (request.data ?? {}) as { tzOffsetMinutes?: unknown };
+    const tzOffsetMinutes =
+      typeof data.tzOffsetMinutes === 'number' && Number.isFinite(data.tzOffsetMinutes)
+        ? data.tzOffsetMinutes
+        : 0;
+
+    const existing = await firstWeekDoc(uid).get();
+    if (existing.exists) {
+      const rec = existing.data() as FirstWeekRecord | undefined;
+      return { granted: false, reason: 'already', endsAtMs: rec?.endsAtMs ?? 0 };
+    }
+
+    const nowMs = Date.now();
+    const endsAtMs = endOfTasteMs(nowMs, tzOffsetMinutes);
+
+    const res = await fetch(
+      `${RC_BASE}/subscribers/${encodeURIComponent(uid)}/entitlements/${SUPPORTER_ENTITLEMENT_ID}/promotional`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${REVENUECAT_SECRET_KEY.value()}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ end_time_ms: endsAtMs }),
+      },
+    );
+
+    if (!res.ok) {
+      // Deliberately NOT recorded. If RevenueCat refused, this account has not had its week, and the
+      // caller's retry must be free to try again.
+      const body = await res.text().catch(() => '');
+      console.error('grantFirstWeek: RevenueCat refused', uid, res.status, body.slice(0, 300));
+      throw new HttpsError('internal', 'Could not start the first week.');
+    }
+
+    await firstWeekDoc(uid).set({ grantedAtMs: nowMs, endsAtMs } satisfies FirstWeekRecord);
+    return { granted: true, endsAtMs };
+  },
+);
+
+// ─── REVOKE (DEV TOOL ONLY) ──────────────────────────────────────────────────
+// Justin is the only tester, so he needs to be able to run this more than once. Revokes the promotional
+// entitlement and clears the record so the account can be granted again.
+// ⚠️ NOT for production use: revoking a real user's week mid-taste is a rug pull.
+export const revokeFirstWeek = onCall(
+  { secrets: [REVENUECAT_SECRET_KEY], maxInstances: 5 },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Please sign in.');
+    }
+    const uid = request.auth.uid;
+
+    const res = await revenueCat(
+      `/subscribers/${encodeURIComponent(uid)}/entitlements/${SUPPORTER_ENTITLEMENT_ID}/revoke_promotionals`,
+      REVENUECAT_SECRET_KEY.value(),
+    );
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      console.error('revokeFirstWeek: RevenueCat refused', uid, res.status, body.slice(0, 300));
+      throw new HttpsError('internal', 'Could not revoke the first week.');
+    }
+
+    await firstWeekDoc(uid).delete().catch(() => {});
+    return { revoked: true };
+  },
+);

@@ -2659,6 +2659,45 @@ export default function SettingsScreen() {
               <Ionicons name="list-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>
 
+            {/* 7-day taste (THE PLAN item D). Dev-only: grant and revoke the promotional entitlement so the
+                whole mechanism can be tested repeatedly without re-running onboarding. */}
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+              try {
+                const fn = httpsCallable(getFunctions(app), 'grantFirstWeek');
+                const res = await fn({ tzOffsetMinutes: new Date().getTimezoneOffset() });
+                const d = (res.data ?? {}) as { granted?: boolean; reason?: string; endsAtMs?: number };
+                const when = d.endsAtMs ? new Date(d.endsAtMs).toLocaleString() : 'unknown';
+                Alert.alert(
+                  d.granted ? 'First week granted' : 'Not granted',
+                  d.granted
+                    ? `Ends ${when}.\n\nFully close and reopen the app to pick up the new status.`
+                    : `This account has already had its first week (ended ${when}).`,
+                );
+              } catch (e) { Alert.alert('Grant failed', String(e)); }
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Grant First Week</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Gives this account the 7-day taste. Refuses if it has already had one.</Text>
+              </View>
+              <Ionicons name="gift-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+              try {
+                const fn = httpsCallable(getFunctions(app), 'revokeFirstWeek');
+                await fn({});
+                Alert.alert('First week revoked', 'Entitlement removed and the record cleared, so this account can be granted again.\n\nFully close and reopen the app.');
+              } catch (e) { Alert.alert('Revoke failed', String(e)); }
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Revoke First Week</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Removes the taste entitlement and clears the record. Testing only.</Text>
+              </View>
+              <Ionicons name="close-circle-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
               triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
               try {

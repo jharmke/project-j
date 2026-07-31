@@ -27,6 +27,10 @@ export { aiProxy } from './aiProxy';
 // thank-you can be hand-written. See revenueCatWebhook.ts.
 export { revenueCatWebhook } from './revenueCatWebhook';
 
+// The 7-day taste: grants a new account a time-boxed PROMOTIONAL Supporter entitlement, and records that
+// the account has had it so a reinstall cannot farm a second one. See firstWeek.ts.
+export { grantFirstWeek, revokeFirstWeek } from './firstWeek';
+
 const APPLE_PRIVATE_KEY = defineSecret('APPLE_PRIVATE_KEY');
 const GMAIL_APP_PASSWORD = defineSecret('GMAIL_APP_PASSWORD');
 

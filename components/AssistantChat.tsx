@@ -22,6 +22,7 @@ import { useMembership } from '../MembershipContext';
 import { CRISIS_RESPONSE, screenForCrisis } from '../utils/faithCrisis';
 import { buildCompanionStats } from '../utils/companionStats';
 import { buildPRContextIfRelevant, buildExerciseNamesIfRelevant } from '../utils/companionPRs';
+import { messageHitsWall, messageAsksForMore, messageBlocksPitch, WALLS_BEFORE_PITCH } from '../utils/companionPitch';
 import { buildWorkoutContextIfRelevant } from '../utils/companionWorkouts';
 import { buildFoodContextIfRelevant } from '../utils/companionFood';
 import { buildSleepContextIfRelevant } from '../utils/companionSleep';
@@ -504,6 +505,9 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
     setInput('');
     setSending(false);
     setMessages([{ role: 'assistant', text: pickGreeting() }]);
+    // New conversation, new wall count. The weekly budget on the server is what stops this being a way to
+    // farm pitches by starting fresh chats.
+    wallCountRef.current = 0;
   };
 
   const newChat = () => {
@@ -526,6 +530,9 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
   };
 
   const { isSupporter } = useMembership();
+  // Walls hit in THIS conversation. A ref, not state: nothing renders from it and it must not cause a
+  // re-render mid-send. Resets with the chat, which is exactly what "once per conversation" means.
+  const wallCountRef = useRef(0);
 
   const canSend = input.trim().length > 0 && !sending;
 
@@ -607,9 +614,21 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
         const journalCtx = await buildJournalContextIfRelevant(text);
         const namesCtx = await buildExerciseNamesIfRelevant(text);
         freeContext = [achCtx, journalCtx, namesCtx].filter(Boolean).join('\n\n') || undefined;
+        // ⚠️ `namesCtx` counts as a wall too. It fires when the user NAMES one of their own exercises, which
+        // is a PR/training question ("how's my bench trending") -- a real wall, but one messageHitsWall
+        // cannot see, because the PR detector needs their lift names and it does not have them. Missing this
+        // meant three walls only ever counted as two and the pitch could never become eligible.
+        if (messageHitsWall(text) || namesCtx) wallCountRef.current += 1;
       }
+
+      // ⚠️ A REQUEST, NOT A DECISION. The server still checks that they are a CONFIRMED free user and that
+      // the weekly budget has room before Otto is told he may say anything. See SPEC_otto.md open item 4.
+      const pitchRequested =
+        !isSupporter &&
+        !messageBlocksPitch(text) &&
+        (messageAsksForMore(text) || wallCountRef.current >= WALLS_BEFORE_PITCH);
       const callable = httpsCallable(getFunctions(app), 'appCompanion');
-      const res = await callable({ message: text, history, styleMode, faithTier, userContext, dataSnapshot, freeContext });
+      const res = await callable({ message: text, history, styleMode, faithTier, userContext, dataSnapshot, freeContext, pitchRequested });
       const data = (res.data ?? {}) as { ok?: boolean; reply?: string; crisis?: boolean; message?: string; used?: number; cap?: number };
 
       if (typeof data.used === 'number' && typeof data.cap === 'number') {

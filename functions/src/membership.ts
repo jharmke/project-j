@@ -97,6 +97,40 @@ export async function isSupporter(uid: string): Promise<boolean> {
   }
 }
 
+/**
+ * The same question as isSupporter, but able to say "I could not tell".
+ *
+ * ⚠️ WHY THIS EXISTS. `isSupporter` returns false BOTH for a confirmed free user and for a lookup that
+ * threw. That is the right default for ACCESS -- a failure must never hand out a paid feature. It is the
+ * WRONG default for SELLING: a paying subscriber being pitched the thing they already pay for is the worst
+ * version of that feature, and it would happen on any transient error.
+ *
+ * So the two decisions take OPPOSITE defaults. Access defaults to free. Pitching defaults to silence, and
+ * only 'free' -- confirmed, not merely un-proven -- may ever be pitched.
+ */
+export type MembershipStatus = 'entitled' | 'free' | 'unknown';
+
+export async function membershipStatus(uid: string): Promise<MembershipStatus> {
+  const now = Date.now();
+  try {
+    const snap = await membershipDoc(uid).get();
+    const m = snap.exists ? (snap.data() as MembershipRecord | undefined) : undefined;
+
+    if (m?.expiresAtMs && m.expiresAtMs > now) return 'entitled';
+    if (m?.checkedAtMs && now - m.checkedAtMs < NEGATIVE_CACHE_MS) return 'free';
+
+    const expiresAtMs = await fetchFromRevenueCat(uid);
+    await membershipDoc(uid).set(
+      { expiresAtMs, checkedAtMs: now, updatedAtMs: now, lastEventType: 'API_LOOKUP' },
+      { merge: true },
+    );
+    return expiresAtMs > now ? 'entitled' : 'free';
+  } catch (e) {
+    console.error('membershipStatus lookup failed (returning unknown):', uid, e);
+    return 'unknown';
+  }
+}
+
 // Record what a RevenueCat webhook event tells us about this user's subscription. Called for EVERY
 // subscription lifecycle event -- not just the two we email about -- because the cap logic needs the
 // state to stay current, and a cancellation or expiry we never wrote down is a cap we'd get wrong.

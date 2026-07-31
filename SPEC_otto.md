@@ -887,7 +887,41 @@ He gets muscles and instructions from his own general knowledge (commodity fitne
 - ⚠️ **NOTE FOR E: the builder needs real programming logic**, not plausible picks from a muscle group.
   Movement-pattern balance, compounds before isolation, sensible volume. It does not fall out for free.
 
-### 4. ✅ RESOLVED 2026-07-30 -- the pitch rules.
+### 4. ✅ RESOLVED 2026-07-30 -- the pitch rules. 🔴 **BUILT 2026-07-31, NOT YET WORKING.**
+
+> **BUILD RECORD (batch 3 of item B). Otto still will not pitch: 0 for 2 on the last attempt.**
+> **Built:** `utils/companionPitch.ts` (client: counts walls per conversation, detects "asks for more",
+> blocks on faith messages), `claimPitchSlot()` + `membershipStatus()` in the functions (server: 3 per
+> rolling 7 days, and the THREE-state membership check item A asked for -- access still fails closed to
+> free, pitching fails closed to SILENCE), and `PITCH_ALLOWED_BLOCK` in companionSystemPrompt.ts.
+>
+> **THE SPLIT:** "once per conversation" is the CLIENT's job (a conversation only exists there; the server
+> sees one message at a time). The weekly budget is the SERVER's, because it is per-account and must not be
+> client-trusted. The client only ever REQUESTS; all three checks must agree.
+>
+> ⚠️ **A `[pitch]` DIAGNOSTIC LOG LINE IS DEPLOYED IN appCompanion.ts. IT IS TEMPORARY -- REMOVE IT.**
+> It prints `{status, pitchRequested, slotClaimed, pitchAllowed}` and it is how the next person should
+> debug this. **Read it before guessing** -- three separate wrong theories were burned before it existed.
+> Last reading: `{"status":"free","pitchRequested":true,"slotClaimed":false,"pitchAllowed":false}`.
+>
+> **THREE BUGS FOUND AND FIXED (all deployed), worth keeping because each was invisible from the outside:**
+> 1. **`revokeFirstWeek` never cleared the server's cached membership doc.** The phone knew you were free
+>    while the server still thought you were entitled until the taste's original end date. Every free-tier
+>    test was running in a half state. Now zeroes `expiresAtMs`/`checkedAtMs` (and clears the pitch budget,
+>    since that row is the reset-my-test-state button and the weekly cap is otherwise a 7-day lockout).
+> 2. **Wall counting missed PR questions.** "How's my bench trending" contains no food/sleep/workout word,
+>    so three walls only ever counted as two and the pitch could never become eligible. Now also counts when
+>    the exercise-name context fires.
+> 3. ⚠️ **A CONTRADICTION IN THE PROMPT, written on the same day.** FREE_TIER_BLOCK said "never explain the
+>    plan or offer to sell anything here"; PITCH_ALLOWED_BLOCK, appended later, said he may. The earlier
+>    absolute instruction won, so the server ticked off a weekly slot each time while Otto said nothing.
+>    FREE_TIER_BLOCK now explicitly names the pitch block as its exception.
+>    **This is the same failure mode this spec warns about twice: a block that CONTRADICTS an earlier
+>    instruction is a coin flip; a block the earlier instruction HANDS OFF to is not.**
+>
+> **NEXT STEP:** it failed twice more after fix 3. Not yet distinguished: the budget may simply still have
+> been empty (Revoke First Week clears it, and it is unconfirmed whether that was tapped), or Otto is still
+> ignoring the block. **Read the `[pitch]` log first.**
 
 #### ATTRIBUTION IS NOT A PITCH (the distinction everything else rests on)
 - **ATTRIBUTION goes in EVERY decline.** One factual clause, e.g. "on the free plan". No price, no call to

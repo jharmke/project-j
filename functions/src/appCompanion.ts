@@ -3,7 +3,7 @@ import { defineSecret } from 'firebase-functions/params';
 import * as admin from 'firebase-admin';
 import Anthropic from '@anthropic-ai/sdk';
 import { screenForCrisis } from './crisis';
-import { isSupporter, REVENUECAT_SECRET_KEY } from './membership';
+import { membershipStatus, REVENUECAT_SECRET_KEY } from './membership';
 import {
   buildCompanionStable,
   buildCompanionVolatile,
@@ -74,6 +74,37 @@ function usageDoc(uid: string) {
   return admin.firestore().collection('ai_usage_companion').doc(uid);
 }
 
+// ─── PITCH BUDGET (SPEC_otto.md open item 4) ─────────────────────────────────
+// At most THREE mentions of the Supporter plan in any rolling 7 days. The "once per conversation" half is
+// the CLIENT's job -- a conversation only exists on the client, the server sees one message at a time -- but
+// the weekly budget is per ACCOUNT and must not be client-trusted, so it lives here beside the usage counter.
+const PITCH_MAX_PER_WEEK = 3;
+const PITCH_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Decide whether Otto may mention the plan on THIS message, and record it if so.
+ *
+ * ⚠️ FAILS SILENT, NOT OPEN. Any error returns false. The cost of a missed pitch is nothing; the cost of a
+ * wrongly-fired one is pitching a paying subscriber.
+ */
+async function claimPitchSlot(uid: string): Promise<boolean> {
+  try {
+    const ref = usageDoc(uid);
+    return await admin.firestore().runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      const d = snap.exists ? (snap.data() as { pitchAtMs?: number[] }) : {};
+      const now = Date.now();
+      const recent = (d.pitchAtMs ?? []).filter((t) => typeof t === 'number' && now - t < PITCH_WINDOW_MS);
+      if (recent.length >= PITCH_MAX_PER_WEEK) return false;
+      tx.set(ref, { pitchAtMs: [...recent, now] }, { merge: true });
+      return true;
+    });
+  } catch (e) {
+    console.error('claimPitchSlot failed (staying silent):', uid, e);
+    return false;
+  }
+}
+
 // Deterministic house-style backstop (same as Halo): strip any dash the model slips past the
 // prompt rule so a reply can never ship with one. Single hyphens between digits are preserved so
 // numeric ranges (for example a "7-14 day" window) never break.
@@ -120,6 +151,7 @@ export const appCompanion = onCall(
       userContext?: unknown;
       dataSnapshot?: unknown;
       freeContext?: unknown;
+      pitchRequested?: unknown;
     };
     const message = typeof data.message === 'string' ? data.message.trim() : '';
     if (!message) {
@@ -148,6 +180,9 @@ export const appCompanion = onCall(
     const freeContext = typeof data.freeContext === 'string' && data.freeContext.trim()
       ? data.freeContext.trim()
       : undefined;
+    // The CLIENT's half of the pitch decision: this conversation has hit its third wall, or the user asked
+    // outright for more. It is only ever a REQUEST -- the server still has to agree (below).
+    const pitchRequested = data.pitchRequested === true;
 
     // 2. Server-side crisis re-screen (backstop). Short-circuit before counting or calling AI.
     if (screenForCrisis(message)) {
@@ -156,7 +191,11 @@ export const appCompanion = onCall(
 
     // 3. Per-user daily cap: atomic check-and-increment so concurrent calls cannot race past it.
     // Tier from the SERVER's own membership record (fails closed to free on any error).
-    const supporter = await isSupporter(uid);
+    // ⚠️ ONE lookup, TWO decisions with OPPOSITE defaults (see membership.ts). ACCESS treats anything that
+    // is not a confirmed entitlement as free, so a failure can never hand out a paid feature. PITCHING only
+    // fires on a CONFIRMED free user, so a failure can never sell to a subscriber.
+    const status = await membershipStatus(uid);
+    const supporter = status === 'entitled';
     const dailyCap = DEV_UNLIMITED_UIDS.includes(uid)
       ? 100000
       : supporter ? SUPPORTER_DAILY_CAP : FREE_DAILY_CAP;
@@ -204,6 +243,15 @@ export const appCompanion = onCall(
       { role: 'user', content: message },
     ];
 
+    // ⚠️ ALL THREE MUST AGREE, and the order matters: only a CONFIRMED free user (never 'unknown', never a
+    // subscriber), only when the client says this conversation earned it, and only if the weekly budget has
+    // room. `claimPitchSlot` RECORDS the slot as it grants it, so it must be the last check.
+    const slotClaimed = status === 'free' && pitchRequested ? await claimPitchSlot(uid) : false;
+    const pitchAllowed = status === 'free' && pitchRequested && slotClaimed;
+    // TEMPORARY DIAGNOSTIC (2026-07-31): the pitch was not firing and the three inputs could not be told
+    // apart from the outside. Remove once it is behaving.
+    console.log('[pitch]', JSON.stringify({ status, pitchRequested, slotClaimed, pitchAllowed }));
+
     const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value() });
 
     let replyText = '';
@@ -230,7 +278,7 @@ export const appCompanion = onCall(
             // the server's own membership record and fails closed to free on any error.
             // (A user who TYPES their own numbers into the message still gets personalised advice. That is
             // the accepted loophole from SPEC_otto.md open item 5 -- the app revealed nothing.)
-            text: buildCompanionVolatile(userContext, supporter ? dataSnapshot : undefined, freeContext),
+            text: buildCompanionVolatile(userContext, supporter ? dataSnapshot : undefined, freeContext, pitchAllowed),
           },
         ],
         messages,

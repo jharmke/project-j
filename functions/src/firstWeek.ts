@@ -134,6 +134,23 @@ export const revokeFirstWeek = onCall(
     }
 
     await firstWeekDoc(uid).delete().catch(() => {});
+
+    // ⚠️ CLEAR THE SERVER'S CACHED MEMBERSHIP TOO, or the revoke only half happens. `membershipStatus` takes
+    // a shortcut: if it already believes there is a LIVE entitlement it returns 'entitled' without asking
+    // RevenueCat again. So without this, the phone correctly knows you are free while the server still
+    // thinks you are a Supporter until the original end date -- a half state that silently breaks any test
+    // of the free tier. (Found 2026-07-31: the pitch would not fire because the server saw a subscriber.)
+    // Zeroing the expiry is enough; the next lookup re-asks RevenueCat and writes the truth back.
+    await admin.firestore().collection('memberships').doc(uid)
+      .set({ expiresAtMs: 0, checkedAtMs: 0, updatedAtMs: Date.now(), lastEventType: 'DEV_REVOKE' }, { merge: true })
+      .catch(() => {});
+
+    // Clear the pitch budget too. This row is the "reset my test state" button, and the weekly cap of three
+    // is otherwise a seven-day lockout the moment a test run uses them up.
+    await admin.firestore().collection('ai_usage_companion').doc(uid)
+      .set({ pitchAtMs: [] }, { merge: true })
+      .catch(() => {});
+
     return { revoked: true };
   },
 );

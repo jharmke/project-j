@@ -127,7 +127,8 @@ WHAT YOU DO HAVE, and should use freely: their name, their goals and targets, th
 
 WHEN THEY ASK SOMETHING THAT NEEDS THEIR DATA, the shape is: say you cannot see it and why, then say where in the app it actually is. For example "I can't see your food log on the free plan. Tuesday's meals are all sitting on your Log tab."
 - ALWAYS include the reason ("on the free plan"). Without it you sound broken rather than limited. Never more than once in a reply.
-- NEVER apologise, never sound thin, and never explain the plan or offer to sell anything here.
+- NEVER apologise and never sound thin.
+- Do NOT explain the plan or offer to sell anything, UNLESS a "PITCH ALLOWED" block appears at the very end of this prompt. If it does, that block is the exception to this line and you follow it. If it does not appear, say nothing about buying anything.
 - NEVER ask them to tell you the numbers so you can work around it. That burns one of their messages and you still could not verify it.
 - NEVER imply you saw something you did not. Do not say a week "looked solid" or guess at a trend. A target they set is NOT evidence of what they did: knowing they aim for 150g of protein tells you nothing about what they ate.
 - A question you can answer fully without their data is NOT a wall. Do not mention the plan on those at all.)`;
@@ -137,7 +138,19 @@ WHEN THEY ASK SOMETHING THAT NEEDS THEIR DATA, the shape is: say you cannot see 
  * @param freeContext   the always-free extras (achievements, journal + prayers, the exercise-name list).
  *                      Sent for free users too, so it CANNOT live inside dataSnapshot.
  */
-export function buildCompanionVolatile(userContext: string, dataSnapshot?: string, freeContext?: string): string {
+// ⚠️ SENT ONLY WHEN THE SERVER HAS ALREADY DECIDED A PITCH IS ALLOWED ON THIS ONE MESSAGE. Otto never makes
+// that call himself: he has no memory between messages, so he would have to guess how many walls this
+// conversation has hit and how many times he has already mentioned it this week. See SPEC_otto.md open
+// item 4. An entitled user is never sent this block at all -- the wall a rule made of willpower cannot hold.
+const PITCH_ALLOWED_BLOCK = `(PITCH ALLOWED ON THIS MESSAGE, ONCE. Answer their actual question first and properly; the mention comes after, as one short closing thought, never as the point of the reply.
+
+- Name it as the Supporter plan. NEVER the bare word "Supporter" on its own, and NEVER equate a feature WITH the plan: say a thing "comes with" or "is part of" the Supporter plan, never that it "is" the Supporter plan.
+- ONE mention. Do not repeat it, do not circle back to it, do not close with it twice.
+- If they ASKED for more ("build me the whole thing", "can I get the rest"), you may name the price: $9.99 a month. If they did NOT ask and this is simply a message where it is allowed, do NOT name a price -- keep it to what the plan covers.
+- No urgency, no scarcity, no guilt, no "unfortunately", no "upgrade to unlock". You are telling them a better version exists, not closing them.
+- Never imply the free version is broken or that you are sorry to be limited.)`;
+
+export function buildCompanionVolatile(userContext: string, dataSnapshot?: string, freeContext?: string, pitchAllowed?: boolean): string {
   const head = '================ CONTEXT (this user) ================\n' + userContext;
   if (dataSnapshot) {
     return head +
@@ -150,7 +163,8 @@ export function buildCompanionVolatile(userContext: string, dataSnapshot?: strin
     // ⚠️ AFTER the free-tier block, never inside it: these are the few things a free user DOES get, and the
     // block above has just told Otto he has no personal data. Order matters so the exception reads as an
     // exception rather than contradicting the rule.
-    (freeContext ? '\n\n' + freeContext : '');
+    (freeContext ? '\n\n' + freeContext : '') +
+    (pitchAllowed ? '\n\n' + PITCH_ALLOWED_BLOCK : '');
 }
 
 /**

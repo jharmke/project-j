@@ -824,6 +824,10 @@ silent. This is deliberately NOT an Apple free trial: no card, no commitment, no
 ever be billed by accident. It exists to create CONTRAST, which is what actually converts -- a limit only
 means something to someone who has felt what it is like without it.
 
+✅ **VERIFIED + FULLY AGREED 2026-07-31.** All ten parts of this section were walked with Justin and checked
+against the real code and the RevenueCat API. Everything below stands, with the additions marked
+"CONFIRMED 2026-07-31". Item A (SPEC_otto.md) is what this taste now steps DOWN from, so read that first.
+
 HOW IT IS BUILT -- and it is far less work than it first looks. A trial IS Supporter status with a known end
 date, exactly like a monthly sub someone cancelled in iPhone settings (entitled, `periodEnd` set,
 `willRenew: false`). The app already renders that shape. So: grant a **7-day RevenueCat PROMOTIONAL
@@ -835,6 +839,29 @@ scheduled job; it is SERVER-SIDE so a reinstall cannot farm it; and the lapse is
 path as a real subscription ending, so the notice reuses the same modal.
 (Claude initially called this a "third membership state" and a real bit of plumbing. Justin pushed back --
 correctly -- that it is just Supporter with an end date. Do not rebuild it as a separate state.)
+
+#### ✅ CONFIRMED 2026-07-31 -- the mechanism checks out, plus four build notes
+- **The grant is `POST /subscribers/{app_user_id}/entitlements/{entitlement}/promotional`** on the SAME v1
+  REST API `functions/src/membership.ts` already calls, with the SAME secret key. Nothing new to wire.
+- ✅ **A CUSTOM END TIME IS AVAILABLE.** The API takes `end_time_ms` (an arbitrary epoch) as well as the fixed
+  duration buckets. So the week CAN be set to expire at **local midnight on day 7** rather than at whatever
+  o'clock they finished onboarding. This closes the "check at build time" question below.
+- **Entitlement identifier must be exactly `supporter`** -- the one every gate checks. RevenueCat will
+  happily accept a differently-named entitlement while nothing in the app unlocks.
+- ⚠️ **THE GRANT CAN FAIL SILENTLY.** Onboarding finishes, the call errors, and the user gets no taste at all
+  while the screen just told them it was on us. Needs a **prompt retry** (not once-a-launch-tomorrow, or they
+  spend a day hitting free limits during their free week). `isSupporter` already does a live RevenueCat
+  lookup on a cache miss, so verifying costs nothing new.
+- ⚠️ **A SERVER-SIDE "ALREADY HAD THEIR WEEK" RECORD IS LOAD-BEARING, not a nice-to-have.** It stops the retry
+  granting twice, AND it is what stops a reinstall farming a second week (the onboarding-complete flag is
+  LOCAL, so a reinstall re-runs onboarding).
+- ✅ **IDENTITY IS SAFE, verified two ways.** `app/_layout.tsx` routes anyone without a user to sign-in, and a
+  signed-in user with onboarding incomplete goes through sign-in too, so onboarding CANNOT run unauthenticated.
+  And `MembershipContext.tsx` calls `Purchases.logIn(user.uid)`, so the RevenueCat app_user_id IS the Firebase
+  uid. A server-side grant keyed to the uid lands correctly even if the client has not finished logging in.
+- ✅ **WEBHOOK EMAIL SPAM IS ALREADY GUARDED**, do not re-solve it. `revenueCatWebhook.ts` skips the
+  new-Supporter email when `event.store === 'PROMOTIONAL'` or the product id starts with `rc_promo_`. That
+  guard exists because granting the testers emailed Justin once already.
 
 LENGTH: 7 DAYS. Justin's ceiling was "definitely not more than 7", and 3 was rejected as actively pointless:
 days 1-3 of a fitness app are setup (profile, goals, finding things), so a 3-day taste passes unnoticed --
@@ -857,6 +884,58 @@ difference someone genuinely feels.
 ANNOUNCE IT UP FRONT, on the final onboarding screen, naming exactly what they get. Being quietly generous
 and then taking it away is a rug pull; saying it plainly makes the step-down a promise KEPT.
 
+#### ✅ THE ANNOUNCEMENT -- BUILT 2026-07-31 (app/onboarding/all-set.tsx)
+- **NO new onboarding screen.** It lives on the existing `all-set.tsx` payoff screen. Precedent: `commitment.tsx`
+  was CUT for being corny and for breaking the step count, and a "you got a free week" screen would repeat that
+  mistake.
+- **MERGED INTO ONE CARD** with the three existing how-to rows. The week block sits ON TOP (it is the news),
+  the how-to rows underneath (they are reference). Two separate cards read as two competing objects and the
+  second one lost.
+- **The grant fires on the final button tap**, the same action that writes `pj_onboarding_complete`. ⚠️ There
+  are TWO buttons on that screen ("Set Up My Home Screen" and "Set it up myself"), so it must fire on either.
+  ⚠️ Do NOT block the button on the grant -- navigate immediately, grant in the background, retry if it fails.
+- ⚠️ **CURRENTLY UNGATED.** None of the taste logic exists, so the block shows for EVERYONE and names builders
+  (E, F) that do not exist. There is a comment in the file saying so. **Must not reach TestFlight until D, B,
+  E and F are real.** Justin accepted this deliberately since the app has not launched.
+- **The copy, as shipped:**
+  > **Your first week is on us**
+  > Seven days with everything unlocked. Free, no credit card, nothing to cancel.
+  > • Otto builds workouts straight into your Workout tab
+  > • He puts meals together from food you actually eat
+  > • His answers use your real numbers
+  > • 30 messages a day with Otto and Halo, up from 10
+  > • Custom Reports, Comparison and your full Effort vs Results open up
+  > • 100 AI Meal Estimates a month, up from 5
+  > When the week is up the app eases back to the free plan, and everything you built stays exactly where it is.
+- ❌ **A Supporter-plan mention was tried on this screen and CUT.** They have been in the app four minutes and
+  have felt no limits, so it has nothing to attach to and sours the one screen whose job is being generous.
+  The step-down notice carries that message seven days later, when it lands.
+- ⚠️ `AI Estimate` was renamed to **`AI Meal Estimate`** on the estimator screen the same day, so the page
+  finally matches the button in Add Food.
+- ℹ️ Coach Insight is FREE and stays out of both lists. Patterns lives inside Effort vs Results, so it is not
+  listed separately.
+
+#### ✅ CONFIRMED 2026-07-31 -- the passive end date is nearly free, and the taste keeps the GOLD
+- `components/MembershipCard.tsx` already builds its date line as **`${willRenew ? 'Renews' : 'Ends'}`** plus
+  the date, and that card is SHARED across Profile and Settings. `app/support.tsx` renders its own version of
+  the same thing. A promotional entitlement does not renew, so it would already read "Ends Aug 7, 2026" with
+  no new code.
+- ⚠️ **BUT "Ends" is the cancelled-subscription voice** and reads faintly like a punishment for someone seven
+  days into a gift. **DECISION: the taste gets its own wording** -- card title **"Your first week"** (not
+  "You're a Supporter", which is not true of someone who has not supported anything) and a **"Free week ends
+  Aug 7"** date line. Applies to the Membership card AND the Support screen; anywhere the app says "You're a
+  Supporter" has to know the difference or the two screens will contradict each other about the same person.
+- ✅ **THE TASTE KEEPS THE FULL GOLD TREATMENT, sprout and all** (Justin, explicit). Only the WORDS change.
+  Showing them exactly what the paid state looks and feels like is the entire point.
+- **HOW TO TELL A TASTE FROM A REAL SUB:** key off the entitlement's SOURCE (promotional vs App Store), NOT
+  `willRenew` -- that reads false for a free week AND for a cancelled subscription, so it cannot tell them
+  apart. ⚠️ Confirm exactly how `react-native-purchases` surfaces that field at build time; five-minute check.
+- ✅ **BUYING DURING THE FREE WEEK RESOLVES ITSELF.** They then hold two sources of the same entitlement, and
+  RevenueCat serves whichever reaches furthest -- a monthly or annual sub always outlasts the remaining days.
+  So the card flips to "You're a Supporter, Renews ..." the MOMENT they buy, not on day 8. No special handling.
+  ⚠️ There is no way to defer an Apple subscription's start date, so a few days of overlap is unavoidable. The
+  end date being on screen means they can see it and choose knowingly. Accepted, do not chase.
+
 SHOW THE END DATE PASSIVELY -- no countdown. A daily countdown creates low-level anxiety and nags. Instead
 the end date appears where membership status already appears: the Membership card (Profile + Settings) and
 the Support screen, reading like a cancelled sub ("Full version until 4 August"). Findable if curious,
@@ -866,15 +945,44 @@ THE STEP-DOWN NOTICE: same centred modal + same deferral rules as MOMENT A below
 the first opening, own once-ever flag). Frame it as a promise kept, not something taken away -- they never
 paid, so there is nothing to thank them for. NAME THE ACTUAL NUMBERS; vague copy ("some limits now apply")
 makes people imagine something harsher than the truth.
-⚠️ THE DRAFT COPY BELOW IS OUT OF DATE -- it names only the estimator and Otto's message cap, because it
-predates the Otto split. It must also cover what Otto STOPS doing: reading their numbers, building
-workouts, building meals. Rewrite alongside SPEC_otto.md, not before it.
-DRAFT COPY (Justin: "fine to put in there", to be refined):
-  "Your first week is up
-   You've had the full version for seven days. From here, photo estimates drop to 5 a month and Otto to 10
-   messages a day. Everything you've logged and created stays exactly where it is.
-   If you'd like to keep the full version, becoming a Supporter is what keeps this going."
-   [Become a Supporter] [Got it]
+#### ✅ THE STEP-DOWN COPY -- REWRITTEN 2026-07-31 (the old draft below is superseded)
+⚠️ **THERE ARE TWO STEP-DOWN EVENTS AND FOUR MESSAGES. Do not merge them:**
+| Event | Message |
+|---|---|
+| Free week ends | this modal |
+| Paid subscription ends | MOMENT A's modal |
+| First WALL after the free week | Otto's in-chat explanation (SPEC_otto.md, trap 4) |
+| First WALL after a subscription lapses | Otto's other in-chat explanation (SPEC_otto.md, trap 4b) |
+Each event gets an app modal when it happens, and an Otto line the first time it actually bites. Different jobs.
+
+⚠️ **THIS ONE SELLS. MOMENT A DOES NOT.** A taste user never paid you anything, so there is nothing to thank
+them for and asking is fair. A lapsed subscriber gave you money for months, so that one is gratitude and asks
+for nothing. **This also explains the apparent contradiction in this spec:** Moment A says keep the copy
+GENERAL and never enumerate features ("it reads like a punishment list"), while this one NAMES the numbers.
+Both are right for their own situation -- a taste user was told these exact numbers seven days ago, so
+repeating them is the promise being KEPT. Do not "fix" one to match the other.
+
+**COPY (agreed 2026-07-31). Numbers deliberately mirror the onboarding block word for word:**
+> **Your first week is up**
+>
+> Everything you logged and built stays exactly where it is. Nothing was deleted.
+>
+> Here's what the free plan looks like:
+> • Otto answers anything, but stops building workouts and meals
+> • 10 messages a day with him and with Halo
+> • 5 AI Meal Estimates a month
+> • Your reports go back to the free view
+>
+> [Become a Supporter] [Got it]
+
+- ⚠️ **LEAD WITH THE REASSURANCE, do not end on it.** Ending on it means they read four bullets of things going
+  away before finding out their data is safe. Flipped, the list lands as information rather than loss.
+- **The reports bullet is deliberately VAGUE** (Justin's call) -- it covers Custom Reports, Comparison, the
+  deeper Effort vs Results cards and Patterns without listing any of them. Onboarding names them; this does not.
+- **PLUS the conditional over-cap line** from the DOWNGRADE BEHAVIOUR section, shown ONLY to the minority who
+  are actually over on meal slots or stats cards.
+- ℹ️ "Become a Supporter" as a BUTTON is fine. SPEC_otto.md's naming rule (never the bare word, never equate a
+  feature WITH the plan) governs explanatory sentences, not buttons and titles.
 ✅ **RESOLVED 2026-07-30 (SPEC_otto.md open item 2): the promise holds, with ONE wording fix needed.**
 Everything Otto BUILT survives permanently -- workouts, meals, recipes -- on both downgrade paths (taste
 ending AND a Supporter cancelling). Content she logs with (recipes, saved meals, custom foods) is

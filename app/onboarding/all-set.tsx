@@ -99,7 +99,7 @@ const WEEK_PERKS = [
   'He puts meals together from food you actually eat',
   'His answers use your real numbers',
   '30 messages a day with Otto and Halo, up from 10',
-  'Custom Reports and the Comparison Report open up',
+  'Custom Reports, Comparison and your full Effort vs Results open up',
   '100 AI Meal Estimates a month, up from 5',
 ];
 

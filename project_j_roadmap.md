@@ -1408,8 +1408,18 @@ are separate pre-submission checklists, NOT part of this menu.
        top of the user's own order survives. Nothing is deleted; everything returns on resubscribe.
      • **TIMING:** capabilities drop the instant the entitlement ends; LAYOUT changes wait for the next local
        day boundary, so nothing ever vanishes off a screen mid-day. See SPEC_otto.md + SPEC_monetization.md.
-  **D. 7-DAY TASTE** -- specced in SPEC_monetization.md, NOT built. ⚠️ HARD DEPENDENCY of B: free Otto is
-     only acceptable *because* users get the taste first. B should not ship without it.
+  **D. 7-DAY TASTE** -- ✅ **FULLY AGREED 2026-07-31** (all ten parts walked and checked against the real code
+     and the RevenueCat API), **still NOT built** apart from the onboarding announcement. Detail in
+     SPEC_monetization.md. ⚠️ HARD DEPENDENCY of B: free Otto is only acceptable *because* users get the taste
+     first. B should not ship without it.
+     KEY OUTCOMES: the grant is the same REST API the app already calls; `end_time_ms` lets the week end at
+     LOCAL MIDNIGHT on day 7; identity is safe (sign-in always precedes onboarding, and the RevenueCat id IS
+     the Firebase uid); the new-Supporter email is already guarded against promo grants. The announcement is
+     BUILT on `all-set.tsx` but is UNGATED and names builders that do not exist, so it must not reach
+     TestFlight until D, B, E and F are real.
+     STILL TO BUILD: the grant itself + a prompt retry, the server-side "already had their week" record, the
+     taste wording on the Membership card and Support screen ("Your first week" / "Free week ends"), and the
+     step-down modal.
   **E. WORKOUT BUILDER** -- needs a full spec + visualisation before any build.
      ⚠️ **THREE THINGS LANDED ON E FROM ITEM A QUESTION 3 (2026-07-30), do not re-decide them:**
      1. **CONSTRAINT: routines are PREVIEWED AND ACCEPTED, never written straight into the Workout tab.**
@@ -1556,6 +1566,24 @@ are separate pre-submission checklists, NOT part of this menu.
   **M. DIETARY RESTRICTIONS / ALLERGIES PROFILE FIELD** -- NEW 2026-07-30. Nothing in the app captures what
      someone does NOT eat. **Hard prerequisite for F** (Otto would build a shellfish dinner for someone
      allergic) and it would improve the AI meal estimator too. Profile work, small, must land before F.
+
+  **N. LAUNCH-MODAL PRIORITY (a shared flag, NOT a queue framework)** -- NEW 2026-07-31.
+     **THE GAP EXISTS TODAY**, independent of the taste: SPEC_monetization.md already admits there is NO
+     cross-system modal coordination. Summaries self-limit via `pj_last_summary_shown` + `runAfterLaunchSplash`,
+     Rate Us has its own budget in utils/ratingPrompt.ts, and they only avoid colliding because they happen to
+     fire at different moments. "The current answer is hope they don't overlap."
+     ⚠️ **The taste makes it worse:** launch-time modals become summaries, the free-week step-down, Moment A
+     (subscription ended) and Rate Us. Four things is six pairwise relationships, and the existing plan of
+     "ten lines of deference" was written when it was one modal deferring to one other.
+     ➡️ **THE FIX (agreed 2026-07-31): one shared flag saying something is claiming this launch, plus a rank
+     number on each modal.** Everything else stands down and retries next launch. Adding a fifth modal later
+     means picking a number, not writing four more rules.
+     ⚠️ NOT a queue framework -- the spec's warning against that still stands. But it is not zero either: the
+     summaries and Rate Us each need a small change to respect the flag, so it is a small idea touching about
+     four files.
+     Known ordering so far: summaries win, then the step-down notice, then Rate Us (Justin: the step-down
+     beats Rate Us 100% of the time).
+     ⏸️ Discussion not finished -- picked up when this item is reached.
 
   🔢 **THE ORDER (set 2026-07-30, after item A completed). Dependencies first, then value.**
   1. **D -- 7-DAY TASTE.** Specced, not built. **Blocks B**, and B is the whole point of this push.

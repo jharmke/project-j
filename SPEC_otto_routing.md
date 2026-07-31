@@ -195,4 +195,15 @@ way to see the hit rate that the whole saving depends on.
   the bundled copy. Restructuring the bundled one into chapters makes that worse. Decide: regenerate it from
   the bundled file, or delete it.
 - **Output concision** (see THE NUMBERS above).
-- **1-hour cache TTL**, once there is traffic to model it against.
+- **1-hour cache TTL -- PINNED 2026-07-31, do not flip it yet.** It is one extra field and has no
+  performance downside (cache hits are marginally faster than fresh reads). But it is NOT a free win, and
+  the maths flips with traffic:
+  • **A question every few minutes** -> the 5-minute copy never expires, so you rarely pay to make one.
+    **5 minutes wins.**
+  • **A question every ~20 minutes** -> the 5-minute copy is always gone and you pay 1.25x to remake it every
+    time; the 1-hour copy survives and is read at 0.1x. **1 hour wins clearly.**
+  • **Less than one question an hour** -> BOTH expire before the next question, so you pay to make a copy
+    every time and the 1-hour version costs 2x instead of 1.25x for nothing. **5 minutes wins again.**
+  ➡️ At 11 testers you are in the LAST band, so switching now would likely cost MORE. It becomes right
+  somewhere around a few hundred active users and stops being right once traffic is properly steady.
+  ⚠️ Check whether the 1h TTL still needs a beta header at build time.

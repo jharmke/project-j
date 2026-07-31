@@ -1608,6 +1608,28 @@ are separate pre-submission checklists, NOT part of this menu.
      the splash gate AND the priority.
      ⏸️ Discussion not finished -- picked up when this item is reached.
 
+  **O. SMART COACH COST PASS** -- NEW 2026-07-31. Found while pricing the other AI features for item H.
+     ⚠️ **`utils/coachAI.ts`'s RULEBOOK is 46,383 chars (~11,600 tokens) sent as the system prompt on EVERY
+     call, with NO caching at all** (`grep cache_control` = 0 hits in coachAI.ts, aiMealEstimator.ts and
+     aiProxy.ts). Otto's 18,400 tokens are at least cached; these are paid in full every time. At the cost
+     model's assumed weekly usage that is **~4.6 cents per user per month, more than half of what Otto will
+     cost AFTER all of item H's work.** It is the biggest unoptimised prompt in the app.
+     ⚠️ **CACHING IS NOT THE FIRST LEVER** -- same traffic-band problem as the 1h TTL (see
+     SPEC_otto_routing.md); at current volume it would cost more, not less.
+     ➡️ **The lever that works at any volume is the RULEBOOK ITSELF.** 11,600 tokens is enormous for
+     something whose own comment says the model does NO analysis and only phrases sentences already computed
+     deterministically in code. There are also at least two call paths using different prompts
+     (coachAI.ts:334 and :496), so the giant rulebook may not be needed on all of them. **Needs a proper read
+     before anyone claims what is possible.**
+     ✅ The AI Meal Estimator was priced at the same time and is DELIBERATELY LEFT ALONE (Justin, 2026-07-31):
+     ~2,250-token prompt, uncached, the only Sonnet call left, but bounded by its own 5/month free cap and
+     Sonnet is justified for reading photos.
+     ℹ️ Halo already has caching switched on; its known issue is the plans catalog sitting INSIDE the cached
+     block and varying per request, which splits the cache. Real but small -- Halo's prompt is a fraction of
+     the others.
+     ⏸️ **Deliberately parked until the Otto work (B + H) is finished.** This is a different feature and
+     chasing it is what pulled the 2026-07-31 session off course.
+
   🔢 **THE ORDER (set 2026-07-30, after item A completed). Dependencies first, then value.**
   1. **D -- 7-DAY TASTE.** Specced, not built. **Blocks B**, and B is the whole point of this push.
   2. **B + H TOGETHER -- the Otto split AND cost routing.** ⚠️ **Do NOT do these separately.** Both are

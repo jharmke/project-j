@@ -1473,10 +1473,12 @@ are separate pre-submission checklists, NOT part of this menu.
      ⚠️ Also note the clamp is a flat 1,200 for everyone, which does not match the spec's thresholds at all
      (men whisper 1500 / modal 1200; women whisper 1200 / modal 1000), so a man can currently be handed
      1,200 with no warning of any kind.
-  **H. COST ROUTING** -- ⚠️ NEEDS ITS OWN SPEC AND FULL ALIGNMENT BEFORE ANY CODE. Design sketch and the
-     two make-or-break rules are in SPEC_otto.md -> COST OPTIMISATION. Send Otto only the knowledge a
-     question needs instead of all 18k tokens. Otto ~$0.21 -> ~$0.08/user/month; break-even conversion
-     4.7% -> ~2.5%. Invisible to users.
+  **H. COST ROUTING** -- ✅ **SPEC WRITTEN 2026-07-31: `SPEC_otto_routing.md`. Design agreed, nothing built.**
+     That file supersedes the sketch in SPEC_otto.md -> COST OPTIMISATION, which got three things wrong:
+     the "$0.21 -> $0.08" figure needs item B as well as routing (routing alone lands ~$0.12, because nobody
+     counted OUTPUT tokens or the uncached block); break-even moves 4.7% -> ~3.2%, not 2.5%; and the
+     "append only" rule is WRONG -- it conflicts with cross-user cache sharing, which is worth more.
+     Invisible to users.
      ⚠️ DO NOT call this optional. It was framed that way once and it was wrong -- this is the direct fix
      to the cost problem that drove the whole 2026-07-29 session.
 

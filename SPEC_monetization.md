@@ -824,9 +824,57 @@ silent. This is deliberately NOT an Apple free trial: no card, no commitment, no
 ever be billed by accident. It exists to create CONTRAST, which is what actually converts -- a limit only
 means something to someone who has felt what it is like without it.
 
-✅ **VERIFIED + FULLY AGREED 2026-07-31.** All ten parts of this section were walked with Justin and checked
-against the real code and the RevenueCat API. Everything below stands, with the additions marked
-"CONFIRMED 2026-07-31". Item A (SPEC_otto.md) is what this taste now steps DOWN from, so read that first.
+✅ **BUILT AND DEVICE-VERIFIED 2026-07-31.** All ten parts were walked with Justin, checked against the real
+code and the RevenueCat API, then built and tested on his iPhone in four batches. Everything below stands,
+with additions marked "CONFIRMED 2026-07-31". Item A (SPEC_otto.md) is what this taste steps DOWN from, so
+read that first.
+
+⚠️ **THE TASTE ITSELF WORKS. WHAT IT ANNOUNCES LARGELY DOES NOT, YET.** The entitlement genuinely starts and
+ends, so anything already gated behind Supporter status locks correctly (reports, Comparison, the deeper EvR
+cards, and the AI caps dropping to 10/day and 5/month). But **item C is not built at all** -- there are no
+caps on anything, nothing goes dormant, and extra meal slots and stats cards do NOT revert. **Item B is not
+built either**, so Otto still does everything for everyone. Both the onboarding block and the step-down
+modal are therefore writing cheques B and C have to cash. Fine pre-launch; **neither may reach TestFlight
+until B and C are done.**
+
+#### WHAT IS ACTUALLY BUILT (files, so nobody re-derives it)
+- `functions/src/firstWeek.ts` -- `grantFirstWeek` + `revokeFirstWeek` callables, deployed.
+- `utils/firstWeek.ts` -- the claim + retry, the stored end date, the once-ever flag, the dev expiry.
+- `app/onboarding/all-set.tsx` -- the announcement block, and the grant on the final button tap.
+- `MembershipContext.tsx` -- `details.isFirstWeek`, the cache invalidation, and the launch retry.
+- `components/MembershipCard.tsx` + `app/support.tsx` -- the taste wording on all three surfaces.
+- `components/FirstWeekEndedModal.tsx` + the effect in `app/(tabs)/index.tsx` -- the step-down notice.
+- Dev rows in Settings: **Grant First Week**, **End First Week Now**, **Revoke First Week**.
+
+#### HOW THE STEP-DOWN DECIDES TO FIRE (three flat questions, no transition-watching)
+`pj_first_week_ends_at` is stored the moment the week is granted, so the notice never has to catch an
+entitled -> not-entitled transition (fragile: it depends on being alive for one particular launch). Instead:
+is that date past, are they no longer entitled, and has `pj_first_week_stepdown_shown` not been set. Same
+logic in testing and production.
+⚠️ The "no longer entitled" half is also what stops it firing for someone who SUBSCRIBED during their week.
+Their taste end date passes identically, but nothing was taken from them.
+
+#### ⚠️ THE TIMING, AND THE TWO WAYS THAT LOOK RIGHT AND ARE NOT
+**Correct: an ~800ms `setTimeout` FIRST, then `runAfterLaunchSplash`.** Identical to the Day/Week/Month
+summary path in the same file. This is the one arrangement that behaves.
+❌ The splash gate ALONE (no delay) lands on top of the launch cinematic.
+❌ Gate first, then a short pause, ALSO lands on the cinematic.
+Match the summaries rather than reasoning about it from first principles. Two cleverer orderings were tried
+on device and both failed.
+⚠️ **AND NULL THE TIMER REF IN CLEANUP, not just `clearTimeout`.** The effect re-runs the moment membership
+resolves from loading to free; cleanup cancels the pending timer, and if the ref still holds the dead handle
+the next pass sees "a show is already pending" and returns early FOREVER. Cost an hour.
+
+#### THE OVER-CAP LINE, precisely
+Only ever mentions the two LAYOUT caps. Content people made (custom foods, recipes, saved meals, custom
+exercises) is GRANDFATHERED, so nothing there disappears and naming it would frighten them about a loss they
+are not taking.
+⚠️ **Both caps are "defaults plus one", never raw totals:** meal slots = the 4 defaults + 1 = **5**; stats
+cards = the **7 default GRAPH cards + 1** (system cards are not in the cap at all).
+Wording, built from whichever they are actually over:
+- Slots only: *"Your meal slots go back to five. The extras are saved and waiting if you come back."*
+- Cards only: *"Your extra stats cards go back to the standard set. They're saved and waiting if you come back."*
+- Both: *"Your meal slots and stats cards go back to the free layout. The extras are saved and waiting if you come back."*
 
 HOW IT IS BUILT -- and it is far less work than it first looks. A trial IS Supporter status with a known end
 date, exactly like a monthly sub someone cancelled in iPhone settings (entitled, `periodEnd` set,
@@ -988,12 +1036,12 @@ Everything Otto BUILT survives permanently -- workouts, meals, recipes -- on bot
 ending AND a Supporter cancelling). Content she logs with (recipes, saved meals, custom foods) is
 GRANDFATHERED even when over the free cap; only NEW creation is blocked until she is back under.
 ⚠️ BUT two things DO step down, so "everything stays exactly where it is" is not literally true: **meal
-slots revert 8 -> 4 and stats cards revert 4 -> 1** (extras go dormant, top of her own order survives,
+slots revert 8 -> 5 and stats cards revert 4 -> 1** (extras go dormant, top of her own order survives,
 nothing is deleted, all of it returns on resubscribe). The copy must not promise more than that. Full
 detail and the reasoning is in SPEC_otto.md open item 2.
 ➡️ **FIX: make that line CONDITIONAL, not a blanket warning (decided 2026-07-30).** `DEFAULT_MEAL_SLOTS` is
-exactly 4 (Morning, Lunch, Dinner, Snacks), so the free cap and the default are the SAME -- only someone who
-deliberately added extras during their week is affected, which is a minority. So:
+exactly 4 (Morning, Lunch, Dinner, Snacks) and the free cap is 5, so a free user gets the defaults plus one
+of their own. Only someone who added several extras during their week is affected, which is a minority. So:
 - NOT over either cap -> leave the copy as it is. It is completely true for them.
 - OVER on slots or stats cards -> add ONE sentence, roughly: *"Your extra meal slots and stats cards go back
   to the standard layout. They're saved, and they'll be right there if you come back."*

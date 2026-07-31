@@ -42,6 +42,7 @@ import { resolveMaxHR, zoneBounds, timeInZones, fmtZoneTime, ageFromBirthday, ta
 import { generateDiagnosticReport, ReportWindow, dumpWindowComparison } from '../utils/diagnosticReport';
 import { dumpDayScoreWithRecovery, ensureFreshDayScore } from '../utils/dayScoreStore';
 import { buildCompanionStats } from '../utils/companionStats';
+import { devExpireFirstWeek } from '../utils/firstWeek';
 import { probeStreakExclusions } from '../utils/streakExclusion';
 import { startVacation, endVacationEarly, cancelVacationFully, describeVacation, getVacation, vacationTodayKey, addDaysKey, MAX_VACATION_DAYS, VacationState } from '../utils/vacationMode';
 
@@ -2698,6 +2699,25 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Gives this account the 7-day taste. Refuses if it has already had one.</Text>
               </View>
               <Ionicons name="gift-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+              try {
+                // Revoke the entitlement AND back-date the stored end time, which is exactly the state a real
+                // user is in the morning after their week runs out. Nothing is faked: the app runs the same
+                // three checks it will run in production.
+                const fn = httpsCallable(getFunctions(app), 'revokeFirstWeek');
+                await fn({});
+                await devExpireFirstWeek();
+                Alert.alert('First week ended', 'Entitlement revoked and the end date back-dated.\n\nFully close and reopen the app. The step-down notice should appear once.');
+              } catch (e) { Alert.alert('End failed', String(e)); }
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>End First Week Now</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Expires the taste so the step-down notice fires on the next launch.</Text>
+              </View>
+              <Ionicons name="hourglass-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {

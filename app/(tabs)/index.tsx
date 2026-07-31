@@ -31,6 +31,10 @@ import { entryNutrient } from '../../utils/nutrientScale';
 import { barFillGradient } from '../../utils/barGradient';
 import { wakeMsFromStored, computeWaterPace, paceTone, pacePinTone, paceToneColor, paceLabel } from '../../utils/waterPace';
 import { runAfterLaunchSplash } from '../../utils/launchSplashGate';
+import { loadMealSlots } from '../../utils/mealSlots';
+import { shouldShowStepDown, markStepDownShown } from '../../utils/firstWeek';
+import { useMembership } from '../../MembershipContext';
+import FirstWeekEndedModal from '../../components/FirstWeekEndedModal';
 import { maybeRunAdaptiveTdee } from '../../utils/adaptiveTdee';
 import { isSyncReady } from '../../services/syncService';
 import { reconcileDayWater, runWaterReconciliation } from '../../utils/waterData';
@@ -64,7 +68,7 @@ import WeightHistoryModal from '../../components/WeightHistoryModal';
 import { gatherWeightHistory, startingWeighIn } from '../../utils/weightHistory';
 import { StatsGraphCard } from '../../components/StatsGraphCard';
 import { StatsCardEditModal } from '../../components/StatsCardEditModal';
-import { saveStatsCards } from '../../statsCardRegistry';
+import { saveStatsCards, loadStatsCards } from '../../statsCardRegistry';
 import { useTutorial, isTutorialSeen } from '../../context/TutorialContext';
 import { useTutorialTarget } from '../../hooks/useTutorialTarget';
 import { showToolkit } from '../../components/ToolkitSheet';
@@ -1150,6 +1154,10 @@ export default function HomeScreen() {
   // Weekly / monthly "summary ready" pop-ups (last closed period). Precedence in runScan.
   const [weekSummary, setWeekSummary] = useState<WeeklySummaryData | null>(null);
   const [monthSummary, setMonthSummary] = useState<MonthlySummaryData | null>(null);
+  // The 7-day taste running out. Once ever, and it always yields to a summary (see the effect below).
+  const [firstWeekEnded, setFirstWeekEnded] = useState<{ overCapNote: string | null } | null>(null);
+  const stepDownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { isSupporter } = useMembership();
   const [homeTips, setHomeTips] = useState<StoredTip[]>([]);
   const [tipIndex, setTipIndex] = useState(0);
   const [coachCache, setCoachCache] = useState<CoachTipCache | null>(null);
@@ -1273,7 +1281,88 @@ export default function HomeScreen() {
     runScan();
     const sub = AppState.addEventListener('change', s => { if (s === 'active') runScan(); });
     return () => { sub.remove(); if (summaryTimerRef.current) clearTimeout(summaryTimerRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── The 7-day taste ending ─────────────────────────────────────────────────
+  // Fires ONCE, on the first launch after the week runs out. SPEC_monetization.md -> THE STEP-DOWN COPY.
+  //
+  // ⚠️ IT MUST DEFER, NOT COMPETE. The week ends overnight, so the very next launch is exactly when a
+  // Day/Week/Month Summary is most likely to fire -- that collision is likely, not theoretical. This is a
+  // once-ever message that is not time-sensitive, so being a day late costs nothing, whereas stacking two
+  // modals on someone the moment their week ends is a rotten first impression of the free tier.
+  // Summary wins; this waits and tries again next launch.
+  // (THE PLAN item N replaces this hand-rolled deference with a shared flag once there are more than two
+  // things competing for a launch.)
+  useEffect(() => {
+    let cancelled = false;
+    const check = async () => {
+      if (cancelled) return;
+      // Something is already on screen, or a summary is queued behind the splash.
+      if (daySummary || dayScoreDisclaimer || weekSummary || monthSummary || summaryTimerRef.current) return;
+      if (firstWeekEnded || stepDownTimerRef.current) return;
+      if (!(await shouldShowStepDown(isSupporter))) return;
+
+      // ⚠️ ONLY warn about a cap they are ACTUALLY over, and ONLY about the two LAYOUT caps. Content they made
+      // (custom foods, recipes, saved meals, custom exercises) is GRANDFATHERED -- they keep every one and
+      // simply cannot add more -- so nothing there disappears, and mentioning it would frighten people about
+      // a loss they are not taking. See SPEC_otto.md open item 2.
+      //
+      // ⚠️ BOTH CAPS ARE "DEFAULTS PLUS ONE", never a raw total (Justin, 2026-07-31). Meal slots ship with 4
+      // and free allows 5. The Stats tab ships with 7 default GRAPH cards and free allows one of your own on
+      // top. Reading either as a bare total would cull the defaults, which was never the intent.
+      let overSlots = false;
+      let overCards = false;
+      try {
+        const { mealSlots } = await loadMealSlots();
+        overSlots = mealSlots.length > 5;
+      } catch {}
+      try {
+        const cards = await loadStatsCards();
+        const graphs = cards.filter(c => c.type === 'graph').length;
+        const defaultGraphs = DEFAULT_STATS_CARDS.filter(c => c.type === 'graph').length;
+        overCards = graphs > defaultGraphs + 1;
+      } catch {}
+
+      const overCapNote =
+        overSlots && overCards
+          ? 'Your meal slots and stats cards go back to the free layout. The extras are saved and waiting if you come back.'
+          : overSlots
+            ? 'Your meal slots go back to five. The extras are saved and waiting if you come back.'
+            : overCards
+              ? "Your extra stats cards go back to the standard set. They're saved and waiting if you come back."
+              : null;
+
+      if (cancelled) return;
+      // ⚠️ IDENTICAL SHAPE TO THE SUMMARY POP-UP ABOVE, deliberately. 800ms so Home paints, THEN the launch
+      // splash gate. Two other orderings were tried here and both still landed on the splash; matching the
+      // one path in the app that is known to behave is worth more than a cleverer arrangement.
+      // (Item N should own this once there is one shared launch-modal path -- right now every launch modal
+      // reinvents its own timing, which is how they drift apart.)
+      stepDownTimerRef.current = setTimeout(() => {
+        stepDownTimerRef.current = null;
+        runAfterLaunchSplash(async () => {
+          if (cancelled) return;
+          await markStepDownShown();
+          setFirstWeekEnded({ overCapNote });
+        });
+      }, 800);
+    };
+    check();
+    const sub = AppState.addEventListener('change', s => { if (s === 'active') check(); });
+    return () => {
+      cancelled = true;
+      sub.remove();
+      // ⚠️ NULL IT, don't just clear it. This effect re-runs the moment membership resolves from loading to
+      // free, so the cleanup cancels the pending timer -- and if the ref still holds the dead handle, the
+      // next pass sees "a show is already pending" and returns early forever. The notice then never fires.
+      if (stepDownTimerRef.current) {
+        clearTimeout(stepDownTimerRef.current);
+        stepDownTimerRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSupporter, daySummary, dayScoreDisclaimer, weekSummary, monthSummary]);
 
   // ── Vacation Mode banner: refresh on every focus so Settings changes land ───
   useFocusEffect(useCallback(() => {
@@ -4779,6 +4868,15 @@ export default function HomeScreen() {
         goalWeight={goalWeight ?? null}
         onChange={refreshWeightCardState}
       />
+
+      {/* The 7-day taste ending. Once ever, and only when nothing else claimed this launch. */}
+      {firstWeekEnded && (
+        <FirstWeekEndedModal
+          theme={theme}
+          overCapNote={firstWeekEnded.overCapNote}
+          onDismiss={() => setFirstWeekEnded(null)}
+        />
+      )}
 
       {/* Morning Day Summary pop-up (yesterday's Day Score) */}
       {daySummary && (

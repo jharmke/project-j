@@ -667,7 +667,11 @@ the free CREATION caps (item C), and that needed splitting into two categories.
 of it, over cap or not. Everything stays usable, editable and deletable. The ONLY thing blocked is creating
 NEW ones until she is back under the cap. This is just item C's own rule ("LIMIT creation, never access").
 
-**LAYOUT limits -> REVERT to the free cap.** Meal slots (8 -> 4) and stats cards (4 -> 1). The extras go
+⚠️ **BOTH LAYOUT CAPS ARE "DEFAULTS PLUS ONE", NOT RAW TOTALS** (Justin, 2026-07-31): meal slots are the 4
+defaults plus 1 = **5**, and stats cards are the **7 default GRAPH cards plus 1** of your own (system cards
+are not in the cap). Reading either as a bare total culls the defaults, which was never the intent.
+
+**LAYOUT limits -> REVERT to the free cap.** Meal slots (8 -> 5) and stats cards (down to defaults + 1). The extras go
 DORMANT, top of the user's own order down to the cap; the rest are stored but not displayed, and come back
 exactly as they were if she subscribes again.
 

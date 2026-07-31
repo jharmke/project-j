@@ -18,6 +18,15 @@ import { app } from '../firebaseConfig';
 // the only thing that makes the app try again.
 const PENDING_KEY = 'pj_first_week_pending';
 
+// When the taste runs out. Stored locally the moment it is granted, so the step-down notice does not have to
+// watch for an entitled -> not-entitled transition (which is fragile: it depends on catching one launch).
+// Instead the check is three flat questions -- is that date past, are they no longer entitled, has the notice
+// already been shown -- which behave identically in testing and in production.
+const ENDS_AT_KEY = 'pj_first_week_ends_at';
+
+// Once-ever flag for the step-down notice. Its own key, so it is impossible for the notice to fire twice.
+const STEP_DOWN_SHOWN_KEY = 'pj_first_week_stepdown_shown';
+
 const ATTEMPT_DELAYS_MS = [0, 3_000, 12_000];
 
 export type ClaimResult = { ok: boolean; granted: boolean; endsAtMs: number };
@@ -43,6 +52,11 @@ export async function claimFirstWeek(): Promise<ClaimResult> {
       const result = await callGrant();
       // Reached the server, so there is nothing left to retry -- whether it granted or refused.
       await AsyncStorage.removeItem(PENDING_KEY).catch(() => {});
+      // Remember the end date either way. On a REFUSAL the server hands back the end date of the week they
+      // already had, which is exactly what a reinstall mid-taste needs to know.
+      if (result.endsAtMs > 0) {
+        await AsyncStorage.setItem(ENDS_AT_KEY, String(result.endsAtMs)).catch(() => {});
+      }
       return result;
     } catch {
       // keep trying
@@ -59,4 +73,38 @@ export async function firstWeekClaimPending(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * Should the step-down notice fire on this launch?
+ *
+ * `entitled` is passed in rather than read here, because membership truth lives in MembershipContext and a
+ * second source would eventually disagree with the first.
+ *
+ * ⚠️ The "still entitled" check is what stops this firing for someone who SUBSCRIBED during their week. Their
+ * taste end date passes exactly the same way, but nothing has been taken from them, so there is nothing to
+ * announce.
+ */
+export async function shouldShowStepDown(entitled: boolean): Promise<boolean> {
+  if (entitled) return false;
+  try {
+    if ((await AsyncStorage.getItem(STEP_DOWN_SHOWN_KEY)) === 'true') return false;
+    const raw = await AsyncStorage.getItem(ENDS_AT_KEY);
+    const endsAtMs = raw ? Number(raw) : 0;
+    if (!endsAtMs || !Number.isFinite(endsAtMs)) return false;
+    return Date.now() >= endsAtMs;
+  } catch {
+    return false;
+  }
+}
+
+/** Marked the moment the notice is actually rendered, so it can never appear twice. */
+export async function markStepDownShown(): Promise<void> {
+  try { await AsyncStorage.setItem(STEP_DOWN_SHOWN_KEY, 'true'); } catch {}
+}
+
+/** DEV TOOL ONLY: pretend the week has already run out, so the notice can be tested without waiting seven days. */
+export async function devExpireFirstWeek(): Promise<void> {
+  await AsyncStorage.setItem(ENDS_AT_KEY, String(Date.now() - 60_000)).catch(() => {});
+  await AsyncStorage.removeItem(STEP_DOWN_SHOWN_KEY).catch(() => {});
 }

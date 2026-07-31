@@ -1378,7 +1378,19 @@ are separate pre-submission checklists, NOT part of this menu.
   **B. OTTO FREE/PAID SPLIT** -- direction locked in SPEC_otto.md, prompt/KB work, small once A is done.
   **C. NON-AI WALLS / PAYWALLS / LIMITS** -- ✅ ALREADY DESIGN-LOCKED with real numbers (2026-07-28), see
      SPEC_monetization.md -> NON-AI SUPPORTER PERKS. Custom foods 20, recipes 5, exercise library 15, stats
-     cards 1, meal slots 4 (vs 8), macro + nutrition goals presets-only, no data export.
+     cards 1, **meal slots 5 (vs 8)**, macro + nutrition goals presets-only, no data export.
+     ⚠️ **THE LAYOUT CAPS ARE "DEFAULTS PLUS ONE", NOT RAW TOTALS (Justin, 2026-07-31). Read either as a bare
+     total and you cull the defaults, which was never the intent.**
+     • **MEAL SLOTS: 5, corrected from 4.** `DEFAULT_MEAL_SLOTS` is 4 (Morning, Lunch, Dinner, Snacks), so a
+       cap of 4 gave a free user nothing of their own -- they could never add a single slot.
+     • **STATS CARDS: the 7 default GRAPH cards plus 1 of your own.** "Stats cards 1" reads as one card TOTAL,
+       which would strip the Stats tab back to a single graph. The system cards (At a Glance, Trends, Records,
+       Streaks, Challenges, Body, Calendar, Reports) are not part of this cap at all.
+     ⚠️ **A SHIPPED MODAL ALREADY PROMISES THE DORMANCY BEHAVIOUR (2026-07-31).** The 7-day taste step-down
+     notice (`components/FirstWeekEndedModal.tsx`) tells users their extra meal slots and stats cards "go back
+     to the free layout" and that the extras are "saved and waiting if you come back". That is a promise the
+     app cannot currently keep -- NOTHING in item C is built. Whoever picks C up is honouring existing copy,
+     not inventing behaviour. The onboarding block in `all-set.tsx` makes the same kind of promise.
      ➡️ **NEW 2026-07-30: SAVED MEALS, cap 5 free.** `pj_saved_meals` (utils/savedMeals.ts + the Repeat Meal
      modal) is a real shipped feature that was MISSING from this cap list entirely. Justin's call: 5, same
      over-cap logic as recipes. (A worry that 5 hides the catalog search box was checked and dropped: the
@@ -1417,9 +1429,13 @@ are separate pre-submission checklists, NOT part of this menu.
      the Firebase uid); the new-Supporter email is already guarded against promo grants. The announcement is
      BUILT on `all-set.tsx` but is UNGATED and names builders that do not exist, so it must not reach
      TestFlight until D, B, E and F are real.
-     STILL TO BUILD: the grant itself + a prompt retry, the server-side "already had their week" record, the
-     taste wording on the Membership card and Support screen ("Your first week" / "Free week ends"), and the
-     step-down modal.
+     ✅ **BUILT AND DEVICE-VERIFIED 2026-07-31**, in four batches: the server-side grant + revoke callables,
+     the claim on the final onboarding tap with a prompt retry (proven with airplane mode), the "already had
+     their week" record, the taste wording on all three membership surfaces, and the step-down modal.
+     ⚠️ **DO NOT SHIP TO TESTFLIGHT UNTIL B AND C ARE DONE.** The taste itself works, but most of what it
+     ANNOUNCES does not exist yet: item C is not built (no caps, nothing goes dormant, extra meal slots and
+     stats cards do not revert) and item B is not built (Otto still does everything for everyone). Both the
+     onboarding block and the step-down modal are promising behaviour those two items have to deliver.
   **E. WORKOUT BUILDER** -- needs a full spec + visualisation before any build.
      ⚠️ **THREE THINGS LANDED ON E FROM ITEM A QUESTION 3 (2026-07-30), do not re-decide them:**
      1. **CONSTRAINT: routines are PREVIEWED AND ACCEPTED, never written straight into the Workout tab.**
@@ -1583,6 +1599,11 @@ are separate pre-submission checklists, NOT part of this menu.
      four files.
      Known ordering so far: summaries win, then the step-down notice, then Rate Us (Justin: the step-down
      beats Rate Us 100% of the time).
+     ➡️ **IT MUST ALSO OWN THE DELAY, not just the ordering (added 2026-07-31).** The summaries wait ~800ms
+     so Home paints, THEN wait for `runAfterLaunchSplash`. The first-week step-down notice was built with only
+     the second half and landed on top of the launch splash on a cold start. Every launch modal currently
+     reinvents its own timing, which is exactly how they drift apart. One shared path should carry the delay,
+     the splash gate AND the priority.
      ⏸️ Discussion not finished -- picked up when this item is reached.
 
   🔢 **THE ORDER (set 2026-07-30, after item A completed). Dependencies first, then value.**

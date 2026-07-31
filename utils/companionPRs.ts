@@ -49,6 +49,54 @@ export const messageWantsPRs = (text: string, liftNames: string[]): boolean => {
   return false;
 };
 
+// ─── FREE TIER: the exercise-NAME list on its own ────────────────────────────
+// Item A kept this free while the PR NUMBERS are gated (SPEC_otto.md open item 1). It is not a perk, it is
+// the guardrail that stops Otto implying a made-up exercise is real: with it he can say "I don't recognise
+// that as one of your exercises" instead of "you haven't logged a PR for it yet".
+//
+// ⚠️ DECOUPLED FROM PRs ON PURPOSE. buildPRContextIfRelevant returns null when the user has NO backed PRs,
+// so the list used to vanish for brand-new users and anyone who only does cardio -- exactly the people most
+// likely to ask about an exercise they half-remember the name of. Item A logged this as a fix; this is it.
+export const buildExerciseNamesIfRelevant = async (message: string): Promise<string | null> => {
+  let libraryNames: string[] = [];
+  try {
+    const rawLib = await AsyncStorage.getItem('pj_exercise_library');
+    const lib = rawLib ? JSON.parse(rawLib) : [];
+    if (Array.isArray(lib)) libraryNames = lib.map((e: any) => e?.name).filter((n: any): n is string => typeof n === 'string' && !!n.trim());
+  } catch {}
+
+  const scheduledNames: string[] = [];
+  try {
+    const raw = await AsyncStorage.getItem('pj_workout_state');
+    const state = raw ? JSON.parse(raw) : null;
+    for (const map of [state?.programs || {}, state?.weeklyTemplate || {}]) {
+      for (const day of Object.values(map as Record<string, any>)) {
+        for (const ex of ((day as any)?.exercises || [])) {
+          if (ex?.name && typeof ex.name === 'string' && ex.name.trim()) scheduledNames.push(ex.name);
+        }
+      }
+    }
+  } catch {}
+
+  const known = Array.from(new Set([...libraryNames, ...scheduledNames]));
+  if (!known.length) return null;
+  // Same generous intent check as the PR block, minus the PR-specific words: fire when the message names
+  // one of their exercises at all. A false positive costs a few tokens; a false negative lets him guess.
+  if (!messageWantsPRs(message, known)) return null;
+
+  return [
+    "REAL EXERCISES FOR THIS USER (their full library plus everything they have logged or scheduled; this",
+    "is the complete list of exercises that actually exist for them):",
+    known.join(', '),
+    '',
+    'Use this ONLY to tell a real exercise from one that does not exist. If they name something that is NOT',
+    'on this list, say you do not recognise it as one of their exercises -- do NOT imply it exists or that',
+    'they might have logged it. You do NOT have their PR numbers or session history on this plan, so never',
+    'state or estimate a weight, a rep count or a trend; point them to the PR home (Exercise Library, PRs',
+    'button) instead.',
+  ].join('\n');
+};
+
 // If the message is about lift PRs, return a snapshot block of ALL the user's history-backed PRs for
 // Otto's context; otherwise null (nothing attached). Reuses the PR home's ghost filter so a record from
 // a deleted workout is never cited.

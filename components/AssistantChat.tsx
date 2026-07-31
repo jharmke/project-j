@@ -21,7 +21,7 @@ import { router } from 'expo-router';
 import { useMembership } from '../MembershipContext';
 import { CRISIS_RESPONSE, screenForCrisis } from '../utils/faithCrisis';
 import { buildCompanionStats } from '../utils/companionStats';
-import { buildPRContextIfRelevant } from '../utils/companionPRs';
+import { buildPRContextIfRelevant, buildExerciseNamesIfRelevant } from '../utils/companionPRs';
 import { buildWorkoutContextIfRelevant } from '../utils/companionWorkouts';
 import { buildFoodContextIfRelevant } from '../utils/companionFood';
 import { buildSleepContextIfRelevant } from '../utils/companionSleep';
@@ -564,22 +564,52 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
 
     try {
       const { styleMode, faithTier, userContext } = await loadUserContext();
-      // Fresh each message so mid-chat logging is reflected. Reuses the app's own calc utils, so
-      // every number matches the coach/reports exactly (see utils/companionStats.ts).
-      const pack = await buildCompanionStats(localTodayKey());
-      // Only when the message is about PRs, attach the user's full lift-PR list to THIS request (kept
-      // out of the always-on snapshot so it costs nothing on unrelated messages). See utils/companionPRs.
-      const prCtx = await buildPRContextIfRelevant(text);
-      const woCtx = await buildWorkoutContextIfRelevant(text);
-      const foodCtx = await buildFoodContextIfRelevant(text);
-      const sleepCtx = await buildSleepContextIfRelevant(text);
-      const bodyCtx = await buildBodyContextIfRelevant(text);
-      const achCtx = await buildAchievementsContextIfRelevant(text);
-      const journalCtx = await buildJournalContextIfRelevant(text);
-      const extraCtx = [prCtx, woCtx, foodCtx, sleepCtx, bodyCtx, achCtx, journalCtx].filter(Boolean).join('\n\n');
-      const dataSnapshot = extraCtx ? `${pack.snapshotText}\n\n${extraCtx}` : pack.snapshotText;
+
+      // ─── THE FREE/PAID DATA GATE (THE PLAN item B; decided in SPEC_otto.md open item 1) ───
+      // ⚠️ STRUCTURAL, NOT INSTRUCTIONAL. Free users are simply not SENT their logged data. Telling Otto to
+      // "know but not say" is a wall made of willpower: models cave when pushed three times. If the numbers
+      // were never sent there is nothing to leak, and no prompt trick can extract them.
+      // The server enforces this again (appCompanion.ts) so a modified client cannot get round it.
+      //
+      // FREE STILL GETS: their goals/targets and coaching mode (userContext, above), ACHIEVEMENTS (the
+      // retention engine, and four of its counters are faith progress), JOURNAL + PRAYERS (faith is never
+      // paywalled), and the exercise-NAME list (a guardrail, not a perk).
+      // FREE LOSES: the always-on snapshot, lift PRs, workout history, food history, sleep/recovery, and
+      // body measurements.
+      //
+      // ⚠️ THE FREE EXTRAS TRAVEL IN THEIR OWN FIELD, not inside dataSnapshot. The server re-applies the
+      // gate by discarding dataSnapshot for a non-Supporter, so anything that must survive for free users
+      // cannot be smuggled inside it.
+      let dataSnapshot: string | undefined;
+      let freeContext: string | undefined;
+      // ⚠️ STAYS EMPTY FOR FREE USERS ON PURPOSE. substituteStats STRIPS any [[stat:key]] whose key is not in
+      // this map, so if Otto ever reaches for a number he was not given, the user sees nothing rather than a
+      // wrong figure or raw bracket code. Belt and braces behind the prompt rules.
+      let statValueMap: Record<string, string> = {};
+      if (isSupporter) {
+        // Fresh each message so mid-chat logging is reflected. Reuses the app's own calc utils, so
+        // every number matches the coach/reports exactly (see utils/companionStats.ts).
+        const pack = await buildCompanionStats(localTodayKey());
+        statValueMap = pack.valueMap;
+        // Only when the message is about PRs, attach the user's full lift-PR list to THIS request (kept
+        // out of the always-on snapshot so it costs nothing on unrelated messages). See utils/companionPRs.
+        const prCtx = await buildPRContextIfRelevant(text);
+        const woCtx = await buildWorkoutContextIfRelevant(text);
+        const foodCtx = await buildFoodContextIfRelevant(text);
+        const sleepCtx = await buildSleepContextIfRelevant(text);
+        const bodyCtx = await buildBodyContextIfRelevant(text);
+        const achCtx = await buildAchievementsContextIfRelevant(text);
+        const journalCtx = await buildJournalContextIfRelevant(text);
+        const extraCtx = [prCtx, woCtx, foodCtx, sleepCtx, bodyCtx, achCtx, journalCtx].filter(Boolean).join('\n\n');
+        dataSnapshot = extraCtx ? `${pack.snapshotText}\n\n${extraCtx}` : pack.snapshotText;
+      } else {
+        const achCtx = await buildAchievementsContextIfRelevant(text);
+        const journalCtx = await buildJournalContextIfRelevant(text);
+        const namesCtx = await buildExerciseNamesIfRelevant(text);
+        freeContext = [achCtx, journalCtx, namesCtx].filter(Boolean).join('\n\n') || undefined;
+      }
       const callable = httpsCallable(getFunctions(app), 'appCompanion');
-      const res = await callable({ message: text, history, styleMode, faithTier, userContext, dataSnapshot });
+      const res = await callable({ message: text, history, styleMode, faithTier, userContext, dataSnapshot, freeContext });
       const data = (res.data ?? {}) as { ok?: boolean; reply?: string; crisis?: boolean; message?: string; used?: number; cap?: number };
 
       if (typeof data.used === 'number' && typeof data.cap === 'number') {
@@ -594,7 +624,7 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
         setSending(false);
         // Substitute [[stat:key]] tokens with the exact values from the pack we sent (so any personal
         // number is the app's own number), then pull out [[route:key]] tokens into tappable pills.
-        const { text: finalText, routes, tutorials } = substituteRoutes(substituteStats(data.reply!, pack.valueMap), text);
+        const { text: finalText, routes, tutorials } = substituteRoutes(substituteStats(data.reply!, statValueMap), text);
         setMessages(prev => [...prev, { role: 'assistant', text: stripInlineFormatting(finalText), routes, tutorials }]);
       } else if (data.message) {
         setSending(false);

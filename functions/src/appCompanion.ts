@@ -52,7 +52,11 @@ const SUPPORTER_DAILY_CAP = 30;
 // EMPTIED 2026-07-28 (Justin's own uid removed) so he experiences the real caps like any other user --
 // he found the unreachable Reports locked screen precisely by being on the free path. Add a uid back here
 // temporarily if heavy Otto testing needs it; must be EMPTY at launch either way.
-const DEV_UNLIMITED_UIDS: string[] = [];
+// ⚠️ TEMPORARILY REPOPULATED 2026-07-31 for the free/paid split work (THE PLAN item B). Justin is the only
+// tester and testing the free tier means asking Otto far more than 10 questions in an afternoon. This ONLY
+// lifts the daily message cap -- it does NOT grant entitlement, so the free-tier gate below still applies to
+// him and the walls still fire. MUST BE EMPTY AT LAUNCH (already on the launch checklist).
+const DEV_UNLIMITED_UIDS: string[] = ['zLZOx2aqiKXcl3tlg7LNmkwbGxH3'];
 
 // Cheap, fast model (matches Halo). Alias form, no date suffix.
 const MODEL = 'claude-haiku-4-5';
@@ -115,6 +119,7 @@ export const appCompanion = onCall(
       faithTier?: unknown;
       userContext?: unknown;
       dataSnapshot?: unknown;
+      freeContext?: unknown;
     };
     const message = typeof data.message === 'string' ? data.message.trim() : '';
     if (!message) {
@@ -136,6 +141,12 @@ export const appCompanion = onCall(
       : '(No profile context provided.)';
     const dataSnapshot = typeof data.dataSnapshot === 'string' && data.dataSnapshot.trim()
       ? data.dataSnapshot.trim()
+      : undefined;
+    // The always-free extras (achievements, journal + prayers, the exercise-name list). Kept separate from
+    // dataSnapshot precisely so the server's gate below can discard the gated half without taking these
+    // with it. See SPEC_otto.md open item 1.
+    const freeContext = typeof data.freeContext === 'string' && data.freeContext.trim()
+      ? data.freeContext.trim()
       : undefined;
 
     // 2. Server-side crisis re-screen (backstop). Short-circuit before counting or calling AI.
@@ -213,7 +224,13 @@ export const appCompanion = onCall(
           {
             // Volatile half (this user's context + data snapshot): not cached.
             type: 'text',
-            text: buildCompanionVolatile(userContext, dataSnapshot),
+            // ⚠️ THE GATE IS ENFORCED HERE TOO, not only on the client. The app already declines to build a
+            // snapshot for a free user, but a modified client could send one, and this is the one place in
+            // the system where trusting the client would hand out a paid feature. `supporter` comes from
+            // the server's own membership record and fails closed to free on any error.
+            // (A user who TYPES their own numbers into the message still gets personalised advice. That is
+            // the accepted loophole from SPEC_otto.md open item 5 -- the app revealed nothing.)
+            text: buildCompanionVolatile(userContext, supporter ? dataSnapshot : undefined, freeContext),
           },
         ],
         messages,

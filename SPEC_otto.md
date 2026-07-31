@@ -1,10 +1,11 @@
 # SPEC: Otto (the general companion) -- free vs Supporter
 
 Status: **DIRECTION LOCKED 2026-07-29, NOTHING BUILT.** Otto today is fully free with no tiering.
-Last updated 2026-07-30. FOUR things resolved that day: **OPEN ITEMS 1, 2 and 3** (the hard gate is LOCKED;
-artifacts survive a downgrade; Otto may create exercises only when asked) and **THE UNDEREATING SAFEGUARD**
-(app-side detection, Otto is the only voice, he never speaks first). Question 3 also spawned three new items
-in THE PLAN: I (exercise editor), J (expand the pool), K (lift-name aliases).
+Last updated 2026-07-30. FIVE things resolved that day: **OPEN ITEMS 1, 2, 3 and 4** (the hard gate is
+LOCKED; artifacts survive a downgrade; Otto may create exercises only when asked; the full pitch ruleset)
+and **THE UNDEREATING SAFEGUARD** (app-side detection, Otto is the only voice, he never speaks first).
+Question 3 also spawned three new items in THE PLAN: I (exercise editor), J (expand the pool), K (lift-name
+aliases). ⚠️ OPEN ITEM 4 supersedes the HOW OTTO SELLS section on any conflict.
 
 ⚠️ THIS IS THE FIRST SPEC OTTO HAS EVER HAD. `SPEC_otto_notifications.md` is the notification HUB,
 not the companion. Halo has had `SPEC_faith_ai.md` since June; Otto, the bigger feature, had nothing.
@@ -77,8 +78,14 @@ it must ship before launch (see SEQUENCING).
 
 **He does not.** He never volunteers Supporter. Ever.
 
-The ONLY trigger is the user asking for more: "can you give me more", "what about the rest", "build me
+The primary trigger is the user asking for more: "can you give me more", "what about the rest", "build me
 the full thing". That is the user saying they want it, and it is the only moment a price may be named.
+
+⚠️ **UPDATED 2026-07-30 (see OPEN ITEM 4, which is now the full ruleset and supersedes this section on any
+conflict).** A SECOND trigger was added: **their third wall in one conversation.** Justin was on the fence
+that "asks for more" alone means most users never hear a pitch at all. Also added there: attribution in
+every decline (which is NOT a pitch), caps of one per conversation and three per rolling 7 days, never
+pitching an entitled user, and the crisis / safeguard / faith exclusions.
 
 ❌ NEVER: "For chest I'd go incline press, flat press and a fly. If you want the full session with sets
 and reps built into your Workout tab, that's part of Supporter."
@@ -844,9 +851,125 @@ He gets muscles and instructions from his own general knowledge (commodity fitne
 - ⚠️ **NOTE FOR E: the builder needs real programming logic**, not plausible picks from a muscle group.
   Movement-pattern balance, compounds before isolation, sensible volume. It does not fall out for free.
 
-### 4. Otto must not pitch to existing Supporters -- CALLED "BIG", NOT TOUCHED
-He has to know not to mention Supporter to someone who already pays, and to say it at most once per
-conversation to someone who does not.
+### 4. ✅ RESOLVED 2026-07-30 -- the pitch rules.
+
+#### ATTRIBUTION IS NOT A PITCH (the distinction everything else rests on)
+- **ATTRIBUTION goes in EVERY decline.** One factual clause, e.g. "on the free plan". No price, no call to
+  action. Without it Otto reads as WEAK rather than LIMITED, and the user concludes the app is thin instead
+  of concluding there is a better version. (Same reasoning already locked for the 2-exercise cap.)
+- **A PITCH names the plan as something they could get.** Rare, capped, and rule-bound (below).
+- **A question needing no personal data is NOT a wall** and gets no attribution at all. Attribution appears
+  when he genuinely cannot do something, never as a tagline.
+- **A WALL = any moment Otto can't do something BECAUSE they are free.** DATA walls (the 6 cut pipes) and
+  CAPABILITY walls (the builders, the 2-exercise cap, creating an exercise).
+
+#### TRIGGERS -- two, and only two
+1. **The user asks for more.** "Build me the full thing", "can you give me the rest".
+2. **Their THIRD wall in one conversation.** ⚠️ Justin was on the fence that trigger 1 alone means most users
+   never hear a pitch at all. Counterweight: Otto is one of six conversion surfaces, not the closer.
+➡️ **THE APP COUNTS THE WALLS AND PASSES A FLAG** saying a pitch is allowed on this message. Otto has no
+memory between messages and would guess. Same principle as the app supplying real numbers.
+
+#### CAPS
+- **One pitch per conversation, maximum.**
+- **At most THREE pitches in any rolling 7 days.**
+- ⚠️ **A SUPPRESSION WINDOW AFTER A DOWNGRADE WAS PROPOSED AND REJECTED** (Justin, and he was right): the
+  downgrade is when someone most feels the loss and is most likely to re-up. Going silent at the best moment
+  is a bad trade. The rolling cap covers the nagging risk without a special case, and removes the need for
+  separate downgrade/cancellation windows.
+- ✅ **The day-8 explanation and the lapsed-Supporter explanation DO NOT COUNT** against the cap. Those are
+  the app explaining a change it made, not sales. If they burned one, someone would hear the explanation and
+  then get nothing when they actually start reaching.
+
+#### NEVER PITCH AN EXISTING SUPPORTER -- do it STRUCTURALLY
+**Do not send the pitch instructions to an entitled user at all.** He cannot do a thing he was never told
+about. "Don't mention it to paying users" is the willpower version, and willpower is not a wall.
+FOUR CASES FALL OUT AUTOMATICALLY, which is how you know it is the right shape:
+- **Someone in their 7-day taste is entitled** -> no pitch. Correct, they already have everything.
+- **Someone in a billing grace period is entitled** -> no pitch while their payment retries. They have not
+  actually left.
+- **A lapsed Supporter is not entitled** -> pitching resumes, landing next to the lapsed explanation so they
+  get one coherent story rather than a sales line out of nowhere.
+- **Mid-conversation upgrade** is already settled (server checks per message; he stops on the next reply).
+⚠️ **WHAT MUST NOT BE REMOVED WITH THE PITCH RULES:** the FACTS about the plan stay in his knowledge for
+everyone. A Supporter asking "what do I actually get for this?" deserves a real answer. Only the pitch
+BEHAVIOUR disappears.
+
+#### ⚠️ TWO BUILD PITFALLS, both invisible in testing -- do not discover these the hard way
+**1. `isSupporter()` RETURNS FALSE ON LOOKUP FAILURE** (verified, functions/src/membership.ts:94-97 -- the
+catch logs "defaulting to free" and returns false). That is the RIGHT default for data access and must not
+change. But it means **a paying Supporter whose lookup hiccups would get pitched** -- a subscriber being
+sold the thing they already pay for is the worst version of this feature.
+➡️ **The two decisions need OPPOSITE defaults.** Data access defaults to FREE on failure. **Pitching defaults
+to SILENCE.** So the pitch check needs THREE states -- entitled / confirmed free / unknown -- and only
+**confirmed free** may ever be pitched. Today it is a plain boolean, so "confirmed free" and "we couldn't
+tell" are indistinguishable.
+**2. TIER-DEPENDENT INSTRUCTIONS MUST LIVE IN THE VOLATILE BLOCK, NOT THE CACHED ONE.** Otto's prompt is
+split into a stable cached half (shared across every user on the same faith tier -- that sharing is why he
+is affordable) and a small volatile half. If the pitch rules or the free-tier decline behaviour go in the
+STABLE half, there are now two versions of it, which splits the cache, cuts the hit rate and works directly
+against item H's savings. Built the obvious way (rules go where rules live) this quietly makes Otto more
+expensive with nothing on screen to show for it.
+
+#### THE COPY (direction; final wording lands in B)
+⚠️ **LANGUAGE RULE, Justin repeated this several times.** Never the bare word "Supporter", and **never
+equate a feature WITH the plan** -- the plan is something you JOIN, not a category features belong to.
+✅ part of / comes with / included in / on **the Supporter plan**.
+❌ "that's Supporter" · "that **is** the Supporter plan" · "all the Supporter plan" · "Supporter, the paid
+membership".
+
+**SHAPE 1 -- they asked for more. Naming the price is fair, they asked for the product.**
+> *"Can you just build me the whole push day?"*
+> "Wish I could hand you the whole thing. On the free plan I'll give you the two that matter most. Open with
+> bench press, because that's where you can actually move some weight while you're fresh. Follow it with an
+> incline dumbbell press to cover the upper chest, which is the bit most push days come up short on. Three or
+> four sets each, and leave a rep in the tank on your last set.
+> Building the full session, sets and reps and the order, straight into your Workout tab, comes with the
+> Supporter plan. It's $9.99 a month, and it's what keeps the app running."
+> *(Support the Mission)*
+
+**SHAPE 2 -- third wall, they asked for nothing. Softer, NO price.**
+> *(after already hitting walls on food and on training)* *"How did I sleep last week?"*
+> "That's another one I can't reach on the free plan. Your whole last week of nights, scores and stages, is
+> sitting on your Sleep page.
+> That's three today I've had to send you elsewhere for. Reading your food, your training and your sleep all
+> comes with the Supporter plan, if you ever want me working from your actual numbers."
+> *(Sleep)* *(Support the Mission)*
+
+**SHAPE 2, MINDFUL** -- nothing about performance or coming up short:
+> "That's another one I can't reach on the free plan. Your last week of nights is on your Sleep page.
+> Three times today I've had to point you somewhere else. Seeing your own numbers is part of the Supporter
+> plan, if that's something you want."
+
+Discipline gets the shortest version. Every message referencing the membership carries a Support the Mission
+jump button.
+
+#### EDGE CASES (the first three are non-negotiable)
+- **CRISIS.** If crisis screening trips, NO pitch in that conversation. Not on the third wall, not even if
+  they ask. Selling to someone in that state is the worst thing this feature could do.
+- **THE UNDEREATING SAFEGUARD.** If it fired, no pitch in that exchange. Following "are you eating enough?"
+  with a sales line is grotesque and would poison the safeguard itself.
+- **FAITH.** A prayer or journal question cannot produce a wall (faith is never paywalled), but the wall
+  counter could already be at three from earlier in the conversation and fire on a message about their
+  prayer list. **Never pitch on a faith message, regardless of the count.**
+- **WHAT COUNTS AS A CONVERSATION:** closing the chat ends it. Reopening could in theory reset the counter,
+  but the 3-per-7-days cap is what actually protects them, so this does not need engineering around.
+- **AN EXPLICIT NO** ("not interested", "stop asking") buys **30 days** of silence from the unsolicited
+  pitch. ⚠️ Trigger 1 still works during those 30 days -- if they ASK, he answers. So the cost of the long
+  window is almost nothing, and what it buys is that saying no to this app actually works. Being asked again
+  two weeks after declining is how a maybe becomes a never.
+- ⚠️ **BUILD NOTE -- WHERE THE COUNTERS LIVE.** "One per conversation" is within a session and is easy. The
+  **3-per-rolling-7-days** cap and the **30-day decline** both have to PERSIST, and both must be per ACCOUNT,
+  not per device (Justin tests on two accounts across two devices, and a device-local counter would let the
+  same person be pitched twice as often).
+- ⚠️ **BUILD NOTE -- HOW THE APP LEARNS SOMEONE DECLINED.** Every other counter is app-side by design, but a
+  decline starts life as a SENTENCE ("not interested", "stop asking") that something has to recognise.
+  Simplest shape: Otto flags it in his reply and the app records the date, exactly like the crisis flag that
+  already exists. Do not try to detect it with string matching on the client.
+- **THE TIP JAR: never unprompted, and never a selling point.** He knows tips exist, so if someone asks how
+  they can support the app he can mention them. He never raises them himself. A tip pitch would need its own
+  rules, caps and edge cases, and anyone who wants to tip finds it on the Support the Mission screen the jump
+  button already goes to.
 
 ### 5. Meal builder design (Justin: ships before launch, but the hard parts are unsolved)
 - Generic meal plans FAIL: people eat what is in the fridge, not what an AI imagined.

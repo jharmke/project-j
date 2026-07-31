@@ -1319,7 +1319,7 @@ are separate pre-submission checklists, NOT part of this menu.
   discussed and fully alligned before we fucking do it."* That applies to all of it, not just the routing.
 
   **A. RESOLVE THE 6 OPEN OTTO ITEMS** (conversations, not code -- they block everything downstream).
-     **PROGRESS: 3 of the 6 done (questions 1, 2 and 3), PLUS the safeguard decision. All on 2026-07-30.**
+     **PROGRESS: 4 of the 6 done (questions 1, 2, 3 and 4), PLUS the safeguard decision. All 2026-07-30.**
      Full detail in SPEC_otto.md -> OPEN ITEMS. Summary:
      1. ✅ RESOLVED 2026-07-30 -- **HARD GATE LOCKED.** Free users are never sent the snapshot or the 5
         gated attachments (PRs, workouts, food history, sleep, body measurements). Profile/goals, the
@@ -1342,7 +1342,14 @@ are separate pre-submission checklists, NOT part of this menu.
         Otto." Full detail in SPEC_otto.md.
         ➡️ Spawned THREE new plan items: **I** (exercise editor), **J** (expand the pool), **K** (lift-name
         aliases), plus three constraints on **E**.
-     4. Otto must not pitch to existing Supporters, and at most once per conversation to anyone else
+     4. ✅ RESOLVED 2026-07-30 -- **the pitch rules.** Attribution ("on the free plan") in EVERY decline and
+        it is NOT a pitch. Two triggers only: the user asks for more, OR their third wall in a conversation,
+        with the APP counting the walls. Caps: one per conversation, three per rolling 7 days; the day-8 and
+        lapsed explanations do not count. Entitled users are never SENT the pitch rules at all (structural,
+        not willpower). ⚠️ Two build pitfalls recorded: `isSupporter()` returns false on lookup FAILURE so a
+        Supporter could be pitched (pitching must default to silence and needs a third "unknown" state), and
+        tier-dependent instructions must live in the VOLATILE prompt block or they split the cache and make
+        Otto more expensive. Full detail in SPEC_otto.md.
      5. Meal-builder food matching (the unsolved part)
      6. Two backlog items that may be cheaper as Otto capabilities: "calorie periodization" and
         "protein timing badge"

@@ -14,6 +14,8 @@ import { THEMES, useTheme } from '../../theme';
 import { storageSet } from '../../utils/storage';
 import { isOnboardingPreview, setOnboardingPreview } from '../../utils/onboardingPreview';
 import { getModeAccent, getSessionStyleMode } from '../../utils/modeAccent';
+import { claimFirstWeek } from '../../utils/firstWeek';
+import { useMembership } from '../../MembershipContext';
 import BackgroundLayers from '../../components/BackgroundLayers';
 import PrimaryCTA from '../../components/PrimaryCTA';
 import { BlurView } from 'expo-blur';
@@ -107,6 +109,7 @@ const WEEK_PERKS = [
 export default function AllSetScreen() {
   const insets = useSafeAreaInsets();
   const { setTheme, setAccent } = useTheme();
+  const { refresh: refreshMembership } = useMembership();
   const [styleMode, setStyleMode]     = useState<string>(getSessionStyleMode() ?? 'balanced');
   const [faithJourney, setFaithJourney] = useState<string>('rooted');
   const [saving, setSaving]           = useState(false);
@@ -205,6 +208,16 @@ export default function AllSetScreen() {
     } catch (e) {
       console.log('AllSet save error', e);
     }
+
+    // The 7-day taste. Fired here rather than on the screen appearing, so it lands on the same action that
+    // writes pj_onboarding_complete -- backing out of this screen must not start the clock.
+    // ⚠️ DELIBERATELY NOT AWAITED. Nobody sits on a spinner at the end of onboarding; if RevenueCat is slow
+    // they walk into the app and the entitlement lands a second later. Failures retry themselves.
+    // ⚠️ The refresh() afterwards is REQUIRED: RevenueCat caches customer info on the device, so without it
+    // the app keeps showing free until it is force-quit, and the screen they just read would be a lie.
+    claimFirstWeek()
+      .then((r) => { if (r.ok) refreshMembership(); })
+      .catch(() => {});
 
     router.replace('/(tabs)');
   };

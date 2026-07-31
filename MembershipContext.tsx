@@ -11,6 +11,7 @@ import Purchases, {
 import { REVENUECAT_IOS_KEY, SUPPORTER_ENTITLEMENT_ID, TIP_PRODUCT_IDS } from './config';
 import { useAuth } from './AuthContext';
 import { enforceIconEntitlement } from './utils/appIcon';
+import { claimFirstWeek, firstWeekClaimPending } from './utils/firstWeek';
 
 // Single source of truth for Supporter status + the purchase surface. Reads the RevenueCat `supporter`
 // entitlement (real purchases) and, IN DEV ONLY, also honors the legacy pj_settings.devProUnlocked toggle
@@ -188,12 +189,31 @@ export function MembershipProvider({ children }: { children: React.ReactNode }) 
       } catch {
         // logOut throws if already anonymous; native module may be absent -> ignore, don't crash.
       }
+
+      // 7-DAY TASTE, THE SAFETY NET. If the grant at the end of onboarding never reached the server, the
+      // user is sitting on free limits during a week they were told was on us. Retry on the next launch
+      // that has a signed-in account. Costs one AsyncStorage read when there is nothing pending.
+      try {
+        if (user?.uid && (await firstWeekClaimPending())) {
+          const r = await claimFirstWeek();
+          if (r.ok) {
+            try { await Purchases.invalidateCustomerInfoCache(); } catch {}
+            const info = await Purchases.getCustomerInfo();
+            applyCustomerInfo(info);
+          }
+        }
+      } catch {}
     })();
   }, [user?.uid, authLoading, loadStoreProducts, applyCustomerInfo]);
 
+  // ⚠️ INVALIDATE FIRST. RevenueCat caches customer info on the device, so getCustomerInfo() alone can hand
+  // back a stale answer -- proven 2026-07-31, when a server-side promotional grant did not appear in the app
+  // until it was force-quit and reopened. Anything that changes entitlement OUTSIDE the SDK (the 7-day taste
+  // grant, a comped tester) needs the cache cleared or the user sits on the old status.
   const refresh = useCallback(async () => {
     await readDevOverride();
     try {
+      try { await Purchases.invalidateCustomerInfoCache(); } catch {}
       const info = await Purchases.getCustomerInfo();
       applyCustomerInfo(info);
     } catch {}

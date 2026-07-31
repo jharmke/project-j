@@ -22,7 +22,7 @@ import FeedbackModal from '../components/FeedbackModal';
 import { requestRatingPrompt, resetRatePromptBudget } from '../utils/ratingPrompt';
 import { showAchievementToast } from '../components/AchievementToast';
 import { ACHIEVEMENTS, AchievementDef, getCelebTier, loadAchievements, checkAndUnlock, loadGoalHitCounts, checkSleepAchievements, checkNutritionAchievements, checkMomentumAchievements, checkWorkoutAchievements, checkFaithAchievements, getWeightMilestonesCrossed, isGoalWeightHit } from '../achievementData';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app, auth, db, saveToFirebase } from '../firebaseConfig';
 import * as AppleAuthentication from 'expo-apple-authentication';
@@ -2470,7 +2470,24 @@ export default function SettingsScreen() {
               triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
               Alert.alert('Reset Onboarding', 'This will send you back to the welcome screen on next app launch.', [
                 { text: 'Cancel', style: 'cancel' },
-                { text: 'Reset', style: 'destructive', onPress: async () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy); await AsyncStorage.removeItem('pj_onboarding_complete'); Alert.alert('Done', 'Onboarding reset. Restart the app.'); } },
+                { text: 'Reset', style: 'destructive', onPress: async () => {
+                  triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+                  await AsyncStorage.removeItem('pj_onboarding_complete');
+                  // ⚠️ THE LOCAL FLAG ALONE IS NOT ENOUGH. Sign-in deliberately runs a cloud restore before it
+                  // will show onboarding (so a returning user is never dumped back into setup), and that
+                  // restore puts pj_onboarding_complete straight back. Clearing the mirrored copy is what
+                  // makes this dev tool actually work on an account that has onboarded before.
+                  // Nothing else is touched -- this is one key, not the user's data.
+                  let cloud = 'local only';
+                  try {
+                    const uid = auth.currentUser?.uid;
+                    if (uid) {
+                      await deleteDoc(doc(db, 'users', uid, 'store', 'pj_onboarding_complete'));
+                      cloud = 'local + cloud';
+                    }
+                  } catch { cloud = 'local only (cloud copy failed)'; }
+                  Alert.alert('Done', `Onboarding reset (${cloud}). Fully close and reopen the app.`);
+                } },
               ]);
             }}>
               <View style={{ flex: 1 }}>

@@ -92,6 +92,17 @@ const ALLSET_TIPS = [
   },
 ];
 
+// What the 7-day taste actually hands them. Deliberately concrete: these exact numbers get named again in
+// the step-down notice on day 8, so the ending reads as a promise kept rather than new bad news.
+const WEEK_PERKS = [
+  'Otto builds workouts straight into your Workout tab',
+  'He puts meals together from food you actually eat',
+  'His answers use your real numbers',
+  '30 messages a day with Otto and Halo, up from 10',
+  'Custom Reports and the Comparison Report open up',
+  '100 AI Meal Estimates a month, up from 5',
+];
+
 // ─── Component ───────────────────────────────────────────────────────────────
 export default function AllSetScreen() {
   const insets = useSafeAreaInsets();
@@ -241,7 +252,12 @@ export default function AllSetScreen() {
       {/* Content */}
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + 72, paddingBottom: 24 }]}
+        contentContainerStyle={[
+          styles.content,
+          // Reserve the REAL footer height (it is absolutely positioned), or the last line slides under
+          // the buttons and cannot be scrolled clear. Discipline has no secondary button.
+          { paddingTop: insets.top + 72, paddingBottom: insets.bottom + (isDiscipline ? 108 : 172) },
+        ]}
         showsVerticalScrollIndicator={false}
       >
 
@@ -255,18 +271,38 @@ export default function AllSetScreen() {
           <GradientTitle title={modeLine} color={accentColor} style={styles.headline} />
         </Animated.View>
 
-        {/* Quick tips */}
-        <Animated.View style={{ opacity: tipsAnim, transform: [{ translateY: tipsSlide }], width: '100%', marginTop: 26 }}>
+        {/* ONE card: the free-week news on top (it is the headline), the three how-to rows underneath as
+            reference. Two separate cards read as two competing objects and the second one lost.
+            ⚠️ The week block is NOT gated yet -- the taste itself (THE PLAN item D) is not built, so it
+            currently shows for everyone and names builders that do not exist. Must not reach TestFlight
+            until D/B/E/F are real. */}
+        <Animated.View style={{ opacity: tipsAnim, transform: [{ translateY: tipsSlide }], width: '100%', marginTop: 14 }}>
           <View style={[styles.tipCard, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: accentColor }]}>
-            {ALLSET_TIPS.map((tip, i) => (
+
+            <View style={styles.weekBlock}>
+              <GradientNumber value="Your first week is on us" color={theme.textSecondary} style={styles.weekTitle} />
+              <Text style={[styles.weekSub, { color: theme.textSecondary }]}>
+                Seven days with everything unlocked. Free, no credit card, nothing to cancel.
+              </Text>
+
+              {WEEK_PERKS.map((perk) => (
+                <View key={perk} style={styles.weekRow}>
+                  <Ionicons name="ellipse" size={6} color={accentColor} style={styles.weekCheck} />
+                  <Text style={[styles.weekitem, { color: theme.textSecondary }]}>{perk}</Text>
+                </View>
+              ))}
+
+              <Text style={[styles.weekFoot, { color: theme.textMuted }]}>
+                When the week is up the app eases back to the free plan, and everything you built stays exactly where it is.
+              </Text>
+            </View>
+
+            {ALLSET_TIPS.map((tip) => (
               <View
                 key={tip.lead}
                 style={[
                   styles.tipRow,
-                  i < ALLSET_TIPS.length - 1 && {
-                    borderBottomWidth: StyleSheet.hairlineWidth,
-                    borderBottomColor: theme.borderCard,
-                  },
+                  { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.borderCard },
                 ]}
               >
                 <View style={[styles.tipIconCircle, { backgroundColor: accentColor + '18', borderColor: accentColor + '30' }]}>
@@ -278,6 +314,7 @@ export default function AllSetScreen() {
                 </View>
               </View>
             ))}
+
           </View>
         </Animated.View>
 
@@ -298,7 +335,7 @@ export default function AllSetScreen() {
 
         {/* Primary button */}
         <PrimaryCTA
-          label={isDiscipline ? "Let's Go" : "We'll Set It Up For You"}
+          label={isDiscipline ? "Let's Go" : 'Set Up My Home Screen'}
           fill={accentColor}
           disabled={saving}
           wrapperStyle={{ width: '100%' }}
@@ -343,7 +380,7 @@ const styles = StyleSheet.create({
 
   // No textShadow -- a drop shadow on a display title is a trick nothing else in the app uses.
   headline:         { fontSize: 36, fontFamily: Type.display, letterSpacing: 0.3,
-                      lineHeight: numLine(36), marginBottom: 14 },
+                      lineHeight: numLine(36), marginBottom: 6 },
 
   // VOICE: this is the app talking, not a label.
   subtext:          { fontSize: 15, fontFamily: Type.voice, lineHeight: 22, maxWidth: 300 },
@@ -352,10 +389,20 @@ const styles = StyleSheet.create({
   tipCard:          { width: '100%', borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14,
                       shadowColor: THEMES['light'].cardShadow, shadowOpacity: THEMES['light'].cardShadowOpacity,
                       shadowOffset: { width: 0, height: 3 }, shadowRadius: 8, elevation: 2 },
-  tipRow:           { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 13, gap: 12 },
+  tipRow:           { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, gap: 12 },
   tipIconCircle:    { width: 36, height: 36, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   tipLead:          { fontSize: 13, fontFamily: Type.uiSemibold, marginBottom: 2 },
   tipBody:          { fontSize: 11, fontFamily: Type.ui, lineHeight: 16 },
+
+  // Deliberately heavier than the tip rows below it: this block is the NEWS, they are reference.
+  weekBlock:        { paddingHorizontal: 14, paddingTop: 15, paddingBottom: 15 },
+  weekTitle:        { fontSize: 17, fontFamily: Type.uiBold, marginBottom: 6 },
+  weekSub:          { fontSize: 12, fontFamily: Type.ui, lineHeight: 17, marginBottom: 13 },
+  weekRow:          { flexDirection: 'row', alignItems: 'flex-start', gap: 9, marginBottom: 7 },
+  // Nudged down so the dot sits on the middle of the first line of text, not its cap height.
+  weekCheck:        { marginTop: 6, marginLeft: 3 },
+  weekitem:         { flex: 1, fontSize: 12, fontFamily: Type.ui, lineHeight: 17 },
+  weekFoot:         { fontSize: 11, fontFamily: Type.ui, lineHeight: 16, marginTop: 6 },
 
   footer:           { position: 'absolute', bottom: 0, left: 0, right: 0,
                       paddingHorizontal: 24, paddingTop: 14, borderTopWidth: 0.5,

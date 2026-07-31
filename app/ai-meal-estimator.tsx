@@ -499,7 +499,7 @@ export default function AIMealEstimatorScreen() {
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
       <BackgroundLayers />
       <ToastRenderer />
-      <ScreenHeader title="AI Estimate" />
+      <ScreenHeader title="AI Meal Estimate" />
 
       {step === 'loading' ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>

@@ -13,10 +13,17 @@
 ## FOOD INTELLIGENCE
 
 - "Why did you eat" / "How did it feel" / Hunger level -- quick tags on food entries (Hungry/Tired/Cravings/Bored/Social) + post-meal feel tags + 1-5 hunger scale before eating.
-- Protein timing badge -- hit protein within 2 hours post-workout. Simple yes/no badge.
 - Food group pattern detection -- gentle tip if user logs zero whole foods for X consecutive days. Mode-aware tone.
 - Time of day food heat map -- when during the day does the user tend to eat, visualized as a grid.
-- Calorie periodization -- higher calories on workout days, automated suggestion.
+- Calorie periodization -- higher calories on workout days, automated suggestion. **STAYS HERE AS A FEATURE,
+  reviewed 2026-07-30 (item A question 6).** Deliberately NOT an Otto capability: the value is the APP
+  changing your daily target, and Otto cannot change anything. Otto can already TALK about periodization
+  today with no build at all (general nutrition guidance), so there is nothing to add to him.
+  ⚠️ Real cost when picked up: the daily target stops being one number, which ripples into the calorie floor,
+  Day Score, weekly/monthly summaries, and MINDFUL, where prescribing calorie numbers is banned outright.
+  (⚠️ "Protein timing badge" was CUT from this section the same day: the two-hour post-workout window is a
+  dated idea -- total daily protein matters far more than timing -- so a badge for it would be rewarding
+  something that is not really true, which fails the honest-numbers rule. Do not re-add it.)
 - Restaurant menu lookup -- scan/search restaurant, pull nutrition from FatSecret. Post-FatSecret feature.
 - Creatine tracking (manual) -- mirror the existing caffeine tracking: let users log creatine by hand (FatSecret does not carry it), then surface it in the nutrition display. Common supplement people track, Justin included. (Justin 2026-07-01.)
 - Nutrition label scan: replace the system photo picker with a custom live-camera screen (viewfinder box + "align label in frame" text, same pattern as the barcode scanner). Real, non-trivial rebuild -- deliberately deferred in favor of a simple text hint under the Scan button. (Justin 2026-07-21, feature itself confirmed done 2026-07-23 -- see archive.)

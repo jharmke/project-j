@@ -1,9 +1,9 @@
 # SPEC: Otto (the general companion) -- free vs Supporter
 
 Status: **DIRECTION LOCKED 2026-07-29, NOTHING BUILT.** Otto today is fully free with no tiering.
-Last updated 2026-07-30. SIX things resolved that day: **OPEN ITEMS 1, 2, 3, 4 and 5** (the hard gate is
-LOCKED; artifacts survive a downgrade; Otto may create exercises only when asked; the full pitch ruleset;
-meal-builder food matching)
+Last updated 2026-07-30. **ALL SIX OPEN ITEMS RESOLVED that day** (the hard gate is LOCKED; artifacts survive
+a downgrade; Otto may create exercises only when asked; the full pitch ruleset; meal-builder food matching;
+and neither backlog item becomes an Otto capability)
 and **THE UNDEREATING SAFEGUARD** (app-side detection, Otto is the only voice, he never speaks first).
 Question 3 also spawned three new items in THE PLAN: I (exercise editor), J (expand the pool), K (lift-name
 aliases). ⚠️ OPEN ITEM 4 supersedes the HOW OTTO SELLS section on any conflict.
@@ -439,7 +439,7 @@ straight downgrade with nothing to offset it.
 
 ---
 
-## OPEN ITEMS
+## OPEN ITEMS -- ✅ ALL SIX RESOLVED 2026-07-30 (kept in place as the record of what was decided and why)
 
 ### 1. ✅ RESOLVED 2026-07-30 -- HARD GATE, LOCKED. Free users are never sent their logged data.
 
@@ -1009,9 +1009,14 @@ of this flow took FOUR turns to build one dinner (ask, "I don't have chicken", "
 1. **A "what have you got?" GRID, rendered inline in the chat**, before he builds. ~15 of their qualifying
    foods as tappable toggles, plus a free-text field for anything not listed. No typing, no extra message.
    ⚠️ A brand-new user sees an empty grid and just types -- that is the fallback, and it works.
-   ✅ **REUSE, DO NOT REBUILD: that free-text field is exactly what `SPEC_ai_meal_estimator.md` already does**
-   (turn a text description into nutrition). Someone typing "leftover lasagna" should route through the
-   existing estimator machinery. This also quietly carries the new-user case, where they type everything.
+   ⚠️ **DO NOT route that free-text field through the AI meal estimator.** It was proposed and Justin killed
+   it, correctly: the estimator is the SONNET call (the pricey one) with its own monthly quota, so it would
+   add an expensive second call per build AND could eat into their photo-estimate allowance. Building a
+   dinner must never cost someone an estimate.
+   ✅ **Otto handles the free text in the call he is ALREADY making.** "Leftover lasagna" is just text in that
+   message; at this point the user is only saying what is AVAILABLE, not logging anything. Real nutrition
+   gets resolved later through the card and the normal food search. The estimator earns its cost on photos
+   and on precision, and neither applies here.
 2. **He builds ONCE**, from exactly what was selected.
 3. **The preview card handles everything else.** Per-line swap and amount controls. Replacing his generic
    jasmine rice with the box in your pantry is two taps and costs nothing.
@@ -1078,10 +1083,31 @@ too, not just Otto). Design it there; treat it as a blocker here.
   nutrition have to be sent. Acceptable: it is ONE call instead of four, Supporter-only, capped at 30/day,
   and it is the thing people would actually be paying for.
 
-### 6. Backlog items that may be cheaper as Otto capabilities
-"Calorie periodization -- higher calories on workout days" and "Protein timing badge" were both scoped as
-standalone features. Both are exactly the personalised, data-aware nudge that only works with the user's
-numbers. Worth checking before building them separately.
+### 6. ✅ RESOLVED 2026-07-30 -- NEITHER becomes an Otto capability.
+
+⚠️ First, a correction to this spec's own earlier wording: these were NOT "scoped as standalone features."
+They were **one-line backlog entries** with no design behind either of them.
+
+**THE FRAMING THAT ANSWERS IT** (and it is just the core principle again): **Otto can TALK about something.
+Only a feature can DO it.** Both of these were about doing something to the user's data, not saying something
+about it. So neither is an Otto capability.
+
+**PROTEIN TIMING BADGE -> CUT. Deleted from the backlog 2026-07-30, do not re-add.**
+The idea was a yes/no badge for hitting protein within ~2 hours of finishing a workout. It is a dated
+bodybuilding idea: the research settled on TOTAL DAILY protein mattering far more than timing. A badge for it
+would reward the user for something that is not really true, which fails the honest-numbers rule.
+ℹ️ Separately, it may not even be computable: food entries carry timestamps but manually-logged workouts
+record only THAT you trained on a given day, not when. So the 2-hour window has no start point unless the
+workout came from HealthKit. Moot now, but worth knowing if anything similar is ever proposed.
+
+**CALORIE PERIODIZATION -> STAYS IN THE BACKLOG AS A FEATURE.**
+Legitimate idea (eat more on training days, less on rest days, same weekly total) and it matches how people
+actually eat. But the value is the APP changing the daily target, and Otto cannot change anything.
+✅ **Otto can already talk about it today with zero build** -- someone asks how to handle rest days and he
+explains it as general nutrition guidance. So there is nothing to add to him.
+⚠️ The feature's real cost, recorded in the backlog entry: the daily target stops being ONE number, which
+ripples into the calorie floor, Day Score, weekly/monthly summaries, and MINDFUL, where prescribing calorie
+numbers is banned outright.
 
 ---
 

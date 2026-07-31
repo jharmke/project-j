@@ -1318,8 +1318,11 @@ are separate pre-submission checklists, NOT part of this menu.
   ⚠️ NOTHING IS BUILT YET. Every item is spec-or-discuss first. He was clear: *"it needs to be specced and
   discussed and fully alligned before we fucking do it."* That applies to all of it, not just the routing.
 
-  **A. RESOLVE THE 6 OPEN OTTO ITEMS** (conversations, not code -- they block everything downstream).
-     **PROGRESS: 5 of the 6 done (questions 1-5), PLUS the safeguard decision. All on 2026-07-30.**
+  **A. ✅ COMPLETE 2026-07-30 -- ALL 6 OPEN OTTO ITEMS RESOLVED, plus the undereating-safeguard decision.**
+     All of it was discussion, no code, exactly as intended. Full detail lives in SPEC_otto.md; the summaries
+     below are pointers, not the source of truth. **B is now unblocked on this side** (it still waits on D).
+     ➡️ Item A also SPAWNED new work: plan items **I**, **J** and **K**, three constraints on **E**, a hard
+     prerequisite on **F** (allergies), a missing saved-meals cap in **C**, and a correction to **G**.
      Full detail in SPEC_otto.md -> OPEN ITEMS. Summary:
      1. ✅ RESOLVED 2026-07-30 -- **HARD GATE LOCKED.** Free users are never sent the snapshot or the 5
         gated attachments (PRs, workouts, food history, sleep, body measurements). Profile/goals, the
@@ -1356,8 +1359,12 @@ are separate pre-submission checklists, NOT part of this menu.
         marked as stand-ins; the CARD handles swaps so picking products costs no messages. Meal size derived,
         never asked. ⚠️ Allergies/dietary restrictions are a HARD PREREQUISITE and need a profile field.
         Full detail in SPEC_otto.md.
-     6. Two backlog items that may be cheaper as Otto capabilities: "calorie periodization" and
-        "protein timing badge"
+     6. ✅ RESOLVED 2026-07-30 -- **NEITHER becomes an Otto capability.** Both were about DOING something to
+        the user's data, and Otto can only say things. **Protein timing badge: CUT** and deleted from the
+        backlog (the 2-hour post-workout window is a dated idea; total daily protein matters far more, so a
+        badge would reward something that is not true). **Calorie periodization: stays in the backlog as a
+        FEATURE** -- its value is the app changing the daily target, and Otto can already talk about it today
+        with zero build.
      PLUS ✅ RESOLVED 2026-07-30 -- the undereating safeguard: **BOTH, split by job.** Detection is
      APP-SIDE (deterministic, works on both tiers, hands Otto a one-line flag rather than reopening the
      data pipes). Otto is the ONLY voice -- no card, no notification -- and **he never speaks first**; he

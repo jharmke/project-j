@@ -299,10 +299,10 @@ Otto's chat already carries a permanent inline disclaimer under every message: *
 mistakes. Not a substitute for a doctor or professional."* The build standard's inline requirement is met,
 and a first-use MODAL is not appropriate in a chat. Do not add one.
 
-### ⚠️ STILL TO DECIDE: WHERE THIS LIVES IN THE PLAN
+### ✅ WHERE THIS LIVES: THE PLAN ITEM **L** (assigned 2026-07-30)
 The detection is app-side code, so this is no longer purely an Otto item. It is NOT part of G (that guards
-the recommended TARGET; this guards actual INTAKE), though it inherits G's thresholds and philosophy.
-It needs a home: either folded into B or given its own letter. Not decided.
+the recommended TARGET; this guards actual INTAKE), though it inherits G's thresholds from
+`utils/calorieFloor.ts`. Sequenced next to G, since they share thresholds and philosophy.
 
 ### DOC SYNC (standing rule, do not batch)
 This is exactly the kind of quiet feature that gets missed. When it ships, `tooltipRegistry.ts`,

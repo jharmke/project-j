@@ -1548,6 +1548,34 @@ are separate pre-submission checklists, NOT part of this menu.
      **SEQUENCE:** alongside or before **I** (renaming lives in that editor), and before **E** makes
      exercise creation common.
 
+  **L. UNDEREATING SAFEGUARD (build)** -- NEW 2026-07-30. The DECISION is fully made (SPEC_otto.md), but the
+     detection is APP-SIDE code, so it is no longer an Otto-only item and needed a home. Not part of G (that
+     guards the recommended TARGET; this guards actual INTAKE), though it inherits G's thresholds from
+     `utils/calorieFloor.ts`. Pairs naturally with G since they share thresholds and philosophy.
+
+  **M. DIETARY RESTRICTIONS / ALLERGIES PROFILE FIELD** -- NEW 2026-07-30. Nothing in the app captures what
+     someone does NOT eat. **Hard prerequisite for F** (Otto would build a shellfish dinner for someone
+     allergic) and it would improve the AI meal estimator too. Profile work, small, must land before F.
+
+  🔢 **THE ORDER (set 2026-07-30, after item A completed). Dependencies first, then value.**
+  1. **D -- 7-DAY TASTE.** Specced, not built. **Blocks B**, and B is the whole point of this push.
+  2. **B + H TOGETHER -- the Otto split AND cost routing.** ⚠️ **Do NOT do these separately.** Both are
+     surgery on the same prompt: B decides what each tier is sent, H decides what each QUESTION is sent.
+     Doing B alone means restructuring the prompt, then immediately restructuring it again. Item A's
+     question 4 already found that tier-dependent text must sit in the VOLATILE block or it splits the
+     cache -- that is an H concern discovered inside B, which is the tell that they are one job.
+     H is also the direct fix to the cost problem that started all of this.
+  3. **G -- CALORIE FLOOR (onboarding clamp).** Small, mostly built already, and it is a safety fix.
+  4. **L -- UNDEREATING SAFEGUARD.** Sits with G, shares its thresholds.
+  5. **C -- NON-AI LIMITS.** Numbers locked; the cap MESSAGING still needs deciding (Justin leans a toast).
+  6. **K + I -- lift-name aliases, then the exercise editor.** K's three rules need agreeing first. I is the
+     seatbelt that makes Otto pre-filling exercise data safe.
+  7. **J -- EXPAND THE LIBRARY.** Pure content work, 64 names already approved. Makes E safer.
+  8. **E -- WORKOUT BUILDER.** Needs I, J and K first.
+  9. **M -- ALLERGIES FIELD**, then **F -- MEAL BUILDER.** F is the riskiest item; its food matching is now
+     solved but the feature still needs a full design session.
+  LAST: IAP review screenshots + the App Store listing. Justin does not want these raised before then.
+
   📊 **READINESS -- what each item actually needs, so nothing is picked up expecting the wrong thing:**
   - READY TO BUILD, design already done: **C** (numbers locked), **D** (specced), **G** (design locked)
   - DISCUSSION ONLY, no code: **A** (six open questions)

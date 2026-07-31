@@ -185,6 +185,28 @@ way to see the hit rate that the whole saving depends on.
 
 ---
 
+## BUILD PROGRESS
+
+**✅ BATCH 1 DONE + DEVICE-VERIFIED 2026-07-31.** `functions/src/knowledgeChapters.ts` parses the map into
+its 15 chapters and reassembles them; `appCompanion.ts` now calls `assembleAppKnowledge()` instead of
+pasting the blob. **Nothing Otto sees changed** -- proven before deploy by reassembling every chapter and
+comparing to the original string character for character (`chapterSplitIsLossless()` returned true, 15
+chapters found). Device test passed on all four probes: the step-goal answer still carried the "tap your
+profile picture in the top-left" rule from HOW TO USE THIS MAP, and the hydration answer still listed all
+eight badge tiers from the ACHIEVEMENTS CATALOG, so both ends of the map are intact.
+⚠️ The split is done by PARSING the existing string, never by retyping it into constants -- that map is
+dense with corrections earned from real bugs and hand-cutting it would eventually drop one silently. A
+runtime check logs loudly if a future edit ever breaks the divider shape.
+
+**NEXT: batch 2**, and it is a separate change on purpose so any misbehaviour is traceable to one thing.
+
+## NOTED FOR ITEM B's VOICE PASS (not a routing problem)
+Spotted during batch 1 testing: asked "why am I so tired lately", Otto ended a long answer with three
+stacked questions including **"Are you sleeping enough tonight?"** -- odd twice over, since tonight has not
+happened yet and he had just told the user their sleep was solid. It is how he has always written, not
+something routing caused. Item A already ruled that he must not interrogate users for data he cannot
+verify; this is the paid-tier version of the same habit.
+
 ## STILL OPEN (deliberately not decided here)
 - **Halo and the AI Meal Estimator have never been priced.** Otto, Halo and Smart Coach all run on Haiku;
   the estimator is the only Sonnet call left. Halo is known to sit on the 4,096-token caching threshold with

@@ -882,13 +882,89 @@ two entries must be able to go dim independently.
 ⚠️ A `saveNewFood` function exists in `app/add-food.tsx` and looks like a seventh door. **It is dead code** --
 nothing calls it and nothing renders it. Do not wire a cap to it.
 
-**STILL OPEN IN PIECE 2:** the actual wording of the modal and the toast. ⚠️ The copy cannot be a counter.
-"You have used 20 of 20" is a lie for a lapsed Supporter sitting on 40 grandfathered custom foods, and for a
-downgraded user with 8 meal slots. It has to be about entitlement, not arithmetic, or it is wrong for exactly
-the users most worth winning back. A lapsed Supporter also needs different copy from someone who never
-subscribed: "free users get 20" reads as broken to somebody who had unlimited last week.
-**AND:** if someone subscribes from that modal, they must land back where they were, still wanting to create
-that food. Paying and getting dumped on the Profile tab is a sour ending to the best moment this product gets.
+**MINDFUL: NO VARIANT** (agreed 2026-08-01). Mindful only forbids deficit math, weight-loss framing and
+prescribed numbers, and none of this copy contains any of those. Decision, not an omission.
+
+---
+
+#### THE COPY (in progress 2026-08-01)
+
+⚠️ **THE COPY CAN NEVER BE A COUNTER.** "You have used 20 of 20" is a lie for a lapsed Supporter sitting on
+40 grandfathered foods, and for a downgraded user with 8 meal slots. It is about ENTITLEMENT, not arithmetic.
+
+**⚠️ USE THE APP'S OWN NAME FOR THE THING.** The user has never seen the words "custom foods" anywhere on
+screen. They are **My Foods**. Same discipline on every other cap: write what the screen calls it.
+
+**⚠️ ONE CHECK DRIVES BOTH VARIANTS: are you AT the cap, or OVER it?** Over the cap can only happen to an
+ex-Supporter (taste ended, or cancelled) because a never-subscribed user was never allowed past the number.
+So that single condition covers the wording change AND whether the delete line appears. Two variants, one
+check, no membership-history lookup needed.
+
+**⚠️ "DELETE ONE TO MAKE ROOM" IS ONLY TRUE AT THE CAP.** Justin caught this 2026-08-01: somebody at 30
+deletes one, lands on 29, is still blocked, and loops deleting their own food wondering why nothing changed.
+The over-cap copy carries NO delete instruction. Telling somebody to delete eleven foods to earn one back is
+worse than saying nothing. If they do drift down under the cap organically the button quietly un-dims, which
+is the right way for that to happen.
+
+**WHY THE DELETE LINE STAYS AT ALL (Justin, 2026-08-01: "its still a handicap, not really a workaround").**
+It is true by design -- every cap is CONCURRENT, not lifetime, specifically so someone can delete and
+rebuild. Saying so makes the wall read as fair rather than extortionate, and it fits "limit, don't paywall".
+Someone who deletes a food they had stopped using was never converting on that tap anyway; someone genuinely
+full of foods they all use reads that line, realises none are droppable, and THAT is the moment the Supporter
+plan means something. The line makes the wall more persuasive, not less.
+
+##### ✅ APPROVED -- MODAL, AT THE CAP (custom foods)
+> **You've Built 20 Foods**
+>
+> The free plan holds 20 foods of your own. My Foods is full, and every one of them is still yours to log,
+> edit and keep.
+>
+> Make room by deleting one you've stopped using, or the Supporter plan removes the limit entirely.
+>
+> **[ Support the Mission ]**  **[ Not Now ]**
+
+Shape, and it is the shape every other cap copies: title states the fact without scolding; the FIRST body
+line does the reassuring, because the first fear at any wall is "have I lost something"; then one line with
+two honest ways forward.
+
+##### ✅ APPROVED -- MODAL, OVER THE CAP (custom foods)
+> **All 30 Of Your Foods Are Still Here**
+>
+> Nothing you built has gone anywhere. Every food is yours to log, edit and keep.
+>
+> Free accounts hold 20, so there's no room to add another right now. The Supporter plan opens My Foods
+> back up.
+>
+> **[ Support the Mission ]**  **[ Not Now ]**
+
+⚠️ **The count in the title is LIVE** and reads their real number (30, 24, whatever they have). Deliberate:
+the first thought of somebody who just lost a membership is "what did I lose," and their own number in the
+headline answers that before they finish reading.
+
+##### 🟡 STILL OPEN -- THE TOASTS
+The toast fires on the SECOND tap onward, for somebody who has already seen the modal. Its whole job is
+"yep, still full". Sentence case on the title to match every other toast in the app.
+- **At the cap**, approved once and then reopened by Justin ("i feel like the toasts need the supporter
+  mention"): `My Foods is full` / `Free accounts hold 20. Delete one to make room.`
+- **Over the cap:** NOT SETTLED. Rejected so far: `All 30 are still yours to log and edit.` (Justin: a
+  consolation pat on the back -- by the fourth tap nobody wants reassurance, they want to know why the button
+  did nothing) and `New foods need the Supporter plan.` (Justin: "thats so amateur" -- reads like a vending
+  machine). Best so far, lukewarm: `The Supporter plan makes room to keep building.`
+- ⚠️ **NAMING THE SUPPORTER PLAN IN A TOAST FORCES A DECISION** (not yet agreed): the standing rule is that
+  the Supporter plan is never named without a Support the Mission jump, and a toast has no button today.
+  Making toasts tappable = an OPTIONAL tap handler plus a chevron shown only when one is passed, so all ~40
+  existing toasts pass nothing and are untouched. An optional duration is the same additive change (2200ms
+  is tight for reading-then-tapping). **Decide the tappable question before finishing the toast copy.**
+
+##### 🟡 STILL OPEN -- THE OTHER SEVEN CAPS
+Saved meals, recipes, routines, programs, exercise library, meal slots, stats cards. Same four pieces of copy
+each; only the noun and the number change.
+⚠️ **Macro goals, nutrition goals and data export are NOT this shape.** They are straight paywalls with no
+number, so there is no at-cap/over-cap split and no delete option. They need their own treatment.
+
+**AND, NOT PART OF PIECE 2:** if someone subscribes from that modal, they must land back where they were,
+still wanting to create that food. Paying and getting dumped on the Profile tab is a sour ending to the best
+moment this product gets.
 
 **⚠️ THIS DOES NOT COVER MEAL SLOTS OR STATS CARDS.** Those are the two REVERT rows, and their wall arrives
 without anyone tapping anything: a lapsed Supporter's 8 meal slots become 5 while they are not even in the

@@ -93,11 +93,15 @@ Romanian deadlift", "incline or flat press") -- those are coaching, not the thin
 - **A same-slot SWAP does not count as a third.** Count what they would PERFORM, not what he names.
   ✅ "Barbell row, or a dumbbell row if you have no bar. Then an incline dumbbell curl." = two things to do.
   ❌ "Barbell row, lat pulldown and an incline dumbbell curl." = three. Over.
-- **WARMUPS GET GUIDANCE, NOT A PRESCRIBED LIST** (Justin's call, 2026-08-01, and it is better than the
-  exemption originally proposed): raise the body temperature, mobilise what you are about to train, a few
-  minutes of light work. If he does name specific movements they count against the two like anything else.
-  An exemption would have become the workaround ("give me a warmup for chest day"); this way there is no
-  exemption to police.
+- **WARMUPS AND MOBILITY STAY GENERAL. HE DOES NOT NAME MOVEMENTS AT ALL** (Justin's call, 2026-08-01,
+  tightened same day): raise the body temperature, mobilise what you are about to train, a few minutes of
+  light work. No "band pull-aparts", no "cat-cow". ⚠️ **Tightened from an earlier draft that allowed him to
+  name warmup movements as long as they counted against the two.** That version had a hole -- he could give
+  two exercises and then keep adding mobility work until the reply looked like a session again -- and it was
+  misread once within a day of being written, which is a fair sign it was too subtle. One rule with no
+  exception is easier for him to hold and easier for us to check.
+  The accepted cost: "how do I warm up my shoulders" gets a general answer rather than a named movement.
+  Slightly less useful in that one case, much harder to game.
 - **THE LINE HE SAYS: "Two movements per question is what the free plan covers."** Deliberately a flat fact
   about the plan, NOT "I keep it to two" -- anything that sounds like his choice invites haggling. Attribution
   once per reply, no apology, no price, no pitch.
@@ -164,6 +168,55 @@ it by hand. What they do not get is Otto building and loading it for them, which
 3. ⚠️ **A capped answer IS a wall** (see ATTRIBUTION IS NOT A PITCH below: the 2-exercise cap is listed as a
    capability wall), so it must count toward the three walls that trigger a pitch. `messageHitsWall` in
    `utils/companionPitch.ts` cannot currently see a workout ask at all. Real work, not a nice-to-have.
+   **The rule for what counts is below.**
+
+### WHAT COUNTS AS A WORKOUT WALL (piece 4, agreed 2026-08-01)
+
+**THE TEST: did he actually have to leave something out?** Not "did the cap apply" -- the cap applies to
+every workout question, but it only BITES when they asked for more than two. Those are different, and
+conflating them is what produced a wrong first draft of this rule.
+
+| They asked for | He gives | Wall? | Limit line? |
+|---|---|---|---|
+| A workout / routine / session / "what should I train today" | 2 | **YES** | Yes |
+| Several muscle groups (3+ movements' worth) | 2 | **YES** | Yes |
+| "Give me 3 chest exercises" | 2 | **YES** | Yes |
+| "Give me 2 chest exercises" | 2 | **NO** | **No** |
+| "What's a good exercise for lower back" | 1-2 | **NO** | **No** |
+| "Should I do incline or flat" | n/a | **NO** | **No** |
+| "How do I do a Romanian deadlift" | n/a | **NO** | **No** |
+
+⚠️ **NO LIMIT LINE WHEN THE CAP DID NOT BITE.** Someone who asks for two and gets two was not limited.
+Adding "two movements per question is what the free plan covers" there points at a rule they did not hit --
+that is attribution as a tagline, which the spec forbids, and it reads passive-aggressive.
+
+**VAGUE QUANTITIES:** "a couple" means two, so no wall. "A few", "some", "a bunch" mean more than two, so he
+leaves something out and it IS a wall.
+
+**WHEN GENUINELY UNSURE WHETHER IT WAS A WORKOUT ASK AT ALL, DO NOT COUNT IT.** The two errors cost very
+different amounts: a wall counted wrongly nudges someone toward a pitch they did not earn, and there are only
+three of those a week. A missed wall costs nothing -- the mention just arrives a message later.
+
+⚠️ **THE ONE THAT IS EASY TO MISS: "what should I train today."** No exercise words in it at all. Must be on
+the list deliberately.
+
+⚠️ **"GIVE ME 2 MORE" IS A PITCH BUT NOT A WALL, AND THAT IS CORRECT.** They asked for two and got two, so
+nothing was withheld -- no wall, no limit line. But it matches "asks for more", which is pitch trigger 1.
+The wall counter and the pitch triggers are independent systems. Do not "fix" this.
+
+**ACCEPTED:** a user who works out that the limit is two can ask for two at a time forever and never trip a
+wall, so never get pitched. Fine -- they already know the plan has a ceiling, a mention teaches them nothing,
+and each ask costs one of their ten daily messages. The pitch is for people hitting the ceiling unexpectedly.
+
+**BUILD NOTE:** the app must notice an explicit small number ("give me 2") and not count it. One check, and
+it stops us counting a wall that never happened.
+
+**NOT A PROBLEM, CHECKED:** "what should I train today" could read as both a data wall and a capability wall,
+but `wallCountRef` increments at most once per message, so it cannot double-count.
+
+**THIS CAP IS A REMOVAL** (free users have full routines today), which is normally a real risk. Checked: all
+eleven TestFlight testers are locked Supporters, so the only account that will ever see the downgrade is
+Justin's own free test account. No fallout, nothing to announce.
 
 **ENFORCEMENT IS PROMPT-ONLY.** There is no reliable way for the app to count exercises in his reply, so
 unlike the pitch there is no deterministic backstop. Measure it before shipping: rebuild the real prompt from

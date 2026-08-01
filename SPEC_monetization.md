@@ -1522,10 +1522,29 @@ modal about the same kind of event, so the same icon is consistency, not lazines
 visually distinct, `time` -- a clock face -- is the closest sibling.) ⚠️ Do NOT use the gold Supporter sprout
 here; that is the mark of BEING one, and this is the screen where they stop.
 
-##### 🟡 STILL OPEN IN PIECE 5
-1. **Billing grace / payment retry.** If entitlement reads false during a failed-payment retry, somebody's
-   layout reverts for a few days and then comes back, and they may get the step-down notice for a lapse that
-   never really happened. Not yet checked how `MembershipContext` treats that state.
+##### ✅ BILLING GRACE + THE STARTUP RACE (checked 2026-08-01)
+**Grace periods: probably fine, and NOT the app's decision.** `MembershipContext` reads
+`info.entitlements.active[SUPPORTER_ENTITLEMENT_ID]` and trusts RevenueCat's definition of active, with no
+custom grace handling. RevenueCat keeps an entitlement active through a billing grace period, so a declined
+card in retry should not flip anyone to free. ⚠️ **Unverifiable from the codebase** -- it is server-side and
+depends on grace periods being ENABLED in the RevenueCat dashboard. Check there, not in the app.
+
+⚠️ **THE REAL ONE, AND IT IS A LIVE BUG IN SHIPPED CODE: the step-down check does not wait for membership to
+load.** `app/(tabs)/index.tsx` line ~1160 destructures ONLY `const { isSupporter } = useMembership()`. It
+never takes `loading`. So at launch `isSupporter` is false-because-unknown and the effect starts running on a
+real Supporter.
+- What saves it today is pure timing: the notice waits 800ms, then waits for the launch splash, and when
+  membership resolves the effect re-runs and its cleanup cancels the pending timer.
+- **If RevenueCat answers slower than that window** (bad cellular at app open, which is not rare) a paying
+  Supporter is told their plan ended. Worse, `markStepDownShown()` fires the moment it renders, so the
+  **once-ever flag is burned**: a wrong notice now and no correct one later when they genuinely do cancel.
+- ✅ **FIX: gate the effect on `loading` being false.** The flag already exists, and **this exact guard is
+  already used one screen over for this exact reason** -- `MembershipContext` ~line 284 does `if (loading)
+  return;` before `enforceIconEntitlement`, with a comment saying startup makes `isSupporter` briefly false.
+  Not an invented fix; the codebase already solved this once.
+- ✅ **Fails in the safe direction:** `loading` only turns false once RevenueCat resolves OR errors (there is
+  a `.catch(() => setLoading(false))`). If it somehow never answered, the notice never fires -- far better
+  than telling a paying customer they lapsed.
 
 ---
 

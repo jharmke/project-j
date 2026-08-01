@@ -1343,6 +1343,19 @@ are separate pre-submission checklists, NOT part of this menu.
     a nice-to-have; nobody has confirmed either way, so do not assume it is optional.
     ⚠️ Do NOT gate the other three share-sheet uses while doing this: sharing a Bible verse and sharing a
     message out of either AI chat are not data export, and paywalling the verse share would be a bad look.
+  • **[LIVE BUG, found 2026-08-01] The step-down notice can fire at a PAYING Supporter on a slow launch.**
+    `app/(tabs)/index.tsx` (~line 1160) takes only `const { isSupporter } = useMembership()` and never takes
+    `loading`, so at launch it cannot tell "free user" from "RevenueCat has not answered yet". Today it is
+    saved only by timing (an 800ms delay plus the launch-splash gate, with the effect's cleanup cancelling
+    the pending timer once membership resolves). On a bad connection at app open, a Supporter gets told their
+    plan ended -- and `markStepDownShown()` fires on render, **burning the once-ever flag**, so they also get
+    NO notice later when they actually do cancel.
+    ✅ **FIX: gate that effect on `loading` being false.** The flag already exists and this exact guard is
+    already used in `MembershipContext` (~line 284) before `enforceIconEntitlement`, for this exact reason.
+    Fails safe: `loading` only clears once RevenueCat resolves or errors, so the worst case is the notice
+    never firing rather than a wrong one.
+    ⚠️ Separately, grace periods are RevenueCat's call, not the app's (it just reads `entitlements.active`).
+    Confirm grace periods are ENABLED in the RevenueCat dashboard; it cannot be checked from the code.
   • **[HAZARD, found 2026-08-01] `saveStatsCards` infers "the user deleted this" from ABSENCE.** Every call
     takes the DEFAULT cards missing from the array handed to it and writes their ids into
     `pj_stats_removed_defaults`, which permanently stops `loadStatsCards` restoring them. Nothing today
@@ -1571,8 +1584,11 @@ are separate pre-submission checklists, NOT part of this menu.
      ✅ The Supporter version of that modal is titled **"Your Supporter Plan Has Ended"** and **keeps the
      calendar icon** (a checkmark was proposed and correctly rejected: it reads as a receipt). Never the gold
      Supporter sprout -- that is the mark of BEING one.
-     🟡 **STILL OPEN IN 5:** how billing-retry/grace states are treated -- a failed payment could revert
-     someone's layout for days and fire the notice for a lapse that never really happened.
+     ✅ **PIECE 5 IS NOW COMPLETE.** Billing grace is RevenueCat's call, not the app's (confirm it is enabled
+     in their dashboard). The check also turned up a LIVE BUG -- the step-down effect never reads membership's
+     `loading` flag, so a slow launch can tell a paying Supporter their plan ended and burn the once-ever
+     flag. Logged at the top of NEXT UP with the fix.
+     ⏭️ **NEXT: PIECE 6, THE LAST ONE** -- where the caps get enforced across the different features.
      ⏭️ **THEN PIECE 6** -- where the caps get enforced across the different features (the build checklist:
      every creation door for all eight caps).
      ⚠️ **THE LAYOUT CAPS ARE "DEFAULTS PLUS ONE", NOT RAW TOTALS (Justin, 2026-07-31). Read either as a bare

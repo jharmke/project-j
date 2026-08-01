@@ -30,6 +30,8 @@ import { buildBodyContextIfRelevant } from '../utils/companionBody';
 import { buildAchievementsContextIfRelevant } from '../utils/companionAchievements';
 import { buildJournalContextIfRelevant } from '../utils/companionJournal';
 import { COMPANION_ROUTES, ROUTE_TRIGGERS } from '../utils/companionRoutes';
+import { resolveDayRef, type DayRef } from '../utils/companionDayRef';
+import { isDayRecall } from '../utils/companionWorkouts';
 import { TUTORIAL_TRIGGERS, TUTORIAL_ROUTE_OVERLAP } from '../utils/companionTutorials';
 import { useTutorial } from '../context/TutorialContext';
 import { TAB_TUTORIALS } from '../data/tutorials';
@@ -117,7 +119,7 @@ function stripInlineFormatting(text: string): string {
 }
 
 type Role = 'user' | 'assistant' | 'system' | 'crisis';
-type Msg = { role: Role; text: string; feedback?: 'up' | 'down'; routes?: string[]; tutorials?: string[] };
+type Msg = { role: Role; text: string; feedback?: 'up' | 'down'; routes?: string[]; tutorials?: string[]; dayJump?: DayRef };
 
 // Replace [[route:key]] tokens with the route's plain label inline (so the sentence still reads
 // naturally) and collect the recognized keys so the client can render tappable pills below the
@@ -438,6 +440,22 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
     });
   };
 
+  // Tapping the day-jump pill: same close-then-navigate shape as a route pill, but carrying a DATE.
+  // ⚠️ The route table cannot express this -- every entry there has fixed params -- which is why this is
+  // its own handler rather than another COMPANION_ROUTES key.
+  // ⚠️ `/day-detail` is a real registered route that renders the same content with a working back action,
+  // but NOTHING in the app has ever navigated to it (Home and Stats both render Day Detail as a sheet).
+  // This is the first caller. If it looks wrong as a full page, the alternative is opening Home with a
+  // param and letting it raise its own sheet.
+  const openDayDetail = (ref: DayRef) => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    Keyboard.dismiss();
+    Animated.timing(anim, { toValue: 0, duration: 180, useNativeDriver: false }).start(() => {
+      onClose();
+      router.push({ pathname: '/day-detail' as any, params: { date: ref.date } });
+    });
+  };
+
   // Tapping a "Show me how" pill: fade the chat out, then launch the guided tutorial. The tour
   // self-navigates to its own screen via its steps, so we just start it. A short delay lets the
   // chat finish closing before the tutorial overlay takes over (mirrors the tutorials list launch).
@@ -668,7 +686,12 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
         // Substitute [[stat:key]] tokens with the exact values from the pack we sent (so any personal
         // number is the app's own number), then pull out [[route:key]] tokens into tappable pills.
         const { text: finalText, routes, tutorials } = substituteRoutes(substituteStats(data.reply!, statValueMap), text);
-        setMessages(prev => [...prev, { role: 'assistant', text: stripInlineFormatting(finalText), routes, tutorials }]);
+        // ⚠️ THE DAY JUMP IS COMPUTED FROM THE QUESTION, NOT THE REPLY, and by the APP, not Otto. He gets
+        // dates wrong (asked on Sat 1 Aug what he did yesterday, he said "Friday, August 1st"), and on the
+        // free plan he cannot see the data to check himself. Both tiers get the button: a Supporter still
+        // gets the full answer above it, this is an addition and never a substitute.
+        const dayJump = isDayRecall(text) ? (resolveDayRef(text, new Date()) ?? resolveDayRef('today', new Date())!) : undefined;
+        setMessages(prev => [...prev, { role: 'assistant', text: stripInlineFormatting(finalText), routes, tutorials, dayJump }]);
       } else if (data.message) {
         setSending(false);
         setMessages(prev => [...prev, { role: 'system', text: data.message! }]);
@@ -820,8 +843,16 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
                     <OttoAvatar accent={accent} />
                     <View style={styles.replyCol}>
                     <View style={[styles.bubble, styles.assistantBubble, styles.replyBubble]}>{body}</View>
-                    {((m.routes && m.routes.length > 0) || (m.tutorials && m.tutorials.length > 0)) && (
+                    {((m.routes && m.routes.length > 0) || (m.tutorials && m.tutorials.length > 0) || m.dayJump) && (
                       <View style={styles.pillRow}>
+                        {/* The day jump leads: it is the most specific answer to "what did I do on X". Its
+                            label carries the real date so the user sees WHICH day before tapping. */}
+                        {m.dayJump && (
+                          <Pressable onPress={() => openDayDetail(m.dayJump!)} style={[styles.pill, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
+                            <Ionicons name="calendar" size={12} color={accent} />
+                            <Text style={[styles.pillText, { color: accent }]}>{m.dayJump.label}</Text>
+                          </Pressable>
+                        )}
                         {m.tutorials?.map(id => {
                           const t = TUTORIAL_TRIGGERS.find(x => x.id === id);
                           if (!t) return null;

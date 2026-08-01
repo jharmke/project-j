@@ -144,6 +144,10 @@ function sanitizeDashes(text: string): string {
   return text
     .replace(/(\d)\s*[–]\s*(\d)/g, '$1-$2')
     .replace(/\s*(?:[—–]|--)\s*/g, ', ')
+    // A PLAIN hyphen used as a dash ("your Log tab - just tap the date") slipped through: the rule above
+    // only catches long dashes and double hyphens. Digits on either side are excluded so a spaced numeric
+    // range ("60 - 90 seconds") stays a range instead of becoming "60, 90".
+    .replace(/(?<!\d)\s+-\s+(?!\d)/g, ', ')
     .replace(/\s+,/g, ',')
     .replace(/,\s*,/g, ',')
     .replace(/[ \t]{2,}/g, ' ');

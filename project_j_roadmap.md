@@ -1423,8 +1423,13 @@ are separate pre-submission checklists, NOT part of this menu.
      "I can't afford it") silences the unprompted pitch for 30 days; if they ASK, he still answers in full.
      ⚠️ The watch instruction rides on the USER'S MESSAGE and only after he has pitched in that conversation
      (3/6 in the stable prompt vs 11/11 on the message). Build record in SPEC_otto.md.
-     ⚠️ STILL TO BUILD IN B: the **per-mode decline pass** only (per item A this collapsed to almost nothing,
-     so it may be a confirmation rather than work).
+     ✅ **THE PER-MODE DECLINE PASS: CLOSED 2026-08-01, NO VARIANTS NEEDED** -- a decision, not an omission.
+     Mindful forbids calorie deficit maths, weight-loss framing and prescribed calorie/macro numbers; nothing
+     in the free/paid work contains any of those (sets and reps are TRAINING numbers, and a price is not a
+     macro). Justin's call on the one real question: a Mindful user still gets pitched, because that mode is
+     about intimidating numbers, not about hiding that a paid tier exists. Reasoning in SPEC_otto.md.
+     ➡️ **ITEM B IS COMPLETE.** Everything in it is built and device-verified. The one accepted leak (a third
+     movement named on "back, bis, core and cardio") is logged above.
      🟡 **NEW, FOUND 2026-08-01, NOT URGENT BUT DO NOT LOSE IT: Otto points at days that predate the app.**
      Asked "what did I do the day after my birthday", he correctly worked out September 6, was honest that
      he could not see it, then said Day Detail "will show you everything you logged that day". It will not:

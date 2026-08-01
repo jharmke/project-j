@@ -963,6 +963,21 @@ identical wall, and the day-8 message would tell a four-month paying customer ab
   backed PRs, so the name list never ships for a brand-new user or anyone who only does cardio -- exactly
   the people most likely to ask about an exercise they half-remember. Pre-existing, but our guardrail leans
   on it.
+- ✅ **THE PER-MODE DECLINE PASS: CLOSED 2026-08-01, NO VARIANTS NEEDED. This is a decision, not an omission.**
+  Checked against the REAL Mindful text rather than a remembered summary. Mindful forbids exactly three
+  things: calorie deficit maths, weight-loss framing, and prescribing a calorie or macro number. Nothing in
+  the free/paid work contains any of them:
+  • the 2-exercise cap is movement names plus a plain fact about the plan;
+  • **sets and reps are TRAINING numbers, not calorie or macro numbers**, so a Mindful user asking how many
+    sets build muscle gets a real answer (the one worth pausing on, since it IS a number);
+  • a price is not a calorie or macro number, and the no-urgency / no-guilt pitch rules already apply to
+    everyone;
+  • declines, attribution, the day-jump button and "Got it." contain nothing Mindful restricts.
+  ⚠️ **The one real question underneath it, raised and answered:** should a Mindful user be pitched at all,
+  since they chose a gentler experience? **Justin's call: leave it.** "The Mindful thing is limiting
+  intimidating numbers and stuff. Just saying hey we have this Supporter plan doesn't really feel
+  pushy/intimidating." Turning it off would also mean a Mindful user never learns the plan exists and so
+  cannot choose to support the app, which patronises them. Do not re-open without a new reason.
 - **Free Otto's data-honesty block is its own variant**: no placeholder rules, no personal numbers, point at
   the app instead.
 - **"Describe, never rank"** applies to BOTH tiers, not just free: Otto explains how a food behaves and never

@@ -1299,6 +1299,95 @@ rather than truncating, which is what we want).
 
 ---
 
+#### ✅ PIECE 4a -- MEAL SLOTS: WHAT "DORMANT" ACTUALLY MEANS (LOCKED 2026-08-01)
+
+⚠️ **"Dormant" is SPEC JARGON invented by an earlier thread. The user never sees the word** and Justin had
+never used it. Shipped copy says the extras are "saved and waiting". Nothing here is user-facing vocabulary.
+
+**THE WHOLE FEATURE, IN ONE SENTENCE: when the app draws a day, show the LIVE slots, plus any sleeping slot
+that has food logged on that day.**
+
+**AND THE PROPERTY THAT MAKES IT SAFE: this feature WRITES NOTHING.** It only decides what to draw. No new
+storage, no migration, no job that runs when a membership ends, nothing rewritten on anyone's device. Data
+cannot be harmed by a change that only decides what is rendered.
+
+##### WHICH SLOTS SLEEP: POSITION DECIDES (Justin's call)
+The first N in the list are awake, everything below is asleep, where N is the tier cap (5 free / 8 Supporter).
+**There is NO stored sleeping flag.** A slot is awake because of where it sits, full stop.
+- Kills the whole class of bugs where a stored flag disagrees with the count.
+- ⚠️ Deliberately does NOT reuse the stats cards' `visible` flag or anything like it -- that flag is
+  USER-controlled, so dormancy built on it would let a downgraded user just switch their extras back on.
+- **Waking one is free: drag it above the line** in Edit Meal Slots. That is not creating anything, it is
+  choosing among what they already own -- same principle as the grandfathered custom macro split.
+- 🎁 **Deleting a live slot automatically wakes the next one down.** Nothing to build; it falls out of
+  position-decides. Looks like a bug if you do not know it is intended.
+- 🎁 **THERE IS NO DOWNGRADE EVENT TO HANDLE AT ALL.** The live set is derived from order + current cap, so
+  nothing runs when a membership ends, nothing can run twice, and nothing can fail halfway. Resubscribing is
+  the same in reverse and equally free.
+
+##### ⚠️ THE THING THAT WAS NEARLY BUILT WRONG: LOGGED FOOD MUST NEVER DISAPPEAR
+If sleeping slots simply stopped rendering, a downgraded user opening last Tuesday would find the food they
+logged into their extra slots **gone from the screen**. That breaks the line the whole cap philosophy rests
+on (*cap creation, never restrict access to data someone already logged*), and it is worse than it sounds
+because the app ALREADY behaves that way on manual slot deletion -- `deleteMealSlot`'s alert warns entries
+"won't appear in your log going forward." That was acceptable for a delete the user chose. Dormancy is not
+chosen, and would silently do it to weeks of history.
+**Justin's vision, and it is the spec:** past dates read like a screenshot frozen in time. Downgrade to 5,
+arrow back to a day you used 7, and all 7 are there with their names and their food.
+⚠️ **ONE ACCEPTED DIFFERENCE from a true frozen snapshot** (Justin agreed 2026-08-01): a past day where they
+had 7 slots but only put food in 5 shows 5, not 7 with two empty cards. **Sleeping slots return for a day
+only if there is something in them.** Empty cards from a slot you no longer have are clutter, not history.
+
+##### THE THREE RULES, AND THE NINE PLACES THEY APPLY (verified in code 2026-08-01)
+**1. DRAWS A DAY -> live slots + any sleeping slot with food that day.**
+   `app/(tabs)/log.tsx` (the day render is ONE loop, line ~1787), `app/day-detail.tsx`, `app/report.tsx`.
+**2. PICKS A SLOT (a destination) -> live slots ONLY.**
+   `app/add-food.tsx`, `app/food-detail.tsx`, `app/recipe-log.tsx`, `app/ai-meal-estimator.tsx`, and the chip
+   row in `components/RepeatMealModal.tsx` (which receives `slots={mealSlots}` as a prop from log.tsx, so
+   log.tsx must hand it the LIVE list).
+**3. NEEDS THE FULL LIST -> the Edit Meal Slots modal (so the locked rows show) and the home-screen step-down
+   message in `app/(tabs)/index.tsx`, whose whole job is saying the extras are waiting.**
+
+**NOT IN SCOPE, checked:** Day Summary, Weekly Summary and Monthly Summary do not read the slot list at all.
+**OTTO IS NOT IN SCOPE, and it is already handled:** his food history is one of the five attachments item B
+gates off from free users, and sleeping slots only exist for free users, so the situation cannot arise. If
+that gate ever broke, the worst case is Otto naming a slot the user still owns -- cosmetic.
+
+##### ⚠️⚠️ THE RULE THAT PROTECTS THE DATA: THE SHORTENED LIST IS NEVER SAVED
+`saveMealSlots` has exactly FOUR call sites, ALL in `log.tsx`, all in the Edit Meal Slots flow (add, delete,
+rename, drag-reorder). That same file also holds the slot list in state. **So log.tsx must keep the FULL list
+in state** and derive the shorter views for rendering. If its state ever held the filtered list, the next
+rename or reorder would write 5 slots over 7 and the extras would be gone from storage permanently.
+⚠️ **DO NOT "FIX" THIS BY MAKING `loadMealSlots` RETURN THE LIVE LIST.** That was proposed and is WRONG:
+changing a shared function so the one dangerous caller has to opt OUT of danger is backwards. If a live-list
+loader is wanted, add it under a NEW NAME and move read-only callers to it one at a time -- then a missed
+call site shows a stale extra slot (visible, harmless, findable) instead of silently truncating.
+✅ **Checked and clean:** every writer of `pj_settings` does a read-then-merge, so nothing else can clobber
+the slot list.
+
+##### BUILD NOTES
+- ⚠️ `addMealSlot` hard-guards `mealSlots.length >= 8` (log.tsx ~1337, with matching copy "Maximum 8 slots
+  reached" at ~2753 and the disabled state at ~2749). **This is the ONLY place the maximum is enforced** and
+  it becomes tier-aware. The dim state + gold lock from piece 2 goes here.
+- The Edit Meal Slots header already reads `${mealSlots.length} of 8 slots` (~2720). It becomes tier-aware
+  and that is the whole count job done there. ⚠️ For a free user over the cap it reads "5 of 5 slots" and
+  that is CORRECT -- the locked rows sitting right below explain themselves, and Justin explicitly rejected
+  inventing a third form of that line.
+- `findSlotForMeal` returns nothing for a slot absent from the list you hand it. That is exactly the
+  mechanism that would drop a historical entry, so **it must always be given the full list.**
+- History display is safe either way: entries store the slot ID and `slotNameCache` never shrinks, so a
+  sleeping slot's old entries still resolve their proper name.
+
+##### 🔎 THREE THINGS TO CONFIRM WHEN THE FILE IS OPEN (not design risks -- "does this file do what it appears to")
+1. **Day Detail may already be correct for free.** Its rendering is driven by the meal keys actually present
+   in the day (`day-detail.tsx` ~679) rather than by the slot list, which is the same idea as this rule.
+2. **Reports cover a date RANGE, not one day**, so the rule there is "a sleeping slot with food anywhere in
+   the range". Small variation, easy to write wrong.
+3. **Meal PHOTOS resolve in a separate loop from the render** (log.tsx ~950, day-detail ~106). Both loops must
+   walk the SAME list, or a sleeping slot returns for a past day with its food but without its photo.
+
+---
+
 ##### 🗄️ THE FALLBACK, KEPT ON PURPOSE -- MODAL ONCE, THEN TOAST
 **Not the plan. Kept because "modal every time" is a "we can try it", and if it reads as too much on device
 this is what we fall back to** rather than re-deriving it from scratch. Justin, 2026-08-01: "can you leave

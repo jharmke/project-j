@@ -1528,8 +1528,22 @@ are separate pre-submission checklists, NOT part of this menu.
      non-breaking spaces so a long name cannot orphan the word "plan".
      ⚠️ SUPPORTERS NEVER SEE A COUNT. Create only, never log. The count must exclude presets/built-ins and
      must be the same number the cap engine uses.
-     ⏭️ **NEXT: PIECES 4-6** -- what "dormant" means concretely for meal slots + stats cards, how the two
-     downgrade categories behave in practice, and where the caps get enforced across the different features.
+     ✅ **PIECE 4a (MEAL SLOTS) IS COMPLETE 2026-08-01.** Full detail in SPEC_monetization.md -> PIECE 4a.
+     One sentence: **when the app draws a day, show the LIVE slots plus any sleeping slot that has food on
+     that day.** Position decides which sleep (first N awake, no stored flag), so there is NO downgrade event
+     to handle and the feature WRITES NOTHING. ⚠️ The near-miss worth knowing: hiding sleeping slots outright
+     would have hidden food people already logged, which breaks the core "never restrict access to logged
+     data" rule. ⚠️ **NEVER make `loadMealSlots` return the live list** -- log.tsx loads AND saves from that
+     state, so it would truncate storage on the next rename. Three things flagged to confirm when the files
+     are open (Day Detail may already be correct, Reports is a date RANGE not a day, meal photos resolve in a
+     separate loop).
+     ⏭️ **NEXT: PIECE 4b, STATS GRAPHS** -- deliberately split from meal slots; they are independent problems
+     and neither waits on the other. Graphs have no history problem (hiding a graph hides no data) but they
+     DO have the tombstone hazard: ⚠️ `saveStatsCards` records any DEFAULT card missing from the list you hand
+     it into `pj_stats_removed_defaults` as "user deleted this on purpose", so saving a shortened list would
+     permanently tombstone their default graphs too. 12 save call sites across stats.tsx + index.tsx.
+     ⏭️ **THEN PIECES 5-6** -- how the two downgrade categories behave in practice, and where the caps get
+     enforced across the different features.
      ⚠️ **THE LAYOUT CAPS ARE "DEFAULTS PLUS ONE", NOT RAW TOTALS (Justin, 2026-07-31). Read either as a bare
      total and you cull the defaults, which was never the intent.**
      • **MEAL SLOTS: 5, corrected from 4.** `DEFAULT_MEAL_SLOTS` is 4 (Morning, Lunch, Dinner, Snacks), so a

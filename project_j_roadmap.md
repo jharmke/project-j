@@ -1462,9 +1462,21 @@ are separate pre-submission checklists, NOT part of this menu.
      and carries NO exercises. The weekly template is the ONE live week (loading a program replaces it) and
      is not cappable. Otto had NOTHING about programs in his knowledge and invented rep ranges and
      progressions when asked -- fixed 2026-08-01.
-     ⏭️ **NEXT PIECE OF C: the MESSAGING** (piece 2 of 6). Pieces 3-6 after it: whether a user sees a cap
-     coming, what "dormant" means concretely, how the two downgrade categories behave, and where the caps get
-     enforced across the different features.
+     ✅ **PIECE 2 (what the user SEES at a cap) IS LOCKED 2026-08-01.** Full detail in SPEC_monetization.md
+     -> "WHAT THE USER SEES AT A CAP". Headline: the ENTRY POINT goes dim with a lock (never the Save button
+     at the end of a builder -- Justin: "dont make users do all the work just to not be able to save it"),
+     it stays pressable, first tap at a given cap opens a MODAL with a Support the Mission jump, every tap
+     after fires a TOAST. First-time state tracked PER CAP. ⚠️ Do NOT touch `Toast.tsx` (2200ms hardcoded, no
+     tap action, shared by ~40 toasts). ⚠️ Unknown membership = NOT dim, ever. ⚠️ The cap is on CREATING
+     only -- editing/deleting/opening what you already have is never blocked. ⚠️ The tutorial's path into a
+     creator must never be capped. ⚠️ Custom foods have SIX user-facing doors (traced in code); every capped
+     feature needs its doors counted before build. Still open in piece 2: the WORDING.
+     ⏭️ **NEXT PIECE OF C: piece 3, does the user see a cap COMING.** Justin's opening proposal, carried over
+     from the piece 2 discussion: put the count in the SUCCESS toast that already fires on create ("Food
+     saved" etc), which have an empty second line already available. ⚠️ Flag to carry in: at a cap of 20 that
+     is useful, but at a cap of 5 saved meals it fires on the first one and meters a free user from day one --
+     same tone problem as the Halo counter. Pieces 4-6 after: what "dormant" means concretely, how the two
+     downgrade categories behave, and where the caps get enforced across the different features.
      ⚠️ **THE LAYOUT CAPS ARE "DEFAULTS PLUS ONE", NOT RAW TOTALS (Justin, 2026-07-31). Read either as a bare
      total and you cull the defaults, which was never the intent.**
      • **MEAL SLOTS: 5, corrected from 4.** `DEFAULT_MEAL_SLOTS` is 4 (Morning, Lunch, Dinner, Snacks), so a

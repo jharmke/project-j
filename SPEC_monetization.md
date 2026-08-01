@@ -804,6 +804,96 @@ TWO CARVE-OUTS THAT ARE NOT ARBITRARY:
 - The macro/nutrition gate is barely a paywall in practice: four presets cover what most people need, so a
   free user is not locked out of eating properly, only out of precision.
 
+### WHAT THE USER SEES AT A CAP (✅ **PIECE 2 OF ITEM C, LOCKED 2026-08-01**)
+
+Piece 1 locked the numbers. This is the moment of impact: a free user with 20 custom foods opens the plus
+menu and wants a 21st. Wording is the only part still open.
+
+**THE RULE, COMPLETE:**
+- **Under the cap:** nothing. No dim, no lock, no toast. The app behaves exactly as it does today.
+- **At the cap:** the ENTRY POINT is **dim with a lock icon**, and is **still pressable**.
+- **First tap at that particular cap:** a **modal**, with a Support the Mission jump.
+- **Every tap after:** a **toast**. No link.
+- **First-time state is tracked PER CAP**, not per app. Hitting the recipe wall teaches nobody anything
+  about the exercise library, so each capped thing gets its own one-time explanation. Store it the same way
+  `pj_tooltip_{key}` already stores seen-state.
+- Nothing ever fires on its own. It only ever happens because the user reached for something, which is what
+  keeps it from reading as nagging.
+
+**WHY DIM THE ENTRY POINT AND NOT THE SAVE BUTTON (Justin, 2026-08-01):** "dont make users do all the work
+just to not be able to save it." Create Routine, Create Program and the recipe builder all put their save at
+the END of a builder. A cap checked only at save time means someone picks eight exercises, names the routine,
+taps create, and gets rejected after all of it. Dimming the way IN means they never enter a builder they
+cannot finish. This is the single strongest argument in the whole piece and it is Justin's.
+
+**WHY THE DIM-BUTTON BUILD STANDARD DOES NOT APPLY AS WRITTEN.** That standard is about VALIDITY: the button
+is dim because nothing valid has been entered and the fix is in the user's hands. A cap is the opposite. The
+input is perfectly valid and the answer is still no. A plain dim state there shows the "you did something
+wrong" face for something the user cannot fix, and they will hunt for the field they missed. **The lock icon
+is what resolves it** -- dim alone reads as "not yet, do something else first"; dim plus a lock reads as
+"not available to you," which is true and takes one glance.
+
+**WHY A MODAL FIRST AND NOT A TOAST EVERY TIME.** Checked in code 2026-08-01: toasts live **2200ms**,
+hardcoded in `components/Toast.tsx`, identical for every toast in the app, with **no duration parameter and
+no tap action of any kind** (the only pressable thing is the close X). 2.2 seconds at the bottom of the
+screen is not enough time to read a sentence, realise you have hit a limit, decide you care, and reach for a
+link. This is the highest-intent moment in the entire non-AI product -- someone actively reaching for the
+paid thing -- and a toast throws it away. Making toasts longer and tappable was considered and rejected: it
+means changing a shared component that roughly forty other toasts run through, for a benefit the modal
+already delivers. ⚠️ **DO NOT TOUCH `Toast.tsx` FOR THIS FEATURE.**
+The repeat toast needs no link because they have seen the offer once and Support the Mission has a permanent
+home (`app/support.tsx`, reachable from Profile and Settings via `MembershipCard.tsx`).
+
+**⚠️ NEVER DIM ON UNCERTAINTY.** Membership loads asynchronously. If a screen draws before the answer
+arrives and assumes "not a Supporter," a paying customer watches the button sit there dim with a padlock on
+it. Even for half a second that is the worst bug this feature can have. **Unknown membership = NOT dim.**
+Same trap already recorded on Otto, where `isSupporter()` returned false on lookup FAILURE rather than on a
+real answer, and needed a third "unknown" state.
+
+**⚠️ THE CAP IS ON CREATING, FULL STOP.** Editing, deleting and opening something the user already has are
+NEVER blocked. A free user with 20 custom foods can still fix a typo in any of them, delete one, and log any
+of them. They just cannot make a 21st. This is easy to get wrong because create and edit often land on the
+same storage write: `pj_my_foods` is written from five places and only some of them are creations. Gate the
+CREATE ACTION, never the storage write. (Same rule as the already-recorded "cap creation, never LOADING" note
+on routines.)
+
+**⚠️ THE TUTORIAL MUST NEVER HIT THIS WALL.** The "Creating Your Own Food" tutorial drives the creator open
+itself via the registered `openCreatorForTutorial` action (`app/add-food.tsx`). A free user sitting at 20
+foods who runs that tutorial would dead-end on a locked button. The tutorial's path in is separate from every
+user-facing door, so there is a clean place to make the distinction, but it must be deliberate or it breaks
+silently. Matches the standing tutorial rule: never let a tutorial hit a wall it cannot get past.
+
+**THE DOORS. EVERY CAPPED FEATURE NEEDS ITS ENTRY POINTS COUNTED BEFORE BUILD, NOT ASSUMED.** This is a build
+checklist, not a decision. Custom foods alone have SIX user-facing doors, traced in code 2026-08-01:
+1. Log tab -> + FAB -> Create Food (routes to add-food with `openCreate: '1'`, which pops the creator on
+   arrival)
+2. Add Food screen -> + FAB -> Create Food
+3. Barcode scanned, nothing found -> Create Food for this Barcode
+4. Barcode results -> Create Food for this Barcode (a genuinely separate second button, not the same one)
+5. Food detail -> Save as Copy (the clone-food path, ends in the "Saved to My Foods" toast)
+6. Recipe builder -> create a food inline while building a recipe (`recipe-builder.tsx` renders the same
+   `CustomFoodCreator`)
+Plus the tutorial path above (do not cap), and Otto as door 8 once plan item A's exercise/food creation
+lands.
+⚠️ On BOTH FAB menus the icon and its label are **two separate touchables**, so each of those rows is two
+places to change, not one.
+⚠️ **New Recipe sits on the same FAB as Create Food but is a DIFFERENT cap with a different number**, so the
+two entries must be able to go dim independently.
+⚠️ A `saveNewFood` function exists in `app/add-food.tsx` and looks like a seventh door. **It is dead code** --
+nothing calls it and nothing renders it. Do not wire a cap to it.
+
+**STILL OPEN IN PIECE 2:** the actual wording of the modal and the toast. ⚠️ The copy cannot be a counter.
+"You have used 20 of 20" is a lie for a lapsed Supporter sitting on 40 grandfathered custom foods, and for a
+downgraded user with 8 meal slots. It has to be about entitlement, not arithmetic, or it is wrong for exactly
+the users most worth winning back. A lapsed Supporter also needs different copy from someone who never
+subscribed: "free users get 20" reads as broken to somebody who had unlimited last week.
+**AND:** if someone subscribes from that modal, they must land back where they were, still wanting to create
+that food. Paying and getting dumped on the Profile tab is a sour ending to the best moment this product gets.
+
+**⚠️ THIS DOES NOT COVER MEAL SLOTS OR STATS CARDS.** Those are the two REVERT rows, and their wall arrives
+without anyone tapping anything: a lapsed Supporter's 8 meal slots become 5 while they are not even in the
+app. Nothing above applies to that moment. Pieces 4 and 5.
+
 ### THE MILESTONE ASK (AGREED 2026-07-28) -- an Otto hub card, never an interruption
 
 WHY IT EXISTS: today the app only asks at WALLS. Someone has to run out of Otto messages or tap a locked

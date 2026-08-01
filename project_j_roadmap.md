@@ -1520,12 +1520,16 @@ are separate pre-submission checklists, NOT part of this menu.
      size. ✅ **DATA EXPORT NEEDED NO COPY**: the only export lives inside Reports, which is already
      Supporter-gated, so that perks row is already true today. A REAL data export does not exist and is now
      its own item in QUICK WINS/NEW below.
-     ⏭️ **NEXT PIECE OF C: piece 3, does the user see a cap COMING.** Justin's opening proposal, carried over
-     from the piece 2 discussion: put the count in the SUCCESS toast that already fires on create ("Food
-     saved" etc), which have an empty second line already available. ⚠️ Flag to carry in: at a cap of 20 that
-     is useful, but at a cap of 5 saved meals it fires on the first one and meters a free user from day one --
-     same tone problem as the Halo counter. Pieces 4-6 after: what "dormant" means concretely, how the two
-     downgrade categories behave, and where the caps get enforced across the different features.
+     ✅ **PIECE 3 IS COMPLETE 2026-08-01** (does the user see a cap coming). Full detail in
+     SPEC_monetization.md -> PIECE 3. The count rides on the SUCCESS toast that already fires on create,
+     EVERY time, counting UP, free users only, and nothing else shows a count anywhere:
+     `Food saved` / `Chicken Thighs (3 of 20 included on the free plan)`.
+     ⚠️ "included" is load-bearing, parentheses not a dot, and the whole parenthetical is bound with
+     non-breaking spaces so a long name cannot orphan the word "plan".
+     ⚠️ SUPPORTERS NEVER SEE A COUNT. Create only, never log. The count must exclude presets/built-ins and
+     must be the same number the cap engine uses.
+     ⏭️ **NEXT: PIECES 4-6** -- what "dormant" means concretely for meal slots + stats cards, how the two
+     downgrade categories behave in practice, and where the caps get enforced across the different features.
      ⚠️ **THE LAYOUT CAPS ARE "DEFAULTS PLUS ONE", NOT RAW TOTALS (Justin, 2026-07-31). Read either as a bare
      total and you cull the defaults, which was never the intent.**
      • **MEAL SLOTS: 5, corrected from 4.** `DEFAULT_MEAL_SLOTS` is 4 (Morning, Lunch, Dinner, Snacks), so a

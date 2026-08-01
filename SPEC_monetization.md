@@ -1226,6 +1226,79 @@ number, so there is no at-cap/over-cap split and no delete option. They need the
 still wanting to create that food. Paying and getting dumped on the Profile tab is a sour ending to the best
 moment this product gets.
 
+---
+
+#### ✅ PIECE 3 -- DOES THE USER SEE A CAP COMING (LOCKED 2026-08-01)
+
+**THE DECISION: the count rides on the SUCCESS toast that already fires when you create something, EVERY
+time, phrased as counting UP, free users only.** Justin's idea and his lean; nothing else shows a count.
+
+> **Food saved**
+> Chicken Thighs (3 of 20 included on the free plan)
+
+**WHY THE EXISTING TOAST AND NOT NEW UI.** Every capped thing already fires a creation toast (Food saved,
+Meal saved, Graph added, Exercise added) and their second line is usually empty. The count rides on something
+the user is already looking at, at the exact moment they used one up. Nothing new to find, nothing always-on.
+
+**WHY EVERY TIME AND NOT ONLY NEAR THE END.** Claude argued first for staying quiet until the user is close,
+on the precedent of `QUOTA_VISIBLE_AT = 5` hiding the Halo/Otto counter until it is useful. Two things
+overturned it:
+1. **Halo's counter counts DOWN, this one counts UP.** "5 messages left" is a fuel gauge; "3 of 20" is a
+   collection filling. Identical information, opposite feel. The objection was to the countdown, not the count.
+2. **TWO CAPS HAVE A RUNWAY OF ONE** -- stats graphs and meal slots both give a free user exactly one of their
+   own. A "stay quiet until near the end" rule never fires for those at all, and needs proportional tuning
+   (a fixed "5 remaining" is most of a cap of 20 and the whole of a cap of 3). Every time works everywhere,
+   needs no threshold and needs no explaining.
+
+**THE WORDING, and every part of it was fought for:**
+- ⚠️ **"INCLUDED" IS LOAD-BEARING** (Justin's word). "3 of 20 on the free plan" reads as a restriction notice;
+  "3 of 20 **included** on the free plan" reads as something you were given. Fits *limit, don't paywall*, and
+  makes the eventual wall land as fair rather than stingy.
+- ⚠️ **PARENTHESES, NOT A DOT.** The app uses "·" to join things of EQUAL weight ("3 items · 420 kcal"). Here
+  the name is the confirmation and the count is a footnote, so the punctuation must subordinate it. Justin
+  rejected the bare "Chicken Thighs · 3 of 20" outright: it does not say what the 20 is.
+- ⚠️ **NEVER "20 free foods"** -- reads like foods with no calories.
+- ⚠️ **BIND THE WHOLE PARENTHETICAL WITH NON-BREAKING SPACES.** Otherwise a long food name orphans the word
+  "plan" on its own line. Bound, the phrase either sits after the name or drops to the next line WHOLE, so a
+  long name gives a tidy two lines instead of a ragged break. (~35 chars against a near-full-width toast line;
+  it fits with room to spare.)
+
+**THE TWO CAPS OF ONE (stats graphs, meal slots) KEEP THE SAME FORMAT** plus one word, so there are no special
+cases. Claude proposed dropping the number entirely ("your free graph"); Justin disagreed -- "1 of 1" is plain
+and readable, not insulting -- and he was right. The added word fixes the only real problem, which is accuracy
+rather than tone: a free user HAS eight graphs (seven defaults + their one) and five meal slots (four defaults
++ their one), and a bare "1 of 1" could be read as the free plan giving you a single graph.
+> **Graph added**
+> Recovery Trend (1 of 1 custom graph included on the free plan)
+
+> **Slot added**
+> Pre-Workout (1 of 1 custom meal slot included on the free plan)
+
+**THE TOAST IS THE WHOLE OF IT.** No count on the list screens, no permanent counter anywhere. A count sitting
+on My Foods or the Exercise Library is the always-on fuel gauge already rejected for Halo, it shows whether or
+not the user cares, and the number is only actionable at the moment you are about to add another one -- which
+is exactly when the toast fires. Justin 2026-08-01: "toast alone is fine. we can re-evaluate if it doesnt end
+up being good or we get complaints."
+
+**RULES THAT FALL OUT OF THIS -- all four are easy to get wrong:**
+- ⚠️ **SUPPORTERS NEVER SEE A COUNT. NEVER.** (Justin, emphatic.) There is nothing to count. Which also means
+  somebody finishing the 7-day taste starts seeing counts on day 8 where they saw none on day 7. That is
+  correct, but it is a visible change and should be deliberate rather than a surprise.
+- ⚠️ **CREATE ONLY, NEVER LOG.** Logging a saved meal for the fortieth time consumes nothing. A count there
+  would say it does.
+- ⚠️ **THE COUNT MUST EXCLUDE PRESETS AND BUILT-INS**, exactly like the cap does -- routines, programs and
+  exercises all mix user-created with shipped ones. A count that includes them is both wrong and alarming.
+- ⚠️ **THE NUMBER SHOWN MUST BE THE NUMBER THE CAP ENGINE USES.** Caps are CONCURRENT, so deleting one frees a
+  slot and the next toast reads lower. Two separate counting implementations WILL drift.
+- 🎁 A free property of counting up: the final creation announces itself ("20 of 20 included on the free
+  plan"), so the last one doubles as the warning with no extra work.
+
+**DEVICE CHECK WHEN BUILT:** how the two-line wrap looks with a long name, and whether the toast has any
+height constraint that a second line fights with (the second line has no `numberOfLines` limit, so it wraps
+rather than truncating, which is what we want).
+
+---
+
 ##### 🗄️ THE FALLBACK, KEPT ON PURPOSE -- MODAL ONCE, THEN TOAST
 **Not the plan. Kept because "modal every time" is a "we can try it", and if it reads as too much on device
 this is what we fall back to** rather than re-deriving it from scratch. Justin, 2026-08-01: "can you leave

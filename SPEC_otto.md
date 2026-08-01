@@ -110,6 +110,18 @@ Romanian deadlift", "incline or flat press") -- those are coaching, not the thin
 I'll cover it" teaches the workaround -- the loophole is accepted, but accepting it quietly and advertising
 it are different things.
 
+**THE REPLY SHAPE, LOCKED 2026-08-01: ANSWER, REASON, LIMIT, STOP.** Nothing goes around it. This is the
+same three-sentence shape as the DATA declines already shipped, which is the point -- free Otto sounds
+consistent whether he is hitting a data wall or a capability one. Specifically kept OUT:
+- **No apology.** "Sorry I can't give you more" makes the plan sound like a punishment.
+- **No naming what he is withholding.** "I can't build you the full session" describes the paid product in
+  the middle of a free answer. That is a pitch wearing a disguise.
+- **No offer to continue** (see above).
+- **No hedging the two he gave.** "This is just a start, obviously not a full workout" undercuts the answer
+  he did give. The two movements must read as a confident, complete answer to what was asked.
+**Why nothing extra:** every additional sentence is another chance to sound apologetic or salesy. The one
+factual clause already does the whole job. Limited, not broken, and not a trailer.
+
 **MODE VARIANTS: NONE.** The cap involves no deficit maths, no weight-loss framing and no prescribed numbers,
 which are the only things Mindful actually forbids. It reads identically in all three modes.
 
@@ -1063,6 +1075,17 @@ He gets muscles and instructions from his own general knowledge (commodity fitne
 
 #### TRIGGERS -- two, and only two
 1. **The user asks for more.** "Build me the full thing", "can you give me the rest".
+   ➡️ **EXTENDED 2026-08-01: "why can't you" counts as asking for more.** "Why can't you / why won't you /
+   why don't you / how come you can't". Someone pushing back on a limit is actively reaching for the thing,
+   and it is the most natural moment to say a better version exists, because they literally asked why.
+   ⚠️ **The honest risk, accepted with eyes open:** from the text alone, frustration and desire look
+   identical. "Why can't you do anything?" is a complaint, and answering a complaint with a sales line is
+   the one place this reads as a hand on the shoulder pushing someone toward the door. Blunted by the caps
+   (once per conversation, three per week) and by the no-urgency/no-guilt rules, but it is a judgement call,
+   not a free win. Revisit if it ever feels that way on device.
+   ⚠️ Matches on **"you"** so "why can't I see my weight" (a how-to question) does not fire, and handles the
+   **curly apostrophe** -- iOS smart punctuation types ’ not ', so a plain ' misses most real phones. Both
+   verified against a should-match / must-not-match list. BUILT in `utils/companionPitch.ts`.
 2. **Their THIRD wall in one conversation.** ⚠️ Justin was on the fence that trigger 1 alone means most users
    never hear a pitch at all. Counterweight: Otto is one of six conversion surfaces, not the closer.
 ➡️ **THE APP COUNTS THE WALLS AND PASSES A FLAG** saying a pitch is allowed on this message. Otto has no

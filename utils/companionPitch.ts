@@ -40,7 +40,11 @@ export function messageHitsWall(text: string): boolean {
  */
 export function messageAsksForMore(text: string): boolean {
   const t = (text || '').toLowerCase();
-  return /\b(give me (the|more)|can you (give|do|build|make) me the (rest|whole|full)|the rest of|full (version|thing|session|plan)|build me|make me a (workout|routine|meal|plan)|unlock|upgrade|how much (is|does)|what does it cost|is there a (paid|pro|premium)|worth paying|subscri)/.test(t);
+  // ⚠️ "why can't you" IS a reach, added 2026-08-01. Someone pushing back on a limit is a person actively
+  // wanting the thing, and it is the most natural moment to explain a better version exists, because they
+  // literally asked why. Matches on "you" so "why can't I see my weight" (a how-to question) does NOT fire.
+  // The curly apostrophe is deliberate: iOS smart punctuation types ’ not ', so ' alone misses most phones.
+  return /\b(give me (the|more)|can you (give|do|build|make) me the (rest|whole|full)|the rest of|full (version|thing|session|plan)|build me|make me a (workout|routine|meal|plan)|unlock|upgrade|how much (is|does)|what does it cost|is there a (paid|pro|premium)|worth paying|subscri|why (ca|wo|do)n['’]?t you|how come you (ca|do)n['’]?t)/.test(t);
 }
 
 /**

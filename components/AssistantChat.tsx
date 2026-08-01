@@ -22,7 +22,7 @@ import { useMembership } from '../MembershipContext';
 import { CRISIS_RESPONSE, screenForCrisis } from '../utils/faithCrisis';
 import { buildCompanionStats } from '../utils/companionStats';
 import { buildPRContextIfRelevant, buildExerciseNamesIfRelevant } from '../utils/companionPRs';
-import { messageHitsWall, messageAsksForMore, messageBlocksPitch, WALLS_BEFORE_PITCH } from '../utils/companionPitch';
+import { messageHitsWall, messageAsksForMore, messageBlocksPitch, messageAsksForExercises, workoutAskWantsMoreThanTwo, WALLS_BEFORE_PITCH } from '../utils/companionPitch';
 import { buildWorkoutContextIfRelevant } from '../utils/companionWorkouts';
 import { buildFoodContextIfRelevant } from '../utils/companionFood';
 import { buildSleepContextIfRelevant } from '../utils/companionSleep';
@@ -600,6 +600,12 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
       // this map, so if Otto ever reaches for a number he was not given, the user sees nothing rather than a
       // wrong figure or raw bracket code. Belt and braces behind the prompt rules.
       let statValueMap: Record<string, string> = {};
+      // ⚠️ ONE FLAG, TWO JOBS: it tells the server to attach the two-movement cap to THIS message, and it is
+      // half of the wall check below. Attaching the cap only on workout messages is why it costs nothing on
+      // the other nine messages of someone's day. Supporters are excluded here, and the server re-checks.
+      const capsWorkout = !isSupporter && messageAsksForExercises(text);
+      // Did they ask for MORE than two? Drives both the wall count and whether Otto says the limit line.
+      const workoutCut = capsWorkout && workoutAskWantsMoreThanTwo(text);
       if (isSupporter) {
         // Fresh each message so mid-chat logging is reflected. Reuses the app's own calc utils, so
         // every number matches the coach/reports exactly (see utils/companionStats.ts).
@@ -625,7 +631,10 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
         // is a PR/training question ("how's my bench trending") -- a real wall, but one messageHitsWall
         // cannot see, because the PR detector needs their lift names and it does not have them. Missing this
         // meant three walls only ever counted as two and the pitch could never become eligible.
-        if (messageHitsWall(text) || namesCtx) wallCountRef.current += 1;
+        // ⚠️ A CAPPED WORKOUT ANSWER IS A WALL TOO, but only when they asked for MORE than two -- ask for two
+        // and get two and nothing was withheld. One increment maximum, so a message that is both a data
+        // question and a workout ask still counts once, not twice.
+        if (messageHitsWall(text) || namesCtx || workoutCut) wallCountRef.current += 1;
       }
 
       // ⚠️ A REQUEST, NOT A DECISION. The server still checks that they are a CONFIRMED free user and that
@@ -639,7 +648,7 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
         !messageBlocksPitch(text) &&
         (messageAsksForMore(text) || (wallCountRef.current >= WALLS_BEFORE_PITCH && !pitchedRef.current));
       const callable = httpsCallable(getFunctions(app), 'appCompanion');
-      const res = await callable({ message: text, history, styleMode, faithTier, userContext, dataSnapshot, freeContext, pitchRequested });
+      const res = await callable({ message: text, history, styleMode, faithTier, userContext, dataSnapshot, freeContext, pitchRequested, capsWorkout, workoutCut });
       const data = (res.data ?? {}) as { ok?: boolean; reply?: string; crisis?: boolean; message?: string; used?: number; cap?: number; pitched?: boolean };
 
       if (typeof data.used === 'number' && typeof data.cap === 'number') {

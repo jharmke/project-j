@@ -8,6 +8,7 @@ import {
   buildCompanionStable,
   buildCompanionVolatile,
   PITCH_REQUIRED_BLOCK,
+  buildWorkoutCapBlock,
   type StyleMode,
   type FaithTier,
 } from './companionSystemPrompt';
@@ -183,6 +184,8 @@ export const appCompanion = onCall(
       dataSnapshot?: unknown;
       freeContext?: unknown;
       pitchRequested?: unknown;
+      capsWorkout?: unknown;
+      workoutCut?: unknown;
     };
     const message = typeof data.message === 'string' ? data.message.trim() : '';
     if (!message) {
@@ -280,9 +283,23 @@ export const appCompanion = onCall(
     // prompt, and an instruction at the end of that loses to his standing "never be pushy" character. On the
     // message it lands every time. This is appended SERVER-SIDE only: the phone stores the user's own text,
     // so the block is never shown to them and never survives into the next turn's history.
+    // ⚠️ THE CAP IS ENFORCED FOR A FREE USER ONLY, and the server decides that from its OWN membership
+    // record -- `capsWorkout` from the client only says "this message asked for exercises". A modified
+    // client cannot switch the cap off, and a Supporter can never have it switched on.
+    const capsWorkout = status !== 'entitled' && data.capsWorkout === true;
+    // Did the cap actually withhold something? Only then does Otto say the limit line. The APP decides this,
+    // he does not -- see buildWorkoutCapBlock.
+    const workoutCut = capsWorkout && data.workoutCut === true;
+
+    // ⚠️ BOTH BLOCKS RIDE ON THE MESSAGE, NOT THE SYSTEM PROMPT. See PITCH_REQUIRED_BLOCK and
+    // buildWorkoutCapBlock for the measurements behind that. Appended server-side only: the phone stores the
+    // user's own text, so neither block is ever shown to them or carried into the next turn's history.
+    const suffix = [capsWorkout ? buildWorkoutCapBlock(workoutCut) : '', pitchAllowed ? PITCH_REQUIRED_BLOCK : '']
+      .filter(Boolean)
+      .join('\n\n');
     const messages: Anthropic.MessageParam[] = [
       ...history,
-      { role: 'user', content: pitchAllowed ? `${message}\n\n${PITCH_REQUIRED_BLOCK}` : message },
+      { role: 'user', content: suffix ? `${message}\n\n${suffix}` : message },
     ];
 
     const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value() });
@@ -311,7 +328,7 @@ export const appCompanion = onCall(
             // the server's own membership record and fails closed to free on any error.
             // (A user who TYPES their own numbers into the message still gets personalised advice. That is
             // the accepted loophole from SPEC_otto.md open item 5 -- the app revealed nothing.)
-            text: buildCompanionVolatile(userContext, supporter ? dataSnapshot : undefined, freeContext),
+            text: buildCompanionVolatile(userContext, supporter, supporter ? dataSnapshot : undefined, freeContext),
           },
         ],
         messages,

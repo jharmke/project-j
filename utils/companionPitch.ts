@@ -48,6 +48,45 @@ export function messageAsksForMore(text: string): boolean {
 }
 
 /**
+ * Did they ask for exercises to actually DO? This is what turns the two-movement cap ON for a free user.
+ *
+ * ⚠️ DELIBERATELY BROADER THAN THE WALL CHECK BELOW. The cap's ceiling applies to every request for
+ * movements, including "give me 2" -- but only a request for MORE than two actually withholds anything, and
+ * only that counts as a wall. Two questions, two functions.
+ *
+ * Excluded on purpose: teaching a movement they already named ("how do I do a Romanian deadlift"), comparing
+ * two ("incline or flat"), general set/rep knowledge, and anything about their own past training -- that last
+ * one is a DATA wall and is already counted by `messageHitsWall`.
+ */
+export function messageAsksForExercises(text: string): boolean {
+  const t = (text || '').toLowerCase();
+  if (/\bhow (do|to|would|should) (i|you)\b.*\b(do|perform)\b/.test(t)) return false;
+  if (/\bshould i\b.*\bor\b/.test(t)) return false;
+  if (/\b(did i|have i|last (week|month)|yesterday|trending|progress(ing)?|how many .*(this|last) week)\b/.test(t)) return false;
+  if (/\bhow many (sets?|reps?)\b/.test(t)) return false;
+
+  const thing = /\b(workouts?|routines?|sessions?|exercises?|movements?|lifts?|circuits?|splits?)\b/;
+  const askVerb = /\b(give|build|make|list|show|suggest|recommend|need|want|plan|got any|any good|what'?s? a good|what should i)\b/;
+  if (thing.test(t) && askVerb.test(t)) return true;
+  if (/\b(push|pull|leg|chest|back|shoulders?|arms?|core|abs?|glutes?|full body|upper|lower)\s+day\b/.test(t)) return true;
+  if (/\bwhat should i (train|do|hit)\b/.test(t)) return true;
+  return false;
+}
+
+/**
+ * Did the cap actually CUT something? Only then is it a wall.
+ *
+ * Someone who asks for two and gets two was not limited, so it must not count toward the three walls that
+ * earn a pitch -- and Otto must not tell them about a limit they never hit. See SPEC_otto.md, WHAT COUNTS AS
+ * A WORKOUT WALL.
+ */
+export function workoutAskWantsMoreThanTwo(text: string): boolean {
+  const t = (text || '').toLowerCase();
+  if (/\b(1|2|one|two|a couple(?: of)?|a single|a)\b[^.?!]{0,24}?\b(exercises?|movements?|lifts?)\b/.test(t)) return false;
+  return true;
+}
+
+/**
  * ⚠️ NEVER PITCH ON A FAITH MESSAGE, whatever the wall count says. Faith is never paywalled, so a prayer or
  * journal question cannot itself be a wall -- but the counter could already be at three from earlier in the
  * conversation and land a sales line on top of someone asking about their prayer list. (Crisis needs no

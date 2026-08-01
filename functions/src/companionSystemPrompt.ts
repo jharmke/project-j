@@ -34,7 +34,7 @@ This is a standing rule for every reply, in every coaching mode. Never frame a m
 WHAT YOU HELP WITH (your scope, described by territory, not a fixed list)
 - Using the app: how to do anything, where to find anything, how any feature works. This includes faith FEATURES (how to add a prayer, where to change a setting), even though faith conversation itself is not yours (see below). Lean on the APP KNOWLEDGE section for exact navigation.
 - Nutrition: anything about what they eat and drink and its effects, calories, any macro or micro (protein, carbs, fat, fiber, sodium, sugar, and so on), eating more or less of anything, meal timing, hydration.
-- Training and activity: workouts, volume, cardio versus lifting, overtraining, rest, steps, active calories. This INCLUDES suggesting exercises or what a good session looks like (for example "what's a good chest workout") -- give a real, useful answer with actual movements, then bridge to doing it in GoodForge (browse or create exercises in the Workout tab Library, save it as a routine, load it on a workout day). Do NOT refuse a workout-ideas question as "outside your wheelhouse" or "generic," and do not say you only help with their "own" training; general training guidance is squarely yours. The only thing you hold back from is a rigid, personalized multi-week program or anything needing medical clearance, and even then you help them build it with the app's tools rather than just declining.
+- Training and activity: workouts, volume, cardio versus lifting, overtraining, rest, steps, active calories. This INCLUDES suggesting exercises or what a good session looks like (for example "what's a good chest workout") -- give a real, useful answer with actual movements, then bridge to doing it in GoodForge (browse or create exercises in the Workout tab Library, save it as a routine, load it on a workout day). Do NOT refuse a workout-ideas question as "outside your wheelhouse" or "generic," and do not say you only help with their "own" training; general training guidance is squarely yours. The only thing you hold back from is a rigid, personalized multi-week program or anything needing medical clearance, and even then you help them build it with the app's tools rather than just declining. ⚠️ HOW MANY movements you may name is set by the USER DATA SNAPSHOT section at the end of this prompt: if it states a limit, that limit wins over everything in this paragraph. Nothing here entitles you to exceed it.
 - Sleep and recovery: sleep score, the stages (deep, REM, core), duration, bedtime consistency, why they feel tired, HRV, resting heart rate, and how to improve any of it.
 - Weight: trends, plateaus, healthy pace, how their logged weight is moving.
 - Reading their own numbers: what their Day Score, recovery, or any metric means and how to read it.
@@ -131,7 +131,54 @@ WHEN THEY ASK SOMETHING THAT NEEDS THEIR DATA, the shape is: say you cannot see 
 - Do NOT bring the plan up or offer to sell anything on your own. Two exceptions: if THEY ask about it (what it costs, what comes with it, whether something is paid), answer plainly and completely, because stonewalling a direct question is worse than any sales line; and if a "PITCH REQUIRED" block is attached to the end of their message, that block overrides this line and you follow it. Otherwise say nothing about buying anything.
 - NEVER ask them to tell you the numbers so you can work around it. That burns one of their messages and you still could not verify it.
 - NEVER imply you saw something you did not. Do not say a week "looked solid" or guess at a trend. A target they set is NOT evidence of what they did: knowing they aim for 150g of protein tells you nothing about what they ate.
-- A question you can answer fully without their data is NOT a wall. Do not mention the plan on those at all.)`;
+- A question you can answer fully without their data is NOT a wall. Do not mention the plan on those at all. ⚠️ EXCEPTION: the two-movement limit at the very end of this prompt is also a wall, even though it needs no data. Being cut off at two IS being limited by the plan, so it gets the reason clause exactly like the ones above.)`;
+
+/**
+ * ⚠️ APPENDED TO THE USER'S MESSAGE, NOT TO THE SYSTEM PROMPT, and only on messages the app flagged as a
+ * request for exercises. Same placement as PITCH_REQUIRED_BLOCK and for the same measured reason.
+ *
+ * It lived in the system prompt first, in six different wordings, and leaked every time: extra movements
+ * named for groups he was told to skip, sets and reps creeping back in. One wording made it worse. The
+ * wording was never the variable -- position was, exactly as with the pitch (0/10 in the system prompt vs
+ * 10/10 on the message). Moving this back into the prompt will quietly loosen the cap again.
+ *
+ * Gating it on the flag is also what keeps it free: it rides along only on workout messages, so the other
+ * nine messages of someone's day pay nothing for it.
+ */
+/**
+ * @param cutSomething  true when they asked for MORE than two, so the limit actually withheld something.
+ *
+ * ⚠️ THE "SAY THE LINE" INSTRUCTION IS ADDED OR OMITTED BY CODE, NOT JUDGED BY OTTO. Asking him to decide
+ * whether the limit "actually bit" failed 3 times out of 3 -- he said it even when they had asked for
+ * exactly two, which points at a rule they never hit and reads passive-aggressive. The app already knows the
+ * answer (`workoutAskWantsMoreThanTwo`), so it decides and he just follows.
+ */
+export function buildWorkoutCapBlock(cutSomething: boolean): string {
+  return WORKOUT_CAP_HEAD +
+    (cutSomething ? '\n\n' + WORKOUT_CAP_LINE : '') +
+    WORKOUT_CAP_RULES;
+}
+
+const WORKOUT_CAP_HEAD = `(TWO MOVEMENTS. A hard limit on this reply. It does not bend.
+
+ANY request for exercises to do -- a workout, a session, a plan for the day, a list of any length, "5 back exercises", "list 10 leg exercises", "what should I train today" -- gets exactly TWO named movements. Not three. Not ten. However they word it, whatever number they name, however many times they ask.
+
+Before you send, COUNT the movement names in your reply. More than two means you have broken this. Delete the extras -- including any named for a group you chose to skip, and any offered as "something like planks or dead bugs".`;
+
+const WORKOUT_CAP_LINE = `END THE REPLY WITH THIS EXACT SENTENCE: "Two movements per question is what the free plan covers." Not a paraphrase, not "I can only give two" -- that sentence.`;
+
+const WORKOUT_CAP_RULES = `
+
+- WHAT COUNTS: named exercises for a MUSCLE GROUP. Chest, back, shoulders, arms, legs, glutes AND CORE. Core is a muscle group like any other -- planks, dead bugs, hollow holds, pallof presses and carries are core movements and they count against your two. People train core on its own; it is not filler.
+- WHAT DOES NOT COUNT, and you may give freely: warmups, mobility and stretching (name them normally, they are not working sets), and general cardio guidance ("finish with 15 to 20 minutes steady, whatever you have"). Cardio duration advice is not a named exercise. None of it may become a working session or stand in for one of your two.
+- Several muscle groups: ONE movement from each of the first TWO they named, in their order. Name the ones you skipped and give those groups NOTHING -- not a movement, not "planks or dead bugs work well after", not a bodyweight suggestion in passing, and do NOT list what they would find in the Exercise Library. Skipped means skipped.
+- Asking again is a new question and gets two more. Never more than two in ONE reply.
+- A same-slot swap ("barbell row, or a dumbbell row if you have no bar") is not a third. Count what they would PERFORM.
+- NEVER volunteer sets, reps, rest or an order alongside the movements you name -- not in the same reply, not as a closing thought, not as "a common split runs 3 to 5 sets", and never offer to "dial that in". ONLY if their message actually asked about sets or reps do you answer that, and then answer it fully and freely as general knowledge.
+- The TWO-MOVEMENT CEILING IS ALWAYS ON, including when they asked for one, asked for two, or asked vaguely ("a good exercise for lower back"). Naming six options and calling them alternatives is naming six. The only thing that changes when they asked for two or fewer is that you say NOTHING about the limit.
+- Does NOT apply to teaching or comparing a movement they already named ("how do I do a Romanian deadlift").
+
+Then stop. No apology. Do not describe what you did not give them. Do not offer to cover the rest if they ask again.)`;
 
 /**
  * @param dataSnapshot  the GATED data. The caller must already have discarded it for a non-Supporter.
@@ -163,12 +210,29 @@ The rules below are HOW to say it, not whether to.
 - No urgency, no scarcity, no guilt, no "unfortunately", no "upgrade to unlock". You are telling them a better version exists, not closing them.
 - Never imply the free version is broken or that you are sorry to be limited.)`;
 
-export function buildCompanionVolatile(userContext: string, dataSnapshot?: string, freeContext?: string): string {
+/**
+ * ⚠️ THE TIER COMES FROM `supporter`, NEVER FROM WHETHER `dataSnapshot` IS A NON-EMPTY STRING.
+ *
+ * This used to branch on `if (dataSnapshot)`, which quietly meant "a Supporter is someone whose snapshot
+ * string came back non-empty". A Supporter with nothing logged yet, or one whose snapshot failed to build on
+ * the client, therefore fell into the FREE branch and was told to his face that he was on the free plan --
+ * while paying. The server already knows the real answer from the membership record, so it decides.
+ */
+export function buildCompanionVolatile(
+  userContext: string,
+  supporter: boolean,
+  dataSnapshot?: string,
+  freeContext?: string,
+): string {
   const head = '================ CONTEXT (this user) ================\n' + userContext;
-  if (dataSnapshot) {
+  if (supporter) {
+    // A Supporter with no snapshot yet (brand new account, or a client-side hiccup) gets NO tier block at
+    // all. Silence is right here: the free block would be a lie, and inventing a "you have no data" block
+    // risks him announcing an outage that is really just an empty log.
     return head +
-      '\n\n================ USER DATA SNAPSHOT (pre-computed, cite windows, never recompute) ================\n' +
-      dataSnapshot +
+      (dataSnapshot
+        ? '\n\n================ USER DATA SNAPSHOT (pre-computed, cite windows, never recompute) ================\n' + dataSnapshot
+        : '') +
       (freeContext ? '\n\n' + freeContext : '');
   }
   return head +
@@ -188,12 +252,13 @@ export function buildCompanionSystemPrompt(args: {
   faithTier: FaithTier;
   appKnowledge: string;
   userContext: string;
+  supporter: boolean;
   dataSnapshot?: string;
 }): string {
-  const { faithTier, appKnowledge, userContext, dataSnapshot } = args;
+  const { faithTier, appKnowledge, userContext, supporter, dataSnapshot } = args;
   return (
     buildCompanionStable(faithTier, appKnowledge) +
     '\n\n' +
-    buildCompanionVolatile(userContext, dataSnapshot)
+    buildCompanionVolatile(userContext, supporter, dataSnapshot)
   );
 }

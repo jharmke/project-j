@@ -188,6 +188,19 @@ async function loadUserContext(): Promise<{ styleMode: StyleMode; faithTier: Fai
     if (rawProfile) {
       const p = JSON.parse(rawProfile);
       if (p.name) lines.push(`Name: ${p.name}`);
+      // ⚠️ THE BIRTHDAY WAS ALREADY IN THE PROFILE AND SIMPLY NEVER SENT. Onboarding requires it, so it has
+      // always been there -- and Otto, asked about "the day after my birthday", INVENTED one and cited "your
+      // profile" as the source. The age is computed HERE, not by him: he is measurably bad at date maths
+      // (same reason the Day Detail jump button resolves its own date).
+      if (p.birthday) {
+        const b = new Date(p.birthday);
+        if (!isNaN(b.getTime())) {
+          const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+          const age = Math.floor((Date.now() - b.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+          lines.push(`Birthday: ${MONTHS[b.getMonth()]} ${b.getDate()}`);
+          if (age > 0 && age < 120) lines.push(`Age: ${age}`);
+        }
+      }
       if (p.calTarget) lines.push(`Calorie target: ${p.calTarget}`);
       if (p.macroProteinG || p.macroCarbsG || p.macroFatG) {
         const parts = [];

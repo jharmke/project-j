@@ -63,7 +63,7 @@ other AI on earth can do is act *inside* GoodForge against *this user's* data.
 |---|---|
 | Reads their actual numbers in answers (`[[stat:key]]` tokens) | Built, needs gating |
 | Food log history, PRs, sleep, body measurements, achievements, journal | Built, needs gating |
-| Structured routines (sets, reps, ordering) rather than loose recs | Built, needs splitting |
+| Structured routines (sets, reps, ordering) rather than loose recs | Built, needs splitting. Line agreed 2026-08-01: he can EXPLAIN general ranges free, he cannot PRESCRIBE them onto his two movements -- see SETS AND REPS |
 | **Builds a workout into the Workout tab** | NOT BUILT |
 | **Meal suggestions / meal builder** | NOT BUILT |
 | 30 messages/day | Built |
@@ -112,6 +112,33 @@ it are different things.
 
 **MODE VARIANTS: NONE.** The cap involves no deficit maths, no weight-loss framing and no prescribed numbers,
 which are the only things Mindful actually forbids. It reads identically in all three modes.
+
+### SETS AND REPS: HE CAN EXPLAIN, HE CANNOT PRESCRIBE (agreed 2026-08-01)
+
+**The governing principle for the whole cap, and deliberately ONE principle rather than a list of rules --
+a list gets picked apart in a prompt, a principle survives.** It is the same line piece 1 drew (teaching a
+movement vs building a session), one level down.
+
+- **GENERAL training knowledge is FREE and answered in full.** "How many sets should I do for muscle growth"
+  gets a real answer: three to four working sets, 8 to 12 reps, a couple of minutes rest. **No wall, no
+  attribution, no limit** -- he answered the question completely, so nothing was withheld.
+- **APPLYING it to the two movements he just gave is the PRODUCT.** "Give me sets and reps for those two",
+  "what order do I do them in" = assembling the routine. Wall + attribution.
+- Supporter gets the numbers and the ordering attached to the movements as a structured routine (and
+  eventually built into the Workout tab, item E). This is exactly the SUPPORTER OTTO table's "structured
+  routines (sets, reps, ordering) rather than loose recs".
+
+⚠️ **DO NOT WALL THE GENERAL QUESTION.** Two reasons, both concrete:
+1. It contradicts what FREE_TIER_BLOCK already promises out loud -- "being on the free plan does not make you
+   a worse coach, it means you cannot see their numbers" -- and set/rep ranges are in every training article
+   on the internet. Refusing them protects nothing and makes free Otto read as THIN, which is the exact
+   failure the attribution rule exists to prevent.
+2. It would fire a pitch trigger on a trivial question, spending one of the three weekly mentions on a bad
+   moment.
+
+**THE LOOPHOLE, ACCEPTED AGAIN:** ask for two movements, then ask about sets, then apply it yourself. Same
+bargain already settled for rephrasing -- that is three of their ten daily messages and they still assemble
+it by hand. What they do not get is Otto building and loading it for them, which is the actual product.
 
 **TWO BUILD NOTES THAT MUST LAND WITH IT (found 2026-08-01 checking this rule against the live prompt):**
 1. ⚠️ **Otto's prompt currently tells him the OPPOSITE.** `companionSystemPrompt.ts` says to give "a real,

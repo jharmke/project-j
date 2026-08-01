@@ -52,7 +52,7 @@ other AI on earth can do is act *inside* GoodForge against *this user's* data.
 | What a feature does / how a calculation works | Built |
 | Nutrient education ("what does magnesium do") | Built |
 | General nutrition guidance ("more protein at breakfast") | Built |
-| General training guidance, **max 2 exercises** | Built, needs limiting |
+| General training guidance, **max 2 exercises** | Built, needs limiting. Rule fully agreed 2026-08-01, NOT BUILT -- see THE 2-EXERCISE CAP, IN FULL |
 | General sleep/recovery guidance ("why am I tired") | Built |
 | Coaching mode + faith tier awareness | Built, stays free |
 | Crisis screening | Built, stays free |
@@ -72,6 +72,63 @@ other AI on earth can do is act *inside* GoodForge against *this user's* data.
 it must ship before launch (see SEQUENCING).
 
 **MAX 2 EXERCISES, NEVER 3.** Three reads as a routine and gives away the thing being sold.
+
+### THE 2-EXERCISE CAP, IN FULL (agreed 2026-08-01. NOT BUILT YET.)
+
+**WHEN IT APPLIES:** only when he is asked to PRESCRIBE a session, i.e. build a workout or list off exercises
+to go and do. It does NOT apply to teaching or comparing movements the user already named ("how do I do a
+Romanian deadlift", "incline or flat press") -- those are coaching, not the thing being sold.
+
+**THE RULES:**
+- **Two movements per REPLY. Never three.** The cap is per answer, not per muscle group, or "give me 3 chest,
+  3 back and 3 legs" hands over a full routine in one message.
+- **Multi-group asks: one movement from each of the FIRST TWO groups they named, in the order they named
+  them.** Their order, not his judgement -- people lead with what they care about, and it is predictable
+  rather than arbitrary. He names plainly which groups he did not get to. **Cardio counts as a group like any
+  other** (Justin, 2026-08-01).
+- **Asking again is a NEW question and gets two more.** This is the accepted rephrasing loophole, and it
+  costs them one of their 10 daily messages. The ONLY thing to enforce is never more than two in a single
+  reply. ⚠️ Note the interaction: "give me more" is also pitch trigger 1, so a user who pushes gets their two
+  more AND, once per conversation, a mention of the plan. That is intended.
+- **A same-slot SWAP does not count as a third.** Count what they would PERFORM, not what he names.
+  ✅ "Barbell row, or a dumbbell row if you have no bar. Then an incline dumbbell curl." = two things to do.
+  ❌ "Barbell row, lat pulldown and an incline dumbbell curl." = three. Over.
+- **WARMUPS GET GUIDANCE, NOT A PRESCRIBED LIST** (Justin's call, 2026-08-01, and it is better than the
+  exemption originally proposed): raise the body temperature, mobilise what you are about to train, a few
+  minutes of light work. If he does name specific movements they count against the two like anything else.
+  An exemption would have become the workaround ("give me a warmup for chest day"); this way there is no
+  exemption to police.
+- **THE LINE HE SAYS: "Two movements per question is what the free plan covers."** Deliberately a flat fact
+  about the plan, NOT "I keep it to two" -- anything that sounds like his choice invites haggling. Attribution
+  once per reply, no apology, no price, no pitch.
+
+**FULL EXAMPLE** (asked for back, biceps, core and cardio):
+> Barbell row for back, incline dumbbell curl for biceps. Those two will carry most of the session. Two
+> movements per question is what the free plan covers, so core and cardio aren't in this one.
+
+⚠️ **HE MUST NOT INVITE THE FOLLOW-UP.** He names what he covered and stops. Saying "ask me about core and
+I'll cover it" teaches the workaround -- the loophole is accepted, but accepting it quietly and advertising
+it are different things.
+
+**MODE VARIANTS: NONE.** The cap involves no deficit maths, no weight-loss framing and no prescribed numbers,
+which are the only things Mindful actually forbids. It reads identically in all three modes.
+
+**TWO BUILD NOTES THAT MUST LAND WITH IT (found 2026-08-01 checking this rule against the live prompt):**
+1. ⚠️ **Otto's prompt currently tells him the OPPOSITE.** `companionSystemPrompt.ts` says to give "a real,
+   useful answer with actual movements" on workout questions and explicitly not to hold back. That
+   instruction has to go when the cap goes in, or it is the same contradiction that broke the pitch.
+2. ⚠️ **FREE_TIER_BLOCK would classify a workout question as NOT A WALL.** It says a question he can answer
+   fully without their data is not a wall and gets no attribution. A general workout question fits that
+   description exactly, so as things stand he would skip the attribution and the app would not count it.
+   It needs a carve-out for CAPABILITY walls. **Do not ship this prompt edit on its own** -- if he starts
+   treating workout questions as walls before the cap exists, he is attributing a limit he is not enforcing.
+3. ⚠️ **A capped answer IS a wall** (see ATTRIBUTION IS NOT A PITCH below: the 2-exercise cap is listed as a
+   capability wall), so it must count toward the three walls that trigger a pitch. `messageHitsWall` in
+   `utils/companionPitch.ts` cannot currently see a workout ask at all. Real work, not a nice-to-have.
+
+**ENFORCEMENT IS PROMPT-ONLY.** There is no reliable way for the app to count exercises in his reply, so
+unlike the pitch there is no deterministic backstop. Measure it before shipping: rebuild the real prompt from
+`functions/lib/` and run adversarial phrasings against the real model (see open item 4 for the method).
 
 ---
 
@@ -93,8 +150,14 @@ and reps built into your Workout tab, that's part of Supporter."
 That is Otto selling unprompted. Justin's exact reaction to this phrasing was that it was terrible and
 that there was no reason to throw the paid plan at someone who had not asked.
 
-✅ SIGNAL WITHOUT SELLING. Deliver the 2 exercises confidently, with a neutral hint that more exists:
-"Here's a couple to start with." No price, no pitch, no footnote.
+✅ SIGNAL WITHOUT SELLING. Deliver the 2 exercises confidently, then state the limit as a flat fact:
+"Two movements per question is what the free plan covers." No price, no pitch, no call to action.
+
+⚠️ **CORRECTED 2026-08-01.** This line used to read "Here's a couple to start with. No price, no pitch, no
+footnote" -- a deliberately vague hint. That predates the attribution rule in open item 4, which requires a
+factual reason clause in EVERY wall and explicitly names the 2-exercise cap as a capability wall. The vague
+version is now wrong: it leaves Otto sounding like he only had two ideas rather than like the plan covers
+two. Do not restore it. (Full rule: THE 2-EXERCISE CAP, IN FULL, above.)
 
 Why the hint at all: a silent limit reads as Otto being weak rather than Otto being limited. The user
 concludes the AI is thin instead of concluding there is a better version. The hint costs nothing and

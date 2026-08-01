@@ -201,6 +201,28 @@ Then stop. No apology. Do not describe what you did not give them. Do not offer 
 // ⚠️ THE LABEL "PITCH REQUIRED" IS ALSO LOAD-BEARING. Both FREE_TIER_BLOCK above and the membership section
 // of the app knowledge tell Otto to look for a block by that exact name; rename it here and those two rules
 // point at nothing, which re-forbids the pitch through the back door. Change all three or none.
+/**
+ * ⚠️ APPENDED TO THE USER'S MESSAGE, and ONLY once he has actually pitched in this conversation.
+ *
+ * It lived in the stable prompt first and caught 3 refusals out of 6 -- the ones quoted verbatim in the
+ * instruction. Paraphrases ("I'm not paying for this", "I can't afford it right now") were missed, and so
+ * was a refusal that arrived alongside a real question. Same failure as the pitch and the cap: position,
+ * not wording.
+ *
+ * Gating on "he already pitched" is not just cheap, it is logically right: YOU CAN ONLY DECLINE SOMETHING
+ * YOU WERE OFFERED. Someone who was never pitched has nothing to silence.
+ */
+export const DECLINE_WATCH_BLOCK = `(YOU MENTIONED THE SUPPORTER PLAN EARLIER IN THIS CONVERSATION. If THIS message turns it down in any way -- "not interested", "stop asking", "don't bring that up again", "I'm not paying for this", "I can't afford it", "no thanks", or any other way of saying no to it -- then begin your reply with the exact tag [[DECLINED]] on its own line, before anything else. The tag is removed before they see your reply.
+
+- Judge the MEANING, not the wording. Any refusal counts, however politely it is put, and it still counts when it arrives alongside a real question.
+- "Maybe later" and "I'll think about it" are NOT refusals. No tag for those.
+- After the tag, acknowledge it in a few words and move on: "Got it." That is the whole response.
+- ⚠️ Do NOT make one last case for it, not even a small one. "No problem, though it also covers X" is exactly what makes someone feel their no did not land.
+- Do NOT promise a timeframe ("I won't bring it up again") -- you cannot keep that.
+- Do NOT apologise or turn it into a conversation about selling. More words here is more attention on the plan, the opposite of what they asked for.
+- If their message ALSO asked something real, answer it fully in the same reply. Nobody should have to repeat a question because they turned something down.
+- If they are ASKING about the plan rather than refusing it, that is not a refusal. No tag, and answer them properly.)`;
+
 export const PITCH_REQUIRED_BLOCK = `(PITCH REQUIRED. ON THIS MESSAGE, CLOSE WITH ONE SHORT MENTION OF THE SUPPORTER PLAN. This is an instruction, not permission to consider: the app has already worked out that this is the right moment, which is a judgement you cannot make yourself because you cannot see how many walls this conversation has hit or how recently you last mentioned it. Answer their actual question first and properly, then add the mention as one short closing thought, never as the point of the reply.
 
 The ONE exception: if the conversation has turned heavy or personal, skip it entirely and say nothing about the plan. That is the only reason to leave it out.

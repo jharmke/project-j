@@ -9,6 +9,7 @@ import {
   buildCompanionVolatile,
   PITCH_REQUIRED_BLOCK,
   buildWorkoutCapBlock,
+  DECLINE_WATCH_BLOCK,
   type StyleMode,
   type FaithTier,
 } from './companionSystemPrompt';
@@ -82,6 +83,11 @@ function usageDoc(uid: string) {
 // the weekly budget is per ACCOUNT and must not be client-trusted, so it lives here beside the usage counter.
 const PITCH_MAX_PER_WEEK = 3;
 const PITCH_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+// An explicit no buys 30 days of silence from the UNPROMPTED pitch. Long on purpose and it costs almost
+// nothing, because trigger 1 still works throughout: if they ask, he answers. Being asked again two weeks
+// after saying no is how a maybe becomes a never.
+const DECLINE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+const DECLINE_TAG = '[[DECLINED]]';
 
 /**
  * ⚠️ THE BUDGET IS CHECKED BEFORE THE CALL AND SPENT AFTER IT, and those are deliberately two steps.
@@ -95,16 +101,29 @@ const PITCH_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
  * Both halves FAIL SILENT, NOT OPEN: any error means no pitch. The cost of a missed pitch is nothing; the
  * cost of a wrongly-fired one is pitching a paying subscriber.
  */
-async function pitchBudgetHasRoom(uid: string): Promise<boolean> {
+// ⚠️ ONE READ, TWO ANSWERS. The weekly budget and the 30-day decline live in the same document, so they are
+// fetched together rather than costing two lookups on every single message.
+async function pitchState(uid: string): Promise<{ hasRoom: boolean; declined: boolean }> {
   try {
     const snap = await usageDoc(uid).get();
-    const d = snap.exists ? (snap.data() as { pitchAtMs?: number[] }) : {};
+    const d = snap.exists ? (snap.data() as { pitchAtMs?: number[]; declinedAtMs?: number }) : {};
     const now = Date.now();
     const recent = (d.pitchAtMs ?? []).filter((t) => typeof t === 'number' && now - t < PITCH_WINDOW_MS);
-    return recent.length < PITCH_MAX_PER_WEEK;
+    const declined = typeof d.declinedAtMs === 'number' && now - d.declinedAtMs < DECLINE_WINDOW_MS;
+    return { hasRoom: recent.length < PITCH_MAX_PER_WEEK, declined };
   } catch (e) {
-    console.error('pitchBudgetHasRoom failed (staying silent):', uid, e);
-    return false;
+    // Fails to SILENCE, like every other pitch check: no room, and treat them as having declined.
+    console.error('pitchState failed (staying silent):', uid, e);
+    return { hasRoom: false, declined: true };
+  }
+}
+
+/** They told him no. Silences the UNPROMPTED pitch for 30 days; if they ask, he still answers. */
+async function recordDecline(uid: string): Promise<void> {
+  try {
+    await usageDoc(uid).set({ declinedAtMs: Date.now() }, { merge: true });
+  } catch (e) {
+    console.error('recordDecline failed:', uid, e);
   }
 }
 
@@ -190,6 +209,8 @@ export const appCompanion = onCall(
       pitchRequested?: unknown;
       capsWorkout?: unknown;
       workoutCut?: unknown;
+      pitchAsked?: unknown;
+      mayDecline?: unknown;
     };
     const message = typeof data.message === 'string' ? data.message.trim() : '';
     if (!message) {
@@ -279,8 +300,14 @@ export const appCompanion = onCall(
     // ⚠️ ALL THREE MUST AGREE: only a CONFIRMED free user (never 'unknown', never a subscriber), only when
     // the client says this conversation earned it, and only if the weekly budget has room. The slot is not
     // spent here -- see `pitchBudgetHasRoom` for why that is two steps now.
-    const budgetHasRoom = status === 'free' && pitchRequested ? await pitchBudgetHasRoom(uid) : false;
-    const pitchAllowed = status === 'free' && pitchRequested && budgetHasRoom;
+    const state = status === 'free' && pitchRequested ? await pitchState(uid) : { hasRoom: false, declined: false };
+    const budgetHasRoom = state.hasRoom;
+    // ⚠️ THE 30-DAY SILENCE GAGS THE WALL TRIGGER ONLY. If THEY asked, he answers, every time -- that is the
+    // whole reason the window can be this long. The client tells us which trigger fired; without that split
+    // a decline would silence their own questions too, which would be a worse app than before the feature.
+    const pitchAsked = data.pitchAsked === true;
+    const silenced = state.declined && !pitchAsked;
+    const pitchAllowed = status === 'free' && pitchRequested && budgetHasRoom && !silenced;
 
     // ⚠️ THE PITCH INSTRUCTION RIDES ON THE MESSAGE, NOT THE SYSTEM PROMPT. See PITCH_REQUIRED_BLOCK for the
     // measurements; the short version is that Otto is on a small model with a ~90,000 character system
@@ -298,9 +325,14 @@ export const appCompanion = onCall(
     // ⚠️ BOTH BLOCKS RIDE ON THE MESSAGE, NOT THE SYSTEM PROMPT. See PITCH_REQUIRED_BLOCK and
     // buildWorkoutCapBlock for the measurements behind that. Appended server-side only: the phone stores the
     // user's own text, so neither block is ever shown to them or carried into the next turn's history.
-    const suffix = [capsWorkout ? buildWorkoutCapBlock(workoutCut) : '', pitchAllowed ? PITCH_REQUIRED_BLOCK : '']
-      .filter(Boolean)
-      .join('\n\n');
+    // Watch for a refusal only once he has actually pitched in this conversation -- you cannot decline
+    // something you were never offered. The client tracks that; the server still gates it on being free.
+    const mayDecline = status === 'free' && data.mayDecline === true;
+    const suffix = [
+      capsWorkout ? buildWorkoutCapBlock(workoutCut) : '',
+      mayDecline ? DECLINE_WATCH_BLOCK : '',
+      pitchAllowed ? PITCH_REQUIRED_BLOCK : '',
+    ].filter(Boolean).join('\n\n');
     const messages: Anthropic.MessageParam[] = [
       ...history,
       { role: 'user', content: suffix ? `${message}\n\n${suffix}` : message },
@@ -354,6 +386,12 @@ export const appCompanion = onCall(
       };
     }
 
+    // ⚠️ STRIP THE DECLINE TAG BEFORE ANYTHING ELSE TOUCHES THE REPLY. Unlike the crisis tag, this reply IS
+    // shown to the user, so a missed strip means they read "[[DECLINED]]" in the chat. Done before the dash
+    // pass so the brackets can never be mangled into something the regex leaves behind.
+    const declinedNow = replyText.includes(DECLINE_TAG);
+    if (declinedNow) replyText = replyText.split(DECLINE_TAG).join('').trim();
+
     // House-style backstop: strip any dash the model slipped past the prompt rule.
     replyText = sanitizeDashes(replyText);
 
@@ -377,12 +415,15 @@ export const appCompanion = onCall(
     // The reply is real and the user is about to see it, so a pitch inside it is a pitch that happened.
     // Deliberately AFTER the crisis and empty-reply exits above: neither of those reaches the user, and a
     // crisis reply must never cost a slot.
-    const pitched = pitchAllowed && mentionsThePlan(replyText);
+    // ⚠️ A DECLINE BEATS A PITCH IN THE SAME REPLY. If both somehow land, record the no and spend nothing --
+    // banking a slot against someone who just said stop is the worst of both outcomes.
+    if (declinedNow && status === 'free') await recordDecline(uid);
+    const pitched = !declinedNow && pitchAllowed && mentionsThePlan(replyText);
     if (pitched) await recordPitch(uid);
 
     // TEMPORARY DIAGNOSTIC (2026-07-31): the pitch was not firing and the inputs could not be told apart
     // from the outside. Remove once it is behaving. Never logs the reply itself, only whether it pitched.
-    console.log('[pitch]', JSON.stringify({ status, pitchRequested, budgetHasRoom, pitchAllowed, pitched }));
+    console.log('[pitch]', JSON.stringify({ status, pitchRequested, pitchAsked, budgetHasRoom, silenced, pitchAllowed, pitched, declinedNow }));
 
     // ⚠️ `pitched` GOES BACK TO THE APP because "one pitch per conversation" is the client's half of the rule
     // and it cannot work this out for itself: the wall count only ever climbs, so without being told, the app

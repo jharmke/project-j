@@ -157,10 +157,11 @@ export const revokeFirstWeek = onCall(
       .set({ expiresAtMs: 0, checkedAtMs: 0, updatedAtMs: Date.now(), lastEventType: 'DEV_REVOKE' }, { merge: true })
       .catch(() => {});
 
-    // Clear the pitch budget too. This row is the "reset my test state" button, and the weekly cap of three
-    // is otherwise a seven-day lockout the moment a test run uses them up.
+    // Clear the pitch budget AND any recorded decline. This row is the "reset my test state" button, and
+    // the weekly cap of three is otherwise a seven-day lockout the moment a test run uses them up -- while
+    // a recorded decline would be a THIRTY-day one, i.e. one test a month.
     await admin.firestore().collection('ai_usage_companion').doc(uid)
-      .set({ pitchAtMs: [] }, { merge: true })
+      .set({ pitchAtMs: [], declinedAtMs: 0 }, { merge: true })
       .catch(() => {});
 
     // Both cleanups above run even when RevenueCat refused, and BEFORE this throw. The whole job of this row

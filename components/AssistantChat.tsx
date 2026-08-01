@@ -685,12 +685,21 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
       // answers, every time -- a direct question deserves a real answer and stonewalling it is worse than a
       // second mention. Latching both would mean someone who asked "how much is it?" right after he brought
       // it up got nothing back.
+      // ⚠️ THE SERVER NEEDS TO KNOW WHICH TRIGGER FIRED. A 30-day decline silences the unprompted pitch but
+      // never the person's own question, and with a single boolean the server could not tell them apart.
+      const pitchAsked = !isSupporter && !messageBlocksPitch(text) && messageAsksForMore(text);
+      // ⚠️ READ BEFORE this turn can set it. `pitchedRef` is true once he has mentioned the plan in this
+      // conversation, which is exactly when a refusal becomes possible -- you cannot decline something you
+      // were never offered.
+      const mayDecline = !isSupporter && pitchedRef.current;
       const pitchRequested =
-        !isSupporter &&
-        !messageBlocksPitch(text) &&
-        (messageAsksForMore(text) || (wallCountRef.current >= WALLS_BEFORE_PITCH && !pitchedRef.current));
+        pitchAsked ||
+        (!isSupporter &&
+          !messageBlocksPitch(text) &&
+          wallCountRef.current >= WALLS_BEFORE_PITCH &&
+          !pitchedRef.current);
       const callable = httpsCallable(getFunctions(app), 'appCompanion');
-      const res = await callable({ message: text, history, styleMode, faithTier, userContext, dataSnapshot, freeContext, pitchRequested, capsWorkout, workoutCut });
+      const res = await callable({ message: text, history, styleMode, faithTier, userContext, dataSnapshot, freeContext, pitchRequested, pitchAsked, mayDecline, capsWorkout, workoutCut });
       const data = (res.data ?? {}) as { ok?: boolean; reply?: string; crisis?: boolean; message?: string; used?: number; cap?: number; pitched?: boolean };
 
       if (typeof data.used === 'number' && typeof data.cap === 'number') {

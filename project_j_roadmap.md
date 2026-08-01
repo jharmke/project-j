@@ -1568,9 +1568,11 @@ are separate pre-submission checklists, NOT part of this menu.
      **Room To Build / "The free limits come off. Nothing you create is capped, counted, or held back."**
      ⚠️ `app/support.tsx`, `app/onboarding/all-set.tsx` and the step-down notice all describe the SAME tier and
      must move together -- any change lands in three places.
-     🟡 **STILL OPEN IN 5:** the modal title ("Your First Week Is Up" is wrong for someone who paid for eight
-     months, and the calendar icon with it), and how billing-retry/grace states are treated (a failed payment
-     could revert someone's layout for days and fire the notice for a lapse that never really happened).
+     ✅ The Supporter version of that modal is titled **"Your Supporter Plan Has Ended"** and **keeps the
+     calendar icon** (a checkmark was proposed and correctly rejected: it reads as a receipt). Never the gold
+     Supporter sprout -- that is the mark of BEING one.
+     🟡 **STILL OPEN IN 5:** how billing-retry/grace states are treated -- a failed payment could revert
+     someone's layout for days and fire the notice for a lapse that never really happened.
      ⏭️ **THEN PIECE 6** -- where the caps get enforced across the different features (the build checklist:
      every creation door for all eight caps).
      ⚠️ **THE LAYOUT CAPS ARE "DEFAULTS PLUS ONE", NOT RAW TOTALS (Justin, 2026-07-31). Read either as a bare

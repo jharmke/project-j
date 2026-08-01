@@ -1510,10 +1510,20 @@ There is a warning already in `app/support.tsx`: this page, **the onboarding fre
 them a week apart. If the wording drifts, the step-down stops reading as a promise kept. **Any change to one
 lands in three places.**
 
+##### ✅ THE SUPPORTER VERSION OF THE MODAL (decided 2026-08-01)
+**Title: "Your Supporter Plan Has Ended".** Same shape as "Your First Week Is Up" -- a plain statement that a
+period has closed, with no editorialising at somebody who just paid for months. Rejected: "You're On The Free
+Plan" (evasive about what happened), "Thanks For Supporting This" (gracious but tells them nothing, and the
+modal exists to explain a change they are about to notice).
+**Icon: KEEP THE CALENDAR.** A checkmark was proposed and Justin knocked it down correctly -- a subscription
+ending happened on a date exactly like a week running out, so the calendar fits, and a tick reads as
+"transaction complete", which is a receipt and colder than this screen should be. Both versions are the same
+modal about the same kind of event, so the same icon is consistency, not laziness. (If they are ever wanted
+visually distinct, `time` -- a clock face -- is the closest sibling.) ⚠️ Do NOT use the gold Supporter sprout
+here; that is the mark of BEING one, and this is the screen where they stop.
+
 ##### 🟡 STILL OPEN IN PIECE 5
-1. **The modal's TITLE is "Your First Week Is Up"**, which is wrong for somebody who paid for eight months.
-   The Supporter version needs its own title, and probably a different icon than the calendar.
-2. **Billing grace / payment retry.** If entitlement reads false during a failed-payment retry, somebody's
+1. **Billing grace / payment retry.** If entitlement reads false during a failed-payment retry, somebody's
    layout reverts for a few days and then comes back, and they may get the step-down notice for a lapse that
    never really happened. Not yet checked how `MembershipContext` treats that state.
 

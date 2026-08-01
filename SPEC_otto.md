@@ -835,7 +835,8 @@ identical wall, and the day-8 message would tell a four-month paying customer ab
 - Still open there: never pitching existing Supporters, and the exact wording.
 
 #### BUILD NOTES FOR B
-- **Day Detail jump button that opens a specific date.** ✅ **FULLY AGREED 2026-08-01, NOT BUILT.** Needed
+- **Day Detail jump button that opens a specific date.** ✅ **BUILT + DEVICE-VERIFIED 2026-08-01** (commits
+  d9200fa, a12349f, 9eea7af). Needed
   because a vague "what did I do yesterday" attaches training + food + sleep at once, so gating them
   individually gives a free user THREE STACKED WALLS in one reply -- the point where free Otto stops reading
   as limited and starts reading as useless.
@@ -890,6 +891,45 @@ identical wall, and the day-8 message would tell a four-month paying customer ab
 
   **ACCEPTED:** if they ask about a day with nothing logged, the button opens an empty screen. Otto cannot
   know that (no data), and it is identical to tapping the calendar icon themselves.
+
+  #### BUILD RECORD (what actually shipped, and the three bugs device-testing found)
+
+  **1. IT OPENS AS A CENTERED MODAL OVER THE CHAT. It does NOT navigate.** The first build did
+  `router.push('/day-detail')` and that was wrong on device: Day Detail is a **centered popup, NOT a bottom
+  sheet** (Justin corrected the terminology, and he does not want bottom sheets anywhere), so as a full page
+  it kept the handle pill and X with nothing to close back to, and the Otto FAB sat on top of the workout
+  rows. It is now rendered inside the chat's own modal layer the way Home raises it -- which fixed the
+  chrome, the FAB overlap and the bottom padding in one change, and the user keeps their place in the
+  conversation. ⚠️ Rendered as a plain overlay INSIDE the existing Modal, deliberately, rather than stacking
+  a second native Modal on iOS.
+
+  **2. THE DETECTOR MISSED "HOW WAS MY DAY ON TUESDAY".** `isDayRecall` needed "what" + a past-tense verb, a
+  short message, or certain lead-ins; that phrasing is six words and uses "how was", so it matched none.
+  ⚠️ **The button was the small half of this.** The same detector decides whether a SUPPORTER gets that
+  day's data attached at all, so the phrasing was silently costing paying users their answer. Now also
+  matches "how was / how were / how did / how has".
+
+  **3. HE INVENTED A BIRTHDAY AND CITED THE PROFILE FOR IT.** Asked about "the day after my birthday" he
+  answered "yours is in November based on your profile". Two separate faults:
+  • **The honesty one, fixed in the STABLE prompt so it covers both tiers:** never state a personal fact that
+    is not in the CONTEXT block, and above all never attribute an invented detail to a source ("based on your
+    profile", "your logs show"). Citing a source turns a guess into something the user believes.
+  • **The data one: the birthday was in `pj_profile` all along and simply never sent.** Onboarding requires
+    it. It is now included, with the AGE COMPUTED APP-SIDE -- he is measurably bad at date maths, same reason
+    the jump button resolves its own date. Verified after: "Your birthday is September 5, so the day after
+    would be September 6", and "How old am I" answers correctly.
+
+  **4. "WHAT DID I DO" vs "WHAT DID I EAT" IS A DELIBERATE SPLIT** (Justin's call, 2026-08-01, after seeing
+  it happen). "What did I do on [day]" means ACTIVITY: answer the training in full, then let the button carry
+  the rest of the day. "What did I eat" gets the food answer in full. Reciting training + food + sleep +
+  steps in one reply is a wall of text, and the button gets them all of it in one tap. ⚠️ Written into the
+  app knowledge because his existing rule says never to point at Day Detail when he has the data -- this is
+  the ONE case where doing it alongside a real answer is correct, and without writing it down it would drift.
+
+  **VERIFIED ON DEVICE:** correct dates on "yesterday", a weekday name and an explicit date; modal opens and
+  closes cleanly; Supporter gets the full answer AND the button; his quoted food totals matched the Day
+  Detail screen exactly (1,738 cal / 154g / 141g / 65g), and two different days returned two different sets
+  of numbers, so he is genuinely reading the day he was asked about.
 - **Decouple the exercise-name list from PRs.** `buildPRContextIfRelevant` returns null when the user has no
   backed PRs, so the name list never ships for a brand-new user or anyone who only does cardio -- exactly
   the people most likely to ask about an exercise they half-remember. Pre-existing, but our guardrail leans

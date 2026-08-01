@@ -30,6 +30,13 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-08-01 **Otto's Day Detail jump button (deployed + device-verified).** A whole-day question now gets a
+  pill labelled with the real date ("Tue, Jul 28") that opens Day Detail as a centered modal OVER the chat.
+  **The app resolves the date, not Otto** -- he was telling people yesterday was "Friday, August 1st" when
+  it was July 31. Also fixed en route: he INVENTED a birthday and cited "your profile" for it (the birthday
+  was in the profile all along and simply never sent; a never-invent-a-fact rule now covers both tiers), and
+  the whole-day detector missed "how was my day on Tuesday", which was silently costing SUPPORTERS their
+  data on that phrasing. Full record in SPEC_otto.md.
 - 2026-08-01 **Otto's 2-exercise cap is live for free users (deployed + device-verified).** A free user asking
   for a workout gets two movements and "Two movements per question is what the free plan covers"; Supporters
   are untouched. Sets/reps, warmups, mobility and cardio guidance all stay free. ⚠️ Like the pitch, **the
@@ -1401,8 +1408,22 @@ are separate pre-submission checklists, NOT part of this menu.
      ✅ **THE 2-EXERCISE CAP IS BUILT + DEVICE-VERIFIED 2026-08-01** (commits d29d9f9, cd4105b). ⚠️ Read
      SPEC_otto.md before touching it: the instruction is appended to the USER'S MESSAGE, not the system
      prompt, and moving it back silently loosens the cap.
-     ⚠️ STILL TO BUILD IN B: the **Day Detail jump button**, the **30-day suppression** after an explicit
-     "not interested", and the **per-mode decline pass**.
+     ✅ **THE DAY DETAIL JUMP BUTTON IS BUILT + DEVICE-VERIFIED 2026-08-01** (d9200fa, a12349f, 9eea7af).
+     Opens as a CENTERED MODAL over the chat, never navigates. The APP resolves the date, not Otto. Full
+     build record + the three bugs device-testing caught in SPEC_otto.md.
+     ⚠️ STILL TO BUILD IN B: the **30-day suppression** after an explicit "not interested", and the
+     **per-mode decline pass** (per item A this collapsed to almost nothing, so it may be a confirmation
+     rather than work).
+     🟡 **NEW, FOUND 2026-08-01, NOT URGENT BUT DO NOT LOSE IT: Otto points at days that predate the app.**
+     Asked "what did I do the day after my birthday", he correctly worked out September 6, was honest that
+     he could not see it, then said Day Detail "will show you everything you logged that day". It will not:
+     that date is ~8 months before the app existed. He cannot know a day is empty because he cannot see the
+     data. ➡️ **The fix is to tell him the EARLIEST date this user has data for**, so he can say "you started
+     logging in May, there is nothing on September 6" instead of sending someone to a blank screen. It fixes
+     the whole class (last Christmas, last January, any pre-install date).
+     ⚠️ **The real victim is a BRAND-NEW USER**, not Justin: someone who installs today and asks "what did I
+     do last week" gets pointed at empty days for their entire first week. That is a worse first impression
+     than one odd birthday answer, which is the only reason this is written down rather than shrugged off.
      🟡 **ONE KNOWN LEAK, ACCEPTED 2026-08-01, DELIBERATELY LOGGED HERE SO IT IS NOT LOST.** The shape
      "back, bis, core and cardio" still names a third movement about 2 times in 3 (a passing "planks or
      carries for core", no sets or reps). Three-group and two-group asks are clean 3/3. Justin's call: accept

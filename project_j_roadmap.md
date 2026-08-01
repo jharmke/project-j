@@ -1330,6 +1330,37 @@ WINS. Items graduate UP here from the backlog sections so good ideas don't rot d
 ships it leaves this list. Always offer at least one QUICK WIN when Justin asks what's next, and pull a
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
+- 🧷 **SPAWNED BY THE OTTO / MONETIZATION / LIMITS PUSH -- THESE GO AT THE TOP.** Standing rule set by Justin
+  2026-08-01: **anything that comes out of this push gets added to the TOP of NEXT UP, not the bottom.** They
+  are side-findings, deliberately NOT folded into plan item C (none of them are about caps, and folding them
+  in would mean C could not close until unrelated work shipped).
+  • **[NEEDS A SPEC] A REAL data export.** The perks table sells "data export" as a Supporter perk and that
+    row is technically already satisfied -- the only export in the app shares a REPORT as an IMAGE
+    (`app/report.tsx`) and Reports are already Supporter-gated. But "you can share a picture of a report" is
+    thin for a feature list. A true export -- the user's own logged data in a file they own (food log,
+    workouts, weight, sleep) -- **does not exist at all**.
+    ⚠️ Worth checking whether data portability is something the App Store or privacy rules EXPECT rather than
+    a nice-to-have; nobody has confirmed either way, so do not assume it is optional.
+    ⚠️ Do NOT gate the other three share-sheet uses while doing this: sharing a Bible verse and sharing a
+    message out of either AI chat are not data export, and paywalling the verse share would be a bad look.
+  • **[QUICK WIN] Colour the macro values in the Macros modal cards.** Each preset card shows "35P · 35C ·
+    30F" as a dim secondary line. Justin's call: put them in the MACRO COLOURS (`theme.macroProtein` etc,
+    already tokenised and already used this way in Settings > Goals), **normal weight, NOT dim**. Coloured
+    VALUES, not dots -- five cards x three dots is fifteen new elements in a small modal for no gain.
+    ⚠️ Watch two things: colour pulls those numbers forward and they sit UNDER the preset name, so check the
+    name still reads as primary; and whatever the SELECTED card's active state does (accent fill or tinted
+    border), the coloured text must stay readable on top of it. All five themes.
+  • **[QUICK WIN] Macros modal should have its number fields inline, like Nutrition Goals does.** Nutrition
+    Goals puts its editable fields right under the preset grid; Macros punts you to "Fine-tune in Settings >
+    Goals". Making them consistent means macro editing happens where the presets are.
+  • **[QUICK WIN] No way to EDIT a saved meal in the Meal Catalog.** The Meal Catalog (second tab in the Find
+    a Meal modal, `RepeatMealModal.tsx`) lets you log a saved meal and DELETE one, but there is no edit and no
+    rename. Rename is the obvious minimum; editing which items are in the meal is the fuller version.
+    ⚠️ **Copy dependency:** the saved-meals wall modals deliberately say "log and keep" where the custom-foods
+    and recipes ones say "log, EDIT and keep", precisely because editing does not exist. If this ships, update
+    those two strings in SPEC_monetization.md -> WHAT THE USER SEES AT A CAP.
+  ⚠️ The two macro-modal items above and item C's Custom-card work all touch the SAME modal. Sequence them;
+  do not let three separate passes collide in one file.
 - [ONLY THE QUOTA-COUNTER FEEL IS LEFT -- the cap change itself SHIPPED 2026-07-29, see RECENTLY SHIPPED]
   **Watch how the "5 messages left today" counter feels on Halo now that free is 10.** Both chats reveal the
   counter at 5 remaining (QUOTA_VISIBLE_AT = 5, AssistantChat.tsx + CompanionChat.tsx, kept in sync). The
@@ -1489,7 +1520,6 @@ are separate pre-submission checklists, NOT part of this menu.
      size. ✅ **DATA EXPORT NEEDED NO COPY**: the only export lives inside Reports, which is already
      Supporter-gated, so that perks row is already true today. A REAL data export does not exist and is now
      its own item in QUICK WINS/NEW below.
-     ⏭️ **NEXT: PIECE 3** -- does the user see a cap COMING (the success-toast count proposal above).
      ⏭️ **NEXT PIECE OF C: piece 3, does the user see a cap COMING.** Justin's opening proposal, carried over
      from the piece 2 discussion: put the count in the SUCCESS toast that already fires on create ("Food
      saved" etc), which have an empty second line already available. ⚠️ Flag to carry in: at a cap of 20 that
@@ -2326,37 +2356,6 @@ are separate pre-submission checklists, NOT part of this menu.
   hand-rolled card spread it -- then "make cards deeper" is one number, not a 40-site hunt. The FULL fix is
   migrating cards to `<GradientCard>`, but that needs GradientCard's OWN hardcoded '#000' @0.12 shadow
   fixed first or every card gets worse, and each card passes different props, so it is a real refactor.
-- [NEW 2026-08-01, needs a spec] **A REAL data export.** The perks table sells "data export" as a Supporter
-  perk, and that row is technically already satisfied -- the only export in the app shares a REPORT as an
-  IMAGE (`app/report.tsx`), and Reports are already Supporter-gated. But "you can share a picture of a
-  report" is thin for a line on a feature list. A true export -- the user's own logged data in a file they
-  own (food log, workouts, weight, sleep) -- **does not exist at all** and needs speccing before building.
-  ⚠️ Worth checking whether data portability is something the App Store or privacy rules EXPECT rather than
-  just a nice-to-have; nobody has confirmed that either way, so do not assume it is optional.
-  ⚠️ Do NOT gate the other three share-sheet uses while doing this: sharing a Bible verse and sharing a
-  message out of either AI chat are not data export, and paywalling the verse share would be a bad look.
-- [QUICK WIN, asked for 2026-08-01] **Colour the macro values in the Macros modal cards.** Each preset card
-  shows "35P · 35C · 30F" as a dim secondary line. Justin's call: put them in the MACRO COLOURS (Protein
-  `theme.macroProtein`, Carbs, Fat -- already tokenised and already used this way in Settings > Goals),
-  **normal weight, NOT dim**. Coloured VALUES, not dots: five cards x three dots would be fifteen new
-  elements in a small modal for no gain.
-  ⚠️ Two things to watch: colour pulls those numbers forward and they currently sit UNDER the preset name,
-  so check the name still reads as primary; and whatever the SELECTED card's active state does (accent fill
-  or tinted border), the coloured text has to stay readable on top of it. All five themes.
-  Independent of the item C cap work -- can ship on its own, must not hold that up.
-- [QUICK WIN, found 2026-08-01] **Macros modal should have its number fields inline, like Nutrition Goals
-  does.** Justin, 2026-08-01: the Nutrition Goals modal has its editable fields right there under the preset
-  grid, while the Macros modal punts you to "Fine-tune in Settings > Goals". Making them consistent means
-  macro editing happens where the presets are. ⚠️ Touches the same modal as the item C Custom-card work and
-  the colour change above, so sequence them rather than letting them collide.
-- [QUICK WIN, found 2026-08-01] **No way to EDIT a saved meal in the Meal Catalog.** Found while writing the
-  cap copy for item C: the Meal Catalog (the second tab in the Find a Meal modal, `RepeatMealModal.tsx`) lets
-  you log a saved meal and DELETE one, but there is no edit and no rename. Justin confirmed the gap. Rename
-  is the obvious minimum; editing which items are in the meal is the fuller version.
-  ⚠️ **This has a copy dependency.** The at-cap and over-cap wall modals for saved meals deliberately say
-  "log and keep" where the custom-foods and recipes ones say "log, EDIT and keep", precisely because editing
-  does not exist. If this ships, update those two strings in SPEC_monetization.md -> WHAT THE USER SEES AT A
-  CAP so they stop under-promising.
 - [QUICK WIN, found 2026-07-15, PARTIAL] **Otto (+ Halo?) FAB placement audit.** The floating companion FAB
   sits bottom-left on many stack screens and can overlap the last card's content when the page has no
   bottom padding. FIXED so far: sleep.tsx + achievements.tsx (paddingBottom bumped to `insets.bottom + 96`),

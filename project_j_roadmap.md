@@ -30,6 +30,13 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-08-01 **Otto's Supporter-plan pitch now actually fires (deployed + verified on device).** He mentions
+  the plan on a free user's third data wall, once per conversation, three times per rolling 7 days, and the
+  slot is only spent on a reply that really names it. Four bugs behind it, but the load-bearing one:
+  **the instruction rides on the USER'S MESSAGE, not the system prompt** -- measured 0/10 at the end of the
+  ~90,000-char system prompt vs 10/10 on the message, because Otto is on a small model and a late
+  instruction there loses to his never-be-pushy character. Rules + traps in SPEC_otto.md open item 4;
+  full debugging story in the archive.
 - 2026-07-29 **Companion caps evened up, and Otto stopped quoting the old price (deployed + verified on
   device).** Halo free 25 -> 10, Halo Supporter 25 -> 30, so both companions are now **10 free / 30
   Supporter**. Free and Supporter were BOTH 25 on Halo, meaning a paying user got literally nothing extra --
@@ -1380,9 +1387,16 @@ are separate pre-submission checklists, NOT part of this menu.
      snapshot, PRs, workout history, food history, sleep or body measurements; achievements, journal/prayers
      and the exercise-name list still come through. Enforced on BOTH the client and the server. Full build
      record in SPEC_otto.md -> OPEN ITEMS -> item 1.
-     ⚠️ STILL TO BUILD IN B: the pitch rules + wall counting (open item 4), the Day Detail jump button, and
-     the per-mode decline pass. ⚠️ `DEV_UNLIMITED_UIDS` currently holds Justin's uid for testing and MUST be
-     emptied at launch.
+     ✅ **THE PITCH RULES ARE BUILT + DEVICE-VERIFIED 2026-08-01** (batch 3, commit f091d8c). Wall counting,
+     the weekly budget, the once-per-conversation cap and the pitch itself all work. ⚠️ Read SPEC_otto.md
+     open item 4 before touching any of it: **the instruction rides on the user's MESSAGE, not the system
+     prompt**, and the label "PITCH REQUIRED" is duplicated across three files that must move together.
+     Either mistake stops the pitch silently, with no error and no log line.
+     ⚠️ STILL TO BUILD IN B: the **2-exercise cap on general training advice** (Otto still hands over full
+     routines -- expected, not a regression), the **Day Detail jump button**, the **30-day suppression** after
+     an explicit "not interested", and the **per-mode decline pass**.
+     ⚠️ `DEV_UNLIMITED_UIDS` currently holds Justin's uid for testing and MUST be emptied at launch, and the
+     `[pitch]` diagnostic log line must come out (both on the REVERT BEFORE LAUNCH list).
   **C. NON-AI WALLS / PAYWALLS / LIMITS** -- ✅ ALREADY DESIGN-LOCKED with real numbers (2026-07-28), see
      SPEC_monetization.md -> NON-AI SUPPORTER PERKS. Custom foods 20, recipes 5, exercise library 15, stats
      cards 1, **meal slots 5 (vs 8)**, macro + nutrition goals presets-only, no data export.
@@ -2336,6 +2350,11 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
    diagnostic (added with the label scanner), the Weight History self-test below, tooltip resets, seed/clear
    tools. NONE should be visible to a public user. Decide once at launch prep: gate the whole dev-tools
    section behind a build flag, or delete the rows outright. Do not keep pruning them individually.
+8. ⚠️ **`[pitch]` DIAGNOSTIC LOG LINE (added 2026-07-31, functions/src/appCompanion.ts).** Prints
+   `{status, pitchRequested, budgetHasRoom, pitchAllowed, pitched}` on every Otto message so the pitch could
+   be debugged from the outside. It logs no chat content, so it is not a privacy problem, but it is noise in
+   production and must come out. Keep it until items B and C are finished -- it is the only window into
+   whether the pitch fired.
 6. [DEV TOOL, not user-facing] "Weight History self-test (dev)" row in app/settings.tsx dev tools (added 2026-07-10). One-tap self-test that seeds/edits/deletes throwaway far-back dates + asserts data-integrity/badge rules, auto-cleans. Same class as the other "(dev)" seed tools -- remove or gate them all behind a dev flag before public launch. Safe (only writes to confirmed-empty dates) but should not ship visible.
 
 ---

@@ -11,6 +11,57 @@
 
 ---
 
+## 💬 OTTO'S SUPPORTER PITCH -- WHY IT TOOK FOUR FIXES (device-confirmed, SHIPPED 2026-08-01, commit f091d8c)
+
+The behaviour rules live in SPEC_otto.md open item 4. This is the debugging story, kept because three of the
+four bugs were invisible from the outside and the process lesson cost two evenings.
+
+**The symptom:** the pitch rules were fully built, every check said they should fire, and Otto never once
+mentioned the plan. Nothing errored. Nothing logged.
+
+**Bug 1 -- the reset button stopped resetting.** `revokeFirstWeek` (the dev "Revoke First Week" row) calls
+RevenueCat to take the promotional entitlement away, then clears the server's cached membership doc and the
+pitch budget. On a repeat tap RevenueCat answers `404 / code 7242, "No promotional entitlements to revoke"`
+-- the normal state of an account that is already free, which is exactly the state every free-tier test runs
+in. The function treated that as a failure and threw **before** the two local cleanups, so the row only ever
+worked once. The cached membership stayed stale (phone said free, server said entitled) and the pitch budget
+stayed full. Fixed: "nothing to revoke" counts as success, the local cleanups run even on a genuine
+RevenueCat failure, and the grant record is only deleted when the entitlement is really gone (deleting it on
+a real failure would let the account be granted a second free week).
+
+**Bug 2 -- three walls only ever counted as two.** `messageHitsWall` looks for food/sleep/body/workout
+language. "How's my bench trending" contains none of it, so a PR question -- a real wall -- did not count.
+Now the exercise-name context firing also counts as a wall.
+
+**Bug 3 -- two contradictions, in two different files.** `FREE_TIER_BLOCK` said "never explain the plan or
+offer to sell anything"; the membership section of the app knowledge said to raise it "only when the user
+asks", which forbids an unprompted third-wall pitch outright. Both were absolute, both predated the pitch
+block, and both won. Each now explicitly defers to the pitch block. Fixing them was necessary and **not
+sufficient** -- which is what made bug 4 hard to see.
+
+**Bug 4, the real one -- placement.** With every contradiction gone and the block confirmed present at the
+very end of the prompt, Otto still ignored it: 1 pitch across 6 eligible messages. Rather than reword it a
+fourth time, the prompt was rebuilt from `functions/lib/` in a throwaway script and run against the real
+model 20 times. **At the end of the ~90,000-character system prompt: 0/10. Appended to the user's message:
+10/10. With no pitch allowed: 0/10.** Otto is on Haiku 4.5; a late instruction in a prompt that size loses
+to his standing never-be-pushy character. The block now rides on the message, server-side only.
+
+**A fifth thing, found while fixing the fourth:** the slot was being spent when the app DECIDED a pitch was
+allowed, with nothing checking Otto went on to make one. Every silent reply burned one of the three weekly
+slots, so the pitch disabled itself for seven days with no trace -- a live production bug, not just a
+testing annoyance. The budget is now checked before the call and spent after it, only on a reply that names
+the plan. And the once-per-conversation cap turned out never to have been implemented at all: the wall count
+only climbs, so every message after the third asked again. The server now reports whether he pitched and the
+app stops asking -- for the wall trigger only, so a direct pricing question is always answered.
+
+**PROCESS LESSON, worth more than the fix:** three theories died to reasoning about the prompt instead of
+measuring it, each one costing a deploy and a round of on-device testing. The measurement that settled it
+took one script and well under a dollar of API calls. **When Otto ignores an instruction, measure it -- do
+not reword it and redeploy.** The `[pitch]` diagnostic line exists for the same reason: read it before
+guessing.
+
+---
+
 ## 🔢 FOOD LIBRARY CALORIE TRUTH -- ONE SHARED LABEL RESOLVER (device-confirmed, SHIPPED 2026-07-25)
 
 **The ask, in Justin's words:** "ANY tab in the library: that food's calorie amount shows that default

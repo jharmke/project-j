@@ -887,41 +887,79 @@ He gets muscles and instructions from his own general knowledge (commodity fitne
 - ⚠️ **NOTE FOR E: the builder needs real programming logic**, not plausible picks from a muscle group.
   Movement-pattern balance, compounds before isolation, sensible volume. It does not fall out for free.
 
-### 4. ✅ RESOLVED 2026-07-30 -- the pitch rules. 🔴 **BUILT 2026-07-31, NOT YET WORKING.**
+### 4. ✅ RESOLVED 2026-07-30 -- the pitch rules. ✅ **BUILT + DEVICE-VERIFIED 2026-08-01** (commit f091d8c).
 
-> **BUILD RECORD (batch 3 of item B). Otto still will not pitch: 0 for 2 on the last attempt.**
+> **BUILD RECORD (batch 3 of item B).** Verified on device: the mention lands on the third wall, three
+> further questions get no second mention, and exactly one slot is spent.
+>
 > **Built:** `utils/companionPitch.ts` (client: counts walls per conversation, detects "asks for more",
-> blocks on faith messages), `claimPitchSlot()` + `membershipStatus()` in the functions (server: 3 per
-> rolling 7 days, and the THREE-state membership check item A asked for -- access still fails closed to
-> free, pitching fails closed to SILENCE), and `PITCH_ALLOWED_BLOCK` in companionSystemPrompt.ts.
+> blocks on faith messages), `pitchBudgetHasRoom()` + `recordPitch()` + `membershipStatus()` in the functions
+> (server: 3 per rolling 7 days, and the THREE-state membership check item A asked for -- access still fails
+> closed to free, pitching fails closed to SILENCE), and `PITCH_REQUIRED_BLOCK` in companionSystemPrompt.ts.
 >
 > **THE SPLIT:** "once per conversation" is the CLIENT's job (a conversation only exists there; the server
 > sees one message at a time). The weekly budget is the SERVER's, because it is per-account and must not be
 > client-trusted. The client only ever REQUESTS; all three checks must agree.
 >
-> ⚠️ **A `[pitch]` DIAGNOSTIC LOG LINE IS DEPLOYED IN appCompanion.ts. IT IS TEMPORARY -- REMOVE IT.**
-> It prints `{status, pitchRequested, slotClaimed, pitchAllowed}` and it is how the next person should
-> debug this. **Read it before guessing** -- three separate wrong theories were burned before it existed.
-> Last reading: `{"status":"free","pitchRequested":true,"slotClaimed":false,"pitchAllowed":false}`.
+> ⚠️ **A `[pitch]` DIAGNOSTIC LOG LINE IS STILL DEPLOYED IN appCompanion.ts. IT IS TEMPORARY -- REMOVE IT.**
+> It prints `{status, pitchRequested, budgetHasRoom, pitchAllowed, pitched}` and it is how the next person
+> should debug this. **Read it before guessing** -- four separate wrong theories were burned before and
+> during its existence.
 >
-> **THREE BUGS FOUND AND FIXED (all deployed), worth keeping because each was invisible from the outside:**
+> ---
+>
+> ### 🚩 THE FOUR RULES THAT MAKE IT WORK. Break any one and the pitch silently stops.
+>
+> **1. THE INSTRUCTION RIDES ON THE USER'S MESSAGE, NOT THE SYSTEM PROMPT.** This is the single load-bearing
+> fact. Measured against the real prompt and the real model (20 calls, ~$0.50): at the end of the ~90,000
+> character system prompt it fired **0 times out of 10**; appended to the user's message, **10 out of 10**.
+> With no pitch allowed, **0 out of 10** -- it cannot leak into ordinary replies. Otto runs on Haiku 4.5, and
+> one late instruction in a prompt that size loses to his standing "never be pushy" character every time.
+> The block is appended SERVER-SIDE only, so the phone never shows it and it never survives into the next
+> turn's history. **Moving it back into the system prompt kills the feature with no error and no log line.**
+>
+> **2. THE LABEL "PITCH REQUIRED" LIVES IN THREE FILES AND MOVES TOGETHER.** The block itself
+> (companionSystemPrompt.ts), FREE_TIER_BLOCK's exception clause (same file), and the membership section of
+> `assistantAppKnowledge.ts` all name it verbatim. Rename it in one and the other two point at nothing,
+> which re-forbids the pitch through the back door. Change all three or none.
+>
+> **3. THE SLOT IS SPENT AFTER THE REPLY, AND ONLY IF THE REPLY NAMES THE PLAN.** It used to be spent when
+> the app DECIDED a pitch was allowed. Every message where Otto stayed quiet burned one of the three, so the
+> pitch disabled itself for a week with no trace -- a live production bug, not just a testing annoyance.
+> `pitchBudgetHasRoom()` runs before the call, `recordPitch()` after it, and `recordPitch` re-checks the cap
+> inside its transaction so two messages in flight can never push the week past three. Crisis replies and
+> failed calls cost nothing.
+>
+> **4. ONE PITCH PER CONVERSATION IS ENFORCED BY A LATCH ON THE WALL TRIGGER ONLY.** The wall count only ever
+> climbs, so once it passes three EVERY later message asked again and Otto could pitch three times in one
+> sitting -- exactly the nagging the rule exists to prevent. The server now returns `pitched` and the app
+> stops asking for the rest of that conversation (resets with the chat, same as the wall count). ⚠️ The latch
+> covers the WALL trigger only: if they ASK about the plan he answers every time, because stonewalling a
+> direct pricing question is worse than a second mention.
+>
+> ---
+>
+> **FOUR BUGS FOUND AND FIXED, each invisible from the outside:**
 > 1. **`revokeFirstWeek` never cleared the server's cached membership doc.** The phone knew you were free
 >    while the server still thought you were entitled until the taste's original end date. Every free-tier
->    test was running in a half state. Now zeroes `expiresAtMs`/`checkedAtMs` (and clears the pitch budget,
->    since that row is the reset-my-test-state button and the weekly cap is otherwise a 7-day lockout).
+>    test was running in a half state. Now zeroes `expiresAtMs`/`checkedAtMs` and clears the pitch budget.
 > 2. **Wall counting missed PR questions.** "How's my bench trending" contains no food/sleep/workout word,
 >    so three walls only ever counted as two and the pitch could never become eligible. Now also counts when
 >    the exercise-name context fires.
-> 3. ⚠️ **A CONTRADICTION IN THE PROMPT, written on the same day.** FREE_TIER_BLOCK said "never explain the
->    plan or offer to sell anything here"; PITCH_ALLOWED_BLOCK, appended later, said he may. The earlier
->    absolute instruction won, so the server ticked off a weekly slot each time while Otto said nothing.
->    FREE_TIER_BLOCK now explicitly names the pitch block as its exception.
->    **This is the same failure mode this spec warns about twice: a block that CONTRADICTS an earlier
+> 3. ⚠️ **TWO CONTRADICTIONS IN THE PROMPT, in different files.** FREE_TIER_BLOCK said "never explain the
+>    plan or offer to sell anything here"; the membership section of the app knowledge said to raise it "only
+>    when the user asks", which forbids an unprompted third-wall pitch outright. Both now defer to the pitch
+>    block. **This is the failure mode this spec warns about twice: a block that CONTRADICTS an earlier
 >    instruction is a coin flip; a block the earlier instruction HANDS OFF to is not.**
+> 4. **The placement itself** -- rule 1 above. Fixing the contradictions was necessary and not sufficient.
 >
-> **NEXT STEP:** it failed twice more after fix 3. Not yet distinguished: the budget may simply still have
-> been empty (Revoke First Week clears it, and it is unconfirmed whether that was tapped), or Otto is still
-> ignoring the block. **Read the `[pitch]` log first.**
+> **PROCESS NOTE WORTH MORE THAN THE FIX:** three theories died to reasoning about the prompt instead of
+> measuring it. A throwaway script that rebuilds the real prompt from `lib/` and calls the real model settled
+> it in one run. **When Otto ignores an instruction, measure it -- do not reword it and redeploy.**
+>
+> **RESOLVED, NOT AN OPEN ITEM:** during the broken phase he sometimes landed the mention a message later
+> than it was offered. That was a symptom of the weak placement, not a separate quirk -- on the message he
+> takes the opening he is given. No watch item.
 
 #### ATTRIBUTION IS NOT A PITCH (the distinction everything else rests on)
 - **ATTRIBUTION goes in EVERY decline.** One factual clause, e.g. "on the free plan". No price, no call to

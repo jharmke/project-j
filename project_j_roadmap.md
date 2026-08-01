@@ -1556,8 +1556,23 @@ are separate pre-submission checklists, NOT part of this menu.
      permanently destroy their default graphs too, silently, across two keys. 12 save call sites (stats.tsx
      x10, index.tsx x2) PLUS a 13th direct `storageSet('pj_stats_cards')` at index.tsx ~2322 that a grep for
      `saveStatsCards` misses entirely.
-     ⏭️ **NEXT: PIECES 5-6** -- how the two downgrade categories behave in practice, and where the caps get
-     enforced across the different features.
+     🟡 **PIECE 5 IS MOSTLY LOCKED 2026-08-01.** The categories themselves were already settled by pieces 2
+     and 4; piece 5 turned out to be "does the user ever find out?". ⚠️ **The step-down notice only fires off
+     the 7-DAY TASTE end date**, so a Supporter who subscribed later and then cancels gets NOTHING and their
+     layout reverts silently. Justin's call: **a Supporter whose subscription ends gets the same notice**
+     (same modal, wider trigger). Also: the "Here's the free plan" list was missing the eight creation caps
+     entirely -- new bullet **"Room to keep building, within free limits"** (no numbers, no list: six content
+     caps means naming three or four is always wrong by omission). And the Support the Mission perk was
+     rewritten, because "higher limits" undersold it badly -- **seven of the eight go fully UNLIMITED**, only
+     meal slots stay finite (5 to 8):
+     **Room To Build / "The free limits come off. Nothing you create is capped, counted, or held back."**
+     ⚠️ `app/support.tsx`, `app/onboarding/all-set.tsx` and the step-down notice all describe the SAME tier and
+     must move together -- any change lands in three places.
+     🟡 **STILL OPEN IN 5:** the modal title ("Your First Week Is Up" is wrong for someone who paid for eight
+     months, and the calendar icon with it), and how billing-retry/grace states are treated (a failed payment
+     could revert someone's layout for days and fire the notice for a lapse that never really happened).
+     ⏭️ **THEN PIECE 6** -- where the caps get enforced across the different features (the build checklist:
+     every creation door for all eight caps).
      ⚠️ **THE LAYOUT CAPS ARE "DEFAULTS PLUS ONE", NOT RAW TOTALS (Justin, 2026-07-31). Read either as a bare
      total and you cull the defaults, which was never the intent.**
      • **MEAL SLOTS: 5, corrected from 4.** `DEFAULT_MEAL_SLOTS` is 4 (Morning, Lunch, Dinner, Snacks), so a

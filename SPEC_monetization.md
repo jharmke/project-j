@@ -1456,6 +1456,69 @@ Practical effect: **hiding does not make room, deleting does** -- which is exact
 
 ---
 
+#### 🟡 PIECE 5 -- HOW THE TWO DOWNGRADE CATEGORIES BEHAVE IN PRACTICE (mostly locked 2026-08-01)
+
+The categories themselves were fully settled by pieces 2 and 4: **grandfathered content stays and simply
+cannot grow; layout reverts by position.** What piece 5 turned out to be about is the practical moment --
+**does the user ever find out?**
+
+##### ⚠️ THE GAP: THE STEP-DOWN NOTICE ONLY COVERS THE FREE WEEK
+`shouldShowStepDown` (`utils/firstWeek.ts`) is three flat checks: not entitled, the **7-day taste end date**
+has passed, and a once-ever flag has not been set. That is correct for the taste and **wrong for everyone
+else**:
+- Somebody who subscribed LATER (after their taste ended and the notice already fired) and then cancels gets
+  **nothing** -- their meal slots and stats graphs quietly revert with no explanation. That is a paying
+  customer, and the group most likely to read a silent change as the app breaking.
+- Because the flag is once-ever, subscribe -> cancel -> resubscribe -> cancel only ever tells them once.
+
+✅ **DECIDED (Justin, 2026-08-01): a Supporter whose subscription ends gets the same notice.** Same modal,
+wider trigger, nothing new built.
+✅ **The hard part is already right:** that modal already knows to mention ONLY the two layout caps and never
+the content ones (content is grandfathered, so warning about it would frighten people about a loss they are
+not taking), and it already does the "defaults plus one" maths correctly. It is the TRIGGER that is narrow.
+
+##### ✅ THE FREE-PLAN LIST WAS MISSING THE CREATION CAPS
+`FirstWeekEndedModal`'s "Here's the free plan" bullets covered the AI limits and reports but said nothing
+about any of the eight caps -- correct when written, incomplete now that item C exists. **New bullet,
+Justin's wording:**
+> - Room to keep building, within free limits
+
+⚠️ **NO NUMBERS AND NO LIST, deliberately.** Eight numbers is a wall of text at the moment somebody is least
+receptive, and any single number is a LIE for the person sitting over it (a taste user holding 30 custom
+foods keeps all 30). The reassurance is already two lines above: "Everything you logged and built stays
+exactly where it is. Nothing was deleted."
+⚠️ Enumerating a few was tried and rejected repeatedly -- there are SIX content caps, so naming three or four
+is wrong by omission every time. Do not reintroduce a list.
+
+##### ✅ THE SUPPORT THE MISSION PAGE PERK (rewritten 2026-08-01)
+The page already had this perk; its body named four of the caps and missed routines, programs, meal slots and
+stats graphs. **New copy:**
+> **Room To Build**
+> The free limits come off. Nothing you create is capped, counted, or held back.
+
+⚠️ **"HIGHER LIMITS" WAS WRONG AND UNDERSOLD IT BADLY** (Justin caught this): **seven of the eight go fully
+UNLIMITED.** Only meal slots stay finite, going 5 to 8. So "the free limits come off" is the accurate frame,
+with a slight round-up on that one row.
+⚠️ **NO EXACT NUMBERS ON THIS PAGE EITHER** (Justin's call). Somebody reading it wants to know what they get,
+not to audit an allowance. The moment a number matters is the moment they hit a wall, and the wall modal
+handles that.
+⚠️ The body deliberately does NOT open with "Build", since the title already owns that word.
+
+##### ⚠️ THREE SURFACES DESCRIBE THE SAME TIER AND MUST MOVE TOGETHER
+There is a warning already in `app/support.tsx`: this page, **the onboarding free-week block
+(`app/onboarding/all-set.tsx`)** and **the step-down notice** all describe the same tier, and a user reads
+them a week apart. If the wording drifts, the step-down stops reading as a promise kept. **Any change to one
+lands in three places.**
+
+##### 🟡 STILL OPEN IN PIECE 5
+1. **The modal's TITLE is "Your First Week Is Up"**, which is wrong for somebody who paid for eight months.
+   The Supporter version needs its own title, and probably a different icon than the calendar.
+2. **Billing grace / payment retry.** If entitlement reads false during a failed-payment retry, somebody's
+   layout reverts for a few days and then comes back, and they may get the step-down notice for a lapse that
+   never really happened. Not yet checked how `MembershipContext` treats that state.
+
+---
+
 ##### 🗄️ THE FALLBACK, KEPT ON PURPOSE -- MODAL ONCE, THEN TOAST
 **Not the plan. Kept because "modal every time" is a "we can try it", and if it reads as too much on device
 this is what we fall back to** rather than re-deriving it from scratch. Justin, 2026-08-01: "can you leave

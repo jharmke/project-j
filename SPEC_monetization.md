@@ -1033,8 +1033,31 @@ Built 3 Programs" reads as a bug.
 ⚠️ Both say "yours to **LOAD**" on purpose. The standing build note is *cap creation, never loading*, and
 having the user-facing copy promise loading out loud makes that far harder to break by accident later.
 
-##### 🟡 STILL OPEN -- THE OTHER THREE CAPS
-Exercise library, meal slots, stats cards. Same two modals each; only the noun and the number change. ⚠️ **Check what the SCREEN calls each one before writing a word** -- "custom foods" turned out
+##### ✅ APPROVED -- EXERCISE LIBRARY (cap 15 of your own, on top of the built-ins)
+⚠️ On screen the whole thing is the **Exercise Library** (the screen title in `workout-library.tsx`). The
+verb is **added**, not built, because the app's own toast on creation says "Exercise added".
+⚠️ Editing a custom exercise **does** already exist (`workout.tsx` fires an "Exercise updated" toast), so
+this copy can promise editing where the saved-meals copy cannot.
+**At the cap:**
+> **You've Added 15 Exercises**
+>
+> The free plan holds 15 exercises of your own. Built-in exercises don't count toward that, and every one
+> you've added is still yours to use, edit and keep.
+>
+> Make room by deleting one you've stopped using, or the Supporter plan removes the limit entirely.
+
+**Over the cap:**
+> **All 22 Of Your Exercises Are Still Here**
+>
+> Nothing you added has gone anywhere. Every exercise is yours to use, edit and keep.
+>
+> Free accounts hold 15 of your own, so there's no room to add another right now. The Supporter plan opens
+> your Exercise Library back up.
+
+##### 🟡 STILL OPEN -- MEAL SLOTS AND STATS CARDS
+Meal slots and stats cards, the two REVERT rows. Their AT-cap wall is a normal tap on a dim door like every
+other cap, but their OVER-cap state arrives on downgrade with nobody tapping anything, so the copy has to be
+written alongside pieces 4 and 5 rather than on its own. ⚠️ **Check what the SCREEN calls each one before writing a word** -- "custom foods" turned out
 to be **My Foods** and "saved meals" turned out to be the **Meal Catalog**, and neither label exists in the
 UI. That check has changed the copy every single time so far.
 ⚠️ **Macro goals, nutrition goals and data export are NOT this shape.** They are straight paywalls with no

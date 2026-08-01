@@ -835,11 +835,61 @@ identical wall, and the day-8 message would tell a four-month paying customer ab
 - Still open there: never pitching existing Supporters, and the exact wording.
 
 #### BUILD NOTES FOR B
-- **Day Detail jump button that opens a specific date.** No such route exists today (Otto's route pills
-  cover Settings sections, Sleep, Achievements, Challenges, Comparison, EvR, Bible, Prayer, Plans, Journal,
-  Mission, Body, PR home and the six tabs). Needed because a vague "what did I do yesterday" attaches
-  training + food + sleep at once, so gating them individually would give a free user THREE STACKED WALLS.
-  Fix is one clean in-character line plus the jump button.
+- **Day Detail jump button that opens a specific date.** ✅ **FULLY AGREED 2026-08-01, NOT BUILT.** Needed
+  because a vague "what did I do yesterday" attaches training + food + sleep at once, so gating them
+  individually gives a free user THREE STACKED WALLS in one reply -- the point where free Otto stops reading
+  as limited and starts reading as useless.
+
+  **1. DESTINATION: Day Detail. Not Day Summary, not the Calendar.** ("100% day detail" -- Justin.) It shows
+  the actual logged contents of a day, which is what they asked for; Day Summary is a recap/scoring view.
+  The on-screen title really is "Day Detail", so the wording below is not internal jargon.
+
+  **2. WHAT HE SAYS -- one reason clause, then what is waiting there. Never three declines:**
+  > I can't see your logged days on the free plan. Yesterday's food, training and sleep are all together on
+  > your Day Detail screen.
+  The three things are named as what is ON that screen, not as what he cannot do -- it reads as a handoff
+  rather than a refusal.
+  ⚠️ **This must NOT hijack specific questions.** "What did I eat yesterday" keeps its existing single food
+  wall pointing at the Log tab. Verified in code: `isDayRecall` only fires on a whole-day question with NO
+  dimension word, so this is already true and must stay true.
+
+  **3. THE APP RESOLVES THE DATE, NOT OTTO.** On the free plan he cannot see their data, so a guessed date
+  sends someone to an empty day and the app looks broken. The app always knows today. A bare weekday resolves
+  to the MOST RECENT one (Justin, 2026-08-01). If it cannot pin the date down, the button opens TODAY, which
+  has a date picker one tap away.
+
+  **4. BUTTON LABEL: "Tue, Jul 29" -- weekday AND date.** ⚠️ Justin caught the reason: a bare "Tuesday" on a
+  Wednesday could be yesterday or eight days ago, and the user only finds out after tapping. **The date on
+  the label is not decoration, it is the safety net that makes imperfect date-guessing harmless** -- English
+  is genuinely ambiguous here ("last Tuesday" means different things to different people), no parser gets it
+  right for everyone, and seeing the real date before tapping is what makes a wrong guess a non-event.
+
+  **5. ONE WALL, not three.** One question, one answer. Three would mean a single "what did I do yesterday"
+  earns a pitch on its own. Already true in code (`wallCountRef` increments at most once per message); this
+  is a confirmation, not a change.
+
+  **6. BOTH TIERS GET THE BUTTON.** Jump buttons are a free-for-everyone capability, so removing one from
+  paying users would be backwards, and tapping through to the real day is useful even after a good summary.
+  ⚠️ **A SUPPORTER MUST STILL GET THE FULL ANSWER** (Justin, emphatically). His knowledge already forbids
+  deflecting a day question to Day Detail when he has the data; the button is an ADDITION underneath, never
+  a substitute. **PASS/FAIL: measure his Supporter answers with the button against without. If they get
+  thinner, it does not ship that way.**
+
+  ⚠️ **BUILD TRAP, found while agreeing this.** `app/day-detail.tsx` carries a comment saying Day Detail is
+  ALWAYS a modal/sheet opened from Home or Stats, and that **the `/day-detail` page route is never navigated
+  to**. It exists and accepts a `date` param, but nothing has ever used it that way. A jump button pointing
+  at it would be the first thing ever to, and it may open a sheet with no sensible way back (it is built
+  around a close handler that assumes a host screen). Either make that page route genuinely work standalone,
+  or send the button to Home with a param that opens the sheet the way the app already does. The second is
+  more faithful to real behaviour.
+
+  ⚠️ **CONFIDENCE, split honestly.** The button's DATE is deterministic app code and will be tested
+  exhaustively offline (including a weekday name on that same weekday). Otto's QUOTED NUMBERS for a
+  Supporter are model reasoning over dated blocks -- a known weak spot for a small model, pre-existing rather
+  than new. On the test list; if he quotes the wrong day's numbers that is its own bug.
+
+  **ACCEPTED:** if they ask about a day with nothing logged, the button opens an empty screen. Otto cannot
+  know that (no data), and it is identical to tapping the calendar icon themselves.
 - **Decouple the exercise-name list from PRs.** `buildPRContextIfRelevant` returns null when the user has no
   backed PRs, so the name list never ships for a brand-new user or anyone who only does cardio -- exactly
   the people most likely to ask about an exercise they half-remember. Pre-existing, but our guardrail leans

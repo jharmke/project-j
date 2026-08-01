@@ -25,7 +25,7 @@ import { buildPRContextIfRelevant, buildExerciseNamesIfRelevant } from '../utils
 import { messageHitsWall, messageAsksForMore, messageBlocksPitch, messageAsksForExercises, workoutAskWantsMoreThanTwo, WALLS_BEFORE_PITCH } from '../utils/companionPitch';
 import { buildWorkoutContextIfRelevant } from '../utils/companionWorkouts';
 import { buildFoodContextIfRelevant } from '../utils/companionFood';
-import { buildSleepContextIfRelevant, messageWantsSleep } from '../utils/companionSleep';
+import { buildSleepContextIfRelevant, messageIsAboutSleep } from '../utils/companionSleep';
 import { buildBodyContextIfRelevant } from '../utils/companionBody';
 import { buildAchievementsContextIfRelevant } from '../utils/companionAchievements';
 import { buildJournalContextIfRelevant } from '../utils/companionJournal';
@@ -728,8 +728,9 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
         // date. A range is not a day, and a button whose label you cannot trust undoes the whole reason the
         // label carries a real date.
         // ⚠️ Sleep questions resolve a named night to the WAKE day -- see resolveDayRef.
-        const dayJump = isDayRecall(text) || messageWantsSleep(text)
-          ? (resolveDayRef(text, new Date(), messageWantsSleep(text)) ?? undefined)
+        const aboutSleep = messageIsAboutSleep(text);
+        const dayJump = isDayRecall(text) || aboutSleep
+          ? (resolveDayRef(text, new Date(), aboutSleep) ?? undefined)
           : undefined;
         setMessages(prev => [...prev, { role: 'assistant', text: stripInlineFormatting(finalText), routes, tutorials, dayJump }]);
       } else if (data.message) {

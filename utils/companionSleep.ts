@@ -42,6 +42,17 @@ const fmtMs = (ms: number): string => {
 
 // Sleep / recovery words, OR the shared whole-day recall ("what did I do on June 24"). Generous: a false
 // positive costs a few tokens, a false negative reads as "I don't have that."
+/**
+ * NARROW: is this message actually ABOUT sleep? Sleep words only, no whole-day fallback.
+ *
+ * ⚠️ Do not use `messageWantsSleep` for this. That one deliberately returns true for ANY whole-day recall,
+ * because attaching sleep data to "what did I do on Tuesday" is cheap and useful. As a signal for "should a
+ * night be filed under the wake day", it is far too broad -- it made "what did I do last night" resolve to
+ * TODAY instead of yesterday, which is the opposite of what that question means.
+ */
+export const messageIsAboutSleep = (text: string): boolean =>
+  /\b(sleep|slept|sleeping|asleep|rem|deep sleep|core sleep|nap(?:ped|s)?|bedtime|woke|awake|wake up|wake time)\b/.test((text || '').toLowerCase());
+
 export const messageWantsSleep = (text: string): boolean => {
   const t = (text || '').toLowerCase();
   const sleep = /\b(sleep|slept|sleeping|asleep|rest(?:ed|ing)?|rem|deep sleep|core sleep|nap(?:ped|s)?|bed|bedtime|wake|woke|awake|recovery|recover(?:ed|ing)?|hrv|heart rate variability|resting (?:heart|hr)|rhr|respirat|breathing rate|blood oxygen|spo2|readiness)\b/;

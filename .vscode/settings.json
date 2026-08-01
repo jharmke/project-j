@@ -3,5 +3,27 @@
     "source.fixAll": "explicit",
     "source.organizeImports": "never",
     "source.sortMembers": "explicit"
-  }
+  },
+
+  // Stop VS Code watching ~62,000 dependency files that never change while you type.
+  // This is the fix for input lag. Needs a window reload to take effect.
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/functions/lib/**": true,
+    "**/.expo/**": true,
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true
+  },
+
+  // Keep Ctrl+Shift+F out of dependencies and compiled output. Applies immediately.
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/functions/lib": true,
+    "**/.expo": true
+  },
+
+  // The default ceiling is small for a project this size, so the TypeScript server
+  // garbage-collects constantly and that shows up as typing stutter.
+  // Applies after "TypeScript: Restart TS Server" -- no window reload needed.
+  "typescript.tsserver.maxTsServerMemory": 4096
 }

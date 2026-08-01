@@ -164,7 +164,11 @@ export function MembershipProvider({ children }: { children: React.ReactNode }) 
     };
 
     try {
-      if (__DEV__) Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+      // INFO, not DEBUG: DEBUG logs every cache read and API request, which floods the Metro terminal
+      // hundreds of lines at a time and lags the editor. INFO still shows what actually matters here --
+      // purchases, entitlement changes, configuration -- which is what we need while the free/paid split
+      // is being built. Raise it back to DEBUG temporarily if a specific RevenueCat call needs tracing.
+      if (__DEV__) Purchases.setLogLevel(LOG_LEVEL.INFO);
       Purchases.configure({ apiKey: REVENUECAT_IOS_KEY });
       Purchases.addCustomerInfoUpdateListener(applyInfo);
       Purchases.getCustomerInfo().then(applyInfo).catch(() => setLoading(false));

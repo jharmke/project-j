@@ -1104,10 +1104,66 @@ which is true under every dormancy model considered so far, but if a dormant slo
 visible-but-greyed rather than hidden, both need a small rewrite. Their AT-cap versions are final -- those
 fire on a normal tap of a dim door like every other cap.
 
-##### 🟡 STILL OPEN -- THE THREE FLAT PAYWALLS
-Custom macro goals, custom nutrition goals and data export. **These are NOT the same shape as the eight
-caps** -- they are straight paywalls with no number, so there is no at-cap/over-cap split, no count in the
-title and no delete-to-make-room offer. They need their own treatment and none of it is written yet. ⚠️ **Check what the SCREEN calls each one before writing a word** -- "custom foods" turned out
+##### ✅ CUSTOM MACRO + NUTRITION GOALS -- THE RULES, LOCKED 2026-08-01 (copy still to write)
+These are NOT the same shape as the eight caps: no number, so no at-cap/over-cap split, no count in a title
+and no delete-to-make-room offer.
+
+**THE RULE (Justin, 2026-08-01):** a Supporter or free-weeker who has custom goals set **KEEPS them
+(grandfathered) but cannot edit them further or make new ones. To change, they pick a preset.**
+⚠️ The perks table said "n/a" on downgrade for these two rows. That never worked -- goals are LIVE numbers
+the whole app reads from, so they have to become something the moment a membership ends. Grandfathering is
+also what the standing category test gives: *did you make it?* -> yes, they made those numbers.
+**PRESETS STAY FREE, which is the escape hatch that makes it safe.** Nobody is ever trapped with a target
+they cannot correct -- same reasoning as the existing carve-out keeping the custom CALORIE goal free.
+
+**⚠️ THE ONE-WAY DOOR, AND THE FIX. THIS IS THE WHOLE POINT.** "Keep it but pick a preset to change" means
+the moment somebody taps a preset out of curiosity their custom numbers are gone forever, because getting
+them back would be authoring a custom goal, which they cannot do. Somebody who spent weeks dialling in
+40/30/30 taps Balanced to see what it looks like and it is unrecoverable, with no warning.
+**FIX: STORE THEIR CUSTOM VALUES SEPARATELY FROM THE LIVE GOALS**, so selecting them again is RESTORING what
+they already made, not authoring something new. That keeps it inside the rule and makes grandfathering mean
+something. Warning-before-switching was considered and rejected: warning somebody they are about to
+permanently lose their own settings is a worse experience than simply not taking it away.
+
+**MACROS MODAL (the Macros sheet off the Home calorie card):**
+- Gains a **FIFTH card, "Custom"**, showing their percentages in the same format as the four presets.
+- **PRESET-SIZED, CENTRED under the 2x2** -- Justin's call, 2026-08-01; full width was proposed and rejected
+  as much too big.
+- Tapping a preset is then **safe, with NO warning**, because their card is still sitting there.
+- ⚠️ The line currently under the grid, **"Custom goals set. Pick a preset to replace them."**, GOES. It
+  describes the destructive behaviour being removed and would scare people off touching a preset.
+- The card shows for **anyone with a stored custom split, Supporter or free** -- a Supporter benefits from a
+  one-tap way back to their own numbers just as much.
+- ⚠️ **The modal is ALWAYS percentages** (Justin corrected an earlier muddle here). Macros can be set as
+  fixed GRAMS, but only on the Settings > Goals screen, and the app syncs percentages from grams
+  (`settings.tsx` ~line 1253), so the modal always has percentages to show. No unit marker needed.
+- ⚠️ **BUILD NOTE: restoring must restore the MODE too** (`macroMode: 'ratio' | 'fixed'`), not just the
+  numbers. Pasting percentages back for somebody who was on fixed grams silently changes their real targets.
+- Harmless quirk worth knowing before somebody reports it as a bug: for a fixed-grams user the percentage is
+  DERIVED, so if their calorie target changes the grams hold and the displayed percentage drifts on its own.
+
+**WHERE THE MACRO GATE ACTUALLY LIVES.** ⚠️ NOT on the "Need exact numbers? Fine-tune in Settings > Goals"
+link. That was raised as a trap (it would block the free calorie goal, which lives on the same screen) and
+**Justin correctly knocked it down**: Settings > Goals is reachable straight from Settings, so dimming a
+shortcut blocks nothing, and the link's own words are about macro precision, which IS the gated thing.
+Dimming the link is honesty, not enforcement. **The real gate sits on the macro split controls INSIDE
+Settings > Goals**, because a free user walks there directly and never touches that link.
+
+**NUTRITION GOALS MODAL (`NutritionGearModal.tsx`)** -- similar rule, different shape, and simpler:
+- **The Custom card already exists** (6th tile in the preset grid, `PRESET_META` key `custom`). No new card
+  needed.
+- The gate is: **Custom is the locked door, AND the fields are read-only.** ⚠️ **TWO DOORS** -- `unlockCustom`
+  is called both from the Custom tile and from tapping any field. Gating the tile alone leaves the fields
+  wide open.
+- A grandfathered free user keeps their Custom card **selectable with their own values**, fields read-only.
+  Which needs the same separate storage as macros, or selecting a preset overwrites the custom values and
+  Custom has nothing to return to.
+
+**STILL TO WRITE:** the wall copy for macro goals and nutrition goals, and **data export, which has not been
+discussed at all yet.**
+
+**SEPARATE, NOT PART OF THIS:** colouring the macro values in the Macros modal cards (see QUICK WINS in the
+roadmap). It is a standalone improvement to a modal that already ships and must not hold up the cap work. ⚠️ **Check what the SCREEN calls each one before writing a word** -- "custom foods" turned out
 to be **My Foods** and "saved meals" turned out to be the **Meal Catalog**, and neither label exists in the
 UI. That check has changed the copy every single time so far.
 ⚠️ **Macro goals, nutrition goals and data export are NOT this shape.** They are straight paywalls with no

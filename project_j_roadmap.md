@@ -1476,8 +1476,15 @@ are separate pre-submission checklists, NOT part of this menu.
      ✅ **THE WALL COPY IS WRITTEN AND APPROVED for all EIGHT capped things** (2026-08-01) -- two modals each,
      at-cap and over-cap, in SPEC_monetization.md -> THE COPY. ⚠️ Meal slots promise **8**, not unlimited.
      ⚠️ The two REVERT over-cap modals are provisional until piece 4 settles what dormant looks like.
-     ⏭️ Still open in piece 2: **the three FLAT paywalls** (custom macro goals, custom nutrition goals, data
-     export). No number, so no at-cap/over-cap split and no delete offer -- they need their own shape.
+     ✅ **CUSTOM MACRO + NUTRITION GOALS: THE RULES ARE LOCKED** (2026-08-01). Grandfathered on downgrade --
+     keep them, cannot edit them, cannot author new ones; presets stay free as the escape hatch. ⚠️ **Their
+     custom values must be STORED SEPARATELY from the live goals** or picking a preset destroys them forever
+     (the one-way door). Macros modal gains a fifth preset-sized "Custom" card centred under the 2x2, and the
+     "Pick a preset to replace them" line goes. Nutrition Goals already HAS its Custom card; there the gate is
+     the card plus READ-ONLY fields (two doors -- the tile and any field tap both unlock custom).
+     ⚠️ The macro gate lives on the controls INSIDE Settings > Goals, not on the "Fine-tune" link.
+     ⏭️ Still open in piece 2: **the wall COPY for macro goals and nutrition goals, and DATA EXPORT**, which
+     has not been discussed at all yet.
      ⏭️ **NEXT PIECE OF C: piece 3, does the user see a cap COMING.** Justin's opening proposal, carried over
      from the piece 2 discussion: put the count in the SUCCESS toast that already fires on create ("Food
      saved" etc), which have an empty second line already available. ⚠️ Flag to carry in: at a cap of 20 that
@@ -2314,6 +2321,20 @@ are separate pre-submission checklists, NOT part of this menu.
   hand-rolled card spread it -- then "make cards deeper" is one number, not a 40-site hunt. The FULL fix is
   migrating cards to `<GradientCard>`, but that needs GradientCard's OWN hardcoded '#000' @0.12 shadow
   fixed first or every card gets worse, and each card passes different props, so it is a real refactor.
+- [QUICK WIN, asked for 2026-08-01] **Colour the macro values in the Macros modal cards.** Each preset card
+  shows "35P · 35C · 30F" as a dim secondary line. Justin's call: put them in the MACRO COLOURS (Protein
+  `theme.macroProtein`, Carbs, Fat -- already tokenised and already used this way in Settings > Goals),
+  **normal weight, NOT dim**. Coloured VALUES, not dots: five cards x three dots would be fifteen new
+  elements in a small modal for no gain.
+  ⚠️ Two things to watch: colour pulls those numbers forward and they currently sit UNDER the preset name,
+  so check the name still reads as primary; and whatever the SELECTED card's active state does (accent fill
+  or tinted border), the coloured text has to stay readable on top of it. All five themes.
+  Independent of the item C cap work -- can ship on its own, must not hold that up.
+- [QUICK WIN, found 2026-08-01] **Macros modal should have its number fields inline, like Nutrition Goals
+  does.** Justin, 2026-08-01: the Nutrition Goals modal has its editable fields right there under the preset
+  grid, while the Macros modal punts you to "Fine-tune in Settings > Goals". Making them consistent means
+  macro editing happens where the presets are. ⚠️ Touches the same modal as the item C Custom-card work and
+  the colour change above, so sequence them rather than letting them collide.
 - [QUICK WIN, found 2026-08-01] **No way to EDIT a saved meal in the Meal Catalog.** Found while writing the
   cap copy for item C: the Meal Catalog (the second tab in the Find a Meal modal, `RepeatMealModal.tsx`) lets
   you log a saved meal and DELETE one, but there is no edit and no rename. Justin confirmed the gap. Rename

@@ -66,6 +66,11 @@ export function messageAsksForExercises(text: string): boolean {
   if (/\bhow many (sets?|reps?)\b/.test(t)) return false;
 
   const thing = /\b(workouts?|routines?|sessions?|exercises?|movements?|lifts?|circuits?|splits?)\b/;
+  // ⚠️ A WARMUP QUESTION IS NOT A REQUEST FOR A SESSION. "Give me a warmup for chest day" used to match on
+  // "chest day" and pick up the cap, so Otto ended a perfectly complete warmup answer with the limit line --
+  // pointing at a limit that had withheld nothing. Warmups are uncapped by design (Justin, 2026-08-01), so
+  // unless they ALSO asked for the workout itself, this is not a prescription ask.
+  if (/\bwarm ?ups?\b|\bwarming up\b|\bstretch(es|ing)?\b|\bmobility\b/.test(t) && !thing.test(t)) return false;
   const askVerb = /\b(give|build|make|list|show|suggest|recommend|need|want|plan|got any|any good|what'?s? a good|what should i)\b/;
   if (thing.test(t) && askVerb.test(t)) return true;
   if (/\b(push|pull|leg|chest|back|shoulders?|arms?|core|abs?|glutes?|full body|upper|lower)\s+day\b/.test(t)) return true;

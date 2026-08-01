@@ -950,9 +950,51 @@ two honest ways forward.
 the first thought of somebody who just lost a membership is "what did I lose," and their own number in the
 headline answers that before they finish reading.
 
-##### 🟡 STILL OPEN -- THE OTHER SEVEN CAPS
-Saved meals, recipes, routines, programs, exercise library, meal slots, stats cards. Same four pieces of copy
-each; only the noun and the number change.
+##### ✅ APPROVED -- SAVED MEALS (cap 5)
+⚠️ On screen these are the **Meal Catalog** (the second tab in the Find a Meal modal). Never "saved meals"
+as a UI label.
+**At the cap:**
+> **You've Saved 5 Meals**
+>
+> The free plan holds 5 saved meals. Your Meal Catalog is full, and every one is still yours to log and keep.
+>
+> Make room by deleting one you've stopped using, or the Supporter plan removes the limit entirely.
+
+**Over the cap:**
+> **All 12 Of Your Saved Meals Are Still Here**
+>
+> Nothing you saved has gone anywhere. Every meal is yours to log and keep.
+>
+> Free accounts hold 5, so there's no room to save another right now. The Supporter plan opens your Meal
+> Catalog back up.
+
+⚠️ **"log and keep", NOT "log, edit and keep"** -- deliberate. There is currently NO edit or rename in the
+Meal Catalog, only log and delete (confirmed with Justin 2026-08-01, now a QUICK WIN in the roadmap). If
+editing ever ships, both strings above gain the word.
+
+##### ✅ APPROVED -- RECIPES (cap 5)
+⚠️ Recipes have **no container name** on screen (they are just a Recipes tab in Add Food), so this copy is
+worded to not need one. Do not invent "My Recipes".
+**At the cap:**
+> **You've Built 5 Recipes**
+>
+> The free plan holds 5 recipes of your own. Every one you've built is still yours to log, edit and keep.
+>
+> Make room by deleting one you've stopped using, or the Supporter plan removes the limit entirely.
+
+**Over the cap:**
+> **All 9 Of Your Recipes Are Still Here**
+>
+> Nothing you built has gone anywhere. Every recipe is yours to log, edit and keep.
+>
+> Free accounts hold 5, so there's no room to build another right now. The Supporter plan lets you keep
+> building.
+
+##### 🟡 STILL OPEN -- THE OTHER FIVE CAPS
+Routines, programs, exercise library, meal slots, stats cards. Same two modals each; only the noun and the
+number change. ⚠️ **Check what the SCREEN calls each one before writing a word** -- "custom foods" turned out
+to be **My Foods** and "saved meals" turned out to be the **Meal Catalog**, and neither label exists in the
+UI. That check has changed the copy every single time so far.
 ⚠️ **Macro goals, nutrition goals and data export are NOT this shape.** They are straight paywalls with no
 number, so there is no at-cap/over-cap split and no delete option. They need their own treatment.
 

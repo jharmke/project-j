@@ -2309,6 +2309,14 @@ are separate pre-submission checklists, NOT part of this menu.
   hand-rolled card spread it -- then "make cards deeper" is one number, not a 40-site hunt. The FULL fix is
   migrating cards to `<GradientCard>`, but that needs GradientCard's OWN hardcoded '#000' @0.12 shadow
   fixed first or every card gets worse, and each card passes different props, so it is a real refactor.
+- [QUICK WIN, found 2026-08-01] **No way to EDIT a saved meal in the Meal Catalog.** Found while writing the
+  cap copy for item C: the Meal Catalog (the second tab in the Find a Meal modal, `RepeatMealModal.tsx`) lets
+  you log a saved meal and DELETE one, but there is no edit and no rename. Justin confirmed the gap. Rename
+  is the obvious minimum; editing which items are in the meal is the fuller version.
+  ⚠️ **This has a copy dependency.** The at-cap and over-cap wall modals for saved meals deliberately say
+  "log and keep" where the custom-foods and recipes ones say "log, EDIT and keep", precisely because editing
+  does not exist. If this ships, update those two strings in SPEC_monetization.md -> WHAT THE USER SEES AT A
+  CAP so they stop under-promising.
 - [QUICK WIN, found 2026-07-15, PARTIAL] **Otto (+ Halo?) FAB placement audit.** The floating companion FAB
   sits bottom-left on many stack screens and can overlap the last card's content when the page has no
   bottom padding. FIXED so far: sleep.tsx + achievements.tsx (paddingBottom bumped to `insets.bottom + 96`),

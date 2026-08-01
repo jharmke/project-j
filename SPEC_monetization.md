@@ -687,7 +687,7 @@ noise against a $6,000 cost base, and non-recurring.
 NEXT STEP IS MEASUREMENT, NOT MORE DECISIONS. Then the caps conversation (levers 1-3: Halo's free cap, the
 caching fix, and free cap levels generally). Price was lever 4 and is done.
 
-## NON-AI SUPPORTER PERKS (DIRECTION AGREED 2026-07-28 -- ⚠️ EVERY FREE-TIER NUMBER IS TBD)
+## NON-AI SUPPORTER PERKS (✅ **EVERY NUMBER LOCKED 2026-08-01** -- this table is now the source of truth)
 
 WHY THIS EXISTS. Justin's long-standing worry -- "there isn't a huge reason to buy a Supporter plan because
 there isn't much behind the paywall" -- was still true. The unit-economics pass on 2026-07-28 made it urgent
@@ -705,16 +705,63 @@ THE OTHER LINE, from the same conversation -- capping CREATION is normal and nob
 fitness app does it). Restricting access to data a user already logged is hostile and would be read as
 hostile. Everything below caps creation. Nothing below touches anyone's existing data.
 
-| Perk | Free | Supporter |
-|---|---|---|
-| Custom foods | **20** | Unlimited |
-| Custom recipes | **5** | Unlimited |
-| Custom exercise library entries | **15** | Unlimited |
-| Custom stats graph cards | **1** | Unlimited |
-| Meal slots | **4** (the defaults, all renameable) | 8 |
-| Custom macro goals | Presets only (High Protein / Balanced / Low Carb / Performance) | Custom split |
-| Custom nutrition goals | Presets only | Custom |
-| Data export | None | Yes |
+⚠️ **THE NUMBERS BELOW REPLACE AN EARLIER TABLE THAT WAS WRONG IN TWO PLACES AND INCOMPLETE IN THREE.** Meal
+slots said 4 and stats cards said 1; both were read as bare TOTALS, which culls what every user already
+starts with. Saved meals, saved routines and saved programs were missing entirely. Walked one by one with
+Justin on 2026-08-01. **On downgrade, every row is either GRANDFATHERED or REVERTS -- see the column.**
+
+| Perk | Free | Supporter | On downgrade |
+|---|---|---|---|
+| Custom foods | **20** | Unlimited | **Grandfathered** |
+| Saved meals | **5** | Unlimited | **Grandfathered** |
+| Custom recipes | **5** | Unlimited | **Grandfathered** |
+| Saved routines (sets of exercises) | **5** (presets excluded) | Unlimited | **Grandfathered** |
+| Saved programs (7-day schedules) | **3** (presets excluded) | Unlimited | **Grandfathered** |
+| Custom exercise library entries | **15** | Unlimited | **Grandfathered** |
+| Meal slots | **5** (4 defaults + 1 of your own) | 8 | **REVERTS**, extras dormant |
+| Stats graph cards | **7 defaults + 1 of your own** | Unlimited | **REVERTS**, extras dormant |
+| Custom macro goals | Presets only (High Protein / Balanced / Low Carb / Performance) | Custom split | n/a |
+| Custom nutrition goals | Presets only | Custom | n/a |
+| Data export | None | Yes | n/a |
+
+**THE TEST FOR WHICH CATEGORY A THING IS IN:** *did you make it?* -> grandfathered (foods, saved meals,
+recipes, routines, programs, exercises). *Is it the shape of a screen?* -> reverts (meal slots, stats cards).
+Five grandfather, two revert, and **nothing is ever deleted in either case**.
+
+⚠️ **WHY LAYOUT CANNOT BE GRANDFATHERED TOO.** If it were, the layout caps would never apply to anyone who
+had ever subscribed -- including everyone who takes the 7-day taste -- so they would only ever affect users
+who never tried it. That is backwards. Content has no such problem: 40 custom foods sitting in a list cost
+nothing to leave there, and taking away things someone MADE reads as hostile in a way a screen returning to
+its free shape does not.
+
+**PER-ROW NOTES FROM THE 2026-08-01 WALK-THROUGH:**
+- **Custom foods 20 -- and 20 is SAFE, for a reason worth keeping.** A logged entry stores its own nutrition
+  inline (name, cal, protein, carbs, fat, per-100g), so **deleting a custom food cannot damage anything
+  already logged**. At the cap you delete one you no longer use and carry on; history is untouched. The cap
+  therefore never hard-blocks logging, which is what would make people leave rather than pay.
+  ⚠️ Do NOT raise this to "be generous". A cap nobody reaches converts nobody -- hitting it after a couple of
+  months of real use IS the design working. Justin, 2026-08-01: "I WANT free users to hit these limits."
+  Equally do not drop it much lower: the wall must land AFTER someone is invested, or they leave before they
+  ever got value.
+- **Saved meals 5.** The cheapest thing on the list to create (one tap from a logged meal), so it is the cap
+  most users will meet FIRST, possibly in week one. Either the earliest conversion trigger or the earliest
+  wall -- worth watching on real users, not worth changing now.
+- **Saved meals vs recipes are genuinely different things**, checked in code: a saved meal is a snapshot of a
+  meal already logged (clones exact items, no maths); a recipe is built from ingredients with yields and
+  per-serving division. Two caps of 5, not one cap of 10 wearing two hats.
+- **Routines 5, programs 3 -- and they are NOT the same thing.** A **routine** is a saved set of EXERCISES;
+  loading it puts lifts on a day. A **program** is a saved 7-DAY SCHEDULE -- weekday type, focus label,
+  muscle line, colour, tags -- and **carries no exercises at all** (every preset's days have empty exercise
+  lists). Programs get 3 because most people have one, maybe two for a cut/bulk swap; five would be a cap
+  nobody meets.
+  ⚠️ **The built-in presets are seeded into the SAME list as the user's own** (`pj_my_programs`, marked
+  `createdAt: 0`). The cap must count only user-created ones or everybody starts at the cap on day one.
+- **Not cappable, do not try:** the **weekly template** (you only ever have one; loading a program replaces
+  it) and per-date programs (one per calendar day).
+- **Exercise library 15** is 15 CUSTOM entries on top of the 79 built-ins, going to ~143 after plan item J.
+- ⚠️ **BUILD NOTE: cap CREATION only, never LOADING.** A free user holding 10 grandfathered routines can
+  still load all 10. Gating the load action would break the "cap creation, never access" rule, and it is an
+  easy mistake to make while implementing.
 
 NUMBERS LOCKED 2026-07-28 (revisit once there is real data on what people actually create). The rule they
 were set by: **the limit should bite the COMMITTED user, never the casual one.** A casual user hitting a

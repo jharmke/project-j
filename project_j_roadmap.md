@@ -1449,9 +1449,22 @@ are separate pre-submission checklists, NOT part of this menu.
      reasoning in SPEC_otto.md -> KNOWN LEAK, ACCEPTED FOR NOW.
      ⚠️ `DEV_UNLIMITED_UIDS` currently holds Justin's uid for testing and MUST be emptied at launch, and the
      `[pitch]` diagnostic log line must come out (both on the REVERT BEFORE LAUNCH list).
-  **C. NON-AI WALLS / PAYWALLS / LIMITS** -- ✅ ALREADY DESIGN-LOCKED with real numbers (2026-07-28), see
-     SPEC_monetization.md -> NON-AI SUPPORTER PERKS. Custom foods 20, recipes 5, exercise library 15, stats
-     cards 1, **meal slots 5 (vs 8)**, macro + nutrition goals presets-only, no data export.
+  **C. NON-AI WALLS / PAYWALLS / LIMITS** -- ✅ **EVERY NUMBER LOCKED 2026-08-01** (walked one by one).
+     ➡️ **SPEC_monetization.md -> NON-AI SUPPORTER PERKS IS THE SOURCE OF TRUTH. Do not read the numbers off
+     this roadmap entry.** That table now also carries the per-row reasoning and the downgrade category.
+     Free: custom foods 20, saved meals 5, recipes 5, **saved routines 5**, **saved programs 3**, exercise
+     library 15, meal slots 5 (4 defaults + 1), stats cards 7 defaults + 1, macro/nutrition goals
+     presets-only, no data export. Five grandfather on downgrade; meal slots + stats cards revert.
+     ⚠️ **THREE THINGS WERE MISSING FROM THE OLD TABLE ENTIRELY** (saved meals, routines, programs) and two
+     numbers were wrong. Anyone building from the pre-2026-08-01 table would take a meal slot away from every
+     free user and cut the Stats tab to one graph.
+     ⚠️ **ROUTINES != PROGRAMS.** A routine is a saved set of EXERCISES. A program is a saved 7-DAY SCHEDULE
+     and carries NO exercises. The weekly template is the ONE live week (loading a program replaces it) and
+     is not cappable. Otto had NOTHING about programs in his knowledge and invented rep ranges and
+     progressions when asked -- fixed 2026-08-01.
+     ⏭️ **NEXT PIECE OF C: the MESSAGING** (piece 2 of 6). Pieces 3-6 after it: whether a user sees a cap
+     coming, what "dormant" means concretely, how the two downgrade categories behave, and where the caps get
+     enforced across the different features.
      ⚠️ **THE LAYOUT CAPS ARE "DEFAULTS PLUS ONE", NOT RAW TOTALS (Justin, 2026-07-31). Read either as a bare
      total and you cull the defaults, which was never the intent.**
      • **MEAL SLOTS: 5, corrected from 4.** `DEFAULT_MEAL_SLOTS` is 4 (Morning, Lunch, Dinner, Snacks), so a

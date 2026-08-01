@@ -990,9 +990,51 @@ worded to not need one. Do not invent "My Recipes".
 > Free accounts hold 5, so there's no room to build another right now. The Supporter plan lets you keep
 > building.
 
-##### 🟡 STILL OPEN -- THE OTHER FIVE CAPS
-Routines, programs, exercise library, meal slots, stats cards. Same two modals each; only the noun and the
-number change. ⚠️ **Check what the SCREEN calls each one before writing a word** -- "custom foods" turned out
+##### ✅ APPROVED -- ROUTINES (cap 5) AND PROGRAMS (cap 3)
+⚠️ **The two are structured DIFFERENTLY on screen and the copy reflects that.** Routines have their own
+labelled **MY ROUTINES** section in `workout-library.tsx` with **PRESETS** as a separate section below, so
+the copy can name My Routines and the numbers match what the user sees. **Programs have no such split** --
+the built-ins are seeded into the same list as the user's own (`pj_my_programs`, `createdAt: 0`), so someone
+with 3 of their own is looking at a list of 8. Without the "built-in programs don't count" line, "You've
+Built 3 Programs" reads as a bug.
+
+**ROUTINES, at the cap:**
+> **You've Built 5 Routines**
+>
+> The free plan holds 5 routines of your own. Presets don't count toward that, and every routine under My
+> Routines is still yours to load, edit and keep.
+>
+> Make room by deleting one you've stopped using, or the Supporter plan removes the limit entirely.
+
+**ROUTINES, over the cap:**
+> **All 11 Of Your Routines Are Still Here**
+>
+> Nothing you built has gone anywhere. Every routine under My Routines is yours to load, edit and keep.
+>
+> Free accounts hold 5, so there's no room to build another right now. The Supporter plan opens My Routines
+> back up.
+
+**PROGRAMS, at the cap:**
+> **You've Built 3 Programs**
+>
+> The free plan holds 3 programs of your own. Built-in programs don't count toward that, and every one you've
+> built is still yours to load, edit and keep.
+>
+> Make room by deleting one you've stopped using, or the Supporter plan removes the limit entirely.
+
+**PROGRAMS, over the cap:**
+> **All 7 Of Your Programs Are Still Here**
+>
+> Nothing you built has gone anywhere. Every program is yours to load, edit and keep.
+>
+> Free accounts hold 3 of your own, so there's no room to build another right now. The Supporter plan lets
+> you keep building.
+
+⚠️ Both say "yours to **LOAD**" on purpose. The standing build note is *cap creation, never loading*, and
+having the user-facing copy promise loading out loud makes that far harder to break by accident later.
+
+##### 🟡 STILL OPEN -- THE OTHER THREE CAPS
+Exercise library, meal slots, stats cards. Same two modals each; only the noun and the number change. ⚠️ **Check what the SCREEN calls each one before writing a word** -- "custom foods" turned out
 to be **My Foods** and "saved meals" turned out to be the **Meal Catalog**, and neither label exists in the
 UI. That check has changed the copy every single time so far.
 ⚠️ **Macro goals, nutrition goals and data export are NOT this shape.** They are straight paywalls with no

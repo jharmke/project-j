@@ -38,11 +38,13 @@ import { GOLD_BASE } from '../components/SupporterFoil';
 // History: this flag was born 2026-07-07 when Reports shipped and no purchase system existed -- it was the
 // only way anyone could see the feature. RevenueCat and the locked screen both landed 2026-07-12 and the
 // flag was simply left on so testers kept access. It is redundant now that testers are comped in RevenueCat.
-// ⚠️ WHY THIS MATTERED: because the flag was OR'd in AHEAD of the entitlement check, it forced access on for
-// everyone -- which means the locked screen below had NEVER been rendered by anyone, including Justin, and
-// the "Force Free State" dev toggle could not reveal it either. Same blind spot already bit the EvR locked
-// card (no shadow on iOS, found by reading the code rather than looking at the screen). Any tester who was
-// never comped loses Reports on the next build, so confirm comps in RevenueCat before shipping one.
+// ⚠️ RESOLVED, DO NOT READ THIS AS A LIVE PROBLEM. While the flag was ON it was OR'd in AHEAD of the
+// entitlement check, which forced access for everyone and meant the locked screen below could not be
+// reached -- not even via the "Force Free State" dev toggle. That is over: the flag is false and
+// **Justin has since seen and tested the locked Reports and Comparison screens on device.**
+// The lesson worth keeping is only the pattern: a beta flag OR'd ahead of an entitlement check hides the
+// locked state from everyone, so it can ship unlooked-at. Same blind spot once bit the EvR locked card.
+// Still true and worth checking before a build: any tester never comped in RevenueCat loses Reports.
 export const REPORTS_BETA_OPEN = false;
 
 export default function ReportsHub() {

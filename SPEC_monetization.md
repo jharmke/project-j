@@ -813,6 +813,14 @@ menu and wants a 21st. Wording is the only part still open.
 fallback at the end of this section, NOT deleted):
 - **Under the cap:** nothing. No dim, no lock, no modal. The app behaves exactly as it does today.
 - **At the cap:** the ENTRY POINT is **dim with a lock icon**, and is **still pressable**.
+- ⚠️ **THE LOCK IS THE FLAT GOLD LOCK THE APP ALREADY USES** (`GOLD_BASE` from `components/SupporterFoil`,
+  `lock-closed` Ionicon) -- the same one on the locked Reports and Comparison screens. **NEVER FOIL.** The
+  app's own rule, written beside the Reports lock: foil means "you have this" (the Supporter mark), a lock
+  means "you could have this" -- same colour family, opposite meanings -- and foil needs size to read as
+  metal, so it turns to mush at icon sizes, which is exactly the size used here. Not grey, not accent.
+  Confirmed by Justin 2026-08-01: "same shit as the reports/comparison feature gold lock. no foil."
+  The payoff is free: a locked Create Food and a locked Reports card then say the same thing in the same
+  voice instead of looking like two features built by two different people.
 - **Every tap:** the **modal**, with a Support the Mission jump. **Every time.** No toast, no seen-state,
   no first-time logic, nothing to store.
 - Nothing ever fires on its own. It only ever happens because the user reached for something, which is what
@@ -1159,8 +1167,53 @@ Settings > Goals**, because a free user walks there directly and never touches t
   Which needs the same separate storage as macros, or selecting a preset overwrites the custom values and
   Custom has nothing to return to.
 
-**STILL TO WRITE:** the wall copy for macro goals and nutrition goals, and **data export, which has not been
-discussed at all yet.**
+##### ✅ APPROVED -- THE TWO GOALS WALLS
+Both fire the same way: a free user taps Custom, or taps into a field, and gets the modal.
+> **Custom Macro Splits**
+>
+> The four presets stay yours for free.
+>
+> Building your own protein, carb and fat split comes with the Supporter plan.
+>
+> **[ Support the Mission ]**  **[ Not Now ]**
+
+> **Custom Nutrition Targets**
+>
+> All five presets stay yours for free.
+>
+> Setting your own targets for fiber, sodium, vitamins and the rest comes with the Supporter plan.
+>
+> **[ Support the Mission ]**  **[ Not Now ]**
+
+**Both LEAD WITH WHAT STAYS FREE**, unlike the cap modals. At a cap the user has lost access to something
+they had, so that copy reassures first. Here they have lost nothing, they are just at a door, and the fair
+thing is to make clear the free path is genuinely usable rather than a crippled trial.
+⚠️ **SHORT TITLES ARE DELIBERATE.** The longer version ("Macro Splits Are Part Of The Supporter Plan") made
+the last line a restatement of the title -- three lines carrying two ideas. Short, each line does its own
+job: the title names what you tapped, the second says what stays free, the third says what it takes. A title
+that explains itself also sounds like it is bracing for an argument.
+⚠️ **NO REFERENCE TO THE FREE CALORIE GOAL.** An earlier draft mentioned it; Justin cut it. Somebody tapping
+Custom wants a macro split, and telling them calories are free answers a question they did not ask and reads
+like the app defending itself.
+⚠️ **NEITHER MENTIONS GRANDFATHERING**, because a grandfathered user never sees these. They keep their Custom
+card and their own values, so they only hit this wall if they try to CHANGE them.
+
+##### ✅ DATA EXPORT -- ALREADY GATED, NO COPY NEEDED (resolved 2026-08-01)
+The only export in the app captures the report as an image and hands it to the iOS share sheet
+(`app/report.tsx`). **Reports are already Supporter-gated** -- `app/reports.tsx` has
+`hasAccess = REPORTS_BETA_OPEN || isPro` with `REPORTS_BETA_OPEN = false` since 2026-07-28, a full locked
+screen, and `stats.tsx` locks the launch card the same way. Export lives inside Reports, so the perks-table
+row "Data export: None / Yes" is **already true today with no work and no wall copy of its own**. The one row
+of that table that is already done.
+⚠️ **Do not go looking for the gate in `app/report.tsx`** (the report VIEWER) -- it has no membership check
+and the confusingly similar filename cost a wrong conclusion once already. The gate is in `app/reports.tsx`
+(the hub) and `stats.tsx`.
+⚠️ **THREE OTHER PLACES USE THE SHARE SHEET AND ARE NOT DATA EXPORT:** sharing a Bible verse (`bible.tsx`)
+and sharing a message out of either AI chat. "Gate sharing" is an easy instruction to hand somebody and
+paywalling the Bible verse share would be a genuinely bad look.
+**HONEST CAVEAT, LOGGED AS ITS OWN ROADMAP ITEM:** what a Supporter actually gets is sharing a report as an
+image. That is real but thinner than "data export" sounds on a feature list. A TRUE export -- the user's
+logged data in a file they own -- does not exist and needs speccing and building.
 
 **SEPARATE, NOT PART OF THIS:** colouring the macro values in the Macros modal cards (see QUICK WINS in the
 roadmap). It is a standalone improvement to a modal that already ships and must not hold up the cap work. ⚠️ **Check what the SCREEN calls each one before writing a word** -- "custom foods" turned out

@@ -1483,8 +1483,13 @@ are separate pre-submission checklists, NOT part of this menu.
      "Pick a preset to replace them" line goes. Nutrition Goals already HAS its Custom card; there the gate is
      the card plus READ-ONLY fields (two doors -- the tile and any field tap both unlock custom).
      ⚠️ The macro gate lives on the controls INSIDE Settings > Goals, not on the "Fine-tune" link.
-     ⏭️ Still open in piece 2: **the wall COPY for macro goals and nutrition goals, and DATA EXPORT**, which
-     has not been discussed at all yet.
+     ✅ **PIECE 2 IS COMPLETE 2026-08-01.** All 16 cap modals + both goals walls are written and approved.
+     ⚠️ **THE LOCK IS THE FLAT GOLD LOCK the app already uses on Reports/Comparison (`GOLD_BASE`), NEVER
+     FOIL** -- foil means "you have this", a lock means "you could have this", and foil turns to mush at icon
+     size. ✅ **DATA EXPORT NEEDED NO COPY**: the only export lives inside Reports, which is already
+     Supporter-gated, so that perks row is already true today. A REAL data export does not exist and is now
+     its own item in QUICK WINS/NEW below.
+     ⏭️ **NEXT: PIECE 3** -- does the user see a cap COMING (the success-toast count proposal above).
      ⏭️ **NEXT PIECE OF C: piece 3, does the user see a cap COMING.** Justin's opening proposal, carried over
      from the piece 2 discussion: put the count in the SUCCESS toast that already fires on create ("Food
      saved" etc), which have an empty second line already available. ⚠️ Flag to carry in: at a cap of 20 that
@@ -2321,6 +2326,15 @@ are separate pre-submission checklists, NOT part of this menu.
   hand-rolled card spread it -- then "make cards deeper" is one number, not a 40-site hunt. The FULL fix is
   migrating cards to `<GradientCard>`, but that needs GradientCard's OWN hardcoded '#000' @0.12 shadow
   fixed first or every card gets worse, and each card passes different props, so it is a real refactor.
+- [NEW 2026-08-01, needs a spec] **A REAL data export.** The perks table sells "data export" as a Supporter
+  perk, and that row is technically already satisfied -- the only export in the app shares a REPORT as an
+  IMAGE (`app/report.tsx`), and Reports are already Supporter-gated. But "you can share a picture of a
+  report" is thin for a line on a feature list. A true export -- the user's own logged data in a file they
+  own (food log, workouts, weight, sleep) -- **does not exist at all** and needs speccing before building.
+  ⚠️ Worth checking whether data portability is something the App Store or privacy rules EXPECT rather than
+  just a nice-to-have; nobody has confirmed that either way, so do not assume it is optional.
+  ⚠️ Do NOT gate the other three share-sheet uses while doing this: sharing a Bible verse and sharing a
+  message out of either AI chat are not data export, and paywalling the verse share would be a bad look.
 - [QUICK WIN, asked for 2026-08-01] **Colour the macro values in the Macros modal cards.** Each preset card
   shows "35P · 35C · 30F" as a dim secondary line. Justin's call: put them in the MACRO COLOURS (Protein
   `theme.macroProtein`, Carbs, Fat -- already tokenised and already used this way in Settings > Goals),

@@ -1388,6 +1388,74 @@ the slot list.
 
 ---
 
+#### ✅ PIECE 4b -- STATS GRAPHS: WHAT SLEEPING MEANS (LOCKED 2026-08-01)
+
+**Deliberately split from meal slots (4a).** They are independent problems, neither waits on the other, and
+lumping them together made every explanation worse. Same core rule, smaller surface, one different hazard.
+
+**THE RULE, IDENTICAL TO MEAL SLOTS: position decides.** The first 8 GRAPH cards are awake (7 defaults + 1 of
+your own on free), everything below sleeps. No stored flag. Nothing runs at downgrade. **The feature writes
+nothing** -- it only decides what is drawn. Waking one is dragging it above the line in Edit Stats.
+
+##### ⚠️ WHY GRAPHS NEED NO "COMES BACK ON PAST DAYS" RULE (the 4a problem does NOT apply here)
+A sleeping meal slot would have hidden FOOD SOMEBODY LOGGED. A sleeping graph hides a **view**, not data.
+Verified: a card holds configuration only (dataKey, chartType, colour, period, nutrientKey). Every number it
+charts lives in the day records and is still reachable in the other graphs, Day Detail, summaries and
+reports. Justin confirmed 2026-08-01 after being asked to rule on it explicitly rather than have it assumed.
+- The configuration survives untouched, so a woken card comes back **exactly as built** -- same metric, chart
+  type, colour, period. Not a blank card to set up again.
+- ⚠️ A graph pinned to Home disappears from **Home** too when it sleeps. Expected, but Home is the most-looked
+  -at screen, so it is the one people notice.
+- No side effects: the only other consumer is the loader deciding how far back to fetch, and it already keys
+  off which cards are showing.
+
+##### GRAPHS RENDER IN TWO PLACES, NOT ONE (found 2026-08-01)
+Graph cards can be **pinned to Home** via `placement: 'both'`, so:
+1. **`app/(tabs)/stats.tsx` ~2018-2025** -- the Stats tab list. Already filters `type === 'graph' && visible`;
+   the cap joins that existing condition.
+2. **`app/(tabs)/index.tsx` ~4422-4426** -- the pinned section on Home. Already filters
+   `type === 'graph' && placement === 'both' && dataKey`; same, one more condition.
+3. **The Home PICKER (`index.tsx` ~4536/4539 collapsed preview and ~4727/4732 full list)** lists graphs you
+   can pin. ⚠️ Needs the cap too, or a user can pin a sleeping graph.
+4. **The Edit Stats modal gets the FULL list**, so the sleeping rows show, greyed with the flat gold lock,
+   trash still available, eye dimmed (toggling visibility on a sleeping card means nothing).
+
+⚠️ **DO NOT CATCH THE CREATOR PREVIEW.** `stats.tsx` ~2673 and ~2874 render a `StatsGraphCard` built from a
+synthetic `creator_preview` card that is NOT in the saved list. Applying the cap carelessly would blank the
+preview while somebody is building a graph.
+✅ **SYSTEM CARDS CAN NEVER SLEEP, and that is structural already:** the Edit Stats modal keeps GRAPH CARDS
+and SECTIONS as separate lists and rebuilds them separately on save (`stats.tsx` ~2461), so the cap only ever
+touches graphs.
+
+##### ⚠️⚠️ THE HAZARD UNIQUE TO GRAPHS: `saveStatsCards` TOMBSTONES MISSING DEFAULTS
+`saveStatsCards` does not just save the list. It takes every DEFAULT card **absent** from the array you hand
+it and writes those ids into `pj_stats_removed_defaults` as "the user deleted these on purpose", which stops
+`loadStatsCards` from ever restoring them.
+**So saving a shortened list would not merely drop somebody's custom graphs -- it would permanently tombstone
+their DEFAULT graphs too, across two storage keys, silently, with no error.** This is the single most
+destructive thing in item C.
+**THE RULE: the shortened list is NEVER saved. State holds the FULL list; the cap is applied at render.**
+- `saveStatsCards` has **12 call sites** (stats.tsx x10, index.tsx x2) -- period change, nutrient change,
+  reorder, delete, add, visibility toggle, card edit. Every one maps over current state and saves the result.
+  A free user with 5 custom graphs who merely changed a chart from 30D to 7D would have wiped the other four.
+- ⚠️ **`app/(tabs)/index.tsx` ~2322 writes `pj_stats_cards` DIRECTLY with `storageSet`, bypassing
+  `saveStatsCards` entirely** (the pinned-card period change). It therefore skips the tombstone logic, which
+  makes it safer, not less safe -- but it is a 13th write path that a grep for `saveStatsCards` will miss.
+- **Home must hold the full list in state** for exactly the reason the Log tab must, since it saves the card
+  list three ways.
+- 🚩 **LOGGED SEPARATELY:** that tombstone infers "user deleted it" from absence rather than from a real
+  delete action. Nothing today triggers it wrongly, but it is a loaded gun in the save path and deserves its
+  own roadmap item.
+
+##### A HIDDEN GRAPH STILL COUNTS TOWARD THE CAP (agreed 2026-08-01)
+The eye icon in Edit Stats is user-controlled hiding, and it is **independent of sleeping** -- a card renders
+only if it passes BOTH (visible AND within the cap). A hidden card still occupies one of the 8, because caps
+are CONCURRENT and count what you HAVE, not what is on screen. Otherwise hiding is a free way around the cap.
+Practical effect: **hiding does not make room, deleting does** -- which is exactly what the wall modal says.
+⚠️ Never build dormancy ON the `visible` flag; a downgraded user would just switch their extras back on.
+
+---
+
 ##### 🗄️ THE FALLBACK, KEPT ON PURPOSE -- MODAL ONCE, THEN TOAST
 **Not the plan. Kept because "modal every time" is a "we can try it", and if it reads as too much on device
 this is what we fall back to** rather than re-deriving it from scratch. Justin, 2026-08-01: "can you leave

@@ -1343,6 +1343,13 @@ are separate pre-submission checklists, NOT part of this menu.
     a nice-to-have; nobody has confirmed either way, so do not assume it is optional.
     ⚠️ Do NOT gate the other three share-sheet uses while doing this: sharing a Bible verse and sharing a
     message out of either AI chat are not data export, and paywalling the verse share would be a bad look.
+  • **[HAZARD, found 2026-08-01] `saveStatsCards` infers "the user deleted this" from ABSENCE.** Every call
+    takes the DEFAULT cards missing from the array handed to it and writes their ids into
+    `pj_stats_removed_defaults`, which permanently stops `loadStatsCards` restoring them. Nothing today
+    triggers it wrongly, so this is not a live bug -- but it means **any caller that ever passes a partial
+    list silently and permanently destroys default cards, across two storage keys, with no error.** It should
+    key off a real delete action instead of absence. Found while speccing item C piece 4b; the cap work
+    explicitly routes around it rather than fixing it.
   • **[QUICK WIN] Colour the macro values in the Macros modal cards.** Each preset card shows "35P · 35C ·
     30F" as a dim secondary line. Justin's call: put them in the MACRO COLOURS (`theme.macroProtein` etc,
     already tokenised and already used this way in Settings > Goals), **normal weight, NOT dim**. Coloured
@@ -1537,12 +1544,19 @@ are separate pre-submission checklists, NOT part of this menu.
      state, so it would truncate storage on the next rename. Three things flagged to confirm when the files
      are open (Day Detail may already be correct, Reports is a date RANGE not a day, meal photos resolve in a
      separate loop).
-     ⏭️ **NEXT: PIECE 4b, STATS GRAPHS** -- deliberately split from meal slots; they are independent problems
-     and neither waits on the other. Graphs have no history problem (hiding a graph hides no data) but they
-     DO have the tombstone hazard: ⚠️ `saveStatsCards` records any DEFAULT card missing from the list you hand
-     it into `pj_stats_removed_defaults` as "user deleted this on purpose", so saving a shortened list would
-     permanently tombstone their default graphs too. 12 save call sites across stats.tsx + index.tsx.
-     ⏭️ **THEN PIECES 5-6** -- how the two downgrade categories behave in practice, and where the caps get
+     ✅ **PIECE 4b (STATS GRAPHS) IS COMPLETE 2026-08-01.** Same rule as meal slots: position decides, first 8
+     graph cards awake, nothing stored, nothing runs at downgrade, writes nothing. No "comes back on past
+     days" rule needed -- a sleeping graph hides a VIEW, not data (a card holds configuration only).
+     ⚠️ Graphs render in TWO places: the Stats tab AND pinned on Home (`placement: 'both'`), plus Home's
+     picker needs the cap or you can pin a sleeping graph. ⚠️ Do NOT catch the graph creator's synthetic
+     `creator_preview` card. ⚠️ A HIDDEN graph still counts toward the cap (concurrent rule) -- hiding does not
+     make room, deleting does; and never build dormancy on the user-controlled `visible` flag.
+     ⚠️⚠️ **THE BIG ONE: `saveStatsCards` tombstones any DEFAULT card missing from the list you hand it** into
+     `pj_stats_removed_defaults` as "user deleted this on purpose", so saving a shortened list would
+     permanently destroy their default graphs too, silently, across two keys. 12 save call sites (stats.tsx
+     x10, index.tsx x2) PLUS a 13th direct `storageSet('pj_stats_cards')` at index.tsx ~2322 that a grep for
+     `saveStatsCards` misses entirely.
+     ⏭️ **NEXT: PIECES 5-6** -- how the two downgrade categories behave in practice, and where the caps get
      enforced across the different features.
      ⚠️ **THE LAYOUT CAPS ARE "DEFAULTS PLUS ONE", NOT RAW TOTALS (Justin, 2026-07-31). Read either as a bare
      total and you cull the defaults, which was never the intent.**

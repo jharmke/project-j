@@ -25,7 +25,7 @@ import { buildPRContextIfRelevant, buildExerciseNamesIfRelevant } from '../utils
 import { messageHitsWall, messageAsksForMore, messageBlocksPitch, messageAsksForExercises, workoutAskWantsMoreThanTwo, WALLS_BEFORE_PITCH } from '../utils/companionPitch';
 import { buildWorkoutContextIfRelevant } from '../utils/companionWorkouts';
 import { buildFoodContextIfRelevant } from '../utils/companionFood';
-import { buildSleepContextIfRelevant } from '../utils/companionSleep';
+import { buildSleepContextIfRelevant, messageWantsSleep } from '../utils/companionSleep';
 import { buildBodyContextIfRelevant } from '../utils/companionBody';
 import { buildAchievementsContextIfRelevant } from '../utils/companionAchievements';
 import { buildJournalContextIfRelevant } from '../utils/companionJournal';
@@ -723,7 +723,14 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
         // dates wrong (asked on Sat 1 Aug what he did yesterday, he said "Friday, August 1st"), and on the
         // free plan he cannot see the data to check himself. Both tiers get the button: a Supporter still
         // gets the full answer above it, this is an addition and never a substitute.
-        const dayJump = isDayRecall(text) ? (resolveDayRef(text, new Date()) ?? resolveDayRef('today', new Date())!) : undefined;
+        // ⚠️ NO BUTTON WHEN THE DAY CANNOT BE PINNED DOWN. This used to fall back to today, and on device
+        // that was worse than nothing: "how did I sleep last week" offered a button labelled with TODAY's
+        // date. A range is not a day, and a button whose label you cannot trust undoes the whole reason the
+        // label carries a real date.
+        // ⚠️ Sleep questions resolve a named night to the WAKE day -- see resolveDayRef.
+        const dayJump = isDayRecall(text) || messageWantsSleep(text)
+          ? (resolveDayRef(text, new Date(), messageWantsSleep(text)) ?? undefined)
+          : undefined;
         setMessages(prev => [...prev, { role: 'assistant', text: stripInlineFormatting(finalText), routes, tutorials, dayJump }]);
       } else if (data.message) {
         setSending(false);

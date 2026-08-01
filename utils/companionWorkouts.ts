@@ -34,7 +34,10 @@ export const isDayRecall = (text: string): boolean => {
     || /\b(this|last|past)\s+(week|weekend|month)\b/.test(t)
     || /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s*\d{0,2}\b/.test(t)
     || /\b\d{1,2}(?:st|nd|rd|th)\b/.test(t)
-    || /\b\d{1,2}\/\d{1,2}\b/.test(t);
+    || /\b\d{1,2}\/\d{1,2}\b/.test(t)
+    // ⚠️ "two days ago" used to fall through here, so "what did I eat two days ago" got no jump button even
+    // though the date resolver handles that phrasing perfectly. The gate was narrower than the resolver.
+    || /\b(\d{1,2}|one|two|three|four|five|six|seven)\s+days?\s+ago\b/.test(t);
   if (!dayRef) return false;
   // Full phrasing ("what did I do on June 24"), a verb-less conversational follow-up ("what about July 2",
   // "how about Monday", "and July 3?"), or a short / bare date reference ("July 2?"). Follow-ups carry the

@@ -35,13 +35,30 @@ const make = (d: Date): DayRef => ({ date: iso(d), label: labelFor(d) });
  * @param today  a Date for "now" (injected so this is testable without mocking the clock)
  * @returns the resolved day, or null when it cannot be pinned down -- caller falls back to today.
  */
-export function resolveDayRef(text: string, today: Date): DayRef | null {
+export function resolveDayRef(text: string, today: Date, isSleepQuestion = false): DayRef | null {
   const t = (text || '').toLowerCase();
   const shift = (days: number) => {
     const d = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     d.setDate(d.getDate() - days);
     return d;
   };
+
+  // ⚠️ A NIGHT IS FILED UNDER THE DAY YOU WOKE UP. HealthKit is queried from 6pm the previous evening to
+  // noon, and the result is stored under the MORNING date -- and every surface in the app agrees (Day Detail
+  // and the Sleep & Recovery hub both key nights that way, verified 2026-08-01). So "Tuesday night" -- the
+  // night you go to bed on Tuesday -- lives under WEDNESDAY, and "last night" lives under TODAY.
+  // Only shifted when the text explicitly says "night", because that is the only unambiguous case: "how did
+  // I sleep on Tuesday" most likely means the night they woke ON Tuesday, and is left alone.
+  if (isSleepQuestion) {
+    if (/\blast night\b/.test(t)) return make(shift(0));
+    const nightOf = t.match(/\b(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\s+night\b/);
+    if (nightOf) {
+      const idx = WEEKDAYS.indexOf(nightOf[1]);
+      const diff = (today.getDay() - idx + 7) % 7;
+      return make(shift(diff - 1)); // the morning AFTER that night
+    }
+    if (/\b(yesterday|last)\s+night\b/.test(t)) return make(shift(0));
+  }
 
   // ⚠️ ORDER MATTERS: "day before yesterday" contains "yesterday", so it must be tested FIRST or it
   // resolves to the wrong day. Caught by the test suite, not by reading.

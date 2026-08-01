@@ -53,7 +53,14 @@ export const COMPANION_ROUTES: Record<string, CompanionRoute> = {
 // by AssistantChat after the token pass; capped so pills never get noisy.
 export const ROUTE_TRIGGERS: { key: string; phrases: string[] }[] = [
   { key: 'pr_home',      phrases: ['all prs', 'all-time prs', 'exercise library', 'pr home', 'prs button', 'records & history'] },
-  { key: 'recovery_hub', phrases: ['sleep & recovery', 'sleep and recovery', 'recovery hub', 'recovery tab'] },
+  // ⚠️ ORDER AND PHRASES MATTER HERE. "Sleep & Recovery" used to belong to recovery_hub, so EVERY sleep
+  // answer -- which names that hub by its full name -- handed the user a button onto the RECOVERY tab.
+  // recovery_hub now only claims phrases that actually mean recovery; the hub's own name goes to sleep_hub.
+  // recovery_hub stays FIRST so "tap the Recovery tab" still wins when he genuinely means recovery.
+  // ⚠️ 'recovery hub' is NOT in this list on purpose: "Sleep & Recovery hub" CONTAINS it, so every sleep
+  // answer matched it. Only phrases that cannot appear inside the hub's own name belong here.
+  { key: 'recovery_hub', phrases: ['recovery tab', 'recovery score', 'recovery data', 'recovery graph'] },
+  { key: 'sleep_hub',    phrases: ['sleep & recovery', 'sleep and recovery', 'sleep hub', 'sleep tab'] },
   { key: 'challenges',   phrases: ['challenges', 'new challenge'] },
   { key: 'achievements', phrases: ['achievements'] },
   { key: 'evr',          phrases: ['effort vs results', 'effort vs. results'] },

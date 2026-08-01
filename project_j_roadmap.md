@@ -30,6 +30,14 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-08-01 **Saying no to Otto now actually works, and sleep nights land on the right day (both device-
+  verified).** An explicit refusal (including "I can't afford it") buys 30 days of silence from the
+  unprompted pitch, while a direct question about the plan is still answered in full. Also fixed from the
+  same round of testing: **a night is filed under the day you WOKE UP**, so "Tuesday night" opens Wednesday
+  and Otto now says why instead of sending you to Tuesday; "what did I do last night" no longer counts as a
+  sleep question; a range like "last week" gets no button instead of one labelled today; and every sleep
+  answer used to hand you a button onto the RECOVERY tab because "Sleep & Recovery hub" contains the words
+  "recovery hub". Details in SPEC_otto.md.
 - 2026-08-01 **Otto's Day Detail jump button (deployed + device-verified).** A whole-day question now gets a
   pill labelled with the real date ("Tue, Jul 28") that opens Day Detail as a centered modal OVER the chat.
   **The app resolves the date, not Otto** -- he was telling people yesterday was "Friday, August 1st" when
@@ -1411,9 +1419,12 @@ are separate pre-submission checklists, NOT part of this menu.
      ✅ **THE DAY DETAIL JUMP BUTTON IS BUILT + DEVICE-VERIFIED 2026-08-01** (d9200fa, a12349f, 9eea7af).
      Opens as a CENTERED MODAL over the chat, never navigates. The APP resolves the date, not Otto. Full
      build record + the three bugs device-testing caught in SPEC_otto.md.
-     ⚠️ STILL TO BUILD IN B: the **30-day suppression** after an explicit "not interested", and the
-     **per-mode decline pass** (per item A this collapsed to almost nothing, so it may be a confirmation
-     rather than work).
+     ✅ **THE 30-DAY SUPPRESSION IS BUILT + DEVICE-VERIFIED 2026-08-01** (5bbde41). An explicit no (including
+     "I can't afford it") silences the unprompted pitch for 30 days; if they ASK, he still answers in full.
+     ⚠️ The watch instruction rides on the USER'S MESSAGE and only after he has pitched in that conversation
+     (3/6 in the stable prompt vs 11/11 on the message). Build record in SPEC_otto.md.
+     ⚠️ STILL TO BUILD IN B: the **per-mode decline pass** only (per item A this collapsed to almost nothing,
+     so it may be a confirmation rather than work).
      🟡 **NEW, FOUND 2026-08-01, NOT URGENT BUT DO NOT LOSE IT: Otto points at days that predate the app.**
      Asked "what did I do the day after my birthday", he correctly worked out September 6, was honest that
      he could not see it, then said Day Detail "will show you everything you logged that day". It will not:

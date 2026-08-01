@@ -926,6 +926,35 @@ identical wall, and the day-8 message would tell a four-month paying customer ab
   app knowledge because his existing rule says never to point at Day Detail when he has the data -- this is
   the ONE case where doing it alongside a real answer is correct, and without writing it down it would drift.
 
+  #### FOLLOW-UP FIXES FROM THE SECOND ROUND OF DEVICE TESTING (2026-08-01, commits 7ced079 + 6f7ffe5)
+
+  **5. ⚠️ A NIGHT IS FILED UNDER THE DAY YOU WOKE UP -- EVERYWHERE IN THE APP.** HealthKit is read from 6pm
+  the previous evening through noon and stored under the MORNING date; Day Detail, the Sleep & Recovery hub
+  and the trend charts all key nights that way (verified in code, the app does NOT contradict itself). So
+  **"Tuesday night" lives under WEDNESDAY** and **"last night" lives under TODAY**. Justin spotted this from
+  a screenshot. The resolver now shifts a NAMED night to the wake day, and Otto's knowledge tells him to say
+  so in a clause -- he was previously telling people to "step back to Tuesday" while the button correctly
+  opened Wednesday, so following his words found the wrong night.
+  ⚠️ Only shifted when the text says **"night"**. "How did I sleep on Tuesday" means the night they woke ON
+  Tuesday and is left alone. English does not distinguish these, so no rule gets both.
+
+  **6. ⚠️ DO NOT USE `messageWantsSleep` TO DECIDE IF SOMETHING IS A SLEEP QUESTION.** It ends with "...or is
+  this any whole-day recall", which is right for its real job (attaching sleep data to "what did I do on
+  Tuesday" is cheap and useful) and badly wrong as a signal for the wake-day shift -- it made **"what did I
+  do last night" resolve to TODAY**. Use `messageIsAboutSleep`, which is sleep words only.
+
+  **7. NO BUTTON WHEN THE DAY CANNOT BE PINNED DOWN.** The agreed design was "fall back to today", and on
+  device that was worse than nothing: "how did I sleep last week" offered a button labelled with TODAY's
+  date. A range is not a day. ⚠️ **This also protects the invariant that the label always names the date it
+  opens** -- that is the safety net that makes an imperfect date guess harmless, and a fallback button
+  quietly breaks it.
+
+  **8. ⚠️ "SLEEP & RECOVERY HUB" CONTAINS THE WORDS "RECOVERY HUB".** The route-trigger list had
+  `recovery hub` under `recovery_hub`, so EVERY sleep answer -- which names the hub by its full name --
+  handed the user a button onto the RECOVERY tab. `recovery_hub` now only claims phrases that cannot appear
+  inside the hub's own name (`recovery tab`, `recovery score`, `recovery data`, `recovery graph`) and
+  `sleep_hub` claims the hub name. **Do not "tidy up" that list by adding `recovery hub` back.**
+
   **VERIFIED ON DEVICE:** correct dates on "yesterday", a weekday name and an explicit date; modal opens and
   closes cleanly; Supporter gets the full answer AND the button; his quoted food totals matched the Day
   Detail screen exactly (1,738 cal / 154g / 141g / 65g), and two different days returned two different sets
@@ -1365,6 +1394,34 @@ jump button.
   prayer list. **Never pitch on a faith message, regardless of the count.**
 - **WHAT COUNTS AS A CONVERSATION:** closing the chat ends it. Reopening could in theory reset the counter,
   but the 3-per-7-days cap is what actually protects them, so this does not need engineering around.
+- ✅ **BUILT + DEVICE-VERIFIED 2026-08-01** (commit 5bbde41). Build record:
+  • **Otto flags the refusal with a `[[DECLINED]]` tag; the app records the date.** Same shape as the crisis
+    tag. ⚠️ **The tag is STRIPPED before the reply is returned** -- unlike crisis, this reply IS shown to the
+    user, so a missed strip means they read "[[DECLINED]]" in the chat. Stripped before the dash pass so the
+    brackets can never be mangled into something the regex leaves behind.
+  • ⚠️ **THE WATCH INSTRUCTION RIDES ON THE USER'S MESSAGE, and only once he has actually pitched in that
+    conversation.** In the stable prompt it caught **3 refusals out of 6** -- the ones quoted verbatim in the
+    instruction -- and missed the paraphrases ("I'm not paying for this", "I can't afford it right now") and
+    a refusal that arrived alongside a real question. On the message: **11 out of 11**, including every
+    paraphrase and both must-not-fire cases. Third time the same lesson has landed: position, not wording.
+  • **Gating on "he already pitched" is logically right, not just cheap: YOU CAN ONLY DECLINE SOMETHING YOU
+    WERE OFFERED.** Someone never pitched has nothing to silence.
+  • ⚠️ **THE CLIENT NOW SENDS WHICH TRIGGER FIRED (`pitchAsked`).** Without that split the 30 days would gag
+    the person's OWN question too, and "if they ask, he answers" would quietly stop being true -- which would
+    make the app worse than before the feature existed.
+  • **A decline beats a pitch in the same reply**: record the no, spend no slot.
+  • **Revoke First Week clears `declinedAtMs`** alongside the weekly budget, or testing this is once a month.
+  • **"I can't afford it" COUNTS as a refusal** (Justin, 2026-08-01). The asymmetry decides it: if they would
+    have bought later they can still ask any time and he answers in full, so counting it costs almost
+    nothing. Not counting it means raising money again in a fortnight with someone who just said they have
+    none, which is the worst possible moment for this app to feel like it is selling.
+  • **What he says: one short acknowledgement, then back to what they were doing.** No last pitch ("no
+    problem, though it also covers X" is exactly what makes a no feel ignored), no promise with a timeframe
+    in it (31 days later he might, and then he is a liar), no apology, no turning it into a conversation
+    about selling. If their message also asked something real, he answers it.
+  • **NOT silenced by a decline:** the 7-day-taste step-down notice and the lapsed-Supporter explanation.
+    Those are the app reporting an access change, not a pitch, and suppressing them would leave someone
+    confused about why things changed.
 - **AN EXPLICIT NO** ("not interested", "stop asking") buys **30 days** of silence from the unsolicited
   pitch. ⚠️ Trigger 1 still works during those 30 days -- if they ASK, he answers. So the cost of the long
   window is almost nothing, and what it buys is that saying no to this app actually works. Being asked again

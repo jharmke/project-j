@@ -30,6 +30,12 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-08-01 **Otto's 2-exercise cap is live for free users (deployed + device-verified).** A free user asking
+  for a workout gets two movements and "Two movements per question is what the free plan covers"; Supporters
+  are untouched. Sets/reps, warmups, mobility and cardio guidance all stay free. ⚠️ Like the pitch, **the
+  instruction rides on the USER'S MESSAGE, not the system prompt** -- six system-prompt wordings all leaked,
+  including "list 10 leg exercises" answered with ten. ALSO FIXED: a Supporter whose data snapshot came back
+  empty was being told he was on the free plan. Rules + the one known leak in SPEC_otto.md.
 - 2026-08-01 **Otto's Supporter-plan pitch now actually fires (deployed + verified on device).** He mentions
   the plan on a free user's third data wall, once per conversation, three times per rolling 7 days, and the
   slot is only spent on a reply that really names it. Four bugs behind it, but the load-bearing one:
@@ -1392,9 +1398,18 @@ are separate pre-submission checklists, NOT part of this menu.
      open item 4 before touching any of it: **the instruction rides on the user's MESSAGE, not the system
      prompt**, and the label "PITCH REQUIRED" is duplicated across three files that must move together.
      Either mistake stops the pitch silently, with no error and no log line.
-     ⚠️ STILL TO BUILD IN B: the **2-exercise cap on general training advice** (Otto still hands over full
-     routines -- expected, not a regression), the **Day Detail jump button**, the **30-day suppression** after
-     an explicit "not interested", and the **per-mode decline pass**.
+     ✅ **THE 2-EXERCISE CAP IS BUILT + DEVICE-VERIFIED 2026-08-01** (commits d29d9f9, cd4105b). ⚠️ Read
+     SPEC_otto.md before touching it: the instruction is appended to the USER'S MESSAGE, not the system
+     prompt, and moving it back silently loosens the cap.
+     ⚠️ STILL TO BUILD IN B: the **Day Detail jump button**, the **30-day suppression** after an explicit
+     "not interested", and the **per-mode decline pass**.
+     🟡 **ONE KNOWN LEAK, ACCEPTED 2026-08-01, DELIBERATELY LOGGED HERE SO IT IS NOT LOST.** The shape
+     "back, bis, core and cardio" still names a third movement about 2 times in 3 (a passing "planks or
+     carries for core", no sets or reps). Three-group and two-group asks are clean 3/3. Justin's call: accept
+     for now, revisit if it grates in real use. ⚠️ **Do NOT restart with prompt wording -- six rounds already
+     hit diminishing returns.** The next step is a deterministic counter that matches replies against the
+     exercise library to MEASURE how often it happens for real users, then decide with numbers. Full
+     reasoning in SPEC_otto.md -> KNOWN LEAK, ACCEPTED FOR NOW.
      ⚠️ `DEV_UNLIMITED_UIDS` currently holds Justin's uid for testing and MUST be emptied at launch, and the
      `[pitch]` diagnostic log line must come out (both on the REVERT BEFORE LAUNCH list).
   **C. NON-AI WALLS / PAYWALLS / LIMITS** -- ✅ ALREADY DESIGN-LOCKED with real numbers (2026-07-28), see

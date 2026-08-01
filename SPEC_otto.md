@@ -52,7 +52,7 @@ other AI on earth can do is act *inside* GoodForge against *this user's* data.
 | What a feature does / how a calculation works | Built |
 | Nutrient education ("what does magnesium do") | Built |
 | General nutrition guidance ("more protein at breakfast") | Built |
-| General training guidance, **max 2 exercises** | Built, needs limiting. Rule fully agreed 2026-08-01, NOT BUILT -- see THE 2-EXERCISE CAP, IN FULL |
+| General training guidance, **max 2 exercises** | ✅ BUILT + device-verified 2026-08-01 -- see THE 2-EXERCISE CAP, IN FULL (one known leak, logged there and in NEXT UP) |
 | General sleep/recovery guidance ("why am I tired") | Built |
 | Coaching mode + faith tier awareness | Built, stays free |
 | Crisis screening | Built, stays free |
@@ -73,7 +73,22 @@ it must ship before launch (see SEQUENCING).
 
 **MAX 2 EXERCISES, NEVER 3.** Three reads as a routine and gives away the thing being sold.
 
-### THE 2-EXERCISE CAP, IN FULL (agreed 2026-08-01. NOT BUILT YET.)
+### THE 2-EXERCISE CAP, IN FULL (agreed + ✅ **BUILT AND DEVICE-VERIFIED 2026-08-01**, commits d29d9f9 + cd4105b)
+
+> **WHERE IT LIVES, AND WHY -- READ BEFORE MOVING ANYTHING.**
+> The cap instruction is **appended to the USER'S MESSAGE** (`buildWorkoutCapBlock`), not to the system
+> prompt, and only on messages the app flagged as a request for exercises (`messageAsksForExercises` in
+> `utils/companionPitch.ts`). It lived in the system prompt first, in **six different wordings**, and leaked
+> every time -- extra movements for skipped groups, sets and reps creeping back, and "list 10 leg exercises"
+> answered with ten. One rewrite made it actively worse. **The wording was never the variable; position was**,
+> exactly as with the pitch (0/10 in the system prompt vs 10/10 on the message). Moving it back will quietly
+> loosen the cap with no error and no log line.
+> **One flag, two jobs:** the same detector decides whether the cap attaches AND whether the message counts
+> as a wall. Gating on it is also why the cap costs nothing on the other nine messages of someone's day.
+> **The limit line is added by CODE, not judged by Otto** (`buildWorkoutCapBlock(cutSomething)`). Asking him
+> to decide whether the limit "actually bit" failed 3 for 3 -- he said it even when they asked for exactly
+> two. The app already knows (`workoutAskWantsMoreThanTwo`), so it decides. Measured after the move: **21/21**
+> correct on the line, present and absent.
 
 **WHEN IT APPLIES:** only when he is asked to PRESCRIBE a session, i.e. build a workout or list off exercises
 to go and do. It does NOT apply to teaching or comparing movements the user already named ("how do I do a
@@ -84,8 +99,12 @@ Romanian deadlift", "incline or flat press") -- those are coaching, not the thin
   3 back and 3 legs" hands over a full routine in one message.
 - **Multi-group asks: one movement from each of the FIRST TWO groups they named, in the order they named
   them.** Their order, not his judgement -- people lead with what they care about, and it is predictable
-  rather than arbitrary. He names plainly which groups he did not get to. **Cardio counts as a group like any
-  other** (Justin, 2026-08-01).
+  rather than arbitrary. He names plainly which groups he did not get to. The movement must genuinely train
+  that group -- ⚠️ he shipped a **Barbell Back Squat labelled as covering "back"** on the first device test,
+  so the prompt now says outright that a back squat is a LEG exercise whatever its name sounds like.
+  ⚠️ **CORRECTED 2026-08-01 (same day): CARDIO DOES NOT CONSUME ONE OF THE TWO SLOTS.** It was written as
+  "a group like any other" in the morning. See WHAT COUNTS below -- cardio duration guidance is not a named
+  exercise, so "back, bis, core and cardio" spends its two slots on BACK and BIS.
 - **Asking again is a NEW question and gets two more.** This is the accepted rephrasing loophole, and it
   costs them one of their 10 daily messages. The ONLY thing to enforce is never more than two in a single
   reply. ⚠️ Note the interaction: "give me more" is also pitch trigger 1, so a user who pushes gets their two
@@ -93,15 +112,23 @@ Romanian deadlift", "incline or flat press") -- those are coaching, not the thin
 - **A same-slot SWAP does not count as a third.** Count what they would PERFORM, not what he names.
   ✅ "Barbell row, or a dumbbell row if you have no bar. Then an incline dumbbell curl." = two things to do.
   ❌ "Barbell row, lat pulldown and an incline dumbbell curl." = three. Over.
-- **WARMUPS AND MOBILITY STAY GENERAL. HE DOES NOT NAME MOVEMENTS AT ALL** (Justin's call, 2026-08-01,
-  tightened same day): raise the body temperature, mobilise what you are about to train, a few minutes of
-  light work. No "band pull-aparts", no "cat-cow". ⚠️ **Tightened from an earlier draft that allowed him to
-  name warmup movements as long as they counted against the two.** That version had a hole -- he could give
-  two exercises and then keep adding mobility work until the reply looked like a session again -- and it was
-  misread once within a day of being written, which is a fair sign it was too subtle. One rule with no
-  exception is easier for him to hold and easier for us to check.
-  The accepted cost: "how do I warm up my shoulders" gets a general answer rather than a named movement.
-  Slightly less useful in that one case, much harder to game.
+- **WHAT COUNTS vs WHAT DOES NOT** ⚠️ **REWRITTEN 2026-08-01 after measurement. This replaces the earlier
+  "warmups stay general, he names no movements at all" rule, which failed 0 for 4 and then 0 for 3 across
+  several wordings -- he named arm circles and band pull-aparts every single time.**
+  • **COUNTS: a named exercise for a MUSCLE GROUP, and that includes CORE.** Planks, dead bugs, hollow holds,
+    pallof presses and carries are core movements and they spend one of the two. Justin's call: "core is
+    still a key muscle group, some people literally just have core days."
+  • **DOES NOT COUNT, and he may give it freely: warmups, mobility, stretching, and general cardio duration
+    guidance** ("finish with 15 to 20 minutes steady"). Justin's call, same day: "warmup/mobility/cardio fine
+    I guess we can let up."
+  ⚠️ **WHY THE CHANGE, so nobody re-tightens it:** he resisted because those things genuinely are not the
+  product. A warmup answer is light cardio, arm circles and a ramp-up set -- that is the generic advice in
+  every training article, not a session in disguise. Nobody subscribes for "do some planks". The thing worth
+  protecting is the structured LIFT prescription, and that part holds. Fighting for the stricter rule cost
+  six rounds and made Otto worse at something that was always free.
+  ⚠️ **A warmup QUESTION also no longer trips the cap at all** -- `messageAsksForExercises` excludes it, so
+  "give me a warmup for chest day" gets no limit line. It used to match on "chest day" and end a complete
+  warmup answer with a limit that had withheld nothing. "Give me a warmup AND a chest workout" still caps.
 - **THE LINE HE SAYS: "Two movements per question is what the free plan covers."** Deliberately a flat fact
   about the plan, NOT "I keep it to two" -- anything that sounds like his choice invites haggling. Attribution
   once per reply, no apology, no price, no pitch.
@@ -221,6 +248,26 @@ Justin's own free test account. No fallout, nothing to announce.
 **ENFORCEMENT IS PROMPT-ONLY.** There is no reliable way for the app to count exercises in his reply, so
 unlike the pitch there is no deterministic backstop. Measure it before shipping: rebuild the real prompt from
 `functions/lib/` and run adversarial phrasings against the real model (see open item 4 for the method).
+
+#### 🟡 KNOWN LEAK, ACCEPTED FOR NOW (2026-08-01) -- NOT swept, it is also ranked in NEXT UP
+
+**The shape "back, bis, core and cardio" still names a third movement roughly 2 times in 3.** You get the two
+prescribed lifts, then a passing "planks or carries for core" with no sets, reps or ordering. Sometimes he
+also spends both slots on the FIRST group (row + pull-ups) instead of taking the first two.
+
+**Measured, not impressionistic:** three groups is clean 3/3 ("chest, legs and shoulders" -> bench + squat).
+"Back and biceps" is clean 3/3. It is specifically the four-group shape where one group is uncapped cardio
+and another is core -- he appears to treat core as leftover once cardio is off the count.
+
+**Why it was accepted rather than fixed:** the structured routine is still withheld, which is the actual
+product; the leak adds a bare movement name. Justin's call, after six rounds of prompt wording had already
+hit diminishing returns: accept for now, log it, revisit if it grates in real use.
+
+**If it IS revisited, do NOT start with more prompt wording -- that is the path already exhausted.** The next
+honest step is a deterministic counter: match the reply against the exercise library (79 movements today,
+~143 after plan item J) and count the names. That is reliable enough to MEASURE how often this happens for
+real users. Enforcing on top of it (regenerating an over-limit reply) costs a second model call and risks a
+stitched-together answer that reads worse than the leak, so measure first and decide with numbers.
 
 ---
 

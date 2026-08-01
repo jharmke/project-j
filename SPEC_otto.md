@@ -1297,6 +1297,17 @@ He gets muscles and instructions from his own general knowledge (commodity fitne
 > than it was offered. That was a symptom of the weak placement, not a separate quirk -- on the message he
 > takes the opening he is given. No watch item.
 
+#### 👀 WATCH ITEM, NOT A BUG YET (2026-08-01): he lost the thread on "How much is it?"
+
+Seen ONCE on device. During the 30-day-decline test, "How much is it?" got the PREVIOUS question re-answered
+(a lift-history decline) instead of the price. Asked again immediately, he answered correctly and in full.
+
+**Deliberately NOT chased.** One occurrence, self-corrected on retry, and it is him losing conversational
+thread rather than a rule failing -- chasing that off a single data point is exactly how six rounds were
+burned on the 2-exercise cap wording. **Recorded only so a SECOND occurrence is recognised as a pattern
+rather than treated as new.** If it recurs, it is worth measuring properly with the offline harness (short
+follow-up questions after a long decline, several runs) before touching anything.
+
 #### ATTRIBUTION IS NOT A PITCH (the distinction everything else rests on)
 - **ATTRIBUTION goes in EVERY decline.** One factual clause, e.g. "on the free plan". No price, no call to
   action. Without it Otto reads as WEAK rather than LIMITED, and the user concludes the app is thin instead

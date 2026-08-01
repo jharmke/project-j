@@ -41,7 +41,12 @@ export const isDayRecall = (text: string): boolean => {
   // intent from the prior turn but drop the verb, so requiring one silently dropped them.
   const followUpLead = /\b(what about|how about|whatabout|and (?:on\s+)?|about|what'?s|how'?s|hows|show me|tell me about)\b/.test(t);
   const shortMsg = t.trim().split(/\s+/).length <= 5;
-  return (/\bwhat\b/.test(t) && /\b(did|do|done|was|were|happen)\b/.test(t)) || followUpLead || shortMsg;
+  // ⚠️ "HOW WAS MY DAY ON TUESDAY" USED TO FALL THROUGH ALL THREE: six words, no "what", and "how was" is
+  // not "how's". Found on device 2026-08-01. It matters well beyond the jump button -- this same detector
+  // decides whether a SUPPORTER gets that day's data attached, so the phrasing was silently costing paying
+  // users their answer.
+  const howWas = /\bhow (was|were|did|has)\b/.test(t);
+  return (/\bwhat\b/.test(t) && /\b(did|do|done|was|were|happen)\b/.test(t)) || followUpLead || shortMsg || howWas;
 };
 
 // Coarse, GENEROUS intent check: does this message look like it's asking about recent workouts / training

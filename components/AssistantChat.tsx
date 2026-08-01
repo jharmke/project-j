@@ -31,6 +31,7 @@ import { buildAchievementsContextIfRelevant } from '../utils/companionAchievemen
 import { buildJournalContextIfRelevant } from '../utils/companionJournal';
 import { COMPANION_ROUTES, ROUTE_TRIGGERS } from '../utils/companionRoutes';
 import { resolveDayRef, type DayRef } from '../utils/companionDayRef';
+import { DayDetailContent } from '../app/day-detail';
 import { isDayRecall } from '../utils/companionWorkouts';
 import { TUTORIAL_TRIGGERS, TUTORIAL_ROUTE_OVERLAP } from '../utils/companionTutorials';
 import { useTutorial } from '../context/TutorialContext';
@@ -440,20 +441,20 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
     });
   };
 
-  // Tapping the day-jump pill: same close-then-navigate shape as a route pill, but carrying a DATE.
-  // ⚠️ The route table cannot express this -- every entry there has fixed params -- which is why this is
-  // its own handler rather than another COMPANION_ROUTES key.
-  // ⚠️ `/day-detail` is a real registered route that renders the same content with a working back action,
-  // but NOTHING in the app has ever navigated to it (Home and Stats both render Day Detail as a sheet).
-  // This is the first caller. If it looks wrong as a full page, the alternative is opening Home with a
-  // param and letting it raise its own sheet.
+  // Tapping the day-jump pill: open Day Detail as a CENTERED MODAL OVER THE CHAT. It does not navigate.
+  //
+  // ⚠️ IT USED TO `router.push('/day-detail')`, and that was wrong on device: Day Detail is built as a
+  // centered popup (ModalHeader gives it a handle pill and an X), so as a full page it kept that chrome
+  // with nothing to close back to, and the Otto FAB sat on top of the workout rows. Rendering it here the
+  // way Home already does fixes the chrome, the overlap and the padding in one go, and the user does not
+  // lose their place in the conversation. The `/day-detail` page route stays unused, as it always was.
   const openDayDetail = (ref: DayRef) => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     Keyboard.dismiss();
-    Animated.timing(anim, { toValue: 0, duration: 180, useNativeDriver: false }).start(() => {
-      onClose();
-      router.push({ pathname: '/day-detail' as any, params: { date: ref.date } });
-    });
+    setDayDetail(ref);
+  };
+  const closeDayDetail = () => {
+    Animated.timing(dayDetailAnim, { toValue: 0, duration: 160, useNativeDriver: true }).start(() => setDayDetail(null));
   };
 
   // Tapping a "Show me how" pill: fade the chat out, then launch the guided tutorial. The tour
@@ -552,6 +553,16 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
   // Walls hit in THIS conversation. A ref, not state: nothing renders from it and it must not cause a
   // re-render mid-send. Resets with the chat, which is exactly what "once per conversation" means.
   const wallCountRef = useRef(0);
+  // Day Detail opened from a jump pill, rendered as a centered modal over the chat (never navigated to).
+  const [dayDetail, setDayDetail] = useState<DayRef | null>(null);
+  const dayDetailAnim = useRef(new Animated.Value(0)).current;
+  // Fade in on open. Home does this in its Modal's onShow; there is no Modal here (deliberately, to avoid
+  // stacking native modal layers), so the effect is the equivalent hook.
+  useEffect(() => {
+    if (!dayDetail) return;
+    dayDetailAnim.setValue(0);
+    Animated.timing(dayDetailAnim, { toValue: 1, duration: 220, easing: Easing.out(Easing.quad), useNativeDriver: true }).start();
+  }, [dayDetail, dayDetailAnim]);
   // ⚠️ ONE PITCH PER CONVERSATION. The wall count only ever climbs, so once it passes three EVERY later
   // message would ask again and Otto could mention the plan three times in a single sitting, which is the
   // nagging the whole rule exists to prevent. The server tells us when he actually pitched (he does not
@@ -981,6 +992,28 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
             the notification panel) for the notification-hub tour. Renders nothing unless an inOtto
             tour step is active, so it never affects normal Otto use. See TutorialOverlay `scope`. */}
         <TutorialOverlay scope="modal" />
+
+        {/* Day Detail from a jump pill. Centered popup over the chat, matching how Home raises it, so the
+            handle + X that ModalHeader provides are correct here and the user keeps their place in the
+            conversation. Rendered INSIDE the chat's own Modal rather than as a second RN Modal, which
+            avoids stacking two native modal layers on iOS. */}
+        {dayDetail && (
+          <Animated.View
+            style={{
+              position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+              backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center',
+              opacity: dayDetailAnim,
+            }}
+          >
+            <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={closeDayDetail} />
+            <View style={{
+              width: '92%', height: '75%', borderRadius: 20, backgroundColor: theme.bgSheet,
+              borderWidth: 0.5, borderColor: theme.borderSheet, overflow: 'hidden',
+            }}>
+              <DayDetailContent date={dayDetail.date} onClose={closeDayDetail} />
+            </View>
+          </Animated.View>
+        )}
       </GestureHandlerRootView>
     </Modal>
   );

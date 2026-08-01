@@ -809,14 +809,12 @@ TWO CARVE-OUTS THAT ARE NOT ARBITRARY:
 Piece 1 locked the numbers. This is the moment of impact: a free user with 20 custom foods opens the plus
 menu and wants a 21st. Wording is the only part still open.
 
-**THE RULE, COMPLETE:**
-- **Under the cap:** nothing. No dim, no lock, no toast. The app behaves exactly as it does today.
+**THE RULE, COMPLETE** (revised 2026-08-01 -- the earlier modal-once-then-toast version is kept as a
+fallback at the end of this section, NOT deleted):
+- **Under the cap:** nothing. No dim, no lock, no modal. The app behaves exactly as it does today.
 - **At the cap:** the ENTRY POINT is **dim with a lock icon**, and is **still pressable**.
-- **First tap at that particular cap:** a **modal**, with a Support the Mission jump.
-- **Every tap after:** a **toast**. No link.
-- **First-time state is tracked PER CAP**, not per app. Hitting the recipe wall teaches nobody anything
-  about the exercise library, so each capped thing gets its own one-time explanation. Store it the same way
-  `pj_tooltip_{key}` already stores seen-state.
+- **Every tap:** the **modal**, with a Support the Mission jump. **Every time.** No toast, no seen-state,
+  no first-time logic, nothing to store.
 - Nothing ever fires on its own. It only ever happens because the user reached for something, which is what
   keeps it from reading as nagging.
 
@@ -833,16 +831,27 @@ wrong" face for something the user cannot fix, and they will hunt for the field 
 is what resolves it** -- dim alone reads as "not yet, do something else first"; dim plus a lock reads as
 "not available to you," which is true and takes one glance.
 
-**WHY A MODAL FIRST AND NOT A TOAST EVERY TIME.** Checked in code 2026-08-01: toasts live **2200ms**,
-hardcoded in `components/Toast.tsx`, identical for every toast in the app, with **no duration parameter and
-no tap action of any kind** (the only pressable thing is the close X). 2.2 seconds at the bottom of the
-screen is not enough time to read a sentence, realise you have hit a limit, decide you care, and reach for a
-link. This is the highest-intent moment in the entire non-AI product -- someone actively reaching for the
-paid thing -- and a toast throws it away. Making toasts longer and tappable was considered and rejected: it
-means changing a shared component that roughly forty other toasts run through, for a benefit the modal
-already delivers. ⚠️ **DO NOT TOUCH `Toast.tsx` FOR THIS FEATURE.**
-The repeat toast needs no link because they have seen the offer once and Support the Mission has a permanent
-home (`app/support.tsx`, reachable from Profile and Settings via `MembershipCard.tsx`).
+**WHY A MODAL AND NOT A TOAST.** Checked in code 2026-08-01: toasts live **2200ms**, hardcoded in
+`components/Toast.tsx`, identical for every toast in the app, with **no duration parameter and no tap action
+of any kind** (the only pressable thing is the close X). 2.2 seconds at the bottom of the screen is not
+enough time to read a sentence, realise you have hit a limit, decide you care, and reach for a link. This is
+the highest-intent moment in the entire non-AI product -- someone actively reaching for the paid thing -- and
+a toast throws it away. ⚠️ **DO NOT TOUCH `Toast.tsx` FOR THIS FEATURE.**
+
+**WHY EVERY TIME AND NOT JUST THE FIRST TIME.** Nagging is UNPROMPTED. This is only ever prompted, and
+prompted by tapping a button that is visibly dim with a padlock on it. Nobody taps a locked door by accident
+twice, so tapping again is somebody saying "I still want this" -- a STRONGER buying signal than the first
+tap, not a reason to give them less. It is also how every app worth copying handles a locked feature: tap the
+locked thing, get the sheet, every time, and the escape is trivial (don't tap the locked button).
+The chain that killed the split: the toast was there to avoid nagging; Justin was right that a toast reading
+only "My Foods is full" is not clear enough and needs the Supporter mention; the standing rule says the
+Supporter plan is never named without a Support the Mission jump; a toast has no button, so it would have to
+become tappable; at which point the toast is doing the modal's job and the split buys nothing while costing
+two extra pieces of copy per cap plus a stored seen-state.
+**THE HONEST COST, ON RECORD:** somebody who taps out of habit gets a card instead of a whisper. That is the
+only downside found, and the card is a small centered thing that dismisses with a tap outside.
+Justin, 2026-08-01: "modal every time. we can try it." **If it turns out to be too much on device, the
+fallback is written up at the end of this section -- do not re-derive it.**
 
 **⚠️ NEVER DIM ON UNCERTAINTY.** Membership loads asynchronously. If a screen draws before the answer
 arrives and assumes "not a Supporter," a paying customer watches the button sit there dim with a padlock on
@@ -941,21 +950,6 @@ two honest ways forward.
 the first thought of somebody who just lost a membership is "what did I lose," and their own number in the
 headline answers that before they finish reading.
 
-##### 🟡 STILL OPEN -- THE TOASTS
-The toast fires on the SECOND tap onward, for somebody who has already seen the modal. Its whole job is
-"yep, still full". Sentence case on the title to match every other toast in the app.
-- **At the cap**, approved once and then reopened by Justin ("i feel like the toasts need the supporter
-  mention"): `My Foods is full` / `Free accounts hold 20. Delete one to make room.`
-- **Over the cap:** NOT SETTLED. Rejected so far: `All 30 are still yours to log and edit.` (Justin: a
-  consolation pat on the back -- by the fourth tap nobody wants reassurance, they want to know why the button
-  did nothing) and `New foods need the Supporter plan.` (Justin: "thats so amateur" -- reads like a vending
-  machine). Best so far, lukewarm: `The Supporter plan makes room to keep building.`
-- ⚠️ **NAMING THE SUPPORTER PLAN IN A TOAST FORCES A DECISION** (not yet agreed): the standing rule is that
-  the Supporter plan is never named without a Support the Mission jump, and a toast has no button today.
-  Making toasts tappable = an OPTIONAL tap handler plus a chevron shown only when one is passed, so all ~40
-  existing toasts pass nothing and are untouched. An optional duration is the same additive change (2200ms
-  is tight for reading-then-tapping). **Decide the tappable question before finishing the toast copy.**
-
 ##### 🟡 STILL OPEN -- THE OTHER SEVEN CAPS
 Saved meals, recipes, routines, programs, exercise library, meal slots, stats cards. Same four pieces of copy
 each; only the noun and the number change.
@@ -965,6 +959,32 @@ number, so there is no at-cap/over-cap split and no delete option. They need the
 **AND, NOT PART OF PIECE 2:** if someone subscribes from that modal, they must land back where they were,
 still wanting to create that food. Paying and getting dumped on the Profile tab is a sour ending to the best
 moment this product gets.
+
+##### 🗄️ THE FALLBACK, KEPT ON PURPOSE -- MODAL ONCE, THEN TOAST
+**Not the plan. Kept because "modal every time" is a "we can try it", and if it reads as too much on device
+this is what we fall back to** rather than re-deriving it from scratch. Justin, 2026-08-01: "can you leave
+the 1 time modal and then toast idea in there but say we agreed on the modal every time? just in case modal
+every time is too much?"
+
+The shape was: modal on the **first** tap at a given cap, **toast** every tap after, with first-time state
+stored **per cap** (not per app -- hitting the recipe wall teaches nobody anything about the exercise
+library) the same way `pj_tooltip_{key}` already stores seen-state.
+
+Toast copy never got settled, and the reasons are the useful part:
+- **At the cap**, approved and then reopened by Justin ("i feel like the toasts need the supporter mention"):
+  `My Foods is full` / `Free accounts hold 20. Delete one to make room.`
+- **Over the cap:** never settled. Rejected: `All 30 are still yours to log and edit.` (Justin: a consolation
+  pat on the back -- by the fourth tap nobody wants reassurance, they want to know why the button did
+  nothing) and `New foods need the Supporter plan.` (Justin: "thats so amateur" -- reads like a vending
+  machine). Lukewarm best: `The Supporter plan makes room to keep building.` Last draft, untested:
+  `No room for new foods` / `The Supporter plan opens My Foods back up.`
+- ⚠️ **If this fallback is ever picked up, the tappable-toast question comes back with it.** Naming the
+  Supporter plan in a toast collides with the standing rule that the plan is never named without a Support
+  the Mission jump. Making toasts tappable = an OPTIONAL tap handler plus a chevron shown only when one is
+  passed, so all ~40 existing toasts pass nothing and are untouched; an optional duration is the same
+  additive change. **Justin's verdict on that work, and it stands: not worth it** -- 2.2 seconds at the
+  bottom of the screen means almost nobody taps it, Support the Mission already has a permanent home on the
+  Profile tab, and navigating out of a toast that fired while a FAB menu or modal is open is its own problem.
 
 **⚠️ THIS DOES NOT COVER MEAL SLOTS OR STATS CARDS.** Those are the two REVERT rows, and their wall arrives
 without anyone tapping anything: a lapsed Supporter's 8 meal slots become 5 while they are not even in the

@@ -1465,8 +1465,10 @@ are separate pre-submission checklists, NOT part of this menu.
      ✅ **PIECE 2 (what the user SEES at a cap) IS LOCKED 2026-08-01.** Full detail in SPEC_monetization.md
      -> "WHAT THE USER SEES AT A CAP". Headline: the ENTRY POINT goes dim with a lock (never the Save button
      at the end of a builder -- Justin: "dont make users do all the work just to not be able to save it"),
-     it stays pressable, first tap at a given cap opens a MODAL with a Support the Mission jump, every tap
-     after fires a TOAST. First-time state tracked PER CAP. ⚠️ Do NOT touch `Toast.tsx` (2200ms hardcoded, no
+     it stays pressable, and EVERY tap opens the MODAL with a Support the Mission jump. **No toast, no
+     seen-state, no first-time logic** (revised 2026-08-01 -- the modal-once-then-toast version is kept in the
+     spec as a written-up FALLBACK, not deleted, in case every-time reads as too much on device).
+     ⚠️ Do NOT touch `Toast.tsx` (2200ms hardcoded, no
      tap action, shared by ~40 toasts). ⚠️ Unknown membership = NOT dim, ever. ⚠️ The cap is on CREATING
      only -- editing/deleting/opening what you already have is never blocked. ⚠️ The tutorial's path into a
      creator must never be capped. ⚠️ Custom foods have SIX user-facing doors (traced in code); every capped

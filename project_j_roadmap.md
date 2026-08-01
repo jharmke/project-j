@@ -1472,7 +1472,12 @@ are separate pre-submission checklists, NOT part of this menu.
      tap action, shared by ~40 toasts). ⚠️ Unknown membership = NOT dim, ever. ⚠️ The cap is on CREATING
      only -- editing/deleting/opening what you already have is never blocked. ⚠️ The tutorial's path into a
      creator must never be capped. ⚠️ Custom foods have SIX user-facing doors (traced in code); every capped
-     feature needs its doors counted before build. Still open in piece 2: the WORDING.
+     feature needs its doors counted before build.
+     ✅ **THE WALL COPY IS WRITTEN AND APPROVED for all EIGHT capped things** (2026-08-01) -- two modals each,
+     at-cap and over-cap, in SPEC_monetization.md -> THE COPY. ⚠️ Meal slots promise **8**, not unlimited.
+     ⚠️ The two REVERT over-cap modals are provisional until piece 4 settles what dormant looks like.
+     ⏭️ Still open in piece 2: **the three FLAT paywalls** (custom macro goals, custom nutrition goals, data
+     export). No number, so no at-cap/over-cap split and no delete offer -- they need their own shape.
      ⏭️ **NEXT PIECE OF C: piece 3, does the user see a cap COMING.** Justin's opening proposal, carried over
      from the piece 2 discussion: put the count in the SUCCESS toast that already fires on create ("Food
      saved" etc), which have an empty second line already available. ⚠️ Flag to carry in: at a cap of 20 that

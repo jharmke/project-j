@@ -1054,10 +1054,60 @@ this copy can promise editing where the saved-meals copy cannot.
 > Free accounts hold 15 of your own, so there's no room to add another right now. The Supporter plan opens
 > your Exercise Library back up.
 
-##### 🟡 STILL OPEN -- MEAL SLOTS AND STATS CARDS
-Meal slots and stats cards, the two REVERT rows. Their AT-cap wall is a normal tap on a dim door like every
-other cap, but their OVER-cap state arrives on downgrade with nobody tapping anything, so the copy has to be
-written alongside pieces 4 and 5 rather than on its own. ⚠️ **Check what the SCREEN calls each one before writing a word** -- "custom foods" turned out
+##### ✅ APPROVED -- MEAL SLOTS (5) AND STATS GRAPHS (7 defaults + 1)
+⚠️ **MEAL SLOTS ARE NOT UNLIMITED ON THE SUPPORTER PLAN, THEY ARE 8.** This copy therefore promises 8 and
+must NOT say "removes the limit entirely" like every other cap. Stats graphs genuinely are unlimited.
+⚠️ **Matches copy the app ALREADY SHIPS.** The home-screen step-down notice (`app/(tabs)/index.tsx`) says
+"Your meal slots and stats cards go back to the free layout. The extras are saved and waiting if you come
+back." These modals reuse that promise rather than inventing new words for it.
+⚠️ **NAMING MISMATCH, flagged and decided:** that shipped line says "stats cards", but the button the user
+actually taps says **Add Graph**. Going with **graph**, since that is the word attached to the action. The
+shipped home-screen line is now the odd one out; worth aligning if it is ever touched.
+⚠️ At a cap of ONE, "delete one you've stopped using" reads strangely, so the stats copy says **swap**
+instead. Same honest offer, right word for a cap of one.
+
+**MEAL SLOTS, at the cap:**
+> **That's All 5 Meal Slots**
+>
+> The free plan holds 5, which is the four your log starts with plus one of your own. Every slot is still
+> yours to rename and use however you like.
+>
+> Make room by deleting one, or the Supporter plan takes you to 8.
+
+**MEAL SLOTS, over the cap:**
+> **Your Extra Meal Slots Are Waiting**
+>
+> Nothing you set up has gone anywhere. Your extra slots are saved, and everything you logged to them is
+> still on your log.
+>
+> Free accounts hold 5, so your log is back to the free layout for now. The Supporter plan brings your extra
+> slots back.
+
+**STATS GRAPHS, at the cap:**
+> **You've Built Your Graph**
+>
+> The free plan holds one graph of your own on top of the seven your Stats tab comes with. Every graph is
+> still yours to use and keep.
+>
+> Swap yours for a different one any time, or the Supporter plan lets you build as many as you like.
+
+**STATS GRAPHS, over the cap:**
+> **Your Extra Graphs Are Waiting**
+>
+> Nothing you built has gone anywhere. Your extra graphs are saved exactly as you set them up.
+>
+> Free accounts show one of your own, so your Stats tab is back to the free layout for now. The Supporter
+> plan brings the rest back.
+
+⚠️ **THE TWO OVER-CAP ONES ARE PROVISIONAL ON PIECE 4.** They describe extras as "saved" and "waiting",
+which is true under every dormancy model considered so far, but if a dormant slot turns out to be
+visible-but-greyed rather than hidden, both need a small rewrite. Their AT-cap versions are final -- those
+fire on a normal tap of a dim door like every other cap.
+
+##### 🟡 STILL OPEN -- THE THREE FLAT PAYWALLS
+Custom macro goals, custom nutrition goals and data export. **These are NOT the same shape as the eight
+caps** -- they are straight paywalls with no number, so there is no at-cap/over-cap split, no count in the
+title and no delete-to-make-room offer. They need their own treatment and none of it is written yet. ⚠️ **Check what the SCREEN calls each one before writing a word** -- "custom foods" turned out
 to be **My Foods** and "saved meals" turned out to be the **Meal Catalog**, and neither label exists in the
 UI. That check has changed the copy every single time so far.
 ⚠️ **Macro goals, nutrition goals and data export are NOT this shape.** They are straight paywalls with no

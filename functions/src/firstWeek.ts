@@ -127,13 +127,25 @@ export const revokeFirstWeek = onCall(
       REVENUECAT_SECRET_KEY.value(),
     );
 
-    if (!res.ok) {
-      const body = await res.text().catch(() => '');
+    // ⚠️ "NOTHING TO REVOKE" IS SUCCESS, NOT FAILURE. RevenueCat answers 404 / code 7242 when the account
+    // has no promotional entitlement left to take away -- which is the state this row leaves behind, so
+    // every repeat tap hit it. Treating that as an error made both dev rows a NO-OP after their first use:
+    // the throw fired before the cleanups below, so the cached membership and the pitch budget stayed stale
+    // and Otto could not pitch for seven days. (Found 2026-07-31; it cost two evenings of debugging.)
+    const body = res.ok ? '' : await res.text().catch(() => '');
+    const nothingToRevoke =
+      res.status === 404 && /"code"\s*:\s*7242|No promotional entitlements/i.test(body);
+    const revoked = res.ok || nothingToRevoke;
+
+    if (!revoked) {
       console.error('revokeFirstWeek: RevenueCat refused', uid, res.status, body.slice(0, 300));
-      throw new HttpsError('internal', 'Could not revoke the first week.');
     }
 
-    await firstWeekDoc(uid).delete().catch(() => {});
+    // Only clear the grant record once the entitlement is genuinely gone. On a REAL refusal the week may
+    // still be live, and deleting the record there would let the account be granted a second one.
+    if (revoked) {
+      await firstWeekDoc(uid).delete().catch(() => {});
+    }
 
     // ⚠️ CLEAR THE SERVER'S CACHED MEMBERSHIP TOO, or the revoke only half happens. `membershipStatus` takes
     // a shortcut: if it already believes there is a LIVE entitlement it returns 'entitled' without asking
@@ -151,6 +163,14 @@ export const revokeFirstWeek = onCall(
       .set({ pitchAtMs: [] }, { merge: true })
       .catch(() => {});
 
-    return { revoked: true };
+    // Both cleanups above run even when RevenueCat refused, and BEFORE this throw. The whole job of this row
+    // is "put my account back to a clean free state", and leaving half of it undone is exactly what broke.
+    // Clearing the cached membership after a real refusal is safe: the next lookup re-asks RevenueCat and
+    // writes the truth back, so it self-corrects. A stale cache does not.
+    if (!revoked) {
+      throw new HttpsError('internal', 'Could not revoke the first week.');
+    }
+
+    return { revoked: true, alreadyRevoked: nothingToRevoke };
   },
 );

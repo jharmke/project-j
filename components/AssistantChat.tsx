@@ -508,6 +508,7 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
     // New conversation, new wall count. The weekly budget on the server is what stops this being a way to
     // farm pitches by starting fresh chats.
     wallCountRef.current = 0;
+    pitchedRef.current = false;
   };
 
   const newChat = () => {
@@ -533,6 +534,12 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
   // Walls hit in THIS conversation. A ref, not state: nothing renders from it and it must not cause a
   // re-render mid-send. Resets with the chat, which is exactly what "once per conversation" means.
   const wallCountRef = useRef(0);
+  // ⚠️ ONE PITCH PER CONVERSATION. The wall count only ever climbs, so once it passes three EVERY later
+  // message would ask again and Otto could mention the plan three times in a single sitting, which is the
+  // nagging the whole rule exists to prevent. The server tells us when he actually pitched (he does not
+  // always take the opening on the exact message it is offered), and that shuts the request off for the rest
+  // of this conversation. Resets with the chat, same as the wall count.
+  const pitchedRef = useRef(false);
 
   const canSend = input.trim().length > 0 && !sending;
 
@@ -623,17 +630,25 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
 
       // ⚠️ A REQUEST, NOT A DECISION. The server still checks that they are a CONFIRMED free user and that
       // the weekly budget has room before Otto is told he may say anything. See SPEC_otto.md open item 4.
+      // ⚠️ THE ONCE-PER-CONVERSATION LATCH APPLIES TO THE WALL TRIGGER ONLY. If they ASK about the plan, he
+      // answers, every time -- a direct question deserves a real answer and stonewalling it is worse than a
+      // second mention. Latching both would mean someone who asked "how much is it?" right after he brought
+      // it up got nothing back.
       const pitchRequested =
         !isSupporter &&
         !messageBlocksPitch(text) &&
-        (messageAsksForMore(text) || wallCountRef.current >= WALLS_BEFORE_PITCH);
+        (messageAsksForMore(text) || (wallCountRef.current >= WALLS_BEFORE_PITCH && !pitchedRef.current));
       const callable = httpsCallable(getFunctions(app), 'appCompanion');
       const res = await callable({ message: text, history, styleMode, faithTier, userContext, dataSnapshot, freeContext, pitchRequested });
-      const data = (res.data ?? {}) as { ok?: boolean; reply?: string; crisis?: boolean; message?: string; used?: number; cap?: number };
+      const data = (res.data ?? {}) as { ok?: boolean; reply?: string; crisis?: boolean; message?: string; used?: number; cap?: number; pitched?: boolean };
 
       if (typeof data.used === 'number' && typeof data.cap === 'number') {
         persistQuota(data.used, data.cap);
       }
+
+      // He mentioned the plan, so this conversation is done asking. Latches on only: a later message must
+      // never turn it back off.
+      if (data.pitched) pitchedRef.current = true;
 
       if (data.crisis) {
         setSending(false);

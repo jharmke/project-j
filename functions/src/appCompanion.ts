@@ -7,6 +7,7 @@ import { membershipStatus, REVENUECAT_SECRET_KEY } from './membership';
 import {
   buildCompanionStable,
   buildCompanionVolatile,
+  PITCH_REQUIRED_BLOCK,
   type StyleMode,
   type FaithTier,
 } from './companionSystemPrompt';
@@ -82,27 +83,57 @@ const PITCH_MAX_PER_WEEK = 3;
 const PITCH_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
- * Decide whether Otto may mention the plan on THIS message, and record it if so.
+ * ⚠️ THE BUDGET IS CHECKED BEFORE THE CALL AND SPENT AFTER IT, and those are deliberately two steps.
  *
- * ⚠️ FAILS SILENT, NOT OPEN. Any error returns false. The cost of a missed pitch is nothing; the cost of a
- * wrongly-fired one is pitching a paying subscriber.
+ * They used to be one, and it cost two evenings: the slot was spent the moment the app DECIDED a pitch was
+ * allowed, with nothing checking that Otto went on to make one. Every message where he stayed quiet (a
+ * contradiction in his prompt, a refusal, a failed call) silently burned one of the three, so the pitch
+ * disabled itself for a week without a trace. Spending it only on a reply that really names the plan means
+ * the budget counts pitches the USER SAW, which is the only thing it was ever meant to ration.
+ *
+ * Both halves FAIL SILENT, NOT OPEN: any error means no pitch. The cost of a missed pitch is nothing; the
+ * cost of a wrongly-fired one is pitching a paying subscriber.
  */
-async function claimPitchSlot(uid: string): Promise<boolean> {
+async function pitchBudgetHasRoom(uid: string): Promise<boolean> {
+  try {
+    const snap = await usageDoc(uid).get();
+    const d = snap.exists ? (snap.data() as { pitchAtMs?: number[] }) : {};
+    const now = Date.now();
+    const recent = (d.pitchAtMs ?? []).filter((t) => typeof t === 'number' && now - t < PITCH_WINDOW_MS);
+    return recent.length < PITCH_MAX_PER_WEEK;
+  } catch (e) {
+    console.error('pitchBudgetHasRoom failed (staying silent):', uid, e);
+    return false;
+  }
+}
+
+/**
+ * Spend one slot, now that Otto has actually pitched. Re-checks the cap inside the transaction rather than
+ * trusting the earlier read, so two messages in flight at once can never push the week past three.
+ */
+async function recordPitch(uid: string): Promise<void> {
   try {
     const ref = usageDoc(uid);
-    return await admin.firestore().runTransaction(async (tx) => {
+    await admin.firestore().runTransaction(async (tx) => {
       const snap = await tx.get(ref);
       const d = snap.exists ? (snap.data() as { pitchAtMs?: number[] }) : {};
       const now = Date.now();
       const recent = (d.pitchAtMs ?? []).filter((t) => typeof t === 'number' && now - t < PITCH_WINDOW_MS);
-      if (recent.length >= PITCH_MAX_PER_WEEK) return false;
+      if (recent.length >= PITCH_MAX_PER_WEEK) return;
       tx.set(ref, { pitchAtMs: [...recent, now] }, { merge: true });
-      return true;
     });
   } catch (e) {
-    console.error('claimPitchSlot failed (staying silent):', uid, e);
-    return false;
+    console.error('recordPitch failed (slot not spent):', uid, e);
   }
+}
+
+/**
+ * Did Otto actually mention the plan? The pitch block orders him to name it as "the Supporter plan" and
+ * forbids the bare word on its own, so the word itself is a reliable marker. Only consulted on messages
+ * where a pitch was already allowed, so an ordinary answer about membership can never trip it.
+ */
+function mentionsThePlan(reply: string): boolean {
+  return /supporter/i.test(reply);
 }
 
 // Deterministic house-style backstop (same as Halo): strip any dash the model slips past the
@@ -238,19 +269,21 @@ export const appCompanion = onCall(
       .slice(-MAX_HISTORY_TURNS)
       .map((h) => ({ role: h.role, content: h.text } as Anthropic.MessageParam));
 
+    // ⚠️ ALL THREE MUST AGREE: only a CONFIRMED free user (never 'unknown', never a subscriber), only when
+    // the client says this conversation earned it, and only if the weekly budget has room. The slot is not
+    // spent here -- see `pitchBudgetHasRoom` for why that is two steps now.
+    const budgetHasRoom = status === 'free' && pitchRequested ? await pitchBudgetHasRoom(uid) : false;
+    const pitchAllowed = status === 'free' && pitchRequested && budgetHasRoom;
+
+    // ⚠️ THE PITCH INSTRUCTION RIDES ON THE MESSAGE, NOT THE SYSTEM PROMPT. See PITCH_REQUIRED_BLOCK for the
+    // measurements; the short version is that Otto is on a small model with a ~90,000 character system
+    // prompt, and an instruction at the end of that loses to his standing "never be pushy" character. On the
+    // message it lands every time. This is appended SERVER-SIDE only: the phone stores the user's own text,
+    // so the block is never shown to them and never survives into the next turn's history.
     const messages: Anthropic.MessageParam[] = [
       ...history,
-      { role: 'user', content: message },
+      { role: 'user', content: pitchAllowed ? `${message}\n\n${PITCH_REQUIRED_BLOCK}` : message },
     ];
-
-    // ⚠️ ALL THREE MUST AGREE, and the order matters: only a CONFIRMED free user (never 'unknown', never a
-    // subscriber), only when the client says this conversation earned it, and only if the weekly budget has
-    // room. `claimPitchSlot` RECORDS the slot as it grants it, so it must be the last check.
-    const slotClaimed = status === 'free' && pitchRequested ? await claimPitchSlot(uid) : false;
-    const pitchAllowed = status === 'free' && pitchRequested && slotClaimed;
-    // TEMPORARY DIAGNOSTIC (2026-07-31): the pitch was not firing and the three inputs could not be told
-    // apart from the outside. Remove once it is behaving.
-    console.log('[pitch]', JSON.stringify({ status, pitchRequested, slotClaimed, pitchAllowed }));
 
     const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value() });
 
@@ -278,7 +311,7 @@ export const appCompanion = onCall(
             // the server's own membership record and fails closed to free on any error.
             // (A user who TYPES their own numbers into the message still gets personalised advice. That is
             // the accepted loophole from SPEC_otto.md open item 5 -- the app revealed nothing.)
-            text: buildCompanionVolatile(userContext, supporter ? dataSnapshot : undefined, freeContext, pitchAllowed),
+            text: buildCompanionVolatile(userContext, supporter ? dataSnapshot : undefined, freeContext),
           },
         ],
         messages,
@@ -320,6 +353,20 @@ export const appCompanion = onCall(
       };
     }
 
-    return { ok: true, reply: replyText, used: cap.used, cap: dailyCap };
+    // The reply is real and the user is about to see it, so a pitch inside it is a pitch that happened.
+    // Deliberately AFTER the crisis and empty-reply exits above: neither of those reaches the user, and a
+    // crisis reply must never cost a slot.
+    const pitched = pitchAllowed && mentionsThePlan(replyText);
+    if (pitched) await recordPitch(uid);
+
+    // TEMPORARY DIAGNOSTIC (2026-07-31): the pitch was not firing and the inputs could not be told apart
+    // from the outside. Remove once it is behaving. Never logs the reply itself, only whether it pitched.
+    console.log('[pitch]', JSON.stringify({ status, pitchRequested, budgetHasRoom, pitchAllowed, pitched }));
+
+    // ⚠️ `pitched` GOES BACK TO THE APP because "one pitch per conversation" is the client's half of the rule
+    // and it cannot work this out for itself: the wall count only ever climbs, so without being told, the app
+    // asks again on every message after the third and Otto could pitch three times in one sitting. The server
+    // is the only side that knows whether he actually said it.
+    return { ok: true, reply: replyText, used: cap.used, cap: dailyCap, pitched };
   },
 );

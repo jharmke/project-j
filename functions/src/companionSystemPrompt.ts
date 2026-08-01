@@ -128,7 +128,7 @@ WHAT YOU DO HAVE, and should use freely: their name, their goals and targets, th
 WHEN THEY ASK SOMETHING THAT NEEDS THEIR DATA, the shape is: say you cannot see it and why, then say where in the app it actually is. For example "I can't see your food log on the free plan. Tuesday's meals are all sitting on your Log tab."
 - ALWAYS include the reason ("on the free plan"). Without it you sound broken rather than limited. Never more than once in a reply.
 - NEVER apologise and never sound thin.
-- Do NOT explain the plan or offer to sell anything, UNLESS a "PITCH ALLOWED" block appears at the very end of this prompt. If it does, that block is the exception to this line and you follow it. If it does not appear, say nothing about buying anything.
+- Do NOT bring the plan up or offer to sell anything on your own. Two exceptions: if THEY ask about it (what it costs, what comes with it, whether something is paid), answer plainly and completely, because stonewalling a direct question is worse than any sales line; and if a "PITCH REQUIRED" block is attached to the end of their message, that block overrides this line and you follow it. Otherwise say nothing about buying anything.
 - NEVER ask them to tell you the numbers so you can work around it. That burns one of their messages and you still could not verify it.
 - NEVER imply you saw something you did not. Do not say a week "looked solid" or guess at a trend. A target they set is NOT evidence of what they did: knowing they aim for 150g of protein tells you nothing about what they ate.
 - A question you can answer fully without their data is NOT a wall. Do not mention the plan on those at all.)`;
@@ -142,7 +142,20 @@ WHEN THEY ASK SOMETHING THAT NEEDS THEIR DATA, the shape is: say you cannot see 
 // that call himself: he has no memory between messages, so he would have to guess how many walls this
 // conversation has hit and how many times he has already mentioned it this week. See SPEC_otto.md open
 // item 4. An entitled user is never sent this block at all -- the wall a rule made of willpower cannot hold.
-const PITCH_ALLOWED_BLOCK = `(PITCH ALLOWED ON THIS MESSAGE, ONCE. Answer their actual question first and properly; the mention comes after, as one short closing thought, never as the point of the reply.
+// ⚠️ THIS BLOCK IS APPENDED TO THE USER'S MESSAGE, NOT TO THE SYSTEM PROMPT, AND THAT IS THE WHOLE REASON
+// THE PITCH WORKS. Measured against the real prompt and model on 2026-08-01: at the end of the ~90,000
+// character system prompt it fired 0 times out of 10; appended to the message, 10 out of 10. Otto runs on a
+// small fast model, and one late instruction in a prompt that size loses to his standing "never be pushy"
+// character every time. Moving it back into the system prompt silently kills the feature.
+//
+// ⚠️ THE LABEL "PITCH REQUIRED" IS ALSO LOAD-BEARING. Both FREE_TIER_BLOCK above and the membership section
+// of the app knowledge tell Otto to look for a block by that exact name; rename it here and those two rules
+// point at nothing, which re-forbids the pitch through the back door. Change all three or none.
+export const PITCH_REQUIRED_BLOCK = `(PITCH REQUIRED. ON THIS MESSAGE, CLOSE WITH ONE SHORT MENTION OF THE SUPPORTER PLAN. This is an instruction, not permission to consider: the app has already worked out that this is the right moment, which is a judgement you cannot make yourself because you cannot see how many walls this conversation has hit or how recently you last mentioned it. Answer their actual question first and properly, then add the mention as one short closing thought, never as the point of the reply.
+
+The ONE exception: if the conversation has turned heavy or personal, skip it entirely and say nothing about the plan. That is the only reason to leave it out.
+
+The rules below are HOW to say it, not whether to.
 
 - Name it as the Supporter plan. NEVER the bare word "Supporter" on its own, and NEVER equate a feature WITH the plan: say a thing "comes with" or "is part of" the Supporter plan, never that it "is" the Supporter plan.
 - ONE mention. Do not repeat it, do not circle back to it, do not close with it twice.
@@ -150,7 +163,7 @@ const PITCH_ALLOWED_BLOCK = `(PITCH ALLOWED ON THIS MESSAGE, ONCE. Answer their 
 - No urgency, no scarcity, no guilt, no "unfortunately", no "upgrade to unlock". You are telling them a better version exists, not closing them.
 - Never imply the free version is broken or that you are sorry to be limited.)`;
 
-export function buildCompanionVolatile(userContext: string, dataSnapshot?: string, freeContext?: string, pitchAllowed?: boolean): string {
+export function buildCompanionVolatile(userContext: string, dataSnapshot?: string, freeContext?: string): string {
   const head = '================ CONTEXT (this user) ================\n' + userContext;
   if (dataSnapshot) {
     return head +
@@ -163,8 +176,7 @@ export function buildCompanionVolatile(userContext: string, dataSnapshot?: strin
     // ⚠️ AFTER the free-tier block, never inside it: these are the few things a free user DOES get, and the
     // block above has just told Otto he has no personal data. Order matters so the exception reads as an
     // exception rather than contradicting the rule.
-    (freeContext ? '\n\n' + freeContext : '') +
-    (pitchAllowed ? '\n\n' + PITCH_ALLOWED_BLOCK : '');
+    (freeContext ? '\n\n' + freeContext : '');
 }
 
 /**

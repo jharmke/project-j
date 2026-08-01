@@ -1548,6 +1548,103 @@ real Supporter.
 
 ---
 
+#### ✅ PIECE 6 -- WHERE THE CAPS GET ENFORCED (THE DOOR MAP, walked 2026-08-01)
+
+**WHY THIS EXISTS: a missed door is not a visible bug, it is a cap that silently does not exist.** Nothing
+errors, nothing looks wrong, the limit just is not there for anyone using that route.
+
+⚠️⚠️ **THE METHOD IS THE POINT. TRACE THE HANDLER, NEVER THE BUTTON LABEL.** Cap 6 below was got WRONG the
+first time by grepping for the words "Add Exercise" and assuming four matches meant four creation doors. Two
+of them just navigate. The codebase even carries a comment warning about that exact confusion
+(`workout-library.tsx` ~3401: *"CREATE, not 'Add'. This modal makes a NEW exercise in your library. The
+Workout tab has its own..."*). **Every door below was verified by reading what the onPress actually does or
+by following the storage write. Do the same for anything added later.**
+
+##### EACH CAP NEEDS THREE THINGS
+1. **The doors** -- every place creation starts.
+2. **The count** -- how many they have right now, with presets/built-ins handled correctly (see the table).
+3. **One shared place that owns it** -- all doors ask the same code "what is the cap, how many do I have, am
+   I at it". Not eight screens each doing their own arithmetic. ⚠️ The number the TOAST shows (piece 3) must
+   come from the same place, or the toast says 19 while the wall says full.
+
+##### THE DOOR MAP
+**1. CUSTOM FOODS (20) -- SIX doors.** The most of any cap.
+   1. Log tab plus -> Create Food (deep-links to Add Food with `openCreate: '1'`)
+   2. Add Food plus -> Create Food
+   3. Scan banner -> **"None match? Create & Set food"** (`add-food.tsx` ~1721)
+   4. Barcode results -> **"Create Food for this Barcode"** (`add-food.tsx` ~2206) -- a genuinely SEPARATE
+      button from 3, different label, different placement
+   5. Food detail -> **Save as Copy** (the clone path, ends in the "Saved to My Foods" toast)
+   6. Recipe builder -> add a custom food inline (`recipe-builder.tsx` ~720)
+   ✅ The AI meal estimator does NOT create foods -- verified by whole-repo grep of both the storage key and
+   the creator component; it writes nutrition straight into the day's entry. ⚠️ If it or Otto ever gains a
+   "save this as a food" button, that is door seven.
+   ⚠️ `saveNewFood` in `add-food.tsx` looks like a door and is DEAD CODE -- nothing calls or renders it.
+
+**2. SAVED MEALS (5) -- ONE door.** Log tab -> a logged meal's action column -> Save as Meal. The create
+   function is called from exactly one line (`log.tsx` ~1125).
+   ⚠️ **FUTURE DOOR: Otto's meal builder (plan item F) writes into this same catalog.** Supporter-only, so it
+   cannot walk a free user into a wall, but meals Otto built DO count toward their total if they downgrade.
+
+**3. RECIPES (5) -- TWO doors.** Log tab plus -> New Recipe, and Add Food plus -> New Recipe.
+   ⚠️ **Gate the door that opens the builder with NO recipe id.** The same screen edits an existing recipe
+   when an id is passed (from Add Food and from the recipe log). Gate the screen and a free user with five
+   recipes cannot fix a typo in any of them.
+   ⚠️ The recipe tutorial injects a demo recipe into the same list -- never block it, never count it.
+
+**4. ROUTINES (5) -- ONE door.** Workout Library plus -> Create Routine (`setEditingRoutine(null)`).
+   Tapping one of your own opens the same builder to edit; never blocked.
+   🔎 CHECK AT BUILD: whether loading a PRESET drops a copy into your own routines. If it does, using a
+   preset silently spends one of the five.
+
+**5. PROGRAMS (3) -- ONE door.** Workout Library plus -> Create Program (`setEditingProgram(null)`).
+
+**6. EXERCISE LIBRARY (15 of your own) -- TWO doors.** ⚠️ **This is the one that was got wrong.**
+   1. Exercise Library plus -> **Create Exercise** (`openAdd()`)
+   2. **"Create new exercise"** link inside the Create Routine modal (`workout-library.tsx` ~1685)
+   Both feed the same single write, so it is two doors and one save.
+   ⚠️ **THREE buttons say "Add Exercise" and NONE of them create anything:** the inline one on the Workout
+   tab and the one in its plus menu both just `router.push` to the library in select mode; the Workout tab's
+   own Add Exercise MODAL writes into that DAY's exercise list, never the library. **Blocking any of them
+   would stop a free user building a workout from exercises they already own.**
+   ⚠️ The library's plus menu has NO select-mode guard, so Create Exercise is reachable when you arrive from a
+   day too. Same button, same modal, same save -- gating it once covers both routes.
+   ⚠️ **FUTURE DOOR:** Otto creating an exercise (item A resolution 3). Supporter-only by design.
+
+**7. MEAL SLOTS (5) -- ONE door.** Edit Meal Slots -> Add Meal Slot. The function is defined once and called
+   from that one button. **Easiest of the eight: the enforcement already exists** as a hardcoded `>= 8` with a
+   disabled state and "Maximum 8 slots reached" copy. It just becomes tier-aware, plus dim + gold lock.
+
+**8. STATS GRAPHS (8) -- ONE door.** Stats plus -> Add Graph. Verified by tracing `generateCardId`, which is
+   used in exactly one place. ✅ Home can pin, unpin, edit, delete and change a graph's period but **cannot
+   create one** -- checked specifically. ⚠️ The tutorial drives the creator open itself; never block it.
+
+##### ⚠️ THE COUNT RULES ARE NOT THE SAME ACROSS CAPS. GETTING THIS BACKWARDS BREAKS THEM.
+| Cap | How to count |
+|---|---|
+| Custom foods, saved meals, recipes | Raw list length. Nothing is seeded. |
+| Routines | Your own only. Presets render from a separate section, not your list. |
+| **Programs** | ⚠️ **EXCLUDE built-ins -- they are seeded into the SAME list as yours.** |
+| **Exercise library** | ⚠️ **EXCLUDE built-ins -- the app's own exercises live in the SAME list.** |
+| Meal slots | ⚠️ **RAW TOTAL, defaults included.** 5 = the 4 that ship + 1 of yours. |
+| Stats graphs | ⚠️ **RAW TOTAL, defaults included.** 8 = the 7 that ship + 1 of yours. |
+
+⚠️ **SOMEBODY WHO JUST LEARNED THE "SKIP THE BUILT-INS" RULE FROM PROGRAMS/EXERCISES WILL APPLY IT TO MEAL
+SLOTS AND GRAPHS AND HAND EVERY FREE USER FOUR EXTRA SLOTS.** The two layout caps are raw totals.
+
+⚠️⚠️ **EXCLUDE BUILT-INS BY IDENTITY, NEVER BY NUMBER (Justin, 2026-08-01).** Plan item J adds 60+ exercises
+(~79 to ~143). Anything that computes "how many minus 79" silently gives every user on earth 60 extra slots
+of allowance the day J ships, or takes them away, depending which way it runs. Nothing errors. The count must
+ask *"did the USER make this"*, never *"how many are there, minus the ones that shipped."*
+
+##### 🎓 TUTORIALS ARE NEVER CAPPED, ON ANY OF THE EIGHT
+Custom foods, recipes and stats graphs all have tutorials that drive their creator open directly, and the
+recipe one injects a demo recipe into the real list. Each opens by its own path, separate from every
+user-facing door, so there is a clean place to make the distinction -- but it must be deliberate or a free
+user at their cap dead-ends inside a tutorial.
+
+---
+
 ##### 🗄️ THE FALLBACK, KEPT ON PURPOSE -- MODAL ONCE, THEN TOAST
 **Not the plan. Kept because "modal every time" is a "we can try it", and if it reads as too much on device
 this is what we fall back to** rather than re-deriving it from scratch. Justin, 2026-08-01: "can you leave

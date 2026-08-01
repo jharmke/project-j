@@ -1588,7 +1588,21 @@ are separate pre-submission checklists, NOT part of this menu.
      in their dashboard). The check also turned up a LIVE BUG -- the step-down effect never reads membership's
      `loading` flag, so a slow launch can tell a paying Supporter their plan ended and burn the once-ever
      flag. Logged at the top of NEXT UP with the fix.
-     ⏭️ **NEXT: PIECE 6, THE LAST ONE** -- where the caps get enforced across the different features.
+     ✅ **PIECE 6 IS COMPLETE 2026-08-01 -- ITEM C IS FULLY SPECCED.** The door map for all eight caps is in
+     SPEC_monetization.md -> PIECE 6, walked one cap at a time and verified by reading HANDLERS, not button
+     labels. Door counts: foods **6**, recipes **2**, exercise library **2**, and one each for saved meals,
+     routines, programs, meal slots and stats graphs.
+     ⚠️⚠️ **TRACE THE HANDLER, NEVER THE LABEL.** The exercise-library cap was got wrong first time by
+     grepping for "Add Exercise" -- THREE buttons in the app say that and NONE of them create anything (two
+     navigate, one adds to that day). Justin caught it. The codebase already carries a comment warning about
+     that exact confusion.
+     ⚠️ **The count rules DIFFER per cap**: programs and the exercise library must EXCLUDE built-ins (seeded
+     into the same list), while meal slots and stats graphs are RAW TOTALS including the defaults. Applying
+     one rule everywhere breaks half of them.
+     ⚠️⚠️ **EXCLUDE BUILT-INS BY IDENTITY, NEVER BY NUMBER** -- plan item J adds 60+ exercises, so any
+     "count minus 79" silently hands every user 60 slots of allowance the day it ships.
+     ⚠️ Tutorials drive several creators open directly and must NEVER be capped.
+     ➡️ **ITEM C IS NOW SPEC-COMPLETE AND READY TO BUILD.** Nothing in it is built yet.
      ⏭️ **THEN PIECE 6** -- where the caps get enforced across the different features (the build checklist:
      every creation door for all eight caps).
      ⚠️ **THE LAYOUT CAPS ARE "DEFAULTS PLUS ONE", NOT RAW TOTALS (Justin, 2026-07-31). Read either as a bare

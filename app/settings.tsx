@@ -43,6 +43,7 @@ import { generateDiagnosticReport, ReportWindow, dumpWindowComparison } from '..
 import { dumpDayScoreWithRecovery, ensureFreshDayScore } from '../utils/dayScoreStore';
 import { buildCompanionStats } from '../utils/companionStats';
 import { devExpireFirstWeek } from '../utils/firstWeek';
+import { CapKey, FREE_CAPS, SUPPORTER_CAPS, countFor } from '../utils/caps';
 import { probeStreakExclusions } from '../utils/streakExclusion';
 import { startVacation, endVacationEarly, cancelVacationFully, describeVacation, getVacation, vacationTodayKey, addDaysKey, MAX_VACATION_DAYS, VacationState } from '../utils/vacationMode';
 
@@ -3843,6 +3844,47 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Counts what is actually in this account's cloud. Writes nothing.</Text>
               </View>
               <Ionicons name="cloud-outline" size={18} color={theme.accentBlue} />
+            </TouchableOpacity>
+
+            {/* Cap Audit -- the ONLY way to verify utils/caps.ts counts correctly, since the caps have no UI
+                yet. Justin's real account is the fixture: it sits well OVER most free caps and UNDER a few,
+                which is exactly the spread needed. Reads only, writes nothing.
+                ⚠️ Exercises show the RAW library length, not the user-made count: DEFAULT_LIBRARY is private
+                to app/workout-library.tsx, so nothing outside that screen can tell a built-in from a custom
+                one. That count gets verified when the Exercise Library screen is wired up. */}
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              try {
+                const keys: CapKey[] = ['foods', 'savedMeals', 'recipes', 'routines', 'programs', 'mealSlots', 'statsGraphs'];
+                const label: Record<string, string> = {
+                  foods: 'My Foods', savedMeals: 'Meal Catalog', recipes: 'Recipes', routines: 'Routines',
+                  programs: 'Programs', mealSlots: 'Meal slots', statsGraphs: 'Stats graphs',
+                };
+                const lines: string[] = [];
+                for (const k of keys) {
+                  const count = await countFor(k);
+                  const free = FREE_CAPS[k];
+                  const sup = SUPPORTER_CAPS[k];
+                  const state = count > free ? 'OVER' : count === free ? 'AT' : 'under';
+                  lines.push(`${label[k]}: ${count}  (free ${free}, supporter ${sup === null ? '∞' : sup})  ${state}`);
+                }
+                let rawLib = 0;
+                try {
+                  const raw = await AsyncStorage.getItem('pj_exercise_library');
+                  rawLib = raw ? (JSON.parse(raw) || []).length : 0;
+                } catch {}
+                Alert.alert(
+                  'Cap Audit (read-only)',
+                  lines.join('\n\n') +
+                  `\n\nExercise Library: ${rawLib} total (built-ins + yours).\nThe user-made count cannot be worked out from here; it is verified on the Exercise Library screen.`,
+                );
+              } catch (e) { Alert.alert('Cap Audit failed', String(e)); }
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentBlue }]}>Cap Audit (read-only)</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>What you have vs the free and Supporter limits. Writes nothing.</Text>
+              </View>
+              <Ionicons name="speedometer-outline" size={18} color={theme.accentBlue} />
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {

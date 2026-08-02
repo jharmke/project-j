@@ -11,6 +11,50 @@
 
 ---
 
+## 🔢 ITEM C PIECE 3 -- THE COUNT ON CREATION TOASTS (device-verified, SHIPPED 2026-08-02)
+Commits 2a07463, 3d8ce06, ccd8347, 888822b, e021979. The DESIGN lives in SPEC_monetization.md -> PIECE 3;
+this is what actually happened building it.
+
+**What shipped:** a free user creating anything capped now gets the count on the success toast that already
+fired -- `Chicken Thighs (3 of 20 included on the free plan)`. Counting UP, free users only, create actions
+only, never on an edit and never on logging. One helper in `utils/caps.ts` builds the line, so all seven
+counted caps phrase it identically and the number is the same one the wall modal reads, by construction
+rather than by coincidence.
+
+**TWO DEVIATIONS FROM THE SPEC, both deliberate, both recorded in the spec itself:**
+- **Meal slots are exempt.** The spec assumed every capped thing already fired a creation toast. Meal slots
+  fire none, the slot has no name yet at creation ("New Meal", then straight into a rename field), and the
+  Edit Meal Slots sheet has no `ToastRenderer`, so a toast fired there would render under the sheet's own
+  window. The sheet header already reads `5 of 5 slots` live against the real tier cap, directly above the
+  Add button -- a better count than a toast could have been.
+- **Graphs got their own builder.** The cap is a raw total of 8, so the normal path would have said "8 of 8".
+  Both numbers are now derived by identity, and the allowance is the cap minus the defaults the user STILL
+  HAS -- deleting a default graph really does buy room for another custom, so "cap - 7" would have claimed
+  "1 of 1" while the button allowed two more.
+
+**THREE PRE-EXISTING BUGS FOUND AND FIXED WHILE BUILDING IT.** All three were found the same way: by
+following the STORAGE WRITE rather than the button labels.
+1. **The routine `Duplicate` button was an ungated second creation door.** PIECE 6 recorded routines as
+   having ONE door. `saveMyRoutines` has three call sites; create/edit was capped, duplicate was not, so a
+   free user at the cap could sit on a locked Create Routine button and keep duplicating presets forever.
+   The same trace ALSO closed PIECE 6's open "check at build" question: `USE` never writes `pj_routines`,
+   so loading a preset does not spend one of your five.
+2. **Three cap counts only refreshed on ARRIVAL at their screen** (routines, programs, and foods on Food
+   Detail). Creating at 4 never locked the door at 5; deleting at the cap left it locked until you navigated
+   away and back. Food Detail had a worse version: its check ran once on mount with `[]` deps, so if the
+   screen opened before RevenueCat answered, `membershipLoading` was true, the check correctly returned
+   UNLIMITED, and nothing ever re-ran -- a free user on a slow launch got no padlock at all. An audit of all
+   13 cap-check sites in the app found these were the only three; every other door was already correct.
+3. **Save as Copy fired two toasts for one save**, and the second named `food.description` -- the food you
+   copied FROM. Rename a food while cloning it and the app announced the wrong name.
+
+**PROCESS NOTE.** Justin's counts move constantly as he tests, and the dev tool "Put Me ONE BELOW Every Cap"
+rewrites the CAPS (to current count + 1), not the data -- so toasts during testing read "58 of 58" or
+"7 of 7 custom graphs" rather than the shipped numbers. That confused a test round; run Cap Audit first and
+expect the override numbers, not 20 / 5 / 15.
+
+---
+
 ## 💬 OTTO'S SUPPORTER PITCH -- WHY IT TOOK FOUR FIXES (device-confirmed, SHIPPED 2026-08-01, commit f091d8c)
 
 The behaviour rules live in SPEC_otto.md open item 4. This is the debugging story, kept because three of the

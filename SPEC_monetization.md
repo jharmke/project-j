@@ -1267,7 +1267,34 @@ moment this product gets.
 
 ---
 
-#### ✅ PIECE 3 -- DOES THE USER SEE A CAP COMING (LOCKED 2026-08-01)
+#### ✅ PIECE 3 -- DOES THE USER SEE A CAP COMING (LOCKED 2026-08-01, **BUILT + DEVICE-VERIFIED 2026-08-02**)
+
+> 🏗️ **BUILD NOTES 2026-08-02 -- READ THESE BEFORE TRUSTING THE TEXT BELOW.** Seven of the eight caps ship
+> exactly as written. **Two things changed on contact with the code:**
+>
+> **1. MEAL SLOTS ARE EXEMPT. They get NO toast.** The spec's premise -- "every capped thing already fires a
+> creation toast" -- is false for this one. Adding a slot fires nothing at all, the slot is born called
+> "New Meal" and drops you into a rename field so there is no name to show, and the Edit Meal Slots sheet has
+> no `ToastRenderer` inside it, so a toast fired there would render underneath the sheet's own window.
+> **It already has a better count:** that sheet's header reads `5 of 5 slots`, live, against the real tier
+> cap, directly above the Add Meal Slot button. Justin's call, and he was shown the alternative.
+> ⚠️ The header does NOT carry the "included on the free plan" framing, and over the cap it counts AWAKE
+> slots (a user with 6 and a cap of 5 reads "5 of 5"). Both reviewed and deliberately left: it is a status
+> line on a screen you opened on purpose, not a message fired at you, and the over-cap meal-slot WALL carries
+> no number at all so there is nothing for it to contradict.
+>
+> **2. GRAPHS NEEDED THEIR OWN BUILDER** (`customGraphCountLine` in utils/caps.ts). The graph cap is a RAW
+> TOTAL of 8, so feeding it through the normal path would have said `8 of 8` -- arithmetically right and
+> useless, because the user did not create eight graphs. Both numbers are derived BY IDENTITY: the allowance
+> is the cap minus the defaults the user STILL HAS, not minus the seven that ship, because deleting a default
+> genuinely buys room for another of your own. A hardcoded "cap - 7" would have told someone who deleted two
+> defaults they were at "1 of 1" while the button let them add two more. The noun pluralises for the same
+> reason ("1 of 3 custom graph" is not a sentence).
+>
+> **THREE PRE-EXISTING BUGS FELL OUT OF BUILDING THIS, all fixed:** the routine **Duplicate** button was an
+> ungated SECOND creation door (see PIECE 6, which said routines had one); the routine, program and food-detail
+> cap counts only refreshed when you ARRIVED at the screen, so creating never locked the door and deleting
+> never unlocked it; and **Save as Copy fired two toasts**, the second naming the food you copied FROM.
 
 **THE DECISION: the count rides on the SUCCESS toast that already fires when you create something, EVERY
 time, phrased as counting UP, free users only.** Justin's idea and his lean; nothing else shows a count.
@@ -1638,10 +1665,18 @@ by following the storage write. Do the same for anything added later.**
    recipes cannot fix a typo in any of them.
    ⚠️ The recipe tutorial injects a demo recipe into the same list -- never block it, never count it.
 
-**4. ROUTINES (5) -- ONE door.** Workout Library plus -> Create Routine (`setEditingRoutine(null)`).
+**4. ROUTINES (5) -- TWO doors.** ⚠️ **THIS SAID "ONE" AND WAS WRONG. Corrected 2026-08-02.**
+   1. Workout Library plus -> Create Routine (`setEditingRoutine(null)`).
+   2. **Duplicate**, on every PRESET routine card, next to USE. It writes a copy straight into `pj_routines`
+      (`saveMyRoutines([...myRoutines, copy])`) and shipped with no cap check at all, so a free user could
+      sit staring at a locked Create Routine button and keep making routines from it indefinitely.
    Tapping one of your own opens the same builder to edit; never blocked.
-   🔎 CHECK AT BUILD: whether loading a PRESET drops a copy into your own routines. If it does, using a
-   preset silently spends one of the five.
+   ✅ **THE "CHECK AT BUILD" QUESTION IS ANSWERED: loading a preset does NOT spend one of your five.** `USE`
+   calls `openLoadRoutinePicker`, which only puts the preset onto a DAY and never writes `pj_routines`.
+   Verified by following all three `saveMyRoutines` call sites (create/edit, delete, duplicate). Never gate USE.
+   ⚠️ **HOW THE MISSED DOOR WAS FOUND, because it is the same lesson as cap 6:** by following the STORAGE
+   WRITE rather than the buttons. Grepping the screen for creation-looking labels finds Create Routine and
+   stops. Grepping for `saveMyRoutines` finds all three.
 
 **5. PROGRAMS (3) -- ONE door.** Workout Library plus -> Create Program (`setEditingProgram(null)`).
 

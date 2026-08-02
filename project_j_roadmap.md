@@ -30,6 +30,13 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-08-02 **Item C piece 3: free users now see a count on every creation toast** (device-verified on all
+  seven counted caps). `Chicken Thighs (3 of 20 included on the free plan)`, counting UP, free only, create
+  only, from the same engine the walls read. Meal slots were EXEMPTED (their Edit sheet already shows a live
+  count and no creation toast exists there); graphs got their own line builder because the cap is a raw total
+  of 8 but the toast talks about the custom one. Three pre-existing bugs fixed en route: the routine Duplicate
+  button was an ungated second creation door, two cap checks only refreshed on arrival, and the clone path
+  fired two toasts of which one named the wrong food. Full detail in project_j_roadmap_archive.md.
 - 2026-08-01 **Saying no to Otto now actually works, and sleep nights land on the right day (both device-
   verified).** An explicit refusal (including "I can't afford it") buys 30 days of silence from the
   unprompted pitch, while a direct question about the plan is still answered in full. Also fixed from the
@@ -1339,9 +1346,10 @@ are separate pre-submission checklists, NOT part of this menu.
   pitch rules, exercise cap, jump button, 30-day suppression, per-mode pass -- all present) and item **D**
   (the week really does end at LOCAL MIDNIGHT via `end_time_ms`, BOTH onboarding buttons fire the grant, and
   the membership refresh that stops the app showing free afterwards is there).
-  **ITEM C -- FIVE THINGS DECIDED AND NEVER BUILT:**
-  1. **The count on creation toasts (piece 3).** `Food saved` / `Chicken Thighs (3 of 20 included on the free
-     plan)`. Justin's own idea, approved, spec'd in full. **Nothing in the app shows a count anywhere.**
+  **ITEM C -- FIVE THINGS DECIDED AND NEVER BUILT. ONE DOWN, FOUR LEFT:**
+  1. ✅ **BUILT + DEVICE-VERIFIED 2026-08-02. The count on creation toasts (piece 3).** All seven counted
+     caps ship it: foods, saved meals, recipes, routines, programs, exercises, graphs. **Meal slots were
+     EXEMPTED** -- see the spec, this is a real change to piece 3, not an omission.
   2. **Custom macro + nutrition goals gating (piece 2).** Grandfathered on downgrade, the custom split STORED
      so picking a preset is not a one-way door, the fifth "Custom" card in the Macros modal, and the gate on
      the controls INSIDE Settings > Goals (not on the Fine-tune link). Two of the eleven perk rows. No code.
@@ -1367,8 +1375,8 @@ are separate pre-submission checklists, NOT part of this menu.
   still lists it as "STILL OPEN"; it is not. ⚠️ The email is outside the app, so it does not change what the
   purchase grants -- **check Apple's actual tipping guideline wording before submission** rather than
   assuming. Tips granting nothing is normal, but do not take that from memory.
-  🧹 **DOC STALENESS FOUND:** SPEC_otto.md ~line 614 still says the 7-day taste is "specced but NOT BUILT".
-  It shipped 2026-07-31.
+  🧹 ✅ **DOC STALENESS FIXED:** SPEC_otto.md ~line 614 said the 7-day taste was "specced but NOT BUILT".
+  It shipped 2026-07-31 and that line now says so.
 - 🧷 **SPAWNED BY THE OTTO / MONETIZATION / LIMITS PUSH -- THESE GO AT THE TOP.** Standing rule set by Justin
   2026-08-01: **anything that comes out of this push gets added to the TOP of NEXT UP, not the bottom.** They
   are side-findings, deliberately NOT folded into plan item C (none of them are about caps, and folding them
@@ -1417,13 +1425,15 @@ are separate pre-submission checklists, NOT part of this menu.
     rest of THE PLAN, but it belongs at the top of NEXT UP so it does not rot.
     Scope when picked up: the whole modal, not just the duration picker. Check it against the app's current
     modal standard (centred card, handle pill, spring in) and the keyboard behaviour.
-  • **[FOUND 2026-08-02] TWO IDENTICAL "create a food from this scan" BUTTONS on the Food Library screen.**
-    The scan banner's **"None match? Create & Set food"** and the results screen's **"Create Food for this
-    Barcode"** do EXACTLY the same thing (both `setBarcodeForCreate(lastScannedBarcode)` then open the
-    creator) and can be on screen at the same time. Pre-existing, not introduced by item C -- locking them
-    just made it obvious, because two identical grey bars are harder to ignore than two blue ones. Justin
-    spotted it 2026-08-02: "why is this button here on the bottom? Isn't it literally the same?"
-    Deleting one is a product call, not part of item C. Decide which earns its place.
+  • **[FOUND 2026-08-02, LEFT BY THE DELETED BUTTON] A BARCODE TUTORIAL STEP NAMES A BUTTON THAT NO LONGER
+    EXISTS.** `data/tutorials.ts` ~855, step `add_food_create_barcode`, still tells the user in all three
+    modes to "tap Create Food for this Barcode". That button was deleted 2026-08-02 as a duplicate. The step
+    carries `skipIfTargetMissing: true`, so today it does not misfire -- it silently vanishes instead, which
+    means the barcode tutorial quietly lost its "nothing matched" step for everyone.
+    ⚠️ Two things to settle, and both are Justin's call: the COPY should name the surviving button (the scan
+    banner's **"None match? Create & Set food"**), and the step needs a real target on that banner rather
+    than a skip -- silently skipping steps is against the standing tutorial rule. Found while updating the
+    roadmap after item C piece 3; not part of C.
   • **[LIVE BUG, found 2026-08-01] The step-down notice can fire at a PAYING Supporter on a slow launch.**
     `app/(tabs)/index.tsx` (~line 1160) takes only `const { isSupporter } = useMembership()` and never takes
     `loading`, so at launch it cannot tell "free user" from "RevenueCat has not answered yet". Today it is

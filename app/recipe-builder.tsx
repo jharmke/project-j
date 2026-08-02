@@ -13,7 +13,7 @@ import CustomFoodCreator from '../components/CustomFoodCreator';
 import CapWallModal from '../components/CapWallModal';
 import { GOLD_BASE } from '../components/SupporterFoil';
 import { useMembership } from '../MembershipContext';
-import { checkCap, capFor, type CapState } from '../utils/caps';
+import { checkCap, capFor, creationCountLine, toastLineWithCount, type CapState } from '../utils/caps';
 import GradientNumber from '../components/GradientNumber';
 import { useToast, ToastRenderer } from '../components/Toast';
 import { saveToFirebase } from '../firebaseConfig';
@@ -662,7 +662,18 @@ export default function RecipeBuilderScreen() {
       }
       await storageSet('pj_recipes', JSON.stringify(recipes));
       await saveToFirebase('recipes', 'list', recipes);
-      showToast(recipeId ? 'Recipe updated' : 'Recipe saved', recipeName.trim(), 'success');
+      // ⚠️ The count rides on the CREATE branch only -- `recipeId` is set when this builder was opened to
+      // edit an existing recipe, and editing one you already own costs nothing. `recipes` is the list this
+      // save just wrote, so the number here is the same one the wall and the dim button read.
+      // ⚠️ The tutorial never reaches this line: saveRecipe returns early in tutorial mode.
+      showToast(
+        recipeId ? 'Recipe updated' : 'Recipe saved',
+        toastLineWithCount(
+          recipeName.trim(),
+          recipeId ? null : creationCountLine('recipes', recipes.length, isSupporter, membershipLoading),
+        ),
+        'success',
+      );
       router.back();
     } catch (e) {
       console.log('Save recipe error', e);

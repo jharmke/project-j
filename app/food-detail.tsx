@@ -6,7 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic, triggerHapticNotification } from '@/utils/haptics';
 import { Camera, CameraView } from 'expo-camera';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActionSheetIOS, Alert, Animated, Dimensions, Image, Linking, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
@@ -1010,10 +1010,22 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
   const [slotNameCache, setSlotNameCache] = useState<Record<string, string>>({});
   useEffect(() => {
     loadMealSlots().then(({ mealSlots: slots, slotNameCache: cache }) => { setMealSlots(slots); setSlotNameCache(cache); });
-    // ITEM C: refresh alongside the slots so the padlock is right whenever this screen appears, including
-    // after the user deleted a food elsewhere and came back.
-    checkCap('foods', isSupporter, membershipLoading).then(setFoodCap).catch(() => {});
   }, []);
+
+  // ITEM C: the food count, on its OWN effect with real dependencies. This screen does not hold the food
+  // list, so unlike add-food it cannot derive the count -- it has to re-read.
+  // ⚠️ THIS USED TO RUN ONCE ON MOUNT WITH `[]` DEPS, which broke it two ways:
+  //   1. Clone a food and the count never updated, so Save as Copy stayed unlocked and you could keep
+  //      cloning straight past the cap (found on device 2026-08-02: the toast read "60 of 59").
+  //   2. Worse and unreported: if the screen mounted before RevenueCat answered, membershipLoading was
+  //      true, checkCap correctly returned UNLIMITED, and nothing ever re-ran -- so a free user on a slow
+  //      launch got no padlock on this screen at all for as long as it stayed open.
+  // Re-running on membership resolving fixes both halves. `refreshFoodCap` is also called after a clone.
+  // (Pattern copied from recipe-builder.tsx, which had this right; every other cap door was already fine.)
+  const refreshFoodCap = useCallback(() => {
+    checkCap('foods', isSupporter, membershipLoading).then(setFoodCap).catch(() => {});
+  }, [isSupporter, membershipLoading]);
+  useEffect(() => { refreshFoodCap(); }, [refreshFoodCap]);
   const [showEditFoodModal, setShowEditFoodModal] = useState(false);
   const [editFoodData, setEditFoodData] = useState<any>(null);
   const mealDropdownAnim = useRef(new Animated.Value(0)).current;
@@ -2355,10 +2367,15 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
         />
       )}
 
+      {/* ⚠️ onSaved FIRES NO TOAST, deliberately. CustomFoodCreator fires its own "Food saved" on the way
+          out, so this used to double-toast a single save -- and this one named `food.description`, the food
+          you copied FROM, so renaming during a clone made it announce the wrong food. The creator's toast is
+          the one all five doors share and the only one carrying the free-plan count. Closing the sheet still
+          belongs here. */}
       <CustomFoodCreator
         visible={showSaveAsCopy}
         onClose={() => setShowSaveAsCopy(false)}
-        onSaved={() => { setShowSaveAsCopy(false); showToast('Saved to My Foods', food.description, 'success'); }}
+        onSaved={() => { setShowSaveAsCopy(false); refreshFoodCap(); }}
         title="Clone Food"
         prefill={{
           name: food.brand ? food.description : (food.description?.split(' · ')[0] ?? food.description),

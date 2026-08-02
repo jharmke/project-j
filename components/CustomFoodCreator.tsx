@@ -28,6 +28,8 @@ import UnitPickerButton from './UnitPickerButton';
 import { parseNutritionLabel, ParsedLabel } from '../utils/nutritionLabelParser';
 import LabelScanReviewModal, { ScanRowResult, ScanServingResult } from './LabelScanReviewModal';
 import ModalHeader from './ModalHeader';
+import { useMembership } from '../MembershipContext';
+import { creationCountLine, toastLineWithCount } from '../utils/caps';
 
 interface CustomFoodCreatorProps {
   visible: boolean;
@@ -88,6 +90,9 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
   const { theme } = useTheme();
   const { showToast } = useToast();
   const { registerScrollView, unregisterScrollView, registerTutorialAction, unregisterTutorialAction } = useTutorial();
+  // ITEM C piece 3: the count on the creation toast. This component is the ONE save shared by all five
+  // custom-food doors, so wiring it here gives every door the same line and none of them can drift.
+  const { isSupporter, loading: membershipLoading } = useMembership();
 
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const cardScale = useRef(new Animated.Value(0.95)).current;
@@ -528,7 +533,15 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
       const updated = [...existing, newFood].sort((a, b) => a.name.localeCompare(b.name));
       await storageSet('pj_my_foods', JSON.stringify(updated));
       await saveToFirebase('my_foods', 'foods', updated);
-      showToast('Food saved', name.trim(), 'success');
+      // ⚠️ The name here is the one the user typed in THIS sheet, which is the same value written into the
+      // food above -- so the toast can never announce a different name than the food it just made. That
+      // matters most on the clone path, where the food you copied FROM has a different name.
+      // ⚠️ tutorialMode returned early long before this line, so a tutorial food never shows a count.
+      showToast(
+        'Food saved',
+        toastLineWithCount(name.trim(), creationCountLine('foods', updated.length, isSupporter, membershipLoading)),
+        'success',
+      );
       onSaved?.(newFood);
       handleClose();
     } catch (e) {

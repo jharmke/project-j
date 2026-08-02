@@ -17,7 +17,7 @@ import { DEFAULT_MEAL_SLOTS, MealSlot, findSlotForMeal, getMealDisplayName, load
 import CapWallModal from '../../components/CapWallModal';
 import { GOLD_BASE } from '../../components/SupporterFoil';
 import { useMembership } from '../../MembershipContext';
-import { checkCap, capFor, capStateFrom, liveItems, sleepingItems, SUPPORTER_CAPS, type CapState } from '../../utils/caps';
+import { checkCap, capFor, capStateFrom, liveItems, sleepingItems, creationCountLine, toastLineWithCount, SUPPORTER_CAPS, type CapState } from '../../utils/caps';
 import { resolveMealPhoto, uploadMealPhoto, purgeMealPhoto, mealPhotoKey } from '../../utils/mealPhotos';
 import { getRepeatSummary, logRepeatedItems, SlotRepeatInfo, tidyFoodName } from '../../utils/repeatMeal';
 import { entryNutrient } from '../../utils/nutrientScale';
@@ -1246,9 +1246,23 @@ export default function LogScreen() {
       await saveMealFromEntries(mealNameDraft.trim(), saveMealSelected);
       setHasSavedMeals(true);
       // ITEM C: re-read immediately, so the button locks on the save that actually reached the cap.
-      checkCap('savedMeals', isSupporter, membershipLoading).then(setSavedMealCap).catch(() => {});
+      // ⚠️ The SAME read feeds the button and the toast. Counting twice is how the two end up disagreeing,
+      // and this one is awaited so it reflects the write that just finished.
+      const savedMealState = await checkCap('savedMeals', isSupporter, membershipLoading);
+      setSavedMealCap(savedMealState);
       triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
-      showToast('Meal saved', `"${mealNameDraft.trim()}" added to your Meal Catalog`, 'success');
+      // ⚠️ The old second line was `"Name" added to your Meal Catalog`. Replaced rather than appended
+      // (Justin's call): with the count on the end that ran to three lines, and every other counted cap
+      // reads `Name (n of N included on the free plan)`. Saved meals phrasing itself differently would
+      // read as unconsidered.
+      showToast(
+        'Meal saved',
+        toastLineWithCount(
+          mealNameDraft.trim(),
+          creationCountLine('savedMeals', savedMealState.count, isSupporter, membershipLoading),
+        ),
+        'success',
+      );
       setSaveMealSlot(null);
     } catch {
       showToast('Could not save meal', 'Please try again', 'error');

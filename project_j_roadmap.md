@@ -1330,6 +1330,42 @@ WINS. Items graduate UP here from the backlog sections so good ideas don't rot d
 ships it leaves this list. Always offer at least one QUICK WIN when Justin asks what's next, and pull a
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
+- 🔍 **THE 2026-08-02 AUDIT: EVERYTHING DECIDED BUT NEVER BUILT.** Run after item C was wrongly declared
+  complete. Claude had been closing each PIECE as it was built and then declaring the ITEM done from memory,
+  without re-reading the spec decision by decision. Justin caught it by asking for a double check.
+  ⚠️ **STANDING RULE FROM HERE: "complete" is only claimable after re-reading the spec against the code.**
+  Mark each decision BUILT or NOT BUILT where it is written, so the claim is checkable instead of asserted.
+  ✅ **AUDITED CLEAN, verified against code, not against the roadmap's own claims:** item **B** (data gate,
+  pitch rules, exercise cap, jump button, 30-day suppression, per-mode pass -- all present) and item **D**
+  (the week really does end at LOCAL MIDNIGHT via `end_time_ms`, BOTH onboarding buttons fire the grant, and
+  the membership refresh that stops the app showing free afterwards is there).
+  **ITEM C -- FIVE THINGS DECIDED AND NEVER BUILT:**
+  1. **The count on creation toasts (piece 3).** `Food saved` / `Chicken Thighs (3 of 20 included on the free
+     plan)`. Justin's own idea, approved, spec'd in full. **Nothing in the app shows a count anywhere.**
+  2. **Custom macro + nutrition goals gating (piece 2).** Grandfathered on downgrade, the custom split STORED
+     so picking a preset is not a one-way door, the fifth "Custom" card in the Macros modal, and the gate on
+     the controls INSIDE Settings > Goals (not on the Fine-tune link). Two of the eleven perk rows. No code.
+  3. **Widening the step-down notice to CANCELLATIONS (piece 5).** Decided: a Supporter whose subscription
+     ends gets the same notice, titled "Your Supporter Plan Has Ended", keeping the calendar icon. Only the
+     `loading` guard was built, and that was a separate bug fix.
+  4. **The four `FirstWeekEndedModal` changes** (already logged below).
+  5. **The tooltip / tutorial / Otto-KB updates.** ⚠️ CLAUDE.md requires these in the SAME session as any
+     user-facing change and they were never touched. **Otto's KB lists what Supporter adds and NONE of the
+     eight caps are in it** -- it even carries a line telling him never to say the whole app is free because a
+     few features are paid, and that list is now wrong. Ask him today how many custom foods you get and he
+     does not know.
+  **ITEM A -- ONE ORPHAN:** the **undereating safeguard** was fully decided (app-side detection, 4+ of 7
+  qualifying days, Otto never speaks first, fixed sentence + improvised lead-in) and the roadmap itself says
+  *"still needs a HOME in this plan: fold into B or give it its own letter."* That never happened. It has no
+  letter and no code -- the only undereating logic in the app is an unrelated Smart Coach rule
+  (`day_undereating` in utils/coachAI.ts). **Give it a letter before anyone tries to build it.**
+  **OUTSIDE THE PLAN -- ✅ DECIDED, spec was just stale:** `purchaseTip` grants nothing in-app. That is
+  DELIBERATE (Justin, 2026-08-02): he gets the purchase emails and thanks people directly. SPEC_monetization
+  still lists it as "STILL OPEN"; it is not. ⚠️ The email is outside the app, so it does not change what the
+  purchase grants -- **check Apple's actual tipping guideline wording before submission** rather than
+  assuming. Tips granting nothing is normal, but do not take that from memory.
+  🧹 **DOC STALENESS FOUND:** SPEC_otto.md ~line 614 still says the 7-day taste is "specced but NOT BUILT".
+  It shipped 2026-07-31.
 - 🧷 **SPAWNED BY THE OTTO / MONETIZATION / LIMITS PUSH -- THESE GO AT THE TOP.** Standing rule set by Justin
   2026-08-01: **anything that comes out of this push gets added to the TOP of NEXT UP, not the bottom.** They
   are side-findings, deliberately NOT folded into plan item C (none of them are about caps, and folding them
@@ -1542,9 +1578,18 @@ are separate pre-submission checklists, NOT part of this menu.
      reasoning in SPEC_otto.md -> KNOWN LEAK, ACCEPTED FOR NOW.
      ⚠️ `DEV_UNLIMITED_UIDS` currently holds Justin's uid for testing and MUST be emptied at launch, and the
      `[pitch]` diagnostic log line must come out (both on the REVERT BEFORE LAUNCH list).
-  **C. ✅ COMPLETE 2026-08-02 -- NON-AI WALLS / PAYWALLS / LIMITS. SPECCED, BUILT AND DEVICE-VERIFIED.**
-     All eight caps enforced, all sixteen wall modals written, both dormancy models built, and the whole
-     thing tested on Justin's real data. Detail below and in SPEC_monetization.md.
+  **C. 🟡 NOT COMPLETE -- NON-AI WALLS / PAYWALLS / LIMITS.**
+     ⚠️ **THIS WAS WRONGLY MARKED COMPLETE ON 2026-08-02 AND CORRECTED THE SAME DAY.** Claude closed each
+     piece as it was built and then declared the item done from memory, without re-reading the spec's own list
+     of what item C contained. **Five decided-but-unbuilt things were missed.** Justin caught it by asking for
+     a double check. The lesson, now a standing rule: **"complete" is only claimable after re-reading the spec
+     decision by decision against the code.**
+     ✅ **BUILT + DEVICE-VERIFIED:** all EIGHT caps enforced on every door, all 16 wall modals, both dormancy
+     models (meal slots incl. the frozen-in-time history rule, and stats graphs), plus the dev tools.
+     🟡 **STILL TO BUILD (see the audit list at the top of NEXT UP):** the count on creation toasts (piece 3),
+     custom macro + nutrition goals gating (piece 2), widening the step-down notice to cancellations
+     (piece 5), the four FirstWeekEndedModal copy changes, and the tooltip/tutorial/Otto-KB updates that
+     CLAUDE.md requires in the SAME session as any user-facing change.
      🐛 **THREE PRE-EXISTING BUGS FELL OUT OF IT:** food stranded in deleted meal slots (counted but invisible
      and unreachable -- 880 on the Log tab against 800 of visible slots); the step-down notice able to fire at
      a paying Supporter on a slow launch; and two identical create-a-food buttons on one screen.

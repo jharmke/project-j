@@ -611,8 +611,9 @@ Asked directly whether free Otto is still good enough that a free user LIKES him
 *"i mean he is still useful free. they get a 1 week taste of the whole thing when they finish onboarding
 so they will hopefully see the differnce."*
 
-**So the acceptability of the free tier rests on the taste existing.** The taste is specced but NOT BUILT.
-If it does not ship, free Otto being thinner than today stops being a considered trade and becomes a
+**So the acceptability of the free tier rests on the taste existing.** ✅ **The taste is BUILT and
+device-verified (item D, 2026-07-31)** -- this line used to say "specced but NOT BUILT" and was stale.
+If it ever did not ship, free Otto being thinner than today would stop being a considered trade and become a
 straight downgrade with nothing to offset it.
 
 **Treat the taste as a hard dependency of this spec, not a nice-to-have alongside it.**

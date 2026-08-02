@@ -623,9 +623,13 @@ Three layers:
    [ADDED 2026-07-27: a fifth tip, `tip_founder` at $49.99, labelled "Founder". The GOLD FOIL MOVED to it
    from "Back the mission" -- two gold tiles mark nothing. Apple allows no open-ended/user-entered amount
    (fixed price points only), so a higher fixed tier IS the answer to "someone wants to give more".
-   ⚠️ STILL OPEN, and it is an App Store review risk this file already warned about: `purchaseTip` grants
-   NOTHING. It runs the purchase, shows a thank-you toast, and stores nothing -- no badge bump, no record.
-   Apple can push back on tips that give literally nothing. Applies to all five tips, not just the new one.]
+   ✅ **DECIDED 2026-08-02, NO LONGER OPEN: tips grant nothing in-app BY DESIGN.** `purchaseTip` runs the
+   purchase, shows a thank-you toast and stores nothing -- no badge bump, no record -- and that is deliberate.
+   Justin gets the purchase notification emails and thanks people DIRECTLY by email. When that stops scaling
+   it is a good problem and gets solved then.
+   ⚠️ The email is OUTSIDE the app, so it does not change what the purchase grants. **Read Apple's actual
+   tipping guideline wording before submission** rather than assuming -- tips granting nothing is normal, but
+   do not take that from anyone's memory.]
    - OPTIONAL FUTURE: a recurring "Patron" tier (higher price, SAME perks + a shinier badge/recognition),
      framed as gratitude not features, self-selected. Lead with the one-time tip first; only add Patron if
      there's demand. Do NOT ship an arbitrary higher feature tier.

@@ -359,6 +359,14 @@ export default function LogScreen() {
   const { isSupporter, loading: membershipLoading } = useMembership();
   const [foodCap, setFoodCap] = useState<CapState>({ cap: null, count: 0, unlimited: true, atCap: false, canCreate: true });
   const [foodCapWall, setFoodCapWall] = useState(false);
+  // ── Saved-meals cap (item C). Re-read on focus AND right after one is saved, since saving is what
+  // reaches the cap and the button must lock on that save rather than the next visit.
+  const [savedMealCap, setSavedMealCap] = useState<CapState>({ cap: null, count: 0, unlimited: true, atCap: false, canCreate: true });
+  const [savedMealCapWall, setSavedMealCapWall] = useState(false);
+  // ── Recipes cap (item C). Same door pattern as custom foods: it lives in the FAB menu, so it is read
+  // fresh each time the menu opens.
+  const [recipeCap, setRecipeCap] = useState<CapState>({ cap: null, count: 0, unlimited: true, atCap: false, canCreate: true });
+  const [recipeCapWall, setRecipeCapWall] = useState(false);
   const logFabScale = useRef(new Animated.Value(1)).current;
   const logFabItem1Anim = useRef(new Animated.Value(0)).current; // Add to Meal -- bottom, animates first
   const logFabItem2Anim = useRef(new Animated.Value(0)).current; // Barcode
@@ -368,6 +376,7 @@ export default function LogScreen() {
   // That is the only moment it matters, and it means deleting a food elsewhere frees the button immediately.
   const openLogFabMenu = () => {
     checkCap('foods', isSupporter, membershipLoading).then(setFoodCap).catch(() => {});
+    checkCap('recipes', isSupporter, membershipLoading).then(setRecipeCap).catch(() => {});
     logFabItem1Anim.setValue(0);
     logFabItem2Anim.setValue(0);
     logFabItem3Anim.setValue(0);
@@ -388,6 +397,15 @@ export default function LogScreen() {
     if (!foodCap.canCreate) { setTimeout(() => setFoodCapWall(true), 150); return; }
     returningFromChild.current = true;
     router.push({ pathname: '/add-food', params: { meal: 'browse', date: activeDate, openCreate: '1' } });
+  };
+
+  // ITEM C: both touchables of the Create Recipe row.
+  const onCreateRecipePress = () => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    closeLogFabMenu();
+    if (!recipeCap.canCreate) { setTimeout(() => setRecipeCapWall(true), 150); return; }
+    returningFromChild.current = true;
+    router.push('/recipe-builder');
   };
 
   const closeLogFabMenu = () => {
@@ -686,6 +704,12 @@ export default function LogScreen() {
   };
 
   useEffect(() => { loadAchievements().then(store => setAchievementStore(store)); }, []);
+
+  // ITEM C: the saved-meals count. Unlike custom foods (whose door is in the FAB menu, refreshed when the
+  // menu opens), Save as Meal is always on screen, so it is read here and again after each save.
+  useEffect(() => {
+    checkCap('savedMeals', isSupporter, membershipLoading).then(setSavedMealCap).catch(() => {});
+  }, [isSupporter, membershipLoading]);
 
   useEffect(() => {
     loadMealSlots().then(({ mealSlots: slots, slotNameCache: cache }) => {
@@ -1145,6 +1169,8 @@ export default function LogScreen() {
     try {
       await saveMealFromEntries(mealNameDraft.trim(), saveMealSelected);
       setHasSavedMeals(true);
+      // ITEM C: re-read immediately, so the button locks on the save that actually reached the cap.
+      checkCap('savedMeals', isSupporter, membershipLoading).then(setSavedMealCap).catch(() => {});
       triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
       showToast('Meal saved', `"${mealNameDraft.trim()}" added to your Meal Catalog`, 'success');
       setSaveMealSlot(null);
@@ -2207,9 +2233,12 @@ export default function LogScreen() {
                           <Ionicons name="search" size={13} color={theme.accentBlue} />
                           <Text style={{ fontSize: 13, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Find a Meal</Text>
                         </TouchableOpacity>
+                        {/* ⚠️ ITEM C: the ONLY door that writes to the Meal Catalog. Locked look is the
+                            standard one -- light fill, gold border, muted label, gold lock. */}
                         <TouchableOpacity
                           onPress={() => {
                             triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+                            if (!savedMealCap.canCreate) { setSavedMealCapWall(true); return; }
                             setMealNameDraft('');
                             setSaveMealItems(mealEntries);
                             setSaveMealChecked(mealEntries.map(() => true));
@@ -2221,11 +2250,12 @@ export default function LogScreen() {
                             flexDirection: 'row', alignItems: 'center', gap: 5,
                             minHeight: 30, paddingVertical: 6, paddingHorizontal: 12,
                             borderRadius: 7, borderWidth: 1, overflow: 'hidden',
-                            backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder,
+                            backgroundColor: savedMealCap.canCreate ? theme.accentBlueBg : theme.bgInset,
+                            borderColor: savedMealCap.canCreate ? theme.accentBlueBorder : GOLD_BASE,
                           }}>
-                          <ButtonShine radius={8} />
-                          <Ionicons name="bookmark-outline" size={13} color={theme.accentBlue} />
-                          <Text style={{ fontSize: 13, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Save as Meal</Text>
+                          {savedMealCap.canCreate && <ButtonShine radius={8} />}
+                          <Ionicons name={savedMealCap.canCreate ? 'bookmark-outline' : 'lock-closed'} size={13} color={savedMealCap.canCreate ? theme.accentBlue : GOLD_BASE} />
+                          <Text style={{ fontSize: 13, color: savedMealCap.canCreate ? theme.accentBlue : theme.textMuted, fontFamily: Type.uiSemibold }}>Save as Meal</Text>
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -2893,6 +2923,26 @@ export default function LogScreen() {
         />
       )}
 
+      {savedMealCapWall && (
+        <CapWallModal
+          capKey="savedMeals"
+          cap={capFor('savedMeals', isSupporter) ?? 0}
+          count={savedMealCap.count}
+          theme={theme}
+          onDismiss={() => setSavedMealCapWall(false)}
+        />
+      )}
+
+      {recipeCapWall && (
+        <CapWallModal
+          capKey="recipes"
+          cap={capFor('recipes', isSupporter) ?? 0}
+          count={recipeCap.count}
+          theme={theme}
+          onDismiss={() => setRecipeCapWall(false)}
+        />
+      )}
+
       {showLogFabMenu && (
         <View style={{ position: 'absolute', bottom: 90 + TAB_BAR_HEIGHT + insets.bottom, right: 20, alignItems: 'flex-end', gap: 12 }}>
           {/* Create Food - top, animates last */}
@@ -2925,16 +2975,21 @@ export default function LogScreen() {
           <Animated.View style={{ opacity: logFabItem3Anim, transform: [{ translateY: logFabItem3Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <TouchableOpacity
-                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeLogFabMenu(); returningFromChild.current = true; router.push('/recipe-builder'); }}
-                style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                <ButtonShine radius={8} solid />
-                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Create Recipe</Text>
+                onPress={onCreateRecipePress}
+                style={recipeCap.canCreate
+                  ? { backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }
+                  : { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: theme.bgInset, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: GOLD_BASE }}>
+                {recipeCap.canCreate && <ButtonShine radius={8} solid />}
+                {!recipeCap.canCreate && <Ionicons name="lock-closed" size={12} color={GOLD_BASE} />}
+                <Text style={{ color: recipeCap.canCreate ? '#ffffff' : theme.textMuted, fontSize: 13, fontFamily: Type.uiSemibold }}>Create Recipe</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeLogFabMenu(); returningFromChild.current = true; router.push('/recipe-builder'); }}
-                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                <ButtonShine radius={22} solid />
-                <Ionicons name="book-outline" size={20} color="#ffffff" />
+                onPress={onCreateRecipePress}
+                style={recipeCap.canCreate
+                  ? { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }
+                  : { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.bgInset, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: GOLD_BASE }}>
+                {recipeCap.canCreate && <ButtonShine radius={22} solid />}
+                <Ionicons name={recipeCap.canCreate ? 'book-outline' : 'lock-closed'} size={20} color={recipeCap.canCreate ? '#ffffff' : GOLD_BASE} />
               </TouchableOpacity>
             </View>
           </Animated.View>

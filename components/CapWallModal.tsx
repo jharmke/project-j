@@ -61,26 +61,30 @@ const COPY: Record<CapKey, { at: Copy; over: Copy }> = {
   },
   savedMeals: {
     at: {
-      title: "You've Saved {cap} Meals",
-      body1: 'The free plan holds {cap} saved meals. Your Meal Catalog is full, and every one is still yours to log and keep.',
+      title: 'Your Meal Catalog Is Full',
+      body1: 'The free plan holds {cap} saved meals, and every one is still yours to log and keep.',
       body2: "Make room by deleting one you've stopped using, or the Supporter plan removes the limit entirely.",
     },
     over: {
-      title: 'All {count} Of Your Saved Meals Are Still Here',
-      body1: 'Nothing you saved has gone anywhere. Every meal is yours to log and keep.',
-      body2: "Free accounts hold {cap}, so there's no room to save another right now. The Supporter plan opens your Meal Catalog back up.",
+      title: 'Your Meal Catalog Is Full',
+      body1: 'All {count} of your saved meals are still here. Nothing has gone anywhere, and every one is yours to log and keep.',
+      body2: "Free accounts hold {cap}, so there's no room to save another right now. The Supporter plan lets you keep saving.",
     },
   },
+  // ⚠️ RECIPES BREAK THE "<Thing> Is Full" TITLE PATTERN ON PURPOSE. Recipes have NO container name anywhere
+  // in the app, so "Recipes Is Full" is broken English and "Your Recipes Are Full" says the recipes
+  // themselves are full. This title answers the same question -- why the button did nothing. Inventing a
+  // noun the app has never shown the user was the alternative and is worse.
   recipes: {
     at: {
-      title: "You've Built {cap} Recipes",
-      body1: "The free plan holds {cap} recipes of your own. Every one you've built is still yours to log, edit and keep.",
+      title: 'No Room For Another Recipe',
+      body1: "The free plan holds {cap} recipes of your own, and every one you've built is still yours to log, edit and keep.",
       body2: "Make room by deleting one you've stopped using, or the Supporter plan removes the limit entirely.",
     },
     over: {
-      title: 'All {count} Of Your Recipes Are Still Here',
-      body1: 'Nothing you built has gone anywhere. Every recipe is yours to log, edit and keep.',
-      body2: "Free accounts hold {cap}, so there's no room to build another right now. The Supporter plan lets you keep building.",
+      title: 'No Room For Another Recipe',
+      body1: 'All {count} of your recipes are still here. Nothing has gone anywhere, and every one is yours to log, edit and keep.',
+      body2: 'Free accounts hold {cap}. The Supporter plan lets you keep building.',
     },
   },
   routines: {

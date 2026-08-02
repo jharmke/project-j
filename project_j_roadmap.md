@@ -1711,10 +1711,22 @@ are separate pre-submission checklists, NOT part of this menu.
      label) held the edge but became "these big dark things"; pass 3 lets the gold hold the edge so the fill
      can go light again. Full reasoning in SPEC_monetization.md.
      ➡️ **ALL FIVE CUSTOM-FOOD DOORS ARE NOW LOCKED. THE FOODS CAP IS COMPLETE.**
-     ⏭️ **NEXT: the remaining SEVEN caps.** Each is the same pattern with fewer doors: saved meals (1 door),
-     recipes (2), routines (1), programs (1), exercise library (2), meal slots (1), stats graphs (1).
-     ⚠️ **Their wall copy is still in the OLD title-as-reassurance shape** and needs reshaping to match foods
-     (`Custom Foods Is Full` style) -- bring it as a batch Justin can see, do not rewrite it alone.
+     🟡 **THE REMAINING SEVEN CAPS, in THREE rounds.** Each round is copy first, then build, then test in one
+     place -- deliberately paired so Justin never approves copy he will not see for hours.
+     ✅ **ROUND 1 DONE + device-verified 2026-08-02: SAVED MEALS + RECIPES.** Saved meals = 1 door (Save as
+     Meal, the only writer to the Meal Catalog). Recipes = 2 doors (both Create Recipe rows, Log tab plus and
+     Food Library plus). Copy reshaped to match foods.
+     ⚠️ **RECIPES BREAK THE "<Thing> Is Full" TITLE PATTERN ON PURPOSE** -- they have no container name in the
+     app, so "Recipes Is Full" is broken English and "Your Recipes Are Full" says the recipes are full. Title
+     is **"No Room For Another Recipe"**, which answers the same question. Do not invent a noun for that list.
+     ✅ **NEW DEV ROW: "Put Me ONE BELOW Every Cap"** -- the AT-cap row cannot test the LIVE RE-LOCK, because
+     at the cap you cannot create anything. This leaves room for exactly one, so creating it should lock that
+     door on the spot. Verified on saved meals.
+     ⏭️ **ROUND 2: the workout side** -- routines, programs, exercise library. 6 modals, 4 doors, and **every
+     door is in `app/workout-library.tsx`**, so it is three caps but one screen to test.
+     ⏭️ **ROUND 3: the layout pair** -- meal slots + stats graphs. 4 modals, 2 doors. Last on purpose: these
+     are the two that REVERT rather than grandfather, so their over-cap wording is the trickiest.
+     ⚠️ Both rounds' copy is still in the OLD title-as-reassurance shape. Reshape it as a batch Justin sees.
      ⏭️ **THEN PIECE 6** -- where the caps get enforced across the different features (the build checklist:
      every creation door for all eight caps).
      ⚠️ **THE LAYOUT CAPS ARE "DEFAULTS PLUS ONE", NOT RAW TOTALS (Justin, 2026-07-31). Read either as a bare

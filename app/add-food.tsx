@@ -16,7 +16,7 @@ import CustomFoodCreator from '../components/CustomFoodCreator';
 import CapWallModal from '../components/CapWallModal';
 import { GOLD_BASE } from '../components/SupporterFoil';
 import { useMembership } from '../MembershipContext';
-import { capStateFrom, capFor, checkCap } from '../utils/caps';
+import { capStateFrom, capFor, checkCap, type CapState } from '../utils/caps';
 import { USDA_API_KEY } from '../config';
 import { app, db, getUserId, loadFromFirebase, saveToFirebase } from '../firebaseConfig';
 import { getFunctions, httpsCallable } from 'firebase/functions';
@@ -353,6 +353,10 @@ export default function AddFoodScreen() {
   // ⚠️ membershipLoading is taken so an unknown answer NEVER dims a paying customer's button. See utils/caps.
   const { isSupporter, loading: membershipLoading } = useMembership();
   const [foodCapWall, setFoodCapWall] = useState(false);
+  // ── Recipes cap (item C). This screen does not hold the recipe list for its own purposes at all times,
+  // so the count is read when the FAB menu opens -- the only moment the door is reachable.
+  const [recipeCap, setRecipeCap] = useState<CapState>({ cap: null, count: 0, unlimited: true, atCap: false, canCreate: true });
+  const [recipeCapWall, setRecipeCapWall] = useState(false);
   const foodCap = capStateFrom('foods', myFoods.length, isSupporter, membershipLoading);
   const [barcodeForCreate, setBarcodeForCreate] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
@@ -566,6 +570,9 @@ const saveEditFood = async () => {
   };
 
   const openFabMenu = () => {
+    // ITEM C: read the recipe count at the only moment its door is reachable. (Custom foods needs no read
+    // here -- this screen already holds `myFoods` in state, so that count is always current.)
+    checkCap('recipes', isSupporter, membershipLoading).then(setRecipeCap).catch(() => {});
     fabItem1Anim.setValue(0);
     fabItem2Anim.setValue(0);
     fabItem3Anim.setValue(0);
@@ -1218,6 +1225,14 @@ const openFoodDetail = async (food: SearchResult) => {
     closeFabMenu();
     if (!foodCap.canCreate) { setTimeout(() => setFoodCapWall(true), 150); return; }
     setShowCreateFood(true);
+  };
+
+  // ITEM C: both touchables of the Create Recipe row.
+  const onCreateRecipePress = () => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    closeFabMenu();
+    if (!recipeCap.canCreate) { setTimeout(() => setRecipeCapWall(true), 150); return; }
+    router.push('/recipe-builder');
   };
 
   // ITEM C doors 3 + 4: both create-a-food-from-a-scan buttons. No FAB menu to close here, so no delay.
@@ -2275,6 +2290,16 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
        />
      )}
 
+     {recipeCapWall && (
+       <CapWallModal
+         capKey="recipes"
+         cap={capFor('recipes', isSupporter) ?? 0}
+         count={recipeCap.count}
+         theme={theme}
+         onDismiss={() => setRecipeCapWall(false)}
+       />
+     )}
+
      <CustomFoodCreator
         visible={showCreateFood}
         title={barcodeForCreate ? 'Create & Set Food' : undefined}
@@ -2475,16 +2500,21 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
               <Animated.View style={{ opacity: fabItem2Anim, transform: [{ translateY: fabItem2Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                   <TouchableOpacity
-                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); router.push('/recipe-builder'); }}
-                    style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                    <ButtonShine radius={8} solid />
-                    <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Create Recipe</Text>
+                    onPress={onCreateRecipePress}
+                    style={recipeCap.canCreate
+                      ? { backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }
+                      : { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: theme.bgInset, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: GOLD_BASE }}>
+                    {recipeCap.canCreate && <ButtonShine radius={8} solid />}
+                    {!recipeCap.canCreate && <Ionicons name="lock-closed" size={12} color={GOLD_BASE} />}
+                    <Text style={{ color: recipeCap.canCreate ? '#ffffff' : theme.textMuted, fontSize: 13, fontFamily: Type.uiSemibold }}>Create Recipe</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); router.push('/recipe-builder'); }}
-                    style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                    <ButtonShine radius={22} solid />
-                    <Ionicons name="book-outline" size={20} color="#ffffff" />
+                    onPress={onCreateRecipePress}
+                    style={recipeCap.canCreate
+                      ? { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }
+                      : { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.bgInset, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: GOLD_BASE }}>
+                    {recipeCap.canCreate && <ButtonShine radius={22} solid />}
+                    <Ionicons name={recipeCap.canCreate ? 'book-outline' : 'lock-closed'} size={20} color={recipeCap.canCreate ? '#ffffff' : GOLD_BASE} />
                   </TouchableOpacity>
                 </View>
               </Animated.View>

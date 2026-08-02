@@ -3909,6 +3909,25 @@ export default function SettingsScreen() {
               <Ionicons name="resize-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>
 
+            {/* The AT-cap row above cannot test the LIVE RE-LOCK, because at the cap you cannot create
+                anything. This one leaves room for exactly one more of everything, so creating it should lock
+                that door on the spot rather than on the next visit. Same reason as the row above: reaching
+                these states with real data would mean deleting Justin's, which is never happening. */}
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+              try {
+                const keys: CapKey[] = ['foods', 'savedMeals', 'recipes', 'routines', 'programs', 'mealSlots', 'statsGraphs'];
+                for (const k of keys) await setDevCapOverride(k, (await countFor(k)) + 1);
+                Alert.alert('Room for one more', 'Every cap is now your current count plus one.\n\nCreate one of anything and that door should lock immediately, without leaving the screen.');
+              } catch (e) { Alert.alert('Failed', String(e)); }
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Put Me ONE BELOW Every Cap</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Room for exactly one more of everything, to test the live re-lock. Touches no data.</Text>
+              </View>
+              <Ionicons name="add-circle-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
               triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
               await clearDevCapOverrides();

@@ -40,7 +40,7 @@ import { entryNutrient } from '../../utils/nutrientScale';
 import { evaluateCalorieGoalHit, paceTargetFromWeightGoal } from '../../utils/goalHit';
 import { StatsGraphCard, GRAPH_SWATCHES, MACRO_PROTEIN, MACRO_CARBS, MACRO_FAT } from '../../components/StatsGraphCard';
 import CapWallModal from '../../components/CapWallModal';
-import { capStateFrom, capFor } from '../../utils/caps';
+import { capStateFrom, capFor, liveCustomGraphIds } from '../../utils/caps';
 import { StatsCardEditModal } from '../../components/StatsCardEditModal';
 import TooltipIcon from '../../components/TooltipIcon';
 import { storageSet } from '../../utils/storage';
@@ -417,7 +417,31 @@ export default function StatsScreen() {
   // user seven extra graphs.
   // Reuses the membership already read above as `isPro`, rather than calling the hook twice.
   const { loading: membershipLoading } = useMembership();
+  // ⚠️ COUNTS ALL GRAPH CARDS, defaults included, because the cap number IS a raw total ("7 defaults + 1").
+  // The DORMANCY rule below is the one that protects the defaults; the cap on CREATING is simply the total.
+  // Consequence, accepted: deleting default graphs frees room to create your own. You gave up a graph to get
+  // a graph, so what is on screen nets out the same.
   const graphCap = capStateFrom('statsGraphs', statsCards.filter(c => c.type === 'graph').length, isPro, membershipLoading);
+
+  // ── ITEM C, PART B: DORMANCY for graphs. Far simpler than meal slots, for one reason: hiding a graph hides
+  // a VIEW, not data. Everything it charted is still in the day records and in every other graph, so there is
+  // no history rule to honour and no way to strand anything.
+  // ⚠️ POSITION DECIDES, and NOTHING IS STORED -- the first N graph cards are awake. So no migration runs at
+  // downgrade, resubscribing is free, and dragging one above the line in Edit Stats wakes it.
+  // ⚠️ RAW TOTAL including the 7 shipped graph cards, NOT exclude-the-built-ins. The free number IS
+  // "defaults plus one". Applying the programs/exercises rule here would hand every free user seven extras.
+  // ⚠️ Sleeping is INDEPENDENT of the eye toggle: a card draws only if it is BOTH visible AND awake. Never
+  // build dormancy on `visible` -- that flag is the user's, so they would just switch their extras back on.
+  const DEFAULT_GRAPH_IDS = useMemo(() => DEFAULT_STATS_CARDS.filter(c => c.type === 'graph').map(c => c.id), []);
+  const isDefaultGraph = (id: string) => DEFAULT_GRAPH_IDS.includes(id);
+  const sleepingGraphIds = useMemo(() => {
+    const cap = capFor('statsGraphs', isPro);
+    if (cap === null || membershipLoading) return new Set<string>();
+    const graphs = statsCards.filter(c => c.type === 'graph');
+    const awake = liveCustomGraphIds(graphs, DEFAULT_GRAPH_IDS, cap);
+    return new Set(graphs.filter(c => !awake.has(c.id)).map(c => c.id));
+  }, [statsCards, isPro, membershipLoading, DEFAULT_GRAPH_IDS]);
+  const isGraphAsleep = (id: string) => sleepingGraphIds.has(id);
   const [graphCapWall, setGraphCapWall] = useState(false);
   const [creatorStep, setCreatorStep] = useState<1 | 2 | 3>(1);
   const [creatorDataKey, setCreatorDataKey] = useState<DataKey | null>(null);
@@ -2035,8 +2059,10 @@ export default function StatsScreen() {
             <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: Type.ui }}>syncs all</Text>
           </View>
 
+          {/* ⚠️ A card draws only if it is BOTH visible (the user's eye toggle) AND awake (the cap). Two
+              independent reasons to be hidden -- never conflate them. */}
           {statsCards
-            .filter(c => c.type === 'graph' && c.visible)
+            .filter(c => c.type === 'graph' && c.visible && !isGraphAsleep(c.id))
             .sort((a, b) => a.order - b.order)
             .map(card => {
               const isTutCard = card.id === tutorialGraphIdRef.current;
@@ -2514,7 +2540,14 @@ export default function StatsScreen() {
                     <View style={{ height: insets.bottom + 20 }} />
                   </>
                 )}
-                renderItem={({ item, drag, isActive }) => (
+                renderItem={({ item, drag, isActive }) => {
+                  // ⚠️ NO DIVIDER HERE, unlike Edit Meal Slots. Sleeping graphs are NOT a contiguous tail:
+                  // your defaults never sleep and your customs are scattered through the order, so there is
+                  // no single line to draw. Each sleeping card carries its own lock instead.
+                  // Reordering still decides WHICH custom is awake -- the first one in the list wins.
+                  const asleep = isGraphAsleep(item.id);
+                  const custom = !isDefaultGraph(item.id);
+                  return (
                   <ScaleDecorator>
                     <TouchableOpacity
                       onLongPress={drag}
@@ -2525,23 +2558,40 @@ export default function StatsScreen() {
                         paddingHorizontal: 20, paddingVertical: 13,
                         backgroundColor: isActive ? theme.bgCard : 'transparent',
                         borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle,
+                        opacity: asleep ? 0.55 : 1,
                       }}>
                       <Ionicons name="reorder-three-outline" size={22} color={theme.textDim} />
-                      <Text style={{ flex: 1, fontSize: 14, fontFamily: Type.uiSemibold, color: item.visible ? theme.textPrimary : theme.textDim }}>
+                      {asleep && <Ionicons name="lock-closed" size={11} color={GOLD_BASE} />}
+                      <Text style={{ fontSize: 14, fontFamily: Type.uiSemibold, color: item.visible ? theme.textPrimary : theme.textDim }}>
                         {item.label}
                       </Text>
+                      {/* ⚠️ Marks the graphs YOU made. Only here, never on the cards themselves: this is the
+                          one screen where "why can that one sleep and this one can't" is a real question,
+                          because the seven the app ships never sleep. On the Stats tab it would be noise. */}
+                      {custom && (
+                        <View style={{ backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
+                          <Text style={{ fontSize: 8, fontFamily: Type.uiBold, color: theme.textMuted, letterSpacing: 1 }}>CUSTOM</Text>
+                        </View>
+                      )}
+                      <View style={{ flex: 1 }} />
                       <View style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
                         <Text style={{ fontSize: 9, fontFamily: Type.uiBold, color: theme.accentBlue, letterSpacing: 1 }}>{item.period}D</Text>
                       </View>
                       <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleDeleteCard(item.id); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                         <Ionicons name="trash-outline" size={17} color={theme.statusBad} />
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleToggleCard(item.id); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                        <Ionicons name={item.visible ? 'eye' : 'eye-off-outline'} size={18} color={item.visible ? theme.accentBlue : theme.textDim} />
+                      {/* ⚠️ The eye is DIMMED on a sleeping card: toggling visibility on something that is not
+                          drawn either way means nothing. Deliberately not the same thing as being asleep. */}
+                      <TouchableOpacity
+                        onPress={() => { if (asleep) return; triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleToggleCard(item.id); }}
+                        disabled={asleep}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                        <Ionicons name={item.visible ? 'eye' : 'eye-off-outline'} size={18} color={asleep ? theme.textDim : item.visible ? theme.accentBlue : theme.textDim} />
                       </TouchableOpacity>
                     </TouchableOpacity>
                   </ScaleDecorator>
-                )}
+                  );
+                }}
               />
             </GestureHandlerRootView>
           </Animated.View>

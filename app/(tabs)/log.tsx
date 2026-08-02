@@ -2947,8 +2947,11 @@ export default function LogScreen() {
               const firstAsleep = slotCapNum !== null && idx === slotCapNum;
               return (
                 <ScaleDecorator>
-                  {/* The line, drawn once, immediately above the first sleeping slot. */}
-                  {firstAsleep && (
+                  {/* The line, drawn once, immediately above the first sleeping slot.
+                      ⚠️ Hidden while THIS row is being dragged. The divider lives inside the row it sits
+                      above, so picking that row up carried the whole "saved and waiting" line along with it
+                      and it floated around the screen mid-drag. */}
+                  {firstAsleep && !isActive && (
                     <View style={{ flexDirection:'row', alignItems:'center', gap:8, marginBottom:12, marginTop:2 }}>
                       <View style={{ flex:1, height:0.5, backgroundColor: GOLD_BASE }} />
                       <Ionicons name="lock-closed" size={11} color={GOLD_BASE} />

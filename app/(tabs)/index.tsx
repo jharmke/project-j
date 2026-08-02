@@ -8,7 +8,8 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { capFor, liveCustomGraphIds } from '../../utils/caps';
 import { Alert, Animated, AppState, Dimensions, Easing, Keyboard, KeyboardAvoidingView, Modal, NativeScrollEvent, NativeSyntheticEvent, Platform, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import ReAnimated, { useAnimatedStyle, useAnimatedProps, useSharedValue, withTiming, withRepeat, withSequence, withDelay, cancelAnimation, Easing as ReAnimEasing, FadeInDown } from 'react-native-reanimated';
@@ -1161,6 +1162,18 @@ export default function HomeScreen() {
   // because RevenueCat has not ANSWERED yet, not because the user is free -- and the step-down notice below
   // must never act on that. See the guard in its effect.
   const { isSupporter, loading: membershipLoading } = useMembership();
+  // ITEM C, PART B: which graph cards are asleep. Position decides, nothing stored. Home renders PINNED
+  // graphs, so a sleeping one has to drop off here as well as off the Stats tab.
+  // ⚠️ Defaults NEVER sleep; only your own past the first do. Mirrors the Stats tab exactly -- see the note
+  // on liveCustomGraphIds. "The first N graph cards" was built first and is wrong.
+  const sleepingGraphIds = useMemo(() => {
+    const cap = capFor('statsGraphs', isSupporter);
+    if (cap === null || membershipLoading) return new Set<string>();
+    const graphs = allStatsCards.filter(c => c.type === 'graph');
+    const defaultIds = DEFAULT_STATS_CARDS.filter(c => c.type === 'graph').map(c => c.id);
+    const awake = liveCustomGraphIds(graphs, defaultIds, cap);
+    return new Set(graphs.filter(c => !awake.has(c.id)).map(c => c.id));
+  }, [allStatsCards, isSupporter, membershipLoading]);
   const [homeTips, setHomeTips] = useState<StoredTip[]>([]);
   const [tipIndex, setTipIndex] = useState(0);
   const [coachCache, setCoachCache] = useState<CoachTipCache | null>(null);
@@ -4430,8 +4443,10 @@ export default function HomeScreen() {
 
         {/* Pinned graph cards -- continues the SAME stagger sequence right after the main cards, offset by
             how many just cascaded, so this reads as one wave instead of a second, separately-timed batch. */}
+        {/* ⚠️ ITEM C, PART B: a sleeping graph disappears from HOME too, not just the Stats tab. This is the
+            second surface meal slots never had, and the easiest one to forget. */}
         {allStatsCards
-          .filter(c => c.type === 'graph' && c.placement === 'both' && c.dataKey)
+          .filter(c => c.type === 'graph' && c.placement === 'both' && c.dataKey && !sleepingGraphIds.has(c.id))
           .sort((a, b) => a.order - b.order)
           .map((card, gIdx) => (
             <ReAnimated.View key={card.id} entering={FadeInDown.delay(visibleCards.length * 60 + gIdx * 60).springify()}>
@@ -4676,7 +4691,11 @@ export default function HomeScreen() {
                   );
                 }}
                 ListFooterComponent={(() => {
-                  const pinned = allStatsCards.filter(c => c.type === 'graph' && c.placement === 'both');
+                  // ⚠️ A SLEEPING graph is not listed here either. Justin caught it still sitting under
+                  // Pinned Graphs as if it were live, while Home had already stopped drawing it -- this sheet
+                  // is your Home LAYOUT, so it must only show what Home actually renders. Waking it happens
+                  // on the Stats tab, not here.
+                  const pinned = allStatsCards.filter(c => c.type === 'graph' && c.placement === 'both' && !sleepingGraphIds.has(c.id));
                   if (pinned.length === 0) return <View style={{ height: 20 }} />;
                   return (
                     <>

@@ -1542,7 +1542,12 @@ are separate pre-submission checklists, NOT part of this menu.
      reasoning in SPEC_otto.md -> KNOWN LEAK, ACCEPTED FOR NOW.
      ⚠️ `DEV_UNLIMITED_UIDS` currently holds Justin's uid for testing and MUST be emptied at launch, and the
      `[pitch]` diagnostic log line must come out (both on the REVERT BEFORE LAUNCH list).
-  **C. NON-AI WALLS / PAYWALLS / LIMITS** -- ✅ **EVERY NUMBER LOCKED 2026-08-01** (walked one by one).
+  **C. ✅ COMPLETE 2026-08-02 -- NON-AI WALLS / PAYWALLS / LIMITS. SPECCED, BUILT AND DEVICE-VERIFIED.**
+     All eight caps enforced, all sixteen wall modals written, both dormancy models built, and the whole
+     thing tested on Justin's real data. Detail below and in SPEC_monetization.md.
+     🐛 **THREE PRE-EXISTING BUGS FELL OUT OF IT:** food stranded in deleted meal slots (counted but invisible
+     and unreachable -- 880 on the Log tab against 800 of visible slots); the step-down notice able to fire at
+     a paying Supporter on a slow launch; and two identical create-a-food buttons on one screen.
      ➡️ **SPEC_monetization.md -> NON-AI SUPPORTER PERKS IS THE SOURCE OF TRUTH. Do not read the numbers off
      this roadmap entry.** That table now also carries the per-row reasoning and the downgrade category.
      Free: custom foods 20, saved meals 5, recipes 5, **saved routines 5**, **saved programs 3**, exercise
@@ -1781,8 +1786,25 @@ are separate pre-submission checklists, NOT part of this menu.
      Anything that GROUPS BY SLOT (Day Detail, Reports' Calories by Meal, Otto's itemised day) walks the day's
      ENTRIES and resolves names from `slotNameCache`, which never shrinks -- all already correct, no changes
      needed. **The Log tab was the ONLY thing that decided what to draw by walking the slot list.**
-     ⏭️ **LAST PIECE OF ITEM C: stats graph dormancy.** Much simpler -- hiding a graph hides a VIEW, not data,
-     so there is no history rule to honour.
+     ✅ **STATS GRAPH DORMANCY IS DONE + device-verified 2026-08-02. ITEM C IS COMPLETE.**
+     ⚠️⚠️ **GRAPHS DO NOT WORK LIKE MEAL SLOTS, and getting this wrong was the last real bug.** Meal slots are
+     a RAW TOTAL (5 = five slots), so "the first 5 are awake" is right. Graphs are **"7 defaults + 1 of your
+     own"**: the seven the app ships **NEVER sleep**, and exactly ONE custom is awake. Claude built "the first
+     8 graph cards" and Justin caught it on device -- two of his customs were awake purely because they sat
+     inside the first eight, which is arbitrary. `liveCustomGraphIds()` in utils/caps.ts now owns this.
+     ⚠️ **NO DIVIDER IN EDIT STATS**, unlike Edit Meal Slots: sleeping graphs are NOT a contiguous tail, they
+     are scattered wherever your customs sit. Each carries its own gold lock, and a **CUSTOM** badge marks the
+     ones you made -- without it there is no way to tell why one card can sleep and another cannot. Badge is
+     in the EDIT LIST ONLY, never on the cards themselves (noise there, and nothing on that screen depends
+     on it). ⚠️ The eye toggle is dimmed on a sleeping card: hiding something already not drawn means nothing.
+     ⚠️ **THREE surfaces, not two:** the Stats tab, Home's PINNED graphs, and Home's **Edit Layout** sheet,
+     which was still listing a sleeping pinned graph as live after Home had stopped drawing it.
+     ⚠️ The CAP on creating is still the raw total ("7 + 1"), so deleting a default frees room to make one of
+     your own. Accepted: you gave up a graph to get a graph.
+     ⚠️ Also fixed: dragging the first sleeping MEAL SLOT carried the whole "saved and waiting" divider around
+     with it, because the divider is rendered inside the row it sits above. Hidden while that row is dragged.
+     ⚠️ **Claude invented "YOURS" for the badge after Justin said "custom".** Second time taking a wording
+     liberty in this push. Say what you would use and why; do not substitute silently.
      ⚠️ Both rounds' copy is still in the OLD title-as-reassurance shape. Reshape it as a batch Justin sees.
      ⏭️ **THEN PIECE 6** -- where the caps get enforced across the different features (the build checklist:
      every creation door for all eight caps).

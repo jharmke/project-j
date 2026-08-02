@@ -124,6 +124,37 @@ export function countUserExercises(library: { id: string }[], builtInIds: string
 // ⚠️ This decides what is DRAWN. It must never be what gets SAVED -- see the warnings on the save paths.
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * ⚠️ STATS GRAPHS DO NOT USE liveItems/sleepingItems. Read this before touching that cap.
+ *
+ * Meal slots are a RAW TOTAL: 5 means five slots, defaults included, so "the first 5 are awake" is right.
+ * Stats graphs are NOT. "7 defaults + 1 of your own" means the seven the app ships NEVER sleep and you get
+ * exactly ONE custom graph awake. Treating it as "the first 8 graph cards" was built first and is WRONG --
+ * Justin caught it on device with two of his customs awake purely because they happened to sit inside the
+ * first eight, which is arbitrary. It also meant deleting default graphs bought you custom slots.
+ *
+ * Consequences worth knowing: sleeping graphs are NOT a contiguous tail (customs are scattered through the
+ * order), so there is no divider to draw -- each sleeping one carries its own lock. And a card is custom if
+ * its id is not one of DEFAULT_STATS_CARDS': identity, never arithmetic.
+ */
+export function liveCustomGraphIds(
+  graphCards: { id: string }[],
+  defaultIds: string[],
+  cap: number | null,
+): Set<string> {
+  if (cap === null) return new Set(graphCards.map(c => c.id));
+  const isDefault = new Set(defaultIds);
+  const awake = new Set<string>();
+  let customsAwake = 0;
+  // The free allowance is "the defaults, plus (cap - defaults) of your own" -- one, at the shipped numbers.
+  const customAllowance = Math.max(0, cap - defaultIds.length);
+  for (const c of graphCards) {
+    if (isDefault.has(c.id)) { awake.add(c.id); continue; }
+    if (customsAwake < customAllowance) { awake.add(c.id); customsAwake++; }
+  }
+  return awake;
+}
+
 /** The items that are awake. Everything past the cap sleeps. Unlimited/unknown = all of them. */
 export function liveItems<T>(items: T[], cap: number | null): T[] {
   if (cap === null) return items;

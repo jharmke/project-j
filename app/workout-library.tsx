@@ -27,6 +27,10 @@ import { useHealthKit } from '../useHealthKit';
 import { groupSyncedWorkouts, loadSyncedLabels, saveSyncedLabel, summarizeSessions, sortSessions, groupSessionsByMonth, formatDurationShort, formatDurationLong, loadSyncedCache, saveSyncedCache, SyncedWorkout, SyncedSort } from '../utils/syncedWorkouts';
 import { Type, PAGE_TITLE } from '../typography';
 import ScreenHeader from '../components/ScreenHeader';
+import CapWallModal from '../components/CapWallModal';
+import { GOLD_BASE } from '../components/SupporterFoil';
+import { useMembership } from '../MembershipContext';
+import { capStateFrom, capFor, checkCap, countUserExercises, type CapState, type CapKey } from '../utils/caps';
 import ButtonShine from '../components/ButtonShine';
 import GradientIcon from '../components/GradientIcon';
 import GradientTitle from '../components/GradientTitle';
@@ -86,7 +90,12 @@ interface LibraryExercise {
 
 const makeId = () => Math.random().toString(36).substr(2, 9);
 
-const DEFAULT_LIBRARY: LibraryExercise[] = [
+// ⚠️ EXPORTED for the Cap Audit / cap-override dev rows in settings.tsx, which otherwise cannot tell a
+// built-in exercise from one the user made -- exercises are the only cap whose count is unreadable from
+// outside this file. Identity, never arithmetic: "how many minus 79" breaks the day item J lands.
+// The tidy long-term home is workoutData.ts next to PRESET_PROGRAMS. Item J adds ~60 entries here and is
+// the moment to move it; moving 770 lines by hand today would be pure transcription risk for no gain.
+export const DEFAULT_LIBRARY: LibraryExercise[] = [
   // ── CHEST ──────────────────────────────────────────────────────────────────
   {
     id: 'l2', name: 'Bench Press', type: 'lift', tags: ['tag_push'],
@@ -1678,46 +1687,15 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
                   </View>
                 ))}
 
-                {!showQuickAdd ? (
-                  <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowQuickAdd(true); }}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 10, marginTop: 4 }}>
-                    <Ionicons name="add-circle-outline" size={16} color={theme.accentBlue} />
-                    <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: Type.uiMedium }}>Create new exercise</Text>
-                  </TouchableOpacity>
-                ) : (
-                  <View style={{ backgroundColor: theme.bgInset, borderRadius: 10, padding: 14, marginTop: 8, borderWidth: 0.5, borderColor: theme.borderCard }}>
-                    <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: Type.uiBold, textTransform: 'uppercase', marginBottom: 10 }}>NEW EXERCISE</Text>
-                    <TextInput
-                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 14, fontFamily: Type.ui, marginBottom: 10 }}
-                      placeholder="Exercise name"
-                      placeholderTextColor={theme.textPlaceholder}
-                      value={quickName}
-                      onChangeText={setQuickName}
-                      autoCapitalize="words"
-                      autoFocus
-                    />
-                    <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-                      <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setQuickIsCardio(false); }}
-                        style={{ flex: 1, paddingVertical: 8, borderRadius: 6, alignItems: 'center', backgroundColor: !quickIsCardio ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: !quickIsCardio ? theme.accentBlueBorder : theme.borderInput }}>
-                        <Text style={{ color: !quickIsCardio ? theme.accentBlue : theme.textMuted, fontSize: 13, fontFamily: Type.uiSemibold }}>Lift</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setQuickIsCardio(true); }}
-                        style={{ flex: 1, paddingVertical: 8, borderRadius: 6, alignItems: 'center', backgroundColor: quickIsCardio ? 'rgba(245,158,11,0.15)' : theme.bgInput, borderWidth: 1, borderColor: quickIsCardio ? 'rgba(245,158,11,0.3)' : theme.borderInput }}>
-                        <Text style={{ color: quickIsCardio ? theme.statusWarn : theme.textMuted, fontSize: 13, fontFamily: Type.uiSemibold }}>Cardio</Text>
-                      </TouchableOpacity>
-                    </View>
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                      <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowQuickAdd(false); setQuickName(''); setQuickIsCardio(false); }}
-                        style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput }}>
-                        <Text style={{ color: theme.textMuted, fontFamily: Type.uiMedium, fontSize: 13 }}>Cancel</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); handleQuickAdd(); }} disabled={!quickName.trim()}
-                        style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: theme.accentBlue, opacity: quickName.trim() ? 1 : 0.4 }}>
-                        <Text style={{ color: '#ffffff', fontFamily: Type.uiBold, fontSize: 16, letterSpacing: 1 }}>ADD</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
+                {/* ⚠️ "Create new exercise" + its inline NEW EXERCISE form were REMOVED 2026-08-02 (Justin's
+                    call). Do not put them back. It made an exercise with a NAME and a lift/cardio flag and
+                    nothing else -- no sets, no reps, no rest, no muscles -- and it never wrote to
+                    pj_exercise_library, so the thing it made was not reusable anywhere. A nameplate.
+                    It also read as a door for the exercise cap and was not one, which is confusing in both
+                    directions: gating it would have blocked something free, leaving it looked like a hole.
+                    ACCEPTED COST: somebody building a routine who wants a movement they do not have must
+                    create it properly in the Exercise Library first. Slightly more friction, but they get a
+                    real exercise instead of a nameplate. */}
 
                 <PrimaryCTA
                   wrapperStyle={{ marginTop: 20 }}
@@ -1904,7 +1882,23 @@ export default function WorkoutLibraryScreen() {
   // Stable ref so tutorial actions always have latest library without re-registering on every load
   const libraryRef = useRef<LibraryExercise[]>([]);
 
+  // ── Item C caps. THREE of them live on this one screen (routines, programs, exercises), which is why the
+  // whole workout side is one testing round. Declared ABOVE `library` because exerciseCap derives from it.
+  const { isSupporter, loading: membershipLoading } = useMembership();
+  const [routineCap, setRoutineCap] = useState<CapState>({ cap: null, count: 0, unlimited: true, atCap: false, canCreate: true });
+  const [programCap, setProgramCap] = useState<CapState>({ cap: null, count: 0, unlimited: true, atCap: false, canCreate: true });
+  const [capWall, setCapWall] = useState<CapKey | null>(null);
+
   const [library, setLibrary] = useState<LibraryExercise[]>([]);
+  // ITEM C: the exercise cap is derived straight from `library`, which this screen already holds. Identity,
+  // not arithmetic -- an entry is the user's if its id is not one of DEFAULT_LIBRARY's, so item J adding ~60
+  // built-ins changes nothing. Deleting a custom exercise frees the door the instant the list updates.
+  const exerciseCap = capStateFrom(
+    'exercises',
+    countUserExercises(library, DEFAULT_LIBRARY.map(e => e.id)),
+    isSupporter,
+    membershipLoading,
+  );
   const [activeTab, setActiveTab] = useState<'all' | 'favorites' | 'programs' | 'routines'>('all');
   const [query, setQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -2234,6 +2228,13 @@ export default function WorkoutLibraryScreen() {
         setMyRoutines(routinesRaw ? JSON.parse(routinesRaw) : []);
       } catch (e) {}
 
+      // ITEM C: both counts come off the lists this effect just loaded, so no extra storage reads. Runs on
+      // every focus, which is also what makes a deletion elsewhere free the door immediately.
+      try {
+        checkCap('routines', isSupporter, membershipLoading).then(setRoutineCap).catch(() => {});
+        checkCap('programs', isSupporter, membershipLoading).then(setProgramCap).catch(() => {});
+      } catch (e) {}
+
       try {
         const settings = settingsRaw ? JSON.parse(settingsRaw) : {};
         const saved: WorkoutTag[] = settings.workoutTags || [];
@@ -2481,6 +2482,38 @@ export default function WorkoutLibraryScreen() {
 
   const openAdd = () => openAddModal(null);
   const openEdit = (ex: LibraryExercise) => openAddModal(ex);
+
+  // ITEM C: three caps, three handlers. Each closes the FAB menu first; the delay lets it finish before a
+  // second Modal appears. ⚠️ openEdit is deliberately NOT gated -- editing what you already own is never
+  // blocked, only creating.
+  const onCreateRoutinePress = () => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    closeFabMenu();
+    if (!routineCap.canCreate) { setTimeout(() => setCapWall('routines'), 150); return; }
+    setEditingRoutine(null);
+    setShowRoutineBuilder(true);
+  };
+
+  const onCreateProgramPress = () => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    closeFabMenu();
+    if (!programCap.canCreate) { setTimeout(() => setCapWall('programs'), 150); return; }
+    setEditingProgram(null);
+    setShowBuilder(true);
+  };
+
+  // ⚠️ THE EXERCISE LIBRARY HAS EXACTLY ONE DOOR: this one. Verified by reading the handler, not the label.
+  // The "Create new exercise" link inside the Create Routine modal LOOKS like a second door and is not --
+  // its handler (`handleQuickAdd` in RoutineBuilderModal) only calls setExercises, adding the movement to
+  // THAT ROUTINE. It never writes pj_exercise_library, so it costs nothing against this cap and gating it
+  // would block something that is free. It is also not a loophole: those movements live inside the routine
+  // and never become reusable library entries.
+  const onCreateExercisePress = () => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    closeFabMenu();
+    if (!exerciseCap.canCreate) { setTimeout(() => setCapWall('exercises'), 150); return; }
+    openAdd();
+  };
 
   const saveExercise = async () => {
     if (!form.name?.trim()) return;
@@ -3516,6 +3549,16 @@ export default function WorkoutLibraryScreen() {
         </Reanimated.View>
       </Modal>
 
+      {capWall && (
+        <CapWallModal
+          capKey={capWall}
+          cap={capFor(capWall, isSupporter) ?? 0}
+          count={capWall === 'routines' ? routineCap.count : capWall === 'programs' ? programCap.count : exerciseCap.count}
+          theme={theme}
+          onDismiss={() => setCapWall(null)}
+        />
+      )}
+
       {/* FAB backdrop */}
       {showFabMenu && (
         <TouchableOpacity
@@ -3532,16 +3575,21 @@ export default function WorkoutLibraryScreen() {
           <Animated.View style={{ opacity: fabItem3Anim, transform: [{ translateY: fabItem3Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <TouchableOpacity
-                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); setEditingRoutine(null); setShowRoutineBuilder(true); }}
-                style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                <ButtonShine radius={8} solid />
-                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Create Routine</Text>
+                onPress={onCreateRoutinePress}
+                style={routineCap.canCreate
+                  ? { backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }
+                  : { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: theme.bgInset, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: GOLD_BASE }}>
+                {routineCap.canCreate && <ButtonShine radius={8} solid />}
+                {!routineCap.canCreate && <Ionicons name="lock-closed" size={12} color={GOLD_BASE} />}
+                <Text style={{ color: routineCap.canCreate ? '#ffffff' : theme.textMuted, fontSize: 13, fontFamily: Type.uiSemibold }}>Create Routine</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); setEditingRoutine(null); setShowRoutineBuilder(true); }}
-                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                <ButtonShine radius={22} solid />
-                <Ionicons name="repeat" size={20} color="#ffffff" />
+                onPress={onCreateRoutinePress}
+                style={routineCap.canCreate
+                  ? { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }
+                  : { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.bgInset, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: GOLD_BASE }}>
+                {routineCap.canCreate && <ButtonShine radius={22} solid />}
+                <Ionicons name={routineCap.canCreate ? 'repeat' : 'lock-closed'} size={20} color={routineCap.canCreate ? '#ffffff' : GOLD_BASE} />
               </TouchableOpacity>
             </View>
           </Animated.View>
@@ -3550,16 +3598,21 @@ export default function WorkoutLibraryScreen() {
           <Animated.View style={{ opacity: fabItem2Anim, transform: [{ translateY: fabItem2Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <TouchableOpacity
-                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); setEditingProgram(null); setShowBuilder(true); }}
-                style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                <ButtonShine radius={8} solid />
-                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Create Program</Text>
+                onPress={onCreateProgramPress}
+                style={programCap.canCreate
+                  ? { backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }
+                  : { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: theme.bgInset, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: GOLD_BASE }}>
+                {programCap.canCreate && <ButtonShine radius={8} solid />}
+                {!programCap.canCreate && <Ionicons name="lock-closed" size={12} color={GOLD_BASE} />}
+                <Text style={{ color: programCap.canCreate ? '#ffffff' : theme.textMuted, fontSize: 13, fontFamily: Type.uiSemibold }}>Create Program</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); setEditingProgram(null); setShowBuilder(true); }}
-                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                <ButtonShine radius={22} solid />
-                <Ionicons name="calendar-outline" size={20} color="#ffffff" />
+                onPress={onCreateProgramPress}
+                style={programCap.canCreate
+                  ? { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }
+                  : { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.bgInset, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: GOLD_BASE }}>
+                {programCap.canCreate && <ButtonShine radius={22} solid />}
+                <Ionicons name={programCap.canCreate ? 'calendar-outline' : 'lock-closed'} size={20} color={programCap.canCreate ? '#ffffff' : GOLD_BASE} />
               </TouchableOpacity>
             </View>
           </Animated.View>
@@ -3568,16 +3621,21 @@ export default function WorkoutLibraryScreen() {
           <Animated.View style={{ opacity: fabItem1Anim, transform: [{ translateY: fabItem1Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <TouchableOpacity
-                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); openAdd(); }}
-                style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                <ButtonShine radius={8} solid />
-                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Create Exercise</Text>
+                onPress={onCreateExercisePress}
+                style={exerciseCap.canCreate
+                  ? { backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }
+                  : { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: theme.bgInset, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: GOLD_BASE }}>
+                {exerciseCap.canCreate && <ButtonShine radius={8} solid />}
+                {!exerciseCap.canCreate && <Ionicons name="lock-closed" size={12} color={GOLD_BASE} />}
+                <Text style={{ color: exerciseCap.canCreate ? '#ffffff' : theme.textMuted, fontSize: 13, fontFamily: Type.uiSemibold }}>Create Exercise</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); openAdd(); }}
-                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                <ButtonShine radius={22} solid />
-                <Ionicons name="barbell-outline" size={20} color="#ffffff" />
+                onPress={onCreateExercisePress}
+                style={exerciseCap.canCreate
+                  ? { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }
+                  : { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.bgInset, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: GOLD_BASE }}>
+                {exerciseCap.canCreate && <ButtonShine radius={22} solid />}
+                <Ionicons name={exerciseCap.canCreate ? 'barbell-outline' : 'lock-closed'} size={20} color={exerciseCap.canCreate ? '#ffffff' : GOLD_BASE} />
               </TouchableOpacity>
             </View>
           </Animated.View>

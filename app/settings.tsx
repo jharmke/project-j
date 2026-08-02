@@ -43,7 +43,21 @@ import { generateDiagnosticReport, ReportWindow, dumpWindowComparison } from '..
 import { dumpDayScoreWithRecovery, ensureFreshDayScore } from '../utils/dayScoreStore';
 import { buildCompanionStats } from '../utils/companionStats';
 import { devExpireFirstWeek } from '../utils/firstWeek';
-import { CapKey, FREE_CAPS, SUPPORTER_CAPS, countFor, setDevCapOverride, clearDevCapOverrides } from '../utils/caps';
+import { CapKey, FREE_CAPS, SUPPORTER_CAPS, countFor, countUserExercises, setDevCapOverride, clearDevCapOverrides } from '../utils/caps';
+// Only for the cap dev tools: exercises are the one cap whose user-made count cannot be worked out without
+// the built-in list. See the note on DEFAULT_LIBRARY.
+import { DEFAULT_LIBRARY } from './workout-library';
+
+// Exercises are the one cap whose USER-MADE count needs the built-in list to work out. Identity, never
+// arithmetic: an entry is the user's if its id is not one of the built-ins, so item J adding ~60 more
+// changes nothing. A "total minus 79" would silently hand every user 60 slots the day J ships.
+const countExercisesNow = async (): Promise<number> => {
+  try {
+    const raw = await AsyncStorage.getItem('pj_exercise_library');
+    const lib = raw ? JSON.parse(raw) : [];
+    return countUserExercises(Array.isArray(lib) ? lib : [], DEFAULT_LIBRARY.map(e => e.id));
+  } catch { return 0; }
+};
 import { probeStreakExclusions } from '../utils/streakExclusion';
 import { startVacation, endVacationEarly, cancelVacationFully, describeVacation, getVacation, vacationTodayKey, addDaysKey, MAX_VACATION_DAYS, VacationState } from '../utils/vacationMode';
 
@@ -3856,6 +3870,7 @@ export default function SettingsScreen() {
               triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
               try {
                 const keys: CapKey[] = ['foods', 'savedMeals', 'recipes', 'routines', 'programs', 'mealSlots', 'statsGraphs'];
+                const exCount = await countExercisesNow();
                 const label: Record<string, string> = {
                   foods: 'My Foods', savedMeals: 'Meal Catalog', recipes: 'Recipes', routines: 'Routines',
                   programs: 'Programs', mealSlots: 'Meal slots', statsGraphs: 'Stats graphs',
@@ -3868,15 +3883,12 @@ export default function SettingsScreen() {
                   const state = count > free ? 'OVER' : count === free ? 'AT' : 'under';
                   lines.push(`${label[k]}: ${count}  (free ${free}, supporter ${sup === null ? '∞' : sup})  ${state}`);
                 }
-                let rawLib = 0;
-                try {
-                  const raw = await AsyncStorage.getItem('pj_exercise_library');
-                  rawLib = raw ? (JSON.parse(raw) || []).length : 0;
-                } catch {}
+                const exFree = FREE_CAPS.exercises;
+                const exState = exCount > exFree ? 'OVER' : exCount === exFree ? 'AT' : 'under';
                 Alert.alert(
                   'Cap Audit (read-only)',
                   lines.join('\n\n') +
-                  `\n\nExercise Library: ${rawLib} total (built-ins + yours).\nThe user-made count cannot be worked out from here; it is verified on the Exercise Library screen.`,
+                  `\n\nExercise Library: ${exCount}  (free ${exFree}, supporter ∞)  ${exState}\nYour own only; the app's built-ins are excluded by id, never by count.`,
                 );
               } catch (e) { Alert.alert('Cap Audit failed', String(e)); }
             }}>
@@ -3898,7 +3910,9 @@ export default function SettingsScreen() {
               triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
               try {
                 const keys: CapKey[] = ['foods', 'savedMeals', 'recipes', 'routines', 'programs', 'mealSlots', 'statsGraphs'];
+                const exCount = await countExercisesNow();
                 for (const k of keys) await setDevCapOverride(k, await countFor(k));
+                await setDevCapOverride('exercises', exCount);
                 Alert.alert('Now AT every cap', 'Each cap is temporarily set to exactly what you have, so every wall shows its AT-cap version.\n\nTap "Clear Cap Overrides" to go back to the real numbers and the OVER-cap versions.');
               } catch (e) { Alert.alert('Failed', String(e)); }
             }}>
@@ -3917,7 +3931,9 @@ export default function SettingsScreen() {
               triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
               try {
                 const keys: CapKey[] = ['foods', 'savedMeals', 'recipes', 'routines', 'programs', 'mealSlots', 'statsGraphs'];
+                const exCount = await countExercisesNow();
                 for (const k of keys) await setDevCapOverride(k, (await countFor(k)) + 1);
+                await setDevCapOverride('exercises', exCount + 1);
                 Alert.alert('Room for one more', 'Every cap is now your current count plus one.\n\nCreate one of anything and that door should lock immediately, without leaving the screen.');
               } catch (e) { Alert.alert('Failed', String(e)); }
             }}>

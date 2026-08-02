@@ -87,40 +87,43 @@ const COPY: Record<CapKey, { at: Copy; over: Copy }> = {
       body2: 'Free accounts hold {cap}. The Supporter plan lets you keep building.',
     },
   },
+  // ⚠️ Routines and programs use the same "No Room For Another X" construction as recipes, and for the same
+  // reason: "My Routines Is Full" is broken English and "Your Routines Are Full" says the routines are full.
+  // The Exercise Library has a real container name that works, so it keeps the standard title.
   routines: {
     at: {
-      title: "You've Built {cap} Routines",
-      body1: "The free plan holds {cap} routines of your own. Presets don't count toward that, and every routine under My Routines is still yours to load, edit and keep.",
+      title: 'No Room For Another Routine',
+      body1: "The free plan holds {cap} routines of your own. Presets don't count toward that, and every one is still yours to load, edit and keep.",
       body2: "Make room by deleting one you've stopped using, or the Supporter plan removes the limit entirely.",
     },
     over: {
-      title: 'All {count} Of Your Routines Are Still Here',
-      body1: 'Nothing you built has gone anywhere. Every routine under My Routines is yours to load, edit and keep.',
-      body2: "Free accounts hold {cap}, so there's no room to build another right now. The Supporter plan opens My Routines back up.",
+      title: 'No Room For Another Routine',
+      body1: 'All {count} of your routines are still here. Nothing has gone anywhere, and every one is yours to load, edit and keep.',
+      body2: 'Free accounts hold {cap} of your own. The Supporter plan lets you keep building.',
     },
   },
   programs: {
     at: {
-      title: "You've Built {cap} Programs",
-      body1: "The free plan holds {cap} programs of your own. Built-in programs don't count toward that, and every one you've built is still yours to load, edit and keep.",
+      title: 'No Room For Another Program',
+      body1: "The free plan holds {cap} programs of your own. Built-in programs don't count toward that, and every one is still yours to load, edit and keep.",
       body2: "Make room by deleting one you've stopped using, or the Supporter plan removes the limit entirely.",
     },
     over: {
-      title: 'All {count} Of Your Programs Are Still Here',
-      body1: 'Nothing you built has gone anywhere. Every program is yours to load, edit and keep.',
-      body2: "Free accounts hold {cap} of your own, so there's no room to build another right now. The Supporter plan lets you keep building.",
+      title: 'No Room For Another Program',
+      body1: 'All {count} of your programs are still here. Nothing has gone anywhere, and every one is yours to load, edit and keep.',
+      body2: 'Free accounts hold {cap} of your own. The Supporter plan lets you keep building.',
     },
   },
   exercises: {
     at: {
-      title: "You've Added {cap} Exercises",
+      title: 'Your Exercise Library Is Full',
       body1: "The free plan holds {cap} exercises of your own. Built-in exercises don't count toward that, and every one you've added is still yours to use, edit and keep.",
       body2: "Make room by deleting one you've stopped using, or the Supporter plan removes the limit entirely.",
     },
     over: {
-      title: 'All {count} Of Your Exercises Are Still Here',
-      body1: 'Nothing you added has gone anywhere. Every exercise is yours to use, edit and keep.',
-      body2: "Free accounts hold {cap} of your own, so there's no room to add another right now. The Supporter plan opens your Exercise Library back up.",
+      title: 'Your Exercise Library Is Full',
+      body1: 'All {count} of your own exercises are still here. Nothing has gone anywhere, and every one is yours to use, edit and keep.',
+      body2: 'Free accounts hold {cap} of your own. The Supporter plan lets you keep adding.',
     },
   },
   mealSlots: {
@@ -152,6 +155,14 @@ const COPY: Record<CapKey, { at: Copy; over: Copy }> = {
   },
 };
 
+// ⚠️ THE COPY ASSUMES EVERY NUMBER IS PLURAL, and that is safe: no cap is below 3 (20/5/5/5/3/15/5/8) and
+// an over-cap count is by definition HIGHER than the cap, so neither can ever be 1. The meal-slots and
+// stats-graphs walls also hardcode "the four your log starts with" and "the seven your Stats tab comes
+// with", which match what the app ships.
+// ⚠️ **IF A CAP IS EVER CHANGED TO 1 OR 2, RE-READ THIS COPY.** At 1 it reads "1 recipes", and the over-cap
+// line would need "All 1 of your foods ARE still here" reworded, not just the noun swapped.
+// The dev cap override CAN drive these to 1 and it reads wrong there. Justin's call 2026-08-02: leave it,
+// since a dev-only artefact is not worth reworking approved copy for a state no user can reach.
 const fill = (s: string, cap: number, count: number) =>
   s.replace(/\{cap\}/g, String(cap)).replace(/\{count\}/g, String(count));
 
@@ -229,9 +240,19 @@ export default function CapWallModal({
               </View>
             </View>
 
+            {/* ⚠️ ONE LINE, SHRINK TO FIT -- NOT DECORATION, IT PREVENTS A REAL BUG. GradientTitle MOULDS the
+                text (light at the top of the block, base in the middle, dark at the bottom). On one line that
+                reads as shine; on TWO lines the first gets the light half and the second gets the dark half,
+                so a wrapped title comes out visibly two-tone. Every other title in the app is one line, which
+                is why nothing else hits it. Shrinking is what the Home greeting does for the same reason.
+                Cost, accepted: longer titles render slightly smaller than short ones. You never see two at
+                once, so it does not read as inconsistent. */}
             <GradientTitle
               title={fill(copy.title, cap, count)}
               color={theme.textSecondary}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
               style={{ fontSize: 21, letterSpacing: 0.3, fontFamily: Type.display, textAlign: 'center', marginBottom: 10 }}
             />
 

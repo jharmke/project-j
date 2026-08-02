@@ -1364,6 +1364,14 @@ are separate pre-submission checklists, NOT part of this menu.
     NOT chased on 2026-08-01 -- he did not want to toy with it mid-build. ⚠️ Unknown whether it is a dev-build
     timing artefact or real. ⚠️ **Plan item N (the shared launch-modal flag) should probably own this** rather
     than patching this one modal's timing a third time; every launch modal currently reinvents its own.
+  • **[FOUND 2026-08-02] THE EDIT ROUTINE MODAL NEEDS A PROPER PASS.** Justin, seeing it while testing the
+    workout caps: *"doesnt look like this edit routine modal got much attention... whole edit routine modal
+    looks and behaves pretty crappy."* Specifically called out: the **DURATION editor** that opens when you
+    tap a cardio exercise's duration is still the OLD style and does not match anything else in the app.
+    ⚠️ **NOT a priority during the Otto/monetization push** -- he was explicit. Do it after item C and the
+    rest of THE PLAN, but it belongs at the top of NEXT UP so it does not rot.
+    Scope when picked up: the whole modal, not just the duration picker. Check it against the app's current
+    modal standard (centred card, handle pill, spring in) and the keyboard behaviour.
   • **[FOUND 2026-08-02] TWO IDENTICAL "create a food from this scan" BUTTONS on the Food Library screen.**
     The scan banner's **"None match? Create & Set food"** and the results screen's **"Create Food for this
     Barcode"** do EXACTLY the same thing (both `setBarcodeForCreate(lastScannedBarcode)` then open the
@@ -1722,8 +1730,24 @@ are separate pre-submission checklists, NOT part of this menu.
      ✅ **NEW DEV ROW: "Put Me ONE BELOW Every Cap"** -- the AT-cap row cannot test the LIVE RE-LOCK, because
      at the cap you cannot create anything. This leaves room for exactly one, so creating it should lock that
      door on the spot. Verified on saved meals.
-     ⏭️ **ROUND 2: the workout side** -- routines, programs, exercise library. 6 modals, 4 doors, and **every
-     door is in `app/workout-library.tsx`**, so it is three caps but one screen to test.
+     ✅ **ROUND 2 DONE + device-verified 2026-08-02: ROUTINES, PROGRAMS, EXERCISE LIBRARY.** All three doors
+     are in `app/workout-library.tsx`, so three caps but one screen.
+     ⚠️ **THE EXERCISE LIBRARY HAS ONE DOOR, NOT TWO.** The "Create new exercise" link inside the routine
+     builder LOOKED like a second and was not -- its handler only added the movement to that routine and
+     never wrote `pj_exercise_library`. Gating it would have blocked something free. **That link and its
+     inline form have since been DELETED** (Justin: a nameplate, no sets/reps/rest and not reusable). Accepted
+     cost: building a routine with a movement you do not have means creating it in the Library first.
+     ⚠️ **THE WALL TITLE NOW FORCES ONE LINE AND SHRINKS TO FIT.** `GradientTitle` MOULDS text (light at the
+     top of the block, dark at the bottom), so a WRAPPED title came out visibly two-tone -- "No Room For
+     Another Program" was the first title long enough to wrap. Every other title in the app is one line, which
+     is why nothing else hits it. That component also says it should only be called via ScreenHeader /
+     ModalHeader; FirstWeekEndedModal already broke that and CapWallModal copied it.
+     ✅ **`DEFAULT_LIBRARY` is now EXPORTED** so the cap dev tools can count custom exercises (identity, never
+     "minus 79"). ⚠️ Moving those 770 lines to `workoutData.ts` is still the tidy end state -- **do it as part
+     of item J**, which is adding ~60 entries there anyway. Moving them by hand now is transcription risk.
+     ⚠️ **PLURALS: "1 exercises of your own" is a DEV-OVERRIDE-ONLY artefact and is deliberately NOT fixed.**
+     No cap is below 3 and an over-cap count is always higher than its cap, so no user can reach a 1.
+     Re-read the copy only if a cap is ever set to 1 or 2.
      ⏭️ **ROUND 3: the layout pair** -- meal slots + stats graphs. 4 modals, 2 doors. Last on purpose: these
      are the two that REVERT rather than grandfather, so their over-cap wording is the trickiest.
      ⚠️ Both rounds' copy is still in the OLD title-as-reassurance shape. Reshape it as a batch Justin sees.

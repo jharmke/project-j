@@ -2802,6 +2802,11 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 3. ⚠️ AI ESTIMATOR QUOTA RAISED. PRO_LIMIT bumped to effectively unlimited (services/aiMealEstimator.ts). Before launch: restore real caps.
 4. ⚠️ BETA CAPS RAISED (2026-07-01). Otto FREE_DAILY_CAP 10->100/day; Halo 5->50/day; AI Meal Estimator FREE_LIMIT 3->100/month. All marked with loud BETA HACK comments. Before launch: revert to 10 / 5 / 3 (or final caps).
 5. ⚠️ CUSTOM REPORTS OPEN TO ALL (2026-07-07). Reports is a Pro feature but REPORTS_BETA_OPEN=true in app/reports.tsx grants every TestFlight user full access. Before launch: gate on the real subscription + set false (the Pro-gate architecture is already in place, so it's a one-line flip).
+6b. ⚠️ **FOUR NEW DEV ROWS ADDED 2026-08-02** for item C, all under the sweep in 7 below: **Cap Audit**,
+   **Put Me AT Every Cap**, **Put Me ONE BELOW Every Cap**, **Clear Cap Overrides**. ⚠️ Dev Tools is a 7-TAP
+   UNLOCK, not a `__DEV__` gate, so these SHIP unless the sweep handles them. Cap Audit is read-only and
+   harmless; the OVERRIDES are inert in a store build by construction (`capFor` only consults them under
+   `__DEV__`), so they cannot alter a real user's limits even if the rows are reachable.
 7. ⚠️ **DEV TOOL SWEEP -- do these as ONE pass, not one at a time** (item raised by Justin 2026-07-22 after
    the OCR Test row came up a third time). Settings has accumulated a pile of "(dev)" rows: the OCR Test
    diagnostic (added with the label scanner), the Weight History self-test below, tooltip resets, seed/clear

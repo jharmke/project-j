@@ -2905,16 +2905,16 @@ export default function LogScreen() {
                 onPress={onCreateFoodPress}
                 style={foodCap.canCreate
                   ? { backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }
-                  : { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: theme.textMuted, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary }}>
+                  : { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: theme.bgInset, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: GOLD_BASE }}>
                 {foodCap.canCreate && <ButtonShine radius={8} solid />}
                 {!foodCap.canCreate && <Ionicons name="lock-closed" size={12} color={GOLD_BASE} />}
-                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Create Food</Text>
+                <Text style={{ color: foodCap.canCreate ? '#ffffff' : theme.textMuted, fontSize: 13, fontFamily: Type.uiSemibold }}>Create Food</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={onCreateFoodPress}
                 style={foodCap.canCreate
                   ? { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }
-                  : { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.textMuted, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary }}>
+                  : { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.bgInset, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: GOLD_BASE }}>
                 {foodCap.canCreate && <ButtonShine radius={22} solid />}
                 <Ionicons name={foodCap.canCreate ? 'restaurant-outline' : 'lock-closed'} size={20} color={foodCap.canCreate ? '#ffffff' : GOLD_BASE} />
               </TouchableOpacity>

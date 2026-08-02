@@ -10,6 +10,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Directory, File as FSFile, Paths } from 'expo-file-system/next';
 import * as ImagePicker from 'expo-image-picker';
 import CustomFoodCreator from '../components/CustomFoodCreator';
+import CapWallModal from '../components/CapWallModal';
+import { GOLD_BASE } from '../components/SupporterFoil';
+import { useMembership } from '../MembershipContext';
+import { checkCap, capFor, type CapState } from '../utils/caps';
 import GradientNumber from '../components/GradientNumber';
 import { useToast, ToastRenderer } from '../components/Toast';
 import { saveToFirebase } from '../firebaseConfig';
@@ -142,6 +146,11 @@ export default function RecipeBuilderScreen() {
   const [servingName, setServingName] = useState('');
   const [defaultToWeight, setDefaultToWeight] = useState(false);
   const [showCustomFoodModal, setShowCustomFoodModal] = useState(false);
+  // ── Custom-food cap (item C). Read on mount and again after a food is created here, since creating one
+  // spends a slot and could be the one that reaches the cap.
+  const { isSupporter, loading: membershipLoading } = useMembership();
+  const [foodCap, setFoodCap] = useState<CapState>({ cap: null, count: 0, unlimited: true, atCap: false, canCreate: true });
+  const [foodCapWall, setFoodCapWall] = useState(false);
   // photoUri = an existing recipe's already-uploaded photo (editing). pendingPhotoUri = a photo
   // picked before the recipe has an id yet (new recipe); it's copied + uploaded once saveRecipe()
   // creates the id, mirroring CustomFoodCreator's pending-photo pattern for new foods.
@@ -421,7 +430,20 @@ export default function RecipeBuilderScreen() {
     );
   };
 
+  // ITEM C: refresh the count on mount, and re-read after each creation here so the button locks on the one
+  // that actually reaches the cap rather than a build later.
+  useEffect(() => {
+    checkCap('foods', isSupporter, membershipLoading).then(setFoodCap).catch(() => {});
+  }, [isSupporter, membershipLoading]);
+
+  const onCreateCustomFoodPress = () => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    if (!foodCap.canCreate) { setFoodCapWall(true); return; }
+    setShowCustomFoodModal(true);
+  };
+
   const handleCustomFoodSaved = (food: any) => {
+    checkCap('foods', isSupporter, membershipLoading).then(setFoodCap).catch(() => {});
     const ingredient: Ingredient = {
       id: makeId(),
       name: food.name,
@@ -717,10 +739,18 @@ export default function RecipeBuilderScreen() {
             <Ionicons name="search" size={16} color={theme.accentBlue} />
             <Text style={styles.addIngredientText}>Search Food</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.addCustomBtn} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowCustomFoodModal(true); }}>
-            <ButtonShine radius={10} />
-            <Ionicons name="add" size={16} color={theme.accentBlue} />
-            <Text style={styles.addCustomText}>Create</Text>
+          {/* ⚠️ ITEM C door 5, the last food door. Creating here does TWO jobs: it saves a new custom food AND
+              drops it into the recipe as an ingredient, so it spends a cap slot. Safe to lock because
+              "Search Food" sits right beside it and still adds any existing food -- the user can always
+              finish their recipe. That is the difference between a wall and a dead end.
+              ✅ The in-progress recipe survives: this screen holds it in its own state and the wall opens as
+              a Modal OVER it, so nothing unmounts and nothing is lost. */}
+          <TouchableOpacity
+            style={foodCap.canCreate ? styles.addCustomBtn : [styles.addCustomBtn, { backgroundColor: theme.bgInset, borderColor: GOLD_BASE }]}
+            onPress={onCreateCustomFoodPress}>
+            {foodCap.canCreate && <ButtonShine radius={10} />}
+            <Ionicons name={foodCap.canCreate ? 'add' : 'lock-closed'} size={16} color={foodCap.canCreate ? theme.accentBlue : GOLD_BASE} />
+            <Text style={foodCap.canCreate ? styles.addCustomText : [styles.addCustomText, { color: theme.textMuted }]}>Create</Text>
           </TouchableOpacity>
         </View>
 
@@ -896,6 +926,16 @@ export default function RecipeBuilderScreen() {
         </View>
 
       </ScrollView>
+
+      {foodCapWall && (
+        <CapWallModal
+          capKey="foods"
+          cap={capFor('foods', isSupporter) ?? 0}
+          count={foodCap.count}
+          theme={theme}
+          onDismiss={() => setFoodCapWall(false)}
+        />
+      )}
 
       <CustomFoodCreator
         visible={showCustomFoodModal}

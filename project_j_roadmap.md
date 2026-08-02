@@ -1699,8 +1699,22 @@ are separate pre-submission checklists, NOT part of this menu.
      lock. The ring stops the disc reading as an accidental white blob.
      ⚠️ Hit the JSX-comment syntax trap TWICE in this one file (a `{/* */}` cannot be the first thing inside a
      ternary branch or a `{cond && (` block). See [[feedback_jsx_comment_placement]].
-     ⏭️ **4d:** the recipe builder's inline creator (LAST -- the only one where the user can be mid-flow, so
-     hitting the wall must not cost them the recipe they are part-way through).
+     ✅ **4d DONE + device-verified 2026-08-02: the recipe builder's inline Create.** ✅ **The in-progress
+     recipe survives** -- that screen holds it in its own state and the wall opens as a Modal OVER it, so
+     nothing unmounts. ⚠️ Creating there does TWO jobs (saves a custom food AND adds it as an ingredient), so
+     it spends a slot; safe to lock because **Search Food sits right beside it** and still adds any existing
+     food, so a capped user can always finish their recipe. Wall, not dead end. The button also re-reads the
+     count right after a food is created there, so it locks on the one that actually reaches the cap.
+     ✅ **THE LOCKED-BUTTON LOOK IS FINAL after THREE passes** (all four food buttons changed together):
+     **light `bgInset` fill + thin GOLD border + muted label + gold lock.** ⚠️ The lesson: **the fill was never
+     the problem, the BORDER was.** Pass 1 (light fill, pale border) vanished; pass 2 (solid mid-tone, white
+     label) held the edge but became "these big dark things"; pass 3 lets the gold hold the edge so the fill
+     can go light again. Full reasoning in SPEC_monetization.md.
+     ➡️ **ALL FIVE CUSTOM-FOOD DOORS ARE NOW LOCKED. THE FOODS CAP IS COMPLETE.**
+     ⏭️ **NEXT: the remaining SEVEN caps.** Each is the same pattern with fewer doors: saved meals (1 door),
+     recipes (2), routines (1), programs (1), exercise library (2), meal slots (1), stats graphs (1).
+     ⚠️ **Their wall copy is still in the OLD title-as-reassurance shape** and needs reshaping to match foods
+     (`Custom Foods Is Full` style) -- bring it as a batch Justin can see, do not rewrite it alone.
      ⏭️ **THEN PIECE 6** -- where the caps get enforced across the different features (the build checklist:
      every creation door for all eight caps).
      ⚠️ **THE LAYOUT CAPS ARE "DEFAULTS PLUS ONE", NOT RAW TOTALS (Justin, 2026-07-31). Read either as a bare

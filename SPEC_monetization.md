@@ -813,9 +813,20 @@ menu and wants a 21st. Wording is the only part still open.
 fallback at the end of this section, NOT deleted):
 - **Under the cap:** nothing. No dim, no lock, no modal. The app behaves exactly as it does today.
 - **At the cap:** the ENTRY POINT is **dim with a lock icon**, and is **still pressable**.
-- ⚠️ **THE LOCKED BUTTON TREATMENT (settled on device 2026-08-02, verified Light + Dark + Warm).** Keep the
-  button's SIZE, SHAPE and border weight, and change only the colour: **solid `theme.textMuted` fill, WHITE
-  label, flat gold lock**, no shine.
+- ⚠️ **THE LOCKED BUTTON TREATMENT (FINAL, settled on device 2026-08-02 after THREE passes).** Keep the
+  button's SIZE and SHAPE, and change only the colour: **light `theme.bgInset` fill, a thin GOLD BORDER,
+  `theme.textMuted` label, flat gold lock**, no shine.
+  **THE THREE PASSES, because the failures are the useful part:**
+  1. Light fill + pale `borderCard` border -> **vanished.** It read as a hollow white chip, a different
+     SPECIES of button from its solid siblings, not the same button turned off.
+  2. Solid mid-tone `textMuted` fill + white label -> **held the edge but overshot.** It became the heaviest
+     object on a light airy screen, "these big dark things" (Justin).
+  3. **Light fill + GOLD border.** ⚠️ **The fill was never the problem -- the BORDER was.** Once the gold
+     holds the edge, the fill no longer has to carry the weight, so it can go light again and the button
+     stops being a slab. Gold also ties it to the badge on icon-only doors and the ring on the wall modal's
+     lock: three places, one gold language.
+  ⚠️ A light fill cannot carry a white label, so the text goes muted. That is correct anyway -- the button is
+  meant to read as unavailable.
   ⚠️⚠️ **ONE LOCKED LOOK EVERYWHERE, REGARDLESS OF WHAT THE BUTTON LOOKED LIKE UNLOCKED.** Claude's first
   instinct was "drain whatever this button was", which gave a solid grey for the solid FAB pills and a pale
   tint for the tinted scan bars -- two different locked greys on one screen. Justin: *"shouldnt all these

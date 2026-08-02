@@ -271,14 +271,12 @@ export async function checkCap(key: CapKey, isSupporter: boolean, membershipLoad
 // person through this file would "tidy" it into a normal space without ever knowing they broke the wrap.
 const NBSP = '\u00A0';
 
-/**
- * The two caps of ONE get an extra word, because a bare "1 of 1" could be read as the free plan giving you
- * a single graph. A free user actually HAS eight graphs (seven shipped + their one) and five meal slots
- * (four shipped + their one) -- it is the CUSTOM one that is capped at one. Everything else needs no noun.
- */
-const COUNT_NOUN: Partial<Record<CapKey, string>> = {
-  statsGraphs: 'custom graph',
-  mealSlots: 'custom meal slot',
+/** The one place the sentence is built, so the graph variant below cannot drift from the normal one. */
+const countPhrase = (count: number, cap: number, noun?: string): string => {
+  const text = noun
+    ? `(${count} of ${cap} ${noun} included on the free plan)`
+    : `(${count} of ${cap} included on the free plan)`;
+  return text.replace(/ /g, NBSP);
 };
 
 /**
@@ -302,11 +300,40 @@ export function creationCountLine(
   if (membershipLoading) return null;
   const cap = capFor(key, isSupporter);
   if (cap === null) return null;
-  const noun = COUNT_NOUN[key];
-  const text = noun
-    ? `(${countAfter} of ${cap} ${noun} included on the free plan)`
-    : `(${countAfter} of ${cap} included on the free plan)`;
-  return text.replace(/ /g, NBSP);
+  return countPhrase(countAfter, cap);
+}
+
+/**
+ * STATS GRAPHS ONLY. Do not use creationCountLine for graphs -- it would say "8 of 8".
+ *
+ * ⚠️ THE GRAPH CAP IS A RAW TOTAL (8 = the 7 the Stats tab ships + 1 of yours), but the TOAST talks about
+ * the custom one, because that is the only part the user chose: `Recovery Trend (1 of 1 custom graph
+ * included on the free plan)`. A bare "8 of 8" would be arithmetically right and completely useless -- the
+ * user did not create eight graphs.
+ *
+ * ⚠️ BOTH NUMBERS ARE WORKED OUT BY IDENTITY, and both have to move together. The allowance is the cap
+ * minus the defaults THE USER STILL HAS, not minus the seven that ship. Deleting a default graph genuinely
+ * buys room for another of your own (accepted, and documented on the cap in stats.tsx), so a hardcoded
+ * "cap - 7" would tell someone who deleted two defaults they were at "1 of 1" while the button happily let
+ * them add two more. Derived this way the toast and the engine agree by construction: the custom count
+ * reaches the allowance at exactly the moment the raw total reaches the cap.
+ *
+ * ⚠️ The noun pluralises for the same reason -- "1 of 3 custom graph" is not a sentence.
+ */
+export function customGraphCountLine(
+  graphCardsAfter: { id: string }[],
+  defaultIds: string[],
+  isSupporter: boolean,
+  membershipLoading: boolean,
+): string | null {
+  if (membershipLoading) return null;
+  const cap = capFor('statsGraphs', isSupporter);
+  if (cap === null) return null;
+  const isDefault = new Set(defaultIds);
+  const defaultsHeld = graphCardsAfter.filter(c => isDefault.has(c.id)).length;
+  const customCount = graphCardsAfter.length - defaultsHeld;
+  const allowance = Math.max(0, cap - defaultsHeld);
+  return countPhrase(customCount, allowance, allowance === 1 ? 'custom graph' : 'custom graphs');
 }
 
 /**

@@ -40,7 +40,7 @@ import { entryNutrient } from '../../utils/nutrientScale';
 import { evaluateCalorieGoalHit, paceTargetFromWeightGoal } from '../../utils/goalHit';
 import { StatsGraphCard, GRAPH_SWATCHES, MACRO_PROTEIN, MACRO_CARBS, MACRO_FAT } from '../../components/StatsGraphCard';
 import CapWallModal from '../../components/CapWallModal';
-import { capStateFrom, capFor, liveCustomGraphIds } from '../../utils/caps';
+import { capStateFrom, capFor, liveCustomGraphIds, customGraphCountLine, toastLineWithCount } from '../../utils/caps';
 import { StatsCardEditModal } from '../../components/StatsCardEditModal';
 import TooltipIcon from '../../components/TooltipIcon';
 import { storageSet } from '../../utils/storage';
@@ -1862,7 +1862,18 @@ export default function StatsScreen() {
     setStatsCards(updated);
     saveStatsCards(updated);
     closeCreatorModal();
-    setTimeout(() => showToast('Graph added', undefined, 'success'), 300);
+    // ⚠️ GRAPHS DO NOT USE creationCountLine -- the cap is a raw total of 8 and it would read "8 of 8".
+    // customGraphCountLine works out the custom count and the custom allowance by identity. Only the GRAPH
+    // cards go in: the system sections (At a Glance, Trends, Records) are not part of this cap.
+    // This toast showed no second line at all before; it now names the graph, like every other creation toast.
+    setTimeout(() => showToast(
+      'Graph added',
+      toastLineWithCount(
+        newCard.label,
+        customGraphCountLine(updated.filter(c => c.type === 'graph'), DEFAULT_GRAPH_IDS, isPro, membershipLoading),
+      ),
+      'success',
+    ), 300);
   };
 
   const trendData = trendDataMap[trendPeriod] ?? EMPTY_TREND_DATA;

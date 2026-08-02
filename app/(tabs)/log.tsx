@@ -13,7 +13,7 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import PressableButton from '../../components/PressableButton';
 import PrimaryCTA from '../../components/PrimaryCTA';
-import { DEFAULT_MEAL_SLOTS, MealSlot, findSlotForMeal, loadMealSlots, saveMealSlots } from '../../utils/mealSlots';
+import { DEFAULT_MEAL_SLOTS, MealSlot, findSlotForMeal, getMealDisplayName, loadMealSlots, saveMealSlots } from '../../utils/mealSlots';
 import CapWallModal from '../../components/CapWallModal';
 import { GOLD_BASE } from '../../components/SupporterFoil';
 import { useMembership } from '../../MembershipContext';
@@ -458,16 +458,55 @@ export default function LogScreen() {
   // RevenueCat is still answering.
   const slotCapNumber = capFor('mealSlots', isSupporter);
   const liveSlots = useMemo(() => liveItems(mealSlots, slotCapNumber), [mealSlots, slotCapNumber]);
-  const slotsForDay = useMemo(() => {
-    if (slotCapNumber === null || mealSlots.length <= slotCapNumber) return mealSlots;
-    const sleeping = sleepingItems(mealSlots, slotCapNumber);
-    const sleepingWithFood = new Set(
-      sleeping.filter(s => entries.some((e: any) => e.meal === s.id || e.meal === s.name)).map(s => s.id),
-    );
-    // Filtering the ORIGINAL array keeps every slot in its own position rather than appending the woken ones.
-    return mealSlots.filter((s, i) => i < slotCapNumber || sleepingWithFood.has(s.id));
-  }, [mealSlots, slotCapNumber, entries]);
+  // ⚠️ `slotsForDay` and `isArchivedSlot` are declared FURTHER DOWN, after slotNameCache and entries exist.
   const [slotNameCache, setSlotNameCache] = useState<Record<string, string>>({});
+
+  // ── ITEM C, PART B: what the log DRAWS for the day being viewed. Declared here because it needs both
+  // `entries` and `slotNameCache`.
+  const slotsForDay = useMemo(() => {
+    // SLEEPING slots that have food today, kept in their own positions.
+    const base = (slotCapNumber === null || mealSlots.length <= slotCapNumber)
+      ? mealSlots
+      : (() => {
+          const sleepingWithFood = new Set(
+            sleepingItems(mealSlots, slotCapNumber)
+              .filter(s => entries.some((e: any) => e.meal === s.id || e.meal === s.name))
+              .map(s => s.id),
+          );
+          // Filtering the ORIGINAL array keeps each slot in its own position rather than appending it.
+          return mealSlots.filter((s, i) => i < slotCapNumber || sleepingWithFood.has(s.id));
+        })();
+
+    // ⚠️ DELETED slots that still hold food on this day, appended LAST.
+    // WHY THIS EXISTS, and it is a BUG FIX FOR EVERY USER, not cap machinery: deleting a slot has always
+    // left its entries behind. They kept counting toward the day's calories, macros and Day Score while no
+    // section rendered them, so the hero number stopped matching the sections under it -- Justin found 880
+    // on the Log tab against 800 of visible slots, with 80 kcal orphaned in a slot he had deleted and no way
+    // to reach, edit or remove it. A Supporter can orphan food exactly the same way.
+    // ⚠️ SHOW IT, DO NOT MOVE IT. Moving those entries into another slot was the obvious fix and is far
+    // worse: the food is not only in today, it is in every past day that slot was ever used, so it means
+    // REWRITING hundreds of real day records to fix a display problem. This writes nothing.
+    // Appended last because a deleted slot no longer has a position to return to (a sleeping one does).
+    // Day Detail already does exactly this, so the two views finally agree.
+    const known = new Set<string>();
+    mealSlots.forEach(s => { known.add(s.id); known.add(s.name); });
+    const orphanIds: string[] = [];
+    entries.forEach((e: any) => {
+      const key = e?.meal;
+      if (!key || known.has(key) || orphanIds.includes(key)) return;
+      orphanIds.push(key);
+    });
+    if (orphanIds.length === 0) return base;
+    // getMealDisplayName resolves the name from slotNameCache, which never shrinks, so a deleted slot still
+    // shows the name it had.
+    return [...base, ...orphanIds.map(id => ({ id, name: getMealDisplayName(id, mealSlots, slotNameCache) }))];
+  }, [mealSlots, slotCapNumber, entries, slotNameCache]);
+
+  // A slot that is only on screen because it still holds food: sleeping, or deleted entirely. You can edit
+  // and remove what is in it, and Clear All works, but it takes NO NEW FOOD -- otherwise a free user could
+  // use their sixth slot forever by logging on a past day, and a deleted slot could be resurrected sideways.
+  const isArchivedSlot = (slotId: string) => !liveSlots.some(s => s.id === slotId);
+
   // Repeat a Meal: per-slot history summary (drives the empty-slot pill + one-tap fast path)
   // and the launch slot for the modal (null = closed).
   const [repeatSummary, setRepeatSummary] = useState<Record<string, SlotRepeatInfo>>({});
@@ -1887,6 +1926,8 @@ export default function LogScreen() {
           on a day it actually has food, so nothing anyone logged is ever hidden. */}
       {slotsForDay.map((slot, mealIdx) => {
         const meal = slot.id;
+        // On screen only because it still holds food -- sleeping, or deleted. Takes no new food.
+        const archived = isArchivedSlot(slot.id);
         const mealEntries = entries.filter(e => e.meal === slot.id || e.meal === slot.name);
         const mealTotal = mealEntries.reduce((s, e) => s + e.cal, 0);
         const mealProtein = Math.round(mealEntries.reduce((s, e) => s + (e.protein || 0), 0));
@@ -1910,13 +1951,23 @@ export default function LogScreen() {
           // So the shadow moves OUT to a wrapper and the clipping stays IN. Outer floats, inner clips.
           <ReAnimated.View key={slot.id} entering={FadeInDown.delay(120 + mealIdx * 60).springify()} style={[styles.mealShadow, { shadowColor: theme.cardShadow, shadowOpacity: theme.cardShadowOpacity }]}>
           <View style={[styles.mealRow, { backgroundColor: theme.bgCardGlass, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
-            {/* + button on left */}
-            <TouchableOpacity
-              ref={mealIdx === 0 ? (mealAddRef as any) : undefined}
-              style={styles.mealAddBtn}
-              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); returningFromChild.current = true; router.push({ pathname: '/add-food', params: { meal: slot.id, date: activeDate } }); }}>
-              <Text style={[styles.mealAddBtnText, { color: theme.accentBlue }]}>+</Text>
-            </TouchableOpacity>
+            {/* + button on left.
+                ⚠️ ARCHIVED slots get NO plus, and it is the only thing marking them for now: no tag, no
+                colour change. Justin's call -- the section's job is to show what you logged, and a label
+                answers a question most people are not asking. If it reads as unexplained on device, a small
+                muted tag is a five-minute addition; taking one away later is the change people notice.
+                ⚠️ NOT gold and NOT a lock: for a DELETED slot the Supporter plan brings nothing back, so
+                gold would be promising something upgrading cannot deliver. */}
+            {archived ? (
+              <View style={styles.mealAddBtn} />
+            ) : (
+              <TouchableOpacity
+                ref={mealIdx === 0 ? (mealAddRef as any) : undefined}
+                style={styles.mealAddBtn}
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); returningFromChild.current = true; router.push({ pathname: '/add-food', params: { meal: slot.id, date: activeDate } }); }}>
+                <Text style={[styles.mealAddBtnText, { color: theme.accentBlue }]}>+</Text>
+              </TouchableOpacity>
+            )}
 
             {/* Meal info middle */}
             <TouchableOpacity ref={entries.some(e => e.tutorialEntry) ? (slot.id === 'ms_lunch' ? (mealTotalRef as any) : undefined) : (mealIdx === 0 ? (mealTotalRef as any) : undefined)} style={[styles.mealInfo, { flexDirection: 'row', alignItems: 'center' }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); toggleMeal(slot.id); }}>
@@ -2272,7 +2323,10 @@ export default function LogScreen() {
                         </TouchableOpacity>
                         {/* Find a Meal -- lets a slot that already has food logged pull in MORE from
                             history or the Meal Catalog, on top of what's there. Previously the
-                            picker only ever showed on an empty slot. */}
+                            picker only ever showed on an empty slot.
+                            ⚠️ Hidden on an ARCHIVED slot: it ADDS food, and a sleeping or deleted slot must
+                            never take new food. Clear All stays, because that is cleanup. */}
+                        {!archived && (
                         <TouchableOpacity
                           onPress={() => openRepeatModal(slot)}
                           activeOpacity={0.85}
@@ -2287,8 +2341,12 @@ export default function LogScreen() {
                           <Ionicons name="search" size={13} color={theme.accentBlue} />
                           <Text style={{ fontSize: 13, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>Find a Meal</Text>
                         </TouchableOpacity>
+                        )}
                         {/* ⚠️ ITEM C: the ONLY door that writes to the Meal Catalog. Locked look is the
-                            standard one -- light fill, gold border, muted label, gold lock. */}
+                            standard one -- light fill, gold border, muted label, gold lock.
+                            ⚠️ Hidden on an ARCHIVED slot: turning a slot you deleted into a permanent saved
+                            meal is odd, and it would spend one of your saved-meal slots to do it. */}
+                        {!archived && (
                         <TouchableOpacity
                           onPress={() => {
                             triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
@@ -2311,6 +2369,7 @@ export default function LogScreen() {
                           <Ionicons name={savedMealCap.canCreate ? 'bookmark-outline' : 'lock-closed'} size={13} color={savedMealCap.canCreate ? theme.accentBlue : GOLD_BASE} />
                           <Text style={{ fontSize: 13, color: savedMealCap.canCreate ? theme.accentBlue : theme.textMuted, fontFamily: Type.uiSemibold }}>Save as Meal</Text>
                         </TouchableOpacity>
+                        )}
                       </View>
                     </View>
                   );

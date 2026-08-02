@@ -43,7 +43,7 @@ import { generateDiagnosticReport, ReportWindow, dumpWindowComparison } from '..
 import { dumpDayScoreWithRecovery, ensureFreshDayScore } from '../utils/dayScoreStore';
 import { buildCompanionStats } from '../utils/companionStats';
 import { devExpireFirstWeek } from '../utils/firstWeek';
-import { CapKey, FREE_CAPS, SUPPORTER_CAPS, countFor } from '../utils/caps';
+import { CapKey, FREE_CAPS, SUPPORTER_CAPS, countFor, setDevCapOverride, clearDevCapOverrides } from '../utils/caps';
 import { probeStreakExclusions } from '../utils/streakExclusion';
 import { startVacation, endVacationEarly, cancelVacationFully, describeVacation, getVacation, vacationTodayKey, addDaysKey, MAX_VACATION_DAYS, VacationState } from '../utils/vacationMode';
 
@@ -3885,6 +3885,40 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>What you have vs the free and Supporter limits. Writes nothing.</Text>
               </View>
               <Ionicons name="speedometer-outline" size={18} color={theme.accentBlue} />
+            </TouchableOpacity>
+
+            {/* Cap override -- the ONLY way to reach the AT-cap wall. Justin's account sits well OVER most
+                free caps, and the at-cap version of each modal (the one that offers "delete one to make
+                room") can otherwise only be seen by deleting his real data, which is never happening.
+                Setting a cap to his exact current count puts him AT it; clearing puts him back OVER.
+                ⚠️ __DEV__ ONLY BY CONSTRUCTION -- capFor() only consults these under __DEV__, so even though
+                the Dev Tools section itself ships (7-tap unlock, not a debug gate) this cannot alter a real
+                user's limits. */}
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+              try {
+                const keys: CapKey[] = ['foods', 'savedMeals', 'recipes', 'routines', 'programs', 'mealSlots', 'statsGraphs'];
+                for (const k of keys) await setDevCapOverride(k, await countFor(k));
+                Alert.alert('Now AT every cap', 'Each cap is temporarily set to exactly what you have, so every wall shows its AT-cap version.\n\nTap "Clear Cap Overrides" to go back to the real numbers and the OVER-cap versions.');
+              } catch (e) { Alert.alert('Failed', String(e)); }
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Put Me AT Every Cap</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Sets each limit to your current count so the at-cap walls show. Touches no data.</Text>
+              </View>
+              <Ionicons name="resize-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+              await clearDevCapOverrides();
+              Alert.alert('Cap overrides cleared', 'Back to the real free limits.');
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Clear Cap Overrides</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Restores the real limits.</Text>
+              </View>
+              <Ionicons name="refresh-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {

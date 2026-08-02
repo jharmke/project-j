@@ -13,6 +13,10 @@ import Reanimated, { Easing as ReEasing, runOnJS, useAnimatedStyle, useSharedVal
 import { Svg, Path, G } from 'react-native-svg';
 import { useToast } from '../components/Toast';
 import CustomFoodCreator from '../components/CustomFoodCreator';
+import CapWallModal from '../components/CapWallModal';
+import { GOLD_BASE } from '../components/SupporterFoil';
+import { useMembership } from '../MembershipContext';
+import { capStateFrom, capFor } from '../utils/caps';
 import { USDA_API_KEY } from '../config';
 import { app, db, getUserId, loadFromFirebase, saveToFirebase } from '../firebaseConfig';
 import { getFunctions, httpsCallable } from 'firebase/functions';
@@ -344,6 +348,12 @@ export default function AddFoodScreen() {
   const [newName, setNewName] = useState('');
   const [newCal, setNewCal] = useState('');
   const [showCreateFood, setShowCreateFood] = useState(false);
+  // ── Custom-food cap (item C). `myFoods` is already loaded on this screen for its own reasons, so the count
+  // is free and updates the instant a food is deleted -- no extra read, no stale dim button.
+  // ⚠️ membershipLoading is taken so an unknown answer NEVER dims a paying customer's button. See utils/caps.
+  const { isSupporter, loading: membershipLoading } = useMembership();
+  const [foodCapWall, setFoodCapWall] = useState(false);
+  const foodCap = capStateFrom('foods', myFoods.length, isSupporter, membershipLoading);
   const [barcodeForCreate, setBarcodeForCreate] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState(false);   // online search/barcode-name lookup failed (offline / server)
@@ -1190,6 +1200,15 @@ const openFoodDetail = async (food: SearchResult) => {
         date,
       }
     });
+  };
+
+  // ITEM C: one handler for BOTH touchables of the Create Food row. At the cap the tap opens the wall
+  // instead of the creator. The small delay lets the FAB menu finish closing before a second Modal appears.
+  const onCreateFoodPress = () => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    closeFabMenu();
+    if (!foodCap.canCreate) { setTimeout(() => setFoodCapWall(true), 150); return; }
+    setShowCreateFood(true);
   };
 
   const saveNewFood = async () => {
@@ -2231,6 +2250,16 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         )}
       />
 
+     {foodCapWall && (
+       <CapWallModal
+         capKey="foods"
+         cap={capFor('foods', isSupporter) ?? 0}
+         count={myFoods.length}
+         theme={theme}
+         onDismiss={() => setFoodCapWall(false)}
+       />
+     )}
+
      <CustomFoodCreator
         visible={showCreateFood}
         title={barcodeForCreate ? 'Create & Set Food' : undefined}
@@ -2446,19 +2475,27 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
               </Animated.View>
 
               {/* Create Food - bottom, animates first */}
+              {/* ⚠️ ITEM C: at the cap this row goes DIM with the flat gold lock and STAYS PRESSABLE -- the tap
+                  is what explains. A disabled button would say "you did something wrong" for something the
+                  user cannot fix. Both touchables (pill + round icon) are one button and must move together. */}
               <Animated.View style={{ opacity: fabItem1Anim, transform: [{ translateY: fabItem1Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                   <TouchableOpacity
-                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); setShowCreateFood(true); }}
-                    style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                    <ButtonShine radius={8} solid />
-                    <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Create Food</Text>
+                    onPress={onCreateFoodPress}
+                    style={foodCap.canCreate
+                      ? { backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }
+                      : { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: theme.bgInset, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.borderCard }}>
+                    {foodCap.canCreate && <ButtonShine radius={8} solid />}
+                    {!foodCap.canCreate && <Ionicons name="lock-closed" size={12} color={GOLD_BASE} />}
+                    <Text style={{ color: foodCap.canCreate ? '#ffffff' : theme.textMuted, fontSize: 13, fontFamily: Type.uiSemibold }}>Create Food</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); setShowCreateFood(true); }}
-                    style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                    <ButtonShine radius={22} solid />
-                    <Ionicons name="restaurant-outline" size={20} color="#ffffff" />
+                    onPress={onCreateFoodPress}
+                    style={foodCap.canCreate
+                      ? { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }
+                      : { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.bgInset, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.borderCard }}>
+                    {foodCap.canCreate && <ButtonShine radius={22} solid />}
+                    <Ionicons name={foodCap.canCreate ? 'restaurant-outline' : 'lock-closed'} size={20} color={foodCap.canCreate ? '#ffffff' : GOLD_BASE} />
                   </TouchableOpacity>
                 </View>
               </Animated.View>

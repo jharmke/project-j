@@ -1640,7 +1640,29 @@ are separate pre-submission checklists, NOT part of this menu.
      ⚠️ **Dev Tools is a 7-TAP UNLOCK, not a `__DEV__` gate, so everything in it SHIPS.** Cap Audit is
      read-only (same category as Cloud Audit). The cap OVERRIDE is inert in a store build by construction --
      `capFor` only consults it under `__DEV__` -- so it cannot change a real user's limits.
-     ⏭️ **BUILD STEP 3:** the dim + gold lock + wall modal on the first cap (custom foods, six doors).
+     🟡 **BUILD STEP 3 -- IN PROGRESS. ⬅️ PICK UP EXACTLY HERE (2026-08-01, end of session).**
+     Built: `components/CapWallModal.tsx` (generic, carries ALL 16 pieces of copy so the other seven caps are
+     data not new components), wired to ONE door only -- the **Add Food plus menu -> Create Food**. Plus the
+     dev rows **Put Me AT Every Cap** / **Clear Cap Overrides**, and `loadDevCapOverrides()` at app start.
+     ✅ **DEVICE-VERIFIED 2026-08-01:** the dim state with the flat gold lock (Justin: colour is fine on Light,
+     leave it), the OVER-cap modal, the AT-cap modal via the override, Not Now, Support the Mission, and
+     Create Food back to normal blue and fully working as a Supporter. No bugs found.
+     🟡 **NOT YET SEEN BY JUSTIN -- THIS IS THE FIRST THING TO DO NEXT SESSION:** the modal TITLE was reshaped
+     after he saw it. It was `All {count} Of Your Foods Are Still Here`; it is now **`Custom Foods Is Full`**
+     on BOTH versions, with the reassurance moved down into the first body line.
+     WHY: the reassurance-first shape belongs to the step-down notice, which arrives UNPROMPTED. This modal is
+     reached by TAPPING Create Food, so the user's question is "why did nothing happen" and the title must
+     answer THAT. The old title also wrapped badly, orphaning "Here". Justin's call on the wording ("Custom
+     Foods", not "My Foods" -- "My Foods Is Full" reads oddly mid-sentence).
+     ⬅️ **NEXT SESSION STARTS BY RELOADING AND LOOKING AT BOTH MODALS AGAIN**, judging: does a short definite
+     title fix the "flat / too dim and plain" feeling he had, and does the title now read too SMALL at one
+     line. He also noted the body felt dim and plain -- unresolved, revisit after seeing the new title.
+     🟡 **STILL OPEN in step 3:** ⚠️ the other seven caps' copy is STILL IN THE OLD SHAPE (title-as-
+     reassurance) and needs the same reordering -- deliberately NOT rewritten alone, bring it as a batch he
+     can see. ⚠️ The over-cap body says "My Foods" while the title says "Custom Foods"; left on purpose (title
+     names the concept, body points at the real tab) but he may want them matched.
+     ⏭️ **BUILD STEP 4:** the other FIVE food doors (Log tab plus, both barcode buttons, Save as Copy, the
+     recipe builder's inline creator). No new decisions, same treatment.
      ⏭️ **THEN PIECE 6** -- where the caps get enforced across the different features (the build checklist:
      every creation door for all eight caps).
      ⚠️ **THE LAYOUT CAPS ARE "DEFAULTS PLUS ONE", NOT RAW TOTALS (Justin, 2026-07-31). Read either as a bare

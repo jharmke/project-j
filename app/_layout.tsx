@@ -19,6 +19,7 @@ import { Stack, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
+import { loadDevCapOverrides } from '../utils/caps';
 import { Alert, AppState, LogBox } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -82,6 +83,10 @@ function RootLayoutNav() {
   // Only route to /sign-in once per app session -- prevents re-navigation when
   // the user signs in while already on the sign-in screen (kills the animation).
   const hasInitialRouted = useRef(false);
+
+  // DEV cap overrides (item C testing) into memory once, so capFor() can stay synchronous. No-ops in a
+  // store build -- loadDevCapOverrides returns immediately unless __DEV__.
+  useEffect(() => { loadDevCapOverrides().catch(() => {}); }, []);
 
   // Flush all local data to Firestore whenever the app backgrounds.
   // Ensures today's data is in the cloud before a build switch wipes local storage.

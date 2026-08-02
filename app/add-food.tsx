@@ -1220,6 +1220,14 @@ const openFoodDetail = async (food: SearchResult) => {
     setShowCreateFood(true);
   };
 
+  // ITEM C doors 3 + 4: both create-a-food-from-a-scan buttons. No FAB menu to close here, so no delay.
+  const onCreateFoodFromBarcode = () => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    if (!foodCap.canCreate) { setFoodCapWall(true); return; }
+    setBarcodeForCreate(lastScannedBarcode);
+    setShowCreateFood(true);
+  };
+
   const saveNewFood = async () => {
     const name = newName.trim();
     const cal = parseInt(newCal);
@@ -1746,13 +1754,16 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
             <Ionicons name="information-circle-outline" size={14} color={theme.textMuted} style={{ marginRight: 6 }} />
             <Text style={{ flexShrink: 1, fontSize: 12, color: theme.textMuted, fontFamily: Type.ui, lineHeight: 16, textAlign: 'center' }}>Tap SET on the correct item to confirm it for future scans</Text>
           </View>
+          {/* ⚠️ ITEM C door 3. This is a CREATE FOOD button, not the scanner -- scanning stays free. Same
+              drain-the-colour rule as the FAB rows, adapted to a TINTED bar: neutral tint, muted label, gold
+              lock in place of the plus. Shape, height and border weight all unchanged. */}
           <TouchableOpacity
             ref={isTutorialScanMode ? (createBarcodeRef as any) : undefined}
-            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setBarcodeForCreate(lastScannedBarcode); setShowCreateFood(true); }}
-            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 44, paddingHorizontal: 12, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8, overflow: 'hidden' }}>
-            <ButtonShine radius={8} />
-            <Ionicons name="add-circle-outline" size={15} color={theme.accentBlue} />
-            <Text style={{ fontSize: 13, color: theme.accentBlue, fontFamily: Type.uiSemibold }}>None match? Create & Set food</Text>
+            onPress={onCreateFoodFromBarcode}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 44, paddingHorizontal: 12, backgroundColor: foodCap.canCreate ? theme.accentBlueBg : theme.textMuted, borderWidth: 1, borderColor: foodCap.canCreate ? theme.accentBlueBorder : theme.textMuted, borderRadius: 8, overflow: 'hidden' }}>
+            {foodCap.canCreate && <ButtonShine radius={8} />}
+            <Ionicons name={foodCap.canCreate ? 'add-circle-outline' : 'lock-closed'} size={15} color={foodCap.canCreate ? theme.accentBlue : GOLD_BASE} />
+            <Text style={{ fontSize: 13, color: foodCap.canCreate ? theme.accentBlue : '#ffffff', fontFamily: Type.uiSemibold }}>None match? Create & Set food</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -2231,19 +2242,14 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                 ))}
               </View>
             )}
-            {lastScannedBarcode && !query.trim() && (
-              <View style={{ marginHorizontal: 12, marginTop: 8, marginBottom: 4 }}>
-                <TouchableOpacity
-                  onPress={() => { setBarcodeForCreate(lastScannedBarcode); setShowCreateFood(true); }}
-                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, paddingHorizontal: 14, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 10, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw }}>
-                  {/* Same doubled top-light as "Use a Saved Food" above: bright 1.5px accent top border AND
-                      the shine. Judge them together -- they are twins. */}
-                  <ButtonShine radius={10} />
-                  <Ionicons name="add-circle" size={16} color={theme.accentBlueRaw} />
-                  <Text style={{ fontSize: 13, color: theme.accentBlueRaw, fontFamily: Type.uiSemibold }}>Create Food for this Barcode</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+            {/* ⚠️ "Create Food for this Barcode" USED TO SIT HERE and was DELETED 2026-08-02 (Justin's call).
+                Do not put it back. It was redundant BY CONSTRUCTION: its condition (`lastScannedBarcode &&
+                !query.trim()`) is a strict subset of the scan banner's (`lastScannedBarcode`), so it could
+                never appear without the banner's "None match? Create & Set food" also being on screen doing
+                exactly the same thing -- both attached the scanned barcode and opened the creator.
+                Its only real job was catching you at the BOTTOM of a long results list, and the banner sits
+                one flick away directly under the search box. It also looked washed out in its normal state,
+                because unlike the banner button it floated on the page with no container behind it. */}
             {(!query.trim() || results.length > 0) ? (
               <TouchableOpacity
                 onPress={() => Linking.openURL('https://platform.fatsecret.com')}

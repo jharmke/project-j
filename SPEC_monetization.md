@@ -814,9 +814,15 @@ fallback at the end of this section, NOT deleted):
 - **Under the cap:** nothing. No dim, no lock, no modal. The app behaves exactly as it does today.
 - **At the cap:** the ENTRY POINT is **dim with a lock icon**, and is **still pressable**.
 - ⚠️ **THE LOCKED BUTTON TREATMENT (settled on device 2026-08-02, verified Light + Dark + Warm).** Keep the
-  button's OWN species -- solid fill, same size, same halo ring as its unlocked siblings -- and drain the
-  COLOUR only: fill `theme.textMuted`, white label, flat gold lock. **Do not turn it into a hollow/outlined
-  chip.** Two wrong versions were built first: a near-white `bgInset` fill (vanished against light cards, and
+  button's SIZE, SHAPE and border weight, and change only the colour: **solid `theme.textMuted` fill, WHITE
+  label, flat gold lock**, no shine.
+  ⚠️⚠️ **ONE LOCKED LOOK EVERYWHERE, REGARDLESS OF WHAT THE BUTTON LOOKED LIKE UNLOCKED.** Claude's first
+  instinct was "drain whatever this button was", which gave a solid grey for the solid FAB pills and a pale
+  tint for the tinted scan bars -- two different locked greys on one screen. Justin: *"shouldnt all these
+  dim/locked states be the same damn color?"* **A lock is its own language.** Same fill, same label colour,
+  same gold lock, whether the unlocked button was solid, tinted or outlined. Anything accent-coloured on the
+  unlocked version (a bright top border, a shine) goes too.
+  ⚠️ **Do not turn it into a hollow/outlined chip.** Two wrong versions were built first: a near-white `bgInset` fill (vanished against light cards, and
   changed the button from solid to hollow, so it read as a DIFFERENT button rather than the same one turned
   off) and a pale `bgProgressTrack` fill (the white halo ring dissolved into the cards -- a white ring only
   reads as an edge when what is behind it is strong). A MID-TONE fill is what makes one value work on every
@@ -1576,14 +1582,21 @@ by following the storage write. Do the same for anything added later.**
    come from the same place, or the toast says 19 while the wall says full.
 
 ##### THE DOOR MAP
-**1. CUSTOM FOODS (20) -- SIX doors.** The most of any cap.
-   1. Log tab plus -> Create Food (deep-links to Add Food with `openCreate: '1'`)
+**1. CUSTOM FOODS (20) -- FIVE doors** (was six; one was deleted 2026-08-02, see below). The most of any cap.
+   1. Log tab plus -> Create Food (deep-links to Add Food with `openCreate: '1'`) ⚠️ **the param path is
+      checked AGAIN on arrival** -- otherwise any future deep link, notification or tutorial route using that
+      param walks straight past the wall. Gate the ACTION, not only the button that usually triggers it.
    2. Add Food plus -> Create Food
-   3. Scan banner -> **"None match? Create & Set food"** (`add-food.tsx` ~1721)
-   4. Barcode results -> **"Create Food for this Barcode"** (`add-food.tsx` ~2206) -- a genuinely SEPARATE
-      button from 3, different label, different placement
-   5. Food detail -> **Save as Copy** (the clone path, ends in the "Saved to My Foods" toast)
-   6. Recipe builder -> add a custom food inline (`recipe-builder.tsx` ~720)
+   3. Scan banner -> **"None match? Create & Set food"**
+   4. Food detail -> **Save as Copy** (the clone path, ends in the "Saved to My Foods" toast)
+   5. Recipe builder -> add a custom food inline (`recipe-builder.tsx` ~720)
+   🗑️ **DELETED 2026-08-02, do not restore: "Create Food for this Barcode"** at the bottom of the results
+   list. Redundant BY CONSTRUCTION -- its condition (`lastScannedBarcode && !query.trim()`) was a strict
+   subset of the scan banner's (`lastScannedBarcode`), so it could never appear without the banner button
+   already on screen doing the identical thing. Its only job was catching you at the bottom of a long results
+   list, and the banner is one flick away under the search box. It also looked washed out normally, because
+   unlike the banner button it floated on the page with no container behind it. Locking it is what made the
+   duplication obvious: two identical grey bars are harder to ignore than two blue ones.
    ✅ The AI meal estimator does NOT create foods -- verified by whole-repo grep of both the storage key and
    the creator component; it writes nutrition straight into the day's entry. ⚠️ If it or Otto ever gains a
    "save this as a food" button, that is door seven.

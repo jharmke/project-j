@@ -1364,6 +1364,13 @@ are separate pre-submission checklists, NOT part of this menu.
     NOT chased on 2026-08-01 -- he did not want to toy with it mid-build. ⚠️ Unknown whether it is a dev-build
     timing artefact or real. ⚠️ **Plan item N (the shared launch-modal flag) should probably own this** rather
     than patching this one modal's timing a third time; every launch modal currently reinvents its own.
+  • **[FOUND 2026-08-02] TWO IDENTICAL "create a food from this scan" BUTTONS on the Food Library screen.**
+    The scan banner's **"None match? Create & Set food"** and the results screen's **"Create Food for this
+    Barcode"** do EXACTLY the same thing (both `setBarcodeForCreate(lastScannedBarcode)` then open the
+    creator) and can be on screen at the same time. Pre-existing, not introduced by item C -- locking them
+    just made it obvious, because two identical grey bars are harder to ignore than two blue ones. Justin
+    spotted it 2026-08-02: "why is this button here on the bottom? Isn't it literally the same?"
+    Deleting one is a product call, not part of item C. Decide which earns its place.
   • **[LIVE BUG, found 2026-08-01] The step-down notice can fire at a PAYING Supporter on a slow launch.**
     `app/(tabs)/index.tsx` (~line 1160) takes only `const { isSupporter } = useMembership()` and never takes
     `loading`, so at launch it cannot tell "free user" from "RevenueCat has not answered yet". Today it is
@@ -1673,7 +1680,15 @@ are separate pre-submission checklists, NOT part of this menu.
      built first -- a near-white fill that vanished on light cards, and a pale fill whose white halo ring
      dissolved into the cards. Detail + reasoning in SPEC_monetization.md. ⚠️ Claude changed this visually
      WITHOUT asking and Justin called it out; ask first on anything visual.
-     ⏭️ **4b:** the two barcode buttons (both already on the wired Add Food screen -- smallest of the four).
+     ✅ **4b DONE + device-verified 2026-08-02: the create-a-food-from-a-scan button.** ⚠️ NOT the scanner --
+     scanning is free and untouched. ➡️ **The food cap now has FIVE doors, not six:** the redundant "Create
+     Food for this Barcode" at the bottom of the results list was DELETED (Justin's call) -- its condition was
+     a strict subset of the scan banner's, so it could never appear alone, and it looked washed out normally.
+     ⚠️ **ONE LOCKED LOOK EVERYWHERE** was settled here: draining each button to its own kind of grey gave two
+     different locked greys on one screen. A lock is its own language -- same fill, same white label, same
+     gold lock, whatever the button looked like unlocked.
+     ⚠️ **A `replace_all` on a colour token recoloured every progress bar and the Food Library tab strip.**
+     Caught by Justin on device, reverted in commit 6149d22. **Never replace-all a theme token.**
      ⏭️ **4c:** Save as Copy on food-detail (new file, needs the same membership wiring).
      ⏭️ **4d:** the recipe builder's inline creator (LAST -- the only one where the user can be mid-flow, so
      hitting the wall must not cost them the recipe they are part-way through).

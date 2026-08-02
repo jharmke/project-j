@@ -1754,8 +1754,35 @@ are separate pre-submission checklists, NOT part of this menu.
      ⚠️ **PLURALS: "1 exercises of your own" is a DEV-OVERRIDE-ONLY artefact and is deliberately NOT fixed.**
      No cap is below 3 and an over-cap count is always higher than its cap, so no user can reach a 1.
      Re-read the copy only if a cap is ever set to 1 or 2.
-     ⏭️ **ROUND 3: the layout pair** -- meal slots + stats graphs. 4 modals, 2 doors. Last on purpose: these
-     are the two that REVERT rather than grandfather, so their over-cap wording is the trickiest.
+     ✅ **ROUND 3 PART A DONE + device-verified 2026-08-02: the meal slot and stats graph DOORS.**
+     ⚠️ Meal slots is the one cap the Supporter plan does not make unlimited, so it has TWO non-create states:
+     at the FREE cap it is LOCKED (gold, pressable, opens the wall); at the SUPPORTER max of 8 it is genuinely
+     DISABLED (plain grey, "Maximum 8 slots reached", no gold) because there is nothing left to sell.
+     ⚠️ Two wall-placement bugs found on device: the meal-slot wall opened UNDERNEATH the Edit Meal Slots
+     sheet (iOS gives every Modal its own window -- it must render INSIDE that sheet), and the graph wall was
+     nested inside the FAB menu block so closing the menu unmounted it and it took a second tap. Anything
+     opened BY a menu must outlive that menu. ⚠️ A third: rendering it in the list's inline
+     `ListFooterComponent` made it remount forever and visibly pulse.
+     ✅ **ROUND 3 PART B (DORMANCY) IS DONE for MEAL SLOTS + device-verified 2026-08-02.**
+     One sentence: **when the log draws a day, it shows the LIVE slots plus any slot that has food on that
+     day.** Position decides which are awake, nothing is stored, no migration runs at downgrade, and the
+     feature WRITES NOTHING. Edit Meal Slots shows a gold "SAVED AND WAITING" line with the sleeping slots
+     under it; drag one above the line to wake it, and deleting a live one wakes the next automatically.
+     ➡️ **IT ALSO FIXED A REAL BUG THAT AFFECTS EVERY USER, PLAN OR NOT.** Deleting a meal slot always left
+     its entries behind: they kept counting toward calories, macros and Day Score while NO section rendered
+     them, so the hero number stopped matching the sections beneath it. Justin found 880 on the Log tab
+     against 800 of visible slots. Those entries are now shown (last, no plus, no Find a Meal, no Save as
+     Meal, Clear All kept) so they can finally be edited or moved out.
+     ⚠️ **SHOW IT, NEVER MOVE IT.** Moving orphaned entries into another slot was the obvious fix and is far
+     worse -- that food is in every past day the slot was ever used, so it means REWRITING hundreds of real
+     day records to fix a display problem.
+     ⚠️ **SCOPE, verified so nobody re-audits it:** anything that SUMS a day (Day Score, EvR, comparison,
+     summaries, challenges, achievements, Otto's totals) always counted every entry and was never wrong.
+     Anything that GROUPS BY SLOT (Day Detail, Reports' Calories by Meal, Otto's itemised day) walks the day's
+     ENTRIES and resolves names from `slotNameCache`, which never shrinks -- all already correct, no changes
+     needed. **The Log tab was the ONLY thing that decided what to draw by walking the slot list.**
+     ⏭️ **LAST PIECE OF ITEM C: stats graph dormancy.** Much simpler -- hiding a graph hides a VIEW, not data,
+     so there is no history rule to honour.
      ⚠️ Both rounds' copy is still in the OLD title-as-reassurance shape. Reshape it as a batch Justin sees.
      ⏭️ **THEN PIECE 6** -- where the caps get enforced across the different features (the build checklist:
      every creation door for all eight caps).

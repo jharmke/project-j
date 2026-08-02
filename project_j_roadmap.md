@@ -1354,11 +1354,14 @@ are separate pre-submission checklists, NOT part of this menu.
      eight caps are in it** -- it even carries a line telling him never to say the whole app is free because a
      few features are paid, and that list is now wrong. Ask him today how many custom foods you get and he
      does not know.
-  **ITEM A -- ONE ORPHAN:** the **undereating safeguard** was fully decided (app-side detection, 4+ of 7
-  qualifying days, Otto never speaks first, fixed sentence + improvised lead-in) and the roadmap itself says
-  *"still needs a HOME in this plan: fold into B or give it its own letter."* That never happened. It has no
-  letter and no code -- the only undereating logic in the app is an unrelated Smart Coach rule
-  (`day_undereating` in utils/coachAI.ts). **Give it a letter before anyone tries to build it.**
+  **ITEM A -- CLEAN. NO ORPHAN.** ⚠️ The audit first reported the **undereating safeguard** as homeless,
+  because item A's own text still said *"still needs a HOME... fold into B or give it its own letter."* **That
+  line was stale: it became ITEM L on 2026-07-30.** Justin questioning the audit is what caught it, and the
+  lesson is the same one that caused all of this -- a stale line was taken at face value instead of checked.
+  Item A's text is corrected. L is simply an unstarted letter like E-K and M-O, not a gap.
+  ➡️ **SO IT IS FIVE THINGS, AND ALL FIVE BELONG TO ITEM C.** Nothing is missing from any other letter:
+  A, B and D are genuinely finished; E-O were never claimed done and simply have not been started (G is
+  mostly built, H has a spec).
   **OUTSIDE THE PLAN -- ✅ DECIDED, spec was just stale:** `purchaseTip` grants nothing in-app. That is
   DELIBERATE (Justin, 2026-08-02): he gets the purchase emails and thanks people directly. SPEC_monetization
   still lists it as "STILL OPEN"; it is not. ⚠️ The email is outside the app, so it does not change what the
@@ -1529,8 +1532,9 @@ are separate pre-submission checklists, NOT part of this menu.
      intake (not net) under the modal line on 4+ of 7 QUALIFYING days (empty / excluded / vacation days do
      not qualify; minimum 5-7 logged days of history). Never asserts undereating, asks a question. Fixed
      app-supplied sentence + improvised lead-in. Full detail in SPEC_otto.md.
-     ⚠️ Still needs a HOME in this plan (it is app-side code now, and it is NOT part of G): fold into B or
-     give it its own letter.
+     ✅ **IT GOT ITS OWN LETTER: THIS IS NOW ITEM L.** This line used to say "still needs a HOME... fold into
+     B or give it its own letter", and stayed that way after L was created on 2026-07-30. That stale sentence
+     made the 2026-08-02 audit briefly report it as an orphan with no home. It has one.
 
   **B. OTTO FREE/PAID SPLIT** -- direction locked in SPEC_otto.md, prompt/KB work, small once A is done.
      ✅ **THE DATA GATE IS BUILT + DEVICE-VERIFIED 2026-07-31** (batch 2). Free users no longer receive their

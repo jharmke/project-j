@@ -30,7 +30,7 @@ import ScreenHeader from '../components/ScreenHeader';
 import CapWallModal from '../components/CapWallModal';
 import { GOLD_BASE } from '../components/SupporterFoil';
 import { useMembership } from '../MembershipContext';
-import { capStateFrom, capFor, checkCap, countUserExercises, type CapState, type CapKey } from '../utils/caps';
+import { capStateFrom, capFor, countUserExercises, countUserPrograms, creationCountLine, toastLineWithCount, type CapKey } from '../utils/caps';
 import ButtonShine from '../components/ButtonShine';
 import GradientIcon from '../components/GradientIcon';
 import GradientTitle from '../components/GradientTitle';
@@ -1885,9 +1885,11 @@ export default function WorkoutLibraryScreen() {
   // ── Item C caps. THREE of them live on this one screen (routines, programs, exercises), which is why the
   // whole workout side is one testing round. Declared ABOVE `library` because exerciseCap derives from it.
   const { isSupporter, loading: membershipLoading } = useMembership();
-  const [routineCap, setRoutineCap] = useState<CapState>({ cap: null, count: 0, unlimited: true, atCap: false, canCreate: true });
-  const [programCap, setProgramCap] = useState<CapState>({ cap: null, count: 0, unlimited: true, atCap: false, canCreate: true });
   const [capWall, setCapWall] = useState<CapKey | null>(null);
+  // ⚠️ routineCap and programCap are DERIVED further down, next to the lists they count -- they used to be
+  // useState refreshed by checkCap on focus, which left the count stale the whole time you stood on this
+  // screen. Deleting a routine at the cap left Create Routine locked until you navigated away and back, and
+  // creating one at 4 never locked it at 5, so you could keep going to 6, 7, 8. See the note there.
 
   const [library, setLibrary] = useState<LibraryExercise[]>([]);
   // ITEM C: the exercise cap is derived straight from `library`, which this screen already holds. Identity,
@@ -1919,6 +1921,15 @@ export default function WorkoutLibraryScreen() {
   const [editingProgram, setEditingProgram] = useState<CustomProgram | null>(null);
   const [libTags, setLibTags] = useState<WorkoutTag[]>([...DEFAULT_TAGS]);
   const [myRoutines, setMyRoutines] = useState<Routine[]>([]);
+
+  // ITEM C: derived from the lists this screen already holds, exactly like exerciseCap above, so the count
+  // is LIVE. Every add and every delete updates the list, so the door locks and unlocks the moment it should
+  // instead of on the next visit. Nothing extra is read from storage.
+  // ⚠️ Programs EXCLUDE the built-ins, which are seeded into the SAME list as yours, and the test is
+  // identity (a real createdAt), never "how many minus the ones that shipped". Routines need no such test:
+  // presets render from their own section and are never stored in pj_routines.
+  const routineCap = capStateFrom('routines', myRoutines.length, isSupporter, membershipLoading);
+  const programCap = capStateFrom('programs', countUserPrograms(myPrograms), isSupporter, membershipLoading);
   const [showRoutineBuilder, setShowRoutineBuilder] = useState(false);
   const [editingRoutine, setEditingRoutine] = useState<Routine | null>(null);
   const [showLoadRoutinePicker, setShowLoadRoutinePicker] = useState(false);
@@ -2228,12 +2239,9 @@ export default function WorkoutLibraryScreen() {
         setMyRoutines(routinesRaw ? JSON.parse(routinesRaw) : []);
       } catch (e) {}
 
-      // ITEM C: both counts come off the lists this effect just loaded, so no extra storage reads. Runs on
-      // every focus, which is also what makes a deletion elsewhere free the door immediately.
-      try {
-        checkCap('routines', isSupporter, membershipLoading).then(setRoutineCap).catch(() => {});
-        checkCap('programs', isSupporter, membershipLoading).then(setProgramCap).catch(() => {});
-      } catch (e) {}
+      // ITEM C: nothing to do here for the routine/program caps any more. Both are derived from myRoutines
+      // and myPrograms, which this effect has just set, so they recompute on their own -- and keep
+      // recomputing on every later add and delete instead of only on the next focus.
 
       try {
         const settings = settingsRaw ? JSON.parse(settingsRaw) : {};
@@ -2351,7 +2359,13 @@ export default function WorkoutLibraryScreen() {
         setActiveProgramName(program.name);
       } catch (e) {}
     }
-    showToast(editingProgram ? 'Program saved' : 'Program created', program.name, 'success');
+    // ⚠️ Counted with countUserPrograms, not updated.length: the built-in programs are seeded into this same
+    // list, and counting them would tell a brand-new user they had already spent most of their three.
+    showToast(
+      editingProgram ? 'Program saved' : 'Program created',
+      toastLineWithCount(program.name, idx < 0 ? creationCountLine('programs', countUserPrograms(updated), isSupporter, membershipLoading) : null),
+      'success',
+    );
     setEditingProgram(null);
   };
 
@@ -2392,7 +2406,14 @@ export default function WorkoutLibraryScreen() {
       ? myRoutines.map(r => r.id === routine.id ? routine : r)
       : [...myRoutines, routine];
     await saveMyRoutines(updated);
-    showToast(editingRoutine ? 'Routine saved' : 'Routine created', routine.name, 'success');
+    // ⚠️ The count is gated on the list actually GROWING (idx < 0), not on `editingRoutine`. Editing costs
+    // nothing, so an edit must never show a count -- and the number here has to be the same one the cap
+    // engine counts, which is list length.
+    showToast(
+      editingRoutine ? 'Routine saved' : 'Routine created',
+      toastLineWithCount(routine.name, idx < 0 ? creationCountLine('routines', updated.length, isSupporter, membershipLoading) : null),
+      'success',
+    );
     setEditingRoutine(null);
     checkWorkoutAchievements(true).then(unlocked => {
       for (const def of unlocked) {
@@ -2494,6 +2515,26 @@ export default function WorkoutLibraryScreen() {
     setShowRoutineBuilder(true);
   };
 
+  // ⚠️ THE SECOND ROUTINE DOOR, and it shipped ungated. Duplicating a preset writes a copy straight into
+  // pj_routines exactly like the builder does, so it spends one of the five and has to answer to the same
+  // cap. Without this a free user could sit staring at a locked Create Routine button and keep making
+  // routines from here all day. Found 2026-08-02 by following saveMyRoutines rather than the button labels.
+  // ⚠️ USE, its neighbour, only loads a preset onto a day and never writes pj_routines -- verified, and it
+  // must NEVER be gated. Using a preset is free and always will be.
+  // ⚠️ The haptic fires on EVERY press, hit or wall, so a capped tap never feels like a dead button.
+  const onDuplicateRoutinePress = async (routine: Routine) => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    if (!routineCap.canCreate) { setCapWall('routines'); return; }
+    const copy: Routine = { ...routine, id: makeId(), name: routine.name, isPreset: false, exercises: routine.exercises.map(e => ({ ...e, id: makeId() })) };
+    const updated = [...myRoutines, copy];
+    await saveMyRoutines(updated);
+    showToast(
+      'Routine duplicated',
+      toastLineWithCount(copy.name, creationCountLine('routines', updated.length, isSupporter, membershipLoading)),
+      'success',
+    );
+  };
+
   const onCreateProgramPress = () => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     closeFabMenu();
@@ -2526,7 +2567,17 @@ export default function WorkoutLibraryScreen() {
     }
     await saveLibrary(updated);
     setShowAddModal(false);
-    showToast(editingEx ? 'Exercise saved' : 'Exercise added', undefined, 'success');
+    // ⚠️ Counted by IDENTITY against DEFAULT_LIBRARY's ids, never "how many minus 79". Item J takes the
+    // shipped library from ~79 to ~143, and an arithmetic count would hand every user 60 free slots the day
+    // it lands. This toast showed no second line at all before; it now carries the name and the count.
+    showToast(
+      editingEx ? 'Exercise saved' : 'Exercise added',
+      toastLineWithCount(
+        editingEx ? undefined : form.name?.trim(),
+        editingEx ? null : creationCountLine('exercises', countUserExercises(updated, DEFAULT_LIBRARY.map(e => e.id)), isSupporter, membershipLoading),
+      ),
+      'success',
+    );
   };
 
   const getFilteredList = () => {
@@ -3102,13 +3153,9 @@ export default function WorkoutLibraryScreen() {
                             <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: Type.uiBold, letterSpacing: 1 }}>USE</Text>
                           </TouchableOpacity>
                           <TouchableOpacity
-                            onPress={async () => {
-                              triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
-                              const copy: Routine = { ...routine, id: makeId(), name: routine.name, isPreset: false, exercises: routine.exercises.map(e => ({ ...e, id: makeId() })) };
-                              await saveMyRoutines([...myRoutines, copy]);
-                              showToast('Routine duplicated', copy.name, 'success');
-                            }}
-                            style={{ paddingVertical: 10, paddingHorizontal: 14, borderRadius: 8, alignItems: 'center', backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard }}>
+                            onPress={() => onDuplicateRoutinePress(routine)}
+                            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 8, backgroundColor: theme.bgInset, borderWidth: routineCap.canCreate ? 1 : 2, borderColor: routineCap.canCreate ? theme.borderCard : GOLD_BASE }}>
+                            {!routineCap.canCreate && <Ionicons name="lock-closed" size={12} color={GOLD_BASE} />}
                             <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: Type.uiSemibold }}>Duplicate</Text>
                           </TouchableOpacity>
                         </View>

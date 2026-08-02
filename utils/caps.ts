@@ -1,4 +1,4 @@
-// utils/caps.ts
+﻿// utils/caps.ts
 //
 // THE ONE PLACE THAT OWNS THE NON-AI FREE LIMITS. Design lives in SPEC_monetization.md ->
 // "NON-AI SUPPORTER PERKS" (the numbers) and "WHAT THE USER SEES AT A CAP" (the behaviour).
@@ -174,7 +174,7 @@ export function sleepingItems<T>(items: T[], cap: number | null): T[] {
  * A program somehow saved without a createdAt reads as built-in and is not counted -- that errs toward
  * giving the user MORE room, which is the safe direction for a miscount.
  */
-const countUserPrograms = (programs: any[]): number => programs.filter(p => !!p?.createdAt).length;
+export const countUserPrograms = (programs: any[]): number => programs.filter(p => !!p?.createdAt).length;
 
 /**
  * How many of `key` the user has right now.
@@ -247,6 +247,75 @@ export async function checkCap(key: CapKey, isSupporter: boolean, membershipLoad
   if (membershipLoading) return UNLIMITED;
   const count = await countFor(key);
   return capStateFrom(key, count, isSupporter, membershipLoading);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// THE COUNT ON A CREATION TOAST -- SPEC_monetization.md -> PIECE 3.
+//
+// Rides on the success toast that already fires when you make something, EVERY time, counting UP, free
+// users only. Nothing else in the app shows a count.
+//
+//   Food saved
+//   Chicken Thighs (3 of 20 included on the free plan)
+//
+// ⚠️ "INCLUDED" IS LOAD-BEARING (Justin's word). "3 of 20 on the free plan" reads as a restriction notice;
+// "included" reads as something you were given. Do not trim it, and never write "20 free foods" -- that
+// reads like foods with no calories.
+//
+// ⚠️ THE COUNT IS PASSED IN, NOT READ. Callers hand over the count AFTER the thing was created, worked out
+// from the list they just saved. Reading it back off React state here would race the render that has not
+// happened yet and report the OLD number on every toast.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Written as an escape on purpose: a literal non-breaking space is invisible in the source, and the next
+// person through this file would "tidy" it into a normal space without ever knowing they broke the wrap.
+const NBSP = '\u00A0';
+
+/**
+ * The two caps of ONE get an extra word, because a bare "1 of 1" could be read as the free plan giving you
+ * a single graph. A free user actually HAS eight graphs (seven shipped + their one) and five meal slots
+ * (four shipped + their one) -- it is the CUSTOM one that is capped at one. Everything else needs no noun.
+ */
+const COUNT_NOUN: Partial<Record<CapKey, string>> = {
+  statsGraphs: 'custom graph',
+  mealSlots: 'custom meal slot',
+};
+
+/**
+ * The parenthetical for a creation toast, or null when no count should be shown.
+ *
+ * ⚠️ RETURNS NULL FOR SUPPORTERS, ALWAYS (Justin, emphatic) -- there is nothing to count. It also returns
+ * null while membership is still loading, so an unresolved RevenueCat never invents a limit for someone who
+ * does not have one. Same rule as every other cap surface: never act on an unknown answer.
+ *
+ * ⚠️ EVERY SPACE INSIDE THE PARENTHESES IS NON-BREAKING. Otherwise a long food name orphans the word "plan"
+ * on its own line. Bound like this the phrase either sits after the name or drops to the next line WHOLE.
+ * The space BETWEEN the name and the parenthetical is a normal one on purpose -- that is the only place the
+ * line is allowed to break.
+ */
+export function creationCountLine(
+  key: CapKey,
+  countAfter: number,
+  isSupporter: boolean,
+  membershipLoading: boolean,
+): string | null {
+  if (membershipLoading) return null;
+  const cap = capFor(key, isSupporter);
+  if (cap === null) return null;
+  const noun = COUNT_NOUN[key];
+  const text = noun
+    ? `(${countAfter} of ${cap} ${noun} included on the free plan)`
+    : `(${countAfter} of ${cap} included on the free plan)`;
+  return text.replace(/ /g, NBSP);
+}
+
+/**
+ * Join a toast's existing second line to the count. Both halves are optional: several creation toasts show
+ * no name today (Graph added, Exercise added) and pass undefined, in which case the count stands alone.
+ */
+export function toastLineWithCount(name: string | undefined, countLine: string | null): string | undefined {
+  if (!countLine) return name;
+  return name ? `${name} ${countLine}` : countLine;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

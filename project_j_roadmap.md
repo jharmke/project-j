@@ -1623,7 +1623,24 @@ are separate pre-submission checklists, NOT part of this menu.
      ⚠️⚠️ **EXCLUDE BUILT-INS BY IDENTITY, NEVER BY NUMBER** -- plan item J adds 60+ exercises, so any
      "count minus 79" silently hands every user 60 slots of allowance the day it ships.
      ⚠️ Tutorials drive several creators open directly and must NEVER be capped.
-     ➡️ **ITEM C IS NOW SPEC-COMPLETE AND READY TO BUILD.** Nothing in it is built yet.
+     ➡️ **ITEM C IS SPEC-COMPLETE. BUILD STARTED 2026-08-01.**
+     ✅ **BUILD STEP 1 -- the step-down `loading` guard.** Done + device-verified (commit 9a599f9). The notice
+     can no longer fire at a Supporter whose membership has not resolved.
+     ✅ **BUILD STEP 2 -- `utils/caps.ts`, the shared cap engine.** Done + verified against Justin's REAL data
+     via a new **Cap Audit** dev row (commit 2d88fe9). It owns the eight numbers for both tiers, counts by the
+     correct per-cap rule, treats unknown membership as allowed, and carries the dev cap override.
+     **Audit result 2026-08-01: foods 57, Meal Catalog 6, recipes 11, routines 2, programs 1, meal slots 6,
+     stats graphs 12, library 80 total.** The three rules most likely to be wrong all held: **programs
+     correctly counted 1** (presets excluded), **meal slots correctly counted 6** (raw total, defaults
+     included), **stats graphs correctly counted 12** (graph cards only, system sections ignored).
+     ⚠️ Exercises cannot be counted outside `app/workout-library.tsx` (`DEFAULT_LIBRARY` is private to it), so
+     `countUserExercises(library, builtInIds)` takes the built-in ids as an argument. Both exercise doors are
+     in that one screen. The tidy long-term fix is moving `DEFAULT_LIBRARY` to `workoutData.ts` next to
+     `PRESET_PROGRAMS` -- **item J is the natural moment**, since it adds ~60 entries to it anyway.
+     ⚠️ **Dev Tools is a 7-TAP UNLOCK, not a `__DEV__` gate, so everything in it SHIPS.** Cap Audit is
+     read-only (same category as Cloud Audit). The cap OVERRIDE is inert in a store build by construction --
+     `capFor` only consults it under `__DEV__` -- so it cannot change a real user's limits.
+     ⏭️ **BUILD STEP 3:** the dim + gold lock + wall modal on the first cap (custom foods, six doors).
      ⏭️ **THEN PIECE 6** -- where the caps get enforced across the different features (the build checklist:
      every creation door for all eight caps).
      ⚠️ **THE LAYOUT CAPS ARE "DEFAULTS PLUS ONE", NOT RAW TOTALS (Justin, 2026-07-31). Read either as a bare

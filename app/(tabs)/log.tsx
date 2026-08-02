@@ -17,7 +17,7 @@ import { DEFAULT_MEAL_SLOTS, MealSlot, findSlotForMeal, loadMealSlots, saveMealS
 import CapWallModal from '../../components/CapWallModal';
 import { GOLD_BASE } from '../../components/SupporterFoil';
 import { useMembership } from '../../MembershipContext';
-import { checkCap, capFor, type CapState } from '../../utils/caps';
+import { checkCap, capFor, capStateFrom, SUPPORTER_CAPS, type CapState } from '../../utils/caps';
 import { resolveMealPhoto, uploadMealPhoto, purgeMealPhoto, mealPhotoKey } from '../../utils/mealPhotos';
 import { getRepeatSummary, logRepeatedItems, SlotRepeatInfo, tidyFoodName } from '../../utils/repeatMeal';
 import { entryNutrient } from '../../utils/nutrientScale';
@@ -367,6 +367,7 @@ export default function LogScreen() {
   // fresh each time the menu opens.
   const [recipeCap, setRecipeCap] = useState<CapState>({ cap: null, count: 0, unlimited: true, atCap: false, canCreate: true });
   const [recipeCapWall, setRecipeCapWall] = useState(false);
+  const [slotCapWall, setSlotCapWall] = useState(false);
   const logFabScale = useRef(new Animated.Value(1)).current;
   const logFabItem1Anim = useRef(new Animated.Value(0)).current; // Add to Meal -- bottom, animates first
   const logFabItem2Anim = useRef(new Animated.Value(0)).current; // Barcode
@@ -433,6 +434,12 @@ export default function LogScreen() {
   const [waterPresetInputs, setWaterPresetInputs] = useState<[string,string,string]>(['','','']);
   const [waterGoalInput, setWaterGoalInput] = useState('');
   const [mealSlots, setMealSlots] = useState<MealSlot[]>(DEFAULT_MEAL_SLOTS);
+  // ── Meal slots cap (item C). Derived from `mealSlots` above, which this screen already holds, so it
+  // updates the instant a slot is added or deleted. ⚠️ This is the one cap the Supporter plan does NOT make
+  // unlimited: at 8 there is genuinely nothing left to sell, so that state stays a plain DISABLED button
+  // rather than a locked one. Selling a plan to somebody already on it would be absurd.
+  const slotCap = capStateFrom('mealSlots', mealSlots.length, isSupporter, membershipLoading);
+  const atSupporterSlotMax = !slotCap.canCreate && (capFor('mealSlots', isSupporter) ?? 0) >= (SUPPORTER_CAPS.mealSlots ?? 8);
   const [slotNameCache, setSlotNameCache] = useState<Record<string, string>>({});
   // Repeat a Meal: per-slot history summary (drives the empty-slot pill + one-tap fast path)
   // and the launch slot for the modal (null = closed).
@@ -1380,9 +1387,24 @@ export default function LogScreen() {
     Animated.timing(editMealsAnim, { toValue: 0, duration: 160, useNativeDriver: true }).start(() => setShowEditMeals(false));
   };
 
-  const addMealSlot = async () => {
-    if (mealSlots.length >= 8) return;
+  // ITEM C: the wall fires from here rather than from the button, so the guard sits on the ACTION.
+  // ⚠️ THE HAPTIC FIRES ON THE PRESS, not on the outcome. It used to live inside addMealSlot below, AFTER
+  // its guard, so a tap that hit the cap felt like nothing at all -- the one door in item C that did not
+  // respond to being tapped. Every press of this button now buzzes, whether it adds a slot or opens the wall.
+  // (The Supporter-max state is genuinely `disabled`, so it never reaches here and correctly stays silent.)
+  const onAddMealSlotPress = () => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    if (!slotCap.canCreate) {
+      if (!atSupporterSlotMax) setSlotCapWall(true);
+      return;
+    }
+    addMealSlot();
+  };
+
+  const addMealSlot = async () => {
+    // ⚠️ The real guard is capFor now, not a hardcoded 8. Kept as a belt-and-braces stop so no future caller
+    // can add past the tier's limit by calling this directly.
+    if (mealSlots.length >= (capFor('mealSlots', isSupporter) ?? 8)) return;
     const newId = `ms_${Date.now()}`;
     const newName = 'New Meal';
     const newSlots = [...mealSlots, { id: newId, name: newName }];
@@ -2765,10 +2787,12 @@ export default function LogScreen() {
       const content = (
         <>
           {/* Title was a 13px uppercase LABEL; DONE is the explicit close, so ModalHeader's own X is
-              suppressed to avoid two close controls. */}
+              suppressed to avoid two close controls.
+              ⚠️ The subtitle's limit used to be a hardcoded 8, so a free user sitting at their limit of five
+              was told "5 of 8 slots". It reads against the real tier cap now. */}
           <ModalHeader
             title="Edit Meal Slots"
-            subtitle={`${mealSlots.length} of 8 slots`}
+            subtitle={`${mealSlots.length} of ${capFor('mealSlots', isSupporter) ?? SUPPORTER_CAPS.mealSlots} slots`}
             onClose={closeEditMeals}
             showClose={false}
             right={
@@ -2793,18 +2817,31 @@ export default function LogScreen() {
             ListFooterComponent={() => (
               <View style={{ paddingBottom:20 }}>
                 <View style={{ height:0.5, backgroundColor: theme.borderCard, marginBottom:12, marginTop:2 }} />
+                {/* ⚠️ ITEM C: this was the app's ONLY hardcoded cap -- a flat `>= 8` with a disabled state and
+                    "Maximum 8 slots reached". It is now tier-aware. Two distinct states now exist:
+                    AT THE SUPPORTER MAX (8): genuinely disabled, the old grey treatment, because no plan
+                    goes higher and there is nothing to sell. Keeps its "Maximum 8 slots reached" copy.
+                    AT THE FREE CAP (5): the standard LOCKED look, still PRESSABLE, opens the wall. */}
                 <View ref={logEditAddBtnRef as any} collapsable={false}>
                   <TouchableOpacity
-                    style={{ flexDirection:'row', alignItems:'center', justifyContent:'center', gap:8, paddingVertical:13, borderRadius:8, backgroundColor: mealSlots.length >= 8 ? theme.bgInput : theme.bgSelected, borderWidth:1, borderColor: mealSlots.length >= 8 ? theme.borderInput : theme.accentBlueBorder, opacity: mealSlots.length >= 8 ? 0.5 : 1 }}
-                    onPress={addMealSlot}
-                    disabled={mealSlots.length >= 8}>
-                    {mealSlots.length < 8 && <ButtonShine radius={8} />}
-                    <Ionicons name="add" size={16} color={mealSlots.length >= 8 ? theme.textDim : theme.accentBlue} />
-                    <Text style={{ fontSize:14, color: mealSlots.length >= 8 ? theme.textDim : theme.accentBlue, fontFamily:Type.uiSemibold }}>
-                      {mealSlots.length >= 8 ? 'Maximum 8 slots reached' : 'Add Meal Slot'}
+                    style={slotCap.canCreate
+                      ? { flexDirection:'row', alignItems:'center', justifyContent:'center', gap:8, paddingVertical:13, borderRadius:8, backgroundColor: theme.bgSelected, borderWidth:1, borderColor: theme.accentBlueBorder }
+                      : atSupporterSlotMax
+                        ? { flexDirection:'row', alignItems:'center', justifyContent:'center', gap:8, paddingVertical:13, borderRadius:8, backgroundColor: theme.bgInput, borderWidth:1, borderColor: theme.borderInput, opacity: 0.5 }
+                        : { flexDirection:'row', alignItems:'center', justifyContent:'center', gap:8, paddingVertical:13, borderRadius:8, backgroundColor: theme.bgInset, borderWidth:2, borderColor: GOLD_BASE }}
+                    onPress={onAddMealSlotPress}
+                    disabled={atSupporterSlotMax}>
+                    {slotCap.canCreate && <ButtonShine radius={8} />}
+                    <Ionicons
+                      name={slotCap.canCreate ? 'add' : atSupporterSlotMax ? 'add' : 'lock-closed'}
+                      size={16}
+                      color={slotCap.canCreate ? theme.accentBlue : atSupporterSlotMax ? theme.textDim : GOLD_BASE} />
+                    <Text style={{ fontSize:14, color: slotCap.canCreate ? theme.accentBlue : atSupporterSlotMax ? theme.textDim : theme.textMuted, fontFamily:Type.uiSemibold }}>
+                      {atSupporterSlotMax ? 'Maximum 8 slots reached' : 'Add Meal Slot'}
                     </Text>
                   </TouchableOpacity>
                 </View>
+
               </View>
             )}
             renderItem={({ item: slot, drag, isActive }: RenderItemParams<MealSlot>) => {
@@ -2870,6 +2907,25 @@ export default function LogScreen() {
                 <Animated.View style={[editSheetCardStyle, { opacity: editMealsAnim }]}>
                   {content}
                 </Animated.View>
+                {/* ⚠️ THE CAP WALL LIVES HERE: INSIDE THIS MODAL, BUT OUTSIDE THE LIST.
+                    Inside the modal because iOS gives every Modal its own window, so a wall rendered at the
+                    screen's top level opens UNDERNEATH this sheet and is invisible -- it fires, you just
+                    never see it.
+                    ⚠️ OUTSIDE THE LIST because it was first put in the DraggableFlatList's
+                    `ListFooterComponent`, which is an inline arrow function and therefore a NEW component
+                    type on every render. React tore the footer subtree down and rebuilt it constantly, so
+                    the wall remounted over and over and its open animation restarted each time -- it
+                    visibly pulsed, growing and shrinking without stopping. Never render a modal inside a
+                    list's inline footer. */}
+                {slotCapWall && (
+                  <CapWallModal
+                    capKey="mealSlots"
+                    cap={capFor('mealSlots', isSupporter) ?? 0}
+                    count={mealSlots.length}
+                    theme={theme}
+                    onDismiss={() => setSlotCapWall(false)}
+                  />
+                )}
               </Animated.View>
             </Modal>
           )}

@@ -1364,6 +1364,12 @@ are separate pre-submission checklists, NOT part of this menu.
     NOT chased on 2026-08-01 -- he did not want to toy with it mid-build. ⚠️ Unknown whether it is a dev-build
     timing artefact or real. ⚠️ **Plan item N (the shared launch-modal flag) should probably own this** rather
     than patching this one modal's timing a third time; every launch modal currently reinvents its own.
+  • **[FOUND 2026-08-02, PRE-EXISTING] THE EDIT MEAL SLOTS SHEET HAS A KEYBOARD BUG.** Tapping a slot to
+    rename opens the keyboard OVER the bottom slots, and the list will not scroll to clear it -- Justin:
+    "keyboard covering the bottom two mealtimes and scrolling doesnt stick when i scroll. need to fix this
+    asap." Nothing to do with item C; found while testing the meal-slot cap. The list is a
+    DraggableFlatList inside a centred sheet, so this is likely the same class of problem as
+    SPEC_keyboard_modals.md describes (the offending ScrollView is often the PAGE's, not the modal's).
   • **[FOUND 2026-08-02] THE EDIT ROUTINE MODAL NEEDS A PROPER PASS.** Justin, seeing it while testing the
     workout caps: *"doesnt look like this edit routine modal got much attention... whole edit routine modal
     looks and behaves pretty crappy."* Specifically called out: the **DURATION editor** that opens when you

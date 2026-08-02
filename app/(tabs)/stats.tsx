@@ -39,6 +39,8 @@ import { loadMetricPresence, seedMetricPresenceOnce, PresenceMap, PresenceMetric
 import { entryNutrient } from '../../utils/nutrientScale';
 import { evaluateCalorieGoalHit, paceTargetFromWeightGoal } from '../../utils/goalHit';
 import { StatsGraphCard, GRAPH_SWATCHES, MACRO_PROTEIN, MACRO_CARBS, MACRO_FAT } from '../../components/StatsGraphCard';
+import CapWallModal from '../../components/CapWallModal';
+import { capStateFrom, capFor } from '../../utils/caps';
 import { StatsCardEditModal } from '../../components/StatsCardEditModal';
 import TooltipIcon from '../../components/TooltipIcon';
 import { storageSet } from '../../utils/storage';
@@ -408,6 +410,15 @@ export default function StatsScreen() {
   useFocusEffect(useCallback(() => { loadChallengeSection(); }, [loadChallengeSection]));
 
   const [creatorVisible, setCreatorVisible] = useState(false);
+  // ── Stats graphs cap (item C). Derived from `statsCards`, which this screen already holds, so deleting a
+  // graph frees the door immediately. ⚠️ GRAPH cards only -- the system sections (At a Glance, Trends,
+  // Records...) are not part of this cap. ⚠️ RAW TOTAL including the 7 defaults, NOT exclude-the-built-ins:
+  // the free number IS "defaults plus one". Applying the programs/exercises rule here would hand every free
+  // user seven extra graphs.
+  // Reuses the membership already read above as `isPro`, rather than calling the hook twice.
+  const { loading: membershipLoading } = useMembership();
+  const graphCap = capStateFrom('statsGraphs', statsCards.filter(c => c.type === 'graph').length, isPro, membershipLoading);
+  const [graphCapWall, setGraphCapWall] = useState(false);
   const [creatorStep, setCreatorStep] = useState<1 | 2 | 3>(1);
   const [creatorDataKey, setCreatorDataKey] = useState<DataKey | null>(null);
   const [creatorChartType, setCreatorChartType] = useState<ChartType | null>(null);
@@ -1695,6 +1706,15 @@ export default function StatsScreen() {
     );
   };
 
+  // ITEM C: both touchables of the Add Graph row. The delay lets the FAB menu finish closing, matching what
+  // the unlocked path already did.
+  const onAddGraphPress = () => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    closeFabMenu();
+    if (!graphCap.canCreate) { setTimeout(() => setGraphCapWall(true), 150); return; }
+    setTimeout(() => openCreatorModal(), 150);
+  };
+
   const openCreatorModal = async () => {
     setCreatorStep(1);
     setCreatorDataKey(null);
@@ -2916,6 +2936,19 @@ export default function StatsScreen() {
         theme={theme}
       />
 
+      {/* ⚠️ RENDERED OUTSIDE THE FAB MENU BLOCK, DELIBERATELY. It was nested inside `showFabMenu` first, so
+          closing the menu unmounted the wall along with it and you had to tap the plus a SECOND time before
+          the wall you already triggered appeared. Anything opened BY a menu must outlive that menu. */}
+      {graphCapWall && (
+        <CapWallModal
+          capKey="statsGraphs"
+          cap={capFor('statsGraphs', isPro) ?? 0}
+          count={statsCards.filter(c => c.type === 'graph').length}
+          theme={theme}
+          onDismiss={() => setGraphCapWall(false)}
+        />
+      )}
+
       {/* ── FAB backdrop ── */}
       {showFabMenu && (
         <TouchableOpacity
@@ -2985,17 +3018,24 @@ export default function StatsScreen() {
           {/* Add Graph -- active, accent fill */}
           <Animated.View style={{ opacity: fabItem2Anim, transform: [{ translateY: fabItem2Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              {/* ⚠️ ITEM C: the ONLY door that creates a graph card (verified by tracing generateCardId).
+                  Home can pin, unpin, edit, delete and change a period but cannot create one. */}
               <TouchableOpacity
-                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => openCreatorModal(), 150); }}
-                style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlueRaw, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                <ButtonShine radius={8} solid />
-                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Add Graph</Text>
+                onPress={onAddGraphPress}
+                style={graphCap.canCreate
+                  ? { backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlueRaw, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }
+                  : { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: theme.bgInset, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: GOLD_BASE }}>
+                {graphCap.canCreate && <ButtonShine radius={8} solid />}
+                {!graphCap.canCreate && <Ionicons name="lock-closed" size={12} color={GOLD_BASE} />}
+                <Text style={{ color: graphCap.canCreate ? '#ffffff' : theme.textMuted, fontSize: 13, fontFamily: Type.uiSemibold }}>Add Graph</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => openCreatorModal(), 150); }}
-                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlueRaw, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlueRaw, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                <ButtonShine radius={22} solid />
-                <Ionicons name="analytics-outline" size={20} color="#ffffff" />
+                onPress={onAddGraphPress}
+                style={graphCap.canCreate
+                  ? { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlueRaw, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlueRaw, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }
+                  : { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.bgInset, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: GOLD_BASE }}>
+                {graphCap.canCreate && <ButtonShine radius={22} solid />}
+                <Ionicons name={graphCap.canCreate ? 'analytics-outline' : 'lock-closed'} size={20} color={graphCap.canCreate ? '#ffffff' : GOLD_BASE} />
               </TouchableOpacity>
             </View>
           </Animated.View>

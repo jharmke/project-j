@@ -126,30 +126,34 @@ const COPY: Record<CapKey, { at: Copy; over: Copy }> = {
       body2: 'Free accounts hold {cap} of your own. The Supporter plan lets you keep adding.',
     },
   },
+  // ⚠️ THESE TWO ARE THE "REVERT" CAPS -- the extras go dormant on downgrade rather than being grandfathered,
+  // which is why their over-cap copy talks about things being SAVED AND WAITING rather than about having no
+  // room to add. Both walls are still reached by TAPPING Add, so the title answers the tap like every other
+  // one, and the reassurance sits a line lower.
   mealSlots: {
-    // ⚠️ MEAL SLOTS ARE THE ONE CAP WHERE THE SUPPORTER PLAN IS NOT UNLIMITED. It promises 8, never "removes
-    // the limit".
+    // ⚠️ MEAL SLOTS ARE THE ONE CAP WHERE THE SUPPORTER PLAN IS NOT UNLIMITED. It promises 8, and must never
+    // say "removes the limit entirely" the way the other seven do.
     at: {
-      title: "That's All {cap} Meal Slots",
-      body1: 'The free plan holds {cap}, which is the four your log starts with plus one of your own. Every slot is still yours to rename and use however you like.',
+      title: 'No Room For Another Meal Slot',
+      body1: 'The free plan holds {cap} slots, which is the four your log starts with plus one of your own. Every slot is still yours to rename and use however you like.',
       body2: 'Make room by deleting one, or the Supporter plan takes you to 8.',
     },
     over: {
-      title: 'Your Extra Meal Slots Are Waiting',
-      body1: 'Nothing you set up has gone anywhere. Your extra slots are saved, and everything you logged to them is still on your log.',
+      title: 'No Room For Another Meal Slot',
+      body1: 'Your extra slots are saved and waiting. Nothing has gone anywhere, and everything you logged to them is still on your log.',
       body2: 'Free accounts hold {cap}, so your log is back to the free layout for now. The Supporter plan brings your extra slots back.',
     },
   },
   statsGraphs: {
     // ⚠️ At a cap of ONE of your own, "delete one you've stopped using" reads strangely, so this says SWAP.
     at: {
-      title: "You've Built Your Graph",
+      title: 'No Room For Another Graph',
       body1: 'The free plan holds one graph of your own on top of the seven your Stats tab comes with. Every graph is still yours to use and keep.',
       body2: 'Swap yours for a different one any time, or the Supporter plan lets you build as many as you like.',
     },
     over: {
-      title: 'Your Extra Graphs Are Waiting',
-      body1: 'Nothing you built has gone anywhere. Your extra graphs are saved exactly as you set them up.',
+      title: 'No Room For Another Graph',
+      body1: 'Your extra graphs are saved exactly as you set them up. Nothing has gone anywhere.',
       body2: 'Free accounts show one of your own, so your Stats tab is back to the free layout for now. The Supporter plan brings the rest back.',
     },
   },

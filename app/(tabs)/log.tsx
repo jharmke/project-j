@@ -14,6 +14,10 @@ import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-nativ
 import PressableButton from '../../components/PressableButton';
 import PrimaryCTA from '../../components/PrimaryCTA';
 import { DEFAULT_MEAL_SLOTS, MealSlot, findSlotForMeal, loadMealSlots, saveMealSlots } from '../../utils/mealSlots';
+import CapWallModal from '../../components/CapWallModal';
+import { GOLD_BASE } from '../../components/SupporterFoil';
+import { useMembership } from '../../MembershipContext';
+import { checkCap, capFor, type CapState } from '../../utils/caps';
 import { resolveMealPhoto, uploadMealPhoto, purgeMealPhoto, mealPhotoKey } from '../../utils/mealPhotos';
 import { getRepeatSummary, logRepeatedItems, SlotRepeatInfo, tidyFoodName } from '../../utils/repeatMeal';
 import { entryNutrient } from '../../utils/nutrientScale';
@@ -153,7 +157,7 @@ function MacroStackedBar({ protein, carbs, fat, proteinGoal, carbsGoal, fatGoal,
   return (
     <View style={{ width: 140, paddingLeft: 22, justifyContent: 'center', gap: 12 }}>
       <TouchableOpacity onPress={onPressProtein} activeOpacity={onPressProtein ? 0.75 : 1} hitSlop={{ top: 6, bottom: 6, left: 12, right: 12 }} style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-        <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
+        <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: theme.textMuted, overflow: 'hidden' }}>
           <ReAnimated.View style={[{ height: '100%', borderRadius: 3, overflow: 'hidden' }, proteinStyle]}>
             <LinearGradient colors={barFillGradient(theme.macroProtein)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }} />
           </ReAnimated.View>
@@ -170,7 +174,7 @@ function MacroStackedBar({ protein, carbs, fat, proteinGoal, carbsGoal, fatGoal,
         </View>
       </TouchableOpacity>
       <TouchableOpacity onPress={onPressCarbs} activeOpacity={onPressCarbs ? 0.75 : 1} hitSlop={{ top: 6, bottom: 6, left: 12, right: 12 }} style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-        <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
+        <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: theme.textMuted, overflow: 'hidden' }}>
           <ReAnimated.View style={[{ height: '100%', borderRadius: 3, overflow: 'hidden' }, carbsStyle]}>
             <LinearGradient colors={barFillGradient(theme.macroCarbs)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }} />
           </ReAnimated.View>
@@ -187,7 +191,7 @@ function MacroStackedBar({ protein, carbs, fat, proteinGoal, carbsGoal, fatGoal,
         </View>
       </TouchableOpacity>
       <TouchableOpacity onPress={onPressFat} activeOpacity={onPressFat ? 0.75 : 1} hitSlop={{ top: 6, bottom: 6, left: 12, right: 12 }} style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-        <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
+        <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: theme.textMuted, overflow: 'hidden' }}>
           <ReAnimated.View style={[{ height: '100%', borderRadius: 3, overflow: 'hidden' }, fatStyle]}>
             <LinearGradient colors={barFillGradient(theme.macroFat)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }} />
           </ReAnimated.View>
@@ -351,12 +355,19 @@ export default function LogScreen() {
   // Log tab FAB -- multiple entry points (Create Food, Create Recipe, Barcode, Add to Meal), same
   // speed-dial structure as workout-library.tsx / add-food.tsx's own FABs.
   const [showLogFabMenu, setShowLogFabMenu] = useState(false);
+  // ── Custom-food cap (item C). Starts UNLIMITED so nothing is ever dim before the real answer arrives.
+  const { isSupporter, loading: membershipLoading } = useMembership();
+  const [foodCap, setFoodCap] = useState<CapState>({ cap: null, count: 0, unlimited: true, atCap: false, canCreate: true });
+  const [foodCapWall, setFoodCapWall] = useState(false);
   const logFabScale = useRef(new Animated.Value(1)).current;
   const logFabItem1Anim = useRef(new Animated.Value(0)).current; // Add to Meal -- bottom, animates first
   const logFabItem2Anim = useRef(new Animated.Value(0)).current; // Barcode
   const logFabItem3Anim = useRef(new Animated.Value(0)).current; // Create Recipe
   const logFabItem4Anim = useRef(new Animated.Value(0)).current; // Create Food -- top, animates last
+  // ITEM C: this screen does not hold the food list, so the count is read fresh each time the menu OPENS.
+  // That is the only moment it matters, and it means deleting a food elsewhere frees the button immediately.
   const openLogFabMenu = () => {
+    checkCap('foods', isSupporter, membershipLoading).then(setFoodCap).catch(() => {});
     logFabItem1Anim.setValue(0);
     logFabItem2Anim.setValue(0);
     logFabItem3Anim.setValue(0);
@@ -369,6 +380,16 @@ export default function LogScreen() {
       Animated.spring(logFabItem4Anim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 120 }),
     ]).start();
   };
+  // ITEM C: one handler for BOTH touchables of the Create Food row. At the cap the tap opens the wall
+  // instead of navigating. The delay lets the FAB menu finish closing before the modal appears.
+  const onCreateFoodPress = () => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    closeLogFabMenu();
+    if (!foodCap.canCreate) { setTimeout(() => setFoodCapWall(true), 150); return; }
+    returningFromChild.current = true;
+    router.push({ pathname: '/add-food', params: { meal: 'browse', date: activeDate, openCreate: '1' } });
+  };
+
   const closeLogFabMenu = () => {
     Animated.parallel([
       Animated.timing(logFabItem1Anim, { toValue: 0, duration: 130, useNativeDriver: true }),
@@ -1521,7 +1542,7 @@ export default function LogScreen() {
               </View>
               <GradientNumber value={`/ ${displayTarget} kcal`} color={theme.textSecondary} style={styles.calTarget} />
             </View>
-            <View style={[styles.progressBarBg, { backgroundColor: theme.bgProgressTrack }]}>
+            <View style={[styles.progressBarBg, { backgroundColor: theme.textMuted }]}>
               <ReAnimated.View style={[styles.progressBarFill, calProgressBarStyle, { overflow: 'hidden' }]}>
                 <LinearGradient colors={barFillGradient(calColor)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }} />
               </ReAnimated.View>
@@ -2599,7 +2620,7 @@ export default function LogScreen() {
                       </View>
                     )}
                   </View>
-                  <View style={{ height:8, backgroundColor: theme.bgProgressTrack, borderRadius:8, overflow:'hidden' }}>
+                  <View style={{ height:8, backgroundColor: theme.textMuted, borderRadius:8, overflow:'hidden' }}>
                     <View style={{ height:'100%', borderRadius:8, overflow:'hidden', width:`${Math.min(100, (water / waterGoal) * 100)}%` }}>
                       <LinearGradient colors={barFillGradient(theme.accentBlue)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }} />
                     </View>
@@ -2862,22 +2883,40 @@ export default function LogScreen() {
           onPress={closeLogFabMenu}
         />
       )}
+      {foodCapWall && (
+        <CapWallModal
+          capKey="foods"
+          cap={capFor('foods', isSupporter) ?? 0}
+          count={foodCap.count}
+          theme={theme}
+          onDismiss={() => setFoodCapWall(false)}
+        />
+      )}
+
       {showLogFabMenu && (
         <View style={{ position: 'absolute', bottom: 90 + TAB_BAR_HEIGHT + insets.bottom, right: 20, alignItems: 'flex-end', gap: 12 }}>
           {/* Create Food - top, animates last */}
+          {/* ⚠️ ITEM C: dim + flat gold lock at the cap, STILL PRESSABLE -- the tap is what explains. Both
+              touchables (pill + round icon) are one button and must move together. Mirrors the identical row
+              on the Add Food screen. */}
           <Animated.View style={{ opacity: logFabItem4Anim, transform: [{ translateY: logFabItem4Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <TouchableOpacity
-                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeLogFabMenu(); returningFromChild.current = true; router.push({ pathname: '/add-food', params: { meal: 'browse', date: activeDate, openCreate: '1' } }); }}
-                style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                <ButtonShine radius={8} solid />
+                onPress={onCreateFoodPress}
+                style={foodCap.canCreate
+                  ? { backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }
+                  : { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: theme.textMuted, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary }}>
+                {foodCap.canCreate && <ButtonShine radius={8} solid />}
+                {!foodCap.canCreate && <Ionicons name="lock-closed" size={12} color={GOLD_BASE} />}
                 <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Create Food</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeLogFabMenu(); returningFromChild.current = true; router.push({ pathname: '/add-food', params: { meal: 'browse', date: activeDate, openCreate: '1' } }); }}
-                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
-                <ButtonShine radius={22} solid />
-                <Ionicons name="restaurant-outline" size={20} color="#ffffff" />
+                onPress={onCreateFoodPress}
+                style={foodCap.canCreate
+                  ? { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }
+                  : { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.textMuted, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary }}>
+                {foodCap.canCreate && <ButtonShine radius={22} solid />}
+                <Ionicons name={foodCap.canCreate ? 'restaurant-outline' : 'lock-closed'} size={20} color={foodCap.canCreate ? '#ffffff' : GOLD_BASE} />
               </TouchableOpacity>
             </View>
           </Animated.View>

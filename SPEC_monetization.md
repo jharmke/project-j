@@ -813,6 +813,14 @@ menu and wants a 21st. Wording is the only part still open.
 fallback at the end of this section, NOT deleted):
 - **Under the cap:** nothing. No dim, no lock, no modal. The app behaves exactly as it does today.
 - **At the cap:** the ENTRY POINT is **dim with a lock icon**, and is **still pressable**.
+- ⚠️ **THE LOCKED BUTTON TREATMENT (settled on device 2026-08-02, verified Light + Dark + Warm).** Keep the
+  button's OWN species -- solid fill, same size, same halo ring as its unlocked siblings -- and drain the
+  COLOUR only: fill `theme.textMuted`, white label, flat gold lock. **Do not turn it into a hollow/outlined
+  chip.** Two wrong versions were built first: a near-white `bgInset` fill (vanished against light cards, and
+  changed the button from solid to hollow, so it read as a DIFFERENT button rather than the same one turned
+  off) and a pale `bgProgressTrack` fill (the white halo ring dissolved into the cards -- a white ring only
+  reads as an edge when what is behind it is strong). A MID-TONE fill is what makes one value work on every
+  theme: it is darker than the page on Light/Warm and lighter than it on Dark, with no per-theme rule.
 - ⚠️ **THE LOCK IS THE FLAT GOLD LOCK THE APP ALREADY USES** (`GOLD_BASE` from `components/SupporterFoil`,
   `lock-closed` Ionicon) -- the same one on the locked Reports and Comparison screens. **NEVER FOIL.** The
   app's own rule, written beside the Reports lock: foil means "you have this" (the Supporter mark), a lock

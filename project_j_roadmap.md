@@ -1663,8 +1663,20 @@ are separate pre-submission checklists, NOT part of this menu.
      reassurance) and needs the same reordering -- deliberately NOT rewritten alone, bring it as a batch he
      can see. ⚠️ The over-cap body says "My Foods" while the title says "Custom Foods"; left on purpose (title
      names the concept, body points at the real tab) but he may want them matched.
-     ⏭️ **BUILD STEP 4:** the other FIVE food doors (Log tab plus, both barcode buttons, Save as Copy, the
-     recipe builder's inline creator). No new decisions, same treatment.
+     🟡 **BUILD STEP 4 -- the other five food doors, split four ways.**
+     ✅ **4a DONE + device-verified 2026-08-02: the LOG TAB plus menu.** Same treatment, plus a BACKSTOP: that
+     button does not open the creator, it deep-links to Add Food with `openCreate=1`, so that param path is
+     checked again on arrival. Otherwise any future deep link, notification or tutorial route using it walks
+     straight past the wall. Verified the normal Supporter route still opens the creator on arrival.
+     ✅ **THE LOCKED-BUTTON LOOK IS SETTLED** (verified Light + Dark + Warm): solid `theme.textMuted` fill,
+     white label, gold lock, SAME halo ring and size as its unlocked siblings. ⚠️ Two wrong versions were
+     built first -- a near-white fill that vanished on light cards, and a pale fill whose white halo ring
+     dissolved into the cards. Detail + reasoning in SPEC_monetization.md. ⚠️ Claude changed this visually
+     WITHOUT asking and Justin called it out; ask first on anything visual.
+     ⏭️ **4b:** the two barcode buttons (both already on the wired Add Food screen -- smallest of the four).
+     ⏭️ **4c:** Save as Copy on food-detail (new file, needs the same membership wiring).
+     ⏭️ **4d:** the recipe builder's inline creator (LAST -- the only one where the user can be mid-flow, so
+     hitting the wall must not cost them the recipe they are part-way through).
      ⏭️ **THEN PIECE 6** -- where the caps get enforced across the different features (the build checklist:
      every creation door for all eight caps).
      ⚠️ **THE LAYOUT CAPS ARE "DEFAULTS PLUS ONE", NOT RAW TOTALS (Justin, 2026-07-31). Read either as a bare

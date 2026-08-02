@@ -16,7 +16,7 @@ import CustomFoodCreator from '../components/CustomFoodCreator';
 import CapWallModal from '../components/CapWallModal';
 import { GOLD_BASE } from '../components/SupporterFoil';
 import { useMembership } from '../MembershipContext';
-import { capStateFrom, capFor } from '../utils/caps';
+import { capStateFrom, capFor, checkCap } from '../utils/caps';
 import { USDA_API_KEY } from '../config';
 import { app, db, getUserId, loadFromFirebase, saveToFirebase } from '../firebaseConfig';
 import { getFunctions, httpsCallable } from 'firebase/functions';
@@ -878,7 +878,16 @@ const saveEditFood = async () => {
   // Deep-link entry points from the Log tab FAB: land on this screen already in the right mode
   // instead of making the user open the Create Food modal or the scanner themselves.
   useEffect(() => {
-    if (openCreate === '1') setShowCreateFood(true);
+    // ⚠️ ITEM C BACKSTOP. The Log tab's Create Food is already dimmed and locked at the cap, so this normally
+    // never fires while capped. It is checked again here because this is a PARAM-driven entry: anything that
+    // navigates here with openCreate=1 (a future deep link, a notification, a tutorial route) would otherwise
+    // walk straight past the wall. The gate belongs on the action, not only on the button that usually
+    // triggers it. Reads fresh rather than trusting whatever screen sent us here.
+    if (openCreate === '1') {
+      checkCap('foods', isSupporter, membershipLoading)
+        .then(s => { if (s.canCreate) setShowCreateFood(true); else setFoodCapWall(true); })
+        .catch(() => setShowCreateFood(true));
+    }
     if (openScanner === '1') startScan();
   }, []);
 
@@ -1977,7 +1986,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                   </View>
                 )}
                 {(item.isMyFood || item.isRecipe || (item.isRecent && query.trim())) && !(activeTab === 'favorites' && !query.trim()) && (
-                  <View style={item.isRecipe ? [styles.savedBadge, { backgroundColor: theme.accentGreenBg }] : item.isRecent && query.trim() ? [styles.savedBadge, { backgroundColor: theme.bgProgressTrack }] : styles.savedBadge}>
+                  <View style={item.isRecipe ? [styles.savedBadge, { backgroundColor: theme.accentGreenBg }] : item.isRecent && query.trim() ? [styles.savedBadge, { backgroundColor: theme.textMuted }] : styles.savedBadge}>
                     <Text style={item.isRecipe ? [styles.savedBadgeText, { color: theme.accentGreen }] : item.isRecent && query.trim() ? [styles.savedBadgeText, { color: theme.textMuted }] : styles.savedBadgeText}>
                       {item.isRecipe ? 'RECIPE' : item.isRecent && query.trim() ? 'RECENT' : 'SAVED'}
                     </Text>
@@ -2484,16 +2493,16 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                     onPress={onCreateFoodPress}
                     style={foodCap.canCreate
                       ? { backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }
-                      : { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: theme.bgInset, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.borderCard }}>
+                      : { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: theme.textMuted, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary }}>
                     {foodCap.canCreate && <ButtonShine radius={8} solid />}
                     {!foodCap.canCreate && <Ionicons name="lock-closed" size={12} color={GOLD_BASE} />}
-                    <Text style={{ color: foodCap.canCreate ? '#ffffff' : theme.textMuted, fontSize: 13, fontFamily: Type.uiSemibold }}>Create Food</Text>
+                    <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: Type.uiSemibold }}>Create Food</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={onCreateFoodPress}
                     style={foodCap.canCreate
                       ? { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }
-                      : { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.bgInset, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.borderCard }}>
+                      : { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.textMuted, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary }}>
                     {foodCap.canCreate && <ButtonShine radius={22} solid />}
                     <Ionicons name={foodCap.canCreate ? 'restaurant-outline' : 'lock-closed'} size={20} color={foodCap.canCreate ? '#ffffff' : GOLD_BASE} />
                   </TouchableOpacity>
@@ -2572,7 +2581,7 @@ const useStyles = (theme: any, themeId: string) => {
   camera: { flex: 1 },
   cancelScan: { position: 'absolute', bottom: 40, alignSelf: 'center', backgroundColor: theme.overlayBg, padding: 16, borderRadius: 8 },
   cancelScanText: { color: theme.textPrimary, fontSize: 16, fontFamily: Type.uiSemibold },
-  tabRow: { flexDirection: 'row', marginHorizontal: 16, marginBottom: 8, backgroundColor: theme.bgProgressTrack, borderRadius: 8, padding: 4 },
+  tabRow: { flexDirection: 'row', marginHorizontal: 16, marginBottom: 8, backgroundColor: theme.textMuted, borderRadius: 8, padding: 4 },
   tab: { flex: 1, padding: 8, alignItems: 'center', borderRadius: 6 },
   tabActive: { backgroundColor: theme.bgCard, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.15, shadowRadius: 3 },
   tabText: { fontSize: 11, color: theme.textMuted, fontFamily: Type.uiMedium },

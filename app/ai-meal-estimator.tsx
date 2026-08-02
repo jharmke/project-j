@@ -25,6 +25,7 @@ import ModalHeader from '../components/ModalHeader';
 import KeyboardAwareCenter from '../components/KeyboardAwareCenter';
 import ButtonShine from '../components/ButtonShine';
 import { useMembership } from '../MembershipContext';
+import { capFor, liveItems } from '../utils/caps';
 import { triggerHaptic } from '../utils/haptics';
 import { DEFAULT_MEAL_SLOTS, MealSlot, getMealDisplayName, loadMealSlots } from '../utils/mealSlots';
 import { storageSet } from '../utils/storage';
@@ -132,6 +133,8 @@ export default function AIMealEstimatorScreen() {
   const [remaining, setRemaining] = useState<number | null>(null);
   // Supporter status from RevenueCat (aliased to isPro). Drives the estimator quota tier.
   const { isSupporter: isPro } = useMembership();
+  // ITEM C, PART B: the slot picker offers destinations, so it gets the LIVE slots only.
+  const liveSlots = liveItems(mealSlots, capFor('mealSlots', isPro));
 
   // Input state
   const [description, setDescription] = useState('');
@@ -912,7 +915,8 @@ export default function AIMealEstimatorScreen() {
 
         <Text style={[cardLabel, { marginBottom: 8 }]}>MEAL</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
-          {mealSlots.map((s) => {
+          {/* ⚠️ ITEM C, PART B: liveSlots, not mealSlots. Destination picker. */}
+          {liveSlots.map((s) => {
             const active = s.id === targetSlot;
             return (
               <TouchableOpacity key={s.id} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setTargetSlot(s.id); }} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: active ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: active ? theme.accentBlueBorder : theme.borderInput }}>

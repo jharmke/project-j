@@ -106,6 +106,36 @@ export function countUserExercises(library: { id: string }[], builtInIds: string
   return library.filter(e => !builtIn.has(e.id)).length;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// DORMANCY -- the two REVERT caps (meal slots, stats graphs)
+//
+// The other six caps GRANDFATHER: an over-cap user keeps everything and simply cannot add more. These two
+// REVERT: the extras stop being drawn and the layout goes back to its free shape. Nothing is ever deleted.
+//
+// ⚠️⚠️ POSITION DECIDES, AND NOTHING IS STORED. The first N are awake, the rest are asleep. There is no
+// "dormant" flag anywhere, which is the whole point:
+//   - nothing can disagree with the count,
+//   - NO MIGRATION RUNS when a membership ends (nothing to run twice, nothing to fail halfway),
+//   - resubscribing is the same in reverse and equally free,
+//   - waking one is just dragging it above the line,
+//   - deleting a live one automatically wakes the next one down.
+// ⚠️ NEVER build this on the stats cards' `visible` flag: that one is USER-controlled, so a downgraded user
+// would simply switch their extras back on.
+// ⚠️ This decides what is DRAWN. It must never be what gets SAVED -- see the warnings on the save paths.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** The items that are awake. Everything past the cap sleeps. Unlimited/unknown = all of them. */
+export function liveItems<T>(items: T[], cap: number | null): T[] {
+  if (cap === null) return items;
+  return items.slice(0, cap);
+}
+
+/** The items that are asleep -- what the Edit sheets show below the line, and nothing else ever draws. */
+export function sleepingItems<T>(items: T[], cap: number | null): T[] {
+  if (cap === null) return [];
+  return items.slice(cap);
+}
+
 /**
  * Programs the USER made. The built-ins are seeded into the SAME list (`pj_my_programs`) marked
  * `createdAt: 0`, while the builder stamps a real `Date.now()` on anything a user saves. So a truthy

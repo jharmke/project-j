@@ -15,7 +15,7 @@ import CustomFoodCreator from '../components/CustomFoodCreator';
 import CapWallModal from '../components/CapWallModal';
 import { GOLD_BASE } from '../components/SupporterFoil';
 import { useMembership } from '../MembershipContext';
-import { checkCap, capFor, type CapState } from '../utils/caps';
+import { checkCap, capFor, liveItems, type CapState } from '../utils/caps';
 import UnitPickerButton from '../components/UnitPickerButton';
 import { convertUnit, convertibleUnitsFor, unitGroup, unitLabel } from '../utils/unitConversion';
 import { ToastRenderer, useToast } from '../components/Toast';
@@ -1005,6 +1005,8 @@ const [showTimePicker, setShowTimePicker] = useState(false);
     const [showMealPicker, setShowMealPicker] = useState(false);
 const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_morning' : meal);
   const [mealSlots, setMealSlots] = useState<MealSlot[]>(DEFAULT_MEAL_SLOTS);
+  // ITEM C, PART B: the meal picker below offers destinations, so it gets the LIVE slots only.
+  const liveSlots = liveItems(mealSlots, capFor('mealSlots', isSupporter));
   const [slotNameCache, setSlotNameCache] = useState<Record<string, string>>({});
   useEffect(() => {
     loadMealSlots().then(({ mealSlots: slots, slotNameCache: cache }) => { setMealSlots(slots); setSlotNameCache(cache); });
@@ -2260,7 +2262,9 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
     <Animated.View style={[styles.pickerCard, { transform: [{ scale: mealDropdownAnim.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) }] }]}>
       <ModalHeader title="Adding To" onClose={closeMealPicker} />
       <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 8, gap: 8 }} showsVerticalScrollIndicator={false}>
-        {mealSlots.map((slot) => {
+        {/* ⚠️ ITEM C, PART B: liveSlots, not mealSlots. This is a DESTINATION picker -- offering a sleeping
+            slot would let somebody log food into one that will not show on today. */}
+        {liveSlots.map((slot) => {
           const selected = currentMeal === slot.id || currentMeal === slot.name;
           return (
             <TouchableOpacity

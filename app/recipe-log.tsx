@@ -16,6 +16,8 @@ import { resolveRecipePhoto, uploadRecipePhoto, purgeRecipePhoto, recipePhotoKey
 import { cancelFoodLogNotification } from '../services/notifications';
 import { useTheme } from '../theme';
 import { DEFAULT_MEAL_SLOTS, MealSlot, loadMealSlots, getMealDisplayName } from '../utils/mealSlots';
+import { useMembership } from '../MembershipContext';
+import { capFor, liveItems } from '../utils/caps';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { ACHIEVEMENTS, checkAndUnlock, loadAchievements, checkMomentumAchievements, checkNutritionAchievements, getCelebTier } from '../achievementData';
 import { showAchievementToast } from '../components/AchievementToast';
@@ -85,6 +87,9 @@ export default function RecipeLogScreen() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const timePickerAnim = useRef(new Animated.Value(0)).current;
   const [mealSlots, setMealSlots] = useState<MealSlot[]>(DEFAULT_MEAL_SLOTS);
+  // ITEM C, PART B: the meal picker offers destinations, so it gets the LIVE slots only.
+  const { isSupporter } = useMembership();
+  const liveSlots = liveItems(mealSlots, capFor('mealSlots', isSupporter));
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [showPhotoFullscreen, setShowPhotoFullscreen] = useState(false);
 
@@ -666,7 +671,8 @@ export default function RecipeLogScreen() {
                 Press feedback is the app standard: scale 0.97, TIMING not spring. Deliberately NOT
                 PressableButton, which springs to 0.94 and reads as bouncy on a row. */}
             <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 8, gap: 8 }} showsVerticalScrollIndicator={false}>
-              {mealSlots.map(slot => (
+              {/* ⚠️ ITEM C, PART B: liveSlots, not mealSlots. Destination picker. */}
+              {liveSlots.map(slot => (
                 <MealOptionRow
                   key={slot.id}
                   label={slot.name}

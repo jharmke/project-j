@@ -6,7 +6,7 @@ import { useScrollToTop } from '@react-navigation/native';
 import { triggerHaptic } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActionSheetIOS, ActivityIndicator, Alert, Animated, Dimensions, Easing, Image, InteractionManager, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
@@ -17,7 +17,7 @@ import { DEFAULT_MEAL_SLOTS, MealSlot, findSlotForMeal, loadMealSlots, saveMealS
 import CapWallModal from '../../components/CapWallModal';
 import { GOLD_BASE } from '../../components/SupporterFoil';
 import { useMembership } from '../../MembershipContext';
-import { checkCap, capFor, capStateFrom, SUPPORTER_CAPS, type CapState } from '../../utils/caps';
+import { checkCap, capFor, capStateFrom, liveItems, sleepingItems, SUPPORTER_CAPS, type CapState } from '../../utils/caps';
 import { resolveMealPhoto, uploadMealPhoto, purgeMealPhoto, mealPhotoKey } from '../../utils/mealPhotos';
 import { getRepeatSummary, logRepeatedItems, SlotRepeatInfo, tidyFoodName } from '../../utils/repeatMeal';
 import { entryNutrient } from '../../utils/nutrientScale';
@@ -440,6 +440,33 @@ export default function LogScreen() {
   // rather than a locked one. Selling a plan to somebody already on it would be absurd.
   const slotCap = capStateFrom('mealSlots', mealSlots.length, isSupporter, membershipLoading);
   const atSupporterSlotMax = !slotCap.canCreate && (capFor('mealSlots', isSupporter) ?? 0) >= (SUPPORTER_CAPS.mealSlots ?? 8);
+
+  // ── ITEM C, PART B: DORMANCY. Two different lists, and using the wrong one is the whole bug surface.
+  //
+  // `liveSlots`  -- the free layout. Anywhere a slot can be CHOSEN as a destination.
+  // `slotsForDay`-- what the LOG DRAWS for the day being viewed: the live slots, PLUS any sleeping slot that
+  //                 has food on THAT day, back in its original position.
+  //
+  // ⚠️ WHY slotsForDay EXISTS AT ALL. If sleeping slots simply stopped rendering, a downgraded user opening
+  // last Tuesday would find the food they logged into their extra slots GONE FROM THE SCREEN. That breaks
+  // the line this whole design rests on: cap CREATING, never restrict access to what somebody already
+  // logged. Justin's words for the intent: past dates read like a screenshot frozen in time.
+  // ⚠️ ACCEPTED DIFFERENCE from a true snapshot: a past day where a slot existed but was EMPTY shows nothing.
+  // Sleeping slots come back for a day only if there is something in them. Empty cards from a slot you no
+  // longer have are clutter, not history.
+  // ⚠️ Unknown membership -> cap is null -> everything stays live. Never hide a Supporter's own slots while
+  // RevenueCat is still answering.
+  const slotCapNumber = capFor('mealSlots', isSupporter);
+  const liveSlots = useMemo(() => liveItems(mealSlots, slotCapNumber), [mealSlots, slotCapNumber]);
+  const slotsForDay = useMemo(() => {
+    if (slotCapNumber === null || mealSlots.length <= slotCapNumber) return mealSlots;
+    const sleeping = sleepingItems(mealSlots, slotCapNumber);
+    const sleepingWithFood = new Set(
+      sleeping.filter(s => entries.some((e: any) => e.meal === s.id || e.meal === s.name)).map(s => s.id),
+    );
+    // Filtering the ORIGINAL array keeps every slot in its own position rather than appending the woken ones.
+    return mealSlots.filter((s, i) => i < slotCapNumber || sleepingWithFood.has(s.id));
+  }, [mealSlots, slotCapNumber, entries]);
   const [slotNameCache, setSlotNameCache] = useState<Record<string, string>>({});
   // Repeat a Meal: per-slot history summary (drives the empty-slot pill + one-tap fast path)
   // and the launch slot for the modal (null = closed).
@@ -998,6 +1025,9 @@ export default function LogScreen() {
   useEffect(() => {
     let alive = true;
     (async () => {
+      // ⚠️ Deliberately the FULL list, not slotsForDay. A sleeping slot reappears on any past day it has food
+      // on, and it must bring its photo with it -- resolving photos only for today's live slots would leave
+      // those days with the food but no photo. Resolving one for a slot that is not drawn costs nothing.
       const entries = await Promise.all(
         mealSlots.map(async s => [s.id, await resolveMealPhoto(activeDate, s.id)] as const)
       );
@@ -1853,7 +1883,9 @@ export default function LogScreen() {
         defaultShowNet={showNetCarbs}
       />
       {/* Meal Sections */}
-      {mealSlots.map((slot, mealIdx) => {
+      {/* ⚠️ slotsForDay, NOT mealSlots -- see the note where it is built. A sleeping slot reappears here only
+          on a day it actually has food, so nothing anyone logged is ever hidden. */}
+      {slotsForDay.map((slot, mealIdx) => {
         const meal = slot.id;
         const mealEntries = entries.filter(e => e.meal === slot.id || e.meal === slot.name);
         const mealTotal = mealEntries.reduce((s, e) => s + e.cal, 0);
@@ -2558,7 +2590,7 @@ export default function LogScreen() {
       <RepeatMealModal
         visible={!!repeatModalSlot}
         onClose={() => setRepeatModalSlot(null)}
-        slots={mealSlots}
+        slots={liveSlots}
         launchSlot={repeatModalSlot}
         viewedKey={activeDate}
         onAdded={applyMergedEntries}
@@ -2792,7 +2824,7 @@ export default function LogScreen() {
               was told "5 of 8 slots". It reads against the real tier cap now. */}
           <ModalHeader
             title="Edit Meal Slots"
-            subtitle={`${mealSlots.length} of ${capFor('mealSlots', isSupporter) ?? SUPPORTER_CAPS.mealSlots} slots`}
+            subtitle={`${liveSlots.length} of ${capFor('mealSlots', isSupporter) ?? SUPPORTER_CAPS.mealSlots} slots`}
             onClose={closeEditMeals}
             showClose={false}
             right={
@@ -2844,12 +2876,28 @@ export default function LogScreen() {
 
               </View>
             )}
-            renderItem={({ item: slot, drag, isActive }: RenderItemParams<MealSlot>) => {
+            renderItem={({ item: slot, drag, isActive, getIndex }: RenderItemParams<MealSlot>) => {
               const isEditing = editingSlotId === slot.id;
               const isFirst = mealSlots[0]?.id === slot.id;
+              // ⚠️ ITEM C, PART B: POSITION DECIDES. A slot is asleep purely because of where it sits, so
+              // there is no flag to store and nothing that can disagree with the count. Dragging one above
+              // the line wakes it and puts whatever it displaced to sleep, with no extra code.
+              const idx = getIndex() ?? 0;
+              const slotCapNum = capFor('mealSlots', isSupporter);
+              const isAsleep = slotCapNum !== null && idx >= slotCapNum;
+              const firstAsleep = slotCapNum !== null && idx === slotCapNum;
               return (
                 <ScaleDecorator>
-                  <View style={[{ flexDirection:'row', alignItems:'center', gap:10, marginBottom:10 }, isActive && { opacity:0.85 }]}>
+                  {/* The line, drawn once, immediately above the first sleeping slot. */}
+                  {firstAsleep && (
+                    <View style={{ flexDirection:'row', alignItems:'center', gap:8, marginBottom:12, marginTop:2 }}>
+                      <View style={{ flex:1, height:0.5, backgroundColor: GOLD_BASE }} />
+                      <Ionicons name="lock-closed" size={11} color={GOLD_BASE} />
+                      <Text style={{ fontSize:9, letterSpacing:2, color: theme.textMuted, fontFamily:Type.uiBold, textTransform:'uppercase' }}>Saved and waiting</Text>
+                      <View style={{ flex:1, height:0.5, backgroundColor: GOLD_BASE }} />
+                    </View>
+                  )}
+                  <View style={[{ flexDirection:'row', alignItems:'center', gap:10, marginBottom:10 }, isActive && { opacity:0.85 }, isAsleep && { opacity:0.55 }]}>
                     {/* Delete badge -- matches editBadge size/shape, red colorway */}
                     <TouchableOpacity
                       onPress={() => deleteMealSlot(slot.id)}
@@ -2874,8 +2922,12 @@ export default function LogScreen() {
                         <TouchableOpacity
                           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditingSlotId(slot.id); setEditingSlotName(slot.name); }}
                           hitSlop={{ top:4, bottom:4, left:0, right:0 }}>
-                          <Text style={{ fontSize:13, color: theme.textPrimary, fontFamily:Type.uiSemibold, marginBottom:2 }}>{slot.name}</Text>
-                          <Text style={{ fontSize:11, color: theme.textDim, fontFamily:Type.ui }}>Tap to rename</Text>
+                          <View style={{ flexDirection:'row', alignItems:'center', gap:5 }}>
+                            {isAsleep && <Ionicons name="lock-closed" size={11} color={GOLD_BASE} />}
+                            <Text style={{ fontSize:13, color: theme.textPrimary, fontFamily:Type.uiSemibold, marginBottom:2 }}>{slot.name}</Text>
+                          </View>
+                          {/* Asleep slots say WHY rather than offering an action that would not help. */}
+                          <Text style={{ fontSize:11, color: theme.textDim, fontFamily:Type.ui }}>{isAsleep ? 'Drag above the line to use this one' : 'Tap to rename'}</Text>
                         </TouchableOpacity>
                       )}
                     </View>

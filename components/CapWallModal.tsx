@@ -215,7 +215,12 @@ export default function CapWallModal({
             {/* The same FLAT GOLD lock as the locked Reports and Comparison screens, never foil. Foil means
                 "you have this"; a lock means "you could have this", and foil turns to mush at icon sizes. */}
             <View style={{ alignItems: 'center', marginBottom: 14 }}>
-              <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard, alignItems: 'center', justifyContent: 'center' }}>
+              {/* ⚠️ GOLD RING, NOT A GOLD FILL (Justin, 2026-08-02). The sibling step-down modal tints its
+                  circle to match its icon, and ours had a gold lock sitting in a plain grey disc that all but
+                  vanished on Light. A gold WASH was the first idea and is wrong: flat gold on a white card
+                  reads as mustard, which the Supporter foil work already warns about. The ring ties the
+                  circle to the lock without introducing a gold surface. */}
+              <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: theme.bgInset, borderWidth: 1, borderColor: GOLD_BASE, alignItems: 'center', justifyContent: 'center' }}>
                 <Ionicons name="lock-closed" size={22} color={GOLD_BASE} />
               </View>
             </View>

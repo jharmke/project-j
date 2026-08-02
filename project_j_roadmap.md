@@ -1647,16 +1647,18 @@ are separate pre-submission checklists, NOT part of this menu.
      ✅ **DEVICE-VERIFIED 2026-08-01:** the dim state with the flat gold lock (Justin: colour is fine on Light,
      leave it), the OVER-cap modal, the AT-cap modal via the override, Not Now, Support the Mission, and
      Create Food back to normal blue and fully working as a Supporter. No bugs found.
-     🟡 **NOT YET SEEN BY JUSTIN -- THIS IS THE FIRST THING TO DO NEXT SESSION:** the modal TITLE was reshaped
-     after he saw it. It was `All {count} Of Your Foods Are Still Here`; it is now **`Custom Foods Is Full`**
-     on BOTH versions, with the reassurance moved down into the first body line.
-     WHY: the reassurance-first shape belongs to the step-down notice, which arrives UNPROMPTED. This modal is
-     reached by TAPPING Create Food, so the user's question is "why did nothing happen" and the title must
-     answer THAT. The old title also wrapped badly, orphaning "Here". Justin's call on the wording ("Custom
-     Foods", not "My Foods" -- "My Foods Is Full" reads oddly mid-sentence).
-     ⬅️ **NEXT SESSION STARTS BY RELOADING AND LOOKING AT BOTH MODALS AGAIN**, judging: does a short definite
-     title fix the "flat / too dim and plain" feeling he had, and does the title now read too SMALL at one
-     line. He also noted the body felt dim and plain -- unresolved, revisit after seeing the new title.
+     ✅ **THE TITLE RESHAPE IS DEVICE-VERIFIED 2026-08-02.** It was `All {count} Of Your Foods Are Still Here`
+     and is now **`Custom Foods Is Full`** on BOTH versions, with the reassurance moved into the first body
+     line. WHY: the reassurance-first shape belongs to the step-down notice, which arrives UNPROMPTED. This
+     modal is reached by TAPPING Create Food, so the user's question is "why did nothing happen" and the title
+     must answer THAT. The old one also wrapped badly, orphaning "Here". "Custom Foods" not "My Foods" is
+     Justin's call -- "My Foods Is Full" reads oddly mid-sentence, though the BODY still says My Foods on
+     purpose (title names the concept, body points at the real tab).
+     ✅ **THE LOCK CIRCLE IS A GOLD RING, NOT A GOLD FILL** (Justin, 2026-08-02, device-verified). The sibling
+     step-down modal tints its circle to match its icon; ours had a gold lock in a plain grey disc that
+     vanished on Light. ⚠️ A gold WASH was proposed first and is WRONG -- flat gold on a white card reads as
+     mustard, which the Supporter foil work already warns about. The ring ties circle to lock with no gold
+     surface. A hairline between the two body paragraphs was also considered and **rejected by Justin**.
      🟡 **STILL OPEN in step 3:** ⚠️ the other seven caps' copy is STILL IN THE OLD SHAPE (title-as-
      reassurance) and needs the same reordering -- deliberately NOT rewritten alone, bring it as a batch he
      can see. ⚠️ The over-cap body says "My Foods" while the title says "Custom Foods"; left on purpose (title

@@ -822,7 +822,17 @@ fallback at the end of this section, NOT deleted):
   dim/locked states be the same damn color?"* **A lock is its own language.** Same fill, same label colour,
   same gold lock, whether the unlocked button was solid, tinted or outlined. Anything accent-coloured on the
   unlocked version (a bright top border, a shine) goes too.
-  ⚠️ **Do not turn it into a hollow/outlined chip.** Two wrong versions were built first: a near-white `bgInset` fill (vanished against light cards, and
+  ⚠️ **Do not turn it into a hollow/outlined chip.**
+  ⚠️⚠️ **ICON-ONLY DOORS: BADGE THE ICON, NEVER REPLACE IT** (settled 2026-08-02 on Save as Copy). Some doors
+  are a bare icon with no surface to drain -- Save as Copy is a 22px copy glyph in the header, already the
+  dimmest grey in the theme. Swapping it for a padlock was the obvious move and is WRONG: **Justin asked what
+  happens to somebody who has never used clone.** They tap a bare gold padlock, get told their custom foods
+  are full, and cannot connect the two, because nothing ever told them what that button did. The alternative
+  was special-casing the modal copy for one door. So: keep the original icon, add a small gold lock badged on
+  its corner. The icon says WHAT, the badge says LOCKED, and the shared modal copy still works.
+  The badge is a ~14px disc in card colour with a **thin gold ring** and a 10px lock inside. ⚠️ The ring is
+  not decoration -- without it the disc reads as an accidental white blob rather than a deliberate badge,
+  the same reason the wall modal rings its lock circle. Two wrong versions were built first: a near-white `bgInset` fill (vanished against light cards, and
   changed the button from solid to hollow, so it read as a DIFFERENT button rather than the same one turned
   off) and a pale `bgProgressTrack` fill (the white halo ring dissolved into the cards -- a white ring only
   reads as an edge when what is behind it is strong). A MID-TONE fill is what makes one value work on every

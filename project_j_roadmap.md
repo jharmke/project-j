@@ -1690,6 +1690,15 @@ are separate pre-submission checklists, NOT part of this menu.
      ⚠️ **A `replace_all` on a colour token recoloured every progress bar and the Food Library tab strip.**
      Caught by Justin on device, reverted in commit 6149d22. **Never replace-all a theme token.**
      ⏭️ **4c:** Save as Copy on food-detail (new file, needs the same membership wiring).
+     ✅ **4c DONE + device-verified 2026-08-02: Save as Copy** (the clone path on food-detail).
+     ⚠️ **THE RULE FOR ICON-ONLY DOORS, settled here: BADGE THE ICON, NEVER REPLACE IT.** Swapping the copy
+     glyph for a padlock was the obvious move and is wrong -- Justin asked what happens to somebody who has
+     never used clone: they tap a bare gold padlock, get told their custom foods are full, and cannot connect
+     the two, because nothing ever told them what that button did. Keeping the icon means the shared modal
+     copy still works with no per-door special case. Badge = ~14px disc in card colour, thin GOLD RING, 10px
+     lock. The ring stops the disc reading as an accidental white blob.
+     ⚠️ Hit the JSX-comment syntax trap TWICE in this one file (a `{/* */}` cannot be the first thing inside a
+     ternary branch or a `{cond && (` block). See [[feedback_jsx_comment_placement]].
      ⏭️ **4d:** the recipe builder's inline creator (LAST -- the only one where the user can be mid-flow, so
      hitting the wall must not cost them the recipe they are part-way through).
      ⏭️ **THEN PIECE 6** -- where the caps get enforced across the different features (the build checklist:

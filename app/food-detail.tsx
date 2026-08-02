@@ -12,6 +12,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import Reanimated, { useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
 import CustomFoodCreator from '../components/CustomFoodCreator';
+import CapWallModal from '../components/CapWallModal';
+import { GOLD_BASE } from '../components/SupporterFoil';
+import { useMembership } from '../MembershipContext';
+import { checkCap, capFor, type CapState } from '../utils/caps';
 import UnitPickerButton from '../components/UnitPickerButton';
 import { convertUnit, convertibleUnitsFor, unitGroup, unitLabel } from '../utils/unitConversion';
 import { ToastRenderer, useToast } from '../components/Toast';
@@ -395,6 +399,11 @@ const isTutorialMode = tutorialMode === 'true';
   const [linkedBarcode, setLinkedBarcode] = useState<string | null>(null);
   const [scanningForLink, setScanningForLink] = useState(false);
   const [showSaveAsCopy, setShowSaveAsCopy] = useState(false);
+  // ── Custom-food cap (item C). This screen does not hold the food list, so the count is read on focus.
+  // Starts UNLIMITED so the badge can never appear before the real answer arrives.
+  const { isSupporter, loading: membershipLoading } = useMembership();
+  const [foodCap, setFoodCap] = useState<CapState>({ cap: null, count: 0, unlimited: true, atCap: false, canCreate: true });
+  const [foodCapWall, setFoodCapWall] = useState(false);
   const [carbsOpen, setCarbsOpen] = useState(true);
   const [fatsOpen, setFatsOpen] = useState(true);
   const [otherOpen, setOtherOpen] = useState(true);
@@ -999,6 +1008,9 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
   const [slotNameCache, setSlotNameCache] = useState<Record<string, string>>({});
   useEffect(() => {
     loadMealSlots().then(({ mealSlots: slots, slotNameCache: cache }) => { setMealSlots(slots); setSlotNameCache(cache); });
+    // ITEM C: refresh alongside the slots so the padlock is right whenever this screen appears, including
+    // after the user deleted a food elsewhere and came back.
+    checkCap('foods', isSupporter, membershipLoading).then(setFoodCap).catch(() => {});
   }, []);
   const [showEditFoodModal, setShowEditFoodModal] = useState(false);
   const [editFoodData, setEditFoodData] = useState<any>(null);
@@ -1689,10 +1701,27 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             <TouchableOpacity
               onPress={() => {
                 triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+                if (!foodCap.canCreate) { setFoodCapWall(true); return; }
                 setShowSaveAsCopy(true);
               }}
               style={{ width: 30, height: 30, alignItems: 'center', justifyContent: 'center' }}>
+              {/* ⚠️ ITEM C door 4 (Save as Copy -- the clone path). ICON-ONLY, so the locked treatment differs
+                  from every other door: there is no surface to drain and the icon is already the dimmest grey
+                  in the theme.
+                  ⚠️ NEVER REPLACE THE ICON WITH THE PADLOCK -- BADGE IT. Swapping it would leave a bare gold
+                  lock in a header, and somebody who has never used clone would tap it, be told their custom
+                  foods are full, and have no idea what those two things have to do with each other; they would
+                  not know what they had just tried to do. The copy icon says WHAT, the badge says LOCKED, and
+                  the wall modal then needs no special wording for this door. Justin caught this 2026-08-02.
+                  This is the rule for every icon-only door from here on. */}
               <Ionicons name="copy-outline" size={22} color={theme.textDim} />
+              {/* The badge disc carries a GOLD RING, same reason as the lock circle on CapWallModal: without
+                  it the disc reads as an accidental white blob rather than a deliberate badge. */}
+              {!foodCap.canCreate && (
+                <View style={{ position: 'absolute', right: 0, bottom: 0, width: 14, height: 14, borderRadius: 7, backgroundColor: theme.bgCard, borderWidth: 1, borderColor: GOLD_BASE, alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="lock-closed" size={10} color={GOLD_BASE} />
+                </View>
+              )}
             </TouchableOpacity>
           ) : null}
           {/* SET / UNSET a barcode for this food. Blue reads like Edit next to it; red is the same
@@ -2312,6 +2341,16 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
       </ScrollView>
 
       {/* Save as Copy */}
+      {foodCapWall && (
+        <CapWallModal
+          capKey="foods"
+          cap={capFor('foods', isSupporter) ?? 0}
+          count={foodCap.count}
+          theme={theme}
+          onDismiss={() => setFoodCapWall(false)}
+        />
+      )}
+
       <CustomFoodCreator
         visible={showSaveAsCopy}
         onClose={() => setShowSaveAsCopy(false)}

@@ -1343,6 +1343,27 @@ are separate pre-submission checklists, NOT part of this menu.
     a nice-to-have; nobody has confirmed either way, so do not assume it is optional.
     ⚠️ Do NOT gate the other three share-sheet uses while doing this: sharing a Bible verse and sharing a
     message out of either AI chat are not data export, and paywalling the verse share would be a bad look.
+  • **[DO THESE FOUR TOGETHER] `FirstWeekEndedModal.tsx` needs one visit, not four.** All found on device
+    2026-08-01 while testing the step-down guard. Same file, same list, do them in one pass:
+    1. ⚠️ **THE OTTO BULLET IS WRONG AND OVERSELLS FREE.** It currently reads *"Otto answers anything, but
+       stops building workouts and meals"*. Justin: *"he gets dumber, he stops using numbers and stuff, he
+       doesnt just not build workouts and meals."* **"Answers anything" is not true on free** -- item B's data
+       gate means he no longer receives their snapshot, PRs, workout history, food log, sleep or body
+       measurements, so he cannot answer about their own numbers at all. He also caps at 2 exercises per
+       reply. Needs a rewrite that is honest about the whole step down, not just the builders.
+    2. **Add the caps bullet** agreed in piece 5: `Room to keep building, within free limits` (no numbers, no
+       list -- see SPEC_monetization.md).
+    3. **"stats cards" -> "graphs"** in the over-cap line. The button people tap says Add Graph; that line is
+       the last place the old word survives.
+    4. **Hairline above the over-cap paragraph** (Justin's call). It currently sits under the bullets with
+       identical spacing, so the one line that is PERSONAL to that user reads as another free-plan bullet.
+  • **[WATCH, seen again 2026-08-01] The step-down notice still lands ON the launch splash sometimes.**
+    Justin: "it did show up during the splash. we sort of fixed that timing thing but last couple times it
+    went over the splash." The notice waits 800ms and then goes through `runAfterLaunchSplash`, and that was
+    already reworked once (two other orderings were tried and both still landed on the splash). Deliberately
+    NOT chased on 2026-08-01 -- he did not want to toy with it mid-build. ⚠️ Unknown whether it is a dev-build
+    timing artefact or real. ⚠️ **Plan item N (the shared launch-modal flag) should probably own this** rather
+    than patching this one modal's timing a third time; every launch modal currently reinvents its own.
   • **[LIVE BUG, found 2026-08-01] The step-down notice can fire at a PAYING Supporter on a slow launch.**
     `app/(tabs)/index.tsx` (~line 1160) takes only `const { isSupporter } = useMembership()` and never takes
     `loading`, so at launch it cannot tell "free user" from "RevenueCat has not answered yet". Today it is

@@ -1157,7 +1157,10 @@ export default function HomeScreen() {
   // The 7-day taste running out. Once ever, and it always yields to a summary (see the effect below).
   const [firstWeekEnded, setFirstWeekEnded] = useState<{ overCapNote: string | null } | null>(null);
   const stepDownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { isSupporter } = useMembership();
+  // `membershipLoading` is taken as well as isSupporter ON PURPOSE. During startup isSupporter is false
+  // because RevenueCat has not ANSWERED yet, not because the user is free -- and the step-down notice below
+  // must never act on that. See the guard in its effect.
+  const { isSupporter, loading: membershipLoading } = useMembership();
   const [homeTips, setHomeTips] = useState<StoredTip[]>([]);
   const [tipIndex, setTipIndex] = useState(0);
   const [coachCache, setCoachCache] = useState<CoachTipCache | null>(null);
@@ -1301,6 +1304,15 @@ export default function HomeScreen() {
       // Something is already on screen, or a summary is queued behind the splash.
       if (daySummary || dayScoreDisclaimer || weekSummary || monthSummary || summaryTimerRef.current) return;
       if (firstWeekEnded || stepDownTimerRef.current) return;
+      // ⚠️ WAIT FOR A DEFINITE ANSWER. isSupporter starts false and stays false until RevenueCat replies, so
+      // without this a SUPPORTER can be told their plan ended simply because the app launched on a slow
+      // connection. Worse, markStepDownShown() fires the moment the notice renders, burning the once-ever
+      // flag -- so they get a wrong notice now AND no correct one later when they actually do cancel.
+      // Timing alone was doing this job (the 800ms delay + the splash gate, with the cleanup cancelling the
+      // pending timer once membership resolves); that only holds while RevenueCat answers inside the window.
+      // Fails in the safe direction: if the answer never arrives the notice simply never fires.
+      // Same guard, same reason, as the one before enforceIconEntitlement in MembershipContext.
+      if (membershipLoading) return;
       if (!(await shouldShowStepDown(isSupporter))) return;
 
       // ⚠️ ONLY warn about a cap they are ACTUALLY over, and ONLY about the two LAYOUT caps. Content they made
@@ -1362,7 +1374,7 @@ export default function HomeScreen() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSupporter, daySummary, dayScoreDisclaimer, weekSummary, monthSummary]);
+  }, [isSupporter, membershipLoading, daySummary, dayScoreDisclaimer, weekSummary, monthSummary]);
 
   // ── Vacation Mode banner: refresh on every focus so Settings changes land ───
   useFocusEffect(useCallback(() => {

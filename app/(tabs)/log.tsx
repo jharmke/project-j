@@ -157,7 +157,7 @@ function MacroStackedBar({ protein, carbs, fat, proteinGoal, carbsGoal, fatGoal,
   return (
     <View style={{ width: 140, paddingLeft: 22, justifyContent: 'center', gap: 12 }}>
       <TouchableOpacity onPress={onPressProtein} activeOpacity={onPressProtein ? 0.75 : 1} hitSlop={{ top: 6, bottom: 6, left: 12, right: 12 }} style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-        <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: theme.textMuted, overflow: 'hidden' }}>
+        <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
           <ReAnimated.View style={[{ height: '100%', borderRadius: 3, overflow: 'hidden' }, proteinStyle]}>
             <LinearGradient colors={barFillGradient(theme.macroProtein)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }} />
           </ReAnimated.View>
@@ -174,7 +174,7 @@ function MacroStackedBar({ protein, carbs, fat, proteinGoal, carbsGoal, fatGoal,
         </View>
       </TouchableOpacity>
       <TouchableOpacity onPress={onPressCarbs} activeOpacity={onPressCarbs ? 0.75 : 1} hitSlop={{ top: 6, bottom: 6, left: 12, right: 12 }} style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-        <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: theme.textMuted, overflow: 'hidden' }}>
+        <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
           <ReAnimated.View style={[{ height: '100%', borderRadius: 3, overflow: 'hidden' }, carbsStyle]}>
             <LinearGradient colors={barFillGradient(theme.macroCarbs)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }} />
           </ReAnimated.View>
@@ -191,7 +191,7 @@ function MacroStackedBar({ protein, carbs, fat, proteinGoal, carbsGoal, fatGoal,
         </View>
       </TouchableOpacity>
       <TouchableOpacity onPress={onPressFat} activeOpacity={onPressFat ? 0.75 : 1} hitSlop={{ top: 6, bottom: 6, left: 12, right: 12 }} style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-        <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: theme.textMuted, overflow: 'hidden' }}>
+        <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
           <ReAnimated.View style={[{ height: '100%', borderRadius: 3, overflow: 'hidden' }, fatStyle]}>
             <LinearGradient colors={barFillGradient(theme.macroFat)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }} />
           </ReAnimated.View>
@@ -1542,7 +1542,7 @@ export default function LogScreen() {
               </View>
               <GradientNumber value={`/ ${displayTarget} kcal`} color={theme.textSecondary} style={styles.calTarget} />
             </View>
-            <View style={[styles.progressBarBg, { backgroundColor: theme.textMuted }]}>
+            <View style={[styles.progressBarBg, { backgroundColor: theme.bgProgressTrack }]}>
               <ReAnimated.View style={[styles.progressBarFill, calProgressBarStyle, { overflow: 'hidden' }]}>
                 <LinearGradient colors={barFillGradient(calColor)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }} />
               </ReAnimated.View>
@@ -2620,7 +2620,7 @@ export default function LogScreen() {
                       </View>
                     )}
                   </View>
-                  <View style={{ height:8, backgroundColor: theme.textMuted, borderRadius:8, overflow:'hidden' }}>
+                  <View style={{ height:8, backgroundColor: theme.bgProgressTrack, borderRadius:8, overflow:'hidden' }}>
                     <View style={{ height:'100%', borderRadius:8, overflow:'hidden', width:`${Math.min(100, (water / waterGoal) * 100)}%` }}>
                       <LinearGradient colors={barFillGradient(theme.accentBlue)} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }} />
                     </View>

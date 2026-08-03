@@ -7,7 +7,13 @@ export interface MealSlot {
 }
 
 export const DEFAULT_MEAL_SLOTS: MealSlot[] = [
-  { id: 'ms_morning', name: 'Morning' },
+  // ⚠️ ID STAYS `ms_morning`, NAME IS "Breakfast" (renamed 2026-08-03). The id is what entries store and what
+  // slotNameCache keys off, so changing it would orphan every meal ever logged to this slot. The NAME is the
+  // only part anyone sees, and it is renameable by the user anyway.
+  // WHY: "Morning" was one time-of-day label sitting between two meal names, and every food logger on earth
+  // uses Breakfast -- Otto guessed "Breakfast" unprompted for exactly that reason. No migration: existing
+  // accounts keep whatever their stored slots already say, so this only affects NEW accounts.
+  { id: 'ms_morning', name: 'Breakfast' },
   { id: 'ms_lunch',   name: 'Lunch'   },
   { id: 'ms_dinner',  name: 'Dinner'  },
   { id: 'ms_snacks',  name: 'Snacks'  },

@@ -600,9 +600,12 @@ export const TUTORIALS: Tutorial[] = [
         bubbleAtBottom: true,
         title: 'MEAL SLOTS',
         body: {
-          discipline: 'Each row is one meal bucket: Morning, Lunch, Dinner, Snacks by default. You can have up to 8. Rename, reorder, or delete any of them.',
-          balanced: 'Each row is one of your meal categories. You start with 4 but can add up to 8. Rename, reorder, or remove them however you like.',
-          mindful: 'These are your meal categories. Start with the 4 defaults or customize however feels right. Up to 8 total.',
+          // ⚠️ "UP TO 8" WAS THE SUPPORTER CAP TOLD TO EVERYONE. The free plan holds 5 -- the four defaults
+          // plus one of your own -- and 8 is what the Supporter plan raises it to. Item C, 2026-08-03.
+          // ⚠️ "THE SUPPORTER PLAN", NEVER BARE "SUPPORTER". Standing rule for every user-facing string.
+          discipline: 'Each row is one meal bucket: Breakfast, Lunch, Dinner, Snacks by default. You get 5 on the free plan and 8 on the Supporter plan. Rename, reorder, or delete any of them.',
+          balanced: 'Each row is one of your meal categories. You start with 4 and can have 5 on the free plan, or 8 on the Supporter plan. Rename, reorder, or remove them however you like.',
+          mindful: 'These are your meal categories. Start with the 4 defaults or customize however feels right. Five on the free plan, eight on the Supporter plan.',
         },
       },
       {
@@ -630,9 +633,12 @@ export const TUTORIALS: Tutorial[] = [
         targetKey: 'log_edit_add_btn',
         title: 'ADD A SLOT',
         body: {
-          discipline: 'This is your Add Meal Slot button. You can have up to 8 total. If it reads "Maximum 8 slots reached," remove a slot first to make room.',
-          balanced: 'Tap this to add a new meal category. You can have up to 8 total. If you\'re at the limit, remove one first.',
-          mindful: 'This adds new categories whenever you need them. Up to 8 total. If it\'s greyed out, you\'ve hit the limit. Remove one to open a spot.',
+          // ⚠️ Same fix as MEAL SLOTS above: 8 is the SUPPORTER cap, 5 is the free one. The at-cap states
+          // also differ by tier -- a free user gets the gold-locked wall, a Supporter at 8 gets a plain
+          // disabled button reading "Maximum 8 slots reached", because at 8 there is nothing left to sell.
+          discipline: 'This is your Add Meal Slot button. The free plan holds 5 slots and the Supporter plan holds 8. At your limit, remove one first to make room.',
+          balanced: 'Tap this to add a new meal category. You get 5 on the free plan and 8 on the Supporter plan. If you\'re at the limit, remove one first.',
+          mindful: 'This adds new categories whenever you need them. Five on the free plan, eight on the Supporter plan. At the limit, remove one to open a spot.',
         },
       },
     ],
@@ -698,7 +704,7 @@ export const TUTORIALS: Tutorial[] = [
         title: 'CHOOSE YOUR MEAL',
         body: {
           discipline: 'Assign this food to a meal slot. Meal-level totals only work when entries are correctly assigned. Lunch is selected by default.',
-          balanced: 'Tap the meal selector to assign this to Morning, Lunch, Dinner, or Snacks. Keeps your log organized.',
+          balanced: 'Tap the meal selector to assign this to Breakfast, Lunch, Dinner, or Snacks. Keeps your log organized.',
           mindful: 'Assign the food to whatever meal fits. This is just for your own organization. No right or wrong answer.',
         },
       },
@@ -1778,9 +1784,13 @@ export const TUTORIALS: Tutorial[] = [
         noTabBarOffset: true,
         title: 'MACROS',
         body: {
-          discipline: 'Set protein, carbs, and fat two ways. Ratio mode splits your calories by percentage and must total 100%. Fixed mode sets grams directly and should match your calorie target. Grams and percentages stay in sync automatically.',
-          balanced: 'Choose how to set your macros. Ratio mode uses percentages that add up to 100%. Fixed mode lets you set grams directly. The app keeps grams and percentages in sync as your calories change.',
-          mindful: 'Macros can be set by percentage (Ratio) or by grams (Fixed). The app handles the math either way. Set them loosely or precisely, your call.',
+          // ⚠️ THIS STEP USED TO TEACH A CONTROL A FREE USER CANNOT TOUCH. Since item C, building your own
+          // split is Supporter-only and this block renders dimmed with a gold lock -- so the old copy walked
+          // people through Ratio/Fixed while they looked at a greyed-out panel. Free half FIRST, gate last:
+          // the presets genuinely are the free path, not a consolation.
+          discipline: 'The four presets are free and set your split in one tap. Ratio mode splits your calories by percentage and must total 100%; Fixed mode sets grams directly. Building your own split is part of the Supporter plan.',
+          balanced: 'The four presets are free and set your split in one tap. Ratio mode uses percentages that add up to 100%, and Fixed mode lets you set grams directly. Building your own split is part of the Supporter plan.',
+          mindful: 'The four presets are free and cover most people in one tap. Ratio sets your split by percentage, Fixed by grams, and the app handles the math either way. Building your own is part of the Supporter plan.',
         },
       },
       {

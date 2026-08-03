@@ -755,6 +755,9 @@ export default function HomeScreen() {
   const macroScaleAnim   = useRef(new Animated.Value(0.92)).current;
   const macroOpacityAnim = useRef(new Animated.Value(0)).current;
   const [macroPreset, setMacroPreset] = useState<string | null>(null);
+  // ITEM C: the split the user authored themselves, kept by Settings > Goals where presets cannot reach it.
+  // null = they have never built one, and the Custom card simply does not render.
+  const [customMacroSplit, setCustomMacroSplit] = useState<any>(null);
   const MACRO_PRESETS: Record<string, { label: string; p: number; c: number; f: number; icon: any }> = {
     high_protein: { label: 'High Protein', p: 35, c: 35, f: 30, icon: 'barbell' },
     balanced:     { label: 'Balanced',     p: 30, c: 40, f: 30, icon: 'pie-chart' },
@@ -800,6 +803,52 @@ export default function HomeScreen() {
       const sett = rawS ? JSON.parse(rawS) : {};
       await storageSet('pj_settings', JSON.stringify({ ...sett, macroPreset: key }));
       showToast('Macro goals updated', preset.label, 'success');
+    } catch {
+      showToast('Save failed', 'Please try again', 'error');
+    }
+  };
+  // ITEM C: put the user's OWN split back. Deliberately mirrors applyMacroPreset above rather than sharing
+  // code with it, because the two differ in the one way that matters: a preset always forces ratio mode,
+  // while restoring must put back the MODE THEY WERE IN. Restoring percentages to somebody who built their
+  // targets in fixed grams would quietly change what they actually eat.
+  const applyCustomMacroSplit = async () => {
+    if (!customMacroSplit) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    setMacroPreset(null);
+    const mode = customMacroSplit.macroMode === 'fixed' ? 'fixed' : 'ratio';
+    // Fixed grams ARE the goal, so they go back verbatim. Ratio percentages are re-derived against today's
+    // calorie target, which may have moved since the split was saved -- the same thing applyMacroPreset does.
+    if (mode === 'fixed') {
+      setMacroGoals({
+        protein: parseFloat(customMacroSplit.macroProteinG) || 0,
+        carbs:   parseFloat(customMacroSplit.macroCarbsG)   || 0,
+        fat:     parseFloat(customMacroSplit.macroFatG)     || 0,
+      });
+    } else if (calTarget > 0) {
+      setMacroGoals({
+        protein: Math.round(((parseFloat(customMacroSplit.macroProteinPct) || 0) / 100) * calTarget / 4),
+        carbs:   Math.round(((parseFloat(customMacroSplit.macroCarbsPct)   || 0) / 100) * calTarget / 4),
+        fat:     Math.round(((parseFloat(customMacroSplit.macroFatPct)     || 0) / 100) * calTarget / 9),
+      });
+    }
+    try {
+      const rawP = await AsyncStorage.getItem('pj_profile');
+      const prof = rawP ? JSON.parse(rawP) : {};
+      // ⚠️ Read-then-merge, and the stored copy is left exactly where it is -- restoring must not consume it.
+      await storageSet('pj_profile', JSON.stringify({
+        ...prof,
+        macroMode:       mode,
+        macroProteinPct: String(customMacroSplit.macroProteinPct ?? ''),
+        macroCarbsPct:   String(customMacroSplit.macroCarbsPct   ?? ''),
+        macroFatPct:     String(customMacroSplit.macroFatPct     ?? ''),
+        macroProteinG:   String(customMacroSplit.macroProteinG   ?? ''),
+        macroCarbsG:     String(customMacroSplit.macroCarbsG     ?? ''),
+        macroFatG:       String(customMacroSplit.macroFatG       ?? ''),
+      }));
+      const rawS = await AsyncStorage.getItem('pj_settings');
+      const sett = rawS ? JSON.parse(rawS) : {};
+      await storageSet('pj_settings', JSON.stringify({ ...sett, macroPreset: null }));
+      showToast('Macro goals updated', 'Your own split', 'success');
     } catch {
       showToast('Save failed', 'Please try again', 'error');
     }
@@ -2090,6 +2139,8 @@ export default function HomeScreen() {
           if (p.exerciseMinsGoal && parseInt(p.exerciseMinsGoal) > 0) setExerciseMinsGoal(parseInt(p.exerciseMinsGoal));
           if (p.goalWeight && parseFloat(p.goalWeight) > 0) setGoalWeight(parseFloat(p.goalWeight));
           if (p.weightGoal) setWeightGoalPace(p.weightGoal);
+          // ITEM C: drives whether the Custom card renders at all.
+          setCustomMacroSplit(p.customMacroSplit ?? null);
 
           // Load macro goals
           const kcalTarget = parseInt(p.calTarget) || 0;
@@ -4852,8 +4903,30 @@ export default function HomeScreen() {
                       );
                     })}
                   </View>
-                  {macroPreset === null && (
-                    <Text style={{ fontSize:11, color: theme.textDim, fontFamily:Type.ui, marginTop:10 }}>Custom goals set. Pick a preset to replace them.</Text>
+                  {/* ITEM C: THE CUSTOM CARD. Preset-sized and centred on its own row under the 2x2 (full
+                      width was proposed and rejected as far too big). It renders only for somebody who has
+                      actually built a split, so a preset-only user never sees a fifth card.
+                      ⚠️ It REPLACED the line "Custom goals set. Pick a preset to replace them." That line
+                      described behaviour that no longer exists: presets used to overwrite your split, so it
+                      was a warning. Now the split is kept and this card is the way back, so the same words
+                      would scare people off a button that has become safe.
+                      ⚠️ Percentages, always -- the modal has no grams view. A fixed-grams user still sees
+                      their split here because the app keeps both in sync, and tapping this restores their
+                      GRAMS and their mode, not these percentages. */}
+                  {customMacroSplit && (
+                    <View style={{ flexDirection:'row', justifyContent:'center', marginTop:8 }}>
+                      <TouchableOpacity onPress={applyCustomMacroSplit} activeOpacity={0.85}
+                        style={{ width:'47%', paddingVertical:14, paddingHorizontal:10, borderRadius:12,
+                          borderWidth: macroPreset === null ? 1.5 : 1,
+                          backgroundColor: macroPreset === null ? theme.accentBlueBg : theme.bgCardGlass,
+                          borderColor: macroPreset === null ? theme.accentBlueBorder : theme.borderCard, alignItems:'center', gap:4 }}>
+                        <GradientHomeIcon name="options" size={22} color={macroPreset === null ? theme.accentBlue : theme.textMuted} />
+                        <GradientTitle title="Custom" color={macroPreset === null ? theme.accentBlue : theme.textSecondary} style={{ fontSize:14, fontFamily:Type.uiBold }} />
+                        <Text style={{ fontSize:11, fontFamily:Type.ui, color: theme.textDim }}>
+                          {customMacroSplit.macroProteinPct}P · {customMacroSplit.macroCarbsPct}C · {customMacroSplit.macroFatPct}F
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   )}
                   <TouchableOpacity
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeMacroSheet(); router.push({ pathname: '/settings', params: { section: 'goals' } }); }}

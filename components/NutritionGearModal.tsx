@@ -113,7 +113,10 @@ const PRESET_META = [
   { key: 'heart',    icon: 'heart'            as const, label: 'Heart Health',  subtitle: 'Heart-friendly limits'  },
   { key: 'fiber',    icon: 'leaf'             as const, label: 'High Fiber',    subtitle: '40g fiber target'       },
   { key: 'athletic', icon: 'flash'            as const, label: 'Athletic',      subtitle: 'Performance focus'      },
-  { key: 'custom',   icon: 'build'            as const, label: 'Custom',        subtitle: 'Your own goals'         },
+  // ITEM C: sliders, not the wrench. `build` reads as tools and repair (Settings territory); sliders is the
+  // "dial in your own values" metaphor, which is what this tile is. Kept identical to the Custom card in the
+  // Macros modal on purpose -- they are the same idea on two screens and must not drift apart.
+  { key: 'custom',   icon: 'options'          as const, label: 'Custom',        subtitle: 'Your own goals'         },
 ];
 
 const GOAL_GROUPS = [

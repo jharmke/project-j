@@ -30,6 +30,13 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-08-03 **🎉 ITEM C IS COMPLETE -- and this time the claim was audited, not asserted.** The last piece
+  was the explainers: Otto now knows all eight caps with their numbers, the macro and nutrition gating, what
+  happens when you cancel, and the "the Supporter plan" naming rule he had never been told. Tutorials stopped
+  telling free users they get 8 meal slots and stopped walking them through a macro editor that is now locked;
+  tooltips swept clean. Also renamed the first meal slot **Morning -> Breakfast** for new accounts. The
+  close-out audit re-read all six pieces against the code and confirmed every one of the thirteen creation
+  doors is gated and all three tutorials still bypass their gates. Full detail in the archive.
 - 2026-08-03 **A Supporter whose subscription ends now gets told, instead of their layout silently reverting**
   (device-verified). Same modal, retitled "Your Supporter Plan Has Ended", and it does NOT sell -- they paid
   for months and chose to leave. The app records which kind of membership you held WHILE you hold it, because
@@ -1386,17 +1393,31 @@ are separate pre-submission checklists, NOT part of this menu.
   4. ✅ **COMPLETE + DEVICE-VERIFIED 2026-08-03. The four `FirstWeekEndedModal` changes**, plus a fifth found
      on device: the wrapped cancelled title rendered two-tone, because GradientTitle moulds light-to-dark down
      the block. Fixed the way CapWallModal already did it (one line, shrink to fit).
-  5. **The tooltip / tutorial / Otto-KB updates.** ⚠️ CLAUDE.md requires these in the SAME session as any
-     user-facing change and they were never touched. **Otto's KB lists what Supporter adds and NONE of the
-     eight caps are in it** -- it even carries a line telling him never to say the whole app is free because a
-     few features are paid, and that list is now wrong. Ask him today how many custom foods you get and he
-     does not know.
+  5. ✅ **COMPLETE + DEVICE-VERIFIED 2026-08-03. The tooltip / tutorial / Otto-KB updates.** Otto now knows
+     all eight caps with their numbers, the macro/nutrition gating, what happens on cancellation, and the
+     "the Supporter plan" naming rule (which he had never been told, so he said bare "Supporter" all day).
+     Tutorials no longer tell free users they get 8 meal slots, or walk them through a macro editor that is
+     now locked. Tooltips swept and found clean -- every macro entry describes TRACKING, which is still free.
+     ⚠️ Two things fell out: the first meal slot was renamed **Morning -> Breakfast** for new accounts (no
+     migration, so both are in the wild and Otto is told so), and Otto drops items from long list answers
+     roughly one time in three. Justin's call: acceptable, he gets direct questions right.
   **ITEM A -- CLEAN. NO ORPHAN.** ⚠️ The audit first reported the **undereating safeguard** as homeless,
   because item A's own text still said *"still needs a HOME... fold into B or give it its own letter."* **That
   line was stale: it became ITEM L on 2026-07-30.** Justin questioning the audit is what caught it, and the
   lesson is the same one that caused all of this -- a stale line was taken at face value instead of checked.
   Item A's text is corrected. L is simply an unstarted letter like E-K and M-O, not a gap.
-  ➡️ **SO IT IS FIVE THINGS, AND ALL FIVE BELONG TO ITEM C.** Nothing is missing from any other letter:
+  🎉 **ALL FIVE ARE NOW BUILT. ITEM C IS COMPLETE, 2026-08-03 -- AND THIS TIME THE CLAIM WAS CHECKED.**
+  Re-read PIECE 1 through PIECE 6 against the code rather than against memory of building them, which is the
+  standing rule this audit created. Verified: the numbers match `utils/caps.ts` exactly; all 16 wall variants
+  exist; both dormancy models are applied in EVERY place that draws those lists (meal slots in the Log tab,
+  Food Detail and the AI estimator's slot picker; graphs on Stats and on Home's pinned graphs); and **all
+  thirteen creation doors are gated** -- five for foods including the deep link, one saved meals, two
+  recipes, two routines, one programs, one exercise library, one meal slots, one graphs.
+  ✅ **The tutorial carve-out holds too:** the food creator, graph creator and recipe builder are each opened
+  by a path that bypasses the gated handler, so a free user at their cap can still finish every tutorial.
+  ⚠️ **ONE DECIDED THING STILL HAS NO OWNER, logged below rather than left loose** -- see "post-purchase
+  return" in the spawned list. It is the same shape as the undereating-safeguard orphan this audit found.
+  ➡️ **SO IT WAS FIVE THINGS, AND ALL FIVE BELONGED TO ITEM C.** Nothing is missing from any other letter:
   A, B and D are genuinely finished; E-O were never claimed done and simply have not been started (G is
   mostly built, H has a spec).
   **OUTSIDE THE PLAN -- ✅ DECIDED, spec was just stale:** `purchaseTip` grants nothing in-app. That is
@@ -1410,6 +1431,15 @@ are separate pre-submission checklists, NOT part of this menu.
   2026-08-01: **anything that comes out of this push gets added to the TOP of NEXT UP, not the bottom.** They
   are side-findings, deliberately NOT folded into plan item C (none of them are about caps, and folding them
   in would mean C could not close until unrelated work shipped).
+  • **[DECIDED, NO OWNER, FOUND BY THE ITEM-C CLOSE-OUT AUDIT 2026-08-03] POST-PURCHASE RETURN.** The spec
+    says somebody who subscribes FROM a wall modal must land back where they were, "still wanting to create
+    that food" -- and marks it **"NOT PART OF PIECE 2"**, so it was never given a letter. Same shape as the
+    undereating-safeguard orphan: a real decision with nowhere to live.
+    ✅ Mostly satisfied already BY CONSTRUCTION: the wall pushes to Support the Mission rather than replacing
+    the screen, so dismissing it returns you where you were with the button now unlocked.
+    ⚠️ **What nobody has done is confirm it after a REAL purchase**, and that cannot be tested without buying.
+    Check it the next time a test account actually subscribes. What it does NOT do is auto-resume the action
+    you were blocked on -- you still have to tap the button again. Decide whether that is good enough.
   • **[NEEDS A SPEC] A REAL data export.** The perks table sells "data export" as a Supporter perk and that
     row is technically already satisfied -- the only export in the app shares a REPORT as an IMAGE
     (`app/report.tsx`) and Reports are already Supporter-gated. But "you can share a picture of a report" is

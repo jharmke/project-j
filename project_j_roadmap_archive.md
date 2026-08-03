@@ -11,6 +11,55 @@
 
 ---
 
+## 🎉 ITEM C -- CLOSED 2026-08-03, AND THE CLOSE-OUT AUDIT THAT MADE IT CLAIMABLE
+Commit d7649c1 and the audit that followed it. Item C was declared complete once before, on 2026-08-02, and
+an audit found FIVE decided-but-unbuilt things in it. The rule that came out of that: **"complete" is only
+claimable after re-reading the spec against the CODE, not against memory of having built it.** So this time
+that pass was actually run before anything was written down.
+
+**WHAT THE AUDIT CHECKED, PIECE BY PIECE.** Numbers match `utils/caps.ts` exactly. All 16 wall variants exist
+(eight keys x at-cap/over-cap). Both dormancy models are applied in every place that DRAWS those lists, not
+just the obvious one -- meal slots in the Log tab, Food Detail and the AI estimator's slot picker; graphs on
+the Stats tab and on Home's pinned graphs. **All thirteen creation doors traced and gated:** five for custom
+foods including the deep link, one saved meals, two recipes, two routines, one programs, one exercise
+library, one meal slots, one graphs.
+
+**THE CARVE-OUT THAT WOULD HAVE BEEN EASY TO MISS.** The spec demands tutorials are never capped, on any of
+the eight. Verified all three: the food creator, the graph creator and the recipe builder are each opened by
+their own path (`setShowCreateFood`, `openGraphCreatorTutorial`, `navigateTo: '/recipe-builder'`) that
+bypasses the gated handler. A free user sitting at their cap can still finish every tutorial.
+
+**THE LAST PIECE WAS THE EXPLAINERS, and it was worse than the audit line suggested.** The audit said Otto's
+KB was missing the caps. It was also actively WRONG in three places: a rule telling him never to call any
+tier "unlimited" (written about AI allowances, which reset -- but seven of the eight creation caps genuinely
+ARE unlimited); a free-tier line claiming "full macro tracking" is free (tracking is, authoring a split is
+not); and meal slots described as "up to 8" in two places, which is the Supporter cap told to everyone.
+The same "up to 8" error was in the tutorials in six places.
+
+**⚠️ HE HAD NEVER BEEN TOLD THE NAMING RULE.** Every screen in the app says "the Supporter plan"; Otto said
+bare "Supporter" in every reply, because the rule lived only in Claude's memory and in app strings. Justin,
+justifiably: *"what the fuck do making these rules/memories even do if you dont follow them"* -- and three
+tutorial strings had just shipped with the same error. **A copy rule that is not written into the assistant's
+knowledge is a rule the assistant breaks all day.**
+
+**FOUND BY ASKING HIM, NOT BY READING THE KB.** Otto answered "Breakfast, Lunch, Dinner, Snacks" for the
+default meal slots. The real first slot was **Morning** -- the KB never listed the names, so he filled in the
+obvious guess. That prompted the actual question: is "Morning" odd sitting between two meal names? Justin's
+call was to rename it to Breakfast. **The rename cost one line** because the app stores slot IDs and never
+names -- the same design that lets any user rename their slots. No migration, so existing accounts keep
+Morning and Otto is told both are in the wild.
+
+**TWICE HE DROPPED STATS GRAPHS from a list of what the plan adds**, once while saying "those seven". The
+likely cause was formatting: every other creation limit was written as a number pair (`20 -> unlimited`) and
+graphs was written as prose, so it did not look like a list item. Rewritten to match, plus an explicit
+completeness rule -- fenced to full-list answers only, so a single-limit question still gets a single answer.
+⚠️ Accepted, Justin's call: he will not be perfect in long summaries. Direct questions are what matter.
+
+**ONE DECIDED THING HAD NO OWNER** and was logged rather than left loose: the post-purchase return, marked
+"NOT PART OF PIECE 2" in the spec and never given a letter. Same orphan shape as the undereating safeguard.
+
+---
+
 ## 📅 ITEM C PIECES 4 + 5 -- THE STEP-DOWN NOTICE COVERS CANCELLATIONS (device-verified, SHIPPED 2026-08-03)
 Commit f194726. Design in SPEC_monetization.md -> PIECE 5.
 

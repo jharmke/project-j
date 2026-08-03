@@ -36,7 +36,7 @@ import { barFillGradient } from '../../utils/barGradient';
 import { wakeMsFromStored, computeWaterPace, paceTone, pacePinTone, paceToneColor, paceLabel } from '../../utils/waterPace';
 import { runAfterLaunchSplash } from '../../utils/launchSplashGate';
 import { loadMealSlots } from '../../utils/mealSlots';
-import { shouldShowStepDown, markStepDownShown } from '../../utils/firstWeek';
+import { stepDownKind, markStepDownShown, recordActiveMembership } from '../../utils/firstWeek';
 import { useMembership } from '../../MembershipContext';
 import FirstWeekEndedModal from '../../components/FirstWeekEndedModal';
 import { maybeRunAdaptiveTdee } from '../../utils/adaptiveTdee';
@@ -1350,12 +1350,23 @@ export default function HomeScreen() {
   const [weekSummary, setWeekSummary] = useState<WeeklySummaryData | null>(null);
   const [monthSummary, setMonthSummary] = useState<MonthlySummaryData | null>(null);
   // The 7-day taste running out. Once ever, and it always yields to a summary (see the effect below).
-  const [firstWeekEnded, setFirstWeekEnded] = useState<{ overCapNote: string | null } | null>(null);
+  const [firstWeekEnded, setFirstWeekEnded] = useState<{ overCapNote: string | null; kind: 'firstWeek' | 'cancelled' } | null>(null);
   const stepDownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // `membershipLoading` is taken as well as isSupporter ON PURPOSE. During startup isSupporter is false
   // because RevenueCat has not ANSWERED yet, not because the user is free -- and the step-down notice below
   // must never act on that. See the guard in its effect.
-  const { isSupporter, loading: membershipLoading } = useMembership();
+  const { isSupporter, loading: membershipLoading, details: membershipDetails } = useMembership();
+  // ⚠️ RECORD WHICH KIND OF MEMBERSHIP THIS IS WHILE IT IS STILL LIVE. RevenueCat marks a granted free week
+  // as promotional (readDetails turns that into `isFirstWeek`), but the moment the entitlement lapses that
+  // detail is gone -- and the lapse is exactly when the step-down notice needs to know which title to use.
+  // This also clears the once-shown flag, so a LATER cancellation gets its own notice instead of being
+  // silenced by a taste that ended a year ago.
+  // ⚠️ Gated on `details` being present, not on isSupporter: the dev Pro toggle flips isSupporter without a
+  // real entitlement, and recording "paid" off a dev toggle would make the notice lie afterwards.
+  useEffect(() => {
+    if (membershipLoading || !membershipDetails) return;
+    recordActiveMembership(membershipDetails.isFirstWeek ? 'taste' : 'paid').catch(() => {});
+  }, [membershipLoading, membershipDetails]);
   // ITEM C: authoring a custom macro split is Supporter-only. Presets stay free, the calorie goal stays free,
   // and a grandfathered user keeps the split they already built -- this only blocks CHANGING it.
   // ⚠️ Declared here rather than up with the other macro state because `isSupporter` is declared on this
@@ -1527,7 +1538,8 @@ export default function HomeScreen() {
       // Fails in the safe direction: if the answer never arrives the notice simply never fires.
       // Same guard, same reason, as the one before enforceIconEntitlement in MembershipContext.
       if (membershipLoading) return;
-      if (!(await shouldShowStepDown(isSupporter))) return;
+      const stepDown = await stepDownKind(isSupporter);
+      if (!stepDown) return;
 
       // ⚠️ ONLY warn about a cap they are ACTUALLY over, and ONLY about the two LAYOUT caps. Content they made
       // (custom foods, recipes, saved meals, custom exercises) is GRANDFATHERED -- they keep every one and
@@ -1550,13 +1562,15 @@ export default function HomeScreen() {
         overCards = graphs > defaultGraphs + 1;
       } catch {}
 
+      // ⚠️ "GRAPHS", NOT "STATS CARDS". The button people tap says Add Graph and every wall modal says graph;
+      // this line was the last place the old word survived.
       const overCapNote =
         overSlots && overCards
-          ? 'Your meal slots and stats cards go back to the free layout. The extras are saved and waiting if you come back.'
+          ? 'Your meal slots and graphs go back to the free layout. The extras are saved and waiting if you come back.'
           : overSlots
             ? 'Your meal slots go back to five. The extras are saved and waiting if you come back.'
             : overCards
-              ? "Your extra stats cards go back to the standard set. They're saved and waiting if you come back."
+              ? "Your extra graphs go back to the standard set. They're saved and waiting if you come back."
               : null;
 
       if (cancelled) return;
@@ -1570,7 +1584,7 @@ export default function HomeScreen() {
         runAfterLaunchSplash(async () => {
           if (cancelled) return;
           await markStepDownShown();
-          setFirstWeekEnded({ overCapNote });
+          setFirstWeekEnded({ overCapNote, kind: stepDown });
         });
       }, 800);
     };
@@ -5307,11 +5321,13 @@ export default function HomeScreen() {
         onChange={refreshWeightCardState}
       />
 
-      {/* The 7-day taste ending. Once ever, and only when nothing else claimed this launch. */}
+      {/* A membership ending -- the 7-day taste OR a real subscription. Once per membership, and only when
+          nothing else claimed this launch. */}
       {firstWeekEnded && (
         <FirstWeekEndedModal
           theme={theme}
           overCapNote={firstWeekEnded.overCapNote}
+          kind={firstWeekEnded.kind}
           onDismiss={() => setFirstWeekEnded(null)}
         />
       )}

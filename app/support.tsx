@@ -38,7 +38,13 @@ const PERKS: Perk[] = [
   { icon: 'sparkles', title: 'Otto Gets To Work', body: "He works from everything you've logged, and builds workouts into your Workout tab and meals from food you actually eat." },
   { icon: 'chatbubbles', title: 'More AI Room', body: '30 messages a day with Otto and Halo, and 100 meal estimates a month.' },
   { icon: 'bar-chart', title: 'Deeper Reports', body: 'Custom Reports, Comparison, and your full Effort vs Results.' },
-  { icon: 'albums', title: 'Room To Build', body: 'Higher limits on custom foods, recipes, saved meals and your exercise library.' },
+  // ⚠️ "HIGHER LIMITS" WAS WRONG AND UNDERSOLD IT BADLY (Justin caught this): SEVEN of the eight caps go
+  // fully UNLIMITED on the Supporter plan -- only meal slots stay finite, going 5 to 8. The old body also
+  // named four of the eight and missed routines, programs, meal slots and stats graphs.
+  // ⚠️ NO EXACT NUMBERS HERE, deliberately: somebody reading this page wants to know what they get, not to
+  // audit an allowance. The moment a number matters is the moment they hit a wall, and the wall modal owns
+  // that. Specced 2026-08-01, built 2026-08-03.
+  { icon: 'albums', title: 'Room To Build', body: 'The free limits come off. Nothing you create is capped, counted, or held back.' },
   // sprout: renders the real gold Supporter sprout (the actual badge), not an Ionicon -- previews the exact perk.
   { icon: 'leaf', sprout: true, title: 'Custom Badge & Icon', body: 'A token of thanks for helping keep this going.', gold: true },
 ];

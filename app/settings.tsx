@@ -45,7 +45,7 @@ import { resolveMaxHR, zoneBounds, timeInZones, fmtZoneTime, ageFromBirthday, ta
 import { generateDiagnosticReport, ReportWindow, dumpWindowComparison } from '../utils/diagnosticReport';
 import { dumpDayScoreWithRecovery, ensureFreshDayScore } from '../utils/dayScoreStore';
 import { buildCompanionStats } from '../utils/companionStats';
-import { devExpireFirstWeek } from '../utils/firstWeek';
+import { devExpireFirstWeek, devSimulateCancelled } from '../utils/firstWeek';
 import { CapKey, FREE_CAPS, SUPPORTER_CAPS, countFor, countUserExercises, setDevCapOverride, clearDevCapOverrides } from '../utils/caps';
 // Only for the cap dev tools: exercises are the one cap whose user-made count cannot be worked out without
 // the built-in list. See the note on DEFAULT_LIBRARY.
@@ -2956,6 +2956,25 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Expires the taste so the step-down notice fires on the next launch.</Text>
               </View>
               <Ionicons name="hourglass-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            {/* ⚠️ The taste is granted as a PROMOTIONAL entitlement, so Grant/Revoke First Week can only ever
+                produce the free-week version of the notice. Reaching the CANCELLED version otherwise needs a
+                real purchase and a real cancellation, which is not a thing to ask of a tester. */}
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+              try {
+                const fn = httpsCallable(getFunctions(app), 'revokeFirstWeek');
+                await fn({});
+                await devSimulateCancelled();
+                Alert.alert('Plan marked as cancelled', 'This account now looks like a Supporter whose subscription ended.\n\nFully close and reopen the app. The notice should say "Your Supporter Plan Has Ended" with no upsell.');
+              } catch (e) { Alert.alert('Failed', String(e)); }
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Simulate Plan Cancelled</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Shows the ex-Supporter version of the step-down notice on the next launch.</Text>
+              </View>
+              <Ionicons name="exit-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {

@@ -758,13 +758,98 @@ export default function HomeScreen() {
   // ITEM C: the split the user authored themselves, kept by Settings > Goals where presets cannot reach it.
   // null = they have never built one, and the Custom card simply does not render.
   const [customMacroSplit, setCustomMacroSplit] = useState<any>(null);
+  // ITEM C: the inline macro fields. `macroMode` decides WHICH numbers you type -- percentages if that is
+  // how your goals are set, grams if they are. The modal NEVER changes your mode; Settings > Goals is still
+  // the only place to switch. Editing percentages for somebody who set fixed grams would silently change
+  // what they actually eat, and even a round trip through rounded percentages moves their grams (34% of
+  // 2150 is 182.75g, not the 180g they set).
+  const [macroMode, setMacroMode] = useState<'ratio' | 'fixed'>('ratio');
+  const [macroPcts, setMacroPcts] = useState({ p: '', c: '', f: '' });
+  const [macroFields, setMacroFields] = useState({ p: '', c: '', f: '' });
+  // The mode being EDITED in the modal, and what everything looked like when the sheet opened. The baseline
+  // is what makes Save dim until something actually changes -- validity alone left it lit on a modal you had
+  // only just opened.
+  const [macroEditMode, setMacroEditMode] = useState<'ratio' | 'fixed'>('ratio');
+  const [macroBaseline, setMacroBaseline] = useState({ mode: 'ratio' as 'ratio' | 'fixed', p: '', c: '', f: '' });
+  // ⚠️ The card's height cap is TWO different numbers on purpose. Closed, 88% made it fill nearly the whole
+  // screen and looked enormous; with the keyboard up, anything lower clipped the fields off the bottom. One
+  // cap cannot serve both, because the keyboard-open case is already squeezed by KeyboardAwareCenter.
+  // The content scrolls either way -- this only decides how tall the CARD is, never what fits inside it.
+  const [macroKeyboardUp, setMacroKeyboardUp] = useState(false);
+  const [macroKeyboardH, setMacroKeyboardH] = useState(0);
+  const macroScrollRef = useRef<ScrollView>(null);
+  // Where the macro editor starts inside the scroll view, measured rather than guessed, so focusing a field
+  // can bring the whole editor AND the Save button up together instead of parking the tapped field on the
+  // keyboard's edge with everything below it out of reach.
+  const macroEditorY = useRef(0);
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardWillShow', (e: any) => {
+      setMacroKeyboardUp(true);
+      setMacroKeyboardH(e?.endCoordinates?.height ?? 0);
+    });
+    const hide = Keyboard.addListener('keyboardWillHide', () => { setMacroKeyboardUp(false); setMacroKeyboardH(0); });
+    return () => { show.remove(); hide.remove(); };
+  }, []);
+  // ⚠️ THE SAFE AREA IS ENFORCED AS A HEIGHT CAP, NOT AS PADDING ON THE BOX. Padding the container looked
+  // like the obvious fix and silently does nothing at the bottom: KeyboardAwareCenter renders
+  // `[style, { paddingBottom }]`, so its own animated paddingBottom always wins over anything passed in.
+  // The result was 67px of padding on top and 0 underneath, which pushed the centred card visibly low --
+  // and made a "symmetric padding" fix look like it changed nothing at all, because the bottom half was
+  // being overridden either way.
+  // The card is centred in a box of (screen - keyboard). For its top edge to clear the status bar, its
+  // height simply must not exceed that box minus twice the inset. Capping it in points is exact on any
+  // device, where a tuned percentage is only ever right on the phone it was tuned on.
+  const macroBoxH = Dimensions.get('window').height - macroKeyboardH;
+  const macroCardMaxH = Math.min(
+    macroBoxH * (macroKeyboardUp ? 0.92 : 0.72),
+    macroBoxH - 2 * (insets.top + 8),
+  );
+  const onMacroFieldFocus = () => {
+    // The delay lets the keyboard animation start so the scroll lands against the final layout, not the
+    // pre-keyboard one.
+    setTimeout(() => macroScrollRef.current?.scrollTo({ y: Math.max(0, macroEditorY.current - 8), animated: true }), 90);
+  };
   const MACRO_PRESETS: Record<string, { label: string; p: number; c: number; f: number; icon: any }> = {
     high_protein: { label: 'High Protein', p: 35, c: 35, f: 30, icon: 'barbell' },
     balanced:     { label: 'Balanced',     p: 30, c: 40, f: 30, icon: 'pie-chart' },
     low_carb:     { label: 'Low Carb',     p: 35, c: 25, f: 40, icon: 'leaf' },
     performance:  { label: 'Performance',  p: 25, c: 50, f: 25, icon: 'flash' },
   };
-  const openMacroSheet = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowMacroGearSheet(true); };
+  // ITEM C: the fields are a local edit buffer, seeded from whatever is live. Re-seeded on open and after a
+  // preset or the Custom card is tapped, so the boxes always agree with the highlighted card.
+  const seedMacroFields = (mode: 'ratio' | 'fixed', pcts: { p: string; c: string; f: string }, grams: { protein: number; carbs: number; fat: number }) => {
+    const next = mode === 'fixed'
+      ? { p: grams.protein ? String(grams.protein) : '', c: grams.carbs ? String(grams.carbs) : '', f: grams.fat ? String(grams.fat) : '' }
+      : { p: pcts.p, c: pcts.c, f: pcts.f };
+    setMacroFields(next);
+    setMacroEditMode(mode);
+    setMacroBaseline({ mode, ...next });
+  };
+
+  // Switching Ratio <-> Fixed inside the modal. ⚠️ It converts the numbers you are looking at rather than
+  // blanking them, so the toggle never costs you your split -- flipping to Fixed shows the grams your
+  // percentages already work out to, and back again shows the percentages those grams represent.
+  const switchMacroEditMode = (mode: 'ratio' | 'fixed') => {
+    if (mode === macroEditMode) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    const nums = { p: parseFloat(macroFields.p) || 0, c: parseFloat(macroFields.c) || 0, f: parseFloat(macroFields.f) || 0 };
+    if (mode === 'fixed') {
+      setMacroFields(calTarget > 0 ? {
+        p: String(Math.round((nums.p / 100) * calTarget / 4)),
+        c: String(Math.round((nums.c / 100) * calTarget / 4)),
+        f: String(Math.round((nums.f / 100) * calTarget / 9)),
+      } : { p: '', c: '', f: '' });
+    } else {
+      const totalKcal = nums.p * 4 + nums.c * 4 + nums.f * 9;
+      setMacroFields(totalKcal > 0 ? {
+        p: String(Math.round((nums.p * 4 / totalKcal) * 100)),
+        c: String(Math.round((nums.c * 4 / totalKcal) * 100)),
+        f: String(Math.round((nums.f * 9 / totalKcal) * 100)),
+      } : { p: '', c: '', f: '' });
+    }
+    setMacroEditMode(mode);
+  };
+  const openMacroSheet = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); seedMacroFields(macroMode, macroPcts, macroGoals); setShowMacroGearSheet(true); };
   const openMacroSheetAnim = () => {
     macroScaleAnim.setValue(0.92);
     macroOpacityAnim.setValue(0);
@@ -802,6 +887,10 @@ export default function HomeScreen() {
       const rawS = await AsyncStorage.getItem('pj_settings');
       const sett = rawS ? JSON.parse(rawS) : {};
       await storageSet('pj_settings', JSON.stringify({ ...sett, macroPreset: key }));
+      // ITEM C: a preset always means ratio mode, so the fields flip to percentages and show the preset's.
+      setMacroMode('ratio');
+      setMacroPcts({ p: String(preset.p), c: String(preset.c), f: String(preset.f) });
+      seedMacroFields('ratio', { p: String(preset.p), c: String(preset.c), f: String(preset.f) }, macroGoals);
       showToast('Macro goals updated', preset.label, 'success');
     } catch {
       showToast('Save failed', 'Please try again', 'error');
@@ -848,7 +937,107 @@ export default function HomeScreen() {
       const rawS = await AsyncStorage.getItem('pj_settings');
       const sett = rawS ? JSON.parse(rawS) : {};
       await storageSet('pj_settings', JSON.stringify({ ...sett, macroPreset: null }));
-      showToast('Macro goals updated', 'Your own split', 'success');
+      const restoredPcts = {
+        p: String(customMacroSplit.macroProteinPct ?? ''),
+        c: String(customMacroSplit.macroCarbsPct   ?? ''),
+        f: String(customMacroSplit.macroFatPct     ?? ''),
+      };
+      setMacroMode(mode);
+      setMacroPcts(restoredPcts);
+      seedMacroFields(mode, restoredPcts, {
+        protein: parseFloat(customMacroSplit.macroProteinG) || 0,
+        carbs:   parseFloat(customMacroSplit.macroCarbsG)   || 0,
+        fat:     parseFloat(customMacroSplit.macroFatG)     || 0,
+      });
+      // Names the card you tapped, exactly like the preset toasts name theirs ("Balanced", "Low Carb").
+      showToast('Macro goals updated', 'Custom', 'success');
+    } catch {
+      showToast('Save failed', 'Please try again', 'error');
+    }
+  };
+
+  // ── ITEM C: SAVING THE INLINE FIELDS ──────────────────────────────────────────────────────────────────
+  // ⚠️ THIS IS THE SECOND PLACE A CUSTOM SPLIT CAN BE AUTHORED. The first is saveGoals in settings.tsx, and
+  // the two MUST stay in step: both write the live goals, both clear pj_settings.macroPreset to null, and
+  // both keep the customMacroSplit backup up to date. Miss the backup here and the Custom card would restore
+  // a stale split; miss the marker and the modal would still highlight a preset you have just left.
+  const macroFieldNums = {
+    p: parseFloat(macroFields.p) || 0,
+    c: parseFloat(macroFields.c) || 0,
+    f: parseFloat(macroFields.f) || 0,
+  };
+  const macroFieldsTotal = macroEditMode === 'ratio'
+    ? macroFieldNums.p + macroFieldNums.c + macroFieldNums.f
+    : macroFieldNums.p * 4 + macroFieldNums.c * 4 + macroFieldNums.f * 9;
+  // Same rules the Settings > Goals screen states on itself: percentages must hit 100, and fixed grams have
+  // to land within 50 kcal of the calorie target, which is what its own "adjust to save" line promises.
+  const macroFixedDiff = Math.round(macroFieldsTotal - calTarget);
+  const macroFieldsValid = macroEditMode === 'ratio'
+    ? macroFieldsTotal === 100
+    : macroFieldNums.p > 0 && macroFieldNums.c > 0 && macroFieldNums.f > 0 && Math.abs(macroFixedDiff) <= 50;
+  // ⚠️ Save must also be DIM WHEN NOTHING HAS CHANGED. Valid-only left it lit the instant the modal opened,
+  // inviting a pointless write that would also mark a preset user as custom for touching nothing.
+  const macroFieldsDirty =
+    macroEditMode !== macroBaseline.mode ||
+    macroFields.p !== macroBaseline.p || macroFields.c !== macroBaseline.c || macroFields.f !== macroBaseline.f;
+  const macroSaveEnabled = macroFieldsValid && macroFieldsDirty;
+
+  const saveMacroFields = async () => {
+    if (!macroSaveEnabled) return;
+    // The save is finished, so the keypad has nothing left to type into. Leaving it up made the modal stay
+    // in its tall keyboard layout after the toast had already confirmed the save.
+    Keyboard.dismiss();
+    const macroMode = macroEditMode;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    // Work out both representations from whichever side was typed, exactly as saveGoals does, so the two
+    // entry points can never leave the profile in different shapes.
+    let pcts = { p: '', c: '', f: '' };
+    let grams = { protein: 0, carbs: 0, fat: 0 };
+    if (macroMode === 'ratio') {
+      pcts = { p: String(macroFieldNums.p), c: String(macroFieldNums.c), f: String(macroFieldNums.f) };
+      grams = calTarget > 0 ? {
+        protein: Math.round((macroFieldNums.p / 100) * calTarget / 4),
+        carbs:   Math.round((macroFieldNums.c / 100) * calTarget / 4),
+        fat:     Math.round((macroFieldNums.f / 100) * calTarget / 9),
+      } : { protein: 0, carbs: 0, fat: 0 };
+    } else {
+      grams = { protein: macroFieldNums.p, carbs: macroFieldNums.c, fat: macroFieldNums.f };
+      pcts = macroFieldsTotal > 0 ? {
+        p: String(Math.round((macroFieldNums.p * 4 / macroFieldsTotal) * 100)),
+        c: String(Math.round((macroFieldNums.c * 4 / macroFieldsTotal) * 100)),
+        f: String(Math.round((macroFieldNums.f * 9 / macroFieldsTotal) * 100)),
+      } : { p: '', c: '', f: '' };
+    }
+    const split = {
+      macroMode,
+      macroProteinPct: pcts.p, macroCarbsPct: pcts.c, macroFatPct: pcts.f,
+      macroProteinG: String(grams.protein), macroCarbsG: String(grams.carbs), macroFatG: String(grams.fat),
+      savedAt: Date.now(),
+    };
+    setMacroPreset(null);
+    setMacroMode(macroMode);
+    setMacroPcts(pcts);
+    setMacroGoals(grams);
+    setCustomMacroSplit(split);
+    // Re-baseline so Save goes dim again immediately after a successful save.
+    setMacroBaseline({ mode: macroMode, ...macroFields });
+    try {
+      const rawP = await AsyncStorage.getItem('pj_profile');
+      const prof = rawP ? JSON.parse(rawP) : {};
+      // ⚠️ Read-then-merge. `customMacroSplit` rides along in the same write so the backup can never end up
+      // describing a split the profile does not actually hold.
+      await storageSet('pj_profile', JSON.stringify({
+        ...prof,
+        macroMode,
+        macroProteinPct: pcts.p, macroCarbsPct: pcts.c, macroFatPct: pcts.f,
+        macroProteinG: String(grams.protein), macroCarbsG: String(grams.carbs), macroFatG: String(grams.fat),
+        customMacroSplit: split,
+      }));
+      const rawS = await AsyncStorage.getItem('pj_settings');
+      const sett = rawS ? JSON.parse(rawS) : {};
+      await storageSet('pj_settings', JSON.stringify({ ...sett, macroPreset: null }));
+      // Names the card you tapped, exactly like the preset toasts name theirs ("Balanced", "Low Carb").
+      showToast('Macro goals updated', 'Custom', 'success');
     } catch {
       showToast('Save failed', 'Please try again', 'error');
     }
@@ -2141,6 +2330,18 @@ export default function HomeScreen() {
           if (p.weightGoal) setWeightGoalPace(p.weightGoal);
           // ITEM C: drives whether the Custom card renders at all.
           setCustomMacroSplit(p.customMacroSplit ?? null);
+          // ITEM C: which side the inline fields let you type, and what they start out holding.
+          const loadedMode: 'ratio' | 'fixed' = p.macroMode === 'fixed' ? 'fixed' : 'ratio';
+          const loadedPcts = {
+            p: String(p.macroProteinPct ?? ''), c: String(p.macroCarbsPct ?? ''), f: String(p.macroFatPct ?? ''),
+          };
+          setMacroMode(loadedMode);
+          setMacroPcts(loadedPcts);
+          seedMacroFields(loadedMode, loadedPcts, {
+            protein: parseFloat(p.macroProteinG) || 0,
+            carbs:   parseFloat(p.macroCarbsG)   || 0,
+            fat:     parseFloat(p.macroFatG)     || 0,
+          });
 
           // Load macro goals
           const kcalTarget = parseInt(p.calTarget) || 0;
@@ -4867,21 +5068,38 @@ export default function HomeScreen() {
       {/* ── Macro gear modal ── */}
       <Modal visible={showMacroGearSheet} transparent animationType="none" onShow={openMacroSheetAnim} onRequestClose={closeMacroSheetWithHaptic}>
         <ToastRenderer />
-        <View style={{ flex:1, justifyContent:'center', alignItems:'center' }}>
+        {/* ITEM C: KeyboardAwareCenter replaced a plain centred View here. This modal had no text input
+            until the inline macro fields landed, so it never needed keyboard handling; with three number
+            fields near the bottom of a scrolling card it does. Same pattern as the water detail modal above
+            and the sheets in log.tsx -- the overlay stays absolute, the CENTERING container is what moves. */}
+        <View style={{ flex:1 }}>
           <Animated.View style={[StyleSheet.absoluteFillObject, { backgroundColor:'rgba(0,0,0,0.55)', opacity: macroOpacityAnim }]} pointerEvents="none" />
           <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={closeMacroSheetWithHaptic} />
+          {/* ⚠️ NO PADDING HERE ON PURPOSE -- see macroCardMaxH. This container must stay a plain centred box
+              or the card stops being centred; the safe area is handled by capping the CARD instead. */}
+          <KeyboardAwareCenter style={{ flex:1, justifyContent:'center', alignItems:'center' }} pointerEvents="box-none">
           <Animated.View style={{
-            width:'86%', maxHeight:'78%',
+            width:'86%', maxHeight: macroCardMaxH,
             backgroundColor: theme.bgSheet,
             borderRadius:20, borderWidth:0.5, borderColor: theme.borderCard,
-            borderTopWidth:4, borderTopColor: theme.accentBlueRaw,
+            // ⚠️ 2.5, not 4. Every other modal card in the app uses 1.5 (the sort sheet, both Bible modals,
+            // achievements) or 2.5 (the AI estimator, adaptive target). 4 was an outlier and read as a heavy
+            // bar rather than an accent -- Justin flagged it independently of the macro work.
+            borderTopWidth:2.5, borderTopColor: theme.accentBlueRaw,
             shadowColor:'#000', shadowOffset:{ width:0, height:10 }, shadowOpacity:0.45, shadowRadius:28, elevation:24,
             overflow:'hidden',
             transform:[{ scale: macroScaleAnim }], opacity: macroOpacityAnim,
           }}>
             <ModalHeader title="Macros" onClose={closeMacroSheetWithHaptic} />
             <View style={{ borderBottomWidth:0.5, borderBottomColor: theme.borderCard }} />
-            <ScrollView contentContainerStyle={{ padding:20, paddingBottom:26 }} showsVerticalScrollIndicator={false}>
+            {/* ⚠️ keyboardShouldPersistTaps="handled" is REQUIRED now this modal has inputs. Without it the
+                scroll view swallows the first tap to dismiss the keyboard, so tapping Save while typing did
+                nothing but close the keypad and you had to tap twice. */}
+            <ScrollView
+              ref={macroScrollRef}
+              contentContainerStyle={{ padding:20, paddingBottom:26 }}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled">
               {/* Macro goal presets -- hidden in Mindful */}
               {styleMode !== 'mindful' && (
                 <>
@@ -4928,14 +5146,97 @@ export default function HomeScreen() {
                       </TouchableOpacity>
                     </View>
                   )}
-                  <TouchableOpacity
-                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeMacroSheet(); router.push({ pathname: '/settings', params: { section: 'goals' } }); }}
-                    hitSlop={{ top:8, bottom:8, left:8, right:8 }}
-                    style={{ flexDirection:'row', alignItems:'center', gap:5, marginTop:12 }}>
-                    <Ionicons name="options" size={13} color={theme.accentBlue} />
-                    <Text style={{ fontSize:12, color: theme.accentBlue, fontFamily:Type.uiSemibold }}>Need exact numbers? Fine-tune in Settings {'>'} Goals</Text>
-                  </TouchableOpacity>
-                  <View style={{ height:0.5, backgroundColor: theme.borderCard, marginTop:16, marginBottom:16 }} />
+                  {/* ITEM C: THE INLINE FIELDS. You type into whichever mode your goals are already in --
+                      percentages if that is how they are set, grams if they are -- and the dim number on the
+                      right is the same target expressed the other way, read-only so it cannot be broken.
+                      ⚠️ THIS MODAL NEVER CHANGES YOUR MODE. Switching between grams and percentages stays in
+                      Settings > Goals. Letting somebody edit derived percentages would silently convert a
+                      fixed-grams user and move their real targets.
+                      ⚠️ Save is DIM until the numbers are usable: percentages must total exactly 100, grams
+                      must all be above zero. */}
+                  {/* ITEM C: THE MACRO EDITOR, PORTED FROM SETTINGS > GOALS. Deliberately the SAME layout as
+                      that screen -- uppercase label, big coloured value box with its macro-colour left edge,
+                      the derived box carrying grams and kcal, and the same Total row -- just sized down for
+                      an 86%-width card. The first version here was a lighter row layout invented from
+                      scratch; Justin called it ugly and he was right, because the app already had a better
+                      answer for this exact job sitting one screen away.
+                      ⚠️ THE RATIO/FIXED TOGGLE LIVES HERE NOW TOO. An earlier draft deliberately left it out
+                      to stop a fixed-grams user having their percentages silently converted -- but an
+                      explicit toggle is not a silent conversion, it is the same choice Settings offers, and
+                      keeping it out was solving a problem the toggle does not create.
+                      ⚠️ Switching modes CONVERTS what is on screen rather than blanking it, so the toggle can
+                      never cost somebody their split. */}
+                  <View onLayout={e => { macroEditorY.current = e.nativeEvent.layout.y; }}>
+                  <Text style={{ fontSize:11, fontFamily:Type.ui, fontStyle:'italic', color: theme.textMuted, marginTop:18, marginBottom:12 }}>
+                    {macroEditMode === 'ratio'
+                      ? 'Set percentages. Grams update automatically when your calorie target changes.'
+                      : 'Set grams directly. Percentages and kcal update live.'}
+                  </Text>
+                  <View style={{ flexDirection:'row', gap:8, marginBottom:14 }}>
+                    {(['ratio', 'fixed'] as const).map(mode => (
+                      <TouchableOpacity key={mode} onPress={() => switchMacroEditMode(mode)} activeOpacity={0.85}
+                        style={{ flex:1, paddingVertical:10, borderRadius:8, alignItems:'center', borderWidth:1,
+                          backgroundColor: macroEditMode === mode ? theme.accentBlueBg : theme.bgInput,
+                          borderColor: macroEditMode === mode ? theme.accentBlueBorder : theme.borderInput }}>
+                        <Text style={{ fontSize:14, fontFamily:Type.uiMedium, color: macroEditMode === mode ? theme.accentBlue : theme.textMuted }}>
+                          {mode === 'ratio' ? 'Ratio' : 'Fixed'}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  {([
+                    { key: 'p' as const, label: 'Protein',                            color: theme.macroProtein, kcalPerG: 4 },
+                    { key: 'c' as const, label: showNetCarbs ? 'Net Carbs' : 'Carbs', color: theme.macroCarbs,   kcalPerG: 4 },
+                    { key: 'f' as const, label: 'Fat',                                color: theme.macroFat,     kcalPerG: 9 },
+                  ]).map(row => {
+                    const typed = parseFloat(macroFields[row.key]) || 0;
+                    const kcal  = macroEditMode === 'ratio' ? Math.round((typed / 100) * calTarget) : Math.round(typed * row.kcalPerG);
+                    const grams = macroEditMode === 'ratio' ? Math.round(kcal / row.kcalPerG) : typed;
+                    const pct   = calTarget > 0 ? Math.round((kcal / calTarget) * 100) : 0;
+                    return (
+                      <View key={row.key} style={{ marginBottom:10 }}>
+                        <Text style={{ fontSize:9, letterSpacing:3, textTransform:'uppercase', color: theme.textMuted, fontFamily:Type.uiBold, marginBottom:5 }}>{row.label}</Text>
+                        <View style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
+                          <TextInput
+                            value={macroFields[row.key]}
+                            onChangeText={v => setMacroFields(prev => ({ ...prev, [row.key]: v.replace(/[^0-9]/g, '') }))}
+                            onFocus={onMacroFieldFocus}
+                            keyboardType="number-pad"
+                            maxLength={macroEditMode === 'ratio' ? 3 : 4}
+                            placeholder="0"
+                            placeholderTextColor={theme.textPlaceholder}
+                            style={{ flex:1, textAlign:'center', paddingVertical:8, borderRadius:8, borderWidth:1,
+                              borderLeftWidth:3, borderLeftColor: row.color,
+                              backgroundColor: theme.bgInput, borderColor: theme.borderInput,
+                              color: row.color, fontSize:18, fontFamily:Type.num }}
+                          />
+                          <Text style={{ color: theme.textMuted, fontSize:15, fontFamily:Type.ui }}>{macroEditMode === 'ratio' ? '%' : 'g'}</Text>
+                          <View style={{ flex:2, backgroundColor: theme.bgInset, borderRadius:8, borderWidth:0.5, borderColor: row.color + '50', paddingVertical:8, paddingHorizontal:10, flexDirection:'row', justifyContent:'space-between', alignItems:'center' }}>
+                            <GradientNumber value={macroEditMode === 'ratio' ? `${grams}g` : `${kcal} kcal`} color={row.color} style={{ fontSize:16, fontFamily:Type.num, letterSpacing:1 }} />
+                            <Text style={{ color: theme.textMuted, fontSize:11, fontFamily:Type.ui }}>{macroEditMode === 'ratio' ? `${kcal} kcal` : `${pct}%`}</Text>
+                          </View>
+                        </View>
+                      </View>
+                    );
+                  })}
+                  <View style={{ flexDirection:'row', justifyContent:'space-between', alignItems:'center', marginTop:4, padding:10, backgroundColor: theme.bgInset, borderRadius:8 }}>
+                    <Text style={{ fontSize:11, color: theme.textMuted, fontFamily:Type.ui }}>
+                      {macroEditMode === 'ratio' ? 'Total' : `Total · ${Math.round(macroFieldsTotal)} kcal`}
+                    </Text>
+                    <GradientTitle
+                      title={macroEditMode === 'ratio'
+                        ? `${macroFieldsTotal}% ${macroFieldsTotal === 100 ? '✓' : 'needs to equal 100%'}`
+                        : (Math.abs(macroFixedDiff) <= 50 ? 'Matches target ✓' : macroFixedDiff > 0 ? `+${macroFixedDiff} kcal over` : `${Math.abs(macroFixedDiff)} kcal under`)}
+                      color={macroFieldsValid ? theme.accentGreen : theme.accentRed}
+                      numberOfLines={1}
+                      style={{ fontSize:13, fontFamily:Type.uiSemibold }}
+                    />
+                  </View>
+                  <View style={{ marginTop:14 }}>
+                    <PrimaryCTA label="Save Goals" onPress={saveMacroFields} disabled={!macroSaveEnabled} />
+                  </View>
+                  </View>
+                  <View style={{ height:0.5, backgroundColor: theme.borderCard, marginTop:18, marginBottom:16 }} />
                 </>
               )}
               {/* Net Carbs display */}
@@ -4956,6 +5257,7 @@ export default function HomeScreen() {
               )}
             </ScrollView>
           </Animated.View>
+          </KeyboardAwareCenter>
         </View>
       </Modal>
 

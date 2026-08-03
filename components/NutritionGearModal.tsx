@@ -14,6 +14,9 @@ import PrimaryCTA from './PrimaryCTA';
 import { Type } from '../typography';
 import ModalHeader from './ModalHeader';
 import GradientTitle from './GradientTitle';
+import GoalsWallModal from './GoalsWallModal';
+import { GOLD_BASE } from './SupporterFoil';
+import { useMembership } from '../MembershipContext';
 
 // Same lift/sink recipe as GradientNumber -- a preset icon glyph is roughly square like a number
 // glyph, not a wide word, so GradientNumber's tuning fits it better than GradientTitle's.
@@ -200,12 +203,57 @@ export default function NutritionGearModal({ visible, onClose, preset, goals, on
   const [localGoals,  setLocalGoals]  = useState<NutritionGoals>({ ...goals });
   const [pressedKey,  setPressedKey]  = useState<string | null>(null);
 
+  // ── ITEM C: SETTING YOUR OWN NUTRITION TARGETS IS SUPPORTER-ONLY ──────────────────────────────────────
+  // The five presets stay free, and a grandfathered user keeps the targets they already built -- this only
+  // blocks CHANGING them. ⚠️ Never lock on an unknown answer: isSupporter is false during startup because
+  // RevenueCat has not replied, not because the user is free.
+  const { isSupporter, loading: membershipLoading } = useMembership();
+  const nutritionLocked = !membershipLoading && !isSupporter;
+  const [goalsWall, setGoalsWall] = useState(false);
+  // The targets the user built, kept where presets cannot overwrite them. See the note on applyPreset.
+  const [customGoals, setCustomGoals] = useState<NutritionGoals | null>(null);
+
+  // ⚠️ SAVE MUST BE DIM UNTIL SOMETHING ACTUALLY CHANGES. It was lit the instant the modal opened, inviting
+  // a pointless write -- and on this screen that write is not harmless: saving while on Custom rewrites the
+  // stored copy of your own targets. Same fix, same reason, as the Macros modal.
+  const [nutritionBaseline, setNutritionBaseline] = useState<{ preset: NutritionPreset; goals: string } | null>(null);
+  // Keys are sorted so two identical goal sets always serialise the same way, whatever order they were built
+  // in -- a preset spread and a field-by-field edit do not produce the same key order.
+  const serializeGoals = (g: NutritionGoals) =>
+    JSON.stringify(Object.keys(g).sort().map(k => [k, (g as any)[k]]));
+  const nutritionDirty = nutritionBaseline
+    ? nutritionBaseline.preset !== localPreset || nutritionBaseline.goals !== serializeGoals(localGoals)
+    : false;
+
   const isCustom = localPreset === 'custom';
+  // ⚠️ "CUSTOM IS SELECTED" AND "YOU MAY TYPE" ARE TWO DIFFERENT THINGS. A grandfathered free user IS on
+  // custom, so keying the text inputs off isCustom alone would hand editing straight back to exactly the
+  // people the gate exists for.
+  const fieldsEditable = isCustom && !nutritionLocked;
 
   useEffect(() => {
     if (visible) {
       setLocalPreset(preset);
       setLocalGoals({ ...goals });
+      setNutritionBaseline({ preset, goals: serializeGoals(goals) });
+      (async () => {
+        try {
+          const raw = await AsyncStorage.getItem('pj_settings');
+          const s = raw ? JSON.parse(raw) : {};
+          if (s.customNutritionGoals) {
+            setCustomGoals(s.customNutritionGoals);
+          } else if (preset === 'custom') {
+            // ⚠️ ONE-TIME BACKFILL, same reasoning as the macro split. Somebody already on custom targets
+            // with no stored copy would lose the lot the first time they tapped a preset, and rebuilding
+            // them is the gated action. Purely additive; once the field exists this never runs again.
+            const backfill = { ...goals };
+            setCustomGoals(backfill);
+            await storageSet('pj_settings', JSON.stringify({ ...s, customNutritionGoals: backfill }));
+          } else {
+            setCustomGoals(null);
+          }
+        } catch {}
+      })();
     }
   }, [visible, preset, goals]);
 
@@ -236,8 +284,15 @@ export default function NutritionGearModal({ visible, onClose, preset, goals, on
     setLocalGoals({ ...NUTRITION_PRESETS[p] });
   };
 
+  // ⚠️ THE TWO DOORS. This is called from the Custom TILE and from tapping ANY read-only field. Gating the
+  // tile alone would leave a whole grid of fields as an unlocked way in -- the exact "a missed door is not a
+  // visible bug, it is a cap that silently does not exist" failure from the caps work.
   const unlockCustom = () => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    if (nutritionLocked) { setGoalsWall(true); return; }
+    // Restores the targets they built, if there are any. Falls back to whatever is on screen, which is the
+    // old behaviour and a reasonable starting point for somebody who has never set their own.
+    if (customGoals) setLocalGoals({ ...customGoals });
     setLocalPreset('custom');
   };
 
@@ -254,10 +309,17 @@ export default function NutritionGearModal({ visible, onClose, preset, goals, on
     try {
       const saved = await AsyncStorage.getItem('pj_settings');
       const settings = saved ? JSON.parse(saved) : {};
+      // ⚠️ A PRESET SAVE MUST NOT TOUCH THE BACKUP. Picking a preset replaces every value on screen, so
+      // writing the backup on every save would overwrite the user's own fiber, sodium and vitamin targets
+      // with Keto's and then hand them back on the Custom tile as if they had built them. Only a save that
+      // IS custom updates the copy.
+      const savingCustom = localPreset === 'custom';
+      if (savingCustom) setCustomGoals({ ...localGoals });
       await storageSet('pj_settings', JSON.stringify({
         ...settings,
         nutritionPreset: localPreset,
         nutritionGoals: localGoals,
+        ...(savingCustom ? { customNutritionGoals: { ...localGoals } } : {}),
       }));
       onSave(localPreset, localGoals);
       const presetMeta = PRESET_META.find(p => p.key === localPreset);
@@ -271,6 +333,9 @@ export default function NutritionGearModal({ visible, onClose, preset, goals, on
   return (
     <Modal visible={visible} transparent animationType="none" onShow={open} onRequestClose={closeWithHaptic}>
       <ToastRenderer />
+      {/* ⚠️ INSIDE this Modal, like the ToastRenderer above it. iOS gives every Modal its own window, so a
+          wall rendered outside would open underneath this one and be invisible. */}
+      {goalsWall && <GoalsWallModal kind="nutrition" theme={theme} onDismiss={() => setGoalsWall(false)} />}
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
 
         {/* Animated dim overlay */}
@@ -331,14 +396,29 @@ export default function NutritionGearModal({ visible, onClose, preset, goals, on
                       paddingVertical: 12,
                       paddingHorizontal: 10,
                       borderRadius: 12,
-                      borderWidth: active ? 1.5 : 1,
+                      borderWidth: (active || (p.key === 'custom' && nutritionLocked)) ? 1.5 : 1,
                       backgroundColor: active ? theme.accentBlueBg : theme.bgCard,
-                      borderColor: active ? theme.accentBlueBorder : theme.borderCard,
+                      borderColor: p.key === 'custom' && nutritionLocked
+                        ? GOLD_BASE
+                        : active ? theme.accentBlueBorder : theme.borderCard,
                       alignItems: 'center',
                       gap: 3,
                       transform: [{ scale: isPressed ? 0.94 : 1 }],
                     }}
                   >
+                    {p.key === 'custom' && nutritionLocked && (
+                      <View style={{ position: 'absolute', top: 6, right: 6 }}>
+                        <Ionicons name="lock-closed" size={12} color={GOLD_BASE} />
+                      </View>
+                    )}
+                    {/* ⚠️ THE LOCK BELONGS TO THE CARD, NOT THE ICON. It was first badged onto the sliders
+                        glyph and read as a wart on the icon rather than a locked tile. "Badge the icon" is
+                        the rule for ICON-ONLY buttons, where the icon IS the control; this is a full card
+                        with a title and a subtitle, so the card is what is locked -- gold border, plus a
+                        padlock in the corner. The BORDER is the part that carries "locked"; the fill was
+                        never what did the work.
+                        ⚠️ When the card is both SELECTED and locked, selection keeps the fill and the lock
+                        takes the border and badge, so the two read together instead of fighting. */}
                     <GradientPresetIcon
                       name={p.icon}
                       size={22}
@@ -362,9 +442,24 @@ export default function NutritionGearModal({ visible, onClose, preset, goals, on
               })}
             </View>
 
-            {!isCustom && (
+            {/* ⚠️ The unlocked line invites you to do the thing a free user cannot, so it gets a locked
+                variant. Wording is parallel to the macro side's "Custom splits are part of the Supporter
+                plan", and the icon steps up from the faint outline padlock to the flat GOLD one, because
+                here it means "this needs the plan" rather than "tap to start editing". */}
+            {nutritionLocked ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'center', marginBottom: 16, paddingVertical: 4 }}>
+                <Ionicons name="lock-closed" size={12} color={GOLD_BASE} />
+                <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.uiSemibold }}>
+                  Custom targets are part of the Supporter plan
+                </Text>
+              </View>
+            ) : !isCustom && (
+              /* ⚠️ NO PADLOCK HERE ANY MORE. This line used to carry a faint outline one meaning "read-only
+                 until you pick Custom". Since item C a padlock in this app means exactly one thing -- needs
+                 the Supporter plan -- and the GOLD one directly above says so. Two padlocks with two
+                 different meanings in the same spot, at different times, is a collision the gate created.
+                 The sentence says it perfectly well on its own. */
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'center', marginBottom: 16, paddingVertical: 4 }}>
-                <Ionicons name="lock-closed-outline" size={11} color={theme.textDim} />
                 <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: Type.ui }}>
                   Tap "Custom" or any field to edit
                 </Text>
@@ -404,7 +499,7 @@ export default function NutritionGearModal({ visible, onClose, preset, goals, on
                           {f.label}{' '}
                           <Text style={{ color: theme.textDim }}>({f.unit})</Text>
                         </Text>
-                        {isCustom ? (
+                        {fieldsEditable ? (
                           <TextInput
                             style={{
                               backgroundColor: theme.bgInput,
@@ -472,6 +567,7 @@ export default function NutritionGearModal({ visible, onClose, preset, goals, on
               faceStyle={{ paddingVertical: 15, borderRadius: 10 }}
               label="Save Goals"
               onPress={handleSave}
+              disabled={!nutritionDirty}
             />
           </ScrollView>
         </Animated.View>

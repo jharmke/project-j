@@ -30,6 +30,12 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-08-03 **Item G done: onboarding stops quietly rounding a dangerous calorie target up to 1,200.** A new
+  user whose maths landed at 915 was shown 1,200 and never told -- the real number now shows, a caution line
+  appears when it is low, and the same low-target modal the Profile tab uses fires on an aggressive pace.
+  The flat 1,200 did not even match the real lines (male 1500/1200, female 1200/1000), so a man could be
+  handed 1,200 with no warning at all. Also killed "so you earn more food" in that modal, which framed eating
+  as a reward for exercise on the one screen where that does the most harm.
 - 2026-08-03 **🎉 ITEM C IS COMPLETE -- and this time the claim was audited, not asserted.** The last piece
   was the explainers: Otto now knows all eight caps with their numbers, the macro and nutrition gating, what
   happens when you cancel, and the "the Supporter plan" naming rule he had never been told. Tutorials stopped
@@ -1440,6 +1446,17 @@ are separate pre-submission checklists, NOT part of this menu.
     ⚠️ **What nobody has done is confirm it after a REAL purchase**, and that cannot be tested without buying.
     Check it the next time a test account actually subscribes. What it does NOT do is auto-resume the action
     you were blocked on -- you still have to tap the button again. Decide whether that is good enough.
+  • **[LOGGED, NOT FIXED, 2026-08-03] THE CALORIE FLOOR MODAL ONLY RE-CHECKS ON A PACE CHANGE.** Change your
+    ACTIVITY or TRAINING and the target moves under the line with no modal -- on the Profile tab and in
+    onboarding, which copied the behaviour deliberately to match. The modal itself offers "Adjust activity
+    level" as a fix, so the app treats activity as a lever in its copy and then does not re-check when you
+    move it. Reads as an oversight in the original build: SPEC_calorie_floor.md says the trigger fires off
+    the COMPUTED target and never says pace-only.
+    ⚠️ **DELIBERATELY NOT FIXED.** The inline whisper caution DOES update live on an activity change, so
+    nobody is left uninformed -- they get the quiet warning instead of the loud one. Set against seven call
+    sites of churn on a working screen, it is not worth doing ahead of the remaining plan letters.
+    **Fix when convenient:** the TDEE calculation reads activity from state, so the check has to be HANDED
+    the newly-tapped value the way the pace version already is, or it computes with the stale one.
   • **[NEEDS A SPEC] A REAL data export.** The perks table sells "data export" as a Supporter perk and that
     row is technically already satisfied -- the only export in the app shares a REPORT as an IMAGE
     (`app/report.tsx`) and Reports are already Supporter-gated. But "you can share a picture of a report" is
@@ -2001,10 +2018,19 @@ are separate pre-submission checklists, NOT part of this menu.
      does NOT eat, so Otto would build a shellfish dinner for someone allergic. Needs a PROFILE field (which
      would help the AI meal estimator too). **F cannot ship without it.**
      ⚠️ Render the grid + preview as INLINE CHAT CARDS, never a modal over Otto's panel (modal-over-modal).
-  **G. CALORIE FLOOR** -- SPEC_calorie_floor.md, DESIGN LOCKED since 2026-07-08. ⚠️ **"NOT BUILT" WAS
-     WRONG (corrected 2026-07-30).** Already built AND wired: `utils/calorieFloor.ts` (+ a test file),
-     `components/CalorieFloorModal.tsx`, and the Profile tab fires the modal when a target change drops
-     below the line. Do NOT rebuild any of that.
+  **G. CALORIE FLOOR** -- ✅ **COMPLETE + DEVICE-VERIFIED 2026-08-03.** Onboarding now shows the real number
+     instead of silently clamping to 1,200, carries the whisper caution when it is low, and fires the same
+     modal the Profile tab uses. Also dropped "so you earn more food" from case 1 (it frames eating as a
+     reward for exercise, on the one screen where that does the most harm) and added a read-only
+     "Calorie Floor State" dev row.
+     ⚠️ **ONE THING LOGGED, NOT FIXED:** the modal only re-checks on a PACE change, not activity -- see the
+     spawned list above.
+     ⚠️ **A TRAP FOR ANYONE TOUCHING THIS:** `profile.calTarget` in storage is a FALLBACK, not the live
+     target. When "Use recommended value" is on, `loadCalorieTargets` recomputes it from BMR, activity and
+     pace, and the stored value can sit stale for months with nothing wrong. A diagnostic that read the
+     stored value reported GREEN while the user was genuinely in the modal zone and sent Justin hunting
+     through working code.
+     (historical, for context on what was wrong:)
      ➡️ **THE ONE THING LEFT: ONBOARDING.** `app/onboarding/your-style.tsx` never runs the floor check. It
      SILENTLY CLAMPS instead -- `setSuggestedCals(Math.max(1200, ...))` -- so a new user whose math lands at
      915 is quietly shown 1,200 and never told. That is the exact behaviour the spec rejects ("warn +

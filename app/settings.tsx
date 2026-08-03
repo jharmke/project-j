@@ -13,6 +13,9 @@ import { ActivityIndicator, Alert, Animated, Dimensions, Easing, Image, Interact
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ACCENT_PALETTES, THEME_ORDER, ThemeId, THEMES, useTheme } from '../theme';
 import { useMembership } from '../MembershipContext';
+import GoalsWallModal from '../components/GoalsWallModal';
+import { GOLD_BASE } from '../components/SupporterFoil';
+import { MACRO_PRESETS, type MacroPresetKey } from '../utils/macroPresets';
 import { useHealthKit, restoreAppleWorkoutHistory } from '../useHealthKit';
 import { useAuth } from '../AuthContext';
 import { BLANK_DAY, WorkoutTag } from '../workoutData';
@@ -600,7 +603,19 @@ export default function SettingsScreen() {
   const [devForceFree, setDevForceFree] = useState(false);
   // Real Supporter status from RevenueCat (drives the Membership row copy). devProUnlocked below is the
   // DEV-ONLY test toggle that, in dev, feeds this via MembershipContext's override.
-  const { isSupporter } = useMembership();
+  const { isSupporter, loading: membershipLoading } = useMembership();
+  // ITEM C: the SECOND home of the macro gate. The Macros modal on Home is the other one, and they have to
+  // agree -- gate one and not the other and the limit does not exist. Presets and the calorie goal stay free.
+  // ⚠️ `loading` is taken as well, so a paying customer never gets their own goals padlocked while
+  // RevenueCat is still answering.
+  const macroGoalsLocked = !membershipLoading && !isSupporter;
+  const [goalsWall, setGoalsWall] = useState(false);
+  // The split the user built, kept where presets cannot overwrite it. Drives the Custom card.
+  const [customMacroSplit, setCustomMacroSplit] = useState<any>(null);
+  // Which preset is selected in the DRAFT being edited on this screen.
+  // ⚠️ `undefined` means "not touched this session", which is not the same as `null` ("they are on a custom
+  // split"). saveGoals only overrides its own hand-edit detection when this is one or the other.
+  const [draftMacroPreset, setDraftMacroPreset] = useState<MacroPresetKey | null | undefined>(undefined);
 
   // Gold app icon (Supporter perk). Device-local, so it reads the CURRENT native icon rather than any
   // stored preference -- if the user reinstalled or switched devices, the native truth is the truth.
@@ -1114,6 +1129,8 @@ export default function SettingsScreen() {
             const data = await AsyncStorage.getItem('pj_profile');
             if (data) {
               const p = JSON.parse(data);
+              // ITEM C: drives whether the Custom card renders here at all.
+              setCustomMacroSplit(p.customMacroSplit ?? null);
               const loaded: GoalProfile = {
                 calTarget: p.calTarget ?? '',
                 useRecommendedCal: p.useRecommendedCal !== false,
@@ -1196,6 +1213,13 @@ export default function SettingsScreen() {
   };
 
   const updateGoalField = (field: keyof GoalProfile, value: any) => {
+    // ITEM C: hand-editing any part of the SPLIT drops you off whatever preset was tapped a moment ago.
+    // Without this, tapping Balanced and then changing protein to 45 would still save as "Balanced".
+    // ⚠️ Deliberately does NOT include calTarget: changing your calorie goal is free and is not a split edit.
+    if (field === 'macroMode' || field === 'macroProteinPct' || field === 'macroCarbsPct' || field === 'macroFatPct'
+      || field === 'macroProteinG' || field === 'macroCarbsG' || field === 'macroFatG') {
+      setDraftMacroPreset(null);
+    }
     setGoalProfile(prev => {
       const updated = { ...prev, [field]: value };
       const isDifferent = JSON.stringify(updated) !== JSON.stringify(savedGoalProfile);
@@ -1246,6 +1270,54 @@ export default function SettingsScreen() {
       }
       for (const [k, v] of updates) await storageSet(k, v);
     } catch {}
+  };
+
+  // ── ITEM C: PRESETS ON THIS SCREEN ────────────────────────────────────────────────────────────────────
+  // They were only ever on the Home Macros modal, which was survivable until the editor here got gated:
+  // a free user would hit a wall saying "the four presets stay yours for free" on a screen with no presets
+  // on it. Justin spotted the inconsistency before the gate was even built.
+  // ⚠️ These update the DRAFT, not storage. Every other control on this screen works that way and commits
+  // through the floating save bar; applying a preset straight to storage from a screen holding unsaved edits
+  // would let the two disagree. The Home modal applies immediately because it has no draft to conflict with.
+  const applyPresetToDraft = (key: MacroPresetKey) => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    const preset = MACRO_PRESETS[key];
+    setDraftMacroPreset(key);
+    setGoalProfile(prev => {
+      const updated = { ...prev, macroMode: 'ratio' as const, macroProteinPct: String(preset.p), macroCarbsPct: String(preset.c), macroFatPct: String(preset.f) };
+      if (JSON.stringify(updated) !== JSON.stringify(savedGoalProfile) && !hasGoalChangesRef.current) {
+        hasGoalChangesRef.current = true;
+        setHasGoalChanges(true);
+        Animated.spring(goalFloatAnim, { toValue: 1, useNativeDriver: true, tension: 65, friction: 11 }).start();
+      }
+      return updated;
+    });
+  };
+
+  // Putting back the split they built. NOT gated: restoring something you already made is not authoring a
+  // new one, which is the whole point of grandfathering. Restores the MODE as well as the numbers.
+  const applyCustomSplitToDraft = () => {
+    if (!customMacroSplit) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    setDraftMacroPreset(null);
+    setGoalProfile(prev => {
+      const updated = {
+        ...prev,
+        macroMode: customMacroSplit.macroMode === 'fixed' ? ('fixed' as const) : ('ratio' as const),
+        macroProteinPct: String(customMacroSplit.macroProteinPct ?? ''),
+        macroCarbsPct:   String(customMacroSplit.macroCarbsPct   ?? ''),
+        macroFatPct:     String(customMacroSplit.macroFatPct     ?? ''),
+        macroProteinG:   String(customMacroSplit.macroProteinG   ?? ''),
+        macroCarbsG:     String(customMacroSplit.macroCarbsG     ?? ''),
+        macroFatG:       String(customMacroSplit.macroFatG       ?? ''),
+      };
+      if (JSON.stringify(updated) !== JSON.stringify(savedGoalProfile) && !hasGoalChangesRef.current) {
+        hasGoalChangesRef.current = true;
+        setHasGoalChanges(true);
+        Animated.spring(goalFloatAnim, { toValue: 1, useNativeDriver: true, tension: 65, friction: 11 }).start();
+      }
+      return updated;
+    });
   };
 
   const saveGoals = async () => {
@@ -1325,10 +1397,18 @@ export default function SettingsScreen() {
       // `synced` above has just reconciled them, so the copy is internally consistent either way.
       // ⚠️ ONE COPY, NOT A HISTORY. Authoring a new split replaces it. Deliberate.
       // ⚠️ ADDITIVE ONLY -- this adds a field to the profile and never removes or rewrites an existing one.
-      // ⚠️ NO BACKFILL, by Justin's call 2026-08-02 (option B): accounts that are already custom get no copy
-      // until they next edit their split. He was re-entering his own macros anyway, and testers on presets
-      // have no custom split to lose. Until someone saves once, the old one-way door is still open for them.
-      const customMacroSplit = authoredSplitChanged
+      // ⚠️ The one-time BACKFILL for accounts already holding a split lives on the Home screen's profile
+      // load (index.tsx), added 2026-08-03 once gating made "just retype it" impossible.
+      //
+      // ⚠️⚠️ A PRESET TAP MUST NEVER OVERWRITE THE BACKUP. Applying a preset changes the same percentage
+      // fields `authoredSplitChanged` watches, so on its own the detector reads a preset tap as the user
+      // authoring a split -- and the Custom card would come back holding Balanced's numbers, claiming a
+      // preset as the thing they built. `presetToWrite === null` is the real test for "this save is a
+      // custom split", so the backup is written only then.
+      const presetToWrite = draftMacroPreset !== undefined
+        ? draftMacroPreset
+        : (authoredSplitChanged ? null : undefined);
+      const customMacroSplit = (authoredSplitChanged && presetToWrite === null)
         ? {
             macroMode:       synced.macroMode,
             macroProteinPct: synced.macroProteinPct,
@@ -1346,20 +1426,23 @@ export default function SettingsScreen() {
       await storageSet('pj_profile', JSON.stringify(merged));
       await saveToFirebase('profile', 'data', merged);
 
-      if (authoredSplitChanged) {
+      // `draftMacroPreset` is undefined unless a preset or the Custom card was actually tapped this session,
+      // and editing a macro field by hand sets it back to null (see updateGoalField).
+      if (presetToWrite !== undefined) {
         // ⚠️ READ-THEN-MERGE. pj_settings holds theme, meal slots, coaching mode and much else; this must
         // only ever change the one field. Written only when it actually changes, so a normal goals save
         // that leaves macros alone does not touch pj_settings at all.
         try {
           const rawSettings = await AsyncStorage.getItem('pj_settings');
           const settings = rawSettings ? JSON.parse(rawSettings) : {};
-          if (settings.macroPreset !== null) {
-            await storageSet('pj_settings', JSON.stringify({ ...settings, macroPreset: null }));
+          if (settings.macroPreset !== presetToWrite) {
+            await storageSet('pj_settings', JSON.stringify({ ...settings, macroPreset: presetToWrite }));
           }
         } catch (e) {
-          console.log('macroPreset clear error', e);
+          console.log('macroPreset write error', e);
         }
       }
+      setDraftMacroPreset(undefined);
 
       setGoalProfile(synced);
       setSavedGoalProfile(synced);
@@ -1860,29 +1943,92 @@ export default function SettingsScreen() {
             {/* Macros */}
             <View ref={goalsMacrosRef}>
               <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Macros</Text>
-              <Text style={{ fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic', color: theme.textMuted, marginBottom: 14 }}>
-                {goalProfile.macroMode === 'ratio'
-                  ? 'Set percentages. Grams update automatically when your calorie target changes.'
-                  : 'Set grams directly. Percentages and kcal update live.'}
-              </Text>
 
-              {/* Mode toggle */}
-              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
-                {(['ratio', 'fixed'] as const).map(mode => (
-                  <TouchableOpacity
-                    key={mode}
-                    style={[styles.modeBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput },
-                      goalProfile.macroMode === mode && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
-                    onPress={() => updateGoalField('macroMode', mode)}>
-                    <Text style={[{ fontSize: 14, fontFamily: Type.uiMedium, color: theme.textMuted },
-                      goalProfile.macroMode === mode && { color: theme.accentBlue }]}>
-                      {mode === 'ratio' ? 'Ratio' : 'Fixed'}
+              {/* ── ITEM C: THE PRESETS, ALSO HERE ─────────────────────────────────────────────────────
+                  They used to live only on the Home Macros modal. Once the editor below is locked for free
+                  users, its wall says "the four presets stay yours for free" -- which on a screen with no
+                  presets is telling somebody about an escape hatch and leaving them at a locked door.
+                  ⚠️ SCALED DOWN, NOT REDESIGNED. Same cards, same colours, same order as the modal, with
+                  tighter padding and a smaller icon: Settings is a long scroll and five full-size cards
+                  would dominate it. A different SHAPE in each place is how the inconsistency started.
+                  ⚠️ These sit ABOVE the editor on purpose, so the screen explains itself before the wall
+                  ever fires: here is what you can use, and below it the part that needs the plan. */}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4, marginBottom: 10 }}>
+                {(Object.entries(MACRO_PRESETS) as [MacroPresetKey, typeof MACRO_PRESETS[MacroPresetKey]][]).map(([key, pr]) => {
+                  const active = draftMacroPreset === key;
+                  return (
+                    <TouchableOpacity key={key} onPress={() => applyPresetToDraft(key)} activeOpacity={0.85}
+                      style={{ width: '48%', paddingVertical: 10, paddingHorizontal: 8, borderRadius: 10, alignItems: 'center', gap: 2,
+                        borderWidth: active ? 1.5 : 1,
+                        backgroundColor: active ? theme.accentBlueBg : theme.bgInput,
+                        borderColor: active ? theme.accentBlueBorder : theme.borderInput }}>
+                      <Ionicons name={pr.icon} size={16} color={active ? theme.accentBlue : theme.textMuted} />
+                      <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: active ? theme.accentBlue : theme.textSecondary }}>{pr.label}</Text>
+                      <Text style={{ fontSize: 10, fontFamily: Type.ui, color: theme.textDim }}>{pr.p}P · {pr.c}C · {pr.f}F</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              {/* Renders only for somebody who actually built a split. NOT gated: putting back what you
+                  already made is restoring, not authoring, which is what grandfathering means. */}
+              {customMacroSplit && (
+                <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 12 }}>
+                  <TouchableOpacity onPress={applyCustomSplitToDraft} activeOpacity={0.85}
+                    style={{ width: '48%', paddingVertical: 10, paddingHorizontal: 8, borderRadius: 10, alignItems: 'center', gap: 2,
+                      borderWidth: draftMacroPreset === null ? 1.5 : 1,
+                      backgroundColor: draftMacroPreset === null ? theme.accentBlueBg : theme.bgInput,
+                      borderColor: draftMacroPreset === null ? theme.accentBlueBorder : theme.borderInput }}>
+                    <Ionicons name="options" size={16} color={draftMacroPreset === null ? theme.accentBlue : theme.textMuted} />
+                    <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: draftMacroPreset === null ? theme.accentBlue : theme.textSecondary }}>Custom</Text>
+                    <Text style={{ fontSize: 10, fontFamily: Type.ui, color: theme.textDim }}>
+                      {customMacroSplit.macroProteinPct}P · {customMacroSplit.macroCarbsPct}C · {customMacroSplit.macroFatPct}F
                     </Text>
                   </TouchableOpacity>
-                ))}
+                </View>
+              )}
+              {macroGoalsLocked && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                  <Ionicons name="lock-closed" size={13} color={GOLD_BASE} />
+                  <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: theme.textMuted }}>Custom splits are part of the Supporter plan</Text>
+                </View>
+              )}
+              {/* ⚠️ THE EDITOR IS LOCKED IN TWO PIECES because the mode toggle sits inside this container and
+                  the number rows sit outside it. Each piece dims and carries its own transparent tap layer;
+                  one lock LABEL above covers both, because three padlocks stacked down a settings screen is
+                  noise. Presets and the Custom card above stay live -- only authoring is gated. */}
+              <View>
+              <View style={macroGoalsLocked ? { opacity: 0.45 } : undefined} pointerEvents={macroGoalsLocked ? 'none' : 'auto'}>
+                <Text style={{ fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic', color: theme.textMuted, marginBottom: 14 }}>
+                  {goalProfile.macroMode === 'ratio'
+                    ? 'Set percentages. Grams update automatically when your calorie target changes.'
+                    : 'Set grams directly. Percentages and kcal update live.'}
+                </Text>
+
+                {/* Mode toggle */}
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+                  {(['ratio', 'fixed'] as const).map(mode => (
+                    <TouchableOpacity
+                      key={mode}
+                      style={[styles.modeBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput },
+                        goalProfile.macroMode === mode && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+                      onPress={() => updateGoalField('macroMode', mode)}>
+                      <Text style={[{ fontSize: 14, fontFamily: Type.uiMedium, color: theme.textMuted },
+                        goalProfile.macroMode === mode && { color: theme.accentBlue }]}>
+                        {mode === 'ratio' ? 'Ratio' : 'Fixed'}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+              {macroGoalsLocked && (
+                <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={0.85}
+                  onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setGoalsWall(true); }} />
+              )}
               </View>
             </View>
 
+            <View>
+            <View style={macroGoalsLocked ? { opacity: 0.45 } : undefined} pointerEvents={macroGoalsLocked ? 'none' : 'auto'}>
             {goalProfile.macroMode === 'ratio' ? (
               <View>
                 {[
@@ -1977,6 +2123,12 @@ export default function SettingsScreen() {
                 })()}
               </View>
             )}
+            </View>
+            {macroGoalsLocked && (
+              <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={0.85}
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setGoalsWall(true); }} />
+            )}
+            </View>
 
             <View style={{ height: 1, backgroundColor: theme.borderCard, marginVertical: 16 }} />
 
@@ -4460,6 +4612,10 @@ export default function SettingsScreen() {
           </View>
         </Animated.View>
       </KeyboardAvoidingView>
+
+      {/* ITEM C: the macro wall. Top level here, unlike on Home where it has to render INSIDE the Macros
+          Modal -- this screen is a plain screen, not a Modal, so there is no window to be trapped under. */}
+      {goalsWall && <GoalsWallModal kind="macros" theme={theme} onDismiss={() => setGoalsWall(false)} />}
 
       {/* Coaching-mode switch modal (centered card, replaces the old iOS Alert) */}
       <Modal

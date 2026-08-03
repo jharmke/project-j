@@ -16,6 +16,9 @@ import ReAnimated, { useAnimatedStyle, useAnimatedProps, useSharedValue, withTim
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TAB_SCROLL_PAD } from '../../components/CustomTabBar';
 import KeyboardAwareCenter from '../../components/KeyboardAwareCenter';
+import GoalsWallModal from '../../components/GoalsWallModal';
+import { MACRO_PRESETS, matchMacroPreset, type MacroPresetKey } from '../../utils/macroPresets';
+import { GOLD_BASE } from '../../components/SupporterFoil';
 import Svg, { Circle } from 'react-native-svg';
 import PressableButton from '../../components/PressableButton';
 import HeaderIconButton from '../../components/HeaderIconButton';
@@ -770,7 +773,11 @@ export default function HomeScreen() {
   // is what makes Save dim until something actually changes -- validity alone left it lit on a modal you had
   // only just opened.
   const [macroEditMode, setMacroEditMode] = useState<'ratio' | 'fixed'>('ratio');
-  const [macroBaseline, setMacroBaseline] = useState({ mode: 'ratio' as 'ratio' | 'fixed', p: '', c: '', f: '' });
+  // Which card is highlighted in the DRAFT. `macroPreset` is the SAVED answer; this one moves the moment you
+  // tap a card and only becomes the saved answer when you press Save.
+  const [draftPreset, setDraftPreset] = useState<MacroPresetKey | null>(null);
+  const [goalsWall, setGoalsWall] = useState(false);
+  const [macroBaseline, setMacroBaseline] = useState({ mode: 'ratio' as 'ratio' | 'fixed', p: '', c: '', f: '', preset: null as MacroPresetKey | null });
   // ⚠️ The card's height cap is TWO different numbers on purpose. Closed, 88% made it fill nearly the whole
   // screen and looked enormous; with the keyboard up, anything lower clipped the fields off the bottom. One
   // cap cannot serve both, because the keyboard-open case is already squeezed by KeyboardAwareCenter.
@@ -809,21 +816,19 @@ export default function HomeScreen() {
     // pre-keyboard one.
     setTimeout(() => macroScrollRef.current?.scrollTo({ y: Math.max(0, macroEditorY.current - 8), animated: true }), 90);
   };
-  const MACRO_PRESETS: Record<string, { label: string; p: number; c: number; f: number; icon: any }> = {
-    high_protein: { label: 'High Protein', p: 35, c: 35, f: 30, icon: 'barbell' },
-    balanced:     { label: 'Balanced',     p: 30, c: 40, f: 30, icon: 'pie-chart' },
-    low_carb:     { label: 'Low Carb',     p: 35, c: 25, f: 40, icon: 'leaf' },
-    performance:  { label: 'Performance',  p: 25, c: 50, f: 25, icon: 'flash' },
-  };
+  // ITEM C: MACRO_PRESETS moved to utils/macroPresets.ts. It was defined here, again in onboarding, and was
+  // about to be typed a third time into Settings > Goals -- and presets are the FREE escape hatch from the
+  // macro wall, so two copies disagreeing would mean one screen offering a way out that the other does not.
   // ITEM C: the fields are a local edit buffer, seeded from whatever is live. Re-seeded on open and after a
   // preset or the Custom card is tapped, so the boxes always agree with the highlighted card.
-  const seedMacroFields = (mode: 'ratio' | 'fixed', pcts: { p: string; c: string; f: string }, grams: { protein: number; carbs: number; fat: number }) => {
+  const seedMacroFields = (mode: 'ratio' | 'fixed', pcts: { p: string; c: string; f: string }, grams: { protein: number; carbs: number; fat: number }, preset: MacroPresetKey | null) => {
     const next = mode === 'fixed'
       ? { p: grams.protein ? String(grams.protein) : '', c: grams.carbs ? String(grams.carbs) : '', f: grams.fat ? String(grams.fat) : '' }
       : { p: pcts.p, c: pcts.c, f: pcts.f };
     setMacroFields(next);
     setMacroEditMode(mode);
-    setMacroBaseline({ mode, ...next });
+    setDraftPreset(preset);
+    setMacroBaseline({ mode, ...next, preset });
   };
 
   // Switching Ratio <-> Fixed inside the modal. ⚠️ It converts the numbers you are looking at rather than
@@ -849,7 +854,7 @@ export default function HomeScreen() {
     }
     setMacroEditMode(mode);
   };
-  const openMacroSheet = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); seedMacroFields(macroMode, macroPcts, macroGoals); setShowMacroGearSheet(true); };
+  const openMacroSheet = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); seedMacroFields(macroMode, macroPcts, macroGoals, macroPreset as MacroPresetKey | null); setShowMacroGearSheet(true); };
   const openMacroSheetAnim = () => {
     macroScaleAnim.setValue(0.92);
     macroOpacityAnim.setValue(0);
@@ -865,95 +870,39 @@ export default function HomeScreen() {
     ]).start(() => setShowMacroGearSheet(false));
   };
   const closeMacroSheetWithHaptic = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeMacroSheet(); };
-  const applyMacroPreset = async (key: string) => {
+  // ⚠️ PRESETS FILL THE DRAFT. THEY NO LONGER SAVE ON THEIR OWN (Justin, 2026-08-03).
+  // This used to write straight to storage and toast. That was right when tapping a preset WAS the whole
+  // interaction -- but the modal now has an editor and a Save button, so one control committing instantly
+  // while the one beside it waits for Save is incoherent, and a stray tap on a big card changed what you
+  // eat that day. Now: the card highlights, the fields fill, Save lights up, nothing is written until you
+  // press it, and closing without saving leaves everything as it was.
+  // ⚠️ No confirm dialog, deliberately -- requiring Save IS the confirmation.
+  const applyMacroPreset = (key: MacroPresetKey) => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     const preset = MACRO_PRESETS[key];
     if (!preset) return;
-    setMacroPreset(key);
-    // Recompute the on-screen gram goals immediately from the current calorie target.
-    if (calTarget > 0) {
-      setMacroGoals({
-        protein: Math.round((preset.p / 100) * calTarget / 4),
-        carbs:   Math.round((preset.c / 100) * calTarget / 4),
-        fat:     Math.round((preset.f / 100) * calTarget / 9),
-      });
-    }
-    // Persist the ratio to the profile (read-then-merge, never wipe) + the chosen
-    // preset key to settings, mirroring onboarding.
-    try {
-      const rawP = await AsyncStorage.getItem('pj_profile');
-      const prof = rawP ? JSON.parse(rawP) : {};
-      await storageSet('pj_profile', JSON.stringify({ ...prof, macroMode: 'ratio', macroProteinPct: String(preset.p), macroCarbsPct: String(preset.c), macroFatPct: String(preset.f) }));
-      const rawS = await AsyncStorage.getItem('pj_settings');
-      const sett = rawS ? JSON.parse(rawS) : {};
-      await storageSet('pj_settings', JSON.stringify({ ...sett, macroPreset: key }));
-      // ITEM C: a preset always means ratio mode, so the fields flip to percentages and show the preset's.
-      setMacroMode('ratio');
-      setMacroPcts({ p: String(preset.p), c: String(preset.c), f: String(preset.f) });
-      seedMacroFields('ratio', { p: String(preset.p), c: String(preset.c), f: String(preset.f) }, macroGoals);
-      showToast('Macro goals updated', preset.label, 'success');
-    } catch {
-      showToast('Save failed', 'Please try again', 'error');
-    }
+    // A preset is always a RATIO, so the editor flips to percentages and shows the preset's.
+    setDraftPreset(key);
+    setMacroEditMode('ratio');
+    setMacroFields({ p: String(preset.p), c: String(preset.c), f: String(preset.f) });
   };
   // ITEM C: put the user's OWN split back. Deliberately mirrors applyMacroPreset above rather than sharing
   // code with it, because the two differ in the one way that matters: a preset always forces ratio mode,
   // while restoring must put back the MODE THEY WERE IN. Restoring percentages to somebody who built their
   // targets in fixed grams would quietly change what they actually eat.
-  const applyCustomMacroSplit = async () => {
+  // Also draft-only, for the same reason as the presets: one Save for the whole panel. Restoring is still
+  // FREE for a grandfathered user -- putting back what you already made is not authoring a new split.
+  // ⚠️ Puts back the MODE they were in, not just the numbers. Restoring percentages to somebody who built
+  // their targets in fixed grams would quietly change what they actually eat.
+  const applyCustomMacroSplit = () => {
     if (!customMacroSplit) return;
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-    setMacroPreset(null);
     const mode = customMacroSplit.macroMode === 'fixed' ? 'fixed' : 'ratio';
-    // Fixed grams ARE the goal, so they go back verbatim. Ratio percentages are re-derived against today's
-    // calorie target, which may have moved since the split was saved -- the same thing applyMacroPreset does.
-    if (mode === 'fixed') {
-      setMacroGoals({
-        protein: parseFloat(customMacroSplit.macroProteinG) || 0,
-        carbs:   parseFloat(customMacroSplit.macroCarbsG)   || 0,
-        fat:     parseFloat(customMacroSplit.macroFatG)     || 0,
-      });
-    } else if (calTarget > 0) {
-      setMacroGoals({
-        protein: Math.round(((parseFloat(customMacroSplit.macroProteinPct) || 0) / 100) * calTarget / 4),
-        carbs:   Math.round(((parseFloat(customMacroSplit.macroCarbsPct)   || 0) / 100) * calTarget / 4),
-        fat:     Math.round(((parseFloat(customMacroSplit.macroFatPct)     || 0) / 100) * calTarget / 9),
-      });
-    }
-    try {
-      const rawP = await AsyncStorage.getItem('pj_profile');
-      const prof = rawP ? JSON.parse(rawP) : {};
-      // ⚠️ Read-then-merge, and the stored copy is left exactly where it is -- restoring must not consume it.
-      await storageSet('pj_profile', JSON.stringify({
-        ...prof,
-        macroMode:       mode,
-        macroProteinPct: String(customMacroSplit.macroProteinPct ?? ''),
-        macroCarbsPct:   String(customMacroSplit.macroCarbsPct   ?? ''),
-        macroFatPct:     String(customMacroSplit.macroFatPct     ?? ''),
-        macroProteinG:   String(customMacroSplit.macroProteinG   ?? ''),
-        macroCarbsG:     String(customMacroSplit.macroCarbsG     ?? ''),
-        macroFatG:       String(customMacroSplit.macroFatG       ?? ''),
-      }));
-      const rawS = await AsyncStorage.getItem('pj_settings');
-      const sett = rawS ? JSON.parse(rawS) : {};
-      await storageSet('pj_settings', JSON.stringify({ ...sett, macroPreset: null }));
-      const restoredPcts = {
-        p: String(customMacroSplit.macroProteinPct ?? ''),
-        c: String(customMacroSplit.macroCarbsPct   ?? ''),
-        f: String(customMacroSplit.macroFatPct     ?? ''),
-      };
-      setMacroMode(mode);
-      setMacroPcts(restoredPcts);
-      seedMacroFields(mode, restoredPcts, {
-        protein: parseFloat(customMacroSplit.macroProteinG) || 0,
-        carbs:   parseFloat(customMacroSplit.macroCarbsG)   || 0,
-        fat:     parseFloat(customMacroSplit.macroFatG)     || 0,
-      });
-      // Names the card you tapped, exactly like the preset toasts name theirs ("Balanced", "Low Carb").
-      showToast('Macro goals updated', 'Custom', 'success');
-    } catch {
-      showToast('Save failed', 'Please try again', 'error');
-    }
+    setDraftPreset(null);
+    setMacroEditMode(mode);
+    setMacroFields(mode === 'fixed'
+      ? { p: String(customMacroSplit.macroProteinG ?? ''), c: String(customMacroSplit.macroCarbsG ?? ''), f: String(customMacroSplit.macroFatG ?? '') }
+      : { p: String(customMacroSplit.macroProteinPct ?? ''), c: String(customMacroSplit.macroCarbsPct ?? ''), f: String(customMacroSplit.macroFatPct ?? '') });
   };
 
   // ── ITEM C: SAVING THE INLINE FIELDS ──────────────────────────────────────────────────────────────────
@@ -978,8 +927,10 @@ export default function HomeScreen() {
   // ⚠️ Save must also be DIM WHEN NOTHING HAS CHANGED. Valid-only left it lit the instant the modal opened,
   // inviting a pointless write that would also mark a preset user as custom for touching nothing.
   const macroFieldsDirty =
-    macroEditMode !== macroBaseline.mode ||
+    macroEditMode !== macroBaseline.mode || draftPreset !== macroBaseline.preset ||
     macroFields.p !== macroBaseline.p || macroFields.c !== macroBaseline.c || macroFields.f !== macroBaseline.f;
+  // ⚠️ A locked user cannot light this from the fields, but a PRESET tap does light it -- correctly, because
+  // picking a preset is free on every tier and still has to be committed.
   const macroSaveEnabled = macroFieldsValid && macroFieldsDirty;
 
   const saveMacroFields = async () => {
@@ -1014,13 +965,18 @@ export default function HomeScreen() {
       macroProteinG: String(grams.protein), macroCarbsG: String(grams.carbs), macroFatG: String(grams.fat),
       savedAt: Date.now(),
     };
-    setMacroPreset(null);
+    // ⚠️ A PRESET SAVE MUST NOT TOUCH THE BACKUP. Since presets now fill the draft, this one handler commits
+    // both cases -- and `draftPreset` is the only thing that tells them apart. Writing `split` on a preset
+    // save would overwrite the user's own numbers with Balanced's and hand it back to them on the Custom
+    // card as if they had built it. Same rule, same reason, as saveGoals in settings.tsx.
+    const savingAPreset = draftPreset !== null;
+    setMacroPreset(draftPreset);
     setMacroMode(macroMode);
     setMacroPcts(pcts);
     setMacroGoals(grams);
-    setCustomMacroSplit(split);
+    if (!savingAPreset) setCustomMacroSplit(split);
     // Re-baseline so Save goes dim again immediately after a successful save.
-    setMacroBaseline({ mode: macroMode, ...macroFields });
+    setMacroBaseline({ mode: macroMode, ...macroFields, preset: draftPreset });
     try {
       const rawP = await AsyncStorage.getItem('pj_profile');
       const prof = rawP ? JSON.parse(rawP) : {};
@@ -1031,13 +987,13 @@ export default function HomeScreen() {
         macroMode,
         macroProteinPct: pcts.p, macroCarbsPct: pcts.c, macroFatPct: pcts.f,
         macroProteinG: String(grams.protein), macroCarbsG: String(grams.carbs), macroFatG: String(grams.fat),
-        customMacroSplit: split,
+        ...(savingAPreset ? {} : { customMacroSplit: split }),
       }));
       const rawS = await AsyncStorage.getItem('pj_settings');
       const sett = rawS ? JSON.parse(rawS) : {};
-      await storageSet('pj_settings', JSON.stringify({ ...sett, macroPreset: null }));
-      // Names the card you tapped, exactly like the preset toasts name theirs ("Balanced", "Low Carb").
-      showToast('Macro goals updated', 'Custom', 'success');
+      await storageSet('pj_settings', JSON.stringify({ ...sett, macroPreset: draftPreset }));
+      // Names the card you tapped, exactly like it always has ("Balanced", "Low Carb").
+      showToast('Macro goals updated', savingAPreset ? MACRO_PRESETS[draftPreset!].label : 'Custom', 'success');
     } catch {
       showToast('Save failed', 'Please try again', 'error');
     }
@@ -1400,6 +1356,13 @@ export default function HomeScreen() {
   // because RevenueCat has not ANSWERED yet, not because the user is free -- and the step-down notice below
   // must never act on that. See the guard in its effect.
   const { isSupporter, loading: membershipLoading } = useMembership();
+  // ITEM C: authoring a custom macro split is Supporter-only. Presets stay free, the calorie goal stays free,
+  // and a grandfathered user keeps the split they already built -- this only blocks CHANGING it.
+  // ⚠️ Declared here rather than up with the other macro state because `isSupporter` is declared on this
+  // line; reading it earlier is a TDZ crash, which this file has produced before.
+  // ⚠️ NEVER LOCK ON AN UNKNOWN ANSWER. isSupporter is false during startup because RevenueCat has not
+  // replied, not because the user is free -- locking then would padlock a paying customer's own goals.
+  const macroGoalsLocked = !membershipLoading && !isSupporter;
   // ITEM C, PART B: which graph cards are asleep. Position decides, nothing stored. Home renders PINNED
   // graphs, so a sleeping one has to drop off here as well as off the Stats tab.
   // ⚠️ Defaults NEVER sleep; only your own past the first do. Mirrors the Stats tab exactly -- see the note
@@ -2337,11 +2300,6 @@ export default function HomeScreen() {
           };
           setMacroMode(loadedMode);
           setMacroPcts(loadedPcts);
-          seedMacroFields(loadedMode, loadedPcts, {
-            protein: parseFloat(p.macroProteinG) || 0,
-            carbs:   parseFloat(p.macroCarbsG)   || 0,
-            fat:     parseFloat(p.macroFatG)     || 0,
-          });
 
           // Load macro goals
           const kcalTarget = parseInt(p.calTarget) || 0;
@@ -2375,16 +2333,43 @@ export default function HomeScreen() {
           // ⚠️ `undefined` (never set) falls back to the old number-matching so an account that has not
           // touched macros since this shipped is not suddenly told it is custom. An explicit null IS the
           // answer -- it means somebody authored their own split -- and must not fall through to the guess.
+          let resolvedPreset: string | null;
           if (storedMacroPreset !== undefined) {
-            setMacroPreset(storedMacroPreset);
+            resolvedPreset = storedMacroPreset;
           } else if (p.macroMode !== 'fixed' && p.macroProteinPct && p.macroCarbsPct && p.macroFatPct) {
-            const match = Object.entries(MACRO_PRESETS).find(([, pr]) =>
-              String(pr.p) === String(p.macroProteinPct) &&
-              String(pr.c) === String(p.macroCarbsPct) &&
-              String(pr.f) === String(p.macroFatPct));
-            setMacroPreset(match ? match[0] : null);
+            resolvedPreset = matchMacroPreset(p.macroProteinPct, p.macroCarbsPct, p.macroFatPct);
           } else {
-            setMacroPreset(null);
+            resolvedPreset = null;
+          }
+          setMacroPreset(resolvedPreset);
+          // ⚠️ Seeded HERE, after the preset is resolved, because the draft baseline includes which card is
+          // highlighted -- seeding earlier would read resolvedPreset before it exists (a TDZ crash).
+          seedMacroFields(loadedMode, loadedPcts, {
+            protein: parseFloat(p.macroProteinG) || 0,
+            carbs:   parseFloat(p.macroCarbsG)   || 0,
+            fat:     parseFloat(p.macroFatG)     || 0,
+          }, resolvedPreset as MacroPresetKey | null);
+
+          // ── ITEM C: ONE-TIME BACKFILL OF AN EXISTING CUSTOM SPLIT ─────────────────────────────────────
+          // Justin originally chose NOT to backfill (option B, 2026-08-02) on the grounds that anyone could
+          // simply retype their numbers. Gating custom macros removes that escape: a free user sitting on a
+          // split with no stored copy who taps a preset loses it for good, because rebuilding it IS the
+          // gated action. So the copy is taken now, once, for anyone already custom without one.
+          // ⚠️ Purely additive -- it writes their OWN current numbers to a new field and changes nothing the
+          // app reads today. It cannot repeat: once the field exists this branch never runs again.
+          if (resolvedPreset === null && !p.customMacroSplit && (p.macroProteinPct || p.macroProteinG)) {
+            const backfill = {
+              macroMode: p.macroMode === 'fixed' ? 'fixed' : 'ratio',
+              macroProteinPct: String(p.macroProteinPct ?? ''), macroCarbsPct: String(p.macroCarbsPct ?? ''), macroFatPct: String(p.macroFatPct ?? ''),
+              macroProteinG: String(p.macroProteinG ?? ''), macroCarbsG: String(p.macroCarbsG ?? ''), macroFatG: String(p.macroFatG ?? ''),
+              savedAt: Date.now(),
+            };
+            setCustomMacroSplit(backfill);
+            try {
+              const rawNow = await AsyncStorage.getItem('pj_profile');
+              const profNow = rawNow ? JSON.parse(rawNow) : {};
+              await storageSet('pj_profile', JSON.stringify({ ...profNow, customMacroSplit: backfill }));
+            } catch {}
           }
 
           if (p.sex) setProfileSex(p.sex === 'male' ? 'male' : 'female');
@@ -5068,6 +5053,10 @@ export default function HomeScreen() {
       {/* ── Macro gear modal ── */}
       <Modal visible={showMacroGearSheet} transparent animationType="none" onShow={openMacroSheetAnim} onRequestClose={closeMacroSheetWithHaptic}>
         <ToastRenderer />
+        {/* ⚠️ RENDERED INSIDE THIS MODAL ON PURPOSE. iOS gives every Modal its own window, so a wall placed
+            at the screen's top level opens UNDERNEATH an open Modal and is invisible. Same rule the app
+            already follows for ToastRenderer, and the same trap the meal-slot cap wall hit. */}
+        {goalsWall && <GoalsWallModal kind="macros" theme={theme} onDismiss={() => setGoalsWall(false)} />}
         {/* ITEM C: KeyboardAwareCenter replaced a plain centred View here. This modal had no text input
             until the inline macro fields landed, so it never needed keyboard handling; with three number
             fields near the bottom of a scrolling card it does. Same pattern as the water detail modal above
@@ -5106,8 +5095,10 @@ export default function HomeScreen() {
                   <Text style={{ fontSize:9, letterSpacing:3, textTransform:'uppercase', color: theme.textMuted, fontFamily:Type.uiBold, marginBottom:4 }}>Macro Goals</Text>
                   <Text style={{ fontSize:11, color: theme.textDim, fontFamily:Type.ui, marginBottom:12, lineHeight:16 }}>Sets your protein, carb, and fat targets automatically.</Text>
                   <View style={{ flexDirection:'row', flexWrap:'wrap', gap:8 }}>
-                    {Object.entries(MACRO_PRESETS).map(([key, pr]) => {
-                      const active = macroPreset === key;
+                    {/* ⚠️ Highlights follow the DRAFT, not what is saved -- tapping a card no longer saves,
+                        so the highlight is the feedback that your tap registered. */}
+                    {(Object.entries(MACRO_PRESETS) as [MacroPresetKey, typeof MACRO_PRESETS[MacroPresetKey]][]).map(([key, pr]) => {
+                      const active = draftPreset === key;
                       return (
                         <TouchableOpacity key={key} onPress={() => applyMacroPreset(key)} activeOpacity={0.85}
                           style={{ width:'47%', paddingVertical:14, paddingHorizontal:10, borderRadius:12,
@@ -5135,11 +5126,11 @@ export default function HomeScreen() {
                     <View style={{ flexDirection:'row', justifyContent:'center', marginTop:8 }}>
                       <TouchableOpacity onPress={applyCustomMacroSplit} activeOpacity={0.85}
                         style={{ width:'47%', paddingVertical:14, paddingHorizontal:10, borderRadius:12,
-                          borderWidth: macroPreset === null ? 1.5 : 1,
-                          backgroundColor: macroPreset === null ? theme.accentBlueBg : theme.bgCardGlass,
-                          borderColor: macroPreset === null ? theme.accentBlueBorder : theme.borderCard, alignItems:'center', gap:4 }}>
-                        <GradientHomeIcon name="options" size={22} color={macroPreset === null ? theme.accentBlue : theme.textMuted} />
-                        <GradientTitle title="Custom" color={macroPreset === null ? theme.accentBlue : theme.textSecondary} style={{ fontSize:14, fontFamily:Type.uiBold }} />
+                          borderWidth: draftPreset === null ? 1.5 : 1,
+                          backgroundColor: draftPreset === null ? theme.accentBlueBg : theme.bgCardGlass,
+                          borderColor: draftPreset === null ? theme.accentBlueBorder : theme.borderCard, alignItems:'center', gap:4 }}>
+                        <GradientHomeIcon name="options" size={22} color={draftPreset === null ? theme.accentBlue : theme.textMuted} />
+                        <GradientTitle title="Custom" color={draftPreset === null ? theme.accentBlue : theme.textSecondary} style={{ fontSize:14, fontFamily:Type.uiBold }} />
                         <Text style={{ fontSize:11, fontFamily:Type.ui, color: theme.textDim }}>
                           {customMacroSplit.macroProteinPct}P · {customMacroSplit.macroCarbsPct}C · {customMacroSplit.macroFatPct}F
                         </Text>
@@ -5167,6 +5158,18 @@ export default function HomeScreen() {
                       ⚠️ Switching modes CONVERTS what is on screen rather than blanking it, so the toggle can
                       never cost somebody their split. */}
                   <View onLayout={e => { macroEditorY.current = e.nativeEvent.layout.y; }}>
+                  {/* ⚠️ ONE LOCK FOR THE WHOLE EDITOR, not one per field. Three padlocks on three number
+                      boxes is noise; the block dims and locks as a single thing, which is also what it is.
+                      The transparent layer below covers the toggle, the fields and the Total together, so
+                      every tap inside opens the wall rather than only the parts that happen to be buttons. */}
+                  {macroGoalsLocked && (
+                    <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginTop:18 }}>
+                      <Ionicons name="lock-closed" size={13} color={GOLD_BASE} />
+                      <Text style={{ fontSize:11, fontFamily:Type.uiSemibold, color: theme.textMuted }}>Custom splits are part of the Supporter plan</Text>
+                    </View>
+                  )}
+                  <View>
+                  <View style={macroGoalsLocked ? { opacity:0.45 } : undefined} pointerEvents={macroGoalsLocked ? 'none' : 'auto'}>
                   <Text style={{ fontSize:11, fontFamily:Type.ui, fontStyle:'italic', color: theme.textMuted, marginTop:18, marginBottom:12 }}>
                     {macroEditMode === 'ratio'
                       ? 'Set percentages. Grams update automatically when your calorie target changes.'
@@ -5232,6 +5235,21 @@ export default function HomeScreen() {
                       style={{ fontSize:13, fontFamily:Type.uiSemibold }}
                     />
                   </View>
+                  </View>
+                  {/* Sits OVER the dimmed editor and swallows every tap inside it. The spec puts the lock on
+                      the entry point, never on the Save at the end of a builder. */}
+                  {macroGoalsLocked && (
+                    <TouchableOpacity
+                      style={StyleSheet.absoluteFill}
+                      activeOpacity={0.85}
+                      onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setGoalsWall(true); }}
+                    />
+                  )}
+                  </View>
+                  {/* ⚠️ SAVE IS OUTSIDE THE LOCK, and has to be. Presets are free on every tier, and since
+                      2026-08-03 tapping one only fills the draft -- so if Save sat under the locked overlay a
+                      free user could pick a preset and have no way to commit it. A locked user simply cannot
+                      light this button from the fields, because the fields are unreachable. */}
                   <View style={{ marginTop:14 }}>
                     <PrimaryCTA label="Save Goals" onPress={saveMacroFields} disabled={!macroSaveEnabled} />
                   </View>

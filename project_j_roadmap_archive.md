@@ -11,6 +11,54 @@
 
 ---
 
+## 📅 ITEM C PIECES 4 + 5 -- THE STEP-DOWN NOTICE COVERS CANCELLATIONS (device-verified, SHIPPED 2026-08-03)
+Commit f194726. Design in SPEC_monetization.md -> PIECE 5.
+
+**THE HOLE.** The notice fired on three checks against the 7-DAY TASTE end date. Right for the taste, wrong
+for everyone else: somebody who used their free week in January, subscribed in March and cancelled in August
+got **nothing** -- their meal slots dropped 8 to 5 and their extra graphs went dormant with no explanation.
+That is a paying customer, and the group most likely to read a silent change as the app being broken.
+
+**THE PART THAT NEEDED THINKING: how does the app know which happened?** RevenueCat marks a granted week as
+promotional and `readDetails` already exposes that as `isFirstWeek` -- but the moment the entitlement lapses
+that detail is gone, and the lapse is exactly when the answer is needed. So the kind is recorded WHILE the
+membership is live. ⚠️ Gated on `details` being present rather than `isSupporter`, because the dev Pro toggle
+flips isSupporter with no real entitlement and would record "paid" off a dev switch.
+
+**THE FLAG BECAME ONCE PER MEMBERSHIP** rather than once ever: becoming entitled clears it. Without that,
+subscribe -> cancel -> resubscribe -> cancel only ever explains itself the first time.
+
+**THE CANCELLED VERSION DOES NOT SELL.** The spec had settled the title and never the button. They paid for
+months and chose to leave, so "Got It" is the only button and is promoted to primary. Support the Mission
+lives permanently on the Profile tab, so the way back is two taps.
+
+**A FIFTH DEV ROW WAS UNAVOIDABLE.** The taste is a promotional grant, so Grant/Revoke First Week can only
+ever produce the free-week version -- reaching paid-and-cancelled otherwise needs a real purchase and a real
+cancellation. "Simulate Plan Cancelled" exists for that and belongs on the dev-tool sweep.
+
+**FOUND ON DEVICE, AND IT IS A GOOD LESSON ABOUT INHERITED COMPONENTS:** the longer title WRAPPED, and
+GradientTitle moulds text light-at-the-top to dark-at-the-bottom, so the second line came out visibly darker.
+CapWallModal already carried the fix (`numberOfLines={1} adjustsFontSizeToFit`) with a comment explaining it;
+this modal had never needed it because "Your First Week Is Up" always fit on one line. **Changing a string can
+activate a latent bug in a component that was fine the day before.**
+
+**ALSO IN THIS PASS -- the free-plan wording, which had drifted into being untrue.** The Otto bullet said he
+"answers anything, but stops building workouts and meals", which stopped being true the day item B's data gate
+shipped: on free he is not sent the user's snapshot, PRs, workouts, food log, sleep or measurements, so he
+cannot answer about their own numbers at all. Justin: *"he gets dumber, he stops using numbers and stuff."*
+New line: *"Otto answers general questions, but no longer works from your numbers or builds for you."*
+⚠️ **"Works from your numbers" was chosen over "can't see your data"** (Justin: the latter "sounds like we
+lobotomised him"). It mirrors Support the Mission's "works from everything you've logged", so the two pages
+read as the same sentence from opposite sides.
+⚠️ **Support the Mission's "Room To Build" was a specced-but-unbuilt rewrite** found while checking the three
+surfaces. It said "Higher limits on custom foods, recipes, saved meals and your exercise library" -- which
+undersells it badly (SEVEN of the eight caps go fully unlimited, only meal slots stay finite) and names four
+of the eight. Now: "The free limits come off. Nothing you create is capped, counted, or held back."
+⚠️ **THREE SURFACES DESCRIBE THIS TIER and only one was wrong.** Onboarding's taste list and Support the
+Mission both already described the data gate correctly. Check all three, change only what is actually stale.
+
+---
+
 ## 🔒 ITEM C PIECE 2 -- THE GATE ITSELF (device-verified, SHIPPED 2026-08-03)
 Commits cd46e94, 642a1ce. Design + every decision in SPEC_monetization.md -> CUSTOM MACRO + NUTRITION GOALS.
 This is what happened building it.

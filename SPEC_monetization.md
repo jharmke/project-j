@@ -1580,7 +1580,26 @@ Practical effect: **hiding does not make room, deleting does** -- which is exact
 
 ---
 
-#### 🟡 PIECE 5 -- HOW THE TWO DOWNGRADE CATEGORIES BEHAVE IN PRACTICE (mostly locked 2026-08-01)
+#### ✅ PIECE 5 -- HOW THE TWO DOWNGRADE CATEGORIES BEHAVE IN PRACTICE (**BUILT + DEVICE-VERIFIED 2026-08-03**)
+
+> 🏗️ **BUILD NOTES 2026-08-03.** Everything below shipped. Three things settled during the build:
+> - **HOW THE APP TELLS THE TWO APART.** RevenueCat marks a granted free week as PROMOTIONAL (`readDetails`
+>   in MembershipContext already turns that into `isFirstWeek`), but **that detail is gone the moment the
+>   entitlement lapses -- which is exactly when the answer is needed.** So the kind is recorded to
+>   `pj_last_membership_kind` WHILE the membership is live. ⚠️ Gated on `details` being present rather than on
+>   `isSupporter`, because the dev Pro toggle flips isSupporter without a real entitlement and would otherwise
+>   record "paid" off a dev switch.
+> - **THE ONCE-EVER FLAG IS NOW ONCE PER MEMBERSHIP.** Becoming entitled clears it. That is what fixes
+>   subscribe -> cancel -> resubscribe -> cancel only ever telling somebody the first time.
+> - **THE CANCELLED VERSION DOES NOT SELL** (settled 2026-08-03; the spec had only fixed the title). "Got It"
+>   is the only button and is promoted to primary. They paid for months and chose to leave; asking for money
+>   on the same screen is tone-deaf, and Support the Mission has a permanent home on the Profile tab.
+> - ⚠️ **A FIFTH DEV ROW EXISTS: "Simulate Plan Cancelled".** The taste is a promotional grant, so
+>   Grant/Revoke First Week can only ever produce the free-week version. Reaching the paid-and-cancelled state
+>   otherwise needs a real purchase and cancellation. On the dev-tool sweep with the other four.
+> - ⚠️ **THE TITLE HAD TO BE FORCED ONTO ONE LINE.** "Your Supporter Plan Has Ended" wraps where "Your First
+>   Week Is Up" never did, and GradientTitle moulds light-to-dark down the block, so the second line rendered
+>   visibly darker. Same `numberOfLines={1} adjustsFontSizeToFit` fix CapWallModal already carried.
 
 The categories themselves were fully settled by pieces 2 and 4: **grandfathered content stays and simply
 cannot grow; layout reverts by position.** What piece 5 turned out to be about is the practical moment --

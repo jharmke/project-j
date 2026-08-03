@@ -30,6 +30,15 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-08-03 **A Supporter whose subscription ends now gets told, instead of their layout silently reverting**
+  (device-verified). Same modal, retitled "Your Supporter Plan Has Ended", and it does NOT sell -- they paid
+  for months and chose to leave. The app records which kind of membership you held WHILE you hold it, because
+  RevenueCat's promotional flag is gone the moment the entitlement lapses, and the notice now resets per
+  membership so subscribe -> cancel -> resubscribe -> cancel explains itself every time instead of once ever.
+  Also on that modal: the Otto bullet was rewritten (it claimed he "answers anything", untrue since the data
+  gate), a caps bullet added, "stats cards" -> "graphs", a hairline above the personal line, and the wrapped
+  title's two-tone gradient fixed. Support the Mission's "Room To Build" rewritten -- "higher limits" undersold
+  seven caps that go fully unlimited. Full detail in project_j_roadmap_archive.md.
 - 2026-08-03 **Item C piece 2 COMPLETE: custom macro splits and custom nutrition targets are Supporter-only**
   (device-verified). Presets, the calorie goal, and restoring a split you already built all stay free, and a
   grandfathered user keeps their own numbers and simply cannot change them. Both gates cover every door --
@@ -1369,10 +1378,14 @@ are separate pre-submission checklists, NOT part of this menu.
      Both sides shipped: the preset marker, the stored custom split and custom targets, the Custom card, the
      inline macro editor, and the gate itself across all four doors. See SPEC_monetization.md -> CUSTOM MACRO
      + NUTRITION GOALS, which carries a build-state block correcting the lines this work overturned.
-  3. **Widening the step-down notice to CANCELLATIONS (piece 5).** Decided: a Supporter whose subscription
-     ends gets the same notice, titled "Your Supporter Plan Has Ended", keeping the calendar icon. Only the
-     `loading` guard was built, and that was a separate bug fix.
-  4. **The four `FirstWeekEndedModal` changes** (already logged below).
+  3. ✅ **COMPLETE + DEVICE-VERIFIED 2026-08-03. Widening the step-down notice to CANCELLATIONS (piece 5).**
+     The kind of membership is recorded while it is LIVE (RevenueCat's promotional flag is gone once the
+     entitlement lapses), the notice resets per membership rather than once ever, and the cancelled version
+     does NOT sell. ⚠️ Added a FIFTH dev row, "Simulate Plan Cancelled" -- the taste is a promotional grant,
+     so Grant/Revoke can only ever produce the free-week version. Add it to the dev-tool sweep.
+  4. ✅ **COMPLETE + DEVICE-VERIFIED 2026-08-03. The four `FirstWeekEndedModal` changes**, plus a fifth found
+     on device: the wrapped cancelled title rendered two-tone, because GradientTitle moulds light-to-dark down
+     the block. Fixed the way CapWallModal already did it (one line, shrink to fit).
   5. **The tooltip / tutorial / Otto-KB updates.** ⚠️ CLAUDE.md requires these in the SAME session as any
      user-facing change and they were never touched. **Otto's KB lists what Supporter adds and NONE of the
      eight caps are in it** -- it even carries a line telling him never to say the whole app is free because a
@@ -1406,20 +1419,12 @@ are separate pre-submission checklists, NOT part of this menu.
     a nice-to-have; nobody has confirmed either way, so do not assume it is optional.
     ⚠️ Do NOT gate the other three share-sheet uses while doing this: sharing a Bible verse and sharing a
     message out of either AI chat are not data export, and paywalling the verse share would be a bad look.
-  • **[DO THESE FOUR TOGETHER] `FirstWeekEndedModal.tsx` needs one visit, not four.** All found on device
-    2026-08-01 while testing the step-down guard. Same file, same list, do them in one pass:
-    1. ⚠️ **THE OTTO BULLET IS WRONG AND OVERSELLS FREE.** It currently reads *"Otto answers anything, but
-       stops building workouts and meals"*. Justin: *"he gets dumber, he stops using numbers and stuff, he
-       doesnt just not build workouts and meals."* **"Answers anything" is not true on free** -- item B's data
-       gate means he no longer receives their snapshot, PRs, workout history, food log, sleep or body
-       measurements, so he cannot answer about their own numbers at all. He also caps at 2 exercises per
-       reply. Needs a rewrite that is honest about the whole step down, not just the builders.
-    2. **Add the caps bullet** agreed in piece 5: `Room to keep building, within free limits` (no numbers, no
-       list -- see SPEC_monetization.md).
-    3. **"stats cards" -> "graphs"** in the over-cap line. The button people tap says Add Graph; that line is
-       the last place the old word survives.
-    4. **Hairline above the over-cap paragraph** (Justin's call). It currently sits under the bullets with
-       identical spacing, so the one line that is PERSONAL to that user reads as another free-plan bullet.
+  • ✅ **[SHIPPED 2026-08-03] All four `FirstWeekEndedModal` changes, in one visit as intended.** The Otto
+    bullet now reads *"Otto answers general questions, but no longer works from your numbers or builds for
+    you"* -- "works from your numbers" chosen over "can't see your data" so it mirrors Support the Mission's
+    "works from everything you've logged" and sounds like a capability switched off rather than something
+    lobotomised. Plus the caps bullet, "stats cards" -> "graphs", the hairline, and a fifth found on device:
+    the longer cancelled title wrapped and rendered two-tone.
   • **[WATCH, seen again 2026-08-01] The step-down notice still lands ON the launch splash sometimes.**
     Justin: "it did show up during the splash. we sort of fixed that timing thing but last couple times it
     went over the splash." The notice waits 800ms and then goes through `runAfterLaunchSplash`, and that was

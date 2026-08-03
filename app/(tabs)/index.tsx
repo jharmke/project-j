@@ -2036,9 +2036,13 @@ export default function HomeScreen() {
           if (wd.checks) setWorkoutChecks(wd.checks);
           if (wd.weeklyTemplate) setWorkoutTemplate(wd.weeklyTemplate);
         }
+        // ITEM C: hoisted out of the block below because the MACRO block further down needs it, and `sd` is
+        // scoped to that if. `undefined` means this account has never picked a preset or edited its split.
+        let storedMacroPreset: string | null | undefined;
         const settingsData = await AsyncStorage.getItem('pj_settings');
         if (settingsData) {
           const sd = JSON.parse(settingsData);
+          storedMacroPreset = sd.macroPreset;
           if (sd.workoutTags && Array.isArray(sd.workoutTags)) setWorkoutTags(sd.workoutTags);
           if (sd.styleMode) setStyleMode(sd.styleMode);
           // Refresh card layout on focus too (mirrors the mount-time loadLayout), so a
@@ -2109,9 +2113,19 @@ export default function HomeScreen() {
               fat:     Math.round((0.25 * kcalTarget) / 9),
             });
           }
-          // Highlight the active preset in the macro modal: a ratio profile whose
-          // pcts match a preset shows it selected; anything else reads as Custom.
-          if (p.macroMode !== 'fixed' && p.macroProteinPct && p.macroCarbsPct && p.macroFatPct) {
+          // ── ITEM C: WHICH PRESET IS SELECTED IS NOW REMEMBERED, NOT GUESSED ──────────────────────────
+          // This used to work it out by comparing the live percentages against the four presets, which got
+          // the common cases right but could not tell "I picked Balanced" apart from "I typed 30/40/30 by
+          // hand". Justin's call 2026-08-02: hand-authored numbers read as CUSTOM even when they happen to
+          // equal a preset. A guess based on the numbers can never honour that, so the answer is stored --
+          // written by applyMacroPreset below, by onboarding, and cleared to null by Settings > Goals
+          // whenever the split itself is edited.
+          // ⚠️ `undefined` (never set) falls back to the old number-matching so an account that has not
+          // touched macros since this shipped is not suddenly told it is custom. An explicit null IS the
+          // answer -- it means somebody authored their own split -- and must not fall through to the guess.
+          if (storedMacroPreset !== undefined) {
+            setMacroPreset(storedMacroPreset);
+          } else if (p.macroMode !== 'fixed' && p.macroProteinPct && p.macroCarbsPct && p.macroFatPct) {
             const match = Object.entries(MACRO_PRESETS).find(([, pr]) =>
               String(pr.p) === String(p.macroProteinPct) &&
               String(pr.c) === String(p.macroCarbsPct) &&

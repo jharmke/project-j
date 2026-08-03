@@ -1290,6 +1290,48 @@ export default function SettingsScreen() {
       await storageSet('pj_profile', JSON.stringify(merged));
       await saveToFirebase('profile', 'data', merged);
 
+      // ── ITEM C: EDITING YOUR SPLIT BY HAND MAKES YOU CUSTOM ────────────────────────────────────────────
+      // `pj_settings.macroPreset` is what the Macros modal on Home reads to decide which preset card is
+      // selected (null = custom). It was only ever written by that modal and by onboarding, NEVER here --
+      // so you could pick Balanced, come to this screen, change 30/40/30 to 45/25/30, and Home would still
+      // show Balanced as your selected preset. The app believed you were on a preset you were not on.
+      //
+      // ⚠️ WHY THIS COMPARES ONLY THE SIDE YOU AUTHORED. saveGoals recalculates BOTH grams and percentages
+      // on every save, because one is always derived from the other. In ratio mode your grams come from your
+      // calorie target, so raising your calorie goal changes them on its own -- and a naive "did any macro
+      // number change" test would knock you off Balanced for editing your calories, which is free and has
+      // nothing to do with the split. So: percentages count only in ratio mode, grams only in fixed mode,
+      // and the mode itself always counts (switching to grams IS authoring a split).
+      //
+      // ⚠️ Typing numbers that happen to equal a preset still makes you custom (Justin, 2026-08-02). You
+      // authored them by hand; matching Balanced by coincidence must not quietly re-attach you to it.
+      const changedByHand = (a: any, b: any) =>
+        a !== undefined && b !== undefined && String(a).trim() !== String(b).trim();
+      const authoredSplitChanged =
+        changedByHand(synced.macroMode, base.macroMode ?? 'ratio') ||
+        (synced.macroMode === 'ratio'
+          ? changedByHand(synced.macroProteinPct, base.macroProteinPct) ||
+            changedByHand(synced.macroCarbsPct,   base.macroCarbsPct)   ||
+            changedByHand(synced.macroFatPct,     base.macroFatPct)
+          : changedByHand(synced.macroProteinG,   base.macroProteinG)   ||
+            changedByHand(synced.macroCarbsG,     base.macroCarbsG)     ||
+            changedByHand(synced.macroFatG,       base.macroFatG));
+
+      if (authoredSplitChanged) {
+        // ⚠️ READ-THEN-MERGE. pj_settings holds theme, meal slots, coaching mode and much else; this must
+        // only ever change the one field. Written only when it actually changes, so a normal goals save
+        // that leaves macros alone does not touch pj_settings at all.
+        try {
+          const rawSettings = await AsyncStorage.getItem('pj_settings');
+          const settings = rawSettings ? JSON.parse(rawSettings) : {};
+          if (settings.macroPreset !== null) {
+            await storageSet('pj_settings', JSON.stringify({ ...settings, macroPreset: null }));
+          }
+        } catch (e) {
+          console.log('macroPreset clear error', e);
+        }
+      }
+
       setGoalProfile(synced);
       setSavedGoalProfile(synced);
       hasGoalChangesRef.current = false;

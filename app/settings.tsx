@@ -1286,10 +1286,6 @@ export default function SettingsScreen() {
       const newSleep = synced.sleepGoal ? parseFloat(synced.sleepGoal) : null;
       await stampGoalsOnHistoricalDays(oldWater, newWater, oldStep, newStep, oldSleep, newSleep);
 
-      const merged = { ...base, ...synced };
-      await storageSet('pj_profile', JSON.stringify(merged));
-      await saveToFirebase('profile', 'data', merged);
-
       // ── ITEM C: EDITING YOUR SPLIT BY HAND MAKES YOU CUSTOM ────────────────────────────────────────────
       // `pj_settings.macroPreset` is what the Macros modal on Home reads to decide which preset card is
       // selected (null = custom). It was only ever written by that modal and by onboarding, NEVER here --
@@ -1316,6 +1312,39 @@ export default function SettingsScreen() {
           : changedByHand(synced.macroProteinG,   base.macroProteinG)   ||
             changedByHand(synced.macroCarbsG,     base.macroCarbsG)     ||
             changedByHand(synced.macroFatG,       base.macroFatG));
+
+      // ── ITEM C: KEEP A COPY OF THE SPLIT THEY AUTHORED, WHERE PRESETS CANNOT REACH IT ─────────────────
+      // Tapping a preset overwrites the live macro fields IN PLACE (applyMacroPreset, index.tsx), so without
+      // this a user's own 45/25/30 is not hidden or archived when they try Balanced -- it is written over
+      // and gone. That one-way door is the whole reason piece 2 exists: once macro editing is Supporter-only,
+      // a grandfathered free user who taps a preset out of curiosity could never rebuild their split, because
+      // rebuilding it is authoring a custom goal, which is the gated action.
+      //
+      // ⚠️ THE MODE IS PART OF THE SPLIT, not decoration. Restoring percentages for somebody who was working
+      // in fixed GRAMS would silently change what they actually eat. Both representations are stored because
+      // `synced` above has just reconciled them, so the copy is internally consistent either way.
+      // ⚠️ ONE COPY, NOT A HISTORY. Authoring a new split replaces it. Deliberate.
+      // ⚠️ ADDITIVE ONLY -- this adds a field to the profile and never removes or rewrites an existing one.
+      // ⚠️ NO BACKFILL, by Justin's call 2026-08-02 (option B): accounts that are already custom get no copy
+      // until they next edit their split. He was re-entering his own macros anyway, and testers on presets
+      // have no custom split to lose. Until someone saves once, the old one-way door is still open for them.
+      const customMacroSplit = authoredSplitChanged
+        ? {
+            macroMode:       synced.macroMode,
+            macroProteinPct: synced.macroProteinPct,
+            macroCarbsPct:   synced.macroCarbsPct,
+            macroFatPct:     synced.macroFatPct,
+            macroProteinG:   synced.macroProteinG,
+            macroCarbsG:     synced.macroCarbsG,
+            macroFatG:       synced.macroFatG,
+            savedAt:         Date.now(),
+          }
+        : undefined;
+
+      // ⚠️ `base` first: read-then-merge, so nothing already in the profile is lost.
+      const merged = { ...base, ...synced, ...(customMacroSplit ? { customMacroSplit } : {}) };
+      await storageSet('pj_profile', JSON.stringify(merged));
+      await saveToFirebase('profile', 'data', merged);
 
       if (authoredSplitChanged) {
         // ⚠️ READ-THEN-MERGE. pj_settings holds theme, meal slots, coaching mode and much else; this must

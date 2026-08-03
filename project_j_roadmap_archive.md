@@ -11,6 +11,56 @@
 
 ---
 
+## 🔒 ITEM C PIECE 2 -- THE GATE ITSELF (device-verified, SHIPPED 2026-08-03)
+Commits cd46e94, 642a1ce. Design + every decision in SPEC_monetization.md -> CUSTOM MACRO + NUTRITION GOALS.
+This is what happened building it.
+
+**Four doors, all gated.** Macros: the controls in Settings > Goals and the modal editor. Nutrition: the
+Custom tile and tapping any field. Each pair is one limit with two ways in, and gating one of a pair leaves a
+limit that silently does not exist.
+
+**THE PRESETS MOVED INTO SETTINGS > GOALS.** Justin found this before the gate was built: the wall says "the
+four presets stay yours for free", and firing it on a screen with no presets tells somebody about an escape
+hatch and leaves them at a locked door. Scaled down rather than redesigned, and placed ABOVE the editor so
+the screen explains itself before the wall ever fires -- here is what you can use, below it the part that
+needs the plan. The list also moved to `utils/macroPresets.ts`: it had been defined three times, and presets
+being the free escape hatch means two copies disagreeing would offer a way out on one screen and not another.
+
+**PRESETS NOW WAIT FOR SAVE.** Justin's call, and he was right for a reason that only became true the day
+before: the modal had gained an editor and a Save button, so one control committing instantly beside one that
+waits is incoherent, and a stray tap on a big card changed what he ate that day. No confirm dialog -- needing
+to press Save IS the confirmation. Two traps came with it, both caught before shipping: **a preset save must
+not overwrite the stored custom copy** (the hand-edit detector watches the very fields a preset changes, so
+the Custom card would have come back holding Balanced's numbers), and **Save had to move OUTSIDE the locked
+overlay**, or a free user could pick a free preset and have no way to commit it.
+
+**"CUSTOM IS SELECTED" IS NOT "YOU MAY TYPE".** A grandfathered free user IS on custom, so keying the
+nutrition inputs off that flag alone handed editing straight back to the people the gate exists for.
+
+**THE LOCK BELONGS TO THE CARD.** First attempt badged the padlock onto the Custom tile's sliders glyph,
+following "badge the icon, never replace it" -- which is the rule for ICON-ONLY buttons, where the icon is
+the whole control. On a tile with a title and a subtitle it read as a wart on the icon. Justin: *"that is
+awful design"*. Gold border plus a corner padlock; selection keeps the fill so the two read together.
+
+**A PADLOCK NOW MEANS ONE THING.** The nutrition modal's "Tap Custom or any field to edit" line had carried a
+faint grey padlock meaning "read-only until you pick Custom" since long before this work. Giving the symbol a
+price tag turned that into a collision -- two padlocks, two meanings, same spot. Icon dropped, sentence kept.
+
+**THE BACKFILL WAS REVERSED.** Option B (no backfill) was chosen on 2026-08-02 because editing was still free
+and anyone could retype their numbers. Gating removes that escape entirely: a free user on a custom split
+with no stored copy who taps a preset loses it permanently, because rebuilding it IS the gated action. Both
+macros and nutrition now take a one-time copy.
+
+**⚠️⚠️ THE EXPENSIVE MISTAKE OF THE DAY, AND IT WAS ENTIRELY SELF-INFLICTED: NEVER USE A SHELL WRITE ON A
+SOURCE FILE.** Five identical lines needed changing and, instead of five edits, a PowerShell one-liner read
+`app/(tabs)/index.tsx` whole and wrote it back. The round trip re-encoded every non-ASCII character in it --
+the `·` in the preset cards, the ⚠️ in comments, the divider rules. The attempted repair then used Latin-1
+where the damage was CP1252, which is lossy, and the file stopped parsing altogether. It had to be restored
+from the last commit and the whole day's Home-screen work redone by hand. `settings.tsx` was untouched only
+because it was never shell-written. **The edit tool exists for this. There is no case for the other thing.**
+
+---
+
 ## 🥗 ITEM C PIECE 2 -- THE MACRO GROUNDWORK (device-verified, SHIPPED 2026-08-02)
 Commits a45d7a7, b90453f, fbcdda8, ab9d1b0. Design in SPEC_monetization.md -> CUSTOM MACRO + NUTRITION GOALS,
 which now carries a build-state block. ⚠️ **THE GATE IS NOT BUILT. None of this is Supporter-only yet.**

@@ -1153,10 +1153,39 @@ fire on a normal tap of a dim door like every other cap.
 
 ##### ✅ CUSTOM MACRO + NUTRITION GOALS -- THE RULES, LOCKED 2026-08-01 (copy still to write)
 
-> 🏗️ **BUILD STATE 2026-08-02 -- THE MACRO SIDE IS BUILT AND DEVICE-VERIFIED. THE GATE IS NOT.**
-> Built: the preset marker, the stored custom split, the Custom card, and the inline macro editor.
-> **Still to do: the GATE itself, and the whole Nutrition Goals side.** Nothing is Supporter-only yet --
-> everything below is the plumbing that makes gating safe, not the gating.
+> ✅ **BUILD STATE: COMPLETE + DEVICE-VERIFIED 2026-08-03.** Both sides ship: the preset marker, the stored
+> custom split and custom nutrition targets, the Custom card, the inline macro editor, and the gate itself.
+>
+> **FOUR DOORS, ALL GATED** -- macros: the controls in Settings > Goals AND the modal editor. Nutrition: the
+> Custom tile AND tapping any field. Gate one of a pair and the limit does not exist.
+>
+> **THINGS DECIDED DURING THE BUILD that are not in the text below:**
+> - **The presets are now in Settings > Goals as well**, scaled down. Justin spotted the inconsistency: the
+>   wall says "the four presets stay yours for free", and firing that on a screen with no presets on it tells
+>   somebody about an escape hatch and leaves them at a locked door. They sit ABOVE the editor, so the screen
+>   explains itself before the wall fires.
+> - **Tapping a preset FILLS THE DRAFT and waits for Save** (both screens). It used to apply instantly. That
+>   was right when tapping a preset was the whole interaction, but once the modal had an editor and a Save
+>   button, one control committing instantly beside one that waits is incoherent -- and a stray tap on a big
+>   card changed what you eat that day. No confirm dialog: requiring Save IS the confirmation.
+> - **A preset save must never overwrite the stored custom copy.** Applying a preset changes the very fields
+>   the hand-edit detector watches, so without an explicit "was this a preset?" test the Custom card would
+>   come back holding Balanced's numbers, claiming a preset as the thing the user built.
+> - **Save is OUTSIDE the locked area.** Presets are free and now need committing, so a Save trapped under
+>   the lock overlay would leave a free user able to pick a preset and unable to save it.
+> - **"Custom is selected" and "you may type" are two different things.** A grandfathered free user IS on
+>   custom, so keying the nutrition text inputs off that alone handed editing back to exactly the people the
+>   gate exists for.
+> - **The lock goes on the CARD, not the icon.** "Badge the icon" is the rule for ICON-ONLY buttons where the
+>   icon is the whole control. A tile with a title and subtitle gets a gold border plus a corner padlock;
+>   badged onto the glyph it read as a wart on the icon. When a card is both selected and locked, selection
+>   keeps the fill and the lock takes the border and badge.
+> - **A padlock now means exactly one thing in this app: needs the Supporter plan.** The old grey outline
+>   padlock on the nutrition modal's "Tap Custom or any field to edit" line meant "read-only until you pick
+>   Custom" -- a collision the gate created. Icon dropped, sentence kept.
+> - **THE BACKFILL WAS REVERSED.** Justin chose option B (no backfill) on 2026-08-02 when editing was still
+>   free and anyone could retype their numbers. Gating removes that escape, so a one-time copy is now taken
+>   for anyone already on custom macros or custom nutrition targets without one.
 >
 > **THREE THINGS IN THE TEXT BELOW ARE NOW WRONG. Corrected here, in place:**
 > 1. ❌ *"The modal is ALWAYS percentages."* **The Ratio/Fixed toggle is now IN the Macros modal.** That line
@@ -1179,8 +1208,8 @@ fire on a normal tap of a dim door like every other cap.
 > preset. The marker is now written by Settings > Goals (on editing the SPLIT, never on changing calories
 > alone) and read by the modal, falling back to the old matching only for accounts that have never set it.
 >
-> **NO BACKFILL (Justin, option B):** accounts already holding a custom split get no stored copy until they
-> next edit it. Until then the old one-way door is still open for them.
+> ⚠️ **SUPERSEDED: the "no backfill" call above was reversed on 2026-08-03** -- see the build-state block at
+> the top of this section. Gating removed the "just retype it" escape that made option B safe.
 These are NOT the same shape as the eight caps: no number, so no at-cap/over-cap split, no count in a title
 and no delete-to-make-room offer.
 

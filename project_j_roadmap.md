@@ -30,6 +30,13 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-08-03 **Item C piece 2 COMPLETE: custom macro splits and custom nutrition targets are Supporter-only**
+  (device-verified). Presets, the calorie goal, and restoring a split you already built all stay free, and a
+  grandfathered user keeps their own numbers and simply cannot change them. Both gates cover every door --
+  Settings > Goals AND the Macros modal for macros; the Custom tile AND tapping any field for nutrition.
+  The presets now appear in Settings > Goals too, so the wall's "presets stay yours for free" is actionable
+  wherever you hit it. Tapping a preset now fills the draft and waits for Save instead of applying instantly.
+  Full detail in project_j_roadmap_archive.md.
 - 2026-08-02 **The Macros modal is now a real macro editor, and custom splits survive tapping a preset**
   (device-verified). The app remembers whether you PICKED a preset or built your own instead of guessing from
   the numbers; your own split is kept where presets cannot overwrite it; a fifth Custom card puts it back in
@@ -1358,16 +1365,10 @@ are separate pre-submission checklists, NOT part of this menu.
   1. ✅ **BUILT + DEVICE-VERIFIED 2026-08-02. The count on creation toasts (piece 3).** All seven counted
      caps ship it: foods, saved meals, recipes, routines, programs, exercises, graphs. **Meal slots were
      EXEMPTED** -- see the spec, this is a real change to piece 3, not an omission.
-  2. 🟡 **Custom macro + nutrition goals gating (piece 2). MACRO GROUNDWORK BUILT 2026-08-02, GATE NOT.**
-     ✅ Built + device-verified: the preset marker (remembered, not guessed from the numbers), the stored
-     custom split so picking a preset is no longer a one-way door, the fifth Custom card, and the inline
-     macro editor with the Ratio/Fixed toggle.
-     ⬜ **STILL TO DO: (a) the GATE itself, which now has TWO homes** -- the macro controls inside
-     Settings > Goals AND the modal editor, because the modal is a full second editor now; gate one and not
-     the other and the cap does not exist. **(b) the entire Nutrition Goals side** (its Custom tile plus
-     read-only fields, and it has two doors: the tile and tapping any field).
-     ⚠️ Nothing is Supporter-only yet. See SPEC_monetization.md -> CUSTOM MACRO + NUTRITION GOALS, which now
-     carries a build-state block correcting three lines this work overturned.
+  2. ✅ **COMPLETE + DEVICE-VERIFIED 2026-08-03. Custom macro + nutrition goals gating (piece 2).**
+     Both sides shipped: the preset marker, the stored custom split and custom targets, the Custom card, the
+     inline macro editor, and the gate itself across all four doors. See SPEC_monetization.md -> CUSTOM MACRO
+     + NUTRITION GOALS, which carries a build-state block correcting the lines this work overturned.
   3. **Widening the step-down notice to CANCELLATIONS (piece 5).** Decided: a Supporter whose subscription
      ends gets the same notice, titled "Your Supporter Plan Has Ended", keeping the calendar icon. Only the
      `loading` guard was built, and that was a separate bug fix.

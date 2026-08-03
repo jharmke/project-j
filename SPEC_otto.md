@@ -418,7 +418,36 @@ speak at all and which way the follow-up leans -- they are not needed to make th
   that person once is fair. Exempting on a settings toggle would silently switch the safeguard off for a
   group who may need it. The conversation handles it (see branch 4).
 
-### HOW IT SURFACES (decided -- Justin was firm: Otto never says anything unprompted)
+### ⚠️⚠️ NARROWED 2026-08-03 -- THE TRIGGER LIST BELOW IS SUPERSEDED. READ THIS FIRST.
+
+**FATIGUE IS OUT. "why am I so tired lately" NO LONGER SURFACES THIS.** Otto answers that question normally
+-- sleep score, recovery, training load -- which are more likely answers anyway.
+
+**IT SURFACES ONLY WHEN THE USER RAISES FOOD, INTAKE OR THE SCALE THEMSELVES:** "how am I doing on calories
+this week", "why isn't the scale moving", "what should I eat tonight", or anything where they bring up their
+own intake. Everything else, including fatigue, gets a normal answer with no mention of this.
+
+**WHY (Justin, 2026-08-03, and he pushed back on this feature repeatedly before it landed here):** injecting
+a fixed, eating-disorder-adjacent question into "why am I so tired" IS a swerve for the person who simply
+slept five hours. The old text argued it was not a swerve because undereating is a real answer to that
+question -- true, but it is one of several, and the others are more common. *"why cant he just answer the why
+am i so tired lately normally? bring up sleep/recovery scores and make a logical answer based on calories if
+needed?"*
+
+**THE ARGUMENT AGAINST NARROWING, recorded so nobody reopens this without seeing it:** people who raise the
+subject themselves are largely people already aware of it. Somebody genuinely undereating often does not ask.
+So this trades away real coverage. **It was taken knowingly, and the reason it is defensible is that this
+spec ALREADY gave up most of that coverage** the moment it decided Otto never speaks first -- somebody who
+never opens the chat was never going to hear it either way. Narrowing is a difference of degree, not kind.
+
+➡️ **TWO BUILD CONSEQUENCES, both good:** the detector now matches FOOD WORDS rather than inferring intent
+from "I'm tired", which is far easier to get right; and the worst failure mode -- a medical-adjacent question
+landing on somebody asking about their step goal -- effectively disappears.
+
+⚠️ **EVERYTHING ELSE IN THIS SECTION STANDS:** he never speaks first, the sentence is fixed and app-supplied,
+it is a QUESTION not a warning, the app renders the numbers, and the eight branches are unchanged.
+
+### HOW IT SURFACES (⚠️ the SURFACES list below is superseded by the narrowing above -- fatigue is out)
 **He does NOT speak first.** The flag sits there quietly and he raises it only when the conversation has
 ALREADY gone near food, energy or the scale.
 - ✅ SURFACES: "how am I doing on calories this week", "why am I so tired lately" (undereating is a real

@@ -15,6 +15,8 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { Ionicons } from '@/components/AppIcons';
 import { isOnboardingPreview } from '../../utils/onboardingPreview';
+import { computeCalorieFloor } from '../../utils/calorieFloor';
+import CalorieFloorModal from '../../components/CalorieFloorModal';
 import { MODE_ACCENT, getModeAccentTints, setSessionStyleMode } from '../../utils/modeAccent';
 import { Type } from '../../typography';
 import BackgroundLayers from '../../components/BackgroundLayers';
@@ -347,6 +349,8 @@ export default function YourStyleScreen() {
   // null = still reading the key; true/false = decided. Rendering the modal before the read lands would
   // flash it at someone who already acknowledged.
   const [showDisclaimer, setShowDisclaimer] = useState<boolean | null>(null);
+  // ITEM G: the low-target modal. null = not showing. modalLine rides along so "slower pace" knows what to clear.
+  const [floorModal, setFloorModal] = useState<{ modalCase: 1 | 2 | 3 | 4; target: number; modalLine: number } | null>(null);
   // The footer STAYS DOWN when the keyboard opens. Riding on top of the keyboard put Continue right over
   // the weight field you were typing into -- and the Done bar is already the way out of that keyboard, so
   // the footer has no job while you type.
@@ -411,8 +415,88 @@ export default function YourStyleScreen() {
     const trainingDailyBonus  = TRAINING_OPTIONS.find(o => o.key === trainingFrequency)?.dailyBonus ?? 0;
     const tdee    = Math.round((bmr * lifestyleMultiplier) + trainingDailyBonus);
     const deficit = GOAL_DEFICITS[weightGoal] ?? -500;
-    setSuggestedCals(Math.max(1200, Math.round(tdee + deficit)));
+    // ⚠️ NO CLAMP. This used to be Math.max(1200, ...), which silently showed 1,200 to somebody whose maths
+    // landed at 915 and never told them. Two things wrong with that: SPEC_calorie_floor.md is explicitly
+    // "warn + consent, NEVER hard-block, the real number always shows", and a displayed target that is not
+    // what the calculation produced breaks the honest-numbers rule. The flat 1,200 did not even match the
+    // real lines (male 1500/1200, female 1200/1000), so a man could be handed 1,200 with no warning at all.
+    setSuggestedCals(Math.round(tdee + deficit));
   }, [profileData, currentWeight, lifestyleActivity, trainingFrequency, weightGoal]);
+
+  // ── ITEM G: THE LOW-TARGET SAFEGUARD, same classifier and same modal the Profile tab already uses ──────
+  // ⚠️ `profileData.sex` RAW, never the `sx` variable above. That one defaults to 'male' for the BMR maths,
+  // and computeCalorieFloor deliberately falls back to the FEMALE lines when sex is unknown -- passing the
+  // BMR default would hand an unset user the male lines, the exact opposite of the safety net's intent.
+  const calorieFloor = computeCalorieFloor({
+    calTarget: suggestedCals ?? 0,
+    sex: profileData?.sex,
+    weightGoal,
+    lifestyleActivity,
+    trainingFrequency,
+  });
+
+  // Fires when a newly-picked PACE lands the target in the modal zone. Mirrors the Profile tab's
+  // `maybeShowFloorModal` deliberately -- same trigger, same acknowledgement key, same three levers.
+  // ⚠️ ON PACE SELECTION, NOT ON CONTINUE. The modal's own actions are "choose a slower pace" and "adjust
+  // activity", which only mean anything while the user is still on those controls. Firing it at Continue
+  // would ambush somebody who thinks they are finished and then send them backwards.
+  // ⚠️ The acknowledgement is SHARED with the Profile tab, so somebody who accepts a low target here is not
+  // asked again about the same number five minutes later. Only a target that drops FURTHER re-asks.
+  const maybeShowFloorModal = async (newGoal: string) => {
+    // ⚠️ DELIBERATELY RUNS IN PREVIEW TOO. Skipping it there was the first instinct and it is wrong twice
+    // over: preview exists to SHOW the real onboarding, and skipping would make this untestable without
+    // creating a brand-new account every time. Nothing is written in preview -- the acknowledgement guard
+    // lives in acknowledgeFloor, which is the only thing here that touches storage.
+    if (!profileData || !suggestedCals) return;
+    const w = parseFloat(currentWeight || '0') || 0;
+    const h = parseFloat(profileData.height || '0') || 0;
+    if (!w || !h || !profileData.birthday) return;
+    const age = Math.floor((Date.now() - new Date(profileData.birthday).getTime()) / (365.25 * 24 * 3600 * 1000));
+    const kg = w * 0.453592;
+    const cm = h * 2.54;
+    const bmr = (profileData.sex || 'male') === 'female'
+      ? (10 * kg) + (6.25 * cm) - (5 * age) - 161
+      : (10 * kg) + (6.25 * cm) - (5 * age) + 5;
+    const lifestyleMultiplier = LIFESTYLE_OPTIONS.find(o => o.key === lifestyleActivity)?.multiplier ?? 1.2;
+    const trainingDailyBonus = TRAINING_OPTIONS.find(o => o.key === trainingFrequency)?.dailyBonus ?? 0;
+    const tdee = Math.round((bmr * lifestyleMultiplier) + trainingDailyBonus);
+    const newTarget = Math.round(tdee + (GOAL_DEFICITS[newGoal] ?? -500));
+    const fl = computeCalorieFloor({
+      calTarget: newTarget, sex: profileData.sex, weightGoal: newGoal,
+      lifestyleActivity, trainingFrequency,
+    });
+    if (fl.zone !== 'modal' || !fl.modalCase) return;
+    try {
+      const raw = await AsyncStorage.getItem('pj_calorie_warning_acknowledged');
+      const ack = raw ? JSON.parse(raw) : null;
+      if (ack && typeof ack.target === 'number' && newTarget >= ack.target) return; // same or safer, no nag
+    } catch {}
+    setFloorModal({ modalCase: fl.modalCase, target: newTarget, modalLine: fl.modalLine });
+  };
+
+  // "Choose a slower pace": the FASTEST loss pace that still clears the modal line, so the user gives up as
+  // little as possible. Falls back to the gentlest if none of them clear it.
+  const floorSlowerPace = () => {
+    const order = ['lose_2', 'lose_1_5', 'lose_1', 'lose_0_75', 'lose_0_5', 'lose_0_25'];
+    let pick = 'lose_0_25';
+    if (floorModal && suggestedCals) {
+      const tdeeNow = suggestedCals - (GOAL_DEFICITS[weightGoal] ?? -500);
+      for (const p of order) {
+        if (tdeeNow + (GOAL_DEFICITS[p] ?? 0) >= floorModal.modalLine) { pick = p; break; }
+      }
+    }
+    setWeightGoal(pick);
+    setFloorModal(null);
+  };
+
+  const acknowledgeFloor = async () => {
+    // ⚠️ The ONLY write in the floor flow, and it is skipped in preview -- previewing onboarding must never
+    // leave a real acknowledgement behind that silences a genuine warning later.
+    if (floorModal && !isOnboardingPreview()) {
+      try { await storageSet('pj_calorie_warning_acknowledged', JSON.stringify({ target: floorModal.target })); } catch {}
+    }
+    setFloorModal(null);
+  };
 
   // When user switches mode, update macro preset default
   const handleModeSelect = (mode: string) => {
@@ -772,6 +856,16 @@ export default function YourStyleScreen() {
               {/* The Mifflin line above is a METHOD note, not a disclaimer -- this screen was showing a
                   calorie target, a BMR and a weight projection with neither the inline line nor the
                   first-use modal the Disclaimer Standard names for all three. */}
+              {/* ITEM G: the WHISPER. The floor has two zones -- this quiet caution, and the modal that
+                  fires on a pace change. Without it, removing the clamp would leave somebody in the whisper
+                  band staring at a bare low number with no context, which is the same "show it and say
+                  nothing" problem the clamp had, just moved. Deliberately calm: no alarm colour, no icon,
+                  no blocking. The modal is where the app gets louder. */}
+              {calorieFloor.zone !== 'green' && (
+                <Text style={{ fontSize: 12, fontFamily: Type.ui, textAlign: 'center', marginTop: 10, lineHeight: 17, color: theme.textSecondary }}>
+                  That's on the low side. Easing your pace or adding a little daily movement would give you more to eat.
+                </Text>
+              )}
               <Text style={{ fontSize: 11, fontFamily: Type.ui, fontStyle: 'italic', textAlign: 'center', marginTop: 8, color: theme.textSecondary }}>
                 For informational purposes only. Not medical advice.
               </Text>
@@ -806,7 +900,7 @@ export default function YourStyleScreen() {
                   return (
                     <TouchableOpacity
                       key={pill.key}
-                      onPress={() => { if (!isDimmed) { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setWeightGoal(pill.key); } }}
+                      onPress={() => { if (!isDimmed) { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setWeightGoal(pill.key); maybeShowFloorModal(pill.key); } }}
                       activeOpacity={isDimmed ? 1 : 0.7}
                       style={[
                         styles.pacePill,
@@ -938,6 +1032,21 @@ export default function YourStyleScreen() {
 
       {showDisclaimer === true && (
         <TargetsDisclaimerModal theme={theme} accent={accent} onAcknowledge={acknowledgeDisclaimer} />
+      )}
+
+      {/* ITEM G: the low-target modal, same component and same four cases the Profile tab uses.
+          ⚠️ "Adjust activity" just closes it here, unlike Profile which scrolls to its activity section --
+          on this screen the activity controls are already above the pace pills and in view. */}
+      {floorModal && (
+        <CalorieFloorModal
+          theme={theme}
+          modalCase={floorModal.modalCase}
+          target={floorModal.target}
+          onSlowerPace={floorSlowerPace}
+          onAdjustActivity={() => setFloorModal(null)}
+          onSetMaintenance={() => { setWeightGoal('maintain'); setFloorModal(null); }}
+          onContinue={acknowledgeFloor}
+        />
       )}
 
       {Platform.OS === 'ios' && [DONE_ID_CURRENT, DONE_ID_GOAL].map(id => (

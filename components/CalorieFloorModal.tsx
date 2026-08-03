@@ -32,7 +32,10 @@ function copyFor(modalCase: FloorModalCase, target: number): { title: string; bo
   switch (modalCase) {
     case 1: return {
       title: "Let's give you more to work with",
-      body: `At this pace your target lands at ${target} calories. That's low enough it gets genuinely hard to hit your protein, vitamins, and minerals, and your body has less to recover with. Two easy fixes: ease the pace, or add a little daily movement so you earn more food. Either one feeds you better while you still lose.`,
+      // ⚠️ "which lifts your target", NOT "so you earn more food" (changed 2026-08-03). Earning food frames
+      // eating as a reward for exercise, which is the exact thinking this modal exists to interrupt -- and
+      // case 3 below already said it better ("raises how much you can eat"). Case 1 was the outlier.
+      body: `At this pace your target lands at ${target} calories. That's low enough it gets genuinely hard to hit your protein, vitamins, and minerals, and your body has less to recover with. Two easy fixes: ease the pace, or add a little daily movement, which lifts your target. Either one feeds you better while you still lose.`,
     };
     case 2: return {
       title: 'Ease off the throttle',

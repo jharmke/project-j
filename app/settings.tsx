@@ -46,6 +46,7 @@ import { generateDiagnosticReport, ReportWindow, dumpWindowComparison } from '..
 import { dumpDayScoreWithRecovery, ensureFreshDayScore } from '../utils/dayScoreStore';
 import { buildCompanionStats } from '../utils/companionStats';
 import { devExpireFirstWeek, devSimulateCancelled } from '../utils/firstWeek';
+import { loadCalorieTargets } from '../utils/calorieTarget';
 import { CapKey, FREE_CAPS, SUPPORTER_CAPS, countFor, countUserExercises, setDevCapOverride, clearDevCapOverrides } from '../utils/caps';
 // Only for the cap dev tools: exercises are the one cap whose user-made count cannot be worked out without
 // the built-in list. See the note on DEFAULT_LIBRARY.
@@ -4139,6 +4140,50 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>What you have vs the free and Supporter limits. Writes nothing.</Text>
               </View>
               <Ionicons name="speedometer-outline" size={18} color={theme.accentBlue} />
+            </TouchableOpacity>
+
+            {/* ITEM G: exists because "the modal is not firing" had three plausible causes and no way to tell
+                them apart -- wrong sex value, a stale acknowledgement, or a target that is not actually below
+                the line. Guessing at that in turn is exactly how time gets burned. Reads only. */}
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              try {
+                const raw = await AsyncStorage.getItem('pj_profile');
+                const p = raw ? JSON.parse(raw) : {};
+                // ⚠️ USE THE CANONICAL COMPUTATION, NOT profile.calTarget. The first version of this read the
+                // stored value and reported GREEN while the user was actually in the modal zone. When "Use
+                // recommended value" is ON, `loadCalorieTargets` RECOMPUTES the target live from BMR,
+                // activity and pace -- the stored calTarget is only a fallback for incomplete stats, and can
+                // sit stale for months without anything being wrong. A diagnostic reading the fallback is
+                // worse than no diagnostic: it sends you hunting for a bug in working code.
+                const d = new Date();
+                const dk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                const canonical = await loadCalorieTargets(dk);
+                const target = canonical.calTarget;
+                const fl = canonical.floor;
+                const ackRaw = await AsyncStorage.getItem('pj_calorie_warning_acknowledged');
+                const ack = ackRaw ? JSON.parse(ackRaw) : null;
+                const silenced = ack && typeof ack.target === 'number' && target >= ack.target;
+                Alert.alert(
+                  'Calorie Floor State (read-only)',
+                  `Live target: ${target || '--'}   (the number the app actually uses)\n` +
+                  `Stored fallback: ${parseInt(p.calTarget || '0') || '--'}   (only used if stats are incomplete or the recommended toggle is off)\n` +
+                  `Sex as stored: ${p.sex === undefined ? 'UNSET' : `"${p.sex}"`}${p.sex !== 'male' ? '  -> using FEMALE lines' : '  -> using MALE lines'}\n` +
+                  `Pace: ${p.weightGoal || '--'}\n` +
+                  `Activity: ${p.lifestyleActivity || '--'} / training ${p.trainingFrequency || '--'}\n\n` +
+                  `Whisper line: ${fl.whisperLine}\nModal line: ${fl.modalLine}\n` +
+                  `ZONE: ${fl.zone.toUpperCase()}${fl.modalCase ? ` (case ${fl.modalCase})` : ''}\n\n` +
+                  `Acknowledged at: ${ack && typeof ack.target === 'number' ? ack.target : 'never'}\n` +
+                  `${silenced ? 'SILENCED -- an acknowledgement at or below this target is stopping the modal.' : 'Not silenced.'}\n\n` +
+                  `⚠️ The modal only fires when you tap a PACE pill. Changing activity or training moves the number but does not re-check.`,
+                );
+              } catch (e) { Alert.alert('Floor state failed', String(e)); }
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentBlue }]}>Calorie Floor State (read-only)</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Which lines apply, what zone you're in, and whether an old acknowledgement is silencing the modal.</Text>
+              </View>
+              <Ionicons name="pulse-outline" size={18} color={theme.accentBlue} />
             </TouchableOpacity>
 
             {/* Cap override -- the ONLY way to reach the AT-cap wall. Justin's account sits well OVER most

@@ -71,8 +71,12 @@ print: "For informational purposes only. Not medical advice."
 Title: Let's give you more to work with
 Body: At this pace your target lands at 950 calories. That's low enough it gets genuinely hard to
 hit your protein, vitamins, and minerals, and your body has less to recover with. Two easy fixes:
-ease the pace, or add a little daily movement so you earn more food. Either one feeds you better
+ease the pace, or add a little daily movement, which lifts your target. Either one feeds you better
 while you still lose.
+⚠️ **"which lifts your target" REPLACED "so you earn more food" on 2026-08-03** (Justin caught it while
+testing G). Earning food frames eating as a reward for exercise -- the exact thinking this modal exists to
+interrupt, on the one screen where it does the most harm. Case 3 below already phrased it correctly
+("raises how much you can eat"); case 1 was the outlier. Do not reintroduce transactional language here.
 Buttons: [Choose a slower pace] [Adjust activity level] [I understand, continue]
 
 ### Case 2 - aggressive pace + already active (pace only)

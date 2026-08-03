@@ -445,7 +445,8 @@ from "I'm tired", which is far easier to get right; and the worst failure mode -
 landing on somebody asking about their step goal -- effectively disappears.
 
 ⚠️ **EVERYTHING ELSE IN THIS SECTION STANDS:** he never speaks first, the sentence is fixed and app-supplied,
-it is a QUESTION not a warning, the app renders the numbers, and the eight branches are unchanged.
+it is a QUESTION not a warning, and the app renders the numbers. The eight branches stand too, with ONE
+later revision: branch 2 ("I don't log dinner") now allows a normal nudge to log. See the branch itself.
 
 ### HOW IT SURFACES (⚠️ the SURFACES list below is superseded by the narrowing above -- fatigue is out)
 **He does NOT speak first.** The flag sits there quietly and he raises it only when the conversation has
@@ -499,7 +500,15 @@ tokens come back for free users.
    as "yes, too much."
 
 **RULES, NOT SCRIPTS (a scripted "got it, thanks for telling me" would sound worse than something he writes):**
-2. **"I don't log dinner."** Back off. ONE line, framed as what SHE loses, never as what the app wants:
+2. **"I don't log dinner."** ⚠️ **REVISED 2026-08-03 (Justin): HE MAY COACH HERE.** This answer RESOLVES
+   the Two Women Problem in her favour: she has just identified herself as the one who eats her dinner and
+   is only bad at logging it, so the conversation is no longer a sensitive one and a normal nudge to log the
+   whole day is fine. The original "no reminder to log tonight" rule below was written for a person who
+   might be deflecting, and there is no way to tell those two apart. Building around the unprovable version
+   means treating every user as fragile. ⚠️ Measured: left to himself Otto adds that nudge about half the
+   time, which is now acceptable rather than a defect.
+   The original wording, kept because the FRAMING still stands. ONE line, framed as what SHE loses, never
+   as what the app wants:
    missing meals drag her averages, Day Score, weekly/monthly summaries and EvR report down with them, so
    the app ends up telling her a story about a week she did not have. Direction: *"Good to know. Worth
    mentioning that missing dinners will drag your averages and your Day Score down with them, so the app
@@ -535,10 +544,16 @@ The detection is app-side code, so this is no longer purely an Otto item. It is 
 the recommended TARGET; this guards actual INTAKE), though it inherits G's thresholds from
 `utils/calorieFloor.ts`. Sequenced next to G, since they share thresholds and philosophy.
 
-### DOC SYNC (standing rule, do not batch)
-This is exactly the kind of quiet feature that gets missed. When it ships, `tooltipRegistry.ts`,
-`data/tutorials.ts` and Otto's knowledge base (`functions/src/assistantAppKnowledge.ts`, redeployed) all
-need to know about it in the SAME session.
+### DOC SYNC -- ✅ SETTLED AT BUILD TIME 2026-08-03: NOTHING TO WRITE, AND THAT IS DELIBERATE
+The standing rule says a behaviour change updates `tooltipRegistry.ts`, `data/tutorials.ts` and Otto's
+knowledge base in the same session. Walked, and all three are correctly EMPTY here:
+- **No tooltip and no tutorial.** There is no card, no screen and no setting. Nothing renders, so there is
+  nothing to point an (i) at or walk anyone through.
+- **⚠️ NOTHING IN OTTO'S KB, ON PURPOSE.** Telling him the safeguard exists gives him something to explain,
+  and branch 6 forbids exactly that: he may not defend the question or say why he asked. Measured -- when he
+  reached for an explanation on that branch he also dragged the free plan into it. The mechanism reaches him
+  as an instruction on the one message it applies to, and he knows nothing about it otherwise.
+Logged so a future close-out audit reads this as a decision rather than a miss.
 
 ⚠️ STILL OPEN, inherited from the original draft: the exact threshold and wording deserve a dietitian's
 eyes. This is an App Store consideration as well as an ethical one -- Apple's guidelines have provisions

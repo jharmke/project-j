@@ -9,6 +9,8 @@ import {
   buildCompanionVolatile,
   PITCH_REQUIRED_BLOCK,
   buildWorkoutCapBlock,
+  buildUndereatingAskBlock,
+  buildUndereatingFollowUpBlock,
   DECLINE_WATCH_BLOCK,
   type StyleMode,
   type FaithTier,
@@ -211,6 +213,8 @@ export const appCompanion = onCall(
       workoutCut?: unknown;
       pitchAsked?: unknown;
       mayDecline?: unknown;
+      undereating?: unknown;
+      undereatingFollowUp?: unknown;
     };
     const message = typeof data.message === 'string' ? data.message.trim() : '';
     if (!message) {
@@ -307,7 +311,22 @@ export const appCompanion = onCall(
     // a decline would silence their own questions too, which would be a worse app than before the feature.
     const pitchAsked = data.pitchAsked === true;
     const silenced = state.declined && !pitchAsked;
-    const pitchAllowed = status === 'free' && pitchRequested && budgetHasRoom && !silenced;
+    // ── THE UNDEREATING SAFEGUARD (THE PLAN item L) ────────────────────────────────────────────────────
+    // The APP detects the pattern and renders the numbers; Otto is only the voice. What arrives here is a
+    // flag plus two figures, never anybody's food history, so the item B data gate is untouched and this
+    // behaves identically for a free user and a Supporter. Numbers are validated because they are printed
+    // into copy the user reads word for word.
+    const rawUnder = data.undereating as { avgCal?: unknown; bmr?: unknown } | undefined;
+    const underAvg = typeof rawUnder?.avgCal === 'number' && rawUnder.avgCal > 0 ? Math.round(rawUnder.avgCal) : 0;
+    const underBmr = typeof rawUnder?.bmr === 'number' && rawUnder.bmr > 0 ? Math.round(rawUnder.bmr) : 0;
+    const safeguardActive = underAvg > 0 && underBmr > 0;
+    // The app arms the follow-up for the two turns after the question, so the two medical-adjacent answers
+    // are ready if they go that way. Otto picks between them; the app cannot see which answer they gave.
+    const safeguardFollowUp = safeguardActive && data.undereatingFollowUp === true;
+
+    // ⚠️ A SAFETY QUESTION AND A SALES LINE DO NOT SHARE A REPLY. Suppressing it here rather than on the
+    // client also means the weekly slot is never spent (see `pitched` below, which reads this same flag).
+    const pitchAllowed = status === 'free' && pitchRequested && budgetHasRoom && !silenced && !safeguardActive;
 
     // ⚠️ THE PITCH INSTRUCTION RIDES ON THE MESSAGE, NOT THE SYSTEM PROMPT. See PITCH_REQUIRED_BLOCK for the
     // measurements; the short version is that Otto is on a small model with a ~90,000 character system
@@ -329,6 +348,11 @@ export const appCompanion = onCall(
     // something you were never offered. The client tracks that; the server still gates it on being free.
     const mayDecline = status === 'free' && data.mayDecline === true;
     const suffix = [
+      // ⚠️ THE SAFEGUARD LEADS. If a message somehow both asks for exercises and raises food, the safety
+      // question comes first and the cap block still rides along underneath it: obeying the safeguard means
+      // naming no movements at all, so the ceiling costs nothing, and if he ignores it the cap still holds.
+      safeguardFollowUp ? buildUndereatingFollowUpBlock(underAvg, underBmr)
+        : safeguardActive ? buildUndereatingAskBlock(underAvg) : '',
       capsWorkout ? buildWorkoutCapBlock(workoutCut) : '',
       mayDecline ? DECLINE_WATCH_BLOCK : '',
       pitchAllowed ? PITCH_REQUIRED_BLOCK : '',

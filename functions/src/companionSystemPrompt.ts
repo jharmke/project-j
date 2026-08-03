@@ -183,6 +183,66 @@ const WORKOUT_CAP_RULES = `
 
 Then stop. No apology. Do not describe what you did not give them. Do not offer to cover the rest if they ask again.)`;
 
+// ── THE UNDEREATING SAFEGUARD (THE PLAN item L) ────────────────────────────────────────────────────────
+//
+// ⚠️ APPENDED TO THE USER'S MESSAGE, NOT THE SYSTEM PROMPT. Same placement as the pitch and the cap, for the
+// same measured reason: an instruction Otto must ACT on loses to his standing character from the end of a
+// ~90,000 character prompt. Gated on a flag the app sets, so it costs nothing on any other message.
+//
+// ⚠️ THE SENTENCES ARE FIXED AND THE APP OWNS THEM. Improvising here produces the normal range of model
+// output, and on this subject one in ten being wrong is too many: "you should probably eat more" is a
+// prescription Mindful bans outright, "that's really low, are you okay?" is alarm, and "you're probably
+// fine" is false reassurance this spec forbids. Otto writes the LEAD-IN so it fits what they asked; the
+// moment he is on the subject, the words are the app's.
+//
+// ⚠️ NO MODE VARIANTS. The sentences deliberately mention no target and no comparison, so they read
+// identically in Discipline, Balanced and Mindful.
+const num = (n: number) => Math.round(n).toLocaleString('en-US');
+
+/** Turn 1: he raises it, asks, and stops. @param avgCal average across every logged day in the window. */
+export function buildUndereatingAskBlock(avgCal: number): string {
+  return `(BEFORE YOU ANSWER ANYTHING ELSE. The app has noticed something in this user's food log and needs you to put ONE question to them. This is not optional and it is not something you decide.
+
+Write a SHORT lead-in of your own so it fits what they just asked, then give this sentence WORD FOR WORD:
+
+"Your log's been coming in around ${num(avgCal)} calories a day this past week. Is that close to what you're actually eating, or are some meals not making it in?"
+
+- Do NOT shorten it, soften it, rephrase it or add to it. Every word, in that order.
+- Do NOT answer it yourself, guess at the reason, or say anything about what they should eat.
+- Do NOT name a target, a deficit, or what the number ought to be. Do not say the word "low".
+- After the sentence, STOP. Do not also answer their original question in this reply. If they come back and ask it again, answer it then.
+- Lead-ins that do the job: "Before I get into that, one thing." / "There's a version of this where the answer isn't what you'd expect, so let me ask first." / "Could be a few things, and one of them's worth ruling out first."
+- Say nothing about the app noticing, nothing about a flag, and nothing about why you are asking.)`;
+}
+
+/**
+ * Turns 2 and 3: they have answered. TWO of the possible answers carry medical-adjacent content and are
+ * fixed copy; everything else is his to write.
+ *
+ * ⚠️ THE APP CANNOT TELL WHICH ANSWER THEY GAVE -- Otto sees their reply and the app does not, and "is that
+ * bad?" arrives in a hundred phrasings a detector would guess wrong on. So he is handed BOTH sentences and
+ * picks, the same way he is handed the cap's limit line. Justin's call 2026-08-03, option 1 of 3.
+ */
+export function buildUndereatingFollowUpBlock(avgCal: number, bmr: number): string {
+  return `(YOU ASKED THIS USER ABOUT THEIR FOOD LOG A MOMENT AGO. If their reply is one of the two cases below, the reply given here is your WHOLE answer, word for word, with no lead-in and nothing added. If it is neither, IGNORE THIS BLOCK COMPLETELY, answer them normally, and never raise their intake again.
+
+CASE A. They confirm the log is accurate. "No, that's real." / "That's genuinely what I eat." / "Yeah, that's right."
+"Thanks for telling me. For context, your body runs through around ${num(bmr)} calories a day just keeping the lights on, before you move at all. Eating under that for a stretch usually means coming up short on nutrients, not only calories. Nothing to fix this second, it's just worth knowing."
+
+CASE B. They ask you for a verdict. "Is that bad?" / "Should I be worried?" / "Is that dangerous?"
+"Honestly, that's not mine to call. What I can tell you is the plain number. Your body runs through about ${num(bmr)} calories a day before you move at all, and your log's been closer to ${num(avgCal)}. A stretch like that usually means falling short on nutrients as much as calories. If that's accurate and it keeps going, it's worth a conversation with a doctor or a dietitian."
+
+CASE C. They push back on you asking at all. "Why do you care?" / "Why are you asking?" / "None of your business."
+"Fair enough, I'll leave it there."
+That sentence is the WHOLE reply and nothing follows it, unless the same message also contained a real question, in which case answer that underneath and say nothing further about their food. Never explain why you asked, never defend the question, and say NOTHING about the free plan, the Supporter plan, or what data you can and cannot see. They did not ask about any of that, and it is not why you asked.
+
+- After any of the three, STOP. Do not ask why, do not tell them to eat more, do not offer to help them fix it, and do not bring it up again later.
+- They said they do not log dinner, or some meals: they are not in either case. Say it in ONE sentence, framed as what THEY lose, never as what the app wants. Missing meals drag their averages, Day Score, weekly and monthly summaries and their reports down with them, so the app ends up telling them a story about a week they did not have. Then STOP. Do NOT ask them to start logging those meals, do NOT offer to tell them more if they do, and do NOT end with a question of any kind.
+- They said they are cutting on purpose, are sick, are travelling, or are fasting: they are not in either case. Take them at their word in a sentence and move on. No argument, no talking them out of it, no follow-up.
+- They ignored the question: just answer whatever they actually asked, and never mention their intake again.
+- NEVER treat any of this as an emergency and never escalate it. Someone saying "yes, that's real" is an adult describing their week.)`;
+}
+
 /**
  * @param dataSnapshot  the GATED data. The caller must already have discarded it for a non-Supporter.
  * @param freeContext   the always-free extras (achievements, journal + prayers, the exercise-name list).

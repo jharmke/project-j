@@ -30,6 +30,11 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-08-03 **Item L done: the undereating safeguard.** The app watches for a logged week that sits under
+  the calorie floor and hands Otto one finished sentence to ask about it; he never speaks first and only
+  raises it when the user brings up food or the scale themselves. Device-verified: the question, the "that's
+  real" answer and the "why do you care" answer. ⚠️ The unrelated-question and 30-day-quiet tests were not
+  run. Measured at 6/6 before a one-word copy change.
 - 2026-08-03 **Item G done: onboarding stops quietly rounding a dangerous calorie target up to 1,200.** A new
   user whose maths landed at 915 was shown 1,200 and never told -- the real number now shows, a caution line
   appears when it is low, and the same low-target modal the Profile tab uses fires on an aggressive pace.
@@ -2144,7 +2149,15 @@ are separate pre-submission checklists, NOT part of this menu.
      **SEQUENCE:** alongside or before **I** (renaming lives in that editor), and before **E** makes
      exercise creation common.
 
-  **L. UNDEREATING SAFEGUARD (build)** -- NEW 2026-07-30. The DECISION is fully made (SPEC_otto.md), but the
+  **L. ✅ COMPLETE + DEVICE-VERIFIED 2026-08-03. UNDEREATING SAFEGUARD.** Detection in
+     `utils/undereatingSafeguard.ts` (last 7 days, blank and vacation days dropped, 5 logged days minimum,
+     4 under the floor line, whole-week average, gross not net); the sentence and the three fixed answers
+     ride on the user's message from `companionSystemPrompt.ts`. Two dev rows arm and disarm it without
+     touching a single logged day. Justin's calls: 30-day quiet period flat with no per-branch variation,
+     5 logged days not 7, whole-week average never the low days only, and branch 2 revised so Otto MAY
+     nudge someone who says they do not log dinner (that answer resolves the Two Women Problem in her
+     favour, so the conversation is no longer a sensitive one). Full post-mortem in the archive.
+     (historical) The DECISION is fully made (SPEC_otto.md), but the
      detection is APP-SIDE code, so it is no longer an Otto-only item and needed a home. Not part of G (that
      guards the recommended TARGET; this guards actual INTAKE), though it inherits G's thresholds from
      `utils/calorieFloor.ts`. Pairs naturally with G since they share thresholds and philosophy.

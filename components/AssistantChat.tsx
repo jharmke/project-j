@@ -23,6 +23,7 @@ import { CRISIS_RESPONSE, screenForCrisis } from '../utils/faithCrisis';
 import { buildCompanionStats } from '../utils/companionStats';
 import { buildPRContextIfRelevant, buildExerciseNamesIfRelevant } from '../utils/companionPRs';
 import { messageHitsWall, messageAsksForMore, messageBlocksPitch, messageAsksForExercises, workoutAskWantsMoreThanTwo, WALLS_BEFORE_PITCH } from '../utils/companionPitch';
+import { messageRaisesIntake, checkUndereatingPattern, markSafeguardShown } from '../utils/undereatingSafeguard';
 import { buildWorkoutContextIfRelevant } from '../utils/companionWorkouts';
 import { buildFoodContextIfRelevant } from '../utils/companionFood';
 import { buildSleepContextIfRelevant, messageIsAboutSleep } from '../utils/companionSleep';
@@ -582,6 +583,11 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
   // always take the opening on the exact message it is offered), and that shuts the request off for the rest
   // of this conversation. Resets with the chat, same as the wall count.
   const pitchedRef = useRef(false);
+  // ⚠️ ARMED FOR THE TWO TURNS AFTER THE SAFEGUARD ASKS. Two of the possible answers ("no, that's real" and
+  // "is that bad?") are fixed app-supplied copy carrying medical-adjacent content, and they are answers to
+  // the NEXT message, so the numbers have to survive the turn that produced them. Clears itself, and clears
+  // on a crisis. Resets with the chat, same as the wall count and the pitch latch.
+  const safeguardRef = useRef<{ flag: { avgCal: number; bmr: number }; turnsLeft: number } | null>(null);
 
   const canSend = input.trim().length > 0 && !sending;
 
@@ -613,6 +619,9 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
     if (screenForCrisis(text).isCrisis) {
       triggerHapticNotification(Haptics.NotificationFeedbackType.Warning);
       setMessages(prev => [...prev, { role: 'crisis', text: '' }]);
+      // ⚠️ THE CRISIS PATH TAKES OVER COMPLETELY AND THE SAFEGUARD STOPS. It never escalates on its own and
+      // it must not come back with a scripted follow-up on top of the crisis response.
+      safeguardRef.current = null;
       return;
     }
 
@@ -679,6 +688,31 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
         if (messageHitsWall(text) || namesCtx || workoutCut) wallCountRef.current += 1;
       }
 
+      // ─── THE UNDEREATING SAFEGUARD (THE PLAN item L; SPEC_otto.md) ───
+      // ⚠️ HE NEVER SPEAKS FIRST. This only ever runs on a message where THEY raised food, intake or the
+      // scale. Fatigue is deliberately out (narrowed 2026-08-03): "why am I so tired lately" gets a normal
+      // answer about sleep and recovery, which are the likelier causes anyway.
+      // ⚠️ BOTH TIERS. The app hands over a flag and two numbers, not their food history, so nothing about
+      // the item B data gate changes and a free user is protected exactly as well as a Supporter.
+      let undereating: { avgCal: number; bmr: number } | undefined;
+      let undereatingFollowUp = false;
+      let safeguardAskedNow = false;
+      if (safeguardRef.current && safeguardRef.current.turnsLeft > 0) {
+        // Already asked. Carry the numbers for another turn or two so the two fixed answers are available
+        // if they confirm the log is real or ask whether it is bad. Otto picks; the app cannot see which.
+        undereating = safeguardRef.current.flag;
+        undereatingFollowUp = true;
+        safeguardRef.current.turnsLeft -= 1;
+        if (safeguardRef.current.turnsLeft <= 0) safeguardRef.current = null;
+      } else if (messageRaisesIntake(text)) {
+        const flag = await checkUndereatingPattern(localTodayKey());
+        if (flag) {
+          undereating = flag;
+          safeguardAskedNow = true;
+          safeguardRef.current = { flag, turnsLeft: 2 };
+        }
+      }
+
       // ⚠️ A REQUEST, NOT A DECISION. The server still checks that they are a CONFIRMED free user and that
       // the weekly budget has room before Otto is told he may say anything. See SPEC_otto.md open item 4.
       // ⚠️ THE ONCE-PER-CONVERSATION LATCH APPLIES TO THE WALL TRIGGER ONLY. If they ASK about the plan, he
@@ -699,7 +733,7 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
           wallCountRef.current >= WALLS_BEFORE_PITCH &&
           !pitchedRef.current);
       const callable = httpsCallable(getFunctions(app), 'appCompanion');
-      const res = await callable({ message: text, history, styleMode, faithTier, userContext, dataSnapshot, freeContext, pitchRequested, pitchAsked, mayDecline, capsWorkout, workoutCut });
+      const res = await callable({ message: text, history, styleMode, faithTier, userContext, dataSnapshot, freeContext, pitchRequested, pitchAsked, mayDecline, capsWorkout, workoutCut, undereating, undereatingFollowUp });
       const data = (res.data ?? {}) as { ok?: boolean; reply?: string; crisis?: boolean; message?: string; used?: number; cap?: number; pitched?: boolean };
 
       if (typeof data.used === 'number' && typeof data.cap === 'number') {
@@ -714,8 +748,14 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
         setSending(false);
         triggerHapticNotification(Haptics.NotificationFeedbackType.Warning);
         setMessages(prev => [...prev, { role: 'crisis', text: '' }]);
+        safeguardRef.current = null;
       } else if (data.ok && data.reply) {
         setSending(false);
+        // ⚠️ THE COOLDOWN IS SPENT WHEN THE QUESTION IS SHOWN, NOT WHEN IT IS ANSWERED -- ignoring it is not
+        // an answer, but it is not permission to nag either. Marked only once a reply actually came back, so
+        // a dropped request cannot silently burn 30 days of quiet. It re-arms after that if the pattern is
+        // still there.
+        if (safeguardAskedNow) void markSafeguardShown();
         // Substitute [[stat:key]] tokens with the exact values from the pack we sent (so any personal
         // number is the app's own number), then pull out [[route:key]] tokens into tappable pills.
         const { text: finalText, routes, tutorials } = substituteRoutes(substituteStats(data.reply!, statValueMap), text);

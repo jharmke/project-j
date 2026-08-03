@@ -48,6 +48,7 @@ import { buildCompanionStats } from '../utils/companionStats';
 import { devExpireFirstWeek, devSimulateCancelled } from '../utils/firstWeek';
 import { loadCalorieTargets } from '../utils/calorieTarget';
 import { CapKey, FREE_CAPS, SUPPORTER_CAPS, countFor, countUserExercises, setDevCapOverride, clearDevCapOverrides } from '../utils/caps';
+import { armSafeguardForTest, clearSafeguardTestState } from '../utils/undereatingSafeguard';
 // Only for the cap dev tools: exercises are the one cap whose user-made count cannot be worked out without
 // the built-in list. See the note on DEFAULT_LIBRARY.
 import { DEFAULT_LIBRARY } from './workout-library';
@@ -4239,6 +4240,36 @@ export default function SettingsScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Clear Cap Overrides</Text>
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Restores the real limits.</Text>
+              </View>
+              <Ionicons name="refresh-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            {/* The undereating safeguard cannot be reached by hand: the real trigger needs five logged days
+                with four of them under the calorie floor. This arms it for the next Otto message instead.
+                Reads and writes NO logged data -- it only makes the check answer yes once. */}
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+              await armSafeguardForTest();
+              Alert.alert(
+                'Safeguard armed',
+                'Open Otto and ask him something about food or the scale, like "how am I doing on calories this week".\n\nHe will ask the question once, then stay quiet for 30 days. Tap "Disarm Safeguard" to reset and run it again.\n\nNone of your logged food is touched or read.',
+              );
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Arm Undereating Safeguard</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Makes Otto raise it on your next food question. Touches no data.</Text>
+              </View>
+              <Ionicons name="alert-circle-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+              await clearSafeguardTestState();
+              Alert.alert('Safeguard disarmed', 'Back to the real check, and the 30 day quiet period is cleared.');
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Disarm Undereating Safeguard</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Also clears the 30 day quiet period.</Text>
               </View>
               <Ionicons name="refresh-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>

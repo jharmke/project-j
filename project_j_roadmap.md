@@ -30,6 +30,14 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-08-02 **The Macros modal is now a real macro editor, and custom splits survive tapping a preset**
+  (device-verified). The app remembers whether you PICKED a preset or built your own instead of guessing from
+  the numbers; your own split is kept where presets cannot overwrite it; a fifth Custom card puts it back in
+  one tap; and the modal gained the full Settings > Goals editor including the Ratio/Fixed toggle, so
+  "Fine-tune in Settings > Goals" is gone. Groundwork for gating custom macros, NOT the gate itself.
+  Also fixed on that modal: Save dims until something changes, it uses the app's own PrimaryCTA, it fires on
+  the first tap with the keyboard up, the card clears the status bar without losing its centring, and the top
+  accent went 4 -> 2.5 to match every other modal. Full detail in project_j_roadmap_archive.md.
 - 2026-08-02 **Item C piece 3: free users now see a count on every creation toast** (device-verified on all
   seven counted caps). `Chicken Thighs (3 of 20 included on the free plan)`, counting UP, free only, create
   only, from the same engine the walls read. Meal slots were EXEMPTED (their Edit sheet already shows a live
@@ -1350,9 +1358,16 @@ are separate pre-submission checklists, NOT part of this menu.
   1. ✅ **BUILT + DEVICE-VERIFIED 2026-08-02. The count on creation toasts (piece 3).** All seven counted
      caps ship it: foods, saved meals, recipes, routines, programs, exercises, graphs. **Meal slots were
      EXEMPTED** -- see the spec, this is a real change to piece 3, not an omission.
-  2. **Custom macro + nutrition goals gating (piece 2).** Grandfathered on downgrade, the custom split STORED
-     so picking a preset is not a one-way door, the fifth "Custom" card in the Macros modal, and the gate on
-     the controls INSIDE Settings > Goals (not on the Fine-tune link). Two of the eleven perk rows. No code.
+  2. 🟡 **Custom macro + nutrition goals gating (piece 2). MACRO GROUNDWORK BUILT 2026-08-02, GATE NOT.**
+     ✅ Built + device-verified: the preset marker (remembered, not guessed from the numbers), the stored
+     custom split so picking a preset is no longer a one-way door, the fifth Custom card, and the inline
+     macro editor with the Ratio/Fixed toggle.
+     ⬜ **STILL TO DO: (a) the GATE itself, which now has TWO homes** -- the macro controls inside
+     Settings > Goals AND the modal editor, because the modal is a full second editor now; gate one and not
+     the other and the cap does not exist. **(b) the entire Nutrition Goals side** (its Custom tile plus
+     read-only fields, and it has two doors: the tile and tapping any field).
+     ⚠️ Nothing is Supporter-only yet. See SPEC_monetization.md -> CUSTOM MACRO + NUTRITION GOALS, which now
+     carries a build-state block correcting three lines this work overturned.
   3. **Widening the step-down notice to CANCELLATIONS (piece 5).** Decided: a Supporter whose subscription
      ends gets the same notice, titled "Your Supporter Plan Has Ended", keeping the calendar icon. Only the
      `loading` guard was built, and that was a separate bug fix.
@@ -1461,17 +1476,20 @@ are separate pre-submission checklists, NOT part of this menu.
     ⚠️ Watch two things: colour pulls those numbers forward and they sit UNDER the preset name, so check the
     name still reads as primary; and whatever the SELECTED card's active state does (accent fill or tinted
     border), the coloured text must stay readable on top of it. All five themes.
-  • **[QUICK WIN] Macros modal should have its number fields inline, like Nutrition Goals does.** Nutrition
-    Goals puts its editable fields right under the preset grid; Macros punts you to "Fine-tune in Settings >
-    Goals". Making them consistent means macro editing happens where the presets are.
+  • ✅ **[SHIPPED 2026-08-02] Macros modal number fields inline.** Done as part of item C piece 2 rather than
+    separately, deliberately: the gate on custom macros is next, and adding an editor to a gated thing
+    afterwards is exactly how the routine Duplicate hole happened. The whole Settings > Goals editor was
+    ported over, Ratio/Fixed toggle included, and the "Fine-tune in Settings > Goals" link is gone.
   • **[QUICK WIN] No way to EDIT a saved meal in the Meal Catalog.** The Meal Catalog (second tab in the Find
     a Meal modal, `RepeatMealModal.tsx`) lets you log a saved meal and DELETE one, but there is no edit and no
     rename. Rename is the obvious minimum; editing which items are in the meal is the fuller version.
     ⚠️ **Copy dependency:** the saved-meals wall modals deliberately say "log and keep" where the custom-foods
     and recipes ones say "log, EDIT and keep", precisely because editing does not exist. If this ships, update
     those two strings in SPEC_monetization.md -> WHAT THE USER SEES AT A CAP.
-  ⚠️ The two macro-modal items above and item C's Custom-card work all touch the SAME modal. Sequence them;
-  do not let three separate passes collide in one file.
+  ⚠️ **UPDATE 2026-08-02: that collision is mostly resolved.** The inline fields and the Custom card shipped
+  together in one pass. What is left of the colour item is ONLY the dim `35P · 35C · 30F` line on the five
+  preset CARDS -- the editor's own values are already in macro colours. The next pass on this modal is the
+  GATE, so sequence the colour tweak around that rather than the other way round.
 - [ONLY THE QUOTA-COUNTER FEEL IS LEFT -- the cap change itself SHIPPED 2026-07-29, see RECENTLY SHIPPED]
   **Watch how the "5 messages left today" counter feels on Halo now that free is 10.** Both chats reveal the
   counter at 5 remaining (QUOTA_VISIBLE_AT = 5, AssistantChat.tsx + CompanionChat.tsx, kept in sync). The

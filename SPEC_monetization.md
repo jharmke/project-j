@@ -1152,6 +1152,35 @@ visible-but-greyed rather than hidden, both need a small rewrite. Their AT-cap v
 fire on a normal tap of a dim door like every other cap.
 
 ##### ✅ CUSTOM MACRO + NUTRITION GOALS -- THE RULES, LOCKED 2026-08-01 (copy still to write)
+
+> 🏗️ **BUILD STATE 2026-08-02 -- THE MACRO SIDE IS BUILT AND DEVICE-VERIFIED. THE GATE IS NOT.**
+> Built: the preset marker, the stored custom split, the Custom card, and the inline macro editor.
+> **Still to do: the GATE itself, and the whole Nutrition Goals side.** Nothing is Supporter-only yet --
+> everything below is the plumbing that makes gating safe, not the gating.
+>
+> **THREE THINGS IN THE TEXT BELOW ARE NOW WRONG. Corrected here, in place:**
+> 1. ❌ *"The modal is ALWAYS percentages."* **The Ratio/Fixed toggle is now IN the Macros modal.** That line
+>    was written when the modal only DISPLAYED macros. Once it could EDIT them, leaving the toggle out meant
+>    a fixed-grams user editing derived percentages would be silently converted -- and the fix for that is the
+>    toggle, because an explicit switch is not a silent conversion. Switching modes CONVERTS the numbers on
+>    screen rather than blanking them, so the toggle can never cost somebody their split.
+> 2. ❌ *"Need exact numbers? Fine-tune in Settings > Goals"* -- **that link is DELETED.** Everything it
+>    pointed at now lives in the modal, so it sent you somewhere for something already in front of you.
+> 3. ⚠️ **The gate therefore has TWO homes, not one.** The note below says the real gate sits on the macro
+>    controls inside Settings > Goals "because a free user walks there directly and never touches that link".
+>    Still true -- but the modal is now a full second editor and needs the same gate. Gate one and not the
+>    other and the cap does not exist. This is why the inline fields were built BEFORE the gate rather than
+>    after: adding an editor to a gated thing later is exactly how the routine Duplicate hole happened.
+>
+> **ALSO BUILT, and not in the text below because it was found during the build:** `pj_settings.macroPreset`
+> was written by two places and read by none -- the Macros modal GUESSED which preset was active by matching
+> the live percentages against the four presets. That guess cannot tell "I picked Balanced" from "I typed
+> 30/40/30 by hand", and Justin's call is that hand-authored numbers read as **Custom** even when they equal a
+> preset. The marker is now written by Settings > Goals (on editing the SPLIT, never on changing calories
+> alone) and read by the modal, falling back to the old matching only for accounts that have never set it.
+>
+> **NO BACKFILL (Justin, option B):** accounts already holding a custom split get no stored copy until they
+> next edit it. Until then the old one-way door is still open for them.
 These are NOT the same shape as the eight caps: no number, so no at-cap/over-cap split, no count in a title
 and no delete-to-make-room offer.
 

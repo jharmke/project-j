@@ -11,6 +11,54 @@
 
 ---
 
+## 🥗 ITEM C PIECE 2 -- THE MACRO GROUNDWORK (device-verified, SHIPPED 2026-08-02)
+Commits a45d7a7, b90453f, fbcdda8, ab9d1b0. Design in SPEC_monetization.md -> CUSTOM MACRO + NUTRITION GOALS,
+which now carries a build-state block. ⚠️ **THE GATE IS NOT BUILT. None of this is Supporter-only yet.**
+
+**What shipped, and why each piece exists:**
+1. **The app now REMEMBERS whether you picked a preset or built your own.** It used to guess, by matching your
+   live percentages against the four presets. That guess cannot tell "I picked Balanced" from "I typed
+   30/40/30 by hand", and Justin's call is that hand-authored numbers read as Custom either way. The stored
+   marker was already there (`pj_settings.macroPreset`) -- written by two places and **read by none**.
+2. **Your own split is kept where presets cannot reach it.** Tapping a preset overwrites the live macro
+   fields in place, so a custom split was simply gone. Once macro editing is Supporter-only that becomes
+   unrecoverable, because rebuilding it IS the gated action. The copy carries the MODE too: restoring
+   percentages to somebody who worked in fixed grams would change what they actually eat.
+3. **A fifth Custom card** puts it back in one tap, and replaced the line "Custom goals set. Pick a preset to
+   replace them." -- which described the destructive behaviour that had just been removed.
+4. **The full Settings > Goals editor, ported into the modal**, Ratio/Fixed toggle included.
+
+**⚠️ THE JUDGEMENT CALL THAT WAS WRONG, AND THE ONE THAT CORRECTED IT.** The editor was first built as a
+lighter row layout invented from scratch, and the Ratio/Fixed toggle deliberately left OUT to stop a
+fixed-grams user having their derived percentages silently converted. Justin: *"its ugly... why isnt it like
+literally the same exact thing as the settings page"*. Both calls were wrong for the same reason -- the app
+already had a better answer one screen away. And the toggle is not the danger, it is the FIX: an explicit
+switch is not a silent conversion. Switching now converts the numbers on screen rather than blanking them.
+
+**⚠️ WHY THE FIELDS SHIPPED BEFORE THE GATE.** Adding an editor to something already gated is precisely how
+the routine Duplicate hole happened. Build the editor first and the gate gets built once, over a finished
+screen. **The gate now has TWO homes -- Settings > Goals and this modal. Gate one and the cap does not exist.**
+
+**FIVE THINGS FOUND ON DEVICE, all pre-existing or self-inflicted, all fixed:**
+- Save Goals was lit the instant the modal opened -- valid-numbers was checked, changed-anything was not.
+- The Save button was hand-rolled next to the app's own `PrimaryCTA`, and read as plastic. Justin: *"shit
+  like that cant happen"*. Use the component that exists.
+- Tapping Save with the keyboard up only dismissed the keyboard. `keyboardShouldPersistTaps="handled"`.
+- The modal's top accent was **4** where every other modal card is 1.5 or 2.5. Now 2.5. Justin had noticed
+  this independently and had it in his own unsent notes.
+- This modal had **no keyboard handling at all**, having never had a text input before.
+
+**⚠️⚠️ THE ONE THAT COST THE MOST TIME, AND IT WAS AVOIDABLE: `KeyboardAwareCenter` RENDERS
+`[style, { paddingBottom }]`, SO ITS OWN paddingBottom ALWAYS WINS.** Passing `paddingTop: insets.top` to keep
+the card off the status bar left the box padded 67px on top and 0 underneath, pushing the centred card
+visibly low -- and then "make the padding symmetric" appeared to change *nothing at all*, because the bottom
+half was being overridden either way. Two rounds of Justin's device time went to guessing before the
+component was actually read. **The fix is to cap the CARD's height in points** (`box - 2 * inset`) and leave
+the container a plain centred box. A tuned percentage was rejected on purpose: it is only ever right on the
+phone it was tuned on.
+
+---
+
 ## 🔢 ITEM C PIECE 3 -- THE COUNT ON CREATION TOASTS (device-verified, SHIPPED 2026-08-02)
 Commits 2a07463, 3d8ce06, ccd8347, 888822b, e021979. The DESIGN lives in SPEC_monetization.md -> PIECE 3;
 this is what actually happened building it.

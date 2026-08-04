@@ -1552,6 +1552,13 @@ are separate pre-submission checklists, NOT part of this menu.
     (light themes need the stronger shadow), and the floating save bar sits over a now-carded layout.
     ⚠️ Deliberately NOT bolted onto item M -- raised while testing it, and folding a whole-tab visual pass
     into a profile-field item is how the field item stops being finishable.
+    ➕ **[2026-08-04] THE FOOD & ALLERGIES (i) BELONGS IN A HEADER AND THERE ISN'T ONE.** It sits inline at
+    the right edge, vertically centred against a two-line paragraph, floating well away from the section
+    title. Justin: *"looks bad but will fix it when we do the profile changes when we make them cards."*
+    It is inline because `ProfileSection` is shared by every section and has no slot for a right-hand
+    element; adding one would put a tooltip affordance on five sections that have no entry. **When the
+    sections become cards, give the header a right slot and move the (i) into it** -- that is the standard
+    everywhere else in the app. This is the ONLY tooltip on the Profile tab.
   • ✅ **[RAISED AND CLOSED 2026-08-04, SPAWNED BY ITEM N] RATE US COLLIDING WITH A LAUNCH POP-UP: NOT
     POSSIBLE. Nothing built, deliberately.** The worry was that a goal check finishing during launch could
     land the store review sheet on a summary. Traced every `fireRatingTrigger` call site instead of

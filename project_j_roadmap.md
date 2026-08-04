@@ -1500,6 +1500,19 @@ are separate pre-submission checklists, NOT part of this menu.
     "works from everything you've logged" and sounds like a capability switched off rather than something
     lobotomised. Plus the caps bullet, "stats cards" -> "graphs", the hairline, and a fifth found on device:
     the longer cancelled title wrapped and rendered two-tone.
+  • 🎨 **[NEW 2026-08-04, JUSTIN] THE TOP ACCENT BORDER IS INCONSISTENT ACROSS CARDS AND MODALS.** Justin:
+    *"i am noticing more and more how inconsistent the fucking top accent border is."* Caught it on the
+    Stats tab, where CHALLENGES has a thick saturated accent line and BODY MEASUREMENTS right below it has a
+    thin pale one, so one reads as deliberate and the other as a mistake.
+    **COUNTED, not guessed: SEVEN different `borderTopWidth` values are in use -- 0.5, 1, 1.5, 2, 2.5, 3
+    and 4.** Two look intentional: **0.5** (plain hairline on a standard card) and **1.5** (the accent line,
+    and by far the most common). The other five are one-offs: a **4** on four modals (HRZoneModal,
+    MeasureHowToModal, MetricDrilldownModal, BodyMeasurementsCard), a **3** on add-food and food-detail, a
+    **2.5** on seven things including NotificationPanel and RepeatMealModal, and a **2** on ToolkitSheet,
+    TooltipModal, NutrientDrilldownModal and the Faith tab.
+    ⏸️ **THE NUMBERS ARE NOT DECIDED YET -- Justin's call when this is picked up**, he explicitly did not
+    want to choose them mid-session. 0.5 and 1.5 are the obvious candidates on usage alone, nothing more.
+    ⚠️ Big sweep: ~230 call sites across roughly 60 files. Not a quick win, do not treat it as one.
   • 🎨 **[NEW 2026-08-04, JUSTIN] THE PROFILE TAB'S SECTIONS ARE NOT CARDS, AND IT LOOKS MESSY.** Every
     other tab groups content into cards that float above the background. Profile's sections are a label, a
     hairline and then content sitting directly on the page gradient, so all the white pills and inputs read

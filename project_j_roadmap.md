@@ -1409,10 +1409,10 @@ are separate pre-submission checklists, NOT part of this menu.
     change. Otto's KB was done and verified; the other two were not touched. Grepped and confirmed: neither
     file mentions allergies or the dietary profile. The section explains itself inline, so nothing is
     BROKEN, but the rule exists so explainers do not rot and this one was simply missed.
-  • **THE SAFEGUARD SENTENCE WAS MEASURED, THEN CHANGED, AND NEVER RE-MEASURED.** Otto reproduced it word
-    for word 6 times out of 6 -- and then Justin (rightly) asked for the unit, so "around 1,050 a day"
-    became "around 1,050 calories a day". A one-word change to fixed copy the model has to reproduce
-    exactly, on the safeguard, with no re-run. Cheap to check: `scratchpad/harness-l.js`.
+  • ✅ **THE SAFEGUARD SENTENCE WAS MEASURED, CHANGED, AND IS NOW RE-MEASURED.** It went 6/6 word for word,
+    then Justin (rightly) asked for the unit, so "around 1,050 a day" became "around 1,050 calories a day"
+    with no re-run. Re-checked 2026-08-04: **4/4 verbatim** with the new wording, and with the reply-shape
+    block stacked on top of it. All three fixed follow-up answers came back verbatim too.
 - 🔴 **[NEW 2026-08-04] EVERY OTHER KEYWORD DETECTOR IS UNMEASURED, AND THE ONE WE MEASURED WAS BADLY
   BROKEN.** Found on device: Justin, on the free plan, typed "What's a good chest workout?" and got SIX
   movements with no limit line. The 2-exercise cap was never broken; it was never ATTACHED, because

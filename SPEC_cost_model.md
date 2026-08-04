@@ -33,8 +33,8 @@ and prices were then re-derived FROM THE CODE, which cannot go stale. Do the sam
 | Apple's cut | 15% | Small Business Program. The 30% table is below in case enrolment slips |
 | Installs still active at day 30 | 5% | SPEC_monetization's own figure |
 | Companion messages/month | 36 total across Otto AND Halo | SPEC_monetization's light-usage figure. It is ~6% of what the caps allow |
-| Otto per message | $0.0027 | Spec cost table, with the data gate shipped and item H routing at its cautious setting |
-| Halo per message | ⚠️ **$0.0032 MEASURED 2026-08-04**, not the $0.0025 the tables below use | 8 real calls. See the warning under this table |
+| Otto per message | ⚠️ **$0.00412 MEASURED** (warm cache), was assumed $0.0027 | Real API call, real prompt, Anthropic's own token counts |
+| Halo per message | ⚠️ **$0.0032 MEASURED**, was assumed $0.0025 | 8 real calls |
 | Smart Coach | $0.046/user/month | THE PLAN item O |
 | Estimates/month | 2 @ ~$0.02 | Light-usage figure; free cap is 5/month |
 | Supporter usage | 2x a free user | Judgement. They have 3x the caps but are still one person |
@@ -42,7 +42,22 @@ and prices were then re-derived FROM THE CODE, which cannot go stale. Do the sam
 **RESULT: an active free user costs ~$0.18/month. A Supporter costs ~$0.36 and nets $8.49.**
 **BREAK-EVEN CONVERSION: 2.16% of active users.**
 
-🔴 **THE TABLES BELOW UNDERCOUNT HALO BY ABOUT 28%, KNOWN AND NOT YET RE-RUN.** They use $0.0025, which came
+## 🔴 EVERYTHING BELOW WAS RE-RUN 2026-08-04 ON MEASURED NUMBERS. WHAT THE ASSUMPTIONS GOT WRONG:
+
+**OTTO'S CACHED BLOCK IS 26,474 TOKENS, NOT 18,400.** Every doc counted the app MANUAL and forgot Otto's
+own standing rules sitting in front of it in the same cached half. That is a 44% undercount on the single
+biggest line in the app, and it had been quoted in three places. Measured Otto: **$0.00412 warm**, against
+$0.0027 assumed.
+**HALO IS $0.0032, NOT $0.0025** -- the old figure was input only and never counted its reply.
+➡️ **Break-even moves from 2.16% to 2.63% at 1 msg/day, and from 3.80% to 5.14% at 3/day.**
+
+⚠️ **COLD CALLS COST $0.0345, EIGHT TIMES A WARM ONE.** At low traffic the cache expires between messages,
+so early users are far more expensive than any table here shows. This is the strongest argument for the
+faith-tier cache fix (three separate cached copies collapse into one that every user shares and keeps warm)
+and for routing.
+✅ **AND IT MAKES ROUTING WORTH MORE THAN THOUGHT.** A bigger cached block means a bigger slice to cut.
+
+(historical) 🔴 **THE TABLES BELOW UNDERCOUNT HALO BY ABOUT 28%, KNOWN AND NOT YET RE-RUN.** They use $0.0025, which came
 from SPEC_monetization and is INPUT ONLY -- it never counted Halo's reply. **Measured over 8 real calls on
 2026-08-04: $0.0032.** Corrected, at 3 messages/day and 3% conversion, 25,000 installs is about **-$984**
 rather than the -$497 the uncorrected figure gives.
@@ -55,7 +70,42 @@ prompt SIZE** -- there is no traffic level at which caching starts paying for it
 
 ---
 
-## NET PER YEAR -- at 15% (Small Business Program)
+## ✅ NET PER YEAR -- MEASURED NUMBERS, 2026-08-04. THESE ARE THE CURRENT TABLES.
+
+### 1 message/day (36/mo). Cost per free user **$0.218**. Break-even **2.63%**
+
+| Installs | 1% conv | 3% conv | 5% conv | 10% conv |
+|---|---|---|---|---|
+| 300 | -$24 | +$5 | +$35 | +$110 |
+| 1,500 | -$122 | +$27 | +$176 | +$549 |
+| 4,000 | -$324 | +$73 | +$470 | +$1,463 |
+| 8,000 | -$648 | +$146 | +$940 | +$2,926 |
+| 25,000 | -$2,025 | +$457 | +$2,939 | +$9,144 |
+
+### 2 messages/day (60/mo). Cost per free user **$0.306**. Break-even **3.73%**
+
+| Installs | 1% conv | 3% conv | 5% conv | 10% conv |
+|---|---|---|---|---|
+| 300 | -$40 | -$11 | +$19 | +$92 |
+| 1,500 | -$201 | -$54 | +$93 | +$462 |
+| 4,000 | -$537 | -$144 | +$249 | +$1,231 |
+| 8,000 | -$1,074 | -$288 | +$498 | +$2,462 |
+| 25,000 | -$3,356 | -$900 | +$1,555 | +$7,695 |
+
+### 3 messages/day (90/mo). Cost per free user **$0.415**. Break-even **5.14%**
+
+| Installs | 1% conv | 3% conv | 5% conv | 10% conv |
+|---|---|---|---|---|
+| 300 | -$60 | -$31 | -$2 | +$71 |
+| 1,500 | -$301 | -$156 | -$10 | +$353 |
+| 4,000 | -$803 | -$415 | -$28 | +$941 |
+| 8,000 | -$1,606 | -$831 | -$56 | +$1,883 |
+| 25,000 | -$5,020 | -$2,597 | -$174 | +$5,883 |
+
+🔴 **AT 3 MESSAGES A DAY YOU NEED BETTER THAN 5% CONVERSION.** Even 5% is roughly break-even. That is the
+single most important number in this file.
+
+## (historical, assumption-based) NET PER YEAR -- at 15%
 
 | Installs | 1% conv | 3% conv | 5% conv | 10% conv |
 |---|---|---|---|---|

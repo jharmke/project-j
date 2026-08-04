@@ -39,11 +39,20 @@ const fmtShort = (dk: string) => {
 // Food words, OR the shared whole-day recall ("what did I do on June 24") so a broad day question also
 // pulls the nutrition slice. Generous: a false positive costs a few tokens, a false negative reads as
 // "I don't have that."
+/**
+ * ⚠️ MEASURED 2026-08-04: the old version caught **57% of 42 realistic phrasings**. It needed a food word
+ * AND a separate "ask" word in the same message, so "whats my water intake looking like", "macros for my
+ * breakfast", "how's my hydration" and "protein count for eggs" all missed -- and a miss means Otto answers
+ * about their eating with NONE of their food log, which for a Supporter is the paid feature failing.
+ *
+ * ⚠️ THE COMMENT ABOVE ALREADY SAID "generous", AND IT WAS NOT. The and-condition quietly made it strict.
+ * A food word alone is now enough. The asymmetry is the justification, same as the exercise cap and the
+ * sleep detector: a false positive costs a few hundred tokens, a miss costs the answer.
+ */
 export const messageWantsFood = (text: string): boolean => {
   const t = (text || '').toLowerCase();
-  const food = /\b(ate|eat|eating|eaten|food|foods|meal|meals|breakfast|lunch|dinner|snacks?|calories?|kcal|macros?|protein|carbs?|carbohydrates?|fat|fats|fiber|sugar|sodium|nutrition|diet|logged?|water|hydration|drink)\b/;
-  const ask = /\b(did|do|had|have|how many|how much|what|log(?:ged)?|yesterday|today|last|this week|on|track(?:ing|ed)?|hit|average|avg|been|total)\b/;
-  if (food.test(t) && ask.test(t)) return true;
+  const food = /\b(ate|eat|eats|eating|eaten|food|foods|meal|meals|breakfast|lunch|dinner|brunch|snacks?|calories?|cals?|kcal|macros?|protein|carbs?|carbohydrates?|fats?|fiber|fibre|sugar|sodium|nutrition|nutrients?|diet|dieting|deficit|surplus|water|hydration|hydrated|drank|drink(?:ing)?|fasting|intake|portion|serving)\b/;
+  if (food.test(t)) return true;
   return isDayRecall(t);
 };
 

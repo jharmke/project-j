@@ -38,13 +38,30 @@ const fmtDelta = (deltaIn: number, unit: MeasurementUnit): string => {
 // Deliberately NOT hooked to isDayRecall (measurements aren't a daily-recall thing) and NOT triggered by
 // bare "weight" (the always-on snapshot already answers weight). Generous within that: a false positive
 // costs a few hundred tokens, a false negative reads as "I don't have that."
+/**
+ * ⚠️ MEASURED 2026-08-04: the old version caught **60% of 42 realistic phrasings**, missing "body fat
+ * percentage update", "chest measurements", "arms inches", "measurements update" and "chest", because it
+ * needed a body word AND a separate ask word together. Same fix and same asymmetry as the food and sleep
+ * detectors: a miss means Otto answers without their tape measurements, a false positive costs tokens.
+ *
+ * ⚠️ THE BODY-PART WORDS OVERLAP WITH TRAINING ("chest", "back", "arms"), so a workout question has to be
+ * excluded explicitly or every "good chest workout" drags the measurement history along with it.
+ */
 export const messageWantsBody = (text: string): boolean => {
   const t = (text || '').toLowerCase();
-  const body = /\b(measurement|measurements|measure(?:d|ing)?|tape|circumference|body ?fat|bodyfat|bf%|body composition|navy|waist|neck|shoulders?|chest|hips?|bicep|biceps|forearms?|thighs?|calf|calves|arm size|leg size)\b/;
-  // ⚠️ `what['’]s` -- iOS types a CURLY apostrophe, so a straight-quote-only pattern misses real phones.
-  // (Harmless here because bare "what" already matches, but kept correct so it is not copied wrong.)
-  const ask = /\b(did|do|does|had|have|how|what|whats|what['’]s|when|last|latest|current|my|change|changed|trend|trending|progress|since|been|big|size|lost|gained|down|up|inch|inches|cm)\b/;
-  return body.test(t) && ask.test(t);
+  // A training question that happens to name a body part is not a measurements question.
+  if (/\b(workouts?|routines?|exercises?|sets?|reps?|lift(?:s|ing)?|train(?:ing)?|press|curl|squat|deadlift|row)\b/.test(t)) return false;
+  // Nor is an injury one. "My shoulder keeps popping" is about pain, not circumference.
+  if (/\b(pain|painful|hurts?|hurting|sore|stiff|ache|aching|popping|clicking|injur(?:y|ed)|strain(?:ed)?|pull(?:ed)? a|tweaked)\b/.test(t)) return false;
+
+  // Unambiguous: these words are only ever about measuring.
+  const measuring = /\b(measurement|measurements|measure(?:d|ing)?|tape|circumference|body ?fat|bodyfat|bf%|body composition|navy|inches|arm size|leg size)\b/;
+  if (measuring.test(t)) return true;
+
+  // Body parts need something around them, since they are also everyday words.
+  const part = /\b(waist|neck|shoulders?|chest|hips?|bicep|biceps|forearms?|thighs?|calf|calves|arms?)\b/;
+  const ask = /\b(did|do|does|had|have|how|what|whats|what['’]s|when|last|latest|current|my|change|changed|trend|trending|progress|since|been|big|size|lost|gained|down|up|inch|cm|update|check)\b/;
+  return part.test(t) && (ask.test(t) || t.trim().split(/\s+/).length <= 3);
 };
 
 export const buildBodyContextIfRelevant = async (message: string): Promise<string | null> => {

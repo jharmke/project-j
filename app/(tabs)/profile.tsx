@@ -30,6 +30,7 @@ import HeaderIconButton from '../../components/HeaderIconButton';
 import PrimaryCTA from '../../components/PrimaryCTA';
 import SproutIcon from '../../components/SproutIcon';
 import MembershipCard from '../../components/MembershipCard';
+import TooltipIcon from '../../components/TooltipIcon';
 import { Type, DISPLAY_CAPS, DISPLAY_TRACKING, displaySize } from '../../typography';
 
 interface Profile {
@@ -654,9 +655,15 @@ export default function ProfileScreen() {
             nothing acts on this until Otto can build meals (item F). Otto points at this section instead,
             once, when somebody raises a food issue and it is still empty. */}
         <ProfileSection label="Food & Allergies" subtitle="What Otto should never suggest" theme={theme} entering={FadeInDown.delay(30).springify()}>
-          <Text style={{ fontSize: 12, fontFamily: Type.uiMedium, color: theme.textSecondary, marginBottom: 12, lineHeight: 17 }}>
-            Otto uses this when he talks about food. Leave anything blank if it doesn't apply.
-          </Text>
+          {/* ⚠️ THE ONLY (i) ON THE PROFILE TAB. It sits inline rather than in the section header because
+              ProfileSection is shared by every section and has no slot for one; adding it there would put a
+              tooltip affordance on five sections that do not have entries. One (i) per card still holds. */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+            <Text style={{ flex: 1, fontSize: 12, fontFamily: Type.uiMedium, color: theme.textSecondary, lineHeight: 17 }}>
+              Otto uses this when he talks about food. Leave anything blank if it doesn't apply.
+            </Text>
+            <TooltipIcon tooltipKey="food_and_allergies" />
+          </View>
 
           <Text style={[styles.fieldLabel, { color: theme.textMuted, marginTop: 0 }]}>ALLERGIES</Text>
           <Text style={{ fontSize: 11, fontFamily: Type.uiMedium, color: theme.textSecondary, marginBottom: 8 }}>

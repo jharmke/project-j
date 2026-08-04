@@ -17,6 +17,18 @@ export interface TooltipDefinition {
 
 export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
   {
+    key: 'food_and_allergies',
+    category: 'Nutrition',
+    title: 'Food & Allergies',
+    body: 'Tell the app what you do not eat, and Otto works around it whenever he talks about food. It lives on your Profile, just under Basic Info, and every part of it is optional.\n\nThere are three separate parts because the app treats them differently. Allergies are a hard rule: Otto will never suggest a food you are allergic to, in any context, no matter how you ask. Diet is a single choice for how you eat overall. Foods to avoid is softer: he stays away from them, but nothing is wrong if one comes up in something you looked for yourself.\n\nGluten and dairy appear on both the allergy list and the avoid list on purpose. Coeliac disease belongs in allergies. Something that just makes you feel rough belongs in foods to avoid. Same food, different rule.\n\nWhat you record is used by Otto and nothing else. It does not filter the food database, it does not warn you when you search or scan a barcode, and it does not change your Log tab. If you log a food you are allergic to, nothing happens and nothing appears. It is there so he remembers, not as a safety net on your food.\n\nEverything here works the same whether you are on the free plan or the Supporter plan. Not suggesting food that could hurt you is not a paid feature.',
+    definitions: [
+      { term: 'Allergies', explanation: 'The safety list. Otto never suggests these, and he will not be talked into it. The nine listed are the ones food labels are legally required to declare, so they match what is printed on packaging.' },
+      { term: 'Diet', explanation: 'Pick one: No restriction, Vegetarian, Vegan or Pescatarian. This is a way of eating rather than a single food, which is why it is separate from the avoid list.' },
+      { term: 'Foods to avoid', explanation: 'Things you would rather he stayed away from, without them being an allergy. He respects them when suggesting food, and will still discuss them normally if you bring one up.' },
+      { term: 'Add your own', explanation: 'Both lists take your own entries for anything not covered, up to five each. Useful for nightshades, cilantro, or anything specific to you.' },
+    ],
+  },
+  {
     key: 'ai_meal_estimator',
     category: 'Nutrition',
     title: 'AI Meal Estimator',

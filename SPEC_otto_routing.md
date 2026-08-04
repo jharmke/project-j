@@ -198,7 +198,44 @@ eight badge tiers from the ACHIEVEMENTS CATALOG, so both ends of the map are int
 dense with corrections earned from real bugs and hand-cutting it would eventually drop one silently. A
 runtime check logs loudly if a future edit ever breaks the divider shape.
 
-**NEXT: batch 2**, and it is a separate change on purpose so any misbehaviour is traceable to one thing.
+**🟡 BATCH 2 BUILT + MEASURED 2026-08-04, WIRED TO NOTHING.** `functions/src/knowledgeRouter.ts` decides the
+chapter set; `appCompanion.ts` still calls `assembleAppKnowledge()` with no argument, so Otto ships all 15
+chapters exactly as before. Turning it on is a one-line change and its own decision.
+
+**HOW IT WORKS, and three earlier versions were measured and discarded getting here:**
+- Every term in a message votes for every chapter it appears in, weighted by how CONCENTRATED it is there
+  (share squared), then normalised by chapter size. Chapters within 15% of the winner all get sent, up to 4.
+- Plus a NAME index: Title Case phrases and consistently-capitalised words pulled out of the map, which is
+  the spec's "generate the list from the map, not from imagination" rule. Names are not size-normalised.
+- ❌ **Exclusivity ("term belongs to the chapter it appears in ALONE") failed** -- it binned "routine",
+  which is overwhelmingly a Workout word mentioned once elsewhere.
+- ❌ **A repetition floor failed** -- it threw away every word used once, leaving half of all messages with
+  nothing to match on.
+- ❌ **Ranking by raw hits failed** -- the LONGEST chapter won on volume alone, taking questions about
+  verses and day scores.
+
+**MEASURED against 343 questions generated FROM the chapters (so the label is right by construction):**
+| Setting | Right chapter | Manual tokens saved |
+|---|---|---|
+| **share .65, hits 2, keep .15, max 4** | **95%** | **39%** ⬅️ **CHOSEN BY JUSTIN 2026-08-04** |
+| share .45, hits 2 | 92% | 50% |
+| share .65, hits 1 | 89% | 56% |
+| share .45, hits 1 | 86% | 65% |
+
+⚠️ **THE SPEC'S 65-80% PROJECTION WAS OPTIMISTIC.** It assumed routing always works and always picks one
+chapter; it never accounted for messages that match nothing and fall back to sending everything, which is
+47% of them at the chosen setting. That single assumption is most of the gap.
+⚠️ **AND THE HEADLINE SAVING IS SMALLER THAN THE TOKEN SAVING SOUNDS.** The map is about a third of a
+message's cost, so ~40% off the map is ~19% off the message. Routing is worth **1-2 cents per free user per
+month** (SPEC_cost_model.md). Real, but it was never the thing that decides whether the app makes money, and
+it was allowed to be framed that way for hours before anyone did the arithmetic.
+⚠️ **THE CONSTANTS IN THAT FILE ARE THE CHOSEN SETTING AND ARE NOT TO BE NUDGED** without re-running
+`scratchpad/router-bulk.js`. They were briefly left on sweep values, which would have shipped a setting
+nobody agreed to. Env-var overrides were removed for the same reason.
+
+**STILL TO DO before it can be turned on:** two cache breakpoints (see CACHING), the membership-rules
+extraction into the core, re-deriving the chapter set from conversation HISTORY (section 5), and the off
+switch (section 7).
 
 ## NOTED FOR ITEM B's VOICE PASS (not a routing problem)
 Spotted during batch 1 testing: asked "why am I so tired lately", Otto ended a long answer with three

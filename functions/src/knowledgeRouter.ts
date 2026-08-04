@@ -78,52 +78,14 @@ function buildStats(): Map<string, Map<string, number>> {
   return seen;
 }
 
-function buildIndexUnused(): Map<string, string> {
-  // term -> chapter -> how many times it occurs in that chapter
-  const seen = new Map<string, Map<string, number>>();
-
-  for (const { title, text } of chaptersForRouting()) {
-    if (CORE_CHAPTERS.includes(title)) continue; // core always ships; indexing it would route noise
-    for (const [term, count] of extractTerms(text)) {
-      let owners = seen.get(term);
-      if (!owners) { owners = new Map(); seen.set(term, owners); }
-      owners.set(title, (owners.get(title) ?? 0) + count);
-    }
-  }
-
-  const index = new Map<string, string>();
-  for (const [term, owners] of seen) {
-    // ⚠️ DOMINANCE, NOT EXCLUSIVITY, and this was the third correction. Demanding a term appear in exactly
-    // ONE chapter throws away the best signals there are: "routine" is overwhelmingly a Workout word but it
-    // is mentioned once elsewhere, so exclusivity binned it, and "how do i build a routine" then routed on
-    // whatever weak scrap was left. A term now belongs to the chapter holding the clear majority of its
-    // uses; if no chapter has a clear majority, the term genuinely is ambiguous and is dropped.
-    const total = [...owners.values()].reduce((a, b) => a + b, 0);
-    const [chapter, count] = [...owners].sort((a, b) => b[1] - a[1])[0];
-    if (count / total < DOMINANCE) continue;
-    // ⚠️ EXCLUSIVE IS NOT THE SAME AS DISTINCTIVE, and the first version of this file confused the two.
-    // Ordinary words like "make", "difference" and "bigger" each happen to appear in exactly one chapter,
-    // so exclusivity alone indexed them -- and "how do i make a recipe" routed to the MEMBERSHIP chapter.
-    // A word a chapter is genuinely ABOUT gets used repeatedly in it ("barcode" all through Log); an
-    // incidental one appears once. Requiring repetition separates the two mechanically, with no hand-built
-    // vocabulary to maintain. Single-use phrases still qualify if they are multi-word, because the app's
-    // own names ("head to head", "effort vs results") can legitimately appear only once.
-    // ⚠️ PHRASES NEED REPETITION TOO, and letting them skip it was the second bug. Indexing every 2- and
-    // 3-word sequence in the map produced ~4,000 "terms" per chapter, nearly all of it debris like
-    // "does head to" -- and debris routes. A real feature name is used more than once in the chapter that
-    // owns it, so the same repetition test that works for single words works here; phrases just need a
-    // lower bar because they are far more specific to begin with.
-    const isPhrase = term.includes(' ');
-    if (count >= (isPhrase ? MIN_PHRASE_OCCURRENCES : MIN_TERM_OCCURRENCES)) index.set(term, chapter);
-  }
-  return index;
-}
-
-/** How often a single word must occur in its chapter before it counts as that chapter's vocabulary. */
-const MIN_TERM_OCCURRENCES = 3;
-const MIN_PHRASE_OCCURRENCES = 2;
-/** Share of a term's total uses that must sit in one chapter for that chapter to own it. */
-const DOMINANCE = 0.7;
+// ⚠️ THREE EARLIER APPROACHES WERE MEASURED AND DISCARDED. Do not re-derive them:
+//   1. A term belongs to the chapter it appears in EXCLUSIVELY. Binned "routine" (overwhelmingly Workout,
+//      mentioned once elsewhere) and left the router matching on scraps.
+//   2. Then: dominance plus a repetition floor, term -> ONE chapter, any hit wins. Better, but it threw
+//      away every word used once, which left half of all messages with nothing at all to match on.
+//   3. Both of those ranked by raw hits, so the LONGEST chapter won everything on volume alone -- KEY
+//      DESTINATION SCREENS took questions about verses, day scores and routines.
+// What survived is below: every term votes, weighted by how concentrated it is, normalised by chapter size.
 
 /**
  * Candidate routing terms from one chapter's text: single words, plus 2- and 3-word phrases so the app's
@@ -237,7 +199,7 @@ function buildNameIndex(): Map<string, string> {
 /** A name has to be this concentrated in one chapter to be treated as that chapter's. */
 const NAME_DOMINANCE = 0.75;
 /** A single word only counts as a name if it is capitalised this often relative to all its uses. */
-const NAME_CAPITALISATION_RATIO = Number(process.env.ROUTER_CAP_RATIO ?? 0.6);
+const NAME_CAPITALISATION_RATIO = 0.6;
 
 const NAMES = buildNameIndex();
 const STATS = buildStats();
@@ -370,15 +332,27 @@ export function routeChapters(message: string): RouteResult {
   };
 }
 
+// ⚠️⚠️ THESE FIVE NUMBERS ARE JUSTIN'S CHOSEN SETTING, MEASURED, NOT GUESSED. Do not nudge them without
+// re-running `scratchpad/router-bulk.js` against the 343-case set. Measured 2026-08-04:
+//   95% right / 39% fewer manual tokens  <- CHOSEN ("cautious")   share 0.65, keep 0.15, max 4, hits 2
+//   92% / 50%                                                     share 0.45
+//   89% / 56%                                                     share 0.65, hits 1
+//   86% / 65%                                                     share 0.45, hits 1
+// Justin took the cautious row deliberately: at 25,000 installs the gap between safest and boldest is about
+// $337 a year, and it is paid for in Otto missing the right chapter three times as often.
+// ⚠️ THE DEFAULTS IN THIS FILE WERE BRIEFLY *NOT* THE CHOSEN SETTING -- they were left on the values from a
+// tuning sweep, so wiring the router in would have shipped behaviour nobody agreed to. Env overrides were
+// removed for the same reason: a tuning knob left in production code is a setting waiting to drift.
+
 /** A term whose uses are at least this concentrated in one chapter counts as real evidence. */
-const CONFIDENT_SHARE = Number(process.env.ROUTER_SHARE ?? 0.6);
+const CONFIDENT_SHARE = 0.65;
 /** How many such words a message needs before we trust routing at all. Below it, send everything. */
-const MIN_CONFIDENT_HITS = Number(process.env.ROUTER_MIN_HITS ?? 2);
+const MIN_CONFIDENT_HITS = 2;
 /** Chapters scoring at least this share of the winner also get sent. */
-const RELATIVE_KEEP = Number(process.env.ROUTER_KEEP ?? 0.45);
+const RELATIVE_KEEP = 0.15;
 /** Ceiling, so a rambling message cannot quietly turn into "send everything" by another route. */
-const MAX_CHAPTERS = Number(process.env.ROUTER_MAX ?? 3);
+const MAX_CHAPTERS = 4;
 /** Multi-word matches are far more specific than single words, so they count for more. */
 const PHRASE_BONUS = 3;
 /** What one app-name match is worth against the statistical score. Deliberately decisive. */
-const NAME_WEIGHT = Number(process.env.ROUTER_NAME_WEIGHT ?? 1);
+const NAME_WEIGHT = 1;

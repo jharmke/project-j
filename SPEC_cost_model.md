@@ -34,13 +34,24 @@ and prices were then re-derived FROM THE CODE, which cannot go stale. Do the sam
 | Installs still active at day 30 | 5% | SPEC_monetization's own figure |
 | Companion messages/month | 36 total across Otto AND Halo | SPEC_monetization's light-usage figure. It is ~6% of what the caps allow |
 | Otto per message | $0.0027 | Spec cost table, with the data gate shipped and item H routing at its cautious setting |
-| Halo per message | $0.0025 | SPEC_monetization line 661 |
+| Halo per message | ⚠️ **$0.0032 MEASURED 2026-08-04**, not the $0.0025 the tables below use | 8 real calls. See the warning under this table |
 | Smart Coach | $0.046/user/month | THE PLAN item O |
 | Estimates/month | 2 @ ~$0.02 | Light-usage figure; free cap is 5/month |
 | Supporter usage | 2x a free user | Judgement. They have 3x the caps but are still one person |
 
 **RESULT: an active free user costs ~$0.18/month. A Supporter costs ~$0.36 and nets $8.49.**
 **BREAK-EVEN CONVERSION: 2.16% of active users.**
+
+🔴 **THE TABLES BELOW UNDERCOUNT HALO BY ABOUT 28%, KNOWN AND NOT YET RE-RUN.** They use $0.0025, which came
+from SPEC_monetization and is INPUT ONLY -- it never counted Halo's reply. **Measured over 8 real calls on
+2026-08-04: $0.0032.** Corrected, at 3 messages/day and 3% conversion, 25,000 installs is about **-$984**
+rather than the -$497 the uncorrected figure gives.
+🔴 **AND HALO NEVER CACHES AT ALL.** Its prompt is 2,465 tokens, under Haiku's 4,096-token minimum, so the
+`cache_control` line in `faithCompanion.ts` has never done anything. Cache reads and writes were ZERO across
+all 8 calls. The docs called this Halo's cache "splitting"; there is no cache to split. **Its only lever is
+prompt SIZE** -- there is no traffic level at which caching starts paying for it.
+⚠️ **The Otto figure below also predates two things that shipped 2026-08-04**: replies are now 46% shorter
+(measured), and routing is still NOT wired in. Re-run `scratchpad/cost-model.js` before quoting these.
 
 ---
 

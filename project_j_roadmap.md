@@ -1402,6 +1402,17 @@ WINS. Items graduate UP here from the backlog sections so good ideas don't rot d
 ships it leaves this list. Always offer at least one QUICK WIN when Justin asks what's next, and pull a
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
+- 🔴 **[NEW 2026-08-04] TWO RULES WERE BROKEN SHIPPING ITEMS L AND M. Found by re-reading the session, not
+  by anything catching it.**
+  • **ITEM M SHIPPED A WHOLE NEW PROFILE SECTION WITH NO TOOLTIP AND NO TUTORIAL.** CLAUDE.md requires
+    `tooltipRegistry.ts` AND `data/tutorials.ts` AND Otto's KB in the SAME session as any user-facing
+    change. Otto's KB was done and verified; the other two were not touched. Grepped and confirmed: neither
+    file mentions allergies or the dietary profile. The section explains itself inline, so nothing is
+    BROKEN, but the rule exists so explainers do not rot and this one was simply missed.
+  • **THE SAFEGUARD SENTENCE WAS MEASURED, THEN CHANGED, AND NEVER RE-MEASURED.** Otto reproduced it word
+    for word 6 times out of 6 -- and then Justin (rightly) asked for the unit, so "around 1,050 a day"
+    became "around 1,050 calories a day". A one-word change to fixed copy the model has to reproduce
+    exactly, on the safeguard, with no re-run. Cheap to check: `scratchpad/harness-l.js`.
 - 🔴 **[NEW 2026-08-04] EVERY OTHER KEYWORD DETECTOR IS UNMEASURED, AND THE ONE WE MEASURED WAS BADLY
   BROKEN.** Found on device: Justin, on the free plan, typed "What's a good chest workout?" and got SIX
   movements with no limit line. The 2-exercise cap was never broken; it was never ATTACHED, because

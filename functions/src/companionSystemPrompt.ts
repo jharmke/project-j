@@ -272,6 +272,26 @@ That sentence is the WHOLE reply and nothing follows it, unless the same message
  * Gating on "he already pitched" is not just cheap, it is logically right: YOU CAN ONLY DECLINE SOMETHING
  * YOU WERE OFFERED. Someone who was never pitched has nothing to silence.
  */
+/**
+ * ⚠️ HE IS ALREADY TOLD ALL OF THIS IN THE SYSTEM PROMPT, AND HE IGNORES IT. That block says "two to four
+ * sentences, ONE short paragraph, no exceptions by default" and "never join thoughts with dashes". Measured
+ * 2026-08-04 over 12 real questions: he averaged 8.5 sentences and used dashes freely. Same failure as the
+ * pitch (0/10 from the system prompt), the exercise cap (leaked through six wordings) and the decline tag
+ * (3/6): an instruction he must ACT on has to ride on the user's message.
+ *
+ * MEASURED EFFECT of this block: output 216 -> 113 tokens, **48% less**, 8.5 -> 3.2 sentences, with nothing
+ * important lost. Output costs 5x what input does, so ~40 tokens of instruction buys back ~100 of reply.
+ *
+ * ⚠️ THE DASH RULE RIDES ALONG because it fails from the same place for the same reason, and dashes in
+ * user-facing text are against the house style (CLAUDE.md). Markdown is NOT included: the app already
+ * strips inline formatting client-side, so it never reaches anyone.
+ */
+export const REPLY_SHAPE_BLOCK = `(HOW THIS REPLY MUST BE WRITTEN. A hard limit on this one reply, not a preference.
+
+LENGTH: TWO TO FOUR SENTENCES, one short paragraph. Before you send, COUNT the sentences. More than four means you have broken this: cut it back and then send. Lead with the direct answer in the first sentence. Cut every example past the first two, every aside, and every closing question. The ONLY exception is a message that asked several separate questions, and then each one gets a single sentence.
+
+NO DASHES. Never join two thoughts with a dash of any kind: no em dash, no en dash, no double hyphen, no spaced hyphen. Use a comma, a full stop, or reword the sentence. This one has no exceptions at all.)`;
+
 export const DECLINE_WATCH_BLOCK = `(YOU MENTIONED THE SUPPORTER PLAN EARLIER IN THIS CONVERSATION. If THIS message turns it down in any way -- "not interested", "stop asking", "don't bring that up again", "I'm not paying for this", "I can't afford it", "no thanks", or any other way of saying no to it -- then begin your reply with the exact tag [[DECLINED]] on its own line, before anything else. The tag is removed before they see your reply.
 
 - Judge the MEANING, not the wording. Any refusal counts, however politely it is put, and it still counts when it arrives alongside a real question.

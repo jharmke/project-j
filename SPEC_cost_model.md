@@ -137,7 +137,7 @@ churn, which is a cost this model does not capture. Justin's call, 2026-08-04.
 ## ✅ MEASURED, READY TO BUILD
 | Lever | Measured effect | Status |
 |---|---|---|
-| **Otto: shorter replies** | Output 216 -> 113 tokens (**48% less**), ~19% off per message. Nothing important lost | Not built |
+| **Otto: shorter replies** | Output 193 -> 105 tokens (**46% less**), 8.1 -> 3.0 sentences, ~19% off per message. Dashes in replies also fell 5/8 -> 1/8 | ✅ **BUILT + DEPLOYED 2026-08-04** (`REPLY_SHAPE_BLOCK`). ⚠️ He was ALREADY told all of this in the system prompt and ignored it -- same failure as the pitch, the cap and the decline tag. It only works from the user's message |
 | **Otto: knowledge routing** (item H) | Up to ~28% off per message. Four accuracy/saving settings, see the table in THE PLAN item H | Built, NOT wired to Otto. Setting not yet chosen |
 
 ## 🔬 NEEDS MEASURING

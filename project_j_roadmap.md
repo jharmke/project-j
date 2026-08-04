@@ -1402,6 +1402,21 @@ WINS. Items graduate UP here from the backlog sections so good ideas don't rot d
 ships it leaves this list. Always offer at least one QUICK WIN when Justin asks what's next, and pull a
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
+- 🔴 **[NEW 2026-08-04] EVERY OTHER KEYWORD DETECTOR IS UNMEASURED, AND THE ONE WE MEASURED WAS BADLY
+  BROKEN.** Found on device: Justin, on the free plan, typed "What's a good chest workout?" and got SIX
+  movements with no limit line. The 2-exercise cap was never broken; it was never ATTACHED, because
+  `messageAsksForExercises` matched only a STRAIGHT apostrophe and iOS types a curly one. The same fix
+  already existed a few lines above in `messageAsksForMore`, with a comment explaining exactly this.
+  ➡️ **Measuring properly then found the real problem: the detector caught 13 of 60 realistic phrasings.**
+  "gimme a routine", "workout please", "give me abs", "what should my workout be" -- all uncapped. The cap
+  had barely fired since it shipped. ✅ Rewritten to **46/60 with zero false alarms** (thing-word alone is
+  now enough; food, app how-to, past-training and opinion questions excluded).
+  ⚠️ **THE OTHER SEVEN DETECTORS HAVE NEVER BEEN MEASURED THIS WAY:** `messageWantsFood`,
+  `messageWantsSleep`, `messageWantsBody`, `messageWantsRecentWorkouts`, `messageHitsWall`,
+  `messageAsksForMore`, and `messageRaisesIntake` (item L's safeguard). Same construction, same silent
+  failure mode, unknown hit rates. A miss on the food one means Otto answers without the user's data; a miss
+  on the safeguard means it never surfaces for someone who needed it.
+  Harness exists: `scratchpad/detector-test.js` + `gen-detector-cases.js`. See [[detectors-are-brittle]].
 - 🔍 **THE 2026-08-02 AUDIT: EVERYTHING DECIDED BUT NEVER BUILT.** Run after item C was wrongly declared
   complete. Claude had been closing each PIECE as it was built and then declaring the ITEM done from memory,
   without re-reading the spec decision by decision. Justin caught it by asking for a double check.

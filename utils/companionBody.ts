@@ -41,7 +41,9 @@ const fmtDelta = (deltaIn: number, unit: MeasurementUnit): string => {
 export const messageWantsBody = (text: string): boolean => {
   const t = (text || '').toLowerCase();
   const body = /\b(measurement|measurements|measure(?:d|ing)?|tape|circumference|body ?fat|bodyfat|bf%|body composition|navy|waist|neck|shoulders?|chest|hips?|bicep|biceps|forearms?|thighs?|calf|calves|arm size|leg size)\b/;
-  const ask = /\b(did|do|does|had|have|how|what|whats|what's|when|last|latest|current|my|change|changed|trend|trending|progress|since|been|big|size|lost|gained|down|up|inch|inches|cm)\b/;
+  // ⚠️ `what['’]s` -- iOS types a CURLY apostrophe, so a straight-quote-only pattern misses real phones.
+  // (Harmless here because bare "what" already matches, but kept correct so it is not copied wrong.)
+  const ask = /\b(did|do|does|had|have|how|what|whats|what['’]s|when|last|latest|current|my|change|changed|trend|trending|progress|since|been|big|size|lost|gained|down|up|inch|inches|cm)\b/;
   return body.test(t) && ask.test(t);
 };
 

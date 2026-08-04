@@ -11,6 +11,7 @@ import {
   buildWorkoutCapBlock,
   buildUndereatingAskBlock,
   buildUndereatingFollowUpBlock,
+  REPLY_SHAPE_BLOCK,
   DECLINE_WATCH_BLOCK,
   type StyleMode,
   type FaithTier,
@@ -348,6 +349,10 @@ export const appCompanion = onCall(
     // something you were never offered. The client tracks that; the server still gates it on being free.
     const mayDecline = status === 'free' && data.mayDecline === true;
     const suffix = [
+      // ⚠️ ON EVERY MESSAGE, unlike the blocks below which are conditional. It is ~40 input tokens and it
+      // buys back ~100 output tokens, and output costs five times what input does, so it pays for itself
+      // roughly twelve times over. Measured 2026-08-04: replies drop from 216 to 113 tokens.
+      REPLY_SHAPE_BLOCK,
       // ⚠️ THE SAFEGUARD LEADS. If a message somehow both asks for exercises and raises food, the safety
       // question comes first and the cap block still rides along underneath it: obeying the safeguard means
       // naming no movements at all, so the ceiling costs nothing, and if he ignores it the cap still holds.

@@ -2918,6 +2918,9 @@ export default function LogScreen() {
             data={mealSlots}
             keyExtractor={s => s.id}
             onDragEnd={({ data }) => { setMealSlots(data); saveMealSlots(data, slotNameCache); }}
+            // Without this the list eats the first tap while a rename is open: the tap dismisses the
+            // keyboard instead of landing on the row you aimed at, so every rename takes two taps.
+            keyboardShouldPersistTaps="handled"
             contentContainerStyle={{ paddingHorizontal:16, paddingTop:10 }}
             ListFooterComponent={() => (
               <View style={{ paddingBottom:20 }}>
@@ -3030,11 +3033,22 @@ export default function LogScreen() {
                 editMealsAnim.setValue(0);
                 Animated.timing(editMealsAnim, { toValue: 1, duration: 220, easing: Easing.out(Easing.quad), useNativeDriver: true }).start();
               }}>
-              <Animated.View style={{ flex:1, backgroundColor:'rgba(0,0,0,0.6)', opacity: editMealsAnim, justifyContent:'center', alignItems:'center' }}>
+              <Animated.View style={{ flex:1, backgroundColor:'rgba(0,0,0,0.6)', opacity: editMealsAnim }}>
+                {/* ⚠️ THE BACKDROP STAYS OUTSIDE THE KEYBOARD-AWARE BOX, or it shrinks with the card and
+                    stops covering the screen. See SPEC_keyboard_modals.md trap 5. */}
                 <TouchableOpacity style={{ position:'absolute', top:0, left:0, right:0, bottom:0 }} activeOpacity={1} onPress={closeEditMeals} />
-                <Animated.View style={[editSheetCardStyle, { opacity: editMealsAnim }]}>
-                  {content}
-                </Animated.View>
+                {/* ⚠️ THIS SHEET HAD NO KEYBOARD HANDLING AT ALL -- one of the "third pattern" cases the
+                    spec warns about, where a grep for KeyboardAvoidingView finds nothing because there is
+                    nothing to find. Renaming a slot opened the keypad straight over the bottom rows, and the
+                    list could not scroll clear because the card never shrank, so there was no overflow to
+                    scroll. Same wrapper the Save as Meal and water-goal sheets in this file already use. */}
+                <KeyboardAwareCenter
+                  style={{ flex:1, alignItems:'center', justifyContent:'center' }}
+                  pointerEvents="box-none">
+                  <Animated.View style={[editSheetCardStyle, { opacity: editMealsAnim }]}>
+                    {content}
+                  </Animated.View>
+                </KeyboardAwareCenter>
                 {/* ⚠️ THE CAP WALL LIVES HERE: INSIDE THIS MODAL, BUT OUTSIDE THE LIST.
                     Inside the modal because iOS gives every Modal its own window, so a wall rendered at the
                     screen's top level opens UNDERNEATH this sheet and is invisible -- it fires, you just

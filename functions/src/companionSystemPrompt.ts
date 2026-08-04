@@ -290,7 +290,9 @@ export const REPLY_SHAPE_BLOCK = `(HOW THIS REPLY MUST BE WRITTEN. A hard limit 
 
 LENGTH: TWO TO FOUR SENTENCES, one short paragraph. Before you send, COUNT the sentences. More than four means you have broken this: cut it back and then send. Lead with the direct answer in the first sentence. Cut every example past the first two and every aside. The ONLY exception is a message that asked several separate questions, and then each one gets a single sentence.
 
-DO NOT END WITH A QUESTION. Never close by asking them anything: not "what does your sleep look like lately", not "have you eaten today", not "what are you in the mood for", not "want me to go deeper". Your reply ends on the answer. If you genuinely cannot answer without something only they can tell you, ask for that ONE thing and nothing else, in the middle of the reply, not as a sign-off. Never ask for data you could not verify anyway.
+DO NOT ASK THEM ANYTHING. Not at the end, not in the middle, not as your whole reply. Never: "what does your sleep look like lately", "have you eaten today", "what did you eat for breakfast", "what are you in the mood for", "want me to go deeper". Your reply ends on the answer.
+
+If their message is ambiguous, ANSWER THE MOST LIKELY READING rather than asking which they meant. If it is about their own logged data and you cannot see it, say so plainly and tell them where it is, exactly as you would if they had asked clearly. NEVER ask them to type in data you could have read, and never ask for data you could not verify anyway.
 
 NO DASHES. Never join two thoughts with a dash of any kind: no em dash, no en dash, no double hyphen, no spaced hyphen. Use a comma, a full stop, or reword the sentence. This one has no exceptions at all.)`;
 

@@ -49,6 +49,7 @@ import { devExpireFirstWeek, devSimulateCancelled } from '../utils/firstWeek';
 import { loadCalorieTargets } from '../utils/calorieTarget';
 import { CapKey, FREE_CAPS, SUPPORTER_CAPS, countFor, countUserExercises, setDevCapOverride, clearDevCapOverrides } from '../utils/caps';
 import { armSafeguardForTest, clearSafeguardTestState } from '../utils/undereatingSafeguard';
+import MacroPresetCards from '../components/MacroPresetCards';
 // Only for the cap dev tools: exercises are the one cap whose user-made count cannot be worked out without
 // the built-in list. See the note on DEFAULT_LIBRARY.
 import { DEFAULT_LIBRARY } from './workout-library';
@@ -618,6 +619,13 @@ export default function SettingsScreen() {
   // ⚠️ `undefined` means "not touched this session", which is not the same as `null` ("they are on a custom
   // split"). saveGoals only overrides its own hand-edit detection when this is one or the other.
   const [draftMacroPreset, setDraftMacroPreset] = useState<MacroPresetKey | null | undefined>(undefined);
+  // ⚠️ DISPLAY ONLY, and deliberately NOT folded into draftMacroPreset. That one is three-state on purpose:
+  // `undefined` means "no card was tapped this session", and the save path reads it to decide whether to
+  // touch pj_settings.macroPreset at all and whether this save counts as authoring a custom split. Seeding
+  // it from storage would quietly retire that meaning. This is the saved value, read once, used to light a
+  // card up and nothing else -- which is what Home's Macros modal already does via seedMacroFields.
+  const [savedMacroPreset, setSavedMacroPreset] = useState<MacroPresetKey | null>(null);
+  const shownMacroPreset = draftMacroPreset !== undefined ? draftMacroPreset : savedMacroPreset;
 
   // Gold app icon (Supporter perk). Device-local, so it reads the CURRENT native icon rather than any
   // stored preference -- if the user reinstalled or switched devices, the native truth is the truth.
@@ -795,6 +803,9 @@ export default function SettingsScreen() {
   const [goalSaved, setGoalSaved] = useState(false);
   const goalFloatAnim = useRef(new Animated.Value(0)).current;
   const [goalKeyboardHeight, setGoalKeyboardHeight] = useState(0);
+  // Same number as the state, in a ref, so a handler can read the CURRENT height instead of whatever it was
+  // when that handler was created. See the keyboard listeners below.
+  const goalKeyboardHRef = useRef(0);
   const goalScrollOffset = useRef(0);
   const GOAL_SAVE_BAR_HEIGHT = 76;
   const hasGoalChangesRef = useRef(false);
@@ -1085,6 +1096,8 @@ export default function SettingsScreen() {
           if (data.adaptiveTdeeAuto !== undefined) setAdaptiveTdeeAuto(data.adaptiveTdeeAuto);
           if (data.showNetCarbs !== undefined) setShowNetCarbs(data.showNetCarbs);
           if (data.styleMode) setStyleMode(data.styleMode);
+          // null is a real value here (it means a custom split), so this cannot use a truthy check.
+          if (data.macroPreset !== undefined) setSavedMacroPreset(data.macroPreset);
           if (data.mindfulGrowthAreas !== undefined) setMindfulGrowthAreas(data.mindfulGrowthAreas);
           if (data.faithJourney) setFaithJourney(data.faithJourney);
           if (data.burnAccuracyPct !== undefined) setBurnAccuracyPct(data.burnAccuracyPct);
@@ -1106,10 +1119,22 @@ export default function SettingsScreen() {
     load();
   }, []);
 
-  // Keyboard height tracking for goal save bar
+  // Keyboard height tracking for goal save bar.
+  // ⚠️ THE REF EXISTS BECAUSE THE STATE IS ALWAYS TOO LATE OR TOO OLD for the field-clearing scroll below.
+  // `keyboardDidShow` fires only once the keyboard has finished animating, and any handler created before
+  // that still closes over the OLD state value -- which is 0 on the first tap, putting the imaginary save
+  // bar at the bottom of the screen so nothing ever measured as covered.
   useEffect(() => {
-    const show = Keyboard.addListener('keyboardDidShow', e => setGoalKeyboardHeight(e.endCoordinates.height));
-    const hide  = Keyboard.addListener('keyboardDidHide', () => setGoalKeyboardHeight(0));
+    const show = Keyboard.addListener('keyboardDidShow', e => {
+      goalKeyboardHRef.current = e.endCoordinates.height;
+      setGoalKeyboardHeight(e.endCoordinates.height);
+      // The keyboard opening IS the moment to check, and the event carries the exact height.
+      clearFocusedGoalField(e.endCoordinates.height);
+    });
+    const hide  = Keyboard.addListener('keyboardDidHide', () => {
+      goalKeyboardHRef.current = 0;
+      setGoalKeyboardHeight(0);
+    });
     return () => { show.remove(); hide.remove(); };
   }, []);
 
@@ -1281,17 +1306,73 @@ export default function SettingsScreen() {
   // ⚠️ These update the DRAFT, not storage. Every other control on this screen works that way and commits
   // through the floating save bar; applying a preset straight to storage from a screen holding unsaved edits
   // would let the two disagree. The Home modal applies immediately because it has no draft to conflict with.
+  // ⚠️ TWO-WAY, and that is the whole point. The preset and Custom cards used to only ever turn the save bar
+  // ON, so going Custom -> Balanced -> Custom put every number back exactly as saved and still left Save lit,
+  // offering to write a change that no longer existed. Home's Macros modal never had this because it
+  // recomputes dirtiness from a baseline on every render instead of latching it. Same both-directions test
+  // `updateGoalField` already ran; shared so a third card handler cannot get half of it again.
+  const syncGoalDirty = (updated: GoalProfile) => {
+    const isDifferent = JSON.stringify(updated) !== JSON.stringify(savedGoalProfile);
+    if (isDifferent && !hasGoalChangesRef.current) {
+      hasGoalChangesRef.current = true;
+      setHasGoalChanges(true);
+      Animated.spring(goalFloatAnim, { toValue: 1, useNativeDriver: true, tension: 65, friction: 11 }).start();
+    } else if (!isDifferent && hasGoalChangesRef.current) {
+      hasGoalChangesRef.current = false;
+      setHasGoalChanges(false);
+      Animated.timing(goalFloatAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start();
+    }
+  };
+
+  /**
+   * ⚠️ THE SAVE BAR IS NOT PART OF THE KEYBOARD. The page's ScrollView uses iOS's automatic keyboard
+   * insets, which lift a focused field clear of the KEYBOARD and know nothing about a floating bar sitting
+   * on top of it. Tap a preset (bar appears), then tap a macro field, and the field lands underneath the
+   * bar. `updateGoalField` already compensated for the opposite order, where the bar appears while the
+   * keyboard is already up; this covers the order Justin actually hit.
+   * The delay lets iOS finish its own adjustment first, so this adds to the final position rather than
+   * fighting a scroll that is still animating.
+   *
+   * ⚠️ MEASURE, DO NOT SHIFT BY A FIXED AMOUNT. Scrolling by the bar's height every time pushed a field
+   * that was already high on the screen straight off the TOP. Only the overflow past the bar is moved, so a
+   * field that was never covered does not move at all.
+   */
+  const goalFieldRefs = useRef<Record<string, any>>({});
+  const focusedGoalField = useRef<string | null>(null);
+
+  /** Move the focused field out from under the save bar, by exactly the amount it is hidden and no more. */
+  const clearFocusedGoalField = (kbHeight: number) => {
+    if (!hasGoalChangesRef.current) return;
+    const node = focusedGoalField.current ? goalFieldRefs.current[focusedGoalField.current] : null;
+    if (!node?.measureInWindow) return;
+    node.measureInWindow((_x: number, y: number, _w: number, h: number) => {
+      const screenH = Dimensions.get('window').height;
+      // Everything the field has to clear: the keyboard, and the save bar riding above it.
+      const barTop = screenH - kbHeight - GOAL_SAVE_BAR_HEIGHT;
+      const overflow = (y + h + 12) - barTop;
+      if (overflow > 0) {
+        scrollViewRef.current?.scrollTo({ y: goalScrollOffset.current + overflow, animated: true });
+      }
+    });
+  };
+
+  const onGoalFieldFocus = (key: string) => {
+    focusedGoalField.current = key;
+    // ⚠️ TWO ENTRY POINTS ON PURPOSE. Tapping a field with the keyboard DOWN is handled by keyboardDidShow,
+    // which knows the real height. Tapping a different field while the keyboard is ALREADY up fires no show
+    // event at all, so that case has to run from here, off the ref rather than the state.
+    if (goalKeyboardHRef.current > 0) {
+      setTimeout(() => clearFocusedGoalField(goalKeyboardHRef.current), 60);
+    }
+  };
+
   const applyPresetToDraft = (key: MacroPresetKey) => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     const preset = MACRO_PRESETS[key];
     setDraftMacroPreset(key);
     setGoalProfile(prev => {
       const updated = { ...prev, macroMode: 'ratio' as const, macroProteinPct: String(preset.p), macroCarbsPct: String(preset.c), macroFatPct: String(preset.f) };
-      if (JSON.stringify(updated) !== JSON.stringify(savedGoalProfile) && !hasGoalChangesRef.current) {
-        hasGoalChangesRef.current = true;
-        setHasGoalChanges(true);
-        Animated.spring(goalFloatAnim, { toValue: 1, useNativeDriver: true, tension: 65, friction: 11 }).start();
-      }
+      syncGoalDirty(updated);
       return updated;
     });
   };
@@ -1313,11 +1394,7 @@ export default function SettingsScreen() {
         macroCarbsG:     String(customMacroSplit.macroCarbsG     ?? ''),
         macroFatG:       String(customMacroSplit.macroFatG       ?? ''),
       };
-      if (JSON.stringify(updated) !== JSON.stringify(savedGoalProfile) && !hasGoalChangesRef.current) {
-        hasGoalChangesRef.current = true;
-        setHasGoalChanges(true);
-        Animated.spring(goalFloatAnim, { toValue: 1, useNativeDriver: true, tension: 65, friction: 11 }).start();
-      }
+      syncGoalDirty(updated);
       return updated;
     });
   };
@@ -1444,6 +1521,15 @@ export default function SettingsScreen() {
           console.log('macroPreset write error', e);
         }
       }
+      // ⚠️ THESE TWO MUST MOVE TOGETHER. Clearing the draft alone hands the highlight back to
+      // `savedMacroPreset`, which was read once when the screen loaded -- so the card would snap back to
+      // whatever you were on BEFORE the save and only correct itself when you left and came back.
+      if (presetToWrite !== undefined) setSavedMacroPreset(presetToWrite);
+      // ⚠️ AND THE CARD'S NUMBERS. The local `customMacroSplit` above SHADOWS the state of the same name, so
+      // writing it to storage left the screen still holding the old split and the Custom card showed stale
+      // numbers until you left and came back. Home's Macros modal never had this because its save sets its
+      // own copy in the same breath.
+      if (customMacroSplit) setCustomMacroSplit(customMacroSplit);
       setDraftMacroPreset(undefined);
 
       setGoalProfile(synced);
@@ -1955,39 +2041,26 @@ export default function SettingsScreen() {
                   would dominate it. A different SHAPE in each place is how the inconsistency started.
                   ⚠️ These sit ABOVE the editor on purpose, so the screen explains itself before the wall
                   ever fires: here is what you can use, and below it the part that needs the plan. */}
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4, marginBottom: 10 }}>
-                {(Object.entries(MACRO_PRESETS) as [MacroPresetKey, typeof MACRO_PRESETS[MacroPresetKey]][]).map(([key, pr]) => {
-                  const active = draftMacroPreset === key;
-                  return (
-                    <TouchableOpacity key={key} onPress={() => applyPresetToDraft(key)} activeOpacity={0.85}
-                      style={{ width: '48%', paddingVertical: 10, paddingHorizontal: 8, borderRadius: 10, alignItems: 'center', gap: 2,
-                        borderWidth: active ? 1.5 : 1,
-                        backgroundColor: active ? theme.accentBlueBg : theme.bgInput,
-                        borderColor: active ? theme.accentBlueBorder : theme.borderInput }}>
-                      <Ionicons name={pr.icon} size={16} color={active ? theme.accentBlue : theme.textMuted} />
-                      <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: active ? theme.accentBlue : theme.textSecondary }}>{pr.label}</Text>
-                      <Text style={{ fontSize: 10, fontFamily: Type.ui, color: theme.textDim }}>{pr.p}P · {pr.c}C · {pr.f}F</Text>
-                    </TouchableOpacity>
-                  );
-                })}
+              {/* Shared with Home's Macros modal. Settings keeps its own tighter card and plain icon/label
+                  by passing them in; everything that BEHAVES is in the component. */}
+              <View style={{ marginTop: 4, marginBottom: 10 }}>
+                <MacroPresetCards
+                  theme={theme}
+                  selected={shownMacroPreset}
+                  customSplit={customMacroSplit}
+                  onPickPreset={applyPresetToDraft}
+                  onPickCustom={applyCustomSplitToDraft}
+                  width="48%"
+                  cardStyle={{ paddingVertical: 10, paddingHorizontal: 8, borderRadius: 10, alignItems: 'center', gap: 2 }}
+                  valueFontSize={10}
+                  restBg={theme.bgInput}
+                  restBorder={theme.borderInput}
+                  renderIcon={(name, active) => <Ionicons name={name} size={16} color={active ? theme.accentBlue : theme.textMuted} />}
+                  renderLabel={(label, active) => (
+                    <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: active ? theme.accentBlue : theme.textSecondary }}>{label}</Text>
+                  )}
+                />
               </View>
-              {/* Renders only for somebody who actually built a split. NOT gated: putting back what you
-                  already made is restoring, not authoring, which is what grandfathering means. */}
-              {customMacroSplit && (
-                <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 12 }}>
-                  <TouchableOpacity onPress={applyCustomSplitToDraft} activeOpacity={0.85}
-                    style={{ width: '48%', paddingVertical: 10, paddingHorizontal: 8, borderRadius: 10, alignItems: 'center', gap: 2,
-                      borderWidth: draftMacroPreset === null ? 1.5 : 1,
-                      backgroundColor: draftMacroPreset === null ? theme.accentBlueBg : theme.bgInput,
-                      borderColor: draftMacroPreset === null ? theme.accentBlueBorder : theme.borderInput }}>
-                    <Ionicons name="options" size={16} color={draftMacroPreset === null ? theme.accentBlue : theme.textMuted} />
-                    <Text style={{ fontSize: 12, fontFamily: Type.uiBold, color: draftMacroPreset === null ? theme.accentBlue : theme.textSecondary }}>Custom</Text>
-                    <Text style={{ fontSize: 10, fontFamily: Type.ui, color: theme.textDim }}>
-                      {customMacroSplit.macroProteinPct}P · {customMacroSplit.macroCarbsPct}C · {customMacroSplit.macroFatPct}F
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
               {macroGoalsLocked && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                   <Ionicons name="lock-closed" size={13} color={GOLD_BASE} />
@@ -2048,8 +2121,10 @@ export default function SettingsScreen() {
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                         <TextInput
                           style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, borderLeftColor: color, borderLeftWidth: 3, color, flex: 1, marginBottom: 0, textAlign: 'center', fontSize: 20, fontFamily: Type.num }]}
+                          ref={r => { goalFieldRefs.current[String(pctKey)] = r; }}
                           value={goalProfile[pctKey] as string}
                           onChangeText={v => updateGoalField(pctKey, v)}
+                          onFocus={() => onGoalFieldFocus(String(pctKey))}
                           keyboardType="number-pad"
                           maxLength={3}
                           placeholder="0"
@@ -2091,8 +2166,10 @@ export default function SettingsScreen() {
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                         <TextInput
                           style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, borderLeftColor: color, borderLeftWidth: 3, color, flex: 1, marginBottom: 0, textAlign: 'center', fontSize: 20, fontFamily: Type.num }]}
+                          ref={r => { goalFieldRefs.current[String(gKey)] = r; }}
                           value={goalProfile[gKey] as string}
                           onChangeText={v => updateGoalField(gKey, v)}
+                          onFocus={() => onGoalFieldFocus(String(gKey))}
                           keyboardType="number-pad"
                           maxLength={4}
                           placeholder="0"
@@ -4690,6 +4767,9 @@ export default function SettingsScreen() {
                 triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
                 Keyboard.dismiss();
                 setGoalProfile(savedGoalProfile);
+                // Cancel puts the CARDS back too. Restoring the numbers but leaving the tapped card lit left
+                // the panel claiming a preset the screen had just thrown away.
+                setDraftMacroPreset(undefined);
                 hasGoalChangesRef.current = false;
                 setHasGoalChanges(false);
                 Animated.timing(goalFloatAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start();

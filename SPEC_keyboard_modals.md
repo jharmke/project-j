@@ -182,6 +182,47 @@ feel slightly fast on the first TestFlight and treat that as expected, not a reg
 
 ---
 
+## TRAP 7 -- A FLOATING SAVE BAR IS NOT PART OF THE KEYBOARD (found 2026-08-04, Settings > Goals)
+
+This one is NOT about modals. It is any long screen with a floating save/cancel bar over the bottom, which
+is most of the settings-shaped screens in the app. It took four rounds to get right and every round failed
+for a different reason, so all four are written down.
+
+**THE SYMPTOM.** Tap something that makes the save bar appear (a preset card), then tap a text field low on
+the page. iOS lifts the field above the KEYBOARD and drops it straight behind the BAR.
+
+**WHY IT HAPPENS.** `automaticallyAdjustKeyboardInsets` (and KeyboardAvoidingView, and every built-in) only
+knows about the keyboard. A bar you drew yourself at `position:'absolute', bottom:0` is invisible to them.
+The field has to clear the keyboard AND the bar, and only your code knows the second number.
+
+⚠️ **`setFloatingBarHeight` DOES NOT HELP.** It looks like it should: it is global and it is set from
+exactly these screens. It only lifts the Otto FAB (`components/AssistantOverlay.tsx`). It pads nothing and
+scrolls nothing. Reading its name and assuming was one of the wasted rounds.
+
+**THE FOUR FAILURES, in order:**
+1. **Compensating in the wrong place.** The original code scrolled by the bar's height when the BAR appeared
+   while the keyboard was already up. That is the rarer order. Bar first, then keyboard, was uncovered.
+2. **Scrolling by a fixed amount.** Shifting by the bar's height on every focus pushed a field that was
+   already high on the screen off the TOP. **Measure the field and move only the overflow past the bar.**
+   `node.measureInWindow(...)`, `barTop = screenHeight - keyboardHeight - BAR_HEIGHT`, scroll by
+   `(y + h + margin) - barTop` and only when that is positive.
+3. 🔴 **READING THE KEYBOARD HEIGHT FROM STATE INSIDE A FOCUS HANDLER. This is the real trap.** The handler
+   closes over the value from the render that created it, which on the first tap is **0** -- so `barTop`
+   computes as if there were no keyboard, nothing ever measures as covered, and nothing scrolls. It fails
+   SILENTLY and looks like a measuring bug. Keep the height in a **ref** written by the listeners.
+4. **Firing on focus alone.** `keyboardDidShow` lands only after the keyboard finishes animating, later than
+   any timer you set from `onFocus`. Do the work FROM the show event, using `e.endCoordinates.height`.
+
+**THE SHAPE THAT WORKS. Two entry points, and you need both:**
+- **`keyboardDidShow`** handles tapping a field with the keyboard down. The event carries the exact height.
+- **`onFocus`** handles tapping a DIFFERENT field while the keyboard is already up, because no show event
+  fires then. Read the height off the ref, not the state, and give it ~60ms.
+Both call one shared measure-and-scroll function. Track which field has focus in a ref.
+
+Reference implementation: `onGoalFieldFocus` / `clearFocusedGoalField` in `app/settings.tsx`.
+
+---
+
 ## KNOWN GAPS (not yet done -- see NEXT UP in the roadmap)
 
 - **Hand-rolled modals still teleport** in a few places. Grep `KbHeight|keyboardHeight`. Workout

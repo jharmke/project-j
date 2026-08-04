@@ -18,6 +18,7 @@ import { TAB_SCROLL_PAD } from '../../components/CustomTabBar';
 import KeyboardAwareCenter from '../../components/KeyboardAwareCenter';
 import GoalsWallModal from '../../components/GoalsWallModal';
 import { MACRO_PRESETS, matchMacroPreset, type MacroPresetKey } from '../../utils/macroPresets';
+import MacroPresetCards from '../../components/MacroPresetCards';
 import { GOLD_BASE } from '../../components/SupporterFoil';
 import Svg, { Circle } from 'react-native-svg';
 import PressableButton from '../../components/PressableButton';
@@ -5108,49 +5109,30 @@ export default function HomeScreen() {
                 <>
                   <Text style={{ fontSize:9, letterSpacing:3, textTransform:'uppercase', color: theme.textMuted, fontFamily:Type.uiBold, marginBottom:4 }}>Macro Goals</Text>
                   <Text style={{ fontSize:11, color: theme.textDim, fontFamily:Type.ui, marginBottom:12, lineHeight:16 }}>Sets your protein, carb, and fat targets automatically.</Text>
-                  <View style={{ flexDirection:'row', flexWrap:'wrap', gap:8 }}>
-                    {/* ⚠️ Highlights follow the DRAFT, not what is saved -- tapping a card no longer saves,
-                        so the highlight is the feedback that your tap registered. */}
-                    {(Object.entries(MACRO_PRESETS) as [MacroPresetKey, typeof MACRO_PRESETS[MacroPresetKey]][]).map(([key, pr]) => {
-                      const active = draftPreset === key;
-                      return (
-                        <TouchableOpacity key={key} onPress={() => applyMacroPreset(key)} activeOpacity={0.85}
-                          style={{ width:'47%', paddingVertical:14, paddingHorizontal:10, borderRadius:12,
-                            borderWidth: active ? 1.5 : 1,
-                            backgroundColor: active ? theme.accentBlueBg : theme.bgCardGlass,
-                            borderColor: active ? theme.accentBlueBorder : theme.borderCard, alignItems:'center', gap:4 }}>
-                          <GradientHomeIcon name={pr.icon} size={22} color={active ? theme.accentBlue : theme.textMuted} />
-                          <GradientTitle title={pr.label} color={active ? theme.accentBlue : theme.textSecondary} style={{ fontSize:14, fontFamily:Type.uiBold }} />
-                          <Text style={{ fontSize:11, fontFamily:Type.ui, color: theme.textDim }}>{pr.p}P · {pr.c}C · {pr.f}F</Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                  {/* ITEM C: THE CUSTOM CARD. Preset-sized and centred on its own row under the 2x2 (full
-                      width was proposed and rejected as far too big). It renders only for somebody who has
-                      actually built a split, so a preset-only user never sees a fifth card.
-                      ⚠️ It REPLACED the line "Custom goals set. Pick a preset to replace them." That line
-                      described behaviour that no longer exists: presets used to overwrite your split, so it
-                      was a warning. Now the split is kept and this card is the way back, so the same words
-                      would scare people off a button that has become safe.
-                      ⚠️ Percentages, always -- the modal has no grams view. A fixed-grams user still sees
-                      their split here because the app keeps both in sync, and tapping this restores their
-                      GRAMS and their mode, not these percentages. */}
-                  {customMacroSplit && (
-                    <View style={{ flexDirection:'row', justifyContent:'center', marginTop:8 }}>
-                      <TouchableOpacity onPress={applyCustomMacroSplit} activeOpacity={0.85}
-                        style={{ width:'47%', paddingVertical:14, paddingHorizontal:10, borderRadius:12,
-                          borderWidth: draftPreset === null ? 1.5 : 1,
-                          backgroundColor: draftPreset === null ? theme.accentBlueBg : theme.bgCardGlass,
-                          borderColor: draftPreset === null ? theme.accentBlueBorder : theme.borderCard, alignItems:'center', gap:4 }}>
-                        <GradientHomeIcon name="options" size={22} color={draftPreset === null ? theme.accentBlue : theme.textMuted} />
-                        <GradientTitle title="Custom" color={draftPreset === null ? theme.accentBlue : theme.textSecondary} style={{ fontSize:14, fontFamily:Type.uiBold }} />
-                        <Text style={{ fontSize:11, fontFamily:Type.ui, color: theme.textDim }}>
-                          {customMacroSplit.macroProteinPct}P · {customMacroSplit.macroCarbsPct}C · {customMacroSplit.macroFatPct}F
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
+                  {/* Shared with Settings > Goals (components/MacroPresetCards.tsx). The modal keeps its
+                      bigger card and its gradient icon and title by passing them in; everything that
+                      BEHAVES lives in the component so the two panels cannot drift again.
+                      ⚠️ Highlights follow the DRAFT, not what is saved -- tapping a card no longer saves,
+                      so the highlight is the feedback that your tap registered.
+                      ⚠️ The Custom card REPLACED the line "Custom goals set. Pick a preset to replace them."
+                      That described behaviour that no longer exists: presets used to overwrite your split, so
+                      it was a warning. Now the split is kept and this card is the way back. */}
+                  <MacroPresetCards
+                    theme={theme}
+                    selected={draftPreset}
+                    customSplit={customMacroSplit}
+                    onPickPreset={applyMacroPreset}
+                    onPickCustom={applyCustomMacroSplit}
+                    width="47%"
+                    cardStyle={{ paddingVertical:14, paddingHorizontal:10, borderRadius:12, alignItems:'center', gap:4 }}
+                    valueFontSize={11}
+                    restBg={theme.bgCardGlass}
+                    restBorder={theme.borderCard}
+                    renderIcon={(name, active) => <GradientHomeIcon name={name} size={22} color={active ? theme.accentBlue : theme.textMuted} />}
+                    renderLabel={(label, active) => (
+                      <GradientTitle title={label} color={active ? theme.accentBlue : theme.textSecondary} style={{ fontSize:14, fontFamily:Type.uiBold }} />
+                    )}
+                  />
                   {/* ITEM C: THE INLINE FIELDS. You type into whichever mode your goals are already in --
                       percentages if that is how they are set, grams if they are -- and the dim number on the
                       right is the same target expressed the other way, read-only so it cannot be broken.
@@ -5216,7 +5198,15 @@ export default function HomeScreen() {
                         <View style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
                           <TextInput
                             value={macroFields[row.key]}
-                            onChangeText={v => setMacroFields(prev => ({ ...prev, [row.key]: v.replace(/[^0-9]/g, '') }))}
+                            onChangeText={v => {
+                              // ⚠️ HAND-EDITING ANY PART OF THE SPLIT DROPS YOU OFF THE PRESET, exactly as
+                              // Settings > Goals already did. Without this, tapping Balanced and then
+                              // changing protein to 45 still saved as "Balanced" -- the wrong marker, and it
+                              // also skipped writing the custom backup, because the save reads `draftPreset`
+                              // to tell a preset save from an authored one.
+                              setDraftPreset(null);
+                              setMacroFields(prev => ({ ...prev, [row.key]: v.replace(/[^0-9]/g, '') }));
+                            }}
                             onFocus={onMacroFieldFocus}
                             keyboardType="number-pad"
                             maxLength={macroEditMode === 'ratio' ? 3 : 4}

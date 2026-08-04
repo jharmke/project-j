@@ -109,6 +109,13 @@ export async function resetRatePromptBudget(): Promise<void> {
 // overlay popping from the same action for the screen. `tutorialActive` must be the caller's own
 // useTutorial().activeState -- pass it truthy whenever a tutorial/demo walkthrough is running so a
 // simulated demo action can never spend one of the 3 real asks. Fire-and-forget; never throws.
+// ⚠️ NO LAUNCH-COLLISION GUARD HERE, and that is a checked decision, not an oversight (2026-08-04).
+// Item N raised the worry that this could land the store review sheet on top of a launch pop-up. Every
+// trigger was then traced: water and protein goals only move when you log in the app, weight achievements
+// come from saving or editing a weight, and the workout, challenge, Bible, devotional, journal and
+// gratitude triggers are all button presses. You cannot do any of those while a modal is on screen, so the
+// collision is unreachable. A guard was written, then removed rather than carried as insurance against
+// something that cannot happen. Apple health data does NOT trigger this at all.
 export function fireRatingTrigger(tutorialActive: unknown): void {
   if (tutorialActive) return;
   setTimeout(() => { requestRatingPrompt().catch(() => {}); }, 3000);

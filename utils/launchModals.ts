@@ -78,8 +78,11 @@ export function launchModalSlotSpent(): boolean {
   return decided;
 }
 
-// ⚠️ RATE US IS DELIBERATELY NOT ROUTED THROUGH HERE YET, and its rank above is reserved rather than used.
-// It is not actually a launch modal: it fires off achievements, goal hits and finishing a challenge, which
-// mostly happen mid-session, and forcing those through a launch gate would silence the 3pm ones. What it
-// CAN do is ride in on a goal check that completes during launch. Handling that means guarding the trigger
-// itself, not moving it in here. Logged rather than bundled.
+
+// ⚠️ RATE US IS NOT ROUTED THROUGH HERE, and its rank above is reserved rather than used. It is not a
+// launch modal: every one of its triggers is a physical user action (logging water or protein past the
+// goal, saving or editing a weight, finishing a workout or a challenge, a Bible/devotional/journal/
+// gratitude entry), and none of those are possible while a modal is on screen. Apple health data does not
+// trigger it at all. TRACED CALL SITE BY CALL SITE 2026-08-04 -- the collision is unreachable, a guard was
+// written and then removed rather than carried for a problem that cannot occur. Do not re-add one without
+// finding a trigger that fires with no user action behind it.

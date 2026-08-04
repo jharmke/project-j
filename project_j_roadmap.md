@@ -1494,13 +1494,16 @@ are separate pre-submission checklists, NOT part of this menu.
     "works from everything you've logged" and sounds like a capability switched off rather than something
     lobotomised. Plus the caps bullet, "stats cards" -> "graphs", the hairline, and a fifth found on device:
     the longer cancelled title wrapped and rendered two-tone.
-  • ⏭️ **[NEW 2026-08-04, SPAWNED BY ITEM N] RATE US CAN STILL RIDE IN ON LAUNCH.** It is deliberately not
-    routed through the launch gate, because it fires off achievements, goal hits and finishing a challenge,
-    which mostly happen mid-session -- gating it on launch would silence those. But those same goal checks
-    run as Home loads its data, so it can still land on top of a launch pop-up. The fix belongs on the
-    TRIGGER (`fireRatingTrigger` / `utils/ratingPrompt.ts`), something like "not while the launch slot is
-    live", not on the modal. `LAUNCH_RANK.rateUs` already exists and is unused, so it can be wired if the
-    trigger-side guard turns out to be the wrong shape.
+  • ✅ **[RAISED AND CLOSED 2026-08-04, SPAWNED BY ITEM N] RATE US COLLIDING WITH A LAUNCH POP-UP: NOT
+    POSSIBLE. Nothing built, deliberately.** The worry was that a goal check finishing during launch could
+    land the store review sheet on a summary. Traced every `fireRatingTrigger` call site instead of
+    assuming: water and protein goals only move when you log in the app, weight achievements come from
+    saving a weight or editing weight history, and the workout, challenge, Bible, devotional, journal and
+    gratitude triggers are all button presses. None are possible with a modal on screen, and Apple health
+    data does not trigger it at all. ⚠️ Justin caught the wrong claim ("steps and health goals could fire
+    it") before any of this shipped. A guard WAS written and then removed rather than carried as insurance
+    against something unreachable; the reasoning is recorded in `ratingPrompt.ts` and `launchModals.ts` so
+    nobody re-derives it. `LAUNCH_RANK.rateUs` stays reserved and unused.
   • ✅ **[FIXED 2026-08-04 BY ITEM N] The step-down notice landing ON the launch splash.** Root cause was
     not timing at all: the "splash is showing" flag was set too late in launch, so an early pop-up asked and
     was told there was no splash. See item N in THE PLAN. Two earlier re-orderings failed because they

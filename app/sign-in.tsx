@@ -13,6 +13,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { router } from 'expo-router';
+import { markLaunchFinished } from '../utils/launchSplashGate';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { app, auth } from '../firebaseConfig';
 import { useAuth } from '../AuthContext';
@@ -140,6 +141,9 @@ export default function SignInScreen() {
       if (obc === 'true') {
         // Existing or just-restored account: straight into the app. _layout would also
         // route here, but doing it explicitly avoids a flash of the onboarding stage.
+        // ⚠️ NO LAUNCH CINEMATIC ON THIS PATH, so release the launch pop-ups here. Every route into the
+        // tabs has to do this now that they are held from app start rather than from the splash appearing.
+        markLaunchFinished();
         router.replace('/(tabs)');
         return;
       }

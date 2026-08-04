@@ -30,6 +30,13 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-08-04 **Item N done: one launch pop-up at a time, and none of them can land on the splash again.**
+  The splash flag was being set too late in launch, so an early pop-up asked "is the splash up" and was
+  told no; it now asks "has launch finished", starting false, so unknown means wait. On top of that, one
+  winner per launch by rank (summary, then step-down, then the meta tutorial), losers ask again next launch.
+  🔴 Killed a real dead-screen bug: two modals due on the same launch left an invisible open modal over Home
+  that needed a force quit, which is what an ordinary user gets the morning their free week ends on a
+  summary day. Rate Us deliberately left out, logged as its own item.
 - 2026-08-04 **The macro preset panel is now ONE shared component** across Home's Macros modal and
   Settings > Goals (`components/MacroPresetCards.tsx`), after four parity bugs in a row proved two hand
   written copies of the same panel cannot be kept in step. Card size and icon treatment stay per screen.
@@ -1487,7 +1494,18 @@ are separate pre-submission checklists, NOT part of this menu.
     "works from everything you've logged" and sounds like a capability switched off rather than something
     lobotomised. Plus the caps bullet, "stats cards" -> "graphs", the hairline, and a fifth found on device:
     the longer cancelled title wrapped and rendered two-tone.
-  • **[WATCH, seen again 2026-08-01] The step-down notice still lands ON the launch splash sometimes.**
+  • ⏭️ **[NEW 2026-08-04, SPAWNED BY ITEM N] RATE US CAN STILL RIDE IN ON LAUNCH.** It is deliberately not
+    routed through the launch gate, because it fires off achievements, goal hits and finishing a challenge,
+    which mostly happen mid-session -- gating it on launch would silence those. But those same goal checks
+    run as Home loads its data, so it can still land on top of a launch pop-up. The fix belongs on the
+    TRIGGER (`fireRatingTrigger` / `utils/ratingPrompt.ts`), something like "not while the launch slot is
+    live", not on the modal. `LAUNCH_RANK.rateUs` already exists and is unused, so it can be wired if the
+    trigger-side guard turns out to be the wrong shape.
+  • ✅ **[FIXED 2026-08-04 BY ITEM N] The step-down notice landing ON the launch splash.** Root cause was
+    not timing at all: the "splash is showing" flag was set too late in launch, so an early pop-up asked and
+    was told there was no splash. See item N in THE PLAN. Two earlier re-orderings failed because they
+    treated it as a timing problem.
+  • **(historical) [WATCH, seen again 2026-08-01] The step-down notice still lands ON the launch splash sometimes.**
     Justin: "it did show up during the splash. we sort of fixed that timing thing but last couple times it
     went over the splash." The notice waits 800ms and then goes through `runAfterLaunchSplash`, and that was
     already reworked once (two other orderings were tried and both still landed on the splash). Deliberately
@@ -2182,7 +2200,29 @@ are separate pre-submission checklists, NOT part of this menu.
      someone does NOT eat. **Hard prerequisite for F** (Otto would build a shellfish dinner for someone
      allergic) and it would improve the AI meal estimator too. Profile work, small, must land before F.
 
-  **N. LAUNCH-MODAL PRIORITY (a shared flag, NOT a queue framework)** -- NEW 2026-07-31.
+  **N. ✅ COMPLETE + DEVICE-VERIFIED 2026-08-04. LAUNCH-MODAL PRIORITY.** Two pieces.
+     **(1) `utils/launchSplashGate.ts` was asking the wrong question.** It asked "is the splash on screen
+     RIGHT NOW", default false, and the flag was only set partway through launch (after auth + the restore
+     gate) -- while the Home tab starts its own timer at mount. On a slow cold start the timer won, was told
+     "no splash", and showed itself; the splash then appeared and the modal sat ON TOP of it, because iOS
+     gives every Modal its own window. **The timing was never the problem, the flag being late was**, which
+     is why two previous re-orderings did not fix it. Now asks "has launch FINISHED", starting false, so
+     unknown resolves to WAIT instead of GO. Every route into the tabs (splash onDone, the no-cinematic
+     path, sign-in, onboarding) calls `markLaunchFinished`; a 12s net means nothing can wait forever.
+     **(2) `utils/launchModals.ts`** -- one winner per launch by rank, losers stand down and ask again next
+     launch. It owns the delay too (was 800ms in two places and 1500ms in a third).
+     🔴 **IT FIXED A DEAD-SCREEN BUG, not just tidiness.** Found while testing: with a summary and the
+     step-down both due, the second modal mounted while the first was presented, never received its
+     presented event, so it never animated in, never became visible and never dismissed. Home sat under an
+     invisible open modal and could not be tapped until a force quit. Ordinary for a real user whose free
+     week ends on a morning a summary is due. One winner per launch removes it by construction.
+     ⚠️ **ANYTHING RANKED MUST DO NOTHING IRREVERSIBLE UNTIL IT WINS** -- the once-per-day summary stamp and
+     the once-EVER step-down flag both live inside the callback now. Burning either on a request that then
+     loses would silently destroy the thing it was going to say.
+     ⏭️ Rate Us is NOT routed through it (rank reserved, unused): it fires off achievements and goal hits,
+     mostly mid-session, so a launch gate would silence the 3pm ones. See the spawned item below.
+
+  **(historical) N. LAUNCH-MODAL PRIORITY (a shared flag, NOT a queue framework)** -- NEW 2026-07-31.
      **THE GAP EXISTS TODAY**, independent of the taste: SPEC_monetization.md already admits there is NO
      cross-system modal coordination. Summaries self-limit via `pj_last_summary_shown` + `runAfterLaunchSplash`,
      Rate Us has its own budget in utils/ratingPrompt.ts, and they only avoid colliding because they happen to

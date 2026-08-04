@@ -1,42 +1,59 @@
-// Cross-route signal for whether the cold-launch splash cinematic is still on screen.
+// Cross-route signal for whether the app has finished launching.
 //
-// The launch splash (showSplash) lives in app/_layout.tsx, but several things that fire on a
-// cold launch live elsewhere -- the Day Summary pop-up and the meta tutorial live on the Home tab,
-// a separate route that can't read the root layout's state directly. Without this, those pops play
-// BEHIND the splash and the user misses them (the confetti/trophy/summary "already gone when the
-// splash lifted" bug). This module lets any of them defer until the splash finishes.
+// Several things want the first moment after a cold launch -- the Day/Week/Month summary pop-up, the
+// first-week step-down notice, the meta tutorial -- and they live on the Home tab, a separate route that
+// cannot read the root layout's state directly. This module is how they wait.
 //
-// Celebrations + the achievement toast use their renderers' own `hold` prop instead; this gate is
-// for the pops that can't take a prop (they're triggered imperatively from the Home screen).
+// ⚠️⚠️ THE DEFAULT IS "NOT FINISHED", AND THAT IS THE WHOLE POINT. This used to ask the opposite question,
+// "is the splash on screen RIGHT NOW", starting at false. The flag was only switched on partway through
+// launch, after auth and the restore gate had resolved -- but the Home tab mounts and starts its own timer
+// long before that. On a slow cold start the timer won, asked "is the splash up?", was told NO because the
+// flag had not been set yet, and showed itself. The splash then appeared, and since iOS gives every Modal
+// its own window, the pop-up sat ON TOP of the cinematic.
+//
+// That is the bug Justin kept hitting, and it is why two previous attempts at re-ordering the timing did
+// not fix it: the timing was never the problem, the flag being late was. Asking "has launch FINISHED",
+// starting at false, means unknown resolves to WAIT instead of GO. The race cannot be lost, only delayed.
+//
+// Celebrations and the achievement toast do not use this -- their renderers take a `hold` prop instead.
 
-let splashShowing = false;
-let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
-const doneCbs: Array<() => void> = [];
+let launchFinished = false;
+const waiting: Array<() => void> = [];
 
 function flush(): void {
-  const cbs = doneCbs.splice(0);
-  cbs.forEach(cb => { try { cb(); } catch {} });
+  waiting.splice(0).forEach(cb => { try { cb(); } catch {} });
 }
 
-export function isLaunchSplashShowing(): boolean {
-  return splashShowing;
+/**
+ * ⚠️ SAFETY NET, ARMED AT MODULE LOAD rather than when the splash starts. Nothing may wait forever: if a
+ * launch path is ever added that never calls `markLaunchFinished`, a summary that silently never appears is
+ * a worse failure than one that appears a little late.
+ *
+ * Deliberately generous. The old five seconds was measured from the splash STARTING; this runs from app
+ * start and has to cover auth, the restore gate and the cinematic on a cold start over a bad connection --
+ * exactly the case this whole fix is about. Too short and the net becomes the very race it is guarding.
+ */
+const fallback = setTimeout(() => { launchFinished = true; flush(); }, 12000);
+
+/** Has the launch sequence finished (splash done, or there was never going to be one)? */
+export function isLaunchFinished(): boolean {
+  return launchFinished;
 }
 
-// Called by _layout when the splash cinematic starts (true) and when it finishes (false).
-export function setLaunchSplashShowing(v: boolean): void {
-  splashShowing = v;
-  if (fallbackTimer) { clearTimeout(fallbackTimer); fallbackTimer = null; }
-  if (v) {
-    // Safety net: if the splash's onDone somehow never fires, never strand a queued pop-up
-    // (a summary that never shows would silently burn nothing, but the user would just miss it).
-    fallbackTimer = setTimeout(() => { splashShowing = false; fallbackTimer = null; flush(); }, 5000);
-  } else {
-    flush();
-  }
+/**
+ * Called once the launch splash finishes, AND on any launch path that shows no splash at all. Idempotent.
+ * ⚠️ EVERY path that reaches the tabs must call this. Miss one and the pop-ups on that path wait for the
+ * 12 second net instead of appearing when they should.
+ */
+export function markLaunchFinished(): void {
+  if (launchFinished) return;
+  launchFinished = true;
+  clearTimeout(fallback);
+  flush();
 }
 
-// Run cb now if the splash isn't showing, otherwise queue it to run the moment the splash finishes.
-export function runAfterLaunchSplash(cb: () => void): void {
-  if (!splashShowing) { cb(); return; }
-  doneCbs.push(cb);
+/** Run cb now if launch has finished, otherwise queue it until it has. */
+export function runAfterLaunch(cb: () => void): void {
+  if (launchFinished) { cb(); return; }
+  waiting.push(cb);
 }

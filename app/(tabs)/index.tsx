@@ -35,7 +35,7 @@ import { storageSet } from '../../utils/storage';
 import { entryNutrient } from '../../utils/nutrientScale';
 import { barFillGradient } from '../../utils/barGradient';
 import { wakeMsFromStored, computeWaterPace, paceTone, pacePinTone, paceToneColor, paceLabel } from '../../utils/waterPace';
-import { runAfterLaunchSplash } from '../../utils/launchSplashGate';
+import { requestLaunchModal, LAUNCH_RANK } from '../../utils/launchModals';
 import { loadMealSlots } from '../../utils/mealSlots';
 import { stepDownKind, markStepDownShown, recordActiveMembership } from '../../utils/firstWeek';
 import { useMembership } from '../../MembershipContext';
@@ -1352,7 +1352,8 @@ export default function HomeScreen() {
   const [monthSummary, setMonthSummary] = useState<MonthlySummaryData | null>(null);
   // The 7-day taste running out. Once ever, and it always yields to a summary (see the effect below).
   const [firstWeekEnded, setFirstWeekEnded] = useState<{ overCapNote: string | null; kind: 'firstWeek' | 'cancelled' } | null>(null);
-  const stepDownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // "This launch has already asked for the slot." Not a timer any more: the shared launch gate owns timing.
+  const stepDownRequestedRef = useRef(false);
   // `membershipLoading` is taken as well as isSupporter ON PURPOSE. During startup isSupporter is false
   // because RevenueCat has not ANSWERED yet, not because the user is free -- and the step-down notice below
   // must never act on that. See the guard in its effect.
@@ -1403,7 +1404,10 @@ export default function HomeScreen() {
   const cardHeightAnim = useRef(new Animated.Value(0)).current;
   const [tipCardWidth, setTipCardWidth] = useState(0);
   const [tipHeightReady, setTipHeightReady] = useState(false);
-  const summaryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // ⚠️ A REQUEST MARKER, NOT A TIMER, since the shared launch gate owns the timing now. Still needed for
+  // the same two reasons the timer was: the scan re-runs on every foreground, and the step-down check below
+  // must know a summary has already asked for this launch.
+  const summaryRequestedRef = useRef(false);
   useEffect(() => {
     const runScan = async () => {
       try {
@@ -1456,7 +1460,7 @@ export default function HomeScreen() {
         if (now.getHours() < 5) return;
         const lastShown = await AsyncStorage.getItem('pj_last_summary_shown');
         if (lastShown === todayKey) return;
-        if (summaryTimerRef.current) return;      // a show is already pending
+        if (summaryRequestedRef.current) return;  // already asked for this launch
 
         // Tier precedence: 1st of month -> Monthly, else Sunday -> Weekly, else Day.
         // Only the highest tier fires; stamping the shared once-per-day gate keeps
@@ -1482,14 +1486,14 @@ export default function HomeScreen() {
         }
         const p = pending!;
 
-        // Brief delay so the home screen paints first; stamp the gate only when
-        // a modal actually shows (a kill during the delay won't burn the day).
-        summaryTimerRef.current = setTimeout(async () => {
-          summaryTimerRef.current = null;
-          // Hold the pop-up AND the once-per-day gate stamp until the launch splash finishes on a
-          // cold start, so it never appears behind the cinematic (a kill mid-splash won't burn the
-          // day since nothing is stamped until it actually shows). Fires immediately on warm launches.
-          runAfterLaunchSplash(async () => {
+        // ⚠️ THE SHARED LAUNCH GATE OWNS THE DELAY AND THE SPLASH WAIT NOW. This used to hold its own
+        // 800ms timer and call the splash gate itself, and the step-down notice held a second copy of the
+        // same pair while the meta tutorial held a third at a different number. One winner per launch.
+        // ⚠️ THE ONCE-PER-DAY STAMP STAYS INSIDE THE CALLBACK. If this request loses the slot, nothing was
+        // shown, so nothing may be recorded -- otherwise standing down would silently burn the day.
+        {
+          summaryRequestedRef.current = true;
+          requestLaunchModal(LAUNCH_RANK.summary, async () => {
             await storageSet('pj_last_summary_shown', todayKey);
             if (p.kind === 'month') {
               cancelMonthlySummaryNotification().catch(() => {}); // saw it in-app -> no redundant push
@@ -1504,12 +1508,12 @@ export default function HomeScreen() {
               else setDayScoreDisclaimer({ score: p.score, dateKey: p.dateKey });
             }
           });
-        }, 800);
+        }
       } catch (e) { console.log('[DayScore] scan error', e); }
     };
     runScan();
     const sub = AppState.addEventListener('change', s => { if (s === 'active') runScan(); });
-    return () => { sub.remove(); if (summaryTimerRef.current) clearTimeout(summaryTimerRef.current); };
+    return () => { sub.remove(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1527,9 +1531,11 @@ export default function HomeScreen() {
     let cancelled = false;
     const check = async () => {
       if (cancelled) return;
-      // Something is already on screen, or a summary is queued behind the splash.
-      if (daySummary || dayScoreDisclaimer || weekSummary || monthSummary || summaryTimerRef.current) return;
-      if (firstWeekEnded || stepDownTimerRef.current) return;
+      // Something is already on screen. ⚠️ The "a summary is queued" half of this is now the shared launch
+      // gate's job, not a check here -- but a summary already SHOWING still blocks, because that is a live
+      // modal and mounting a second one on top of it is the exact dead-screen bug item N exists to kill.
+      if (daySummary || dayScoreDisclaimer || weekSummary || monthSummary) return;
+      if (firstWeekEnded || stepDownRequestedRef.current) return;
       // ⚠️ WAIT FOR A DEFINITE ANSWER. isSupporter starts false and stays false until RevenueCat replies, so
       // without this a SUPPORTER can be told their plan ended simply because the app launched on a slow
       // connection. Worse, markStepDownShown() fires the moment the notice renders, burning the once-ever
@@ -1575,32 +1581,31 @@ export default function HomeScreen() {
               : null;
 
       if (cancelled) return;
-      // ⚠️ IDENTICAL SHAPE TO THE SUMMARY POP-UP ABOVE, deliberately. 800ms so Home paints, THEN the launch
-      // splash gate. Two other orderings were tried here and both still landed on the splash; matching the
-      // one path in the app that is known to behave is worth more than a cleverer arrangement.
-      // (Item N should own this once there is one shared launch-modal path -- right now every launch modal
-      // reinvents its own timing, which is how they drift apart.)
-      stepDownTimerRef.current = setTimeout(() => {
-        stepDownTimerRef.current = null;
-        runAfterLaunchSplash(async () => {
-          if (cancelled) return;
-          await markStepDownShown();
-          setFirstWeekEnded({ overCapNote, kind: stepDown });
-        });
-      }, 800);
+      // ⚠️ ITEM N: the shared launch gate owns the delay and the splash wait. This used to hold its own copy
+      // of the summary's 800ms + splash-gate pair, which is how the two drifted apart.
+      // ⚠️ markStepDownShown() STAYS INSIDE THE CALLBACK. It is a ONCE-EVER flag: burning it on a request
+      // that then loses the slot would mean this person is never told their plan ended, at all.
+      stepDownRequestedRef.current = true;
+      // ⚠️ NO `cancelled` CHECK IN HERE. This effect re-runs when membership resolves, and that re-run's
+      // cleanup sets `cancelled` on the closure this callback was created in -- so honouring it would mean
+      // winning the launch slot and then showing nothing, wasting the whole launch on a no-op. The decision
+      // to show was already made above, under a definite membership answer, and only one request is ever
+      // made per launch because the marker above survives the re-run.
+      requestLaunchModal(LAUNCH_RANK.stepDown, async () => {
+        await markStepDownShown();
+        setFirstWeekEnded({ overCapNote, kind: stepDown });
+      });
     };
     check();
     const sub = AppState.addEventListener('change', s => { if (s === 'active') check(); });
     return () => {
       cancelled = true;
       sub.remove();
-      // ⚠️ NULL IT, don't just clear it. This effect re-runs the moment membership resolves from loading to
-      // free, so the cleanup cancels the pending timer -- and if the ref still holds the dead handle, the
-      // next pass sees "a show is already pending" and returns early forever. The notice then never fires.
-      if (stepDownTimerRef.current) {
-        clearTimeout(stepDownTimerRef.current);
-        stepDownTimerRef.current = null;
-      }
+      // ⚠️ THE REQUEST MARKER IS NOT CLEARED HERE, and that is deliberate. It means "this launch has already
+      // asked", which stays true across the re-run that happens the moment membership resolves from loading
+      // to free. The old timer had to be nulled here for the opposite reason: it was cancelled by this
+      // cleanup, so leaving a dead handle behind made the next pass believe a show was pending and return
+      // early forever. Nothing is cancelled now, so there is nothing to undo.
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSupporter, membershipLoading, daySummary, dayScoreDisclaimer, weekSummary, monthSummary]);
@@ -2083,11 +2088,16 @@ export default function HomeScreen() {
   const metaTutorialFiredRef = useRef(false);
   useFocusEffect(useCallback(() => {
     if (metaTutorialFiredRef.current) return;
-    let timerId: ReturnType<typeof setTimeout>;
+    let timerId: ReturnType<typeof setTimeout> | undefined;
     Promise.all([isTutorialSeen('meta'), isTutorialSeen('meta_mindful')]).then(([metaSeen, mindfulSeen]) => {
       if (metaSeen || mindfulSeen) { metaTutorialFiredRef.current = true; return; }
-      timerId = setTimeout(() => {
-        runAfterLaunchSplash(() => {
+      // ⚠️ ITEM N: through the shared launch gate, which owns the delay (this held its own 1500ms while the
+      // summary and the step-down each held 800ms -- three private numbers for the same job).
+      // ⚠️ RANKED LAST, and it costs nothing: this only fires for somebody who has never seen it, i.e. a new
+      // account, who has no summaries and cannot have finished a free week. It competes with nothing in
+      // practice, so yielding to the two that carry real news is free.
+      {
+        requestLaunchModal(LAUNCH_RANK.tutorial, () => {
           // Reinstall guard: only fire once the restore gate has settled. On a fresh reinstall the home
           // tab can mount transiently during the sign-in/restore churn, and without this the tutorial
           // popped over the sign-in screen. If not ready yet, leave the ref unset so the next home
@@ -2096,9 +2106,9 @@ export default function HomeScreen() {
           metaTutorialFiredRef.current = true;
           startTutorial('meta');
         });
-      }, 1500);
+      }
     });
-    return () => clearTimeout(timerId);
+    return () => { if (timerId) clearTimeout(timerId); };
   }, []));
 
   // ── Auto-save daily ──────────────────────────────────────────────────────────

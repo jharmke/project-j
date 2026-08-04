@@ -25,7 +25,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { runRestoreGate, uploadAllLocal, isSyncReady } from '../services/syncService';
 import { backfillAllPhotos } from '../utils/foodPhotos';
-import { setLaunchSplashShowing } from '../utils/launchSplashGate';
+import { markLaunchFinished } from '../utils/launchSplashGate';
 import { applyVacation } from '../utils/vacationMode';
 import { ensureRatePromptInitialized } from '../utils/ratingPrompt';
 import { checkOttoPrompts } from '../utils/ottoPrompts';
@@ -177,10 +177,15 @@ function RootLayoutNav() {
         // session, just lift the native splash directly.
         if (!coldSplashConsumed) {
           coldSplashConsumed = true;
-          setLaunchSplashShowing(true); // hold launch pop-ups (summary, meta tutorial) until the cinematic ends
+          // ⚠️ NOTHING TO SET HERE ANY MORE. Launch pop-ups are held from the moment the app starts, not
+          // from the moment this line runs -- which was the bug: this line lands after auth and the restore
+          // gate, long after the Home tab has started its own timer. The splash's onDone releases them.
           setShowSplash(true);
         } else {
           SplashScreen.hideAsync();
+          // ⚠️ NO CINEMATIC ON THIS PATH, so nothing else will ever release the pop-ups. Without this they
+          // would sit until the 12 second safety net.
+          markLaunchFinished();
         }
         router.replace('/(tabs)');
         // Fire-and-forget: schedule today's notis after tabs load
@@ -247,7 +252,7 @@ function RootLayoutNav() {
       <TutorialOverlay />
       <ToolkitRenderer />
       <AssistantOverlay />
-      {showSplash && <LaunchSplash onDone={() => { setShowSplash(false); setLaunchSplashShowing(false); }} />}
+      {showSplash && <LaunchSplash onDone={() => { setShowSplash(false); markLaunchFinished(); }} />}
     </>
   );
 }

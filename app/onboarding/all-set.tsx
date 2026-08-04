@@ -6,6 +6,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@/components/AppIcons';
 import { router } from 'expo-router';
+import { markLaunchFinished } from '../../utils/launchSplashGate';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
@@ -219,6 +220,9 @@ export default function AllSetScreen() {
       .then((r) => { if (r.ok) refreshMembership(); })
       .catch(() => {});
 
+    // ⚠️ NO LAUNCH CINEMATIC COMING OUT OF ONBOARDING, so release the launch pop-ups here. Without it the
+    // meta tutorial -- the one thing a brand new user is meant to get -- would sit behind the safety net.
+    markLaunchFinished();
     router.replace('/(tabs)');
   };
 

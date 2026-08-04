@@ -30,6 +30,16 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-08-04 **The macro preset panel is now ONE shared component** across Home's Macros modal and
+  Settings > Goals (`components/MacroPresetCards.tsx`), after four parity bugs in a row proved two hand
+  written copies of the same panel cannot be kept in step. Card size and icon treatment stay per screen.
+  Fixed with it: Cancel not restoring the highlight, Save not refreshing the highlight or the Custom card's
+  numbers until you left the screen, and the modal keeping you on a preset after a hand edit (which also
+  skipped the custom backup). Plus macro colours on the values and the standard press feel on all five cards.
+- 2026-08-04 **A floating save bar is invisible to every built in keyboard helper.** Focused fields landed
+  behind the Settings > Goals save bar. Fixed, and written up as TRAP 7 in SPEC_keyboard_modals.md because it
+  took four rounds: the cause that hides is reading the keyboard height from STATE inside a focus handler,
+  which reads 0 and fails silently. Same session: the Edit Meal Slots rename keypad.
 - 2026-08-03 **Item L done: the undereating safeguard.** The app watches for a logged week that sits under
   the calorie floor and hands Otto one finished sentence to ask about it; he never speaks first and only
   raises it when the user brings up food or the scale themselves. Device-verified: the question, the "that's
@@ -1484,7 +1494,13 @@ are separate pre-submission checklists, NOT part of this menu.
     NOT chased on 2026-08-01 -- he did not want to toy with it mid-build. ⚠️ Unknown whether it is a dev-build
     timing artefact or real. ⚠️ **Plan item N (the shared launch-modal flag) should probably own this** rather
     than patching this one modal's timing a third time; every launch modal currently reinvents its own.
-  • **[FOUND 2026-08-02, PRE-EXISTING] THE EDIT MEAL SLOTS SHEET HAS A KEYBOARD BUG.** Tapping a slot to
+  • ✅ **[SHIPPED 2026-08-04] THE EDIT MEAL SLOTS KEYBOARD BUG.** The sheet had NO keyboard handling at all,
+    which is exactly why earlier sweeps missed it: a grep for KeyboardAvoidingView finds nothing when there
+    is nothing to find. Wrapped in `KeyboardAwareCenter` like the two working sheets in the same file, with
+    the backdrop left outside it, plus `keyboardShouldPersistTaps` so tapping from one open rename to another
+    row lands on the row. Justin's call on the leftover: no per-field scroll positioning, it would fight the
+    user whenever the field was already visible.
+  • **(historical) [FOUND 2026-08-02, PRE-EXISTING] THE EDIT MEAL SLOTS SHEET HAS A KEYBOARD BUG.** Tapping a slot to
     rename opens the keyboard OVER the bottom slots, and the list will not scroll to clear it -- Justin:
     "keyboard covering the bottom two mealtimes and scrolling doesnt stick when i scroll. need to fix this
     asap." Nothing to do with item C; found while testing the meal-slot cap. The list is a

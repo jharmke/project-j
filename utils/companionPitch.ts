@@ -13,7 +13,7 @@
 import { messageWantsFood } from './companionFood';
 import { messageWantsSleep } from './companionSleep';
 import { messageWantsBody } from './companionBody';
-import { messageWantsJournal } from './companionJournal';
+import { messageIsFaithOrJournal } from './companionJournal';
 import { messageWantsRecentWorkouts } from './companionWorkouts';
 
 /** Walls before Otto is allowed to say anything. Three means they keep reaching for the paid product. */
@@ -44,7 +44,19 @@ export function messageAsksForMore(text: string): boolean {
   // wanting the thing, and it is the most natural moment to explain a better version exists, because they
   // literally asked why. Matches on "you" so "why can't I see my weight" (a how-to question) does NOT fire.
   // The curly apostrophe is deliberate: iOS smart punctuation types ’ not ', so ' alone misses most phones.
-  return /\b(give me (the|more)|can you (give|do|build|make) me the (rest|whole|full)|the rest of|full (version|thing|session|plan)|build me|make me a (workout|routine|meal|plan)|unlock|upgrade|how much (is|does)|what does it cost|is there a (paid|pro|premium)|worth paying|subscri|why (ca|wo|do)n['’]?t you|how come you (ca|do)n['’]?t)/.test(t);
+  // ⚠️ MEASURED 2026-08-04: the old pattern caught **7 of 39** realistic phrasings. It missed "whats the
+  // premium price", "how much would it cost me annually", "do you have a yearly plan thats cheaper",
+  // "why's everything locked behind a paywall" and "i want access to all the programs" -- people literally
+  // asking to hand over money, and Otto not recognising it as interest. This is the ONE detector where a
+  // miss costs a sale rather than a few tokens, so it is now generous on anything money-shaped.
+  // ⚠️ Balanced against a real downside: this trigger also BYPASSES the 30-day silence after someone
+  // declines, so a false positive re-pitches a person who already said no. Explicit money and access words
+  // only; nothing vague.
+  // ⚠️ "free" and "pro" are NOT in here bare. "free weights" and "protein" would match, and a false
+  // positive re-pitches somebody who already declined. Only the phrases that can only mean the plan.
+  const money = /\b(price|prices|pricing|cost|costs|charge|charged|pay|paying|paid|purchase|buy|billing|subscri\w*|premium|paywall|locked|upgrade|upgrading|unlock|discount\w*|payment\w*|trial|trials|annual|annually|yearly|monthly plan|per month|per year|free (?:version|tier|plan|trial)|for free|family plan|plan option|free and pro|limited|restrictive)\b/;
+  const reach = /\b(give me (the|more)|can you (give|do|build|make) me the (rest|whole|full)|the rest of|full (version|thing|session|plan)|build me|make me a (workout|routine|meal|plan)|access\b|worth it|worth paying|what do i get|whats included|what['’]?s included|why (ca|wo|do)n['’]?t you|how come you (ca|do)n['’]?t|only get \d)\b/;
+  return money.test(t) || reach.test(t);
 }
 
 /**
@@ -126,5 +138,10 @@ export function workoutAskWantsMoreThanTwo(text: string): boolean {
  * check here: the server short-circuits before Otto is called at all.)
  */
 export function messageBlocksPitch(text: string): boolean {
-  return messageWantsJournal(text);
+  // ⚠️ USES THE BROAD FAITH CHECK, NOT `messageWantsJournal`. Until 2026-08-04 this called the journal
+  // ATTACH detector, which is strict on purpose because it governs private reflections -- so the tuning
+  // that protects someone's privacy was also deciding when a sales line was allowed. A miss there is not a
+  // few wasted tokens, it is a Supporter pitch landing on somebody's prayer list, and faith is NEVER
+  // paywalled. This fires on the topic alone.
+  return messageIsFaithOrJournal(text);
 }

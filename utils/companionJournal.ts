@@ -39,8 +39,27 @@ const excerpt = (s: string): string => {
   return clean.length > EXCERPT_CHARS ? clean.slice(0, EXCERPT_CHARS).trimEnd() + '…' : clean;
 };
 
+/**
+ * ⚠️ IS THIS MESSAGE FAITH OR JOURNAL TERRITORY AT ALL? Deliberately far broader than
+ * `messageWantsJournal` below, and the two must NOT be merged back together, because they are tuned in
+ * OPPOSITE directions:
+ *
+ * - ATTACHING the journal is private data. Over-attaching ships someone's reflections and prayers into the
+ *   prompt when they never asked, so that one stays strict and demands a clear ask.
+ * - BLOCKING A SALES LINE is the reverse. Missing one puts a Supporter pitch on top of somebody's prayer
+ *   list, and faith is never paywalled. So this one fires on the TOPIC alone, no ask word needed.
+ *
+ * One function was serving both jobs until 2026-08-04, which meant the strict tuning the private data
+ * needed was silently deciding when a pitch was allowed.
+ */
+export const messageIsFaithOrJournal = (text: string): boolean => {
+  const t = (text || '').toLowerCase();
+  return /\b(journal(?:ed|ing|s)?|reflection|reflections|reflect(?:ed|ing)?|gratitude|grateful|thankful|prayer|prayers|pray(?:ed|ing|s)?|devotion(?:al|s)?|scripture|verse|verses|bible|psalm|proverbs|gospel|faith|god|jesus|christ|lord|worship|church|sermon|blessed|blessing|amen|reading plan|quiet time)\b/.test(t);
+};
+
 // Journal / reflection / gratitude / prayer words + an ask/possessive. Kept explicit (no day-recall hook) so
 // private content only surfaces when the user is clearly asking about it.
+// ⚠️ STAYS STRICT ON PURPOSE. See messageIsFaithOrJournal above for why this one is not loosened.
 export const messageWantsJournal = (text: string): boolean => {
   const t = (text || '').toLowerCase();
   const jp = /\b(journal(?:ed|ing|s)?|reflection|reflections|reflect(?:ed|ing)?|entry|entries|gratitude|grateful|thankful|thank ?ful|prayer|prayers|pray(?:ed|ing|s)?|praying for|wrote about|write about|diary)\b/;

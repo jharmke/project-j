@@ -64,6 +64,36 @@ and prices were then re-derived FROM THE CODE, which cannot go stale. Do the sam
 | 8,000 | -$535 | +$119 | +$773 | +$2,408 |
 | 25,000 | -$1,672 | +$372 | +$2,416 | +$7,526 |
 
+## THE USAGE LADDER -- THE MOST IMPORTANT PART OF THIS DOC
+
+Everything above uses 36 messages/month, which is ~1.2/day. That is the assumption the whole model rests
+on, and nothing enforces it: the CAPS allow ~600/month. Here is the same table as usage rises.
+
+### CASUAL -- 60/month (~2/day). Cost per free user **$0.24**. Break-even **2.93%**
+
+| Installs | 1% conv | 3% conv | 5% conv | 10% conv |
+|---|---|---|---|---|
+| 300 | -$29 | +$1 | +$31 | +$105 |
+| 1,500 | -$144 | +$5 | +$153 | +$525 |
+| 4,000 | -$383 | +$13 | +$409 | +$1,399 |
+| 8,000 | -$766 | +$26 | +$818 | +$2,798 |
+| 25,000 | -$2,393 | +$82 | +$2,557 | +$8,744 |
+
+⚠️ At 2 messages a day, **3% conversion is break-even and nothing more** -- $82/year at 25,000 installs.
+The comfortable margin in the headline table exists only at ~1 message a day.
+
+### ENGAGED -- 90/month (~3/day). Cost per free user **$0.32**. Break-even **3.92%**
+
+| Installs | 1% conv | 3% conv | 5% conv | 10% conv |
+|---|---|---|---|---|
+| 300 | -$43 | -$13 | +$16 | +$89 |
+| 1,500 | -$214 | -$67 | +$80 | +$447 |
+| 4,000 | -$572 | -$180 | +$213 | +$1,193 |
+| 8,000 | -$1,144 | -$359 | +$425 | +$2,386 |
+| 25,000 | -$3,574 | -$1,123 | +$1,329 | +$7,457 |
+
+🔴 **At 3 messages a day, 3% conversion LOSES money at every scale.** You need 5%.
+
 ## ⚠️ NET PER YEAR -- HEAVIER USE (5 companion messages/day, ~150/month)
 
 Still only ~15% of what the caps allow, and an entirely ordinary number for an engaged user.
@@ -86,10 +116,13 @@ An active free user now costs **$0.48/month**.
    and the Apple cut are the rest.
 2. **Below ~2.2% conversion it loses money at any size**, and the loss grows with scale, because cost
    follows every free user while revenue follows only the few who pay. That has not changed and never will.
-3. 🔴 **USAGE IS A BIGGER LEVER THAN CONVERSION.** Going from 36 to 150 messages a month costs more than
-   tripling conversion earns. The whole model rests on an assumption of ~6% cap utilisation, and nothing in
-   the app enforces that -- the CAPS allow ~600 companion messages a month. **If real usage lands near the
-   caps, none of the positive columns survive.** Measure real usage before trusting any of this.
+3. 🔴 **USAGE IS A BIGGER LEVER THAN CONVERSION, and this is the finding that matters.** Break-even moves
+   2.16% -> 2.93% -> 3.92% -> 5%+ as usage goes 1 -> 2 -> 3 -> 5 messages a day. Every one of those is an
+   ordinary number, and the highest is still only 15% of what the caps allow.
+   **The app is comfortably profitable at ~1 message a day, break-even at 2, and loses money at 3 unless
+   conversion reaches 5%.** Nothing in the app enforces the assumption the headline table rests on.
+   ➡️ **THE SINGLE MOST VALUABLE THING TO MEASURE BEFORE LAUNCH is real messages per active user per day.**
+   It moves the answer more than price, more than the Apple cut, and far more than any routing work.
 4. **Item H (routing) is worth about 1-2 cents per free user per month** against these numbers. Real, but it
    was never the thing that decides whether the app makes money. Do not let it be sold as such again.
 

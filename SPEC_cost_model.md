@@ -126,5 +126,50 @@ An active free user now costs **$0.48/month**.
 4. **Item H (routing) is worth about 1-2 cents per free user per month** against these numbers. Real, but it
    was never the thing that decides whether the app makes money. Do not let it be sold as such again.
 
+---
+
+# THE COST LEVER REGISTER
+
+Every idea for cutting AI cost, with a MEASURED number or a reason it was rejected. Add to it rather than
+re-proposing. ⚠️ Nothing here may be built by degrading Otto or Halo for free users -- that trades money for
+churn, which is a cost this model does not capture. Justin's call, 2026-08-04.
+
+## ✅ MEASURED, READY TO BUILD
+| Lever | Measured effect | Status |
+|---|---|---|
+| **Otto: shorter replies** | Output 216 -> 113 tokens (**48% less**), ~19% off per message. Nothing important lost | Not built |
+| **Otto: knowledge routing** (item H) | Up to ~28% off per message. Four accuracy/saving settings, see the table in THE PLAN item H | Built, NOT wired to Otto. Setting not yet chosen |
+
+## 🔬 NEEDS MEASURING
+| Lever | Why it might be worth it |
+|---|---|
+| **Halo: shorter replies** | Same chat, same fix, never tested. No reason it behaves differently to Otto's 48% |
+| **Halo: its REAL per-message cost** | ⚠️ This model costs Halo at $0.0025, which is INPUT ONLY -- the figure in SPEC_monetization excludes its reply. If Halo answers at Otto's length its true cost is nearer $0.0036 and **every table here undercounts Halo** |
+| **Halo: cache splitting** | Its prompt sits on the size threshold where caching starts, with content that varies per request, so the cache keeps splitting. Docs dismissed it as small -- written when Halo's cap was 25/day, before it halved. Recheck the reasoning, do not inherit it |
+| **Smart Coach rulebook** (item O) | 11,600 tokens sent UNCACHED on every call. The biggest unoptimised prompt in the app |
+| **Conversation history** | Every message re-sends the previous turns, so a long chat pays for itself again each time. A limit exists (`MAX_HISTORY_TURNS`) but nobody has measured what it costs or whether it is tuned right. Invisible to users |
+| **Which prompt rules Otto ignores** | He breaks at least two (dashes, and the length rule) -- found by reading replies, not by testing. The rest of that block is assumption. Quality AND cost |
+
+## 🟡 OPEN DECISIONS
+| Lever | What it does |
+|---|---|
+| **Otto free cap 10 -> 5** (Justin's proposal) | Does NOT change the average case, because at 3/day almost nobody hits 10. It cuts the WORST case ~30%, $1.65 -> $1.15/user/month. Justin's reasoning: the counter shows from the first message at a cap of 5, so people stop wasting messages on "hi", and the free week gives them unlimited to get the feelers out of the way. ⚠️ Counter stays visible -- Justin's call, overruling the "fuel gauge" note in the code |
+
+## ✅ FREE WINS ALREADY IDENTIFIED (in SPEC_otto_routing.md, never built)
+| Lever | Effect |
+|---|---|
+| **Never send the Faith chapter to "Not Right Now" users** | 562 tokens they can never need. Zero risk |
+| **Move the faith-tier line out of Otto's cached half** | It is already sent in the volatile block, so the cached copy is duplicated. Today it splits one shared cache into three |
+
+## ❌ REJECTED
+| Lever | Why |
+|---|---|
+| **Cutting free caps to fix the AVERAGE cost** | Trades money for churn. A worse free product means fewer people stay long enough to ever pay. (Distinct from the 5-cap proposal above, which targets the worst case only) |
+| **1-hour cache TTL** | PINNED, documented in SPEC_otto_routing.md. At current traffic it costs MORE. Revisit around a few hundred active users |
+
+## 💰 NOT AI, AND BIGGER THAN MOST OF THE ABOVE
+**Apple Small Business Program, 30% -> 15%.** Worth ~$1.50 per subscriber per month. Enrolment is a
+pre-launch to-do and is already on the launch checklist.
+
 ## RE-RUN IT
 `scratchpad/cost-model.js` computes every table here. Change an assumption at the top and run it.

@@ -288,7 +288,9 @@ That sentence is the WHOLE reply and nothing follows it, unless the same message
  */
 export const REPLY_SHAPE_BLOCK = `(HOW THIS REPLY MUST BE WRITTEN. A hard limit on this one reply, not a preference.
 
-LENGTH: TWO TO FOUR SENTENCES, one short paragraph. Before you send, COUNT the sentences. More than four means you have broken this: cut it back and then send. Lead with the direct answer in the first sentence. Cut every example past the first two, every aside, and every closing question. The ONLY exception is a message that asked several separate questions, and then each one gets a single sentence.
+LENGTH: TWO TO FOUR SENTENCES, one short paragraph. Before you send, COUNT the sentences. More than four means you have broken this: cut it back and then send. Lead with the direct answer in the first sentence. Cut every example past the first two and every aside. The ONLY exception is a message that asked several separate questions, and then each one gets a single sentence.
+
+DO NOT END WITH A QUESTION. Never close by asking them anything: not "what does your sleep look like lately", not "have you eaten today", not "what are you in the mood for", not "want me to go deeper". Your reply ends on the answer. If you genuinely cannot answer without something only they can tell you, ask for that ONE thing and nothing else, in the middle of the reply, not as a sign-off. Never ask for data you could not verify anyway.
 
 NO DASHES. Never join two thoughts with a dash of any kind: no em dash, no en dash, no double hyphen, no spaced hyphen. Use a comma, a full stop, or reword the sentence. This one has no exceptions at all.)`;
 

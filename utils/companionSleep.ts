@@ -53,11 +53,26 @@ const fmtMs = (ms: number): string => {
 export const messageIsAboutSleep = (text: string): boolean =>
   /\b(sleep|slept|sleeping|asleep|rem|deep sleep|core sleep|nap(?:ped|s)?|bedtime|woke|awake|wake up|wake time)\b/.test((text || '').toLowerCase());
 
+/**
+ * ⚠️ MEASURED 2026-08-04: the old version caught **34% of 41 realistic phrasings** and it was the worst
+ * detector in the app. It required a sleep word AND a separate "ask" word in the same message, so all of
+ * these missed: "why am i so tired today", "check my recovery", "hows my resting hr", "sleep was rough",
+ * "feel dead tired". That is most of how anybody actually raises it -- and a miss means Otto answers a
+ * question about their tiredness with NONE of their sleep or recovery data, which for a Supporter is the
+ * paid feature silently failing.
+ *
+ * ⚠️ THE ASYMMETRY DECIDES THE TUNING, exactly as with the exercise cap. A false positive costs a few
+ * hundred tokens; a miss costs the answer. So a topic word ALONE is now enough, and only genuinely
+ * off-topic phrasing is excluded.
+ */
 export const messageWantsSleep = (text: string): boolean => {
   const t = (text || '').toLowerCase();
-  const sleep = /\b(sleep|slept|sleeping|asleep|rest(?:ed|ing)?|rem|deep sleep|core sleep|nap(?:ped|s)?|bed|bedtime|wake|woke|awake|recovery|recover(?:ed|ing)?|hrv|heart rate variability|resting (?:heart|hr)|rhr|respirat|breathing rate|blood oxygen|spo2|readiness)\b/;
-  const ask = /\b(did|do|had|have|how|what|when|last night|yesterday|today|monday|tuesday|wednesday|thursday|friday|saturday|sunday|this week|last week|score|hours?|average|avg|been|trend|quality)\b/;
-  if (sleep.test(t) && ask.test(t)) return true;
+  // ⚠️ FOOD AND TRAINING WIN when the message is really about them. "Should I eat before bed" is a
+  // nutrition question that happens to contain "bed".
+  if (/\b(eat|eating|ate|food|meal|snack|calories|macros|protein)\b/.test(t)) return false;
+
+  const topic = /\b(sleep|slept|sleeping|asleep|insomnia|rem|deep sleep|core sleep|nap(?:ped|s)?|bed|bedtime|wake|woke|awake|groggy|tired|exhaust(?:ed|ion)?|fatigue[d]?|drained|knackered|wiped|restless|recovery|recover(?:ed|ing)?|rested|hrv|heart rate variability|resting (?:heart|hr)|rhr|respirat|breathing rate|blood oxygen|spo2|readiness)\b/;
+  if (topic.test(t)) return true;
   return isDayRecall(t);
 };
 

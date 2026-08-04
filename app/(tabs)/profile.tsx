@@ -57,6 +57,138 @@ interface Profile {
   activeCalGoal: string;
   exerciseMinsGoal: string;
   useRecommendedCal: boolean;
+  // THE PLAN item M -- see SPEC_dietary_profile.md. Three fields, not one list, because the app treats
+  // them differently: allergies are a hard rule Otto never breaks, diet is a way of eating, and avoid is
+  // soft. Custom entries live in the same arrays as the presets; anything not in the preset list IS a
+  // custom entry.
+  allergies: string[];
+  diet: 'none' | 'vegetarian' | 'vegan' | 'pescatarian';
+  avoidFoods: string[];
+}
+
+// ⚠️ THE NINE THE FOOD INDUSTRY LABELS FOR, so the list matches what is printed on packaging.
+const ALLERGY_OPTIONS = ['Milk', 'Eggs', 'Peanuts', 'Tree nuts', 'Fish', 'Shellfish', 'Wheat', 'Soy', 'Sesame'];
+// ⚠️ GLUTEN AND DAIRY LEAD because they are by far the most commonly avoided. Alcohol was cut (Otto would
+// never suggest it), Beef was cut (Red meat contains it), and keto/low carb was cut (macro goals already do
+// that job, and two places to say it means they can disagree). See the spec before re-adding any of them.
+const AVOID_OPTIONS = ['Gluten', 'Dairy', 'Red meat', 'Pork'];
+const DIET_OPTIONS: { id: Profile['diet']; label: string }[] = [
+  { id: 'none', label: 'No restriction' },
+  { id: 'vegetarian', label: 'Vegetarian' },
+  { id: 'vegan', label: 'Vegan' },
+  { id: 'pescatarian', label: 'Pescatarian' },
+];
+// Caps are about COST AND CLUTTER, not safety -- long free text is paid for on every single Otto message.
+// (Not a new injection surface either: `Name:` already puts user-typed text in the same trusted block.)
+const CUSTOM_MAX_LEN = 30;
+const CUSTOM_MAX_COUNT = 5;
+
+/** A wrapping row of multi-select chips. Selected uses the same treatment as the Male/Female toggle. */
+function ChipRow({ options, selected, onToggle, theme }: {
+  options: string[]; selected: string[]; onToggle: (v: string) => void; theme: any;
+}) {
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
+      {options.map(opt => {
+        const on = selected.includes(opt);
+        return (
+          <TouchableOpacity
+            key={opt}
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); onToggle(opt); }}
+            // 44pt minimum: the chip reads small but the hit area is not.
+            hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+            style={{
+              paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, borderWidth: 1,
+              backgroundColor: on ? theme.bgSelected : theme.bgInput,
+              borderColor: on ? theme.accentBlue : theme.borderInput,
+            }}>
+            {on && <ButtonShine radius={999} />}
+            <Text style={{ fontSize: 13, fontFamily: on ? Type.uiSemibold : Type.uiMedium, color: on ? theme.accentBlue : theme.textMuted }}>{opt}</Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
+/**
+ * "Add your own" for the allergy and avoid lists. Custom entries live in the SAME array as the presets --
+ * anything not in the preset list is a custom one, which is why removal only ever appears here.
+ * ⚠️ Labelled "Add your own", never "Custom": that reads as a setting rather than something you type.
+ */
+function CustomAdder({ items, presets, onChange, theme, placeholder }: {
+  items: string[]; presets: string[]; onChange: (next: string[]) => void; theme: any; placeholder: string;
+}) {
+  const [draft, setDraft] = useState('');
+  const custom = items.filter(i => !presets.includes(i));
+  const atCap = custom.length >= CUSTOM_MAX_COUNT;
+  const clean = draft.trim().slice(0, CUSTOM_MAX_LEN);
+  // Dim until there is something valid to add -- and a duplicate is not valid, whatever its casing.
+  const canAdd = clean.length > 0 && !atCap && !items.some(i => i.toLowerCase() === clean.toLowerCase());
+
+  const add = () => {
+    if (!canAdd) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    onChange([...items, clean]);
+    setDraft('');
+  };
+
+  return (
+    <View style={{ marginTop: 2 }}>
+      {custom.length > 0 && (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+          {custom.map(c => (
+            <TouchableOpacity
+              key={c}
+              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); onChange(items.filter(i => i !== c)); }}
+              hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+              style={{
+                flexDirection: 'row', alignItems: 'center', gap: 6,
+                paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, borderWidth: 1,
+                backgroundColor: theme.bgSelected, borderColor: theme.accentBlue,
+              }}>
+              <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: theme.accentBlue }}>{c}</Text>
+              <Ionicons name="close" size={13} color={theme.accentBlue} />
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+      {atCap ? (
+        <Text style={{ fontSize: 11, fontFamily: Type.uiMedium, color: theme.textDim }}>
+          That's the most you can add here. Remove one to add another.
+        </Text>
+      ) : (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <TextInput
+            style={{
+              flex: 1, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput,
+              borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14,
+              color: theme.textPrimary, fontFamily: Type.uiMedium,
+            }}
+            value={draft}
+            onChangeText={v => setDraft(v.slice(0, CUSTOM_MAX_LEN))}
+            onSubmitEditing={add}
+            returnKeyType="done"
+            maxLength={CUSTOM_MAX_LEN}
+            placeholder={placeholder}
+            placeholderTextColor={theme.textPlaceholder}
+          />
+          <TouchableOpacity
+            onPress={add}
+            disabled={!canAdd}
+            style={{
+              paddingHorizontal: 16, paddingVertical: 11, borderRadius: 10, borderWidth: 1,
+              backgroundColor: canAdd ? theme.bgSelected : theme.bgInput,
+              borderColor: canAdd ? theme.accentBlue : theme.borderInput,
+              opacity: canAdd ? 1 : 0.5,
+            }}>
+            {canAdd && <ButtonShine radius={10} />}
+            <Text style={{ fontSize: 13, fontFamily: Type.uiSemibold, color: canAdd ? theme.accentBlue : theme.textDim }}>Add</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
+  );
 }
 
 const GOAL_DEFICITS: Record<string, number> = {
@@ -174,6 +306,9 @@ export default function ProfileScreen() {
     activeCalGoal: '500',
     exerciseMinsGoal: '30',
     useRecommendedCal: true,
+    allergies: [],
+    diet: 'none',
+    avoidFoods: [],
   });
   const [currentWeight, setCurrentWeight] = useState<number | null>(null);
   const [saved, setSaved] = useState(false);
@@ -213,7 +348,9 @@ export default function ProfileScreen() {
       try {
         const data = await AsyncStorage.getItem('pj_profile');
         if (data) {
-          const parsed = { goalWeight: '', stepGoal: '10000', waterGoal: '128', activeCalGoal: '500', exerciseMinsGoal: '30', ...JSON.parse(data) };
+          // ⚠️ THE DEFAULTS GO FIRST so an older profile that predates a field still gets one. The dietary
+          // fields are arrays, and a missing array would crash every .includes() below.
+          const parsed = { goalWeight: '', stepGoal: '10000', waterGoal: '128', activeCalGoal: '500', exerciseMinsGoal: '30', allergies: [], diet: 'none', avoidFoods: [], ...JSON.parse(data) };
           setProfile(parsed);
           setSavedProfile(parsed);
         }
@@ -245,7 +382,9 @@ export default function ProfileScreen() {
           if (!hasChangesRef.current) {
             const data = await AsyncStorage.getItem('pj_profile');
             if (data) {
-              const parsed = { goalWeight: '', stepGoal: '10000', waterGoal: '128', activeCalGoal: '500', exerciseMinsGoal: '30', ...JSON.parse(data) };
+              // ⚠️ THE DEFAULTS GO FIRST so an older profile that predates a field still gets one. The dietary
+          // fields are arrays, and a missing array would crash every .includes() below.
+          const parsed = { goalWeight: '', stepGoal: '10000', waterGoal: '128', activeCalGoal: '500', exerciseMinsGoal: '30', allergies: [], diet: 'none', avoidFoods: [], ...JSON.parse(data) };
               setProfile(parsed);
               setSavedProfile(parsed);
             }
@@ -507,6 +646,76 @@ export default function ProfileScreen() {
               <Text style={[styles.toggleBtnText, { color: theme.textMuted }, profile.sex === 'female' && { color: theme.accentBlue }]}>Female</Text>
             </TouchableOpacity>
           </View>
+        </ProfileSection>
+
+        {/* THE PLAN item M -- SPEC_dietary_profile.md. Sits under Basic Info because it is a fact about
+            the person, not app behaviour (which is why it is here and not in Settings).
+            ⚠️ NO PROMPT ANYWHERE. Deliberately not in onboarding: that flow is already six steps, and
+            nothing acts on this until Otto can build meals (item F). Otto points at this section instead,
+            once, when somebody raises a food issue and it is still empty. */}
+        <ProfileSection label="Food & Allergies" subtitle="What Otto should never suggest" theme={theme} entering={FadeInDown.delay(30).springify()}>
+          <Text style={{ fontSize: 12, fontFamily: Type.uiMedium, color: theme.textSecondary, marginBottom: 12, lineHeight: 17 }}>
+            Otto uses this when he talks about food. Leave anything blank if it doesn't apply.
+          </Text>
+
+          <Text style={[styles.fieldLabel, { color: theme.textMuted, marginTop: 0 }]}>ALLERGIES</Text>
+          <Text style={{ fontSize: 11, fontFamily: Type.uiMedium, color: theme.textSecondary, marginBottom: 8 }}>
+            He will never suggest these.
+          </Text>
+          <ChipRow
+            options={ALLERGY_OPTIONS}
+            selected={profile.allergies}
+            onToggle={v => updateField('allergies', profile.allergies.includes(v) ? profile.allergies.filter(a => a !== v) : [...profile.allergies, v])}
+            theme={theme}
+          />
+          <CustomAdder
+            items={profile.allergies}
+            presets={ALLERGY_OPTIONS}
+            onChange={next => updateField('allergies', next)}
+            theme={theme}
+            placeholder="Something else you're allergic to"
+          />
+
+          <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>DIET</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
+            {DIET_OPTIONS.map(o => {
+              const on = profile.diet === o.id;
+              return (
+                <TouchableOpacity
+                  key={o.id}
+                  onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateField('diet', o.id); }}
+                  hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                  style={{
+                    paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, borderWidth: 1,
+                    backgroundColor: on ? theme.bgSelected : theme.bgInput,
+                    borderColor: on ? theme.accentBlue : theme.borderInput,
+                  }}>
+                  {on && <ButtonShine radius={999} />}
+                  <Text style={{ fontSize: 13, fontFamily: on ? Type.uiSemibold : Type.uiMedium, color: on ? theme.accentBlue : theme.textMuted }}>{o.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>FOODS TO AVOID</Text>
+          {/* ⚠️ Gluten and dairy are on BOTH lists on purpose. Coeliac belongs in allergies; someone who
+              just feels rough after bread belongs here. Same food, different rule. */}
+          <Text style={{ fontSize: 11, fontFamily: Type.uiMedium, color: theme.textSecondary, marginBottom: 8 }}>
+            Not allergies. Things you'd rather he stayed away from.
+          </Text>
+          <ChipRow
+            options={AVOID_OPTIONS}
+            selected={profile.avoidFoods}
+            onToggle={v => updateField('avoidFoods', profile.avoidFoods.includes(v) ? profile.avoidFoods.filter(a => a !== v) : [...profile.avoidFoods, v])}
+            theme={theme}
+          />
+          <CustomAdder
+            items={profile.avoidFoods}
+            presets={AVOID_OPTIONS}
+            onChange={next => updateField('avoidFoods', next)}
+            theme={theme}
+            placeholder="Something else you avoid"
+          />
         </ProfileSection>
 
         {/* Shared with Settings > Membership (components/MembershipCard) so the two can never drift. */}

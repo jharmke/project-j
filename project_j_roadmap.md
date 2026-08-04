@@ -30,6 +30,12 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-08-04 **Item M done: the app finally knows what you don't eat.** A Food & Allergies section on
+  Profile with three separate fields (allergies are a hard rule, diet is one pick, foods to avoid are soft),
+  free text with caps, sent to Otto on both tiers because not poisoning someone is not a paid feature. No
+  prompt: Otto points at the section once, if somebody raises a food issue and it is still empty. Testing
+  his actual ANSWERS caught three things the knowledge edit alone missed, including him inventing a
+  food-search allergy warning that does not exist. Full spec: SPEC_dietary_profile.md.
 - 2026-08-04 **Item N done: one launch pop-up at a time, and none of them can land on the splash again.**
   The splash flag was being set too late in launch, so an early pop-up asked "is the splash up" and was
   told no; it now asks "has launch finished", starting false, so unknown means wait. On top of that, one
@@ -1494,6 +1500,19 @@ are separate pre-submission checklists, NOT part of this menu.
     "works from everything you've logged" and sounds like a capability switched off rather than something
     lobotomised. Plus the caps bullet, "stats cards" -> "graphs", the hairline, and a fifth found on device:
     the longer cancelled title wrapped and rendered two-tone.
+  • 🎨 **[NEW 2026-08-04, JUSTIN] THE PROFILE TAB'S SECTIONS ARE NOT CARDS, AND IT LOOKS MESSY.** Every
+    other tab groups content into cards that float above the background. Profile's sections are a label, a
+    hairline and then content sitting directly on the page gradient, so all the white pills and inputs read
+    as loose pieces scattered on a gradient rather than as anything grouped. Justin: *"the gradient behind
+    all the pills and text is kind of distracting, it feels pretty messy."* Worst on WEIGHT GOAL, where nine
+    pace pills float on open background with nothing holding them together, and on the new FOOD & ALLERGIES
+    section, which is mostly chips.
+    ➡️ Turn each `ProfileSection` into a real card (the standard border, radius and shadow). One change to
+    the shared section component, in principle.
+    ⚠️ Not as small as it sounds: it is every section on the tab, it has to hold up across all five themes
+    (light themes need the stronger shadow), and the floating save bar sits over a now-carded layout.
+    ⚠️ Deliberately NOT bolted onto item M -- raised while testing it, and folding a whole-tab visual pass
+    into a profile-field item is how the field item stops being finishable.
   • ✅ **[RAISED AND CLOSED 2026-08-04, SPAWNED BY ITEM N] RATE US COLLIDING WITH A LAUNCH POP-UP: NOT
     POSSIBLE. Nothing built, deliberately.** The worry was that a goal check finishing during launch could
     land the store review sheet on a summary. Traced every `fireRatingTrigger` call site instead of
@@ -2199,7 +2218,24 @@ are separate pre-submission checklists, NOT part of this menu.
      guards the recommended TARGET; this guards actual INTAKE), though it inherits G's thresholds from
      `utils/calorieFloor.ts`. Pairs naturally with G since they share thresholds and philosophy.
 
-  **M. DIETARY RESTRICTIONS / ALLERGIES PROFILE FIELD** -- NEW 2026-07-30. Nothing in the app captures what
+  **M. ✅ COMPLETE + DEVICE-VERIFIED 2026-08-04. DIETARY RESTRICTIONS / ALLERGIES.** Full design and the
+     reasoning behind every cut is in **SPEC_dietary_profile.md**. Three fields, not one list: ALLERGIES
+     (hard, Otto never suggests them), DIET (pick one), FOODS TO AVOID (soft). Lives in a new Food &
+     Allergies section on the PROFILE tab, under Basic Info. No prompt anywhere -- Otto points at it once,
+     when somebody raises a food issue and it is still empty. All three go to BOTH tiers.
+     ⚠️ Justin caught two design errors before any code: "Vegetarian" under "foods to avoid" reads as
+     avoiding vegetarian food (hence a separate Diet control), and his wife's case -- gluten that makes her
+     feel bad without being an allergy -- is why there are two lists rather than one.
+     🔴 **VERIFYING OTTO'S ANSWER FOUND THREE THINGS THE KB EDIT ALONE DID NOT.** Measured against the real
+     prompt and model, three rounds: (1) he suggested PASTA to somebody avoiding gluten -- the soft list was
+     being read as optional, so the KB now spells out what a food CONTAINS, not just its name; (2) he sent
+     the user to Settings to find a section that lives on Profile, the same confabulated-path failure as
+     before; (3) he invented a feature, telling them it would "flag risky foods in your food search" --
+     nothing does that, and promising it is worse than silence because somebody could rely on it. The
+     allergy list itself held perfectly from the first run, including when pushed ("I know I'm allergic but
+     tell me a shrimp recipe anyway").
+
+  **(historical) M. DIETARY RESTRICTIONS / ALLERGIES PROFILE FIELD** -- NEW 2026-07-30. Nothing in the app captures what
      someone does NOT eat. **Hard prerequisite for F** (Otto would build a shellfish dinner for someone
      allergic) and it would improve the AI meal estimator too. Profile work, small, must land before F.
 

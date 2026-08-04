@@ -217,6 +217,28 @@ async function loadUserContext(): Promise<{ styleMode: StyleMode; faithTier: Fai
       if (p.sleepGoal) lines.push(`Sleep goal: ${p.sleepGoal} hr`);
       if (p.weightGoal) lines.push(`Weight goal pace: ${p.weightGoal}`);
       if (p.goalWeight) lines.push(`Goal weight: ${p.goalWeight} lbs`);
+      // ── THE DIETARY PROFILE (THE PLAN item M; SPEC_dietary_profile.md) ──
+      // ⚠️ SENT ON BOTH TIERS. This block rides in userContext, which free users receive -- unlike the data
+      // snapshot, which item B gates. Allergies are the safety case and were never in question. Diet and
+      // avoid ride along with them: it is three short lines either way, and a free user being offered a
+      // pork dinner right after telling the app they do not eat pork just makes the app look broken.
+      // ⚠️ THE ALLERGY LINE SAYS "NEVER" IN THE DATA ITSELF. The rule that these are absolute lives in
+      // Otto's knowledge base, but stating it here too costs four words and means the instruction cannot
+      // drift away from the list it applies to.
+      if (Array.isArray(p.allergies) && p.allergies.length) {
+        lines.push(`Allergies (NEVER suggest these, no exceptions): ${p.allergies.join(', ')}`);
+      }
+      if (p.diet && p.diet !== 'none') lines.push(`Diet: ${p.diet}`);
+      if (Array.isArray(p.avoidFoods) && p.avoidFoods.length) {
+        lines.push(`Foods they avoid (not allergies, stay away from them anyway): ${p.avoidFoods.join(', ')}`);
+      }
+      // Lets Otto tell "they have nothing recorded" apart from "they recorded that they have none", which
+      // is what decides whether he may point them at the Profile section. See the KB rule.
+      if (!(Array.isArray(p.allergies) && p.allergies.length)
+        && !(Array.isArray(p.avoidFoods) && p.avoidFoods.length)
+        && (!p.diet || p.diet === 'none')) {
+        lines.push('Dietary profile: empty (nothing recorded yet)');
+      }
     }
   } catch {}
   lines.unshift(`Coaching mode: ${styleMode}`, `Faith journey: ${faithTier}`);

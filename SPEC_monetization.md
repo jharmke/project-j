@@ -664,6 +664,14 @@ WHAT WAS MEASURED (real):
   ⚠️ THE COST MODEL BELOW ALREADY ASSUMED CACHING WORKS. This check did not make the numbers better or
   worse -- it confirmed there is no hidden savings hiding behind a caching bug.
 
+🔴🔴 **SUPERSEDED 2026-08-04 -- DO NOT QUOTE THE NUMBERS BELOW. See SPEC_cost_model.md.** This block was
+written at $6.99, at Apple's 30%, with Halo at 25 messages/day, and before the free-tier data gate shipped.
+All four have changed. Its headline finding -- that every install scenario loses money -- is NO LONGER TRUE:
+at the same 3% conversion the rebuilt model is positive at every scale. Kept only for the reasoning and the
+sensitivity argument, which still stands and is carried forward.
+⚠️ This block had no date on its face, so it kept being found by keyword search and quoted as current,
+repeatedly, in one session. That is why the new model is a separate dated file and derives caps from CODE.
+
 WHAT WAS ASSUMED (light usage -- deliberately generous to the model):
 ~3 companion conversations/week at ~3 messages each (~36 messages/month), 2 meal estimates/month, Smart Coach
 weekly. NOTE: the free caps ALLOW 1,050 companion messages/month (Otto 10/day + Halo 25/day). So the model

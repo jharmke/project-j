@@ -56,6 +56,14 @@ const PARSED = parse(ASSISTANT_APP_KNOWLEDGE);
 export const CHAPTER_TITLES: string[] = PARSED.chapters.map((c) => c.title);
 
 /**
+ * The parsed chapters, for the router to build its term index from (item H batch 2).
+ * ⚠️ Read-only by intent: the router indexes this text, it must never edit it.
+ */
+export function chaptersForRouting(): readonly KnowledgeChapter[] {
+  return PARSED.chapters;
+}
+
+/**
  * Build the app-knowledge block.
  *
  * @param titles which chapters to include. OMIT IT to include everything, which is what batch 1 does.

@@ -2,6 +2,7 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import * as admin from 'firebase-admin';
 import Anthropic from '@anthropic-ai/sdk';
+import { recordUsage } from './aiUsageMeter';
 
 // Server-side proxy for the app's two DIRECT Anthropic features: the Smart Coach tips (coachAI.ts)
 // and the AI Meal Estimator (services/aiMealEstimator.ts). Before this, both called
@@ -136,6 +137,9 @@ export const aiProxy = onCall(
         ...(temperature !== undefined ? { temperature } : {}),
         messages,
       });
+      // PLAN.md item 0: record what this actually cost. Fire and forget -- never awaited, never throws,
+      // writes to its own `ai_cost` collection so it cannot touch the cap counters above.
+      recordUsage(feature, uid, model, response.usage);
       // response.content is [{ type: 'text', text }, ...] -- same shape the direct HTTP call
       // returned, which both clients read as data.content[0].text.
       return { ok: true, data: response };

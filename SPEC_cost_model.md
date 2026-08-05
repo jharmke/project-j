@@ -18,6 +18,23 @@ and prices were then re-derived FROM THE CODE, which cannot go stale. Do the sam
 
 ---
 
+# ✅ 2026-08-05: A COST METER NOW EXISTS. STOP CALCULATING, GO AND READ IT.
+
+`functions/src/aiUsageMeter.ts` records Anthropic's own token counts on every AI call to Firestore
+`ai_cost/{uid}_{date}`, split by feature. **Per-call costs are now READINGS, not arithmetic.** Before
+quoting any per-call figure from this file, check the collection -- it is the source of truth and this file
+is a derivation.
+
+**Metered 2026-08-05:** Smart Coach **$0.00387** · Halo **$0.00406** · Otto cold **$0.0331** / warm
+**~$0.0043** · meal estimator with a photo **$0.00953**.
+✅ **The model validated itself** -- Otto's two test calls came to $0.03904195 against a predicted $0.0390,
+and the cached block metered at 26,477 tokens against 26,474 measured.
+🔴 **It corrected three numbers on day one** (Halo's prompt size, the estimator's prompt size, and the fact
+that cache minimums differ by model). See the table in section 10b. **Every per-call number that predates
+the meter should be treated as suspect until a reading confirms it.**
+
+---
+
 # 🔴 READ THIS FIRST -- 2026-08-04 EVENING. THREE THINGS BELOW ARE NOW KNOWN TO BE BACKWARDS.
 
 Everything in this section was measured by running the REAL router over 566 realistic messages and pricing
@@ -221,7 +238,10 @@ numbers are recorded here instead of the code that produced them.** Do this for 
 | **Haiku 4.5 minimum cacheable prefix** | **4,096 tokens** | ⚠️ Under this, NOTHING caches, silently. This is what has been killing Halo |
 | Otto cached block | **26,474** = 22,049 manual + 4,425 rules | Measured |
 | Otto uncached input / output per msg | ~223 / ~250 tokens | Back-solved from the measured $0.00412 warm call |
-| Halo prompt / output | 2,465 / 147 tokens | Measured |
+| ~~Halo prompt~~ | 🔴 **3,987 tokens, NOT 2,465** | **METERED 2026-08-05** off a real call. The old figure was 62% low. Only ~150 short of the 4,096 minimum, so the padding fix is trivial |
+| **Haiku 4.5 cache minimum** | **4,096** | ⚠️ **Minimums DIFFER BY MODEL and this was never checked: Sonnet 4.6 is 1,024.** Any "under the minimum" claim must name its model |
+| Meal estimator prompt | **562 tokens** | METERED. Item O recorded "~2,250" -- wrong |
+| Meal estimator image | ~1,550 tokens (**49% of that call's cost**) | Full-res upload, scaled by Anthropic to their 1568px cap |
 | Router core (always sent) | 6,874 tokens | 4,425 rules + 5 core chapters |
 | Router fallback rate | **73%** | 566 realistic messages |
 | Router when it works | 1.7 chapters, 10,704 total | |

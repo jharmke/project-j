@@ -17,6 +17,7 @@ import {
   type FaithTier,
 } from './companionSystemPrompt';
 import { assembleAppKnowledge } from './knowledgeChapters';
+import { recordUsage } from './aiUsageMeter';
 
 // NOTE: admin.initializeApp() is already called once in index.ts. Do NOT call it again here.
 //
@@ -398,6 +399,9 @@ export const appCompanion = onCall(
         ],
         messages,
       });
+      // PLAN.md item 0: record what this call actually cost. Fire and forget -- never
+      // awaited, never throws, and writes to its own collection so it cannot touch the cap counters.
+      recordUsage('otto', uid, MODEL, response.usage);
       replyText = response.content
         .filter((b): b is Anthropic.TextBlock => b.type === 'text')
         .map((b) => b.text)

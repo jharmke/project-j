@@ -37,15 +37,38 @@ real readings.**
 
 Ranked. Do them top down. `[ ]` not started, `[~]` in progress, `[x]` done and verified on device.
 
-### 0. THE COST METER -- do this before any optimisation
-- [ ] **0.1** Record real token usage on every AI call (`usage.input_tokens`,
-      `cache_creation_input_tokens`, `cache_read_input_tokens`, `output_tokens`) to Firestore, tagged by
-      feature. Covers Smart Coach + estimator via `aiProxy.ts`; Otto and Halo need their own.
-      ⚠️ **Nothing captures this today** -- Anthropic returns it on every call and the code discards it.
-      The per-call Firestore write already exists for the daily caps, so this is a small addition.
-      ➡️ **Why first:** every number below is arithmetic until this proves it. `cache_read_input_tokens > 0`
-      is the binary proof the cache fixes actually landed. Works off Justin's own device; does not need
-      real traffic.
+### 0. THE COST METER -- ✅ BUILT, DEPLOYED AND VERIFIED 2026-08-05
+- [x] **0.1** `functions/src/aiUsageMeter.ts` records Anthropic's own token counts on every AI call to a
+      Firestore `ai_cost/{uid}_{date}` document, split by feature. Wired into `aiProxy.ts` (coach +
+      estimator), `appCompanion.ts` (Otto) and `faithCompanion.ts` (Halo). Fire-and-forget, never throws,
+      writes to its own collection so it can never touch a cap counter or the pitch budget.
+      **Device-verified by Justin the same day.**
+
+#### 🔢 MEASURED PER-CALL COSTS -- these are READINGS, not arithmetic (2026-08-05)
+| Feature | Measured | What I had estimated |
+|---|---:|---:|
+| Smart Coach | **$0.00387** | $0.0043 |
+| Halo | **$0.00406** | $0.0032 |
+| Otto, cold | **$0.0331** | $0.0345 |
+| Otto, warm | **~$0.0043** | $0.0041 |
+| Meal estimator (photo) | **$0.00953** | $0.0165 |
+
+✅ **The cost model validated itself.** Otto's two test calls came to $0.03904195; the model predicts
+$0.0390 on those token counts. Otto's cached block metered at **26,477 tokens** against the 26,474 measured
+earlier -- a 3-token difference.
+✅ **Confirmed from real data:** Otto's cache works (`cacheRead 26,477`). **Smart Coach and Halo have never
+cached** -- both returned `cacheRead 0, cacheWrite 0`.
+
+#### 🔴 THREE NUMBERS THE METER CAUGHT ON DAY ONE
+1. **Halo's prompt is 3,987 tokens, not the 2,465 recorded in two places (62% low).**
+   ➡️ **This makes 2.3 EASIER, not harder: it is only ~150 tokens short of the 4,096 minimum, not 1,600.**
+2. **The meal estimator's prompt is 562 tokens, not the "~2,250" in THE PLAN item O.**
+3. **Cache minimums differ by model and nobody had checked: Haiku 4.5 needs 4,096, Sonnet 4.6 needs 1,024.**
+   Every "under the minimum" conclusion has to name its model.
+
+⚠️ **STILL TO CONFIRM:** Smart Coach logged only ONE call, not the two predicted. Almost certainly because
+the app was opened before the meter deployed, so that day's tips were already generated and the dedup
+returned early. **The first Home-tab open on a fresh day is the clean test.**
 
 ### 1. SMART COACH -- the biggest AI cost in the app (~$0.37/user/mo, DERIVED)
 Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
@@ -71,8 +94,12 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       that it costs slightly more. **Set it as part of the launch build, not today.** Make it a dial.
 - [ ] **2.2** Faith cache fix: move the faith-tier line out of `buildCompanionStable` so three cached copies
       collapse into one shared entry.
-- [ ] **2.3** Pad Halo's prompt past 4,096 tokens so it caches at all (2,465 today -- it has NEVER cached).
-      Safety/theology/crisis blocks are off-limits to cut, so growing them is the allowed direction.
+- [ ] **2.3** Pad Halo's prompt past Haiku's 4,096-token minimum so it caches at all -- **METERED 2026-08-05
+      at 3,987 tokens, so it needs roughly 150 more, not the ~1,600 the old 2,465 figure implied.**
+      Safety/theology/crisis blocks are off-limits to cut, so growing them is the allowed direction anyway.
+      ⚠️ Halo's real per-call cost is **$0.00406 metered**, not the $0.0032 in the old docs.
+      ⚠️ Once it DOES cache, the old note about the plans catalog varying inside the cached block becomes a
+      live problem -- check it then (it is harmless today only because nothing caches).
 - [ ] **2.4** Don't send the Faith chapter to "Not Right Now" users. 635 tokens they can never need.
 
 ### 3. THE FREE CAP
@@ -104,10 +131,33 @@ is what made him think work had been dropped -- it had not, but he had no way to
 | 12 | Is Otto wordier on some topics | 🔴 open -- **4.7** |
 | 13 | Smart Coach packet not sized | ✅ done -- ~200 tokens |
 
-- [ ] **4.1** The **meal estimator runs on Sonnet** (3x Haiku on both input and output) on the one feature
-      that also sends an image. ~$0.0165/estimate vs ~$0.0055 on Haiku. ⚠️ Vision + structured JSON --
-      **needs a quality test, not just a config change.** ⚠️ Also note: item O recorded a Justin decision
-      (2026-07-31) to deliberately leave this alone. Revisit that decision explicitly, do not overrule it.
+- [ ] **4.1 ✅ DECIDED 2026-08-05: KEEP SONNET. RESIZE THE PHOTO INSTEAD.** Not built.
+      **MEASURED, one real photo estimate: $0.00953.** Where it goes:
+      | | tokens | cost | share |
+      |---|---:|---:|---:|
+      | **the photo** | ~1,550 | $0.00465 | **49%** |
+      | prompt (562) + user text | ~600 | $0.00180 | 19% |
+      | the reply | 205 | $0.00308 | 32% |
+      ➡️ **The IMAGE is half the cost, not the model.** The photo is uploaded at full resolution and
+      Anthropic scales it to their 1568px cap and bills ~1,550 tokens for it.
+      ➡️ **Resize to a 1024px max dimension, behind a dial.** Image tokens scale with AREA, so the curve is
+      steep early: 1568 -> 1024 costs ~660 tokens (**28% off, $0.0095 -> $0.0068**); going on down to 784
+      buys only another 9% for meaningfully more quality risk. **Start at 1024.**
+      ✅ **Keeps Justin's 2026-07-31 call that Sonnet is justified for vision** -- switching to Haiku would
+      save 66% but you would have to find out whether it reads food worse. This way you never do.
+      ⚠️ **The code comment saying a resize "is a native module and needs a rebuild" is STALE.**
+      `expo-image-manipulator` is already a dependency and already used in `app/(tabs)/log.tsx` and
+      `app/profile-photo-crop.tsx`. No rebuild needed.
+      ⚠️ **REAL RISK IS PORTION ESTIMATION, NOT IDENTIFICATION.** A muffin at 1024px is still obviously a
+      muffin; judging HOW MUCH leans on fine cues (plate rim, fork, depth) and that is what decides whether
+      the calorie number is right. **Nutrition labels are NOT a risk** -- label scanning is a separate
+      on-device feature in Create Food and never uses this path.
+      ⚠️ **QUALITY TEST BEFORE THIS IS DONE:** four photos of increasing difficulty (single item, mixed
+      plate, something small, something with ambiguous portion) at both sizes. Compare the identified foods
+      **and the calorie totals**. Ship only if the totals track.
+      🔴 Corrections this replaced: the estimate was $0.0165 (74% high); item O recorded the prompt as
+      "~2,250 tokens" when it is **562**; and a same-day claim that caching the prompt would recover most of
+      the Haiku saving was wrong -- at 562 tokens caching it saves about 2%.
 - [ ] **4.2** The estimator's 5/month cap is **client-side** (AsyncStorage). A modified client could burn
       60 Sonnet calls/day through the server backstop -- about $1/day. Wants a server-side cap.
 - [ ] **4.3** Otto's **uncached per-message overhead**: volatile block 786 tokens + reply-shape block 336 +

@@ -441,9 +441,30 @@ is what made him think work had been dropped -- it had not, but he had no way to
       silently takes over and answers everything. Nothing is ever ignored and nobody is ever asked to rephrase.
       ✅ **ONE TEST SERVES BOTH OUTCOMES:** "is every part of this message explained by a canned answer?"
       All explained -> stitch and serve. Any part unexplained -> Otto.
-      **🕳️ REMAINING HOLES:** a canned reply must be written into conversation history or Otto loses the
-      thread on the next turn; fixed text does not soften for Mindful; coverage decays silently as features
-      ship (harmless, falls through).
+      **✅ HOLE 3 CLOSED -- conversation history, and it settled WHERE THE MATCHER RUNS.**
+      The problem: a canned reply never touches the API, so unless it is stored the next turn shows the user
+      asking about recipes and Otto saying nothing back. Ask "what about macros for it" and he cannot know
+      what "it" is. It looks like amnesia, not a missing line of code.
+      ✅ **NOTHING TO BUILD -- the mechanism already exists.** `AssistantChat.tsx` builds `history` from its
+      in-memory `messages` list on every send (verified: line ~637, filtered to user/assistant roles), and
+      that list is wiped when the sheet closes. A canned reply stored as an ordinary assistant message shows
+      on screen, rides the next turn, and disappears with the chat. Exactly Justin's "temp history" instinct,
+      already in place.
+      🔴 **THEREFORE THE MATCHER RUNS SERVER-SIDE, and this is the load-bearing decision.** Answering on the
+      phone would break the two things Justin asked for outright: the daily cap is enforced **server-side**
+      atomically, so a reply the server never sees CANNOT count against it; and the meter is server-side too,
+      so every canned answer would be invisible and **the deflection rate could never be learned.**
+      ⚠️ **ORDERING IS LOAD-BEARING AND EASY TO GET WRONG: the canned check must sit AFTER the cap
+      increment**, not before. Put it first and the cap silently stops counting canned answers -- invisible
+      when wrong, and it undoes decision 1.
+      ⚠️ Honest caveats, having overstated this once: a Cloud Function invocation is **negligible, not free**
+      (~1/10,000th of an Otto message), and "faster" comes with an asterisk -- no AI round trip, but a cold
+      start still costs a second or two.
+      ⚠️ **PRECEDENT, and why it is the WRONG one here:** the crisis response already short-circuits on the
+      CLIENT and never calls the server. That is correct for crisis (safety, and it must not consume a cap
+      message). Canned answers are the opposite case on both counts.
+      **🕳️ REMAINING HOLES:** fixed text does not soften for Mindful; coverage decays silently as features
+      ship (harmless -- unmatched questions just fall through to Otto).
       **🔬 HOW IT GETS MEASURED:** three corpora as with 4.9, but the number that must be zero is
       **WRONG-ANSWER rate, not miss rate** -- with 177 candidates the risk is matching the wrong one.
       ⚠️ **Build the third corpus from the collisions the KB ITSELF documents:** PRs vs Records, create vs log

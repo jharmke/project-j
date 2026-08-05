@@ -405,7 +405,18 @@ prompt SIZE** -- there is no traffic level at which caching starts paying for it
 
 ---
 
-## ✅ NET PER YEAR -- MEASURED NUMBERS, 2026-08-04. THESE ARE THE CURRENT TABLES.
+## ✅ THE TABLES ARE NOW A SCRIPT: `node scripts/cost-model.js`
+🔴 **RUN IT. DO NOT READ THE TABLES BELOW AS CURRENT.** Rebuilt 2026-08-05 because the original
+(`scratchpad/cost-model.js`) no longer exists, so this file spent months telling readers to re-run a script
+that was gone. The new one is committed and prints its own assumptions with provenance every time.
+⚠️ **DO NOT PASTE ITS OUTPUT INTO ANY DOC.** That is exactly how the old numbers went stale. Change an
+assumption in the script and re-run.
+**Differences from the tables below:** Apple's cut is **15%** (Small Business Program), not 30%; subscriber
+LIFETIME is an axis rather than an assumed 12 months; and Supporters are charged AI cost too.
+⚠️ `$0.218` below is per free user per **MONTH**, not per year. The label is ambiguous and it was misread
+once already.
+
+## (historical) NET PER YEAR -- MEASURED NUMBERS, 2026-08-04.
 
 ⚠️ **STILL VALID, BUT AS THE "DO NOTHING" BASELINE ONLY.** These are the app as it stands with no fixes
 built, and they assume the 5-minute cache is always warm, which is false at launch traffic. **For the

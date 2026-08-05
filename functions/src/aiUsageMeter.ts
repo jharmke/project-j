@@ -49,6 +49,12 @@ export function recordUsage(
   uid: string,
   model: string,
   usage: AnthropicUsage | undefined | null,
+  /**
+   * PLAN.md 4.9. Which half of Otto answered. Counting these is the ONLY honest way to learn the real
+   * coach/support mix -- inventing test questions and counting them would be deciding the answer we are
+   * trying to measure. Read `routeCoach / (routeCoach + routeSupport)` off production.
+   */
+  route?: 'coach' | 'support',
 ): void {
   try {
     if (!usage || !uid) return;
@@ -84,6 +90,7 @@ export function recordUsage(
               calls: inc(1), inputTokens: inc(inTok), outputTokens: inc(outTok),
               cacheReadTokens: inc(readTok), cacheWriteTokens: inc(writeTok), usd: inc(usd),
               model,
+              ...(route ? { [route === 'coach' ? 'routeCoach' : 'routeSupport']: inc(1) } : {}),
             },
           },
         },

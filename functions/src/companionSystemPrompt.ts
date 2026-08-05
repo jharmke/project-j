@@ -152,6 +152,11 @@ export function buildFaithHandoffBlock(faithTier: FaithTier, repeat: boolean): s
 // The STABLE half of the system prompt: identity/rules + the app-knowledge map.
 // Byte-identical for EVERY user, so the Cloud Function caches ONE copy that the whole account shares.
 //
+// ⚠️ THE CLOUD FUNCTION NO LONGER CALLS THIS (PLAN.md 4.9). It sends `buildCompanionRules()` and
+// `buildCompanionManual()` as two separately-cached blocks so a coaching message can skip the manual.
+// This function is kept because `rules + manual` is byte-identical to what it always returned, which is
+// what proves the Support path did not change -- and it is asserted after every build.
+//
 // ⚠️ THE FAITH-TIER TAIL USED TO LIVE HERE AND WAS MOVED OUT 2026-08-05 (PLAN.md 2.2). The old note said
 // caching per tier was "fine" because there are only 3 variants. Measured, it was not: the three blocks
 // came to 26,483 / 26,480 / 26,551 tokens -- **26,480 tokens of byte-identical content cached three
@@ -169,11 +174,43 @@ export function buildFaithHandoffBlock(faithTier: FaithTier, repeat: boolean): s
 // ⚠️ DO NOT PUT ANYTHING USER-DEPENDENT BACK IN HERE. Anything that varies per user or per tier
 // multiplies the number of cached copies and divides the hit rate by the same factor.
 export function buildCompanionStable(appKnowledge: string): string {
-  return (
-    BASE +
-    '\n\n================ APP KNOWLEDGE ================\n' + appKnowledge
-  );
+  return buildCompanionRules() + buildCompanionManual(appKnowledge);
 }
+
+/**
+ * PLAN.md 4.9. THE RULES HALF -- identity, voice, safety, coaching mode, the honesty rules. ~4,400 tokens,
+ * byte-identical for every user AND for both routes, so it stays ONE shared cached copy no matter which
+ * half of Otto answers.
+ * ⚠️ This is Justin's stack idea and it is what makes the split cheap: a Support message reads these rules
+ * from the same cache a Coach message just warmed, and only pays fresh for the manual.
+ */
+export function buildCompanionRules(): string {
+  return BASE;
+}
+
+/**
+ * THE MANUAL HALF -- ~22,000 tokens teaching Otto how the app works. Sent only when the message needs it.
+ * ⚠️ Returns the SEPARATOR TOO, so `rules + manual` is byte-for-byte what this file has always produced.
+ */
+export function buildCompanionManual(appKnowledge: string): string {
+  return '\n\n================ APP KNOWLEDGE ================\n' + appKnowledge;
+}
+
+/**
+ * 🔴 SENT IN PLACE OF THE MANUAL ON A COACH MESSAGE, AND IT IS NOT OPTIONAL.
+ *
+ * BASE says "using the APP KNOWLEDGE map provided below". Drop the map and that sentence points at nothing,
+ * so Otto is left hunting for a section that is not there.
+ * ✅ The safety net already existed: BASE's CRITICAL NO-GUESS RULE says that if he cannot find a feature BY
+ * NAME in the map he does not know where it is and must say so. With no map, every feature is not-found, so
+ * a misrouted message degrades to "I'm not certain, check Settings then Help" -- never to an invented path.
+ * This block just makes that explicit rather than leaving it to inference.
+ */
+export const COACH_NO_MANUAL_BLOCK = `================ APP KNOWLEDGE ================
+NOT LOADED ON THIS MESSAGE. You do not have the app map right now, so you cannot look up where anything lives.
+
+If this turns out to be a question about the app -- a screen, a tab, a button, a setting, a feature by name, what a plan includes, or why something is not working -- do NOT guess and do NOT describe a path from memory. Say plainly that you would rather be certain than guess, and point them to Settings then Help, which lists every explainer, or the question mark in a tab's header for a guided walkthrough.
+Everything else in these rules still applies exactly as written.`;
 
 // The VOLATILE half: this user's profile/goals context + their pre-computed data snapshot. Sent after the
 // stable block.
@@ -466,7 +503,10 @@ export function buildCompanionVolatile(
 
 /**
  * Convenience: the full prompt as one string (stable + volatile). The Cloud Function prefers the
- * two-block form (buildCompanionStable + buildCompanionVolatile) so it can cache the stable half.
+ * split form so it can cache each part separately. ⚠️ STALE NAME, KEPT DELIBERATELY: since PLAN.md 4.9 the
+ * Cloud Function sends FOUR pieces (rules, manual-or-stand-in, the per-user block, then the per-message
+ * tail), not two. This convenience function still returns the whole thing as one string for any caller
+ * that just wants the full prompt.
  */
 export function buildCompanionSystemPrompt(args: {
   styleMode: StyleMode;

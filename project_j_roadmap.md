@@ -30,6 +30,13 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-08-05 **Otto stopped carrying the whole app manual to answer "is white rice bad".** About 22,000 of
+  the 26,442 tokens sent on every message was the manual: how every screen works, where every button is. He
+  now splits in two, Coach (no manual) and Support (full manual), decided per message by one yes/no. Same
+  Otto to the user. **A coaching message drops $0.0061 to $0.0032.** Measured over 306 messages across three
+  corpora at **zero** app questions wrongly sent to a manual-less Otto; the earlier 15-way router this
+  replaces gave up 73% of the time. The lesson that made it work: a keyword whitelist capped recall at 81%
+  because food and exercise names are endless, so it now works by elimination instead. Detail: `PLAN.md` 4.9.
 - 2026-08-05 **The meter now measures what re-sending a conversation costs, and the answer was "leave it
   alone."** Otto has no memory, so every message carries the recent conversation with it, capped at 12
   messages. Measured on a deliberate 10-message chat: **38% of full-price input but 5% of the bill**, and a

@@ -5,7 +5,9 @@ import Anthropic from '@anthropic-ai/sdk';
 import { screenForCrisis } from './crisis';
 import { membershipStatus, REVENUECAT_SECRET_KEY } from './membership';
 import {
-  buildCompanionStable,
+  buildCompanionRules,
+  buildCompanionManual,
+  COACH_NO_MANUAL_BLOCK,
   buildFaithHandoffBlock,
   buildCompanionVolatileSplit,
   PITCH_REQUIRED_BLOCK,
@@ -19,6 +21,7 @@ import {
 } from './companionSystemPrompt';
 import { assembleAppKnowledge } from './knowledgeChapters';
 import { recordUsage, recordHistorySample } from './aiUsageMeter';
+import { routeCoachOrSupport } from './ottoCoachRouting';
 
 // NOTE: admin.initializeApp() is already called once in index.ts. Do NOT call it again here.
 //
@@ -384,6 +387,11 @@ export const appCompanion = onCall(
       { role: 'user', content: suffix ? `${message}\n\n${suffix}` : message },
     ];
 
+    // PLAN.md 4.9. ONE yes/no: can this be answered without the app manual? Measured over 306 messages
+    // across three corpora at ZERO dangerous misses (an app question sent to a manual-less Otto).
+    // ⚠️ The default is the manual, so anything this is unsure about behaves exactly as it did before.
+    const route = routeCoachOrSupport(message);
+
     // PLAN.md 4.3. Split, not rewritten: `cached + tail` is byte-identical to what this call has always
     // sent, so the prompt Otto reads is unchanged in both content and order.
     const volatile = buildCompanionVolatileSplit(
@@ -399,12 +407,18 @@ export const appCompanion = onCall(
         max_tokens: MAX_TOKENS,
         system: [
           {
-            // Stable half (identity + rules + app knowledge): cached across messages.
+            // PLAN.md 4.9, block 1 of 3: THE RULES. Identical for every user and for BOTH routes, so this
+            // stays one shared cached copy that Coach and Support messages warm for each other.
             type: 'text',
-            // Batch 1 of item H: assembled from chapters instead of one blob. With no argument this is
-            // byte-identical to ASSISTANT_APP_KNOWLEDGE, so nothing Otto sees has changed yet. Routing
-            // (passing a chapter list here) is a later batch. See SPEC_otto_routing.md.
-            text: buildCompanionStable(assembleAppKnowledge()),
+            text: buildCompanionRules(),
+            cache_control: { type: 'ephemeral' },
+          },
+          {
+            // Block 2: the manual, or the short stand-in that replaces it on a coaching message.
+            // ⚠️ The stand-in is NOT optional -- the rules above refer to "the map below", and BASE's
+            // no-guess rule needs something to be true about. See COACH_NO_MANUAL_BLOCK.
+            type: 'text',
+            text: route.coachOnly ? COACH_NO_MANUAL_BLOCK : buildCompanionManual(assembleAppKnowledge()),
             cache_control: { type: 'ephemeral' },
           },
           {
@@ -431,7 +445,7 @@ export const appCompanion = onCall(
       });
       // PLAN.md item 0: record what this call actually cost. Fire and forget -- never
       // awaited, never throws, and writes to its own collection so it cannot touch the cap counters.
-      recordUsage('otto', uid, MODEL, response.usage);
+      recordUsage('otto', uid, MODEL, response.usage, route.coachOnly ? 'coach' : 'support');
       // PLAN.md 4.5. What does re-sending the conversation actually cost? Both system blocks carry cache
       // markers now, so `usage.input_tokens` is the MESSAGE side of the request at full price. Count this
       // turn on its own and the remainder is the history.

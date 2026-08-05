@@ -350,7 +350,38 @@ is what made him think work had been dropped -- it had not, but he had no way to
 - [ ] **4.8** Canned answers for fixed-answer app questions. Zero cost, faster, always correct.
       ⚠️ Needs a matcher, and matchers fail badly in the wild -- **only answer when very sure; anything
       doubtful goes to Otto.**
-- [ ] **4.9** Split Otto into **Coach** (no manual, ~5,000 tokens) and **Support** (full manual).
+- [x] **4.9 ✅ BUILT + DEPLOYED + DEVICE-VERIFIED 2026-08-05.** `ottoCoachRouting.ts` answers one yes/no --
+      can this be answered without the app manual? -- and `appCompanion.ts` sends the manual only when the
+      answer is no. **Built as a STACK, Justin's design:** block 1 is the ~4,400-token rules half, identical
+      for both routes so Coach and Support keep ONE shared cache warm for each other; block 2 is the manual
+      or its stand-in; block 3 is 4.3's per-user block.
+      ✅ **THE SUPPORT PATH IS BYTE-IDENTICAL** to what shipped before (`rules + manual === old stable`,
+      asserted in code, verified after build).
+      **MEASURED, 306 messages across THREE corpora:**
+      | | |
+      |---|---:|
+      | 🔴 app/data questions sent to a manual-less Otto | **0 / 306** |
+      | coaching correctly routed | **119 / 120** |
+      ⚠️ **EVERY CORPUS FOUND A NEW *CLASS*, NOT NEW WORDS.** Corpus 1: questions about the user's own data
+      ("hows my protein this week" names no app noun but is answered by pointing at a screen). Corpus 2:
+      "I can't find it" (names no feature at all). Corpus 3: UI verbs and vague product complaints ("i
+      tapped it and nothing happened"). **Assume a fourth corpus would find a fourth class** -- which is
+      why the default is the manual and why the number to watch is the dangerous one, not recall.
+      ✅ **THE KEYWORD WHITELIST WAS ABANDONED and that is the main lesson.** Requiring a recognised coaching
+      word capped recall at 81%: food names, exercise names and plain English are unbounded ("is white rice
+      bad", "should i take a deload week"). It now works by ELIMINATION -- no app evidence means coaching --
+      so the listing burden sits on the app side, which is finite. See [[detectors-are-brittle]].
+      ✅ **THE NO-GUESS RULE IS THE SAFETY NET AND IT ALREADY EXISTED.** BASE says that if he cannot find a
+      feature BY NAME in the map he must say so and point at Settings > Help. With no map every feature is
+      not-found, so a misroute degrades to "I'm not certain" rather than an invented path.
+      `COACH_NO_MANUAL_BLOCK` makes that explicit instead of leaving it to inference.
+      ➡️ **MEASURED EFFECT: $0.0061 -> $0.0032 on a coaching message at warm traffic** (DERIVED from the
+      metered block sizes). Blended depends on the mix.
+      🔬 **THE MIX IS NOW BEING COUNTED.** `ai_cost` gains `routeCoach` / `routeSupport` per day. That ratio
+      is the number no amount of offline testing could produce, and it arrives free with real traffic.
+      ⚠️ **NO KILL SWITCH.** Reverting is a one-line change plus a redeploy (~1 minute), not a config flip.
+      Fold it into 5.1 when the dials land.
+      (Original note follows.)
       ⚠️ **Build the two as a STACK, not two packets** (Justin's idea, and it is the right one): rules first
       with a cache marker, manual second with its own. A Support message then reads the rules from the same
       cache a Coach message just used and only pays fresh for the manual.

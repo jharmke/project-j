@@ -26,6 +26,13 @@ optimisation, not a launch one.
 (full manual).** Same idea, reduced to ONE yes/no question instead of a 15-way choice -- far more reliable,
 and **2 cache entries instead of 57**, which is what makes the fragmentation problem disappear.
 
+✅ **AND IT WORKED. BUILT, MEASURED AND DEPLOYED 2026-08-05 -- see PLAN.md 4.9.** `ottoCoachRouting.ts`.
+**Zero dangerous misses over 306 messages across three corpora**, against this router's 73% fallback.
+🔴 **WHY THE YES/NO SUCCEEDED WHERE THE 15-WAY FAILED, since it is the transferable lesson:** this router
+needed strong positive evidence to NAME a chapter, so ordinary phrasing starved it. The replacement needs no
+evidence at all to reach its default -- it asks only whether the message touches the app, and sends the
+manual whenever it cannot tell. **The fallback stopped being a failure and became the answer.**
+
 ---
 
 Status (original): **DESIGN AGREED 2026-07-31, NOTHING BUILT.** This is the spec the roadmap said item H

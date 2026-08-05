@@ -159,6 +159,9 @@ lever register below was never real. Revisit at 10k+ msgs/day.
 ## 4. WHAT THE CACHED BLOCK IS ACTUALLY MADE OF (measured, `scan-manual.js`)
 
 **26,474 tokens = 22,049 app manual (83%) + 4,425 Otto's own standing rules (17%).**
+✅ **AS OF 2026-08-05 THIS IS THE *SUPPORT* PROMPT ONLY.** A coaching message now sends the 4,425 rules and
+skips the 22,049-token manual entirely (section 7 above, `PLAN.md` 4.9). Anywhere below that reasons from
+"every message reads 26,474 tokens" is describing the pre-4.9 app.
 ⚠️ An earlier note in this session guessed the rules at ~8,000. Wrong; they are 4,425.
 
 | tokens | chapter | | tokens | chapter |
@@ -210,7 +213,15 @@ converting pays for all of them.
 🟡 **Still open:** whether a canned (zero-cost) answer counts against the cap. Justin leans YES, because he
 wants people reaching the limit. Counter wording/placement deliberately NOT settled -- needs the screen.
 
-## 7. 🆕 THE LEAD IDEA: SPLIT OTTO IN TWO
+## 7. ✅ BUILT 2026-08-05: SPLIT OTTO IN TWO
+> **Status: shipped and device-verified. Detail and the measurement live in `PLAN.md` 4.9 -- do not restate
+> them here.** Headline: 0 dangerous misses over 306 messages, coaching message **$0.0061 -> $0.0032** at
+> warm traffic, and `ai_cost` now counts `routeCoach` / `routeSupport` so the real mix arrives with traffic.
+> ⚠️ The design below said "ship it logging-only first". **That was dropped deliberately:** logging-only
+> exists to learn the mix from many users, and with one tester it would only have learned Justin's mix while
+> delaying the saving. The safety came from measuring the classifier instead. The mix is still being counted.
+
+(original)
 
 **Why GoodForge is expensive when competitor AI companions are not:** their prompts are ~2,000 tokens.
 Ours is 26,474. Because **Otto is not just a coach, he is also the help desk** -- 22,049 of those tokens

@@ -41,7 +41,7 @@ then quietly skipped.
 
 | What | The check | Risk if wrong |
 |---|---|---|
-| ✅ ~~**2.2 moved Otto's faith-tier rules**~~ **CLEARED 2026-08-05** -- superseded by 4b, which enforces faith behaviour from the user turn and was device-verified on all three tiers. Residual risk is only the 19% of faith messages the detector misses, which fall back to the tails. | Profile > gear > Faith & Style > **Not Right Now**. Ask Otto something faith-adjacent. He must NOT mention Halo or weave in scripture. Set it back after. | **Highest risk item.** Halo and the Faith tab are HIDDEN for these users, so pointing at Halo sends them at something that does not exist. Values-sensitive, not a cost issue. |
+| ✅ ~~**2.2 faith-tier rules moved position**~~ | **CLEARED 2026-08-05.** Superseded by 4b, which enforces faith behaviour from the user turn and was device-verified on all three tiers. | Residual: only the 19% of faith messages the detector misses, which fall back to the tails. |
 | 🟡 Smart Coach prompt content | The tips were checked after the FIRST padding pass, before the second. Four rulebook sections have never had their output read. | Worse tips, silently |
 | 🟡 Halo prompt content | Three new voice examples in. Only messages sent were "hi" and "how are you". | Ditto. One real message would settle it |
 | 🟡 **1.2** skip-the-AI on no-data | Not reachable from an account with full data. | Low -- it is an `if` on a value the engine already computed |
@@ -96,10 +96,23 @@ returned early. **The first Home-tab open on a fresh day is the clean test.**
 
 ### 1. SMART COACH -- the biggest AI cost in the app (~$0.37/user/mo, DERIVED)
 Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
-- [ ] **1.1** Send all three voice-example sets instead of one. Crosses Haiku's 4,096-token cache minimum
-      (3,520 -> 4,342) so the prompt caches for the first time, AND collapses three cache entries into one
-      shared by every user. ⚠️ Requires `aiProxy.ts` to accept a cache marker -- it currently takes the
-      system prompt only as a plain string.
+- [x] **1.1 ✅ BUILT + DEVICE-VERIFIED 2026-08-05.** Smart Coach's prompt now crosses Haiku's 4,096-token
+      minimum and caches for the first time. Verified on device: `cacheWriteTokens 4,454`, then a read, with
+      a warm call metering **$0.00107 against the old $0.00387 (72% off)**.
+      ❌ **THE ORIGINAL PLAN HERE WAS REJECTED.** It was to send all three voice-example sets, which crosses
+      the line using content already written and collapses three cache entries into one. But the rulebook
+      tells the model to "read the examples for your mode", so putting all three in front of it risks the
+      **voices blending** -- and the coaching modes are the point. Justin's call: option B.
+      ✅ **BUILT INSTEAD: pad the RULEBOOK**, which lifts all three modes at once. What went in was real
+      quality work, not filler -- the rulebook had **no surface guidance at all**, so sleep and recovery tips
+      were being written off examples entirely about weight and food logging. Added sleep/recovery guidance,
+      day/weekly/monthly guidance, a not-repeating-yesterday rule (the packet carries `previousTip` and
+      nothing told the model to read it), conflicting-signal guidance, and four examples per mode.
+      ⚠️ **TOOK THREE PASSES BECAUSE THE CHARACTER-TO-TOKEN ESTIMATE WAS 23% OUT** (3.87 assumed, 4.75 real).
+      The first attempt looked like it cleared the line and did not; the meter caught it. Final counts, taken
+      with Anthropic's own counter rather than arithmetic: discipline 4,331, balanced 4,461, mindful 4,451.
+      ⚠️ Required `aiProxy.ts` to attach the cache marker itself, since the client sends the system prompt as
+      a plain string. Done, and the estimator gets the same plumbing for free.
 - [x] **1.2 ✅ BUILT 2026-08-05.** Skip the AI entirely on "not enough data" verdicts. `NO_DATA_RULE_IDS` in
       `coachAI.ts`, checked in `generateCoachTip` before the prompt is even assembled.
       **Swept the engine rather than trusting the two I had found: FOUR rule IDs across SIX places.**

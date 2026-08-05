@@ -1639,15 +1639,37 @@ export default function HomeScreen() {
       setHomeTips(tips);
       setTipIndex(i => (i >= tips.length ? 0 : i));
     });
-    // AI coach tip runs in parallel. Renders fallback from cache immediately,
-    // updates to AI body once the async generation completes.
-    refreshCoachTip('home', 14).then(cache => {
-      setCoachCache(cache);
-    }).catch(() => {});
-    // Sleep Coach for the home sleep card: cached body instantly, AI body when ready.
+    // Cached bodies render instantly and cost nothing, so they load unconditionally.
     loadCoachTipCacheSleep().then(c => { if (c) setSleepCoachCache(c); }).catch(() => {});
-    refreshCoachTipSleep(14).then(c => setSleepCoachCache(c)).catch(() => {});
     loadCoachTipCacheRecovery().then(c => { if (c) setRecoveryCoachCache(c); }).catch(() => {});
+    // ⚠️ ONLY GENERATE A TIP FOR A CARD THAT IS ACTUALLY ON SCREEN (PLAN.md 1.3).
+    // Both refreshes below fire on every Home focus and were never checked against the user's layout, so
+    // hiding the Smart Tip card or the Sleep card still bought an AI tip nobody could see -- two paid calls
+    // a day for nothing. (Justin found this.)
+    // ⚠️ READS THE SETTING FROM STORAGE, NOT THE cardVisible STATE. This effect has [] deps and runs on the
+    // very first focus, which can land BEFORE the async settings load populates that state. Trusting the
+    // state here would fall back to defaults and silently gate nothing, which is exactly the kind of bug
+    // that looks fixed and is not.
+    // ⚠️ FAILS OPEN (`!== false`). If the setting is missing or unreadable we still generate: a wasted call
+    // costs a fraction of a cent, a missing tip is a broken feature.
+    (async () => {
+      let visible: Record<string, boolean> = DEFAULT_VISIBLE;
+      try {
+        const raw = await AsyncStorage.getItem('pj_settings');
+        const parsed = raw ? JSON.parse(raw) : null;
+        if (parsed?.cardVisible && typeof parsed.cardVisible === 'object') {
+          visible = { ...DEFAULT_VISIBLE, ...parsed.cardVisible };
+        }
+      } catch {}
+      // AI coach tip. Renders fallback from cache immediately, updates to AI body when generation completes.
+      if (visible.smart_tip !== false) {
+        refreshCoachTip('home', 14).then(cache => { setCoachCache(cache); }).catch(() => {});
+      }
+      // Sleep Coach for the home sleep card.
+      if (visible.sleep !== false) {
+        refreshCoachTipSleep(14).then(c => setSleepCoachCache(c)).catch(() => {});
+      }
+    })();
   }, []));
 
   // ── Load the active challenge + live progress for the home challenge card ──

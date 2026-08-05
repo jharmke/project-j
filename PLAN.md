@@ -88,8 +88,30 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       ➡️ **Not directly testable on an account with full data.** It is an `if` on a value the engine already
       computed, and the meter will show it at launch.
 - [x] **1.6 ✅ ANSWERED** by the sweep above: recovery has `rec_no_data`, the same waste as sleep. Covered.
-- [ ] **1.3** Gate generation on card visibility. Hidden cards still generate tips nobody sees.
+- [x] **1.3 ✅ BUILT 2026-08-05.** Home now checks the user's layout before generating. `smart_tip` gates
+      the home coach tip, `sleep` gates the sleep tip; both were firing on every Home focus regardless.
       (Justin found this.)
+      ⚠️ **Reads `pj_settings` from storage, NOT the `cardVisible` state.** The focus effect has `[]` deps
+      and runs on the first focus, which can land before the async settings load populates that state --
+      trusting it would fall back to defaults and gate nothing, which looks fixed and is not.
+      ⚠️ **Fails open** (`!== false`): a wasted call costs a fraction of a cent, a missing tip is a broken
+      feature. The Sleep screen's own refreshes are deliberately NOT gated -- being on that screen IS the
+      visibility check.
+- [ ] **1.7 🆕 EvR REPORTS VOICE CARDS FREE USERS CANNOT READ.** (Justin found this too, 2026-08-05.)
+      `voiceDiagnosticCards(baseCards, mode)` in `diagnostic-report-view.tsx` is handed EVERY card with no
+      membership check. But at line ~942, `!isTutorialMode && !isPro && i > 0` means **a free user sees
+      exactly ONE card**; the rest render frosted with only a topic chip. So we pay the AI to write insight
+      text for ~7 cards that are never readable.
+      | | per report view |
+      |---|---:|
+      | voicing all ~8 cards | ~$0.0068 |
+      | voicing the 1 that is visible | ~$0.0015 |
+      | **waste** | **~78%** |
+      ⚠️ **TRAP IN THE OBVIOUS FIX.** The report persists voiced cards and decides "already voiced" by
+      testing whether ANY card carries an `insight`. Voice only card 0 and the report is flagged done
+      forever, so **a user who later upgrades unlocks seven permanently blank cards.**
+      ➡️ Fix: judge "already voiced" against the cards the user can actually SEE. On upgrade the
+      newly-visible cards have no insight, the check fails, and they voice on next open. Self-healing.
 - ❌ **1.4 DROPPED 2026-08-05 after investigating. It does not work.** The idea was to skip the AI when the
       underlying data had not changed. Two things killed it:
       (a) `windowFp` looked perfect -- a "cheap signature of the data" that already exists -- but it is built

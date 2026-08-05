@@ -276,15 +276,19 @@ into a Firestore settings doc the Cloud Function reads per call.**
 - **Never print a cap number in marketing copy.** A counter saying "3 left today" is a status. "5 messages a
   day" on a website is a promise.
 
-## 10. THE HEADLINE NUMBERS (after 1h cache + faith fix + Halo padding + 5/day cap + canned answers)
+## 10. 🔴 HISTORICAL -- DO NOT QUOTE. RUN `node scripts/cost-model.js` INSTEAD.
 
+**Every break-even figure in this section and below is superseded (2026-08-05).** An audit found eight
+different ones across this file, `PLAN.md` and the roadmap. They share three faults: **Apple's cut was taken
+as 30%** (it is 15% under the Small Business Program), **Supporters were silently assumed to stay 12 months**
+(the single biggest variable in the whole model), and **no usage level was attached** -- while break-even
+ranges from 2.5% to 8.5% on usage alone. A break-even with no usage and no retention attached is not a fact.
+
+⚠️ **The 1.3% below was always a guess** (40% canned-answer deflection, which section 8 explains cannot be
+measured before launch without being circular) and it was nonetheless being quoted as an upside.
+
+(historical text follows)
 **BREAK-EVEN CONVERSION: ~2.8% -> ~1.3%.**
-
-⚠️ **THAT 1.3% ASSUMES CANNED ANSWERS DEFLECT 40% OF OTTO MESSAGES, AND THAT NUMBER IS A GUESS.** It cannot
-honestly be measured before launch (section 8 -- generating the questions makes it circular). At 25%
-deflection break-even is nearer **1.6%**; with no canned answers at all, nearer **1.9%**. The 1h cache,
-faith fix, Halo padding and 5/day cap are all measured and carry the app from 2.8% to ~1.9% on their own.
-**Quote 1.9% as the safe figure and 1.3% as the upside.**
 
 50,000 installs (2,500 active), 1 msg/active user/day, 12 months:
 

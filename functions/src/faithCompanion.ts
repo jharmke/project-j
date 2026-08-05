@@ -34,6 +34,11 @@ const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
 // real caps are more useful to test than fake ones). 25 for BOTH tiers is deliberate and permanent: faith
 // is never upcharged, so a Supporter gets exactly what a free user gets. No copy change was needed for
 // this -- the cap and the remaining-count label already existed, so only the number moved.
+// ⚠️ NO LONGER MATCHED TO OTTO. Otto's free cap went to 5/day on 2026-08-05 (PLAN.md 3.1) and Halo was
+// deliberately LEFT at 10, pending a decision on whether cutting the faith companion is compatible with
+// "faith is never paywalled" (CLAUDE.md). Free users currently get twice as much Halo as Otto.
+// ⚠️ THE COMMENT ABOVE ABOUT FAITH NEVER BEING UPCHARGED IS ALREADY OUT OF STEP WITH THIS CODE -- it
+// describes an equal free/Supporter allowance, and the constants below are 10 vs 30. That predates today.
 // Matched to Otto's on 2026-07-29 (free 10 / Supporter 30). Free was 25 and Supporter was ALSO 25, which
 // meant a paying user got literally nothing extra on Halo. Faith is still never paywalled -- Halo is free
 // for everyone, every day, forever; a Supporter just gets a bigger daily allowance, exactly like Otto.

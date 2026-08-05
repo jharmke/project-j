@@ -1500,7 +1500,9 @@ are separate pre-submission checklists, NOT part of this menu.
   🔴 **RULE: tighten the invisible dials freely, never tighten the visible one.** Launch at 5 and plan to
   RAISE ("we've increased your daily messages" is a great thing to send). If the cap ever must tighten,
   GRANDFATHER existing users. Never print a cap number in marketing copy.
-  ➡️ **HEADLINE: break-even conversion ~2.8% -> ~1.3%.** AI as a share of revenue 92% -> 43% at 1 msg/day.
+  ➡️ ~~**HEADLINE: break-even conversion ~2.8% -> ~1.3%.**~~ 🔴 **SUPERSEDED 2026-08-05 -- RUN
+  `node scripts/cost-model.js`.** Those figures assumed a 30% Apple cut (it is 15%), a 12-month subscriber
+  lifetime, and no stated usage level. Break-even ranges 2.5%-8.5% on usage alone. See `PLAN.md`.
   🔴 **BUT USAGE IS STILL THE BOSS.** At 3% conversion the app affords ~**2 messages per active user per
   day**. At 3/day everything loses money; at 5/day nothing works under 8% conversion. Engineering cannot fix
   that -- only the cap can.

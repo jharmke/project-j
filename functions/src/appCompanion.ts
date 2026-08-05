@@ -55,7 +55,13 @@ const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
 // the estimator too for the scary combined number, and that user does not exist.
 // FREE IS 10 by Justin's call -- new users are the heaviest Otto users and they are all free, so this is
 // the number to revisit first if onboarding feedback says people hit a wall while learning the app.
-const FREE_DAILY_CAP = 10;
+// ⚠️ 10 -> 5 ON 2026-08-05 (PLAN.md 3.1). Done BEFORE launch on purpose: this is the one dial users can
+// SEE, and PLAN's rule is that a visible limit may be raised but never tightened. There are no free users
+// yet (every TestFlight tester is a Supporter), so this is the last moment it costs nothing.
+// ⚠️ CHANGING THIS NUMBER MEANS CHANGING FOUR OTHER PLACES, not one: Otto's knowledge base states it out
+// loud (`assistantAppKnowledge.ts`), `FirstWeekEndedModal.tsx` promises it in copy, and LAUNCH_CHECKLIST.md
+// records the locked design. The in-chat counter is fine -- it reads `cap` off the response.
+const FREE_DAILY_CAP = 5;
 const SUPPORTER_DAILY_CAP = 30;
 
 // Dev/test accounts that bypass the daily cap (effectively unlimited). Empty this before public

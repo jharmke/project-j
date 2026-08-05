@@ -22,9 +22,17 @@ places, three of them stale, and decisions made off the stale copy.
 
 | | Value | Provenance |
 |---|---|---|
-| Break-even conversion, today | ~2.8% | DERIVED |
-| Break-even after the measured fixes | **~1.9%** | DERIVED. Quote this one. |
-| Break-even if canned answers land at 40% | ~1.3% | ASSUMED -- do not quote |
+| 🔴 **Break-even conversion** | **RUN `node scripts/cost-model.js`** | It prints every table with its assumptions |
+
+🔴 **DO NOT WRITE A BREAK-EVEN NUMBER INTO THIS FILE AGAIN.** Replaced 2026-08-05 after an audit found
+**eight** different figures across PLAN, the roadmap and `SPEC_cost_model.md` (1.3 / 1.6 / 1.9 / 2.63 / 2.8 /
+2.93 / 3.73 / 3.92 / 5.14%), with this table telling everyone to "quote this one".
+**All of them were wrong in the same three ways:** they assumed Apple takes **30%** (it is 15% under the
+Small Business Program), they silently assumed Supporters stay **12 months** (the single biggest variable in
+the model), and they carried **no usage level** -- yet break-even ranges from **2.5% to 8.5%** on usage alone.
+➡️ A break-even with no usage and no retention attached is not a fact. **The script is the number.**
+⚠️ **And do not log one per change either** (Justin's call): mid-way through the cost work the figure moves
+every time we ship, so a dated history would be a graveyard. Record it at real milestones only.
 | Affordable usage at 3% conversion | ~2 companion messages/active user/day | DERIVED |
 
 🔴 **The cost tables do NOT yet include Smart Coach or the meal estimator.** They counted Otto and Halo
@@ -233,7 +241,20 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       ➡️ **REVISIT** only once traffic is high enough that every variant stays warm regardless.
 
 ### 3. THE FREE CAP
-- [ ] **3.1** Otto and Halo free cap 10/day -> 5/day. Enforced server-side already, so it is a safe change.
+- [~] **3.1 OTTO DONE 2026-08-05, HALO HELD.** Otto's free cap is 10 -> **5**/day (`appCompanion.ts`).
+      ⚠️ **IT WAS NEVER A ONE-LINE CHANGE.** Four places state the number and would have contradicted it:
+      Otto's knowledge base says it out loud (he would have told users 10), `FirstWeekEndedModal.tsx`
+      promises it in copy, and `LAUNCH_CHECKLIST.md` records the locked design. ✅ The in-chat counter needed
+      nothing -- it reads `cap` off the server response, which is why it survived.
+      ✅ **DONE BEFORE LAUNCH ON PURPOSE.** This is the one dial users SEE, and 5.1's rule is that a visible
+      limit may be raised but never tightened. There are no free users yet, so it cost nothing today.
+      🔴 **HALO IS HELD FOR A DECISION, and it is a values question not a cost one.** Cutting the FAITH
+      companion to 5 while Supporters keep 30 makes faith a paid feature in practice, against CLAUDE.md.
+      ⚠️ The code already contradicted itself here: `faithCompanion.ts` carries a comment saying "a Supporter
+      does not get more of Halo than a free user" directly above `FREE 10 / SUPPORTER 30`. Whatever is
+      decided, that comment is wrong today.
+      ⚠️ Halo is ~3% of a free user's AI bill (`scripts/cost-model.js`), so this is worth almost nothing
+      financially. Decide it on what the app stands for.
       A monthly 100-message pool was considered and rejected: a daily cap gives thirty pitch moments a month
       and they come back tomorrow; a monthly pool gives one wall and three dead weeks.
 - [ ] **3.2** The counter UI. 🟡 **Wording and placement deliberately NOT settled** -- needs the screen.

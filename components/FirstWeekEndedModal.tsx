@@ -41,7 +41,10 @@ import { Type } from '../typography';
 // short list is wrong by omission every time. The reassurance is already two lines above.
 const FREE_TIER = [
   'Otto answers general questions, but no longer works from your numbers or builds for you',
-  '10 messages a day with him and with Halo',
+  // ⚠️ SPLIT 2026-08-05 (PLAN.md 3.1). Otto dropped to 5/day; Halo is still 10 pending a decision on
+  // whether cutting the FAITH companion is compatible with "faith is never paywalled" (CLAUDE.md).
+  // One line covering both was only ever right while the two numbers matched.
+  '5 messages a day with him, 10 with Halo',
   '5 AI Meal Estimates a month',
   'Your reports go back to the free view',
   'Room to keep building, within free limits',

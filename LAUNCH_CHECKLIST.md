@@ -95,6 +95,10 @@ Every one of these is currently making the app more generous than it should be a
 - [~] **2.1 — Real AI caps. COMPANIONS DONE + DEPLOYED + DEVICE-VERIFIED 2026-07-28. Estimator still open.**
       Was marked blocked on 1.1; that turned out to be stale — the Supporter lookup shipped 2026-07-13 and the
       `supporter ? SUPPORTER_CAP : FREE_CAP` branch already existed, it was just that both constants were equal.
+      - [x] 🔴 **SUPERSEDED 2026-08-05: Otto is now 5 free / 30 Supporter** (PLAN.md 3.1), cut before launch
+        because a visible limit may be raised later but never tightened. Halo is unchanged at 10 free
+        pending a decision on whether cutting the faith companion fits "faith is never paywalled".
+        (original follows)
       - [x] `appCompanion.ts` — **10 free / 30 Supporter** (deployed). NOTE: 30, not the 25 originally locked —
         deliberate 2026-07-28. 3x free makes the perk read as real and it acts as a runaway backstop, not a
         product limit. Verified on device: a free account correctly showed "9 of 10 messages left today".

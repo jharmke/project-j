@@ -241,7 +241,16 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       ➡️ **REVISIT** only once traffic is high enough that every variant stays warm regardless.
 
 ### 3. THE FREE CAP
-- [~] **3.1 OTTO DONE 2026-08-05, HALO HELD.** Otto's free cap is 10 -> **5**/day (`appCompanion.ts`).
+- [x] **3.1 ✅ DONE + DEVICE-VERIFIED 2026-08-05. OTTO 5/DAY, HALO STAYS 10.** Otto's free cap is 10 ->
+      **5**/day (`appCompanion.ts`); verified by asking Otto himself, who now states 5.
+      ✅ **HALO DELIBERATELY NOT CUT** (Justin, 2026-08-05), reversing what this item originally said. She is
+      **~3% of a free user's AI bill**, so cutting her buys nothing, and free users getting MORE of the faith
+      companion than the fitness one is the app stating its own identity. **Do not "finish" 3.1 by cutting
+      Halo later.**
+      🟡 **RESIDUAL, NOT URGENT:** free 10 vs Supporter 30 still means faith is *somewhat* upcharged, which
+      is not quite what CLAUDE.md says. The clean fix is equal caps, but the only safe direction is RAISING
+      free (5.1's rule: never tighten a visible limit), and Halo is cheap enough that it is affordable.
+      Decide it when the dials land, not before.
       ⚠️ **IT WAS NEVER A ONE-LINE CHANGE.** Four places state the number and would have contradicted it:
       Otto's knowledge base says it out loud (he would have told users 10), `FirstWeekEndedModal.tsx`
       promises it in copy, and `LAUNCH_CHECKLIST.md` records the locked design. ✅ The in-chat counter needed

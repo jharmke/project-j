@@ -34,9 +34,11 @@ const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
 // real caps are more useful to test than fake ones). 25 for BOTH tiers is deliberate and permanent: faith
 // is never upcharged, so a Supporter gets exactly what a free user gets. No copy change was needed for
 // this -- the cap and the remaining-count label already existed, so only the number moved.
-// ⚠️ NO LONGER MATCHED TO OTTO. Otto's free cap went to 5/day on 2026-08-05 (PLAN.md 3.1) and Halo was
-// deliberately LEFT at 10, pending a decision on whether cutting the faith companion is compatible with
-// "faith is never paywalled" (CLAUDE.md). Free users currently get twice as much Halo as Otto.
+// 🔴 NO LONGER MATCHED TO OTTO, AND THAT IS THE POINT. Otto's free cap went to 5/day on 2026-08-05
+// (PLAN.md 3.1); Halo was DELIBERATELY left at 10 -- Justin's call the same day. Free users get TWICE as
+// much of the faith companion as the fitness one, which is the app stating its own identity, and she is
+// ~3% of a free user's AI bill so cutting her would have bought nothing.
+// ⚠️ DO NOT "FINISH 3.1" BY LOWERING THIS LATER. The mismatch with Otto is intentional.
 // ⚠️ THE COMMENT ABOVE ABOUT FAITH NEVER BEING UPCHARGED IS ALREADY OUT OF STEP WITH THIS CODE -- it
 // describes an equal free/Supporter allowance, and the constants below are 10 vs 30. That predates today.
 // Matched to Otto's on 2026-07-29 (free 10 / Supporter 30). Free was 25 and Supporter was ALSO 25, which

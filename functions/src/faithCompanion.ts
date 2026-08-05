@@ -3,7 +3,7 @@ import { defineSecret } from 'firebase-functions/params';
 import * as admin from 'firebase-admin';
 import Anthropic from '@anthropic-ai/sdk';
 import { screenForCrisis } from './crisis';
-import { buildSystemPrompt, FaithTier } from './faithSystemPrompt';
+import { buildSystemPromptStable, buildTierBlock, FaithTier } from './faithSystemPrompt';
 import { isSupporter, REVENUECAT_SECRET_KEY } from './membership';
 import { recordUsage } from './aiUsageMeter';
 
@@ -185,9 +185,18 @@ export const faithCompanion = onCall(
         max_tokens: MAX_TOKENS,
         system: [
           {
+            // Shared half: identical for every user, so ONE cached copy serves the whole account.
+            // ⚠️ Until 2026-08-05 this was a single block INCLUDING the tier, at 3,987 tokens -- ~109 short
+            // of Haiku's 4,096 minimum, so it had never cached once. See PLAN.md 2.3.
             type: 'text',
-            text: buildSystemPrompt(tier, catalog),
-            cache_control: { type: 'ephemeral' }, // caches when the prefix clears the model threshold
+            text: buildSystemPromptStable(catalog),
+            cache_control: { type: 'ephemeral' },
+          },
+          {
+            // Per-user tail (~12 tokens of difference between the two tiers). Deliberately AFTER the cache
+            // marker: inside it, this would split the cached copy in two for a rounding error.
+            type: 'text',
+            text: buildTierBlock(tier),
           },
         ],
         messages,

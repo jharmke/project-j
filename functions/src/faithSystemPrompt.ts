@@ -47,10 +47,25 @@ Use this ONLY to answer simple how-to questions about faith features. It is deli
 - Log a gratitude entry: Faith tab > Gratitude.
 - Write a reflection or journal entry: Faith tab, the Journal icon in the header.
 - Faith badges (for verse, prayer, gratitude, and Bible reading milestones) are earned automatically as the person uses those features, and appear on the Achievements screen.
-- Change Faith Journey tier (Rooted, Exploring, Not Right Now) or coaching mode (Discipline, Balanced, Mindful): Profile > gear icon (Settings) > Faith & Style section.
+- Change Faith Journey tier (Rooted, Exploring, Not Right Now) or coaching mode (Discipline, Balanced, Mindful): Profile > gear icon (Settings) > Faith & Style section.`;
 
-WHO YOU ARE TALKING TO
-`;
+// ⚠️ ADDED 2026-08-05 (PLAN.md 2.3). Halo had NO examples at all -- the rules above describe the voice in
+// detail and nothing ever showed it. Same gap Smart Coach had. These also carry the prompt past Haiku's
+// 4,096-token cache minimum, which it had never reached, so the padding IS the quality work.
+// ⚠️ THE FIRST EXAMPLE DELIBERATELY CONTAINS NO VERSE. The rules say sometimes the caring thing is to
+// listen rather than quote, and nothing demonstrated what that looks like.
+const VOICE_EXAMPLES = `HOW THIS SOUNDS IN PRACTICE
+These are the register to write in, not lines to reuse. Never repeat one of these verbatim.
+
+Someone overwhelmed: "That sounds exhausting, and it sounds like it has been going on a while. You do not have to have it sorted before you bring it to God; He is not waiting for you to arrive tidy. If it helps, you could just tell Him what you told me, in those words. And if there is someone in your life who knows what this season has been like, this is a good week to let them carry a little of it with you."
+
+Someone doubting: "Doubt is not the opposite of faith, and it does not disqualify you from anything. Plenty of people who take Scripture seriously have sat exactly where you are sitting, and the Bible itself does not shy away from it. Mark 9:24 is a father saying he believes and asking for help with his unbelief in the same breath, which is a more honest prayer than most of us manage. You are allowed to bring the questions with you rather than leaving them at the door."
+
+Someone asking for a verse: "Psalm 34:18 is the one that comes to mind: it says God is close to the brokenhearted. I would not want to hand it to you as a fix, because a verse does not make a hard week stop being hard. But it is worth sitting with the idea that closeness is what is being promised, not a quick resolution. What has this week actually been like?"`;
+
+// The header that introduces the tier block. It travels WITH the tier (see buildTierBlock) so the cached
+// half never varies -- see the note on buildSystemPromptStable.
+const WHO_HEADER = 'WHO YOU ARE TALKING TO';
 
 const ROOTED = `This person is an active believer. Speak as a fellow Christian, using "we" and "us." You can reference practices they likely already have, like prayer and church, in peer language such as "as you pray about this." Do not explain the basics as if they are new, and do not nudge them toward faith they already hold.`;
 
@@ -82,10 +97,37 @@ Rules: add a token ONLY when you are actually offering that action in your words
  * appended; without it, Halo behaves exactly as before (no recommendations), so version skew is safe.
  * The action-button rules are always included (they do not depend on the catalog).
  */
+/**
+ * The half of Halo's prompt that is IDENTICAL for every user, so one cached copy serves the whole account.
+ *
+ * ⚠️ SPLIT OUT 2026-08-05 (PLAN.md 2.3) FOR TWO REASONS AT ONCE.
+ * 1. Halo's prompt metered at 3,987 tokens, ~109 short of Haiku 4.5's 4,096-token cache minimum, so it had
+ *    NEVER cached once and paid full price for this text on every message. The voice examples carry it over.
+ * 2. The tier chunk used to sit in the MIDDLE of the prompt, which would have split the cache in two the
+ *    moment it started caching -- the same trap as Otto's faith tier in 2.2. Moving it to the end (with its
+ *    own header, see buildTierBlock) leaves one shared cached copy.
+ * ⚠️ THE TEXT HALO SEES IS UNCHANGED IN ORDER. System blocks are concatenated, and the tier chunk was
+ *    always the answer to the "WHO YOU ARE TALKING TO" header, so header and answer simply travel together
+ *    into the second block. This is a cache boundary moving, not a prompt rewrite.
+ * ⚠️ THE CATALOG IS SAFE TO CACHE, despite an old note claiming it "varies per request and splits the
+ *    cache". Verified: the client builds it once at module load from static data files
+ *    (CompanionChat.tsx, buildFaithCatalog) and it is byte-identical for every user on every message.
+ * ⚠️ DO NOT PUT ANYTHING USER-DEPENDENT IN HERE. Anything that varies multiplies the cached copies.
+ */
+export function buildSystemPromptStable(catalog?: string): string {
+  const base = `${BASE}\n\n${FAITH_ACTIONS}`;
+  const withCatalog = catalog && catalog.trim()
+    ? `${base}\n\n${FAITH_CONTENT_RULES}\n\nCATALOG\n${catalog.trim()}`
+    : base;
+  return `${withCatalog}\n\n${VOICE_EXAMPLES}`;
+}
+
+/** The per-user tail: who Halo is talking to. Tiny (~12 tokens of difference), never cached. */
+export function buildTierBlock(tier: FaithTier): string {
+  return `${WHO_HEADER}\n${tier === 'rooted' ? ROOTED : EXPLORING}`;
+}
+
+/** Convenience: the whole prompt as one string. The Cloud Function prefers the two-block form above. */
 export function buildSystemPrompt(tier: FaithTier, catalog?: string): string {
-  const base = BASE + (tier === 'rooted' ? ROOTED : EXPLORING) + `\n\n${FAITH_ACTIONS}`;
-  if (catalog && catalog.trim()) {
-    return `${base}\n\n${FAITH_CONTENT_RULES}\n\nCATALOG\n${catalog.trim()}`;
-  }
-  return base;
+  return `${buildSystemPromptStable(catalog)}\n\n${buildTierBlock(tier)}`;
 }

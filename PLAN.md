@@ -164,8 +164,25 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       ⚠️ The rules now sit LATER in the prompt, which on this project has meant better instruction-following,
       not worse. **Worth a glance at faith behaviour anyway** -- especially that a "Not Right Now" user is
       never pointed at Halo.
-- [ ] **2.3** Pad Halo's prompt past Haiku's 4,096-token minimum so it caches at all -- **METERED 2026-08-05
-      at 3,987 tokens, so it needs roughly 150 more, not the ~1,600 the old 2,465 figure implied.**
+- [x] **2.3 ✅ BUILT + DEPLOYED 2026-08-05.** Halo caches for the first time, and the tier no longer splits it.
+      **Two problems fixed at once, because fixing one alone would have created the other.**
+      1. At 3,987 tokens it was ~109 short of the minimum, so it had never cached. Three voice examples
+         carry it to **~4,228**. Halo had **NO examples at all** -- the rules described the voice in detail
+         and nothing ever demonstrated it. One example deliberately contains no verse, because the rules say
+         sometimes the caring thing is to listen rather than quote and nothing showed that.
+      2. The tier chunk sat in the MIDDLE of the prompt, so the moment it started caching it would have split
+         the copy in two -- the same trap as 2.2. Moved to the end as its own uncached block (87/99 tokens).
+      ✅ **THE TEXT HALO SEES IS UNCHANGED IN ORDER.** System blocks concatenate, and the tier was always the
+      answer to the "WHO YOU ARE TALKING TO" header, so header and answer travelled together. A cache
+      boundary moved, not a prompt.
+      🔴 **A THIRD STALE DOC CLAIM CORRECTED:** item O and this file both warned the plans catalog "varies
+      per request and splits the cache". **It does not.** The client builds it once at module load from
+      static data files (`CompanionChat.tsx`, `buildFaithCatalog`) and it is byte-identical for everyone.
+      ⚠️ **MARGIN IS 132 TOKENS (3%).** The catalog is client-supplied, so if reading plans were ever
+      REMOVED the block could fall back under the minimum and silently stop caching. The meter catches it
+      (`cacheWriteTokens` returning to 0). A fourth voice example would buy more room if wanted.
+      ⚠️ Older clients that send no catalog sit at 2,712 tokens and will not cache. Expected, not a bug.
+      ➡️ Expected: **$0.00406 -> ~$0.0012 warm.** (Original note follows.)
       Safety/theology/crisis blocks are off-limits to cut, so growing them is the allowed direction anyway.
       ⚠️ Halo's real per-call cost is **$0.00406 metered**, not the $0.0032 in the old docs.
       ⚠️ Once it DOES cache, the old note about the plans catalog varying inside the cached block becomes a

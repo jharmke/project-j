@@ -70,6 +70,11 @@ tokens or the uncached block. A full warm message today:
 |---|---|
 | Cached map, 18,400 tok | $0.0018 |
 | Volatile block, ~1,500 tok (uncached, full price) | $0.0015 |
+<!-- ⚠️ BOTH ROWS ABOVE ARE STALE, LEFT ONLY BECAUSE THIS TABLE IS A RECORD OF THE OLD SKETCH.
+     Metered 2026-08-05: the cached block is 26,442 tokens, not 18,400, and full-price input is ~2,200
+     tokens a message, not ~1,500 -- and since PLAN.md 4.3 the steady part of the volatile block is itself
+     cached, so "uncached, full price" no longer describes it. Current numbers: SPEC_cost_model.md. -->
+
 | Output, ~300 tok @ $5/M | $0.0015 |
 | **Total** | **$0.0048** |
 

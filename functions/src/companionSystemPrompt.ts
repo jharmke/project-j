@@ -160,8 +160,12 @@ export function buildFaithHandoffBlock(faithTier: FaithTier, repeat: boolean): s
 // ⚠️ The trade is lopsided: carrying the tail in the volatile half costs ~$0.00007 a message, and ONE
 // avoided cold call saves $0.0305. It pays for itself if the split causes one extra cold call per 429
 // messages, which at any real traffic it does many times over.
-// ⚠️ THE CODEBASE HAD ALREADY MADE THIS EXACT CALL ONCE -- see FREE_TIER_BLOCK below, kept out of the
-// cached half for precisely this reason. Faith tier was the inconsistency, not the rule.
+// ⚠️ THE CODEBASE HAD ALREADY MADE THIS EXACT CALL ONCE -- see FREE_TIER_BLOCK below, kept out of THIS
+// (shared, everybody-gets-the-same) cached block for precisely this reason. Faith tier was the
+// inconsistency, not the rule.
+// ⚠️ Since PLAN.md 4.3, FREE_TIER_BLOCK IS cached -- but in the user's OWN cached block, not this shared
+// one. The rule is unchanged: nothing that varies by user or tier may enter this block, because every
+// variant here divides the hit rate that makes Otto affordable.
 // ⚠️ DO NOT PUT ANYTHING USER-DEPENDENT BACK IN HERE. Anything that varies per user or per tier
 // multiplies the number of cached copies and divides the hit rate by the same factor.
 export function buildCompanionStable(appKnowledge: string): string {
@@ -171,8 +175,12 @@ export function buildCompanionStable(appKnowledge: string): string {
   );
 }
 
-// The VOLATILE half: this user's profile/goals context + their pre-computed data snapshot. Changes
-// per user and per data change, so it is NOT cached; it is sent after the stable block.
+// The VOLATILE half: this user's profile/goals context + their pre-computed data snapshot. Sent after the
+// stable block.
+// ⚠️ "VOLATILE" IS NOW ONLY HALF TRUE (PLAN.md 4.3, 2026-08-05). This half is itself split: the part that
+// does not change between one message and the next carries its OWN cache marker, and only the genuinely
+// per-message part is still sent at full price. See `buildCompanionVolatileSplit` below for where the line
+// falls and why it falls in a different place for a free user than for a Supporter.
 // ⚠️ THE FREE-TIER BLOCK LIVES HERE, IN THE VOLATILE HALF, DELIBERATELY. Putting tier-dependent text in the
 // CACHED half would create a separate cached copy per tier and halve the hit rate that makes Otto affordable
 // (SPEC_otto_routing.md). It is also written as the second BRANCH of the data rules rather than as an

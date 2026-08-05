@@ -281,7 +281,7 @@ numbers are recorded here instead of the code that produced them.** Do this for 
 | Cache WRITE, 1-hour TTL | **2.0x input** | The lever in section 1 |
 | **Haiku 4.5 minimum cacheable prefix** | **4,096 tokens** | ⚠️ Under this, NOTHING caches, silently. This is what has been killing Halo |
 | Otto cached block | **26,474** = 22,049 manual + 4,425 rules | Measured |
-| Otto uncached input / output per msg | ~223 / ~250 tokens | Back-solved from the measured $0.00412 warm call |
+| ~~Otto uncached input per msg~~ | 🔴 **~2,200 tokens, NOT ~223** | **METERED 2026-08-05** across 15 real calls (32,960 full-price tokens / 15). The old figure was back-solved from a single warm call and is an order of magnitude low. **History is the only piece big enough to explain it -- see PLAN.md 4.5.** Output ~250/msg still stands (854 over 15 calls skews low on short replies) |
 | ~~Halo prompt~~ | 🔴 **3,987 tokens, NOT 2,465** | **METERED 2026-08-05** off a real call. The old figure was 62% low. Only ~150 short of the 4,096 minimum, so the padding fix is trivial |
 | **Haiku 4.5 cache minimum** | **4,096** | ⚠️ **Minimums DIFFER BY MODEL and this was never checked: Sonnet 4.6 is 1,024.** Any "under the minimum" claim must name its model |
 | Meal estimator prompt | **562 tokens** | METERED. Item O recorded "~2,250" -- wrong |

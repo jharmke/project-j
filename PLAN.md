@@ -150,8 +150,20 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       ➡️ **Switch at launch.** Make it a dial first (5.1) so it is a config change, not a deploy.
       ✅ **ANSWERED: the 1-hour TTL needs NO beta header.** `SPEC_otto_routing.md` carried that as an open
       question; verified against the current Anthropic caching docs 2026-08-05.
-- [ ] **2.2** Faith cache fix: move the faith-tier line out of `buildCompanionStable` so three cached copies
-      collapse into one shared entry.
+- [x] **2.2 ✅ BUILT + DEPLOYED 2026-08-05.** The faith-tier tail is out of `buildCompanionStable`, which
+      now takes ONE argument (the app knowledge) and therefore **cannot** vary by user. The tail moved into
+      `buildCompanionVolatile`, directly under the CONTEXT block that already carries the tier value.
+      **MEASURED BEFORE:** the three cached blocks were 26,483 / 26,480 / 26,551 tokens -- **26,480 tokens
+      of byte-identical content cached three separate times because ~71 tokens differed.** Each copy got a
+      third of the traffic and went cold three times as often.
+      **AFTER:** one shared 26,442-token block for everybody.
+      ⚠️ The trade is lopsided and worth remembering: carrying the tail uncached costs **$0.00007 a
+      message**; one avoided cold call saves **$0.0305**. Break-even is one extra cold call per 429 messages.
+      ⚠️ The codebase had already made this exact call once for MEMBERSHIP tier (see the note on
+      `FREE_TIER_BLOCK`). Faith tier was the inconsistency, not the rule.
+      ⚠️ The rules now sit LATER in the prompt, which on this project has meant better instruction-following,
+      not worse. **Worth a glance at faith behaviour anyway** -- especially that a "Not Right Now" user is
+      never pointed at Halo.
 - [ ] **2.3** Pad Halo's prompt past Haiku's 4,096-token minimum so it caches at all -- **METERED 2026-08-05
       at 3,987 tokens, so it needs roughly 150 more, not the ~1,600 the old 2,465 figure implied.**
       Safety/theology/crisis blocks are off-limits to cut, so growing them is the allowed direction anyway.

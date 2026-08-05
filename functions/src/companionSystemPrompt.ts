@@ -104,13 +104,24 @@ function tierTail(tier: FaithTier): string {
   return TIER_EXPLORING;
 }
 
-// The STABLE half of the system prompt: identity/rules + faith-tier tail + the app-knowledge map.
-// This is byte-stable across messages (and across users on the same tier), so the Cloud Function
-// caches it. faithTier is included here because it changes rarely (only 3 variants), so caching
-// per tier is fine and keeps the volatile block purely per-user-data.
-export function buildCompanionStable(faithTier: FaithTier, appKnowledge: string): string {
+// The STABLE half of the system prompt: identity/rules + the app-knowledge map.
+// Byte-identical for EVERY user, so the Cloud Function caches ONE copy that the whole account shares.
+//
+// ⚠️ THE FAITH-TIER TAIL USED TO LIVE HERE AND WAS MOVED OUT 2026-08-05 (PLAN.md 2.2). The old note said
+// caching per tier was "fine" because there are only 3 variants. Measured, it was not: the three blocks
+// came to 26,483 / 26,480 / 26,551 tokens -- **26,480 tokens of byte-identical content cached three
+// separate times because ~71 tokens differed.** Each copy got a third of the traffic and went cold three
+// times as often, and a cold call costs $0.0331 against $0.0027 warm.
+// ⚠️ The trade is lopsided: carrying the tail in the volatile half costs ~$0.00007 a message, and ONE
+// avoided cold call saves $0.0305. It pays for itself if the split causes one extra cold call per 429
+// messages, which at any real traffic it does many times over.
+// ⚠️ THE CODEBASE HAD ALREADY MADE THIS EXACT CALL ONCE -- see FREE_TIER_BLOCK below, kept out of the
+// cached half for precisely this reason. Faith tier was the inconsistency, not the rule.
+// ⚠️ DO NOT PUT ANYTHING USER-DEPENDENT BACK IN HERE. Anything that varies per user or per tier
+// multiplies the number of cached copies and divides the hit rate by the same factor.
+export function buildCompanionStable(appKnowledge: string): string {
   return (
-    BASE + tierTail(faithTier) +
+    BASE +
     '\n\n================ APP KNOWLEDGE ================\n' + appKnowledge
   );
 }
@@ -332,8 +343,16 @@ export function buildCompanionVolatile(
   supporter: boolean,
   dataSnapshot?: string,
   freeContext?: string,
+  faithTier: FaithTier = 'exploring',
 ): string {
-  const head = '================ CONTEXT (this user) ================\n' + userContext;
+  // ⚠️ THE FAITH-TIER TAIL LIVES HERE NOW, NOT IN THE CACHED HALF (PLAN.md 2.2). It sits directly under the
+  // CONTEXT block because that block already carries the tier VALUE -- the client sends "Faith journey: X"
+  // (AssistantChat.tsx) -- so the rule now sits next to the fact it acts on instead of 22,000 tokens away.
+  // ⚠️ It also lands LATER in the prompt than it used to, which on this project has consistently meant
+  // BETTER instruction-following, not worse. Watch faith behaviour after this ships anyway.
+  const head =
+    '================ CONTEXT (this user) ================\n' + userContext +
+    '\n\n' + tierTail(faithTier);
   if (supporter) {
     // A Supporter with no snapshot yet (brand new account, or a client-side hiccup) gets NO tier block at
     // all. Silence is right here: the free block would be a lie, and inventing a "you have no data" block
@@ -366,8 +385,8 @@ export function buildCompanionSystemPrompt(args: {
 }): string {
   const { faithTier, appKnowledge, userContext, supporter, dataSnapshot } = args;
   return (
-    buildCompanionStable(faithTier, appKnowledge) +
+    buildCompanionStable(appKnowledge) +
     '\n\n' +
-    buildCompanionVolatile(userContext, supporter, dataSnapshot)
+    buildCompanionVolatile(userContext, supporter, dataSnapshot, undefined, faithTier)
   );
 }

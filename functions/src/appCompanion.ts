@@ -382,7 +382,7 @@ export const appCompanion = onCall(
             // Batch 1 of item H: assembled from chapters instead of one blob. With no argument this is
             // byte-identical to ASSISTANT_APP_KNOWLEDGE, so nothing Otto sees has changed yet. Routing
             // (passing a chapter list here) is a later batch. See SPEC_otto_routing.md.
-            text: buildCompanionStable(faithTier, assembleAppKnowledge()),
+            text: buildCompanionStable(assembleAppKnowledge()),
             cache_control: { type: 'ephemeral' },
           },
           {
@@ -394,7 +394,7 @@ export const appCompanion = onCall(
             // the server's own membership record and fails closed to free on any error.
             // (A user who TYPES their own numbers into the message still gets personalised advice. That is
             // the accepted loophole from SPEC_otto.md open item 5 -- the app revealed nothing.)
-            text: buildCompanionVolatile(userContext, supporter, supporter ? dataSnapshot : undefined, freeContext),
+            text: buildCompanionVolatile(userContext, supporter, supporter ? dataSnapshot : undefined, freeContext, faithTier),
           },
         ],
         messages,

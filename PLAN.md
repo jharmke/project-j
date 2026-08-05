@@ -41,7 +41,7 @@ then quietly skipped.
 
 | What | The check | Risk if wrong |
 |---|---|---|
-| 🔴 **2.2 moved Otto's faith-tier rules** to a different position in the prompt | Profile > gear > Faith & Style > **Not Right Now**. Ask Otto something faith-adjacent. He must NOT mention Halo or weave in scripture. Set it back after. | **Highest risk item.** Halo and the Faith tab are HIDDEN for these users, so pointing at Halo sends them at something that does not exist. Values-sensitive, not a cost issue. |
+| ✅ ~~**2.2 moved Otto's faith-tier rules**~~ **CLEARED 2026-08-05** -- superseded by 4b, which enforces faith behaviour from the user turn and was device-verified on all three tiers. Residual risk is only the 19% of faith messages the detector misses, which fall back to the tails. | Profile > gear > Faith & Style > **Not Right Now**. Ask Otto something faith-adjacent. He must NOT mention Halo or weave in scripture. Set it back after. | **Highest risk item.** Halo and the Faith tab are HIDDEN for these users, so pointing at Halo sends them at something that does not exist. Values-sensitive, not a cost issue. |
 | 🟡 Smart Coach prompt content | The tips were checked after the FIRST padding pass, before the second. Four rulebook sections have never had their output read. | Worse tips, silently |
 | 🟡 Halo prompt content | Three new voice examples in. Only messages sent were "hi" and "how are you". | Ditto. One real message would settle it |
 | 🟡 **1.2** skip-the-AI on no-data | Not reachable from an account with full data. | Low -- it is an `if` on a value the engine already computed |
@@ -339,7 +339,8 @@ answer; false alarms cost app help. Fail on the miss side.**
 "the gold cross button in the app". She is a floating gold cross FAB rendered on the **Faith tab and the
 Bible reader** (`CompanionFAB.tsx`). Both now say "the gold cross button on the Faith tab".
 
-🔬 **NEEDS DEVICE VERIFICATION:** ask Otto a faith question on each tier. Rooted/Exploring should point at
+✅ **DEVICE-VERIFIED 2026-08-05, all three paths.** Not Right Now returned the NRN copy word for word; a second faith question returned the short repeat line; "how do I add a prayer request" was answered normally AND Otto worked out unprompted that faith features would need turning on first, which is better than the scripted behaviour. Rooted/Exploring confirmed separately.
+      (original check: ask Otto a faith question on each tier.) Rooted/Exploring should point at
 the gold cross; Not Right Now should name her, say she is off, and give the Settings path. Ask twice to
 confirm the second reply is the short "Still Halo's area" version.
 

@@ -478,8 +478,24 @@ is what made him think work had been dropped -- it had not, but he had no way to
       agreed for the Tier 2 conditionals.
       ✅ **MECHANICAL CHECK, same family as the KB-path assertion:** no canned answer may mention the Macros
       card, the calorie strip or net calories without a mode branch.
-      **🕳️ REMAINING HOLE:** coverage decays silently as features ship (harmless in itself -- unmatched
-      questions fall through to Otto -- but the saving erodes with nothing to flag it).
+      **✅ HOLE 5 CLOSED -- decay. It is TWO failures and they need different answers.**
+      1. **A feature changes and the canned answer does not** -- the dangerous one, Otto states an old path
+         with total confidence. ✅ Already handled by the KB-path assertion (decision 4).
+         ⚠️ Residual, stated honestly: if the app changes and NOBODY updates the KB, both are wrong together
+         and the check passes. That is a pre-existing exposure -- Otto would be lying either way -- and
+         canned answers do not add it.
+      2. **A new feature ships with no canned answer** -- harmless (falls through to Otto) but the saving
+         erodes with nothing to flag it. ✅ **Handled by PROCESS, not code:** CLAUDE.md's ship check already
+         has a "anything user-facing" row naming tooltips + tutorials + Otto's KB. Canned answers join it,
+         and 2026-08-05 that row gained a dedicated line for **a number a user can see**, after the free-cap
+         change touched four files while being called a one-liner.
+      ✅ **AND A COUNTER IN THE METER:** app questions that reached Otto without matching. The number tells
+      you the gap is growing.
+      🔴 **COUNT ONLY, NEVER THE MESSAGE TEXT (Justin, 2026-08-05).** Logging the misses verbatim would be a
+      ready-made to-do list of what people ask that we do not cover -- and it is new collection of what users
+      type at an AI assistant, needing `privacy.html` updated first. The gap can be closed by reading the KB
+      instead of reading users. **Easy to add, awkward to explain later.**
+      ➡️ **ALL FIVE HOLES CLOSED. The spec is finished; next step is building the matcher.**
       **🔬 HOW IT GETS MEASURED:** three corpora as with 4.9, but the number that must be zero is
       **WRONG-ANSWER rate, not miss rate** -- with 177 candidates the risk is matching the wrong one.
       ⚠️ **Build the third corpus from the collisions the KB ITSELF documents:** PRs vs Records, create vs log

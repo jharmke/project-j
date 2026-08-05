@@ -31,6 +31,28 @@ const ALLOWED_MODELS = new Set(['claude-sonnet-4-6', 'claude-haiku-4-5']);
 
 const MAX_TOKENS_CEILING = 2000; // coach uses <= 1100, estimator 1500; hard ceiling on cost.
 
+// Cache lifetime per feature. Omit a feature to leave it on Anthropic's 5-minute default.
+// ⚠️ THE RIGHT VALUE DIFFERS BY FEATURE AND BY TRAFFIC, so this is not a global setting. A 1-hour write
+// costs 2x base input against 1.25x for 5 minutes, but survives twelve times as long -- so it only wins
+// when something READS it before it would have expired anyway.
+//   COACH -> 1h. Tips are spread across a morning (Home, then Sleep 20 minutes later, then a Day Summary),
+//   which is exactly the gap a 5-minute cache cannot bridge. Measured on real usage 2026-08-05: six coach
+//   calls cost $0.0263 on the 5-minute cache and would have been ~$0.0145 on 1 hour, because they wrote
+//   four separate copies instead of sharing one.
+//   ESTIMATOR -> default. Its 562-token prompt is under Sonnet 4.6's 1,024 minimum, so it never caches
+//   either way and the TTL is irrelevant.
+// ⚠️ OTTO AND HALO ARE DELIBERATELY LEFT ON 5 MINUTES FOR NOW (they set their own cache_control, not this
+// file). Otto is BURSTY -- two or three messages seconds apart, then hours of nothing -- so those messages
+// already share a 5-minute cache and a longer TTL buys nothing while paying 2x to write. Measured on the
+// same day: two back-to-back Otto messages cost $0.0357 at 5 minutes and $0.0556 at 1 hour, 56% worse.
+// It flips the moment two conversations land within an hour, which real traffic guarantees, so switch them
+// at launch. See PLAN.md 2.1.
+// ⚠️ Verified against the current Anthropic caching docs 2026-08-05: the 1-hour TTL needs NO beta header.
+// (SPEC_otto_routing.md carried an open question about that; this is the answer.)
+const CACHE_TTL: Record<string, '1h' | undefined> = {
+  coach: '1h',
+};
+
 // Per-user per-day safety caps (abuse backstop, not the product quota). Coach fires a few auto
 // tips a day; the estimator's real limit is client-side. These only catch runaway loops/abuse.
 const DAILY_CAPS: Record<string, number> = {
@@ -143,7 +165,15 @@ export const aiProxy = onCall(
         // Smart Coach's prompt was grown past 4,096 for this; the estimator's 562-token prompt is still
         // under Sonnet's 1,024 and simply will not cache, which costs nothing.
         ...(system !== undefined
-          ? { system: [{ type: 'text' as const, text: system, cache_control: { type: 'ephemeral' as const } }] }
+          ? {
+              system: [{
+                type: 'text' as const,
+                text: system,
+                cache_control: CACHE_TTL[feature]
+                  ? { type: 'ephemeral' as const, ttl: CACHE_TTL[feature] }
+                  : { type: 'ephemeral' as const },
+              }],
+            }
           : {}),
         ...(temperature !== undefined ? { temperature } : {}),
         messages,

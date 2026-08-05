@@ -463,8 +463,23 @@ is what made him think work had been dropped -- it had not, but he had no way to
       ⚠️ **PRECEDENT, and why it is the WRONG one here:** the crisis response already short-circuits on the
       CLIENT and never calls the server. That is correct for crisis (safety, and it must not consume a cap
       message). Canned answers are the opposite case on both counts.
-      **🕳️ REMAINING HOLES:** fixed text does not soften for Mindful; coverage decays silently as features
-      ship (harmless -- unmatched questions just fall through to Otto).
+      **✅ HOLE 4 CLOSED -- Mindful. Much smaller than it was flagged as, and Justin called it.**
+      Grepped what ACTUALLY changes in Mindful rather than assuming: only three things (the calorie stat
+      strip on Home + the Log header, the Macros card, and the calorie rows in Stats "At a Glance"), plus the
+      standing tone rule against deficit math and weight-loss prescriptions.
+      ✅ **ACHIEVEMENTS AND STREAKS ARE NOT MODE-DEPENDENT AT ALL**, which removes 99 of the 177 outright.
+      ➡️ **SO IT IS A VISIBILITY PROBLEM, NOT A TONE ONE, and it hits ~3-4 answers.** A navigation path or a
+      badge definition cannot violate the Mindful rules -- neither does maths and neither grades anything.
+      The clearest case is already in the KB's own index: *"Change calorie/macro/water/step/sleep goals:
+      Profile > Settings > Goals (macros also via the Home Macros card gear)"* -- for a Mindful user the
+      second half points at a card they do not have.
+      ❌ **NO THREE-VARIANT SET.** 531 answers to maintain, buying nothing. Written ONCE, neutrally; only the
+      three or four that name a Mindful-hidden surface branch on `styleMode`, using the mechanism already
+      agreed for the Tier 2 conditionals.
+      ✅ **MECHANICAL CHECK, same family as the KB-path assertion:** no canned answer may mention the Macros
+      card, the calorie strip or net calories without a mode branch.
+      **🕳️ REMAINING HOLE:** coverage decays silently as features ship (harmless in itself -- unmatched
+      questions fall through to Otto -- but the saving erodes with nothing to flag it).
       **🔬 HOW IT GETS MEASURED:** three corpora as with 4.9, but the number that must be zero is
       **WRONG-ANSWER rate, not miss rate** -- with 177 candidates the risk is matching the wrong one.
       ⚠️ **Build the third corpus from the collisions the KB ITSELF documents:** PRs vs Records, create vs log

@@ -271,7 +271,7 @@ of 1) hurts more than it looks.
 | Companion messages/month | 36 total across Otto AND Halo | SPEC_monetization's light-usage figure. It is ~6% of what the caps allow |
 | Otto per message | ⚠️ **$0.00412 MEASURED** (warm cache), was assumed $0.0027 | Real API call, real prompt, Anthropic's own token counts |
 | Halo per message | ⚠️ **$0.0032 MEASURED**, was assumed $0.0025 | 8 real calls |
-| Smart Coach | $0.046/user/month | THE PLAN item O |
+| ~~Smart Coach~~ | 🔴 **$0.046 IS WRONG -- MEASURED SHAPE IS ~$0.37/user/month (8x)** | It assumed weekly usage. Tips fire on SCREEN OPEN; the Home tab alone fires two a day. See `PLAN.md` section 1 |
 | Estimates/month | 2 @ ~$0.02 | Light-usage figure; free cap is 5/month |
 | Supporter usage | 2x a free user | Judgement. They have 3x the caps but are still one person |
 
@@ -448,7 +448,7 @@ churn, which is a cost this model does not capture. Justin's call, 2026-08-04.
 | **Halo: shorter replies** | Same chat, same fix, never tested. No reason it behaves differently to Otto's 48% |
 | **Halo: its REAL per-message cost** | ⚠️ This model costs Halo at $0.0025, which is INPUT ONLY -- the figure in SPEC_monetization excludes its reply. If Halo answers at Otto's length its true cost is nearer $0.0036 and **every table here undercounts Halo** |
 | ~~**Halo: cache splitting**~~ | ✅ **ANSWERED 2026-08-04 EVENING. There is no cache to split -- it has NEVER cached** (2,465 tokens, under Haiku's 4,096 minimum). **And the fix is to make the prompt BIGGER, not smaller** -- padding past 4,096 makes it cacheable and takes it from $0.0032 to ~$0.0007. See section 2 at the top |
-| **Smart Coach rulebook** (item O) | 11,600 tokens sent UNCACHED on every call. The biggest unoptimised prompt in the app |
+| ~~**Smart Coach rulebook** (item O)~~ | ✅ **MEASURED 2026-08-05. The rulebook is 3,109 tokens, NOT 11,600** -- the old figure was the size of the whole `coachAI.ts` file, not the constant inside it. Full system prompt is 3,520, which sits UNDER Haiku's 4,096 cache minimum, so it has never cached. **The fix is to GROW it past 4,096, not shrink it.** Decisions in `PLAN.md` section 1 |
 | **Conversation history** | Every message re-sends the previous turns, so a long chat pays for itself again each time. A limit exists (`MAX_HISTORY_TURNS`) but nobody has measured what it costs or whether it is tuned right. Invisible to users |
 | **Which prompt rules Otto ignores** | He breaks at least two (dashes, and the length rule) -- found by reading replies, not by testing. The rest of that block is assumption. Quality AND cost |
 

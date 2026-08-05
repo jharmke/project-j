@@ -1397,6 +1397,14 @@ actually reads every session.
 ---
 
 ## ⏭️ NEXT UP (THE single ranked work queue -- READ THIS TOP-DOWN whenever Justin asks "what's next")
+
+🔴 **READ `PLAN.md` FIRST, BEFORE THIS SECTION. Created 2026-08-05.** It is the single ranked queue for the
+AI-cost work and it holds the STATUS of every item A-O as well. This section stays for everything outside
+that push, but where the two disagree, **`PLAN.md` wins** -- it was written to end exactly the problem of
+the same fact living in four files with three of them stale.
+⚠️ **The rule that makes it work: every fact lives in ONE file, everywhere else gets a pointer.** If you
+find yourself copying a number out of `PLAN.md` into another doc, stop -- that is how this broke last time.
+
 Ranking IS the priority: [NOW] items are committed, do them first. Below them: active tracks, then QUICK
 WINS. Items graduate UP here from the backlog sections so good ideas don't rot down there. When something
 ships it leaves this list. Always offer at least one QUICK WIN when Justin asks what's next, and pull a
@@ -2389,7 +2397,30 @@ are separate pre-submission checklists, NOT part of this menu.
      the splash gate AND the priority.
      ⏸️ Discussion not finished -- picked up when this item is reached.
 
-  **O. SMART COACH COST PASS** -- NEW 2026-07-31. Found while pricing the other AI features for item H.
+  **O. SMART COACH COST PASS** -- 🔴 **SUPERSEDED 2026-08-05. THE DECISIONS NOW LIVE IN `PLAN.md` SECTION 1.
+     EVERYTHING BELOW THIS LINE IS KEPT ONLY TO SHOW WHAT WAS WRONG. DO NOT ACT ON IT.**
+     ⚠️ **THE RULEBOOK IS 3,109 TOKENS, NOT 11,600.** The "46,383 chars" below is the size of the whole
+     `coachAI.ts` FILE (49,859 chars), not the RULEBOOK constant inside it (12,032 chars). One mis-measure,
+     and it pointed the fix in exactly the wrong direction for a week.
+     ⚠️ **~4.6 cents/user/month was 5-8x too low. Measured shape: ~37 cents.** It assumed weekly usage. The
+     tips actually fire on SCREEN OPEN: the Home tab alone fires TWO (home tip + sleep tip), every day, with
+     no user action. 2-4 calls/day for any daily-active user.
+     ⚠️ **"THE LEVER IS SHRINKING THE RULEBOOK" IS BACKWARDS.** At 3,520 tokens the prompt sits UNDER Haiku's
+     4,096-token cache minimum, so it can never cache. Shrinking it keeps it uncacheable forever.
+     **It must GROW past 4,096** -- send all three voice-example sets instead of one (3,520 -> 4,342) and it
+     caches for the first time, at 10% of the price, with one shared entry instead of three.
+     ⚠️ **"CACHING IS NOT THE FIRST LEVER" was inherited from the 1h-TTL pin, which has itself been reversed**
+     (see SPEC_cost_model.md section 1). Caching IS the first lever here.
+     ⚠️ **"Halo already has caching switched on" IS FALSE.** Halo's prompt is 2,465 tokens, also under the
+     4,096 minimum -- it has never cached once. (The note below about the plans catalog varying inside the
+     cached block is still worth keeping: it becomes a real problem the moment Halo is padded and DOES cache.)
+     ⚠️ **"Parked until the Otto work (B + H) is finished" no longer holds.** H is parked, and Smart Coach is
+     the single biggest AI cost in the app.
+     ✅ **The AI Meal Estimator note below is still a live Justin decision (2026-07-31) and has NOT been
+     overruled** -- but two things have changed since: it is the only Sonnet call left (3x Haiku on both
+     input and output), and its 5/month cap is CLIENT-side, so the "bounded by its own cap" reasoning is
+     weaker than stated. See `PLAN.md` 4.1 and 4.2. Revisit the decision explicitly; do not quietly reverse it.
+     ⬇️⬇️ ORIGINAL TEXT, RETAINED AS A RECORD OF THE ERROR ⬇️⬇️
      ⚠️ **`utils/coachAI.ts`'s RULEBOOK is 46,383 chars (~11,600 tokens) sent as the system prompt on EVERY
      call, with NO caching at all** (`grep cache_control` = 0 hits in coachAI.ts, aiMealEstimator.ts and
      aiProxy.ts). Otto's 18,400 tokens are at least cached; these are paid in full every time. At the cost

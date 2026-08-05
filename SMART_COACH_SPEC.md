@@ -32,6 +32,12 @@ Lesson: the old library was not wrong to exist, it was too shallow (one signal e
 
 Runs once per day per user, cached (engine already computes once per day). Cost is a fraction of a cent per tip, pennies per month per user. Offline or API failure falls back to a template.
 
+🔴 **THAT LINE IS WRONG ON ALL THREE COUNTS -- MEASURED 2026-08-05. Cost decisions live in `PLAN.md` section 1; do not restate numbers here.**
+- **NOT "once per day per user."** It is once per day per SURFACE, and there are seven. The Home tab alone fires TWO (home tip + sleep tip) on open, with no user action. A daily-active user triggers 2-4 calls a day.
+- **NOT "cached."** The system prompt is 3,520 tokens, under Haiku's 4,096-token cache minimum, so it has never cached once. Every call pays full price for the identical rulebook.
+- **NOT "pennies per month."** Measured shape is ~37 cents per active user per month, which makes Smart Coach the single largest AI cost in the app -- larger than Otto and Halo combined.
+✅ The last sentence IS true and is load-bearing: the template fallback is real, well-written app-voice text. On low-data scenarios it says exactly what the AI would say, which is why `PLAN.md` 1.2 skips the AI there entirely.
+
 ---
 
 ## Foundational principles (the AI's thinking rests on these)

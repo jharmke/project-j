@@ -377,9 +377,58 @@ is what made him think work had been dropped -- it had not, but he had no way to
 - [ ] **4.7** A second Otto reply-shortening pass, and whether he is wordier on some topics than others.
       ⚠️ Once the prompt shrinks, **output is ~70% of the remaining cost**, so this gets MORE valuable, not
       less.
-- [ ] **4.8** Canned answers for fixed-answer app questions. Zero cost, faster, always correct.
-      ⚠️ Needs a matcher, and matchers fail badly in the wild -- **only answer when very sure; anything
-      doubtful goes to Otto.**
+- [ ] **4.8 SPECCED IN FULL 2026-08-05, NOTHING BUILT.** Canned answers for fixed-answer app questions:
+      no API call at all, so the reply costs **zero**, not less. It deflects the EXPENSIVE messages -- an app
+      question is a Support-route message at $0.0054.
+      **🔢 THE INVENTORY (read all 972 lines of `assistantAppKnowledge.ts` to build it):**
+      | | count |
+      |---|---:|
+      | navigation how-tos (the KB's own "COMMON HOW DO I" index is already question -> one answer) | 43 |
+      | achievement definitions ("what is Well Worn" = 50 step-goal days), 13 families | 99 |
+      | conceptual fixed answers (Program vs Routine, Net Carbs, why BURNED is high, a night files under the day you woke, where Apple Health permissions really live, ...) | ~25 |
+      | money + policy (price, the five tip amounts, restore purchases, what happens if you cancel, faith is never paywalled) | ~10 |
+      | **TIER 1 total -- identical for every user** | **~177** |
+      ✅ **PLUS PLEASANTRIES**, which nobody had counted: "thanks", "ok", "cool", "hey" each cost a full
+      $0.0054 today. Probably more frequent than any single how-to and trivially safe to match.
+      **TIER 2 -- fixed but conditional. ALL BUT THREE ARE CANNABLE**, because the server already has
+      `supporter`, `faithTier` AND `styleMode` at the point the matcher runs (verified in `appCompanion.ts`):
+      branch on membership (AI allowances, the 8 creation limits, custom macros/nutrition, Reports/EvR, "what
+      does the plan add"), on faith tier (anything pointing at the Faith tab or Halo), on coaching mode
+      (Macros card + calorie strip, hidden in Mindful).
+      ❌ **THREE ARE NOT CANNABLE -- the server does not know the fact:** whether they own a wearable, their
+      Home layout ("where's my Weight card" -- hidden by default), and their meal-slot names (accounts before
+      2026-08-03 have "Morning"). Those go to Otto, who has the snapshot.
+      **✅ DECIDED (Justin, 2026-08-05):**
+      1. **Canned answers COUNT against the daily cap.** Deliberate: hitting the wall is what creates pitch
+         moments, and conversion moves the needle harder than cost does. I argued the other way; his is better.
+      2. **Free AND Supporters.** A Supporter's app question costs the same, a canned reply is INSTANT, and
+         free-only would give paying users the slower answer to "how do I log a recipe".
+      3. **Written in OTTO'S VOICE, not pasted from the KB.** The KB lines are terse index entries and would
+         read like a vending machine directly after a warm AI reply. Justin's point, and it is the seam that
+         would make this feel cheap.
+      4. 🔴 **AND THEREFORE: AN AUTOMATED STALENESS CHECK.** Voicing them by hand re-creates the problem the
+         KB-generation idea was meant to solve. So each canned answer asserts that its navigation path still
+         appears VERBATIM in `assistantAppKnowledge.ts`; move a feature and the check fails and names the
+         answer that is now lying. **This is the whole reason the free-cap change took four edits today --
+         mechanise it or it will happen again.**
+      5. **Fires only on a SELF-CONTAINED message**, judged per message with no conversation-position rules.
+         ⚠️ An earlier draft said "never two canned answers in a row"; Justin killed it with "how do I log
+         food?" / "how do I log water?" -- two perfectly good standalone questions. Block only on real
+         evidence of context-dependence: a connector opener ("and", "what about", "ok so") or a bare pronoun
+         with no noun ("how do I edit it").
+      **➡️ EXPECTED, and stated as a range because the deflection rate cannot be known before launch:**
+      catching half to two-thirds of app questions is **~17-26% off a free user's bill**, break-even retention
+      **4.5 -> ~3.3-3.7 months**, roughly **$5,000-7,000/yr at 25,000 installs**.
+      ⚠️ **A MISS COSTS NOTHING EXTRA -- it just saves nothing.** Correcting my own sloppy phrasing: a miss
+      falls back to exactly today's behaviour. It is not cheap, it is the whole prize on that message.
+      **🕳️ OPEN HOLES, still to work through:** two-part questions ("how do I log a recipe and what's a good
+      protein target" -- must go to Otto whole); a canned reply must be written into conversation history or
+      Otto loses the thread on the next turn; fixed text does not soften for Mindful; coverage decays silently
+      as features ship (harmless, falls through).
+      **🔬 HOW IT GETS MEASURED:** three corpora as with 4.9, but the number that must be zero is
+      **WRONG-ANSWER rate, not miss rate** -- with 177 candidates the risk is matching the wrong one.
+      ⚠️ **Build the third corpus from the collisions the KB ITSELF documents:** PRs vs Records, create vs log
+      a recipe, Program vs Routine, Repeat Yesterday vs Find a Meal. Those pairs are where a matcher dies.
 - [x] **4.9 ✅ BUILT + DEPLOYED + DEVICE-VERIFIED 2026-08-05.** `ottoCoachRouting.ts` answers one yes/no --
       can this be answered without the app manual? -- and `appCompanion.ts` sends the manual only when the
       answer is no. **Built as a STACK, Justin's design:** block 1 is the ~4,400-token rules half, identical
@@ -534,6 +583,7 @@ annual figure at a few scales before calling something too small to bother with.
 |---|---|---|---|
 | **Combine Home's two Smart Coach calls into one** (was 1.5) | $0.013/user/mo -- **$390/yr at 2,500 actives, $1,560 at 10k, $7,800 at 50k** | One call would have to produce TWO tips for two different surfaces: needs new output parsing, both tips fail together if parsing breaks, and a model doing two jobs at once tends to do both worse. Not worth risking the two flagship tips at today's size. | **Above ~10,000 active users**, or if the two Home tips are ever rewritten anyway |
 | **Batch API (50% off) for Smart Coach** | ~$0.05/user/mo | The surfaces where batching is safe (weekly, monthly) are worth ~$0.003/mo; the ones worth real money are daily. **Justin's deciding reason: first open is exactly when someone checks their recovery and sleep read, and batching fails at that moment.** | If a genuinely non-interactive AI feature appears, or if tips ever stop being read on first open |
+| 🆕 **TRIM THE APP MANUAL ITSELF once canned answers are live** (Justin's idea, 2026-08-05) | Unknown -- potentially large, it is 22,049 of Otto's 26,474 tokens | **Cannot be done yet, and the reason is the safety story.** The manual is the FALLBACK: canned answers only fire when the matcher is certain, and matchers miss 8-20% of unseen phrasing however carefully built (measured, 4.9). Trim it and every miss stops costing a fraction of a cent and starts being "Otto does not know". ⚠️ **And it cannot be half-removed** -- there is no state where he knows a feature exists but not how to reach it; the path is in the text or it is not. | **Once canned answers have shipped AND the meter shows how often the manual is still genuinely reached.** If that number collapses, this becomes a real conversation backed by data instead of a hunch. Do not attempt it on a hunch. |
 
 ## ❌ DECIDED AGAINST -- do not re-propose without new evidence
 
@@ -547,6 +597,7 @@ annual figure at a few scales before calling something too small to bother with.
 | Cutting Smart Coach surfaces / templates-for-free-users | Unnecessary once 1.1-1.5 land. |
 | **Batch API (50% off) for Smart Coach** | ⏸️ **Parked, not ruled out.** The surfaces where it is safe (weekly, monthly) are worth ~$0.003/mo; the surfaces worth real money are daily. **Justin's deciding reason: first open is exactly when someone checks their recovery and sleep read, and batching fails at that moment.** |
 | Shortening Smart Coach replies | Rulebook already says 2-3 sentences and requires connecting two signals. One sentence cannot. No fat. |
+| **Answering Bible verse lookups from local data instead of Halo** | ❌ **DECLINED 2026-08-05 on cost, kept here because the idea is sound and will come back.** The whole Bible ships in the app (`data/bible-web.ts`), so "what does John 3:16 say" is a local lookup needing no AI. **But it only ever covers reciting the text** -- what it MEANS, how it applies, anything at all interpretive, is Halo's and always will be. Halo is the cheapest AI in the app at $0.00067/message, so deflecting even a fifth of her traffic saves **~$144/yr at 25,000 installs**. Rounding error. ➡️ **The real argument is ACCURACY, not money** -- a lookup returns the actual text where a model can misquote scripture, which matters more in a faith app than most. Revisit as a correctness feature if misquoting is ever observed. |
 | **Cutting Otto's 12-message history cap** | ❌ **MEASURED AND REJECTED 2026-08-05, see 4.5.** History is 38% of full-price input but **5% of the bill**. A free user on the 5/day cap tops out at 9 messages and never reaches 12, so trimming bills Supporters almost exclusively. And it backfires: the cold write is per-conversation, so shorter history means fewer messages to spread it across. **Do not re-propose without new evidence.** |
 
 ---

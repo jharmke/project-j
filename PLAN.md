@@ -97,7 +97,17 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       ⚠️ **Fails open** (`!== false`): a wasted call costs a fraction of a cent, a missing tip is a broken
       feature. The Sleep screen's own refreshes are deliberately NOT gated -- being on that screen IS the
       visibility check.
-- [ ] **1.7 🆕 EvR REPORTS VOICE CARDS FREE USERS CANNOT READ.** (Justin found this too, 2026-08-05.)
+- [x] **1.7 ✅ BUILT 2026-08-05.** EvR now voices only the cards the user can actually read.
+      ✅ **VERIFIED NOTHING VISIBLE CHANGES for a free user.** Everything crisp on a locked card is
+      deterministic: the topic chip is `lockedTopic(c.id)`, a hardcoded lookup by card ID; the tone accent
+      comes from `c.positive`/`c.tone`; the lock icon and "Become a Supporter" are static. The only
+      AI-written fields (`claim`, `lever`) render UNDER a full-card `BlurView` at intensity 26. `insight` is
+      never passed to `LockedInsightCard` at all. Confirmed this is the only render path for report cards.
+      ⚠️ **`isPro` ADDED TO THE EFFECT DEPS** (`[id, isTutorialMode, isPro]`). It was missing, and with
+      voicing now scoped to membership that was the same race as 1.3: a Supporter whose membership had not
+      resolved when the screen opened would get card 0 voiced and no second pass. Re-running is idempotent.
+      ⚠️ Pre-existing type errors at lines 184-278 of that file are untouched and unrelated.
+      (Original finding follows.)
       `voiceDiagnosticCards(baseCards, mode)` in `diagnostic-report-view.tsx` is handed EVERY card with no
       membership check. But at line ~942, `!isTutorialMode && !isPro && i > 0` means **a free user sees
       exactly ONE card**; the rest render frosted with only a topic chip. So we pay the AI to write insight

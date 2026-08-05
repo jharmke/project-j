@@ -730,18 +730,32 @@ export default function DiagnosticReportViewScreen() {
         // card carries an `insight` line.
         const baseCards = found.cards ?? [];
         setVoicedCards(baseCards);
-        const alreadyVoiced = baseCards.some(c => !!c.insight);
-        if (baseCards.length > 0 && !alreadyVoiced) {
+        // ⚠️ ONLY VOICE THE CARDS THIS USER CAN ACTUALLY READ (PLAN.md 1.7). A free user sees card 0 and
+        // nothing else -- the rest render through LockedInsightCard, whose claim and lever sit UNDER a
+        // full-card BlurView. Voicing them was paying the AI to rewrite text behind frosted glass, roughly
+        // 78% of the call. Everything crisp on a locked card (the topic chip, the lock, the tone accent,
+        // "Become a Supporter") is deterministic and is untouched by this. (Justin found this.)
+        const visibleCount = isPro ? baseCards.length : 1;
+        const toVoice = baseCards.slice(0, visibleCount);
+        // ⚠️ JUDGE "ALREADY VOICED" ON THE VISIBLE SUBSET, NOT THE WHOLE REPORT. The old test was
+        // `baseCards.some(...)`, which with a narrowed voicing set would flag the report done after card 0
+        // and leave a user who LATER UPGRADES staring at permanently blank cards. Testing the visible slice
+        // makes it self-healing: on upgrade the newly-visible cards have no insight, so they voice on the
+        // next open.
+        const needsVoicing = toVoice.some(c => !c.insight);
+        if (toVoice.length > 0 && needsVoicing) {
           // First view: show skeletons while voicing, then reveal voiced in one shot. On any
           // failure/timeout, finally() clears the flag so the deterministic baseCards reveal.
           setCardsVoicing(true);
-          voiceDiagnosticCards(baseCards, mode)
+          voiceDiagnosticCards(toVoice, mode)
             .then(voiced => {
-              setVoicedCards(voiced);
+              // Merge back over the untouched tail so the locked cards keep their deterministic text.
+              const merged = [...voiced, ...baseCards.slice(visibleCount)];
+              setVoicedCards(merged);
               // Only persist if voicing actually produced insight (real AI pass, not the
               // unchanged fallback) so a timeout does not lock in un-voiced cards.
               if (voiced.some(c => !!c.insight)) {
-                saveReport({ ...found, cards: voiced }).catch(() => {});
+                saveReport({ ...found, cards: merged }).catch(() => {});
               }
             })
             .catch(() => {})
@@ -775,7 +789,12 @@ export default function DiagnosticReportViewScreen() {
         }
       };
       load();
-    }, [id, isTutorialMode])
+    // ⚠️ isPro IS IN HERE ON PURPOSE (PLAN.md 1.7). Voicing is now scoped to the cards the user can read,
+    // so this effect has to re-run when membership resolves or changes. Without it, a Supporter whose
+    // membership had not resolved when the screen opened would get card 0 voiced and no second pass, and an
+    // upgrade would never fill in the rest. Re-running is idempotent: it reloads the same report and the
+    // needsVoicing test skips anything already done.
+    }, [id, isTutorialMode, isPro])
   );
 
   const handleDelete = () => {

@@ -421,10 +421,29 @@ is what made him think work had been dropped -- it had not, but he had no way to
       **4.5 -> ~3.3-3.7 months**, roughly **$5,000-7,000/yr at 25,000 installs**.
       ⚠️ **A MISS COSTS NOTHING EXTRA -- it just saves nothing.** Correcting my own sloppy phrasing: a miss
       falls back to exactly today's behaviour. It is not cheap, it is the whole prize on that message.
-      **🕳️ OPEN HOLES, still to work through:** two-part questions ("how do I log a recipe and what's a good
-      protein target" -- must go to Otto whole); a canned reply must be written into conversation history or
-      Otto loses the thread on the next turn; fixed text does not soften for Mindful; coverage decays silently
-      as features ship (harmless, falls through).
+      **✅ HOLE 1 CLOSED -- follow-ups.** Fires only on a SELF-CONTAINED message, judged per message with no
+      conversation-position rules (see decision 5 above).
+      **✅ HOLE 2 CLOSED -- two-part questions.**
+      🔴 **THE MATCH MUST EXPLAIN THE WHOLE MESSAGE, NOT PART OF IT.** Not "does this contain a question I
+      recognise" -- that is substring matching and it is how you end up answering a third of what somebody
+      asked. After matching, if any substance is left unexplained, bail to Otto.
+      - Both parts canned -> **answer both, stitched into ONE reply** ("Two things: ..."). Zero cost.
+      - **LIMIT 2.** Three stitched answers start reading like a list rather than a person, and three-part
+        questions are rare. Three or more -> Otto.
+      - Mixed (one canned, one coaching) -> **Otto answers the WHOLE thing.** Costs $0.0054 rather than the
+        $0.0032 the coaching half alone would have, because the app words route it to Support. **That is the
+        right way to lose $0.002** -- one reply that answers everything beats two that each answer half.
+      - **A stitched reply counts as ONE message.** One reply, one message. The cap rule stays one rule.
+      ❌ **NEVER A "PLEASE ASK ONE AT A TIME" REPLY.** Justin floated it (free users get a nudge instead of
+      being charged) and then killed it himself: it is the app asking the user to work around its own
+      limitation at the exact moment they are engaged enough to ask two things, and it would fire on genuine
+      coaching two-parters Otto handles fine today. ⚠️ **THE LIMIT IS INTERNAL AND INVISIBLE.** Over it, Otto
+      silently takes over and answers everything. Nothing is ever ignored and nobody is ever asked to rephrase.
+      ✅ **ONE TEST SERVES BOTH OUTCOMES:** "is every part of this message explained by a canned answer?"
+      All explained -> stitch and serve. Any part unexplained -> Otto.
+      **🕳️ REMAINING HOLES:** a canned reply must be written into conversation history or Otto loses the
+      thread on the next turn; fixed text does not soften for Mindful; coverage decays silently as features
+      ship (harmless, falls through).
       **🔬 HOW IT GETS MEASURED:** three corpora as with 4.9, but the number that must be zero is
       **WRONG-ANSWER rate, not miss rate** -- with 177 candidates the risk is matching the wrong one.
       ⚠️ **Build the third corpus from the collisions the KB ITSELF documents:** PRs vs Records, create vs log

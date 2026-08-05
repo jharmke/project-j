@@ -133,7 +133,18 @@ export const aiProxy = onCall(
       const response = await client.messages.create({
         model,
         max_tokens: maxTokens,
-        ...(system !== undefined ? { system } : {}),
+        // ⚠️ THE SYSTEM PROMPT IS SENT AS A BLOCK SO IT CAN CARRY A CACHE MARKER (PLAN.md 1.1).
+        // The client sends `system` as a plain string and is unchanged; the marker is added HERE so every
+        // feature behind this proxy gets it without touching client code.
+        // ⚠️ ALWAYS ATTACHING IT IS DELIBERATE AND SAFE. A prefix under the model's minimum simply does not
+        // cache -- no error, no charge, `cache_creation_input_tokens` comes back 0. So there is no case to
+        // detect and nothing to gate on. ⚠️ AND THE MINIMUM DIFFERS BY MODEL, which is exactly the sort of
+        // thing that gets assumed wrong: Haiku 4.5 needs 4,096, Sonnet 4.6 needs 1,024.
+        // Smart Coach's prompt was grown past 4,096 for this; the estimator's 562-token prompt is still
+        // under Sonnet's 1,024 and simply will not cache, which costs nothing.
+        ...(system !== undefined
+          ? { system: [{ type: 'text' as const, text: system, cache_control: { type: 'ephemeral' as const } }] }
+          : {}),
         ...(temperature !== undefined ? { temperature } : {}),
         messages,
       });

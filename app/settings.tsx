@@ -3632,16 +3632,18 @@ export default function SettingsScreen() {
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
               triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-              Alert.alert('Reset Coach Tip Cache', 'Clears all AI coaching tips (home card, Day Summary, and all EvR window tips) so they regenerate fresh. Your logged data is not affected.', [
+              Alert.alert('Reset Coach Tip Cache', 'Clears every AI coaching tip (home, sleep, recovery, Day Summary, Weekly, Monthly and all EvR windows) so they regenerate fresh. Your logged data is not affected.', [
                 { text: 'Cancel', style: 'cancel' },
                 { text: 'Reset', style: 'destructive', onPress: async () => {
                   triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
                   const allKeys = await AsyncStorage.getAllKeys();
+                  // ⚠️ PREFIX MATCH, NOT A HAND-MAINTAINED LIST. The old version listed the surfaces one by
+                  // one and had silently fallen three behind: pj_coach_tip_sleep, pj_coach_tip_recovery and
+                  // pj_coach_tip_monthly_* were never cleared, so "reset" left those tips stale and the tool
+                  // looked broken. Every coach cache key starts with pj_coach_tip, so match on that and a new
+                  // surface is covered automatically. (pj_coach_last_rule_* is separate and still needed.)
                   const coachKeys = allKeys.filter(k =>
-                    k === 'pj_coach_tip' ||
-                    k.startsWith('pj_coach_tip_day_') ||
-                    k.startsWith('pj_coach_tip_evr_') ||
-                    k.startsWith('pj_coach_tip_weekly_') ||
+                    k.startsWith('pj_coach_tip') ||
                     k.startsWith('pj_coach_last_rule_')
                   );
                   if (coachKeys.length > 0) await AsyncStorage.multiRemove(coachKeys);

@@ -1402,6 +1402,65 @@ WINS. Items graduate UP here from the backlog sections so good ideas don't rot d
 ships it leaves this list. Always offer at least one QUICK WIN when Justin asks what's next, and pull a
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
+- 🔴 **[NOW] [NEW 2026-08-04 EVENING] THE COST WORK. Full findings and every table live in
+  SPEC_cost_model.md, sections 1-11 at the TOP of that file. Read those before touching any of this.**
+  Nothing below is built. Ranked; do them in this order.
+  ➡️ **THREE THINGS THE DOCS HAD BACKWARDS, all measured, all now corrected in the spec:**
+  • 🔴 **THE 1-HOUR CACHE TTL WAS LOGGED AS REJECTED AND IT IS THE BIGGEST WIN IN THE APP.** The note said
+    "at current traffic it costs MORE." Backwards: at low traffic the 5-minute cache expires BETWEEN
+    messages, so you pay the write price on nearly every call. Measured **$0.0297 -> $0.0042 per message at
+    100 msgs/day, 7x**, and identical at high volume. **One line of code, no failure mode.**
+  • 🔴 **HALO'S FIX IS TO MAKE ITS PROMPT BIGGER.** 2,465 tokens is under Haiku's 4,096 cache minimum, so it
+    has never cached and never will. Padding it PAST 4,096 makes it cacheable: **$0.0032 -> ~$0.0007, 6x.**
+    The safety/theology/crisis blocks are off-limits to CUT, so growing them is the allowed direction.
+  • 🔴 **ROUTING (ITEM H) DOES NOT WORK AS BUILT -- PARK IT.** Measured over 566 realistic messages with the
+    real `routeChapters()`: **it falls back 73% of the time and sends the entire manual.** It gave up on
+    "did i eat too much today", "log my lunch for me", "macros for my breakfast". **Same failure as the
+    keyword detectors** -- see [[detectors-are-brittle]]. It also shatters one shared cache into **57
+    entries**, making it MORE expensive than doing nothing at normal volume. The "~28% per message" figure
+    was never real. Revisit above ~10k msgs/day only.
+  **BUILD ORDER:**
+  1. **1-hour cache TTL** on Otto's cached block. One line.
+  2. **Faith cache fix** -- move the faith-tier line out of `buildCompanionStable` so three cached copies
+     collapse into one that every user shares.
+  3. **Pad Halo's prompt past 4,096 tokens** so it caches at all.
+  4. ✅ **DECIDED: free cap 10/day -> 5/day** (Otto and Halo). A monthly 100-message pool was proposed and
+     Justin killed it, correctly: a daily cap gives thirty pitch moments a month and they come back
+     tomorrow; a monthly pool gives one wall and three dead weeks. Worst-case free user drops
+     **$26.74 -> $9.61/year** against a Supporter worth $101.88.
+     🟡 OPEN: does a zero-cost canned answer count against the cap (Justin leans YES); counter wording and
+     placement deliberately NOT settled, needs the screen in front of us.
+  5. **Canned answers** for fixed-answer app questions. Zero cost, instant, always right.
+     ⚠️ Match conservatively -- anything doubtful goes to Otto. A wrong canned answer is worse than paying.
+  6. 🆕 **SPLIT OTTO IN TWO -- the lead idea.** Competitor AI companions are cheap because their prompts are
+     ~2,000 tokens; ours is 26,474, because **Otto is also the help desk**. The coaching half is nearly free
+     (Claude already knows nutrition); you only pay to teach him YOUR APP. So: **Coach Otto** (no manual,
+     ~5,000 tokens) and **Support Otto** (full manual, as today). This is routing reduced to ONE yes/no
+     question -- far more reliable than a 15-way choice, and **2 cache entries instead of 57**.
+     ⚠️ **SHIP IT LOGGING-ONLY FIRST.** Both halves keep the full manual so nothing changes and nothing
+     breaks; log the classification; two weeks of real users gives the real mix, then flip the coach half.
+     ⚠️ **DO NOT "measure" the mix with generated questions -- it is CIRCULAR and Justin caught it.** The
+     detector audits were valid because they tested real code against any mix. Here the MIX IS THE ANSWER,
+     so inventing the questions is marking your own homework. This rule applies to any future "what will
+     users do" question.
+  7. **Batch API (50% off) for anything that need not be instant** -- Smart Tips, weekly/monthly summaries,
+     the diagnostic report. ⚠️ Check which of those actually call the AI before promising a number.
+  8. **Audit Otto's own 4,425 tokens of standing rules.** Never once reviewed. (The manual itself IS tight --
+     verified by reading it. Do not re-propose "rewrite it denser".)
+  ➡️ **THE DIALS -- how to launch without gambling.** Move every expensive number into a Firestore settings
+  doc the Cloud Function reads per call: cap, model, whether the manual is attached, canned answers on/off,
+  reply length, Halo's prompt/cache. **Five of those six are INVISIBLE to the user; only the cap is visible.**
+  🔴 **RULE: tighten the invisible dials freely, never tighten the visible one.** Launch at 5 and plan to
+  RAISE ("we've increased your daily messages" is a great thing to send). If the cap ever must tighten,
+  GRANDFATHER existing users. Never print a cap number in marketing copy.
+  ➡️ **HEADLINE: break-even conversion ~2.8% -> ~1.3%.** AI as a share of revenue 92% -> 43% at 1 msg/day.
+  🔴 **BUT USAGE IS STILL THE BOSS.** At 3% conversion the app affords ~**2 messages per active user per
+  day**. At 3/day everything loses money; at 5/day nothing works under 8% conversion. Engineering cannot fix
+  that -- only the cap can.
+  ❌ **KILLED, DO NOT RE-PROPOSE:** a smaller "free edition" of the manual (the app is mostly free -- the
+  gating is INSIDE features, not whole chapters, worth ~15% not 40-70%); rewriting the manual denser (it is
+  already tight); switching AI provider (cost is prompt-size dominated, not rate dominated); a 100/month
+  pool; **removing Otto from free after a trial week -- Justin: "that is drastic." DEAD.**
 - 🔴 **[NEW 2026-08-04] TWO RULES WERE BROKEN SHIPPING ITEMS L AND M. Found by re-reading the session, not
   by anything catching it.**
   • **ITEM M SHIPPED A WHOLE NEW PROFILE SECTION WITH NO TOOLTIP AND NO TUTORIAL.** CLAUDE.md requires

@@ -1,7 +1,35 @@
 # SPEC: Otto knowledge routing (THE PLAN item H)
 
-Status: **DESIGN AGREED 2026-07-31, NOTHING BUILT.** This is the spec the roadmap said item H needed
-before any code. Written after a full pass over the real prompt, the real knowledge base and the real
+Status: 🔴 **BUILT, MEASURED, AND PARKED 2026-08-04 EVENING. DO NOT WIRE IT.** See the block below before
+reading anything else in this file. The design reasoning here is still worth keeping; the conclusion is not.
+
+## 🔴 MEASURED 2026-08-04: THE ROUTER DOES NOT WORK AS BUILT. TWO INDEPENDENT REASONS.
+
+Run over **566 realistic messages** with the real `routeChapters()` (`scratchpad/model3.js`):
+
+1. **IT FALLS BACK 73% OF THE TIME AND SENDS THE ENTIRE MANUAL.** The confidence gate wants two
+   strongly-owned terms and real messages do not have them. It gave up on *"did i eat too much today"*,
+   *"log my lunch for me"*, *"macros for my breakfast"*, *"did i hit my protein goal"* -- unmistakable food
+   questions. ⚠️ **This is the exact failure mode as the keyword detectors**: tuned against clean phrasing,
+   collapses against how people actually type. See [[detectors-are-brittle]].
+   ✅ When it DOES route it is excellent: **1.7 chapters, 10,704 tokens, 60% smaller.** The mechanism is
+   sound; the gate is not.
+2. ⚠️ **IT SHATTERS ONE SHARED CACHE INTO 57 ENTRIES.** Today every user on the app shares one cached block
+   and keeps it warm for each other. Routing gives each chapter combination its own entry, each with a
+   fraction of the traffic, so they go cold and get REWRITTEN at 1.25x. **On the 5-minute cache this makes
+   routing more expensive than doing nothing at normal volume.** Even with the fallback fixed and a 1-hour
+   cache it only beats no-router above ~10,000 messages/day.
+
+➡️ **The "~28% off per message" quoted in SPEC_cost_model.md was never real.** Park this; it is a scale
+optimisation, not a launch one.
+➡️ **THE REPLACEMENT IS IN SPEC_cost_model.md SECTION 7: split Otto into Coach (no manual) and Support
+(full manual).** Same idea, reduced to ONE yes/no question instead of a 15-way choice -- far more reliable,
+and **2 cache entries instead of 57**, which is what makes the fragmentation problem disappear.
+
+---
+
+Status (original): **DESIGN AGREED 2026-07-31, NOTHING BUILT.** This is the spec the roadmap said item H
+needed before any code. Written after a full pass over the real prompt, the real knowledge base and the real
 Anthropic caching docs, not from the sketch in SPEC_otto.md.
 
 ⚠️ Read `SPEC_otto.md` first. Item A decided WHAT each tier is sent. This decides WHAT EACH QUESTION is
@@ -266,3 +294,13 @@ verify; this is the paid-tier version of the same habit.
   ➡️ At 11 testers you are in the LAST band, so switching now would likely cost MORE. It becomes right
   somewhere around a few hundred active users and stops being right once traffic is properly steady.
   ⚠️ Check whether the 1h TTL still needs a beta header at build time.
+  🔴 **UNPINNED 2026-08-04 EVENING -- BUILD IT. The three bands above are CORRECT; the conclusion was
+  applied to the wrong traffic level.** "At 11 testers you are in the last band" is true and irrelevant:
+  the question is what happens at LAUNCH, not on the tester build. **The crossover sits at roughly 8-10
+  companion messages a day across the whole app** -- any launched app clears that on day one, which puts
+  GoodForge in the MIDDLE band ("1 hour wins clearly") from the moment it ships.
+  **Measured 2026-08-04 (`scratchpad/model3.js`): $0.02971 -> $0.00422 per message at 100 msgs/day, 7x
+  cheaper. Identical at high volume, so there is no traffic level at which it hurts a live app.**
+  ⚠️ This pin was then copied into SPEC_cost_model.md as a flat "REJECTED -- at current traffic it costs
+  MORE", losing the band nuance entirely, and that is what kept it buried. **A conditional decision must
+  never be summarised as an unconditional one.** Both files now corrected; see SPEC_cost_model.md section 1.

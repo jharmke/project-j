@@ -28,6 +28,7 @@ import { buildWorkoutContextIfRelevant } from '../utils/companionWorkouts';
 import { buildFoodContextIfRelevant } from '../utils/companionFood';
 import { buildSleepContextIfRelevant, messageIsAboutSleep } from '../utils/companionSleep';
 import { buildBodyContextIfRelevant } from '../utils/companionBody';
+import { messageWantsFaithHandoff } from '../utils/companionFaith';
 import { buildAchievementsContextIfRelevant } from '../utils/companionAchievements';
 import { buildJournalContextIfRelevant } from '../utils/companionJournal';
 import { COMPANION_ROUTES, ROUTE_TRIGGERS } from '../utils/companionRoutes';
@@ -564,6 +565,7 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
     // farm pitches by starting fresh chats.
     wallCountRef.current = 0;
     pitchedRef.current = false;
+    faithHandedOffRef.current = false;
   };
 
   const newChat = () => {
@@ -605,6 +607,9 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
   // always take the opening on the exact message it is offered), and that shuts the request off for the rest
   // of this conversation. Resets with the chat, same as the wall count.
   const pitchedRef = useRef(false);
+  // PLAN.md item 8: true once Otto has handed a faith question to Halo in THIS conversation, so the full
+  // "here is where to turn her on" line is said once and not on every faith message after it.
+  const faithHandedOffRef = useRef(false);
   // ⚠️ ARMED FOR THE TWO TURNS AFTER THE SAFEGUARD ASKS. Two of the possible answers ("no, that's real" and
   // "is that bad?") are fixed app-supplied copy carrying medical-adjacent content, and they are answers to
   // the NEXT message, so the numbers have to survive the turn that produced them. Clears itself, and clears
@@ -748,6 +753,13 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
       // conversation, which is exactly when a refusal becomes possible -- you cannot decline something you
       // were never offered.
       const mayDecline = !isSupporter && pitchedRef.current;
+      // ⚠️ FAITH CONVERSATION GOES TO HALO, ALWAYS, AND FOR EVERY TIER. Otto is the app guide and the
+      // wellness coach; faith is Halo's job. Detector measured at ZERO false alarms across 141 app and
+      // wellness messages, because the failure that matters is Otto refusing to explain his own app.
+      const faithHandoff = messageWantsFaithHandoff(text);
+      // Read BEFORE this turn sets it, so the first faith message of a conversation gets the full line.
+      const faithHandoffRepeat = faithHandoff && faithHandedOffRef.current;
+      if (faithHandoff) faithHandedOffRef.current = true;
       const pitchRequested =
         pitchAsked ||
         (!isSupporter &&
@@ -755,7 +767,7 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
           wallCountRef.current >= WALLS_BEFORE_PITCH &&
           !pitchedRef.current);
       const callable = httpsCallable(getFunctions(app), 'appCompanion');
-      const res = await callable({ message: text, history, styleMode, faithTier, userContext, dataSnapshot, freeContext, pitchRequested, pitchAsked, mayDecline, capsWorkout, workoutCut, undereating, undereatingFollowUp });
+      const res = await callable({ message: text, history, styleMode, faithTier, userContext, dataSnapshot, freeContext, pitchRequested, pitchAsked, mayDecline, capsWorkout, workoutCut, undereating, undereatingFollowUp, faithHandoff, faithHandoffRepeat });
       const data = (res.data ?? {}) as { ok?: boolean; reply?: string; crisis?: boolean; message?: string; used?: number; cap?: number; pitched?: boolean };
 
       if (typeof data.used === 'number' && typeof data.cap === 'number') {

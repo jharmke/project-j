@@ -6,6 +6,7 @@ import { screenForCrisis } from './crisis';
 import { membershipStatus, REVENUECAT_SECRET_KEY } from './membership';
 import {
   buildCompanionStable,
+  buildFaithHandoffBlock,
   buildCompanionVolatile,
   PITCH_REQUIRED_BLOCK,
   buildWorkoutCapBlock,
@@ -212,6 +213,8 @@ export const appCompanion = onCall(
       freeContext?: unknown;
       pitchRequested?: unknown;
       capsWorkout?: unknown;
+      faithHandoff?: unknown;
+      faithHandoffRepeat?: unknown;
       workoutCut?: unknown;
       pitchAsked?: unknown;
       mayDecline?: unknown;
@@ -349,7 +352,15 @@ export const appCompanion = onCall(
     // Watch for a refusal only once he has actually pitched in this conversation -- you cannot decline
     // something you were never offered. The client tracks that; the server still gates it on being free.
     const mayDecline = status === 'free' && data.mayDecline === true;
+    // PLAN.md item 8. The CLIENT detects a faith conversation (utils/companionFaith.ts, measured 0 false
+    // alarms across 141 app and wellness messages) and the block rides on the user turn, because a rule in
+    // the system half is exactly what Otto has been ignoring.
+    const faithHandoff = data.faithHandoff === true;
+    const faithHandoffRepeat = data.faithHandoffRepeat === true;
     const suffix = [
+      // ⚠️ THE HANDOFF LEADS. If a message is faith, nothing else matters: Otto is not answering it, so a
+      // workout cap or a pitch riding underneath would be attached to a reply that never happens.
+      faithHandoff ? buildFaithHandoffBlock(faithTier, faithHandoffRepeat) : '',
       // ⚠️ ON EVERY MESSAGE, unlike the blocks below which are conditional. It is ~40 input tokens and it
       // buys back ~100 output tokens, and output costs five times what input does, so it pays for itself
       // roughly twelve times over. Measured 2026-08-04: replies drop from 216 to 113 tokens.

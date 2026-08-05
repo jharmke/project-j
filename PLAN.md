@@ -293,6 +293,56 @@ is what made him think work had been dropped -- it had not, but he had no way to
       a little money; needing it and not having it makes Otto invent things about the app.
 - [ ] **4.10** Enumerate which remaining features call the AI at all. Only Smart Coach is fully mapped.
 
+### 4b. 🆕 OTTO HANDS FAITH CONVERSATION TO HALO -- ✅ BUILT + DEPLOYED 2026-08-05
+**Not a cost item.** A product-correctness bug found during the 2.2 verification check. Kept separate on
+purpose so it does not hide inside the cost work.
+
+**WHAT WAS WRONG.** A Not Right Now user asked Otto *"is it okay to pray about lust?"* and got a full
+pastoral answer: no handoff, no mention of Halo, spiritual framing that presumed belief. **That is a
+violation for EVERY tier** -- Otto was never meant to counsel anyone about prayer.
+🔴 **AND THE RULE WAS ALREADY THERE, STATED PLAINLY.** The base prompt says *"Faith conversation, Bible
+study, prayer, and spiritual guidance are Halo's, not yours."* It could not have been clearer and he
+ignored it. **Strongest confirmation yet that a rule Otto must ACT on cannot live in the system prompt.**
+
+**THE FIX.** `utils/companionFaith.ts` detects a faith conversation on the CLIENT; the handoff block rides
+on the USER'S MESSAGE (`buildFaithHandoffBlock`), the same mechanism as the pitch, the cap and the
+undereating safeguard. The tier tails and base prompt were strengthened too, but only as a fallback for the
+misses -- they are not the mechanism.
+
+**MEASURED, THREE DRAFTS:**
+| | draft 1 | draft 2 | **final** |
+|---|---:|---:|---:|
+| **App help wrongly blocked** (must be 0) | 19 | 6 | **0 / 64** |
+| **Wellness wrongly blocked** (must be 0) | 2 | 0 | **0 / 77** |
+| Faith caught | 42/57 | 39/57 | **46/57 (81%)** |
+➡️ **The structure that worked: an app question needs a SHAPE *and* a TARGET.** Draft 2 matched a bare
+"how" or "where" anywhere, which fixed the app-help problem and then swallowed *"how do you even pray"*.
+➡️ The 11 misses all contain **no religious word at all** (*"why do i feel guilty when i rest"*,
+*"what happens after we die"*). Most read as wellness questions Otto should answer. **Misses cost one warm
+answer; false alarms cost app help. Fail on the miss side.**
+
+**DECISIONS (Justin, 2026-08-05):**
+- Otto gives **no faith answer at all**, for any tier. Acknowledge and hand off, nothing more.
+- **App how-to about faith features stays with Otto** -- prayer requests, the verse card, reading plans, the
+  gratitude card, turning faith features off. He is the app guide and the Faith tab is part of the app.
+- A message that is BOTH hands off. ⚠️ Measuring overrode this in practice: the combined rule made the
+  guard leaky and cost 19 app answers, so the app shape now wins outright. Rare case, cheap either way.
+- 🆕 **Halo IS named to Not Right Now users**, reversing the old "never point them to Halo" rule. That rule
+  existed to avoid a dead END, not to hide her. Naming her, saying she is switched off, and giving the path
+  is honest, creates intrigue, and says nothing about belief. CLAUDE.md is explicit that the app does not
+  hide or apologise for its faith identity.
+- **Once per conversation.** Otto has no memory, so without a client-side flag a person asking three faith
+  questions gets the full "here is where to turn her on" line three times -- a sales pitch aimed at the one
+  person who explicitly opted out. Same `useRef` pattern as the Supporter pitch.
+
+⚠️ **COPY CORRECTED ON THE WAY:** the first draft said Halo is "on the Faith tab" and the base prompt said
+"the gold cross button in the app". She is a floating gold cross FAB rendered on the **Faith tab and the
+Bible reader** (`CompanionFAB.tsx`). Both now say "the gold cross button on the Faith tab".
+
+🔬 **NEEDS DEVICE VERIFICATION:** ask Otto a faith question on each tier. Rooted/Exploring should point at
+the gold cross; Not Right Now should name her, say she is off, and give the Settings path. Ask twice to
+confirm the second reply is the short "Still Halo's area" version.
+
 ### 5. THE DIALS -- move these out of code and into a Firestore settings doc
 Read per call, changeable without an App Store update.
 | Dial | Visible to the user? |

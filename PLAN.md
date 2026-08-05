@@ -82,10 +82,18 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       a day to be told "not enough data".
 - [ ] **1.3** Gate generation on card visibility. Hidden cards still generate tips nobody sees.
       (Justin found this.)
-- [ ] **1.4** Only regenerate when the underlying packet changed. No staleness -- an unchanged packet would
-      have produced the same tip.
-- [ ] **1.5** Combine the Home tab's two calls (home tip + sleep tip) into one. Same batching trick the EvR
-      card voicer already uses.
+- ❌ **1.4 DROPPED 2026-08-05 after investigating. It does not work.** The idea was to skip the AI when the
+      underlying data had not changed. Two things killed it:
+      (a) `windowFp` looked perfect -- a "cheap signature of the data" that already exists -- but it is built
+      as `count:newestDay:totalLength`, and **the newest day changes daily** as the window slides, so it
+      always reports "changed".
+      (b) The correct comparison is the VERDICT (ruleId + diagnosis + action + facts), but the diagnosis
+      embeds the numbers themselves ("protein averaged 74g"), which shift daily for anyone actively logging.
+      **So it overlaps entirely with 1.2 where it would fire, and almost never fires where it does not.**
+      The only variant that fires often is one ignoring the numbers, which puts yesterday's figures in
+      today's tip. Worse than useless.
+- ⏸️ **1.5 PARKED WITH A TRIGGER** (combine Home's two calls into one). See the PARKED table below --
+      **$390/yr at 2,500 actives, revisit above ~10,000.** Not deleted.
 - [ ] **1.6** Verify whether the recovery tip has the same low-data waste as sleep. **Unverified.**
 - ➡️ Expected: **~$0.37 -> ~$0.10/user/month, DERIVED**, nothing visible changing. Item 0 confirms it.
 
@@ -229,6 +237,20 @@ Read per call, changeable without an App Store update.
       ever take you to zero.
 
 ---
+
+## ⏸️ PARKED WITH A TRIGGER -- not dead, revisit when the condition is met
+
+⚠️ **Park with a trigger rather than deleting.** A deleted idea gets re-proposed from scratch months later
+with none of the reasoning; a parked one comes back when the maths changes instead of when someone happens
+to remember it. Justin's call, 2026-08-05.
+⚠️ **And beware per-user framing.** "$0.013 a user a month" sounds like nothing and is $7,800/year at
+50,000 actives. That framing is exactly what made Smart Coach look like 4.6 cents. **Always show the
+annual figure at a few scales before calling something too small to bother with.**
+
+| Idea | Worth | Why parked | ➡️ REVISIT WHEN |
+|---|---|---|---|
+| **Combine Home's two Smart Coach calls into one** (was 1.5) | $0.013/user/mo -- **$390/yr at 2,500 actives, $1,560 at 10k, $7,800 at 50k** | One call would have to produce TWO tips for two different surfaces: needs new output parsing, both tips fail together if parsing breaks, and a model doing two jobs at once tends to do both worse. Not worth risking the two flagship tips at today's size. | **Above ~10,000 active users**, or if the two Home tips are ever rewritten anyway |
+| **Batch API (50% off) for Smart Coach** | ~$0.05/user/mo | The surfaces where batching is safe (weekly, monthly) are worth ~$0.003/mo; the ones worth real money are daily. **Justin's deciding reason: first open is exactly when someone checks their recovery and sleep read, and batching fails at that moment.** | If a genuinely non-interactive AI feature appears, or if tips ever stop being read on first open |
 
 ## ❌ DECIDED AGAINST -- do not re-propose without new evidence
 

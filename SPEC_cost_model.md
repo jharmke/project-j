@@ -25,8 +25,23 @@ and prices were then re-derived FROM THE CODE, which cannot go stale. Do the sam
 quoting any per-call figure from this file, check the collection -- it is the source of truth and this file
 is a derivation.
 
-**Metered 2026-08-05:** Smart Coach **$0.00387** · Halo **$0.00406** · Otto cold **$0.0331** / warm
-**~$0.0043** · meal estimator with a photo **$0.00953**.
+**Metered 2026-08-05, BEFORE the fixes:** Smart Coach **$0.00387** · Halo **$0.00406** · Otto cold
+**$0.0331** / warm **~$0.0043** · meal estimator with a photo **$0.00953**.
+
+### ✅ AND AFTER, SAME DAY -- ALSO METERED, NOT PROJECTED
+| | before | after (warm) | |
+|---|---:|---:|---|
+| **Smart Coach** | $0.00387 | **$0.00107** | 72% off. Crossed the 4,096 cache minimum for the first time (PLAN 1.1) and moved to a 1-hour TTL (2.1a) |
+| **Halo** | $0.00406 | **$0.00067** | 83% off on a short reply, ~$0.0011 on a realistic one. Crossed the minimum for the first time (2.3) |
+| **Otto** | ~$0.0043 | unchanged per call | 2.2 collapsed three cached copies into one, which raises the HIT RATE rather than lowering the per-call price |
+
+🔴 **NEITHER SMART COACH NOR HALO HAD EVER CACHED ONCE** before 2026-08-05. Both had been paying full price
+for byte-identical text on every message since the day they shipped, because both prompts sat a hundred-odd
+tokens under Haiku's 4,096 minimum and nobody had checked.
+⚠️ **These are WARM prices.** At Justin's solo volume many calls are still cold writes, so the bill will not
+show the full saving until real traffic keeps the caches warm. **Watch the ratio of `cacheReadTokens` to
+`cacheWriteTokens` in `ai_cost`** -- that single number says whether the caching work is landing, for every
+feature at once.
 ✅ **The model validated itself** -- Otto's two test calls came to $0.03904195 against a predicted $0.0390,
 and the cached block metered at 26,477 tokens against 26,474 measured.
 🔴 **It corrected three numbers on day one** (Halo's prompt size, the estimator's prompt size, and the fact

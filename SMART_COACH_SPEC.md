@@ -38,6 +38,12 @@ Runs once per day per user, cached (engine already computes once per day). Cost 
 - **NOT "pennies per month."** Measured shape is ~37 cents per active user per month, which makes Smart Coach the single largest AI cost in the app -- larger than Otto and Halo combined.
 ✅ The last sentence IS true and is load-bearing: the template fallback is real, well-written app-voice text. On low-data scenarios it says exactly what the AI would say, which is why `PLAN.md` 1.2 skips the AI there entirely.
 
+🆕 **THE RULEBOOK GREW ON 2026-08-05 AND THIS SPEC DESCRIBES THE OLD ONE.** Detail in `PLAN.md` 1.1; do not restate the numbers here. What changed and why it matters to this spec:
+- **Surface guidance now exists, and it never did.** `generateCoachTip` picks examples by MODE only and never looks at the surface, so the sleep and recovery tips were being written off examples entirely about weight, deficits and food logging. There is now a section for the sleep and recovery cards (what each card's numbers mean, that resting heart rate and training volume are only meaningful together, and a hard line against drifting into sounding medical) and one for the day/weekly/monthly summaries (a single day is never a trend; a closed period needs a comparison or it is a readout, not an insight).
+- **Four new gold-standard examples per mode**, covering the sleep card, the recovery card, the partial-data framing this spec describes but never demonstrated, and a second corrective. This spec already asked for the example library to grow ("a dozen plus across modes and tones"); that is what this was.
+- **A not-repeating-yesterday rule.** Every packet carries `previousTip` for that surface and nothing told the model to read it, so a coach saying the same thing every morning was an unguarded failure mode.
+- ⚠️ **The growth was also what made the prompt cacheable** (it had been ~570 tokens under the minimum), but the content was chosen to fill real gaps, not as filler. Rejected the alternative of sending all three modes' example sets, which would have crossed the line using text already written but risks the voices blending, and the modes are the point.
+
 ---
 
 ## Foundational principles (the AI's thinking rests on these)

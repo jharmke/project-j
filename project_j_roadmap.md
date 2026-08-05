@@ -30,6 +30,25 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-08-05 **A cost meter, so nothing about AI spend is guessed again.** Anthropic returns exact token
+  counts on every call and the code was throwing them away, so nothing in the app knew what anything cost.
+  Now written to `ai_cost/{uid}_{date}` split by feature. It corrected three numbers on day one, including a
+  rulebook recorded at 11,600 tokens that is 3,109 (somebody had measured the whole file). Detail: `PLAN.md` 0.
+- 2026-08-05 **Smart Coach was the biggest AI cost in the app and every doc had it 8x low.** It fires on
+  SCREEN OPEN, not on request: the Home tab alone triggers two calls a day with no user action. Now caches
+  for the first time (it sat under Haiku's minimum), skips the AI entirely on "not enough data" verdicts
+  where the written fallback already says the same words, and stops generating for cards the user has
+  hidden. **$0.00387 -> $0.00107 a call, device-verified.** Detail: `PLAN.md` 1.
+- 2026-08-05 **Halo had never cached once, and neither had Smart Coach.** Both prompts sat about a hundred
+  tokens under the 4,096 minimum, so both paid full price for identical text on every message since launch.
+  Halo **$0.00406 -> $0.00067**. Otto's three cached copies (one per faith tier) collapsed into one shared
+  copy. Detail: `PLAN.md` 2.
+- 2026-08-05 **Otto stopped counselling people about prayer.** A Not Right Now user asked "is it okay to pray
+  about lust?" and got a full pastoral answer, with no handoff -- a violation for every tier. The rule was
+  already in his prompt, stated plainly, and he ignored it, so the handoff now rides on the user's message
+  like the pitch and the cap do. Detector measured to **zero false alarms across 141 app and wellness
+  messages**, because the failure that mattered was Otto refusing to explain his own app. Halo is now named
+  to Not Right Now users too. Detail: `PLAN.md` 4b.
 - 2026-08-04 **Item M done: the app finally knows what you don't eat.** A Food & Allergies section on
   Profile with three separate fields (allergies are a hard rule, diet is one pick, foods to avoid are soft),
   free text with caps, sent to Otto on both tiers because not poisoning someone is not a paid feature. No

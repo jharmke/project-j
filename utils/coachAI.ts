@@ -370,6 +370,20 @@ async function callWithTimeout(
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
+// Rule IDs whose packet is a "there is not enough data to coach you yet" verdict. Their diagnosis and
+// action are fixed strings with a count substituted in, and every one already carries a written
+// `fallbackBody` saying the same thing in the app's voice, so there is nothing for the model to add.
+// Swept from smartTipsEngine.ts 2026-08-05 -- these four cover six places across every surface.
+// ⚠️ KEEP THIS CONSERVATIVE. Only rules meaning "we cannot coach you yet" belong here. `weight_infrequent`
+// is deliberately NOT in the list: it reads like a data complaint but it is a genuine coaching verdict with
+// a real action behind it, and skipping the model there would flatten a legitimate tip.
+const NO_DATA_RULE_IDS = new Set([
+  'log_consistency_low',         // home, EvR and weekly: fewer than 4 of 7 days logged
+  'log_consistency_low_monthly', // monthly: too few logged days in the month
+  'sleep_data_low',              // sleep hub: fewer than 3 of the last 7 nights have sleep
+  'rec_no_data',                 // recovery tab: no recovery snapshots at all
+]);
+
 export async function generateCoachTip(
   cache: CoachTipCache,
   cacheKey: string = COACH_TIP_KEY,
@@ -379,6 +393,33 @@ export async function generateCoachTip(
   // Already generated today: return as-is
   if (cache.aiBody && cache.aiGeneratedDate === todayKey) {
     return cache;
+  }
+
+  // ⚠️ A "NOT ENOUGH DATA" VERDICT NEVER REACHES THE MODEL (PLAN.md 1.2).
+  // The engine builds a FIXED packet in this case, and its `fallbackBody` already says exactly what the AI
+  // would say ("The coach has 2 logged days to work with. Log food on 5 or more days this week..."). Calling
+  // the model here is paying full price to reword a sentence that cannot change.
+  // ⚠️ THERE IS NO DETECTION RISK HERE, unlike a keyword matcher. The engine's OWN code chose this ruleId,
+  // so this is a lookup on a value the app already computed, not a guess about what the user meant. The
+  // words on screen are identical either way, and this is the same path that already renders when the API
+  // call fails.
+  // ⚠️ WHO IT WAS COSTING: anyone without a sleep tracker paid for a wasted sleep-tip call EVERY DAY, and
+  // every new user paid for a wasted home-tip call until they had logged 4 of 7 days. Those are exactly the
+  // users generating the least revenue.
+  if (NO_DATA_RULE_IDS.has(cache.packet.ruleId)) {
+    // Already handled today: return without rewriting storage on every screen focus. The dedup above cannot
+    // catch this case because it tests aiBody, which is deliberately null on this path.
+    if (cache.fallbackUsed && cache.aiGeneratedDate === todayKey) return cache;
+    const skipped: CoachTipCache = {
+      ...cache,
+      aiBody: null,
+      aiGeneratedDate: todayKey,
+      fallbackUsed: true,
+    };
+    try {
+      await storageSet(cacheKey, JSON.stringify(skipped));
+    } catch {}
+    return skipped;
   }
 
   const mode = cache.packet.mode.toLowerCase();

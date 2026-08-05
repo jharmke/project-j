@@ -76,10 +76,18 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       (3,520 -> 4,342) so the prompt caches for the first time, AND collapses three cache entries into one
       shared by every user. ⚠️ Requires `aiProxy.ts` to accept a cache marker -- it currently takes the
       system prompt only as a plain string.
-- [ ] **1.2** Skip the AI entirely on low-data scenarios (`sleep_data_low`, `log_consistency_low`). The
-      packet already carries a written `fallbackBody` that says the same words. **Zero detection risk** --
-      the app's own code already chose that packet. Today a new user with no wearable pays for two AI calls
-      a day to be told "not enough data".
+- [x] **1.2 ✅ BUILT 2026-08-05.** Skip the AI entirely on "not enough data" verdicts. `NO_DATA_RULE_IDS` in
+      `coachAI.ts`, checked in `generateCoachTip` before the prompt is even assembled.
+      **Swept the engine rather than trusting the two I had found: FOUR rule IDs across SIX places.**
+      `log_consistency_low` (home, EvR, weekly), `log_consistency_low_monthly`, `sleep_data_low`,
+      and `rec_no_data` -- **which also closes 1.6: recovery had the same waste.**
+      ⚠️ Deliberately EXCLUDED `weight_infrequent`. It reads like a data complaint but it is a genuine
+      coaching verdict with a real action, and skipping the model there would flatten a legitimate tip.
+      ⚠️ The skip path also guards against rewriting storage on every screen focus -- the existing daily
+      dedup tests `aiBody`, which is deliberately null here, so it cannot catch this case.
+      ➡️ **Not directly testable on an account with full data.** It is an `if` on a value the engine already
+      computed, and the meter will show it at launch.
+- [x] **1.6 ✅ ANSWERED** by the sweep above: recovery has `rec_no_data`, the same waste as sleep. Covered.
 - [ ] **1.3** Gate generation on card visibility. Hidden cards still generate tips nobody sees.
       (Justin found this.)
 - ❌ **1.4 DROPPED 2026-08-05 after investigating. It does not work.** The idea was to skip the AI when the
@@ -98,8 +106,18 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
 - ➡️ Expected: **~$0.37 -> ~$0.10/user/month, DERIVED**, nothing visible changing. Item 0 confirms it.
 
 ### 2. THE CACHE FIXES -- launch build
-- [ ] **2.1** 1-hour cache TTL on Otto, Halo and Smart Coach. ⚠️ Only correct above ~10 active users; below
-      that it costs slightly more. **Set it as part of the launch build, not today.** Make it a dial.
+- [x] **2.1a ✅ SMART COACH ON 1-HOUR TTL. Deployed 2026-08-05.** Set in `aiProxy.ts` (`CACHE_TTL`).
+      Coach tips spread across a morning, which is exactly the gap a 5-minute cache cannot bridge.
+      **Measured on real usage: six coach calls cost $0.0263 at 5 minutes, ~$0.0145 at 1 hour** -- they wrote
+      four separate copies instead of sharing one.
+- [ ] **2.1b OTTO AND HALO STAY ON 5 MINUTES UNTIL LAUNCH.** ⚠️ **Not an oversight -- 1 hour is WORSE for
+      them today.** Otto is bursty: two or three messages seconds apart, then hours of nothing. Those already
+      share a 5-minute cache, so a longer TTL buys nothing and pays 2x to write instead of 1.25x.
+      **Measured 2026-08-05: two back-to-back Otto messages cost $0.0357 at 5 minutes and $0.0556 at 1 hour,
+      56% worse.** It flips the moment two conversations land within an hour, which real traffic guarantees.
+      ➡️ **Switch at launch.** Make it a dial first (5.1) so it is a config change, not a deploy.
+      ✅ **ANSWERED: the 1-hour TTL needs NO beta header.** `SPEC_otto_routing.md` carried that as an open
+      question; verified against the current Anthropic caching docs 2026-08-05.
 - [ ] **2.2** Faith cache fix: move the faith-tier line out of `buildCompanionStable` so three cached copies
       collapse into one shared entry.
 - [ ] **2.3** Pad Halo's prompt past Haiku's 4,096-token minimum so it caches at all -- **METERED 2026-08-05

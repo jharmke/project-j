@@ -250,7 +250,7 @@ is what made him think work had been dropped -- it had not, but he had no way to
 | 2 | Smart Coach can't cache (under 4,096) | ✅ decided -- **same fix as #1**, see 1.1 |
 | 3 | Docs said the rulebook was 11,600 tokens | ✅ done -- corrected in 4 places |
 | 4 | Meal estimator runs on Sonnet | 🔴 open -- **4.1** |
-| 5 | Otto's uncached per-message overhead | 🔴 open -- **4.3** |
+| 5 | Otto's uncached per-message overhead | ✅ built + device-verified -- **4.3** |
 | 6 | Reply-shape block is 336 tokens, not 40 | 🔴 open -- **4.4** |
 | 7 | Otto's cache is healthy | ✅ nothing to do (good news) |
 | 8 | Otto's cap is server-side | ✅ nothing to do -- enables 3.1 |
@@ -289,11 +289,38 @@ is what made him think work had been dropped -- it had not, but he had no way to
       the Haiku saving was wrong -- at 562 tokens caching it saves about 2%.
 - [ ] **4.2** The estimator's 5/month cap is **client-side** (AsyncStorage). A modified client could burn
       60 Sonnet calls/day through the server backstop -- about $1/day. Wants a server-side cap.
-- [ ] **4.3** Otto's **uncached per-message overhead**: volatile block 786 tokens + reply-shape block 336 +
-      history. ~1,100-1,400 tokens paid at full price on every message, 25-35% of the cost. Never examined.
+- [x] **4.3 ✅ BUILT + DEPLOYED + DEVICE-VERIFIED 2026-08-05.** The per-user half of Otto's prompt is now
+      split at its own stability line and the stable side carries a cache marker. `buildCompanionVolatileSplit`
+      in `companionSystemPrompt.ts`; `appCompanion.ts` sends it as two blocks with the marker between them.
+      ✅ **THE PROMPT IS BYTE-IDENTICAL.** `buildCompanionVolatile` is now literally `cached + tail`, so the
+      two forms cannot drift. Verified across four cases (free, free+extras, Supporter with and without a
+      snapshot): free-user prompt is still exactly 3,698 characters, the count taken BEFORE the edit.
+      ⚠️ **THE BOUNDARY IS IN A DIFFERENT PLACE PER TIER, deliberately.** Free: the free-plan block is static
+      text identical for every free user, so it is cached. Supporter: the data snapshot is rebuilt every
+      message so mid-chat logging shows up, so it stays OUT. `freeContext` is always out (it attaches only
+      when the question is about achievements/journal/exercise names).
+      ⚠️ **IT IS A PER-USER CACHE, NOT A SHARED ONE.** Their name and goals sit above the free-plan block, so
+      the cached prefix carries them. Making it genuinely shared means moving the block above the CONTEXT
+      section, and the block's own text says "their goals are in the CONTEXT block above" -- a real copy edit.
+      Not done. Decide it with the meter, not with an opinion.
+      ➡️ **SIZE UNPROVEN.** 786 tokens becomes cacheable for a free user (MEASURED); ~15% of a warm message
+      (DERIVED) and only on messages that land warm. Device-verified 7/7 (Supporter data, free-plan wall, app
+      how-to, faith handoff) -- that confirms nothing BROKE, not that it saved. First all-after meter day is
+      the clean read.
+- 🔢 **TWO FINDINGS FROM THE FIRST METER READ (2026-08-05, 15 real Otto calls, MEASURED).** Breakdown and
+      arithmetic: `SPEC_cost_model.md`.
+      1. 🔴 **Cold cache writes are ~67% of Otto's daily cost** (13.4c of 20.0c). The big block was written
+         cold ~4x and read warm ~11x. **The dominant cost is the cache expiring between sessions, not the
+         uncached tail 4.3 addresses.** ➡️ Confirms 2.1b: at 1h TTL those 4 writes cost 5.3c each instead of
+         3.3c, so it would be WORSE at this volume unless the longer window merged sessions. It would not.
+      2. 🔴 **~2,200 full-price tokens per message, not the 1,100-1,400 recorded here** (32,960 over 15
+         calls). The gap is almost certainly history. ➡️ **First real evidence for 4.5.**
+      ✅ The meter's own dollar figure reconciles to the price model to the cent ($0.200352). These are good numbers.
 - [ ] **4.4** The reply-shape block's own comment claims it is "~40 input tokens". **It is 336.** It still
       pays for itself, but ~1.5x over, not the "twelve times over" claimed.
-- [ ] **4.5** `MAX_HISTORY_TURNS` is 12. Up to ~$0.0015/message at the cap. Never measured or tuned.
+- [ ] **4.5 🔺 PROMOTED -- now the biggest open item in section 4.** `MAX_HISTORY_TURNS` is 12, never
+      measured or tuned. The 2026-08-05 meter read puts full-price load at **~2,200 tokens/message against
+      the 1,100-1,400 assumed**, and history is the only piece big enough to explain the gap.
 - [ ] **4.6** Otto's 4,425 tokens of standing rules -- never once read for cuttable content.
 - [ ] **4.7** A second Otto reply-shortening pass, and whether he is wordier on some topics than others.
       ⚠️ Once the prompt shrinks, **output is ~70% of the remaining cost**, so this gets MORE valuable, not

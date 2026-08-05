@@ -7,7 +7,7 @@ import { membershipStatus, REVENUECAT_SECRET_KEY } from './membership';
 import {
   buildCompanionStable,
   buildFaithHandoffBlock,
-  buildCompanionVolatile,
+  buildCompanionVolatileSplit,
   PITCH_REQUIRED_BLOCK,
   buildWorkoutCapBlock,
   buildUndereatingAskBlock,
@@ -379,6 +379,12 @@ export const appCompanion = onCall(
       { role: 'user', content: suffix ? `${message}\n\n${suffix}` : message },
     ];
 
+    // PLAN.md 4.3. Split, not rewritten: `cached + tail` is byte-identical to what this call has always
+    // sent, so the prompt Otto reads is unchanged in both content and order.
+    const volatile = buildCompanionVolatileSplit(
+      userContext, supporter, supporter ? dataSnapshot : undefined, freeContext, faithTier,
+    );
+
     const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value() });
 
     let replyText = '';
@@ -397,16 +403,24 @@ export const appCompanion = onCall(
             cache_control: { type: 'ephemeral' },
           },
           {
-            // Volatile half (this user's context + data snapshot): not cached.
-            type: 'text',
+            // Per-user half that does NOT change between messages (their context + faith tier, plus the
+            // free-plan block for a free user). PLAN.md 4.3: this was being re-sent at full price on every
+            // message, and for a free user ~74% of it is text that never changes at all.
             // ⚠️ THE GATE IS ENFORCED HERE TOO, not only on the client. The app already declines to build a
             // snapshot for a free user, but a modified client could send one, and this is the one place in
             // the system where trusting the client would hand out a paid feature. `supporter` comes from
             // the server's own membership record and fails closed to free on any error.
             // (A user who TYPES their own numbers into the message still gets personalised advice. That is
             // the accepted loophole from SPEC_otto.md open item 5 -- the app revealed nothing.)
-            text: buildCompanionVolatile(userContext, supporter, supporter ? dataSnapshot : undefined, freeContext, faithTier),
+            type: 'text',
+            text: volatile.cached,
+            cache_control: { type: 'ephemeral' },
           },
+          // Everything that genuinely changes message to message (a Supporter's freshly built snapshot,
+          // and the always-free extras that only ride along when the question calls for them). Outside the
+          // marker deliberately -- inside it, one changed number would rewrite the whole cached copy.
+          // Pushed only when it has content: an empty text block is not valid.
+          ...(volatile.tail ? [{ type: 'text' as const, text: volatile.tail }] : []),
         ],
         messages,
       });

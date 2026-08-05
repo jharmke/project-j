@@ -383,13 +383,32 @@ The rules below are HOW to say it, not whether to.
  * the client, therefore fell into the FREE branch and was told to his face that he was on the free plan --
  * while paying. The server already knows the real answer from the membership record, so it decides.
  */
-export function buildCompanionVolatile(
+/**
+ * THE VOLATILE HALF, SPLIT AT ITS OWN STABILITY LINE (PLAN.md 4.3).
+ *
+ * `cached` is everything that does NOT change between one message and the next for a given user;
+ * `tail` is everything that does. Concatenated they are byte-identical to what this file has always
+ * produced -- `buildCompanionVolatile` below is now literally `cached + tail`, so nothing Otto reads
+ * has moved, changed or been reordered. Only a cache boundary was added.
+ *
+ * ⚠️ THE BOUNDARY SITS IN A DIFFERENT PLACE PER TIER, and that is the whole point.
+ *  - FREE: the free-plan block is static text, identical for every free user, so it goes in `cached`.
+ *    It is ~74% of the volatile half (786 tokens MEASURED; the split within it is DERIVED from exact
+ *    character counts), and we were paying full price to re-send it on every single message.
+ *  - SUPPORTER: the data snapshot is rebuilt fresh on every message so mid-chat logging shows up
+ *    (AssistantChat.tsx), which means it is NOT stable between messages. It stays in `tail`.
+ *
+ * ⚠️ `freeContext` is ALWAYS in the tail. It is attached only when the message happens to be about
+ * achievements, journal entries or their own exercise names, so it varies message to message; caching
+ * it would mean a fresh copy every time somebody's question changed shape.
+ */
+export function buildCompanionVolatileSplit(
   userContext: string,
   supporter: boolean,
   dataSnapshot?: string,
   freeContext?: string,
   faithTier: FaithTier = 'exploring',
-): string {
+): { cached: string; tail: string } {
   // ⚠️ THE FAITH-TIER TAIL LIVES HERE NOW, NOT IN THE CACHED HALF (PLAN.md 2.2). It sits directly under the
   // CONTEXT block because that block already carries the tier VALUE -- the client sends "Faith journey: X"
   // (AssistantChat.tsx) -- so the rule now sits next to the fact it acts on instead of 22,000 tokens away.
@@ -398,22 +417,43 @@ export function buildCompanionVolatile(
   const head =
     '================ CONTEXT (this user) ================\n' + userContext +
     '\n\n' + tierTail(faithTier);
+  // ⚠️ AFTER the free-tier block, never inside it: these are the few things a free user DOES get, and the
+  // block above has just told Otto he has no personal data. Order matters so the exception reads as an
+  // exception rather than contradicting the rule.
+  const extras = freeContext ? '\n\n' + freeContext : '';
   if (supporter) {
     // A Supporter with no snapshot yet (brand new account, or a client-side hiccup) gets NO tier block at
     // all. Silence is right here: the free block would be a lie, and inventing a "you have no data" block
     // risks him announcing an outage that is really just an empty log.
-    return head +
-      (dataSnapshot
-        ? '\n\n================ USER DATA SNAPSHOT (pre-computed, cite windows, never recompute) ================\n' + dataSnapshot
-        : '') +
-      (freeContext ? '\n\n' + freeContext : '');
+    return {
+      cached: head,
+      tail:
+        (dataSnapshot
+          ? '\n\n================ USER DATA SNAPSHOT (pre-computed, cite windows, never recompute) ================\n' + dataSnapshot
+          : '') + extras,
+    };
   }
-  return head +
-    '\n\n================ USER DATA SNAPSHOT ================\n' + FREE_TIER_BLOCK +
-    // ⚠️ AFTER the free-tier block, never inside it: these are the few things a free user DOES get, and the
-    // block above has just told Otto he has no personal data. Order matters so the exception reads as an
-    // exception rather than contradicting the rule.
-    (freeContext ? '\n\n' + freeContext : '');
+  return {
+    cached: head + '\n\n================ USER DATA SNAPSHOT ================\n' + FREE_TIER_BLOCK,
+    tail: extras,
+  };
+}
+
+/**
+ * The volatile half as ONE string. Kept so `buildCompanionSystemPrompt` and any other caller behave
+ * exactly as before; the Cloud Function uses the split form above so it can put a cache marker between
+ * the two halves. Defined as `cached + tail` on purpose -- there is one source of truth for this text,
+ * so the two forms cannot drift apart.
+ */
+export function buildCompanionVolatile(
+  userContext: string,
+  supporter: boolean,
+  dataSnapshot?: string,
+  freeContext?: string,
+  faithTier: FaithTier = 'exploring',
+): string {
+  const { cached, tail } = buildCompanionVolatileSplit(userContext, supporter, dataSnapshot, freeContext, faithTier);
+  return cached + tail;
 }
 
 /**

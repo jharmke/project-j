@@ -30,6 +30,12 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-08-05 **Otto stopped re-sending the same paragraph at full price on every message.** The per-user half
+  of his prompt is now split at its own stability line, so the part that never changes between messages (and
+  for a free user that is a block of text identical for everyone) gets cached instead of paid for every time.
+  The prompt he reads is byte-identical, verified across four account shapes, and device-verified 7/7.
+  🔬 The same day's meter read found the bigger fish: **two thirds of Otto's daily cost is cold cache writes**,
+  and full-price load is **~2,200 tokens a message against the 1,100-1,400 assumed**. Detail: `PLAN.md` 4.3.
 - 2026-08-05 **A cost meter, so nothing about AI spend is guessed again.** Anthropic returns exact token
   counts on every call and the code was throwing them away, so nothing in the app knew what anything cost.
   Now written to `ai_cost/{uid}_{date}` split by feature. It corrected three numbers on day one, including a

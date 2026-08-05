@@ -48,6 +48,35 @@ and the cached block metered at 26,477 tokens against 26,474 measured.
 that cache minimums differ by model). See the table in section 10b. **Every per-call number that predates
 the meter should be treated as suspect until a reading confirms it.**
 
+### 🔬 THE FIRST FULL DAY OF REAL OTTO TRAFFIC (2026-08-05, 15 calls, one account)
+Straight off `ai_cost`. **Where the money actually went:**
+| | tokens | rate | cost | share |
+|---|---:|---|---:|---:|
+| cache WRITES (cold) | 106,968 | 1.25x input | **$0.1337** | **67%** |
+| full-price input | 32,960 | 1x | $0.0330 | 16% |
+| cache READS (warm) | 294,125 | 0.1x input | $0.0294 | 15% |
+| output | 854 | 5x input | $0.0043 | 2% |
+| | | | **$0.2004** | |
+
+✅ **The meter's own `usd` field reconciles to this model to the cent** ($0.200352). The price model is sound;
+use it.
+
+🔴 **FINDING 1: THE COLD WRITE IS THE COST, NOT THE UNCACHED TAIL.** The 26,442-token block was written cold
+~4x and read warm ~11x. Two thirds of the day's spend is rebuilding a cache that expired between sessions.
+➡️ **This CONFIRMS 2.1b rather than overturning it.** At a 1-hour TTL those same 4 writes cost 5.3c each
+instead of 3.3c (2x premium vs 1.25x), so 1h is worse here unless the longer window actually merges sessions
+into one another. Justin's sessions are spread across the day, so it would not. **Hold at 5 minutes.**
+⚠️ **This flips at real traffic for a reason that has nothing to do with TTL:** the block is byte-identical
+for every user (2.2), so with enough users it never goes cold at any TTL. **The trigger for 2.1b should be a
+measured cold-write rate, not the launch date.**
+
+🔴 **FINDING 2: ~2,200 FULL-PRICE TOKENS PER MESSAGE, NOT THE 1,100-1,400 ASSUMED** (32,960 / 15). History is
+the only piece big enough to explain the gap. ➡️ First real evidence for **PLAN 4.5** (`MAX_HISTORY_TURNS` is
+12 and has never been measured or tuned), which is now the biggest open item in section 4.
+
+⚠️ **This day mixes before and after PLAN 4.3**, which deployed mid-afternoon, so it does NOT size 4.3. The
+first all-after day is the clean read.
+
 ---
 
 # 🔴 READ THIS FIRST -- 2026-08-04 EVENING. THREE THINGS BELOW ARE NOW KNOWN TO BE BACKWARDS.

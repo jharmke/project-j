@@ -65,6 +65,7 @@ Ranked. Do them top down. `[ ]` not started, `[~]` in progress, `[x]` done and v
 | Halo | **$0.00406** | $0.0032 |
 | Otto, cold | **$0.0331** | $0.0345 |
 | Otto, warm | **~$0.0043** | $0.0041 |
+| Otto, **a real 10-message conversation** | **$0.0072/message** | ⚠️ **QUOTE THIS ONE.** The warm price assumes the cold write never happens; it happens once per conversation. A 2-message chat is ~$0.021/message. See `SPEC_cost_model.md` |
 | Meal estimator (photo) | **$0.00953** | $0.0165 |
 
 ✅ **The cost model validated itself.** Otto's two test calls came to $0.03904195; the model predicts
@@ -255,7 +256,7 @@ is what made him think work had been dropped -- it had not, but he had no way to
 | 7 | Otto's cache is healthy | ✅ nothing to do (good news) |
 | 8 | Otto's cap is server-side | ✅ nothing to do -- enables 3.1 |
 | 9 | Estimator's cap is client-side | 🔴 open -- **4.2** |
-| 10 | History capped at 12 turns | 🔴 open -- **4.5** |
+| 10 | History capped at 12 turns | ✅ measured + closed, LEAVE AT 12 -- **4.5** |
 | 11 | Otto's 4,425 tokens of rules unread | 🔴 open -- **4.6** |
 | 12 | Is Otto wordier on some topics | 🔴 open -- **4.7** |
 | 13 | Smart Coach packet not sized | ✅ done -- ~200 tokens |
@@ -314,13 +315,34 @@ is what made him think work had been dropped -- it had not, but he had no way to
          uncached tail 4.3 addresses.** ➡️ Confirms 2.1b: at 1h TTL those 4 writes cost 5.3c each instead of
          3.3c, so it would be WORSE at this volume unless the longer window merged sessions. It would not.
       2. 🔴 **~2,200 full-price tokens per message, not the 1,100-1,400 recorded here** (32,960 over 15
-         calls). The gap is almost certainly history. ➡️ **First real evidence for 4.5.**
+         calls). ➡️ **MEASURED the same day: history is 38% of that, not all of it.** The rest is the
+         reply-shape block, the user's own message and the occasional pitch/cap block. **4.5 is closed.**
       ✅ The meter's own dollar figure reconciles to the price model to the cent ($0.200352). These are good numbers.
 - [ ] **4.4** The reply-shape block's own comment claims it is "~40 input tokens". **It is 336.** It still
       pays for itself, but ~1.5x over, not the "twelve times over" claimed.
-- [ ] **4.5 🔺 PROMOTED -- now the biggest open item in section 4.** `MAX_HISTORY_TURNS` is 12, never
-      measured or tuned. The 2026-08-05 meter read puts full-price load at **~2,200 tokens/message against
-      the 1,100-1,400 assumed**, and history is the only piece big enough to explain the gap.
+- [x] **4.5 ✅ MEASURED AND CLOSED 2026-08-05. THE ANSWER IS "LEAVE IT AT 12."** Instrumented
+      (`recordHistorySample` in `aiUsageMeter.ts`, fired from `appCompanion.ts`, measurement only, changes
+      nothing Otto is sent), then measured on a deliberate 10-message conversation on device.
+      **MEASURED, 10 messages, isolated with a before/after read of `ai_cost`:**
+      | | |
+      |---|---:|
+      | history | **3,565 tokens = 38% of full-price input, but only 5% of the bill** |
+      | `historyTurns` 84 across 10 samples | 1,3,5,7,9,11,12,12,12,12 -- **the cap genuinely engaged from message 7** |
+      ❌ **CUTTING IT IS REJECTED, and the free cap is why.** History is per-session and never persisted
+      (`AssistantChat.tsx` holds it in `useState`, closing the sheet wipes it), so it builds 1,3,5,7,9,11 then
+      pins at 12. **A free user on the 5/day cap tops out at 9 and can never reach 12.** Trimming the cap
+      therefore bills SUPPORTERS almost exclusively -- the people paying -- to save ~0.5% at 10 (~$65/yr at
+      2,500 actives) or ~2.5% at 6, and 6 is the setting that makes him lose the thread.
+      ✅ **History is worth its money, device-verified.** After nine earlier messages he correctly recapped
+      the post-workout window, rest days, logging consistency and the Recipe Builder.
+      🔴 **AND IT POINTS THE OTHER WAY.** The cold write is a per-CONVERSATION cost, so history is what gives
+      it more messages to spread across: **~$0.0072/message over 10 messages vs ~$0.021/message over 2.**
+      A short conversation is ~3x more expensive per message. **Trimming history pushes in the wrong
+      direction.** ⚠️ Nobody has costed this against 3.1 -- a 5/day cap pushes users toward exactly the
+      short-conversation shape that is worst per message.
+      ⚠️ **HALO HAS THE SAME UNMEASURED 12-TURN CAP** (`faithCompanion.ts`). Not measured; do not assume this
+      result transfers, her prompt is a seventh the size so the arithmetic is different.
+      ➡️ Corrects the same-day claim that history explained the ~2,200-token gap. It is 38% of it, not all.
 - [ ] **4.6** Otto's 4,425 tokens of standing rules -- never once read for cuttable content.
 - [ ] **4.7** A second Otto reply-shortening pass, and whether he is wordier on some topics than others.
       ⚠️ Once the prompt shrinks, **output is ~70% of the remaining cost**, so this gets MORE valuable, not
@@ -464,6 +486,7 @@ annual figure at a few scales before calling something too small to bother with.
 | Cutting Smart Coach surfaces / templates-for-free-users | Unnecessary once 1.1-1.5 land. |
 | **Batch API (50% off) for Smart Coach** | ⏸️ **Parked, not ruled out.** The surfaces where it is safe (weekly, monthly) are worth ~$0.003/mo; the surfaces worth real money are daily. **Justin's deciding reason: first open is exactly when someone checks their recovery and sleep read, and batching fails at that moment.** |
 | Shortening Smart Coach replies | Rulebook already says 2-3 sentences and requires connecting two signals. One sentence cannot. No fat. |
+| **Cutting Otto's 12-message history cap** | ❌ **MEASURED AND REJECTED 2026-08-05, see 4.5.** History is 38% of full-price input but **5% of the bill**. A free user on the 5/day cap tops out at 9 messages and never reaches 12, so trimming bills Supporters almost exclusively. And it backfires: the cold write is per-conversation, so shorter history means fewer messages to spread it across. **Do not re-propose without new evidence.** |
 
 ---
 

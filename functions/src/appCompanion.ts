@@ -18,7 +18,7 @@ import {
   type FaithTier,
 } from './companionSystemPrompt';
 import { assembleAppKnowledge } from './knowledgeChapters';
-import { recordUsage } from './aiUsageMeter';
+import { recordUsage, recordHistorySample } from './aiUsageMeter';
 
 // NOTE: admin.initializeApp() is already called once in index.ts. Do NOT call it again here.
 //
@@ -69,6 +69,11 @@ const DEV_UNLIMITED_UIDS: string[] = ['zLZOx2aqiKXcl3tlg7LNmkwbGxH3'];
 // Cheap, fast model (matches Halo). Alias form, no date suffix.
 const MODEL = 'claude-haiku-4-5';
 const MAX_TOKENS = 800;            // concise replies; bounds cost and latency
+// ⚠️ MEASURED 2026-08-05 AND DELIBERATELY LEFT AT 12 (PLAN.md 4.5). Do not "optimise" this.
+// History is 38% of full-price input but only 5% of the bill. A free user on the 5/day cap tops out at 9
+// messages of history and never reaches this cap, so lowering it bills SUPPORTERS almost exclusively.
+// And it backfires: the cold cache write is a per-CONVERSATION cost, so a shorter history means fewer
+// messages to spread it over ($0.0072/msg over 10 messages vs ~$0.021 over 2).
 const MAX_HISTORY_TURNS = 12;      // cap the conversation sent to the API (cost + abuse)
 const CRISIS_TAG = '[[CRISIS]]';
 
@@ -427,6 +432,24 @@ export const appCompanion = onCall(
       // PLAN.md item 0: record what this call actually cost. Fire and forget -- never
       // awaited, never throws, and writes to its own collection so it cannot touch the cap counters.
       recordUsage('otto', uid, MODEL, response.usage);
+      // PLAN.md 4.5. What does re-sending the conversation actually cost? Both system blocks carry cache
+      // markers now, so `usage.input_tokens` is the MESSAGE side of the request at full price. Count this
+      // turn on its own and the remainder is the history.
+      // ⚠️ NOT AWAITED, and inside its own try -- a measurement must never delay or break a reply. The
+      // count_tokens call is free and does not consume the daily cap.
+      void (async () => {
+        try {
+          if (!history.length) return;
+          const turnOnly = await client.messages.countTokens({
+            model: MODEL,
+            messages: [messages[messages.length - 1]],
+          });
+          const histTok = (response.usage?.input_tokens ?? 0) - (turnOnly.input_tokens ?? 0);
+          recordHistorySample('otto', uid, histTok, history.length);
+        } catch (e) {
+          console.error('[otto] history sample failed', { msg: (e as Error)?.message });
+        }
+      })();
       replyText = response.content
         .filter((b): b is Anthropic.TextBlock => b.type === 'text')
         .map((b) => b.text)

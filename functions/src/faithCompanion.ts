@@ -51,6 +51,9 @@ const DEV_UNLIMITED_UIDS: string[] = [];
 // needs it). Alias form, no date suffix.
 const MODEL = 'claude-haiku-4-5';
 const MAX_TOKENS = 800;            // concise replies; bounds cost and latency
+// ⚠️ NOT MEASURED FOR HALO. Otto's identical cap was measured 2026-08-05 and left at 12 (PLAN.md 4.5), but
+// **do not assume that result transfers**: her cached prompt is ~4,200 tokens against Otto's 26,442, so the
+// per-conversation cold write that dominates his arithmetic is a seventh the size here.
 const MAX_HISTORY_TURNS = 12;      // cap the conversation sent to the API (cost + abuse)
 const CRISIS_TAG = '[[CRISIS]]';
 

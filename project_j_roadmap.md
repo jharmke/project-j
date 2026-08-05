@@ -30,6 +30,13 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-08-05 **The meter now measures what re-sending a conversation costs, and the answer was "leave it
+  alone."** Otto has no memory, so every message carries the recent conversation with it, capped at 12
+  messages. Measured on a deliberate 10-message chat: **38% of full-price input but 5% of the bill**, and a
+  free user on the 5/day cap never reaches the cap anyway, so trimming it would have billed Supporters to
+  save ~$65/yr. It would also have backfired, because the expensive event is one cold cache write per
+  CONVERSATION and a longer chat spreads it over more messages. A 2-message conversation costs ~3x per
+  message what a 10-message one does. Detail: `PLAN.md` 4.5.
 - 2026-08-05 **Otto stopped re-sending the same paragraph at full price on every message.** The per-user half
   of his prompt is now split at its own stability line, so the part that never changes between messages (and
   for a free user that is a block of text identical for everyone) gets cached instead of paid for every time.

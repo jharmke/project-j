@@ -95,3 +95,53 @@ export function recordUsage(
     console.error('[aiUsageMeter] threw', { feature, msg: (e as Error)?.message });
   }
 }
+
+/**
+ * PLAN.md 4.5 INSTRUMENTATION. How much of a message's full-price input is the conversation being
+ * re-sent? Otto has no memory, so the last `MAX_HISTORY_TURNS` messages ride along on every new one and
+ * are paid for again each time. Nobody has ever measured what that costs.
+ *
+ * ⚠️ MEASUREMENT ONLY. Changes nothing about what Otto is sent or how he answers. It exists so the cap can
+ * be tuned against a reading instead of an opinion -- cutting it blind trades money we have not confirmed
+ * we are spending for Otto losing the thread mid-conversation, which is a worse app.
+ *
+ * ⚠️ `historyTokens` is a SUBTRACTION, so it carries a few tokens of request overhead either way. Read it
+ * as a share of the bill, not to the token. `historySamples` is the divisor -- **average history per
+ * message is `historyTokens / historySamples`, NOT `historyTokens / calls`**, because a message with no
+ * history yet is deliberately not sampled.
+ *
+ * FIRE AND FORGET, same as `recordUsage`, and writes to the same per-day document.
+ */
+export function recordHistorySample(
+  feature: string,
+  uid: string,
+  historyTokens: number,
+  historyTurns: number,
+): void {
+  try {
+    if (!uid || !(historyTokens > 0)) return;
+    const inc = admin.firestore.FieldValue.increment;
+    const date = todayKey();
+    admin
+      .firestore()
+      .collection('ai_cost')
+      .doc(`${uid}_${date}`)
+      .set(
+        {
+          uid,
+          date,
+          byFeature: {
+            [feature]: {
+              historyTokens: inc(historyTokens),
+              historyTurns: inc(historyTurns),
+              historySamples: inc(1),
+            },
+          },
+        },
+        { merge: true },
+      )
+      .catch((e) => console.error('[aiUsageMeter] history write failed', { feature, msg: (e as Error)?.message }));
+  } catch (e) {
+    console.error('[aiUsageMeter] history threw', { feature, msg: (e as Error)?.message });
+  }
+}

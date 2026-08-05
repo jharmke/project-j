@@ -70,9 +70,33 @@ into one another. Justin's sessions are spread across the day, so it would not. 
 for every user (2.2), so with enough users it never goes cold at any TTL. **The trigger for 2.1b should be a
 measured cold-write rate, not the launch date.**
 
-🔴 **FINDING 2: ~2,200 FULL-PRICE TOKENS PER MESSAGE, NOT THE 1,100-1,400 ASSUMED** (32,960 / 15). History is
-the only piece big enough to explain the gap. ➡️ First real evidence for **PLAN 4.5** (`MAX_HISTORY_TURNS` is
-12 and has never been measured or tuned), which is now the biggest open item in section 4.
+🔴 **FINDING 2: ~2,200 FULL-PRICE TOKENS PER MESSAGE, NOT THE 1,100-1,400 ASSUMED** (32,960 / 15).
+➡️ **MEASURED THE SAME DAY, see the next section. History is 38% of it, not all of it** -- the rest is the
+reply-shape block, the user's own message and the occasional pitch/cap block. **PLAN 4.5 is closed: leave the
+cap at 12.**
+
+### 🔬 ONE DELIBERATE 10-MESSAGE CONVERSATION (2026-08-05, before/after read, MEASURED)
+| | cost | share |
+|---|---:|---:|
+| **ONE cold cache write** | $0.0342 | **48%** |
+| cache reads | $0.0246 | 34% |
+| full-price input (history = $0.0036 of it) | $0.0094 | 13% |
+| output | $0.0036 | 5% |
+| **10 messages** | **$0.0718** | **$0.0072 each** |
+
+🔴 **THE COLD WRITE IS A PER-CONVERSATION COST, AND IT DOMINATES.** Rebuilding the 26,442-token block once
+cost more than everything else in a ten-message conversation combined.
+➡️ **SO COST PER MESSAGE DEPENDS ON CONVERSATION LENGTH:** ~$0.0072 over 10 messages, **~$0.021 over 2**.
+A short conversation is roughly **3x more expensive per message.**
+⚠️ **The $0.0043 "warm" figure quoted elsewhere assumes the write never happens.** It happens once per
+conversation. **Quote $0.0072 for a real conversation, not $0.0043.**
+⚠️ **UNCOSTED INTERACTION WITH THE 5/DAY CAP (section 3.1):** the cap pushes users toward short
+conversations, which are the most expensive shape per message. Nobody has modelled that.
+✅ **4.3 confirmed live**: the write is 27,354, i.e. the 26,442 block plus ~900 -- that ~900 is 4.3's new
+cache block writing itself.
+✅ **History measured: 3,565 tokens, 38% of full-price input, 5% of the bill.** `historyTurns` came to
+84 over 10 samples (1,3,5,7,9,11,12,12,12,12), so the cap genuinely engaged. **Cutting it is rejected --
+see PLAN.md 4.5 and the DECIDED AGAINST table.**
 
 ⚠️ **This day mixes before and after PLAN 4.3**, which deployed mid-afternoon, so it does NOT size 4.3. The
 first all-after day is the clean read.
@@ -513,7 +537,7 @@ churn, which is a cost this model does not capture. Justin's call, 2026-08-04.
 | **Halo: its REAL per-message cost** | ⚠️ This model costs Halo at $0.0025, which is INPUT ONLY -- the figure in SPEC_monetization excludes its reply. If Halo answers at Otto's length its true cost is nearer $0.0036 and **every table here undercounts Halo** |
 | ~~**Halo: cache splitting**~~ | ✅ **ANSWERED 2026-08-04 EVENING. There is no cache to split -- it has NEVER cached** (2,465 tokens, under Haiku's 4,096 minimum). **And the fix is to make the prompt BIGGER, not smaller** -- padding past 4,096 makes it cacheable and takes it from $0.0032 to ~$0.0007. See section 2 at the top |
 | ~~**Smart Coach rulebook** (item O)~~ | ✅ **MEASURED 2026-08-05. The rulebook is 3,109 tokens, NOT 11,600** -- the old figure was the size of the whole `coachAI.ts` file, not the constant inside it. Full system prompt is 3,520, which sits UNDER Haiku's 4,096 cache minimum, so it has never cached. **The fix is to GROW it past 4,096, not shrink it.** Decisions in `PLAN.md` section 1 |
-| **Conversation history** | Every message re-sends the previous turns, so a long chat pays for itself again each time. A limit exists (`MAX_HISTORY_TURNS`) but nobody has measured what it costs or whether it is tuned right. Invisible to users |
+| ~~**Conversation history**~~ | ❌ **MEASURED AND CLOSED 2026-08-05 -- not a dial, leave it at 12.** 38% of full-price input but **5% of the bill**; a free user on the 5/day cap never reaches the cap anyway, so trimming bills Supporters only, and shorter history makes the per-conversation cold write land on fewer messages. See PLAN.md 4.5 |
 | **Which prompt rules Otto ignores** | He breaks at least two (dashes, and the length rule) -- found by reading replies, not by testing. The rest of that block is assumption. Quality AND cost |
 
 ## 🟡 OPEN DECISIONS

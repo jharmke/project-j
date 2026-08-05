@@ -41,6 +41,22 @@ Read project_j_roadmap.md at the start of every session before touching anything
   go deeper only when the actual task needs it. Those two sections ARE the session-start read. (Set
   2026-07-16 -- the intent was always "know what's active," never "ingest the whole file.")
   It is the SLIM active roadmap. project_j_roadmap_archive.md is the frozen shipped/fixed history -- read only when you need the story behind a shipped feature. project_j_backlog.md is parked/future items -- read only when planning future sessions
+- 🔴 **THE SHIP CHECK -- MECHANICAL, RUN IT BEFORE EVERY COMMIT. Added 2026-08-05 because "keep the docs
+  in sync" is a principle and principles do not bind.** On 2026-08-05 four separate pieces of work shipped
+  and `RECENTLY SHIPPED` got nothing, `SMART_COACH_SPEC.md` still described a rulebook that had changed that
+  morning, and `SPEC_cost_model.md` had only the before numbers. `PLAN.md` was updated every single time,
+  which is exactly why the miss went unnoticed: it FELT like the docs were being kept up.
+  ➡️ **Run `git diff --cached --name-only`. If that list contains any file outside `*.md`, then a `.md` file
+  MUST appear in the same list, in the same commit.** One command, unambiguous answer, no judgement call.
+  ➡️ **And check these by name, not by vibe:**
+  | Changed | Must also update |
+  |---|---|
+  | App/functions code that ships behaviour | `PLAN.md` status + **`project_j_roadmap.md` RECENTLY SHIPPED (one line)** |
+  | A prompt, rulebook or model behaviour | that feature's own spec (`SMART_COACH_SPEC.md`, `SPEC_otto.md`, ...) |
+  | Anything with a cost | `SPEC_cost_model.md` |
+  | Anything user-facing | `tooltipRegistry.ts` + `data/tutorials.ts` + Otto's KB (rule further down) |
+  ⚠️ **Updating ONE doc is the trap.** The miss is never "I forgot the docs", it is "I updated the one I was
+  looking at". Name each file and check it.
 - After Justin states the task, restate it and wait for explicit go-ahead
 - "WHAT'S NEXT" = **read PLAN.md's queue first and answer top-down from it**, then the "⏭️ NEXT UP" section
   of project_j_roadmap.md for anything outside that push. Answer TOP-DOWN ([NOW] items first). ALWAYS also offer at least one QUICK WIN from that list, and pull a stale item up from the backlog-by-area / project_j_backlog.md now and then so nothing rots. NEXT UP is the single ranked queue; new small ideas land THERE (ranked), never buried straight into the backlog. When something ships, remove it from NEXT UP and refill from the backlog. (Justin flagged 2026-07-05 that the backlog was where ideas went to die because "what's next" never surfaced them.)

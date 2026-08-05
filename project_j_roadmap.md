@@ -2523,8 +2523,16 @@ are separate pre-submission checklists, NOT part of this menu.
   and again 2026-07-29 (second confirmation received). Mail searched back 60 days on 2026-07-29: there is NO
   approval and NO denial, only the two "we've received your request" emails. The duplicate submission is
   harmless.
-  ➡️ **IF NOTHING BY 2026-08-05, CONTACT APPLE DEVELOPER SUPPORT** (developer.apple.com/contact, membership /
-  App Store Connect topic). Three weeks from the original submission is long enough to ask.
+  ✅ **CONTACTED 2026-08-05 -- AWAITING REPLY. Not resolved, do not close this item.** Sent via
+  developer.apple.com/contact under **Agreements and Contracts** (NOT "Program Enrollment", which routes to
+  Developer Program membership signup; the Small Business Program is a change to the Paid Apps agreement).
+  Message named both submission dates, flagged the duplicate, and gave Team ID 8A8F5933RX so support can look
+  the account up without a round trip. A Case ID comes back by email.
+  ⚠️ **CONTEXT THAT LOWERS THE URGENCY:** developers report a typical 6-10 day turnaround with no published
+  official timeline, and some wait 40+ days. Justin was at 23 days. **There is no revenue yet, so the delay
+  has cost nothing so far** -- the reduced rate applies 15 days after the end of the fiscal month in which
+  enrolment is APPROVED, so what matters is being approved before launch, not today.
+  ➡️ **NEXT: if no reply by ~2026-08-19, chase again quoting the Case ID.**
   WHY IT MATTERS: 30% -> 15% Apple cut, i.e. roughly **21% more revenue per subscription** with no code, no
   price change, no product work. It moves the unit economics more than every AI optimisation considered on
   2026-07-29 combined, and the COST MODEL projections in SPEC_monetization.md still assume 30%.

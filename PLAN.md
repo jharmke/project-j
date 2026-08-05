@@ -171,7 +171,6 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       today's tip. Worse than useless.
 - ⏸️ **1.5 PARKED WITH A TRIGGER** (combine Home's two calls into one). See the PARKED table below --
       **$390/yr at 2,500 actives, revisit above ~10,000.** Not deleted.
-- [ ] **1.6** Verify whether the recovery tip has the same low-data waste as sleep. **Unverified.**
 - ➡️ Expected: **~$0.37 -> ~$0.10/user/month, DERIVED**, nothing visible changing. Item 0 confirms it.
 
 ### 2. THE CACHE FIXES -- launch build
@@ -224,7 +223,13 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       ⚠️ Halo's real per-call cost is **$0.00406 metered**, not the $0.0032 in the old docs.
       ⚠️ Once it DOES cache, the old note about the plans catalog varying inside the cached block becomes a
       live problem -- check it then (it is harmless today only because nothing caches).
-- [ ] **2.4** Don't send the Faith chapter to "Not Right Now" users. 635 tokens they can never need.
+- ⏸️ **2.4 PARKED WITH A TRIGGER** (skip the Faith chapter for "Not Right Now" users). Recorded elsewhere as
+      a "free win"; it is not. Those 635 tokens sit INSIDE the cached block, so at the cached price they are
+      worth about **six hundredths of a cent a message** -- and skipping them needs a SECOND variant of the
+      block, which re-splits the cache 2.2 just unified. A small slice of users would keep their own copy
+      warm, and when it went cold they would pay a full write: **33,000 effective tokens instead of 2,600.**
+      **Same trap that killed the router: trading a rounding error for a fragmentation risk.**
+      ➡️ **REVISIT** only once traffic is high enough that every variant stays warm regardless.
 
 ### 3. THE FREE CAP
 - [ ] **3.1** Otto and Halo free cap 10/day -> 5/day. Enforced server-side already, so it is a safe change.
@@ -397,8 +402,9 @@ Read per call, changeable without an App Store update.
 ### 7. NOT AI, AND BIGGER THAN MOST OF THIS
 - [~] **7.1 Apple Small Business Program.** ⚠️ **APPLIED TWICE, NO RESPONSE** (2026-07-13 and 2026-07-29,
       both confirmed received). **NOT a to-do for Justin to start -- do not recommend enrolling again.**
-      ➡️ **ACTION 2026-08-05: contact Apple Developer Support** (developer.apple.com/contact, membership /
-      App Store Connect topic). Worth ~21% more revenue per subscription, more than every AI optimisation
+      ✅ **CONTACTED 2026-08-05 via Agreements and Contracts. AWAITING REPLY -- still open.**
+      ⚠️ Typical turnaround is 6-10 days with no official timeline published; Justin was at 23. No revenue
+      yet, so the delay has cost nothing. Chase again ~2026-08-19 with the Case ID if silent. Worth ~21% more revenue per subscription, more than every AI optimisation
       here combined.
 - [ ] **7.2** Revenue levers never properly discussed: price, annual push, tip jar. Cost cutting can only
       ever take you to zero.

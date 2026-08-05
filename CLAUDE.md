@@ -24,14 +24,26 @@ Branding: NOT marketed as a "Christian app." Positioned as intentional, encourag
 Read project_j_roadmap.md at the start of every session before touching anything. Parked/future items live in project_j_backlog.md -- read only when planning future sessions.
 
 ## Process
+- **READ PLAN.md FIRST, EVERY SESSION, BEFORE THE ROADMAP.** It is short by design and it is THE single
+  ranked queue: what we are doing, in order, with a status on each. It also carries the status of plan
+  items A-O, the dial register, and a DECIDED-AGAINST list so dead ideas stop being re-proposed.
+  Created 2026-08-05 after two sessions were derailed by the same fact living in four files with three of
+  them stale. **Where PLAN.md and any other doc disagree, PLAN.md wins.**
+  ⚠️ **Its three rules are binding on you too:** every fact lives in exactly ONE file (everywhere else gets
+  a pointer, never a copy); every number is tagged MEASURED / DERIVED / ASSUMED; PLAN.md holds status and
+  ranking only, detail lives in the spec named beside each item.
+  ⚠️ **If you renumber or reorganise anything Justin has been tracking, SAY SO and leave a mapping.**
+  Silently renumbering a list he is following reads exactly like dropping the work, even when nothing was
+  lost. That happened 2026-08-05.
 - Read project_j_roadmap.md at session start, every session, no exceptions -- but read it TARGETED, not
-  whole. The file is ~43KB (~25k tokens) and reading it end to end burns a chunk of the session's usage
-  before any work happens. Grep the "⏭️ NEXT UP" and "RECENTLY SHIPPED" headings and read those sections;
+  whole. The file is **~375KB (~90k tokens, and growing)** and reading it end to end burns a chunk of the
+  session's usage before any work happens. Grep the "⏭️ NEXT UP" and "RECENTLY SHIPPED" headings and read those sections;
   go deeper only when the actual task needs it. Those two sections ARE the session-start read. (Set
   2026-07-16 -- the intent was always "know what's active," never "ingest the whole file.")
   It is the SLIM active roadmap. project_j_roadmap_archive.md is the frozen shipped/fixed history -- read only when you need the story behind a shipped feature. project_j_backlog.md is parked/future items -- read only when planning future sessions
 - After Justin states the task, restate it and wait for explicit go-ahead
-- "WHAT'S NEXT" = read the "⏭️ NEXT UP" section of project_j_roadmap.md and answer TOP-DOWN from it ([NOW] items first). ALWAYS also offer at least one QUICK WIN from that list, and pull a stale item up from the backlog-by-area / project_j_backlog.md now and then so nothing rots. NEXT UP is the single ranked queue; new small ideas land THERE (ranked), never buried straight into the backlog. When something ships, remove it from NEXT UP and refill from the backlog. (Justin flagged 2026-07-05 that the backlog was where ideas went to die because "what's next" never surfaced them.)
+- "WHAT'S NEXT" = **read PLAN.md's queue first and answer top-down from it**, then the "⏭️ NEXT UP" section
+  of project_j_roadmap.md for anything outside that push. Answer TOP-DOWN ([NOW] items first). ALWAYS also offer at least one QUICK WIN from that list, and pull a stale item up from the backlog-by-area / project_j_backlog.md now and then so nothing rots. NEXT UP is the single ranked queue; new small ideas land THERE (ranked), never buried straight into the backlog. When something ships, remove it from NEXT UP and refill from the backlog. (Justin flagged 2026-07-05 that the backlog was where ideas went to die because "what's next" never surfaced them.)
 - Update the roadmap in real time the moment anything ships, a bug is found, or a decision is made. Never batch at end of session
 - ROADMAP HYGIENE (non-negotiable, this is why it bloated to 368KB before): when something ships, it gets ONE line under "RECENTLY SHIPPED" in project_j_roadmap.md and the detailed post-mortem goes to project_j_roadmap_archive.md the SAME session. NEVER write a long completed-feature writeup into the active roadmap. Keep the active file lean; the archive is where detail accumulates
 - After every completed feature, recommend a git commit

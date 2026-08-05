@@ -82,8 +82,28 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
 - [ ] **3.2** The counter UI. 🟡 **Wording and placement deliberately NOT settled** -- needs the screen.
       🟡 Open: does a zero-cost canned answer count against the cap? Justin leans yes.
 
-### 4. STILL UNDISCUSSED -- findings #2 to #13 from the 2026-08-05 measuring pass
-These are measured findings with no decision yet. Work them one at a time, same as #1.
+### 4. STILL UNDISCUSSED -- from the 2026-08-05 measuring pass
+These are measured findings with no decision yet. Work them one at a time, same as section 1.
+
+⚠️ **MAP TO THE ORIGINAL FINDINGS LIST** (the numbering Justin was tracking). Renumbering without this map
+is what made him think work had been dropped -- it had not, but he had no way to check. Keep it current.
+
+| Original # | Finding | Now |
+|---|---|---|
+| 1 | Smart Coach is the #1 AI cost | ✅ decided -- section 1 |
+| 2 | Smart Coach can't cache (under 4,096) | ✅ decided -- **same fix as #1**, see 1.1 |
+| 3 | Docs said the rulebook was 11,600 tokens | ✅ done -- corrected in 4 places |
+| 4 | Meal estimator runs on Sonnet | 🔴 open -- **4.1** |
+| 5 | Otto's uncached per-message overhead | 🔴 open -- **4.3** |
+| 6 | Reply-shape block is 336 tokens, not 40 | 🔴 open -- **4.4** |
+| 7 | Otto's cache is healthy | ✅ nothing to do (good news) |
+| 8 | Otto's cap is server-side | ✅ nothing to do -- enables 3.1 |
+| 9 | Estimator's cap is client-side | 🔴 open -- **4.2** |
+| 10 | History capped at 12 turns | 🔴 open -- **4.5** |
+| 11 | Otto's 4,425 tokens of rules unread | 🔴 open -- **4.6** |
+| 12 | Is Otto wordier on some topics | 🔴 open -- **4.7** |
+| 13 | Smart Coach packet not sized | ✅ done -- ~200 tokens |
+
 - [ ] **4.1** The **meal estimator runs on Sonnet** (3x Haiku on both input and output) on the one feature
       that also sends an image. ~$0.0165/estimate vs ~$0.0055 on Haiku. ⚠️ Vision + structured JSON --
       **needs a quality test, not just a config change.** ⚠️ Also note: item O recorded a Justin decision

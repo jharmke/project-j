@@ -33,6 +33,20 @@ real readings.**
 
 ---
 
+## 🔬 BUILT BUT NOT VERIFIED ON DEVICE
+
+⚠️ **"Built" is not "done".** Anything here is shipped code whose effect nobody has actually seen. Clear it
+before starting new work, not after. Added 2026-08-05 after a review turned up a check that was flagged and
+then quietly skipped.
+
+| What | The check | Risk if wrong |
+|---|---|---|
+| 🔴 **2.2 moved Otto's faith-tier rules** to a different position in the prompt | Profile > gear > Faith & Style > **Not Right Now**. Ask Otto something faith-adjacent. He must NOT mention Halo or weave in scripture. Set it back after. | **Highest risk item.** Halo and the Faith tab are HIDDEN for these users, so pointing at Halo sends them at something that does not exist. Values-sensitive, not a cost issue. |
+| 🟡 Smart Coach prompt content | The tips were checked after the FIRST padding pass, before the second. Four rulebook sections have never had their output read. | Worse tips, silently |
+| 🟡 Halo prompt content | Three new voice examples in. Only messages sent were "hi" and "how are you". | Ditto. One real message would settle it |
+| 🟡 **1.2** skip-the-AI on no-data | Not reachable from an account with full data. | Low -- it is an `if` on a value the engine already computed |
+| 🟡 **1.7** EvR voicing scoped to visible cards | ⚠️ **May not be exercisable by Justin at all** -- with the dev Pro toggle on he sees every card and the narrowed path never runs. Check which account first. | Medium. The upgrade path (blank cards) is the failure mode to watch |
+
 ## THE QUEUE
 
 Ranked. Do them top down. `[ ]` not started, `[~]` in progress, `[x]` done and verified on device.
@@ -69,6 +83,16 @@ cached** -- both returned `cacheRead 0, cacheWrite 0`.
 ⚠️ **STILL TO CONFIRM:** Smart Coach logged only ONE call, not the two predicted. Almost certainly because
 the app was opened before the meter deployed, so that day's tips were already generated and the dedup
 returned early. **The first Home-tab open on a fresh day is the clean test.**
+
+- [ ] **0.2 🆕 THE METER HAS NO RETENTION RULE -- a gap WE created 2026-08-05.** It writes one Firestore
+      document per user per day, forever. At 10,000 users that is **3.65 million documents a year** with
+      nothing ever deleting them.
+      ⚠️ Not a cost problem (Firestore storage is cheap) -- a **tidiness problem that gets harder to fix the
+      longer it runs**, and it will quietly become the largest collection in the project.
+      ➡️ Options: a scheduled function deleting `ai_cost` docs older than ~90 days, or rolling them up into
+      one document per user per month and dropping the dailies. **Rolling up is better** -- it keeps the
+      long-run trend, which is the whole point of having a meter.
+      ⚠️ **Do it BEFORE launch.** Retrofitting cleanup onto a live collection is worse than shipping with one.
 
 ### 1. SMART COACH -- the biggest AI cost in the app (~$0.37/user/mo, DERIVED)
 Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.

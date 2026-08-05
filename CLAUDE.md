@@ -57,6 +57,17 @@ Read project_j_roadmap.md at the start of every session before touching anything
   | Anything user-facing | `tooltipRegistry.ts` + `data/tutorials.ts` + Otto's KB (rule further down) |
   ⚠️ **Updating ONE doc is the trap.** The miss is never "I forgot the docs", it is "I updated the one I was
   looking at". Name each file and check it.
+  🔴 **STEP 3 -- GREP FOR CONTRADICTIONS. ADDING DOCS IS NOT THE CHECK. Added 2026-08-05 because steps 1 and
+  2 BOTH PASSED and four files still described the old behaviour.** Writing a new doc entry does not find
+  the OTHER file that says the opposite; only searching does.
+  ➡️ **Take 2-4 distinctive terms for what you just changed** -- the function name, the constant, and the
+  phrase the OLD behaviour was described with (e.g. "not cached") -- **grep every `*.ts` and `*.md` for them,
+  and READ every hit.** One command.
+  ➡️ **Fix or mark every contradiction found**, including code comments and spec tables. A stale table that
+  is deliberately a historical record gets marked stale IN PLACE, not silently edited.
+  ⚠️ On 2026-08-05 this caught: a code comment stating the exact opposite of the new behaviour, a rule that
+  had become half-true, a cost constant that was **10x wrong** and feeding the break-even maths, and a stale
+  spec table. The commit had already shipped with three `.md` files in it and looked clean.
 - After Justin states the task, restate it and wait for explicit go-ahead
 - "WHAT'S NEXT" = **read PLAN.md's queue first and answer top-down from it**, then the "⏭️ NEXT UP" section
   of project_j_roadmap.md for anything outside that push. Answer TOP-DOWN ([NOW] items first). ALWAYS also offer at least one QUICK WIN from that list, and pull a stale item up from the backlog-by-area / project_j_backlog.md now and then so nothing rots. NEXT UP is the single ranked queue; new small ideas land THERE (ranked), never buried straight into the backlog. When something ships, remove it from NEXT UP and refill from the backlog. (Justin flagged 2026-07-05 that the backlog was where ideas went to die because "what's next" never surfaced them.)

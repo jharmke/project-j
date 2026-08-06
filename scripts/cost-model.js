@@ -43,6 +43,9 @@ const C = {
   annualShare:  { v: 0.30,  src: 'ASSUMED share of Supporters choosing annual.' },
   activeRate:   { v: 0.30,  src: 'ASSUMED share of installs still active. ⚠️ CANCELS OUT of break-even.' },
 };
+// ⚠️ ENV OVERRIDES, for scenario work without editing the committed assumptions.
+// e.g.  coachTipsDay=1 estimator=0.0068 node scripts/cost-model.js
+for (const k of Object.keys(C)) if (process.env[k] !== undefined) C[k] = { v: Number(process.env[k]), src: 'OVERRIDDEN via env for this run' };
 const v = (k) => C[k].v;
 
 const money = (n) => (n < 0 ? `-$${Math.round(Math.abs(n)).toLocaleString()}` : `+$${Math.round(n).toLocaleString()}`);

@@ -747,7 +747,7 @@ Read per call, changeable without an App Store update.
 | A | Otto open items | ✅ complete 2026-07-30 |
 | B | Otto free/paid split | direction locked, prompt/KB work outstanding |
 | C | Non-AI walls / paywalls / limits | ⚠️ header says NOT COMPLETE, but the 2026-08-03 commit says closed after audit. **Verify before trusting either.** |
-| D | 7-day taste | ✅ fully agreed 2026-07-31, **specced not built** |
+| D | 7-day taste | 🔴 **THIS ROW WAS WRONG. CORRECTED 2026-08-05 by Justin, who said he was "almost certain it is fully built" and was right.** `FirstWeekEndedModal.tsx` exists and is wired into `app/(tabs)/index.tsx`. It said "specced not built" and I quoted that back at him as an unbuilt conversion lever. **Verify what remains on it before planning around it.** |
 | E | Workout builder | needs a full spec |
 | F | Meal builder | needs a full spec |
 | G | Calorie floor | ✅ complete + device-verified 2026-08-03 |
@@ -769,6 +769,28 @@ Read per call, changeable without an App Store update.
       here combined.
 - [ ] **7.2** Revenue levers never properly discussed: price, annual push, tip jar. Cost cutting can only
       ever take you to zero.
+      🔬 **MODELLED 2026-08-05, two findings worth keeping:**
+      - **Price is the strongest single lever nobody has touched.** At $12.99 break-even falls to ~2.2% with
+        nothing else changing; at $6.99 it rises past 4%.
+      - 🔴 **PUSHING ANNUAL MAKES BREAK-EVEN SLIGHTLY WORSE, not better.** $89.99 against $119.88 of monthly
+        payments is a **25% discount**. A 6-month monthly subscriber is worth $50.94; an annual one $76.49.
+        **So annual only wins if it genuinely doubles retention** -- which contractually it does, since an
+        annual subscriber cannot churn in month three. It is a trade (certainty for margin), not free money.
+        Do not "push annual" on the assumption it helps; it helps only through retention.
+- [ ] **7.3 🆕 VERIFY WE CAN MEASURE ACTIVES, CONVERSION AND RETENTION. BEFORE LAUNCH (Justin, 2026-08-05).**
+      🔴 **THE UNCOMFORTABLE OBSERVATION THAT PROMPTED THIS: we instrumented the solved problem.** `ai_cost`
+      knows every token, cache read and route decision to the cent, and AI cost turned out to be the part
+      that was already fine ($2.64 per active user per year). **The three numbers that actually decide
+      whether this makes money -- active users, conversion, and retention -- are not verified as
+      instrumented at all.**
+      ➡️ **CHECK, do not assume:** RevenueCat should give conversion and churn, but nobody has opened it and
+      confirmed what it reports or how it defines a conversion. Actives (DAU/MAU) may not be instrumented
+      anywhere. **Launch without churn data and every table in `scripts/cost-model.js` stays a guess
+      forever**, because subscriber lifetime is the single biggest assumption in it (at 6 months instead of
+      12, break-even roughly doubles).
+      ✅ **Canned-answer rate IS already tracked** (`cannedHit` / `cannedMiss` / `cannedBlocked` in `ai_cost`,
+      PLAN 4.8), as is the coach/support mix (`routeCoach` / `routeSupport`).
+      ⚠️ Not urgent tonight and useless at solo volume. Do it in the pre-launch window.
 
 ---
 

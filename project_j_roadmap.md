@@ -1457,6 +1457,12 @@ WINS. Items graduate UP here from the backlog sections so good ideas don't rot d
 ships it leaves this list. Always offer at least one QUICK WIN when Justin asks what's next, and pull a
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
+- 🔴 **[NOW] [NEW 2026-08-05 EVENING] VERIFY WE CAN MEASURE ACTIVES, CONVERSION AND RETENTION. Pre-launch,
+  not tonight. Full detail: `PLAN.md` 7.3.** We instrumented AI cost to the cent and it turned out to be the
+  solved problem ($2.64 per active user per year). **Actives, conversion and retention are what decide
+  whether the app makes money and none of them is verified as tracked.** Open RevenueCat and confirm what it
+  actually reports; find out whether DAU/MAU exists anywhere. Subscriber lifetime is the biggest assumption
+  in `scripts/cost-model.js`, and at 6 months instead of 12 break-even roughly doubles.
 - 🔴 **[NOW] [NEW 2026-08-04 EVENING] THE COST WORK. Full findings and every table live in
   SPEC_cost_model.md, sections 1-11 at the TOP of that file. Read those before touching any of this.**
   Nothing below is built. Ranked; do them in this order.

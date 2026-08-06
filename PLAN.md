@@ -406,8 +406,40 @@ is what made him think work had been dropped -- it had not, but he had no way to
          calls). ➡️ **MEASURED the same day: history is 38% of that, not all of it.** The rest is the
          reply-shape block, the user's own message and the occasional pitch/cap block. **4.5 is closed.**
       ✅ The meter's own dollar figure reconciles to the price model to the cent ($0.200352). These are good numbers.
-- [ ] **4.4** The reply-shape block's own comment claims it is "~40 input tokens". **It is 336.** It still
-      pays for itself, but ~1.5x over, not the "twelve times over" claimed.
+- [x] **4.4 ✅ MEASURED AND CLOSED 2026-08-06. IT DOES NOT PAY FOR ITSELF AT ALL.** Its own comment claims
+      "~40 input tokens" bought back "~100 output tokens", so it "pays for itself roughly twelve times over".
+      **Both halves are wrong.** MEASURED on the same 18 coaching questions, with and without the block:
+      | | |
+      |---|---:|
+      | block size | **334 tokens** (1,302 chars), not 40 |
+      | output WITHOUT it | 185 tokens |
+      | output WITH it | 122 tokens |
+      | so it saves | 63 output tokens = **$0.000315** |
+      | and it costs | 334 input tokens = **$0.000336** |
+      | **net** | **-$0.00002 a message** |
+      🔴 **DO NOT DELETE IT ON THIS FINDING.** The block is not only about length: it also carries the
+      no-questions rule, the ambiguous-message rule and the no-dashes rule. Those are QUALITY, and they would
+      have to be re-homed. ➡️ **The correct conclusion is "its cost justification is false", not "remove it".**
+      ⚠️ The earlier note here said it pays back ~1.5x. That was arithmetic on the corrected size against the
+      comment's own claimed 100-token saving. The real saving is 63, which tips it negative.
+- [x] **4.7 ✅ MEASURED AND CLOSED 2026-08-06. OTTO ALREADY COMPLIES. NOTHING TO DO.**
+      Harness: `functions/_otto_length.cjs`, 18 real coaching questions, A/B against the real prompt stack.
+      | as shipped | |
+      |---|---:|
+      | output | **122 tokens** |
+      | sentences | **3.3** (rule says two to four) |
+      | replies over one paragraph | **0 / 18** |
+      ❌ **AN EXTRA LENGTH RIDER MADE IT WORSE**, not better: 136 output tokens and 3.6 sentences, on top of
+      123 tokens of uncached input. More instruction produced longer replies. It would have shipped as a net
+      loss.
+      🔴 **THE FIRST TWO RUNS WERE INVALID AND NEARLY SHIPPED A WRONG CONCLUSION.** The harness omitted
+      `REPLY_SHAPE_BLOCK`, which `appCompanion.ts` attaches to the user turn on EVERY message and which is
+      already a full length rider. The baseline was therefore Otto with his length rule stripped out, and it
+      measured 7.3 sentences and 18/18 multi-paragraph -- which looked like a large opportunity and was an
+      artefact. ➡️ **A harness is only as good as its reading of the call site. Reproduce the WHOLE user
+      turn, not the parts you happen to have read.** See [[feedback_read_full_context_before_debugging]].
+      ✅ **Justin called both 4.6 and 4.7 correctly before either was measured** ("I'm almost certain it is
+      all tightly written already"). Two for two.
 - [x] **4.5 ✅ MEASURED AND CLOSED 2026-08-05. THE ANSWER IS "LEAVE IT AT 12."** Instrumented
       (`recordHistorySample` in `aiUsageMeter.ts`, fired from `appCompanion.ts`, measurement only, changes
       nothing Otto is sent), then measured on a deliberate 10-message conversation on device.

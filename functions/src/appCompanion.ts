@@ -377,9 +377,16 @@ export const appCompanion = onCall(
       // ⚠️ THE HANDOFF LEADS. If a message is faith, nothing else matters: Otto is not answering it, so a
       // workout cap or a pitch riding underneath would be attached to a reply that never happens.
       faithHandoff ? buildFaithHandoffBlock(faithTier, faithHandoffRepeat) : '',
-      // ⚠️ ON EVERY MESSAGE, unlike the blocks below which are conditional. It is ~40 input tokens and it
-      // buys back ~100 output tokens, and output costs five times what input does, so it pays for itself
-      // roughly twelve times over. Measured 2026-08-04: replies drop from 216 to 113 tokens.
+      // ⚠️ ON EVERY MESSAGE, unlike the blocks below which are conditional.
+      // 🔴 **ITS COST JUSTIFICATION WAS WRONG AND IS CORRECTED HERE (2026-08-06, PLAN 4.4).** This comment
+      // used to say "~40 input tokens... buys back ~100 output tokens... pays for itself roughly twelve
+      // times over". MEASURED on 18 coaching questions with and without it (`_otto_length.cjs`): the block
+      // is **334 tokens**, and it saves **63** output tokens (185 -> 122). At $1/M in and $5/M out that is
+      // $0.000336 spent to save $0.000315. **It is a net loss of about $0.00002 a message.**
+      // ✅ **KEEP IT ANYWAY.** It is not only a length rule: it also carries the no-questions rule, the
+      // answer-the-likely-reading rule and the no-dashes rule, and those are QUALITY. Removing it to save a
+      // fiftieth of a cent would cost all three. Read it as "a quality block that is roughly cost-neutral",
+      // not as a cost optimisation.
       REPLY_SHAPE_BLOCK,
       // ⚠️ THE SAFEGUARD LEADS. If a message somehow both asks for exercises and raises food, the safety
       // question comes first and the cap block still rides along underneath it: obeying the safeguard means

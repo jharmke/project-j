@@ -521,10 +521,27 @@ is what made him think work had been dropped -- it had not, but he had no way to
       word capped recall at 81%: food names, exercise names and plain English are unbounded ("is white rice
       bad", "should i take a deload week"). It now works by ELIMINATION -- no app evidence means coaching --
       so the listing burden sits on the app side, which is finite. See [[detectors-are-brittle]].
-      ✅ **THE NO-GUESS RULE IS THE SAFETY NET AND IT ALREADY EXISTED.** BASE says that if he cannot find a
-      feature BY NAME in the map he must say so and point at Settings > Help. With no map every feature is
-      not-found, so a misroute degrades to "I'm not certain" rather than an invented path.
-      `COACH_NO_MANUAL_BLOCK` makes that explicit instead of leaving it to inference.
+      🔴 **CAUGHT LIVE THE SAME EVENING, AND IT CORRECTS TWO THINGS I ASSERTED.** A free user asked
+      **"how many messages do i get a day"** and it routed to COACH -- no app noun, no coaching word, so
+      `coach-by-elimination` fired -- and a manual-less Otto answered **"that's not something GoodForge
+      tracks or limits"**. The true answer is 5.
+      ⚠️ **CORRECTION 1: three corpora missed an entire CLASS.** Entitlement questions ("how many X do I
+      get", "am I limited", "do I run out") have no app noun at all; **only their SHAPE gives them away**, so
+      no list of feature names reaches them. Fixed with `ENTITLEMENT_PATTERNS_STRICT` / `_SOFT` +
+      `ENTITLEMENT_TERMS`, and a fourth corpus (`_route_holdout3.cjs`) built entirely from the class.
+      ⚠️ **THE STRICT/SOFT SPLIT IS LOAD-BEARING.** Guarding every pattern with "no coaching word present"
+      broke "how many WORKOUTS can i save" and "do i RUN out of anything" -- both contain coaching words and
+      went straight back to Coach. Only the bare `how many ... do i get` shape needs that guard, so that
+      "how much protein do i get from chicken" is not read as an allowance question.
+      🔴 **CORRECTION 2, AND THE MORE IMPORTANT ONE: THE NO-GUESS RULE DID NOT HOLD.** I claimed a misroute
+      would degrade to "I'm not certain, check Settings > Help" because BASE's no-guess rule would catch it.
+      **It did not** -- he answered confidently and wrongly. `COACH_NO_MANUAL_BLOCK` has been rewritten to
+      say the thing that actually failed, in the words it failed in: **not knowing a limit is never evidence
+      that no limit exists**, and never call a thing unlimited, untracked, free or non-existent.
+      ➡️ **TREAT THE SAFETY NET AS WEAKER THAN THE CLASSIFIER.** The classifier is measured; the net is a
+      prompt instruction, and this is the third time on this project one has lost to the model's own
+      inclination. See [[feedback_measure_dont_ask_justin]].
+      **✅ AFTER THE FIX: 0 dangerous across FOUR corpora (342 messages), coach recall 132/133.**
       ➡️ **MEASURED EFFECT: $0.0061 -> $0.0032 on a coaching message at warm traffic** (DERIVED from the
       metered block sizes). Blended depends on the mix.
       🔬 **THE MIX IS NOW BEING COUNTED.** `ai_cost` gains `routeCoach` / `routeSupport` per day. That ratio

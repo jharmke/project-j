@@ -138,6 +138,44 @@ const DATA_SIGNALS = [
   'so far', 'trending', 'on pace',
 ];
 
+/**
+ * 🔴 ENTITLEMENT QUESTIONS -- THE CLASS THAT GOT THROUGH LIVE ON 2026-08-05, and the most instructive
+ * failure so far. A free user asked **"how many messages do I get a day"** and it routed to Coach: the word
+ * "messages" was in no list, the sentence carries no coaching word either, so `coach-by-elimination` fired
+ * and handed it to an Otto with no app manual. He answered **"that's not something GoodForge tracks or
+ * limits"**. The true answer is 5.
+ * ⚠️ THE SHAPE IS THE TELL, NOT THE NOUN. "How many X do I get" is asking what the PLAN allows, whatever X
+ * is, and no list of feature names reaches it -- which is exactly why three corpora missed the whole class.
+ * ⚠️ It costs money when it fires on a coaching question ("how many calories do I get"). That is the safe
+ * direction and it is a fraction of a cent.
+ */
+/**
+ * ⚠️ TWO LISTS, AND THE SPLIT IS LOAD-BEARING. The strict ones describe operating a piece of software and
+ * settle it outright. The soft ones are only a SHAPE, so they are ignored when the message also names
+ * something about the body -- otherwise "how much protein do i get from chicken" reads as an allowance
+ * question, which it plainly is not.
+ * ⚠️ Guarding the strict ones the same way broke them: "how many WORKOUTS can i save" and "do i RUN out of
+ * anything" both contain coaching words ('workout', 'run') and were handed straight back to Coach.
+ */
+const ENTITLEMENT_PATTERNS_STRICT: RegExp[] = [
+  /\bhow many\b.{0,40}\bcan i (save|create|make|add|store|keep)\b/,
+  /\bdo i get (a|per|each|every) (day|month|week)\b/,
+  /\b(run|ran) out of\b/,
+  /\bleft (today|this month)\b/,
+  /\bis there a (cap|limit)\b/,
+  /\bam i (limited|capped)\b/,
+];
+const ENTITLEMENT_PATTERNS_SOFT: RegExp[] = [
+  /\bhow many\b.{0,40}\bdo i (get|have|receive)\b/,
+  /\bhow much\b.{0,40}\bdo i (get|receive)\b/,
+];
+
+/** Nouns that only ever mean "the plan's allowance". */
+const ENTITLEMENT_TERMS = [
+  'message', 'allowance', 'quota', 'unlimited', 'free plan', 'daily limit',
+  'a limit', 'my limit', 'the limit', 'any limit', 'a cap', 'the cap',
+];
+
 /** Settings language. "Change my sleep goal" is a settings screen, not a coaching question. */
 // ⚠️ NO BARE 'goal' OR 'target'. The third corpus caught "whats a realistic goal for a year" being
 // classed as settings -- that is a coaching question. The settings meaning always comes with a verb.
@@ -157,7 +195,7 @@ export interface CoachRouteResult {
   /** true ONLY when this is confidently answerable with no app knowledge at all. */
   coachOnly: boolean;
   /** Why, for the log. Never shown to a user. */
-  reason: 'app-term' | 'app-shape' | 'own-data' | 'settings' | 'no-coach-signal' | 'too-short' | 'coach' | 'coach-by-elimination';
+  reason: 'app-term' | 'app-shape' | 'entitlement' | 'own-data' | 'settings' | 'no-coach-signal' | 'too-short' | 'coach' | 'coach-by-elimination';
 }
 
 /**
@@ -169,6 +207,17 @@ export function routeCoachOrSupport(message: string): CoachRouteResult {
 
   // Naming any part of the app settles it immediately, however the rest of the message reads.
   if (hasAny(t, APP_TERMS)) return { coachOnly: false, reason: 'app-term' };
+
+  // ⚠️ RUNS EARLY, BEFORE THE COACH TEST. "How many messages do I get a day" contains no app noun and no
+  // coaching word; only its SHAPE gives it away. See ENTITLEMENT_PATTERNS for the live failure this fixes.
+  // ⚠️ AN ENTITLEMENT NOUN SETTLES IT OUTRIGHT. A bare SHAPE ("how much X do I get") only settles it when
+  // nothing about the body is present -- otherwise "how much protein do i get from chicken" reads as a
+  // question about an allowance, which it plainly is not.
+  if (hasAny(t, ENTITLEMENT_TERMS)) return { coachOnly: false, reason: 'entitlement' };
+  if (ENTITLEMENT_PATTERNS_STRICT.some((re) => re.test(t))) return { coachOnly: false, reason: 'entitlement' };
+  if (ENTITLEMENT_PATTERNS_SOFT.some((re) => re.test(t)) && !hasAny(t, COACH_TERMS)) {
+    return { coachOnly: false, reason: 'entitlement' };
+  }
 
   // ⚠️ THE COACH-TERM TEST RUNS BEFORE THE LENGTH FLOOR, not after. "ive plateaued" and "salmon vs
   // chicken" are two words and unmistakably coaching; the floor exists for messages carrying NO evidence,

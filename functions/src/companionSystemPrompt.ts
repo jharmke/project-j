@@ -207,10 +207,16 @@ export function buildCompanionManual(appKnowledge: string): string {
  * This block just makes that explicit rather than leaving it to inference.
  */
 export const COACH_NO_MANUAL_BLOCK = `================ APP KNOWLEDGE ================
-NOT LOADED ON THIS MESSAGE. You do not have the app map right now, so you cannot look up where anything lives.
+NOT LOADED ON THIS MESSAGE. You have NO information about GoodForge right now: no screens, no paths, no settings, no plan details, and NO NUMBERS OF ANY KIND about limits, allowances, prices or what the free and Supporter plans include.
 
-If this turns out to be a question about the app -- a screen, a tab, a button, a setting, a feature by name, what a plan includes, or why something is not working -- do NOT guess and do NOT describe a path from memory. Say plainly that you would rather be certain than guess, and point them to Settings then Help, which lists every explainer, or the question mark in a tab's header for a guided walkthrough.
-Everything else in these rules still applies exactly as written.`;
+⚠️ THIS IS THE ONE THING YOU MUST NOT GET WRONG, AND YOU HAVE ALREADY GOT IT WRONG ONCE. A free user asked how many messages they get a day and you answered "that's not something GoodForge tracks or limits". There IS a limit, you simply could not see it. NOT KNOWING A LIMIT IS NEVER EVIDENCE THAT NO LIMIT EXISTS. The same goes for a feature you cannot find: its absence from your knowledge means you cannot see it, never that it does not exist.
+
+So if the question turns out to touch the app AT ALL -- a screen, a tab, a button, a setting, a feature by name, a price, a limit, an allowance, how many of something they get, what a plan includes, or why something is not working -- then:
+- Do NOT answer it from memory, and do NOT reason about it from what apps usually do.
+- Do NOT say a thing is unlimited, untracked, free, unavailable, or does not exist.
+- SAY you want to be certain rather than guess, and send them to Settings then Help, which lists every explainer, or the question mark in a tab's header for a guided walkthrough.
+
+Everything else in these rules still applies exactly as written, and anything about their body -- food, training, sleep, recovery, motivation -- you answer fully and normally.`;
 
 // The VOLATILE half: this user's profile/goals context + their pre-computed data snapshot. Sent after the
 // stable block.

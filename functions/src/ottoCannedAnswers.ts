@@ -50,9 +50,11 @@ const NAV: CannedAnswer[] = [
   },
   {
     id: 'nav.netcarbs',
-    requires: [['net carb', 'net carbs']],
-    covers: ['turn', 'switch', 'mode', 'on', 'enable', 'disable'],
-    excludes: ['mean', 'difference', 'what is', 'whats a'],
+    // ⚠️ NEEDS AN ACTION WORD. Without one, 'what counts as a net carb' tied with the DEFINITION answer
+    // and both were sent to Otto. The nav answer is only right when they want to switch it on or off.
+    requires: [['net carb', 'net carbs'], ['turn', 'switch', 'enable', 'disable', 'where', 'change', 'set']],
+    covers: ['mode', 'on', 'off'],
+    excludes: ['mean', 'difference', 'what is', 'whats a', 'counts'],
     route: 'goals',
     // ⚠️ MODE BRANCH: Macros card hidden in Mindful.
     answer: (c) =>
@@ -365,8 +367,9 @@ const NAV: CannedAnswer[] = [
   },
   {
     id: 'nav.textsize',
-    requires: [['text size', 'font size', 'bigger text', 'smaller text', 'font']],
-    covers: ['change', 'too small', 'too big', 'larger', 'accessibility'],
+    // ⚠️ TWO GROUPS, not one phrase. Nobody types 'text size'; they type 'the text is too small'.
+    requires: [['text', 'font'], ['size', 'small', 'big', 'large', 'tiny', 'read', 'change']],
+    covers: ['too', 'accessibility', 'bigger', 'smaller', 'larger'],
     route: 'settings',
     answer:
       "Profile > Settings, then Accessibility > Text Size, with Default and Large to choose from. GoodForge deliberately does not follow your iPhone's system text size, because following it without limit broke layouts, so this control is the only way to change it here.",
@@ -416,7 +419,7 @@ const CONCEPT: CannedAnswer[] = [
     covers: ['difference', 'between', 'vs', 'versus', 'same'],
     route: 'workout',
     answer:
-      "A program is a saved 7-day schedule. It sets what each day is (lift, cardio or rest) and what it is called, like Push or Leg Day, but it holds no exercises at all. Loading one changes the day labels along the top of your Workout tab. A routine is a saved set of exercises, and that is what actually puts lifts on your screen. So the program is the shape of your week, the routine is what you lift.",
+      "A program is a saved 7-day schedule. It sets what each day is (lift, cardio or rest) and what it is called, like Push or Pull, but it holds no exercises at all. Loading one changes the day labels along the top of your Workout tab. A routine is a saved set of exercises, and that is what actually puts lifts on your screen. So the program is the shape of your week, the routine is what you lift.",
   },
   {
     id: 'con.pr',

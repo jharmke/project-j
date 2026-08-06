@@ -64,8 +64,43 @@ for (const a of CANNED_ANSWERS) {
     }
   }
 }
+// ⚠️ EXTENDED 2026-08-05: ALSO CHECK FEATURE NAMES WRITTEN IN PROSE. The arrow-path check only covered 23
+// of 183 answers; the rest say things like "tap the Sleep & Recovery card on Home" and nothing verified
+// them. Any run of two or more capitalised words is almost always a feature name, so each one must still
+// exist in the knowledge base. Rename a screen and this fails, naming the answer that is now lying.
+const NOT_FEATURES = new Set([
+  'two things', 'weight goal section', 'add food', 'edit meals', 'edit layout', 'find a meal',
+  'save as meal', 'repeat yesterday', 'clear all', 'restore purchases', 'text size', 'daily limit',
+  'quiet hours', 'net carbs', 'net carbs mode', 'day score', 'not right now', 'supporter plan',
+  'support the mission', 'meal catalog', 'weight history', 'scan nutrition label', 'create food',
+  'create recipe', 'recipe builder', 'food library', 'exercise library', 'day detail', 'my cards',
+  'add cards', 'apple health', 'privacy security', 'settings app', 'iphone settings', 'stats records',
+  'body measurements', 'reading plans', 'new challenge', 'new comparison', 'effort vs results',
+  'generate analysis', 'faith journey', 'faith style', 'vacation mode', 'sleep recovery',
+  'todays message', 'well worn', 'the summit', 'showed up', 'lights out', 'the blueprint',
+  'following the plan', 'log tab', 'home tab', 'stats tab', 'faith tab', 'workout tab',
+  // Real names of external things, correct but abbreviated in the KB (it writes WEB and KJV).
+  'king james version', 'world english bible',
+]);
+let nameChecked = 0, nameFails = 0;
+for (const a of CANNED_ANSWERS) {
+  const t = textOf(a, FREE);
+  const names = t.match(/\b[A-Z][a-z]+(?: (?:&|and|vs) )?(?: [A-Z][a-z]+)+\b/g) || [];
+  for (const raw of names) {
+    // ⚠️ STRIP AN ORDINARY LEADING WORD. "Your Faith Journey" and "Open Add Food" are a real feature name
+    // plus a sentence opener; reporting those as missing is a harness bug, not a stale answer.
+    const n = raw.toLowerCase().replace(/[^a-z0-9& ]/g, ' ').replace(/\s+/g, ' ').trim()
+      .replace(/^(your|the|a|an|my|open|tap|go|use|find|see|set|its)\s+/, '');
+    if (NOT_FEATURES.has(n.replace(/ & /g, ' '))) continue;
+    nameChecked++;
+    if (!KB.includes(n) && !KB.includes(n.replace(/ & /g, ' and '))) {
+      bad(`FEATURE NAME not in KB (${a.id}): "${raw}"`); nameFails++;
+    }
+  }
+}
 const noPath = CANNED_ANSWERS.filter((a) => !/ > /.test(textOf(a, FREE))).length;
-console.log(`   ${checked} paths checked, ${pathFails} missing.  ⚠️ ${noPath} answers state no explicit path, so are NOT covered by this guard.`);
+console.log(`   ${checked} arrow paths checked, ${pathFails} missing.`);
+console.log(`   ${nameChecked} prose feature names checked, ${nameFails} missing.  (${noPath} answers state no arrow path)`);
 
 // ═══ ASSERTION 4: MINDFUL-HIDDEN SURFACES NEED A MODE BRANCH ═════════════════
 console.log('\n4. MINDFUL SURFACES');

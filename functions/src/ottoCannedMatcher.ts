@@ -74,7 +74,7 @@ const STOPWORDS = new Set([
   // NEW graph ON stats", "can i JUST tip INSTEAD". These carry no topic and were blocking otherwise
   // perfect matches. Generic filler only. Nothing here names a feature.
   'way', 'ways', 'new', 'around', 'instead', 'really', 'actually', 'app', 'goodforge', 'best',
-  'fastest', 'quickest', 'easiest', 'simplest', 'other', 'one', 'put', 'make', 'give', 'access',
+  'fastest', 'quickest', 'easiest', 'simplest', 'other', 'one', 'make', 'give', 'access', 'everything',
   'look', 'over', 'into', 'back', 'stop', 'keep', 'let', 'him', 'her', 'me', 'us', 'thats',
   'counts', 'number', 'wrong', 'fix', 'typed', 'still', 'ever', 'even',
 ]);
@@ -87,14 +87,22 @@ const STOPWORDS = new Set([
  */
 const SYNONYMS: Record<string, string> = {
   wipe: 'clear', erase: 'clear', empty: 'clear',
+  // ⚠️ put -> ADD, not 'log'. Mapping it to 'log' fixed 'where do i put my weight in' and immediately
+  // broke 'how do i put a new graph on stats', because a graph is added, not logged. 'add' serves both.
+  put: 'add', typing: 'log', type: 'log',
   swap: 'change', switching: 'change', switched: 'change',
   buzzing: 'notification', buzz: 'notification', pinging: 'notification', ping: 'notification',
   older: 'past', earlier: 'past', previous: 'past',
   trip: 'vacation', holiday: 'vacation', away: 'vacation',
   badge: 'achievement', badges: 'achievement',
   dark: 'theme', light: 'theme',
-  waist: 'measurement', arms: 'measurement', chest: 'measurement',
+  // ⚠️ NO BODY-PART SYNONYMS. 'waist' is already in the body answer's own requires, and canonicalising it
+  // to 'measurement' broke that match outright. A synonym that duplicates a requires term is pure downside.
   tiny: 'size', small: 'size', big: 'size', bigger: 'size', smaller: 'size',
+  // ⚠️ UK SPELLINGS. The third corpus lost 'how do i get a different COLOUR scheme' outright. Generic,
+  // not fitted: British users type these constantly and no answer will ever list both forms.
+  colour: 'color', colours: 'color', favourite: 'favorite', favourites: 'favorite',
+  customise: 'customize', personalise: 'personalize', organise: 'organize',
 };
 
 /** Curly apostrophes, punctuation, and the way people actually type. See [[detectors-are-brittle]]. */
@@ -171,7 +179,11 @@ export function matchCanned(
   ctx: CannedContext,
   answers: CannedAnswer[],
 ): CannedResult {
-  const t = normalise(message);
+  // ⚠️ SYNONYMS ARE APPLIED TO THE MESSAGE, NOT JUST TO THE COVERAGE TEST. Doing it only in coverage was
+  // half a fix: "how do i WIPE a meal" and "how do i look at an OLDER day" still failed, because the
+  // answer's `requires` never saw the canonical word. Canonicalising once, up front, means every stage
+  // downstream benefits.
+  const t = normalise(message).split(' ').map((w) => SYNONYMS[w] ?? w).join(' ');
   if (!t) return { matched: false, reason: 'no-match' };
 
   if (CONNECTOR_OPENERS.some((c) => t.startsWith(c))) return { matched: false, reason: 'context-dependent' };
@@ -186,7 +198,7 @@ export function matchCanned(
   // ⚠️ ONLY ON A SHORT MESSAGE. The held-out run refused 'i typed my weight wrong how do i fix it' and
   // 'the text is too small how do i fix it' as context-dependent. Both name their subject perfectly well;
   // the trailing 'it' refers to something INSIDE the same sentence, not to the previous turn.
-  if (BARE_PRONOUN.test(t) && tokens(t).length <= 6) return { matched: false, reason: 'context-dependent' };
+  if (BARE_PRONOUN.test(t) && tokens(t).length <= 4) return { matched: false, reason: 'context-dependent' };
 
   // 🔴 THEIR OWN DATA IS NEVER CANNABLE. See OWN_DATA_SIGNALS.
   // ⚠️ TWO EXEMPTIONS, BOTH FOUND BY THE AUDIT. A HOW-TO is never a data question however many time words

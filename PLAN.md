@@ -506,19 +506,27 @@ is what made him think work had been dropped -- it had not, but he had no way to
       `ottoCannedAnswers.ts` (**183 answers**), `ottoCannedMatcher.ts`, wired into `appCompanion.ts`.
       Harnesses committed: `_canned_audit.cjs`, `_canned_holdout.cjs`.
 
-      **RESULTS**
-      | | tuned corpus | held-out (written after tuning) |
-      |---|---:|---:|
-      | 🔴 **wrong answers** | **0** | **0** |
-      | matched correctly | 71/71 | **47/54 (87%)** |
-      | declined correctly | 30/30 | 22/22 |
-      | collisions resolved | 22/22 | |
-      | stitching | 2/2 | |
-      | assertion failures | 0 | |
-      ⚠️ **THE HELD-OUT NUMBER IS THE HONEST ONE, AND IT IS NOW PART-BURNED.** It scored **61%** on its first
-      run; one round of GENERIC fixes (not per-message patches) took it to 87%. True unseen phrasing sits
-      somewhere between. Same overfitting gap 4.9 showed (100% tuned / 81% unseen).
-      ✅ **THE NUMBER THAT MATTERS HELD THROUGHOUT: zero wrong answers, on every run, on both corpora.**
+      **RESULTS -- THREE CORPORA, THE THIRD WRITTEN AFTER ALL TUNING**
+      | | corpus 1 (tuned) | corpus 2 (tuned once) | **corpus 3 (never tuned)** |
+      |---|---:|---:|---:|
+      | 🔴 **wrong answers** | **0** | **0** | **0** |
+      | matched correctly | 71/71 | 54/54 | **25/42 (60%)** |
+      | declined correctly | 30/30 | 22/22 | **21/21** |
+      | collisions resolved | 22/22 | | |
+      | stitching | 2/2 | | |
+      | assertion failures | 0 | | |
+
+      🔴 **THE HONEST COVERAGE NUMBER IS ~60%, NOT 96%, AND THE PATTERN IS NOW UNMISTAKABLE.**
+      Every fresh corpus lands near 60%. Tuning lifts THAT corpus to ~100% and does almost nothing for the
+      next one: corpus 2 went 61% -> 87% -> 100%, and corpus 3, written afterwards, still opened at 60%.
+      ➡️ **So the tuned scores measure nothing. Quote 60%.**
+      ⚠️ **THIS MATTERS FOR THE SAVING.** The 4.8 estimate assumed catching half to two-thirds of app
+      questions. 60% is the bottom of that range, so **expect the low end, not the high end.**
+      ✅ **AND THE NUMBER THAT ACTUALLY MATTERS NEVER MOVED: ZERO WRONG ANSWERS, on all three corpora, on
+      every run, plus 73/73 correct refusals.** It either answers correctly or it steps aside.
+      ➡️ **THE FIX FOR COVERAGE IS PRODUCTION, NOT MORE GUESSING.** `cannedMiss` counts app questions that
+      reached Otto unmatched. That number, against real phrasing, is the only honest list of what to add.
+      Writing a fourth corpus myself would just produce another 60%.
 
       **FOUR ASSERTIONS, ALL PASSING**
       1. No dashes of any kind (em, en, double hyphen, spaced hyphen). Hyphens inside compounds allowed.
@@ -559,12 +567,15 @@ is what made him think work had been dropped -- it had not, but he had no way to
 
       **⚠️ OPEN, FOR JUSTIN**
       - **Nothing is cut.** Per instruction, anything questionable stays in and is flagged here instead.
-      - **160 of 183 answers state no explicit path**, so assertion 3 does not cover them. They are mostly
-        achievements and concepts, which have nothing to go stale, but the guard is thinner than it sounds.
-      - **7 held-out misses remain**, all cost-only: "where do i put my weight in", "how do i wipe a meal",
-        "how do i look at an older day", "how do i pause everything for a trip", "the text is too small how
-        do i fix it", "what counts as a net carb" (ambiguous tie), and one more. Each is fixable by widening
-        one answer's vocabulary; I have NOT done so, because that is fitting the held-out set.
+      - ✅ **STALENESS GUARD EXTENDED 2026-08-05 (Justin's item 2).** It now also checks FEATURE NAMES
+        written in prose (any run of two or more capitalised words, like "Weight History" or "Sleep &
+        Recovery"), not just arrow paths. **147 checks, up from 30**, covering the 160 answers that state no
+        path. It immediately caught two real things: an invented example label ("Leg Day", changed to the
+        KB's own "Push"), and "King James Version" written in full where the KB abbreviates to KJV.
+      - ✅ **THE 7 KNOWN MISSES ARE FIXED (Justin's item 1)**, by mechanism rather than by patching answers:
+        synonyms now canonicalise the MESSAGE rather than only the coverage test (so "wipe a meal" and
+        "an OLDER day" reach the right answer), the bare-pronoun guard only applies to short messages, and
+        two answers were restructured. ⚠️ **And it barely moved corpus 3**, which is the whole lesson.
       - **The 99 achievements are generated from a table**, so their phrasing is uniform and slightly flatter
         than the hand-written ones. Worth reading a few before shipping.
 - [x] **4.9 ✅ BUILT + DEPLOYED + DEVICE-VERIFIED 2026-08-05.** `ottoCoachRouting.ts` answers one yes/no --

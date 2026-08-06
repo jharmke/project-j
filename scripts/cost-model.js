@@ -3,206 +3,174 @@
  * PROJECT J -- COST / REVENUE MODEL.  Run: node scripts/cost-model.js
  *
  * 🔴 THIS FILE EXISTS BECAUSE THE LAST ONE DID NOT. The tables in SPEC_cost_model.md were produced by
- * `scratchpad/cost-model.js`, which no longer exists -- so the headline economics of the app sat in a
- * table nobody could reproduce, while the same spec told readers to re-run the missing script.
- * ⚠️ IT IS COMMITTED ON PURPOSE. If you change an assumption, change it HERE and re-run; do not hand-edit
- * numbers into a doc. Docs get a pointer to this file, never a copy of its output.
+ * `scratchpad/cost-model.js`, which no longer exists, so the app's headline economics sat in a table nobody
+ * could reproduce while the same spec told readers to re-run the missing script.
+ * ⚠️ IT IS COMMITTED ON PURPOSE. Change an assumption HERE and re-run. Never hand-edit numbers into a doc.
  *
- * ⚠️ NET IS DEFINED ONCE:  net = subscription revenue after Apple's cut  MINUS  all AI costs.
- *    Fixed costs (Apple's $99/yr developer program, Firebase) are DELIBERATELY EXCLUDED -- Justin's call,
- *    2026-08-05. Add them yourself if you want a true P&L.
+ * ⚠️ NET IS DEFINED ONCE:  net = subscription revenue after Apple's 15% cut  MINUS  all AI costs.
+ *    Fixed costs (Apple's $99/yr developer program, Firebase) are EXCLUDED. Justin's call, 2026-08-05.
+ *
+ * 🔴🔴 THE BUG THIS FILE WAS REWRITTEN TO KILL, 2026-08-05 evening. Justin spotted it from the output alone:
+ * "+$50k? yeah...". The first version applied the ACTIVE RATE TO COSTS BUT NOT TO SUBSCRIBERS. At 25,000
+ * installs and 30% active it charged AI for 7,500 people and still counted 750 subscribers, i.e. 3% of ALL
+ * installs. If only 7,500 people use the app, 750 subscribers is 10% conversion, not 3%. It handed the
+ * model a 70% discount on cost and none on revenue, turning a -$6,000 year into +$43,000.
+ * ✅ **CONVERSION IS NOW A SHARE OF ACTIVES**, and the active rate applies to both sides.
+ * ➡️ **AND THEN IT CANCELS OUT.** Break-even conversion is identical at any active rate, because the same
+ * fraction of people generate the cost and the revenue. The old "30% active" row was never good news; it
+ * was arithmetic error dressed up as good news. Do not re-add an active-rate sensitivity row.
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTS. Every one carries its provenance. MEASURED = read off `ai_cost`.
 // ─────────────────────────────────────────────────────────────────────────────
 const C = {
-  // --- AI, per call -----------------------------------------------------------
-  ottoCoach:    { v: 0.0032,  src: 'DERIVED 2026-08-05 from metered block sizes (PLAN 4.9). Not yet metered warm.' },
+  ottoCoach:    { v: 0.0032,  src: 'DERIVED 2026-08-05 from metered block sizes (PLAN 4.9).' },
   ottoSupport:  { v: 0.0054,  src: 'DERIVED 2026-08-05, same basis.' },
   halo:         { v: 0.00067, src: 'MEASURED 2026-08-05, warm (PLAN 2.3).' },
   smartCoach:   { v: 0.00107, src: 'MEASURED 2026-08-05, warm (PLAN 1.1).' },
   estimator:    { v: 0.00953, src: 'MEASURED 2026-08-05, one real photo (PLAN 4.1).' },
 
-  // --- Behaviour --------------------------------------------------------------
-  // ⚠️ THE SINGLE SOFTEST NUMBER IN THIS FILE. `ai_cost` now counts routeCoach/routeSupport, so this
-  // becomes MEASURED after a few days of real traffic. Until then it is a coin flip, stated as one.
-  coachShare:   { v: 0.50, src: 'ASSUMED. Production counters (routeCoach/routeSupport) will replace this.' },
-  haloShare:    { v: 0.20, src: 'ASSUMED -- share of companion messages going to Halo rather than Otto.' },
+  coachShare:   { v: 0.50, src: 'ASSUMED. ai_cost now counts routeCoach/routeSupport; real traffic replaces this.' },
+  haloShare:    { v: 0.20, src: 'ASSUMED share of companion messages going to Halo rather than Otto.' },
   coachTipsDay: { v: 2,    src: 'MEASURED behaviour: Home fires smart_tip + sleep per day (PLAN 1.3).' },
   estimatorMo:  { v: 2,    src: 'ASSUMED photos/month. Free cap is 5/month.' },
-  supporterMult:{ v: 2,    src: 'ASSUMED. Supporters message ~2x a free user (higher caps, more engaged).' },
+  supporterMult:{ v: 2,    src: 'ASSUMED. Supporters message ~2x a free user.' },
 
-  // --- Money ------------------------------------------------------------------
   priceMonthly: { v: 9.99,  src: 'Real price (SPEC_monetization).' },
   priceAnnual:  { v: 89.99, src: 'Real price.' },
-  appleCut:     { v: 0.15,  src: "Small Business Program. Justin's instruction: ALWAYS 15%, never 30%." },
+  appleCut:     { v: 0.15,  src: "Small Business Program. Justin's instruction: ALWAYS 15%." },
   annualShare:  { v: 0.30,  src: 'ASSUMED share of Supporters choosing annual.' },
+  activeRate:   { v: 0.30,  src: 'ASSUMED share of installs still active. ⚠️ CANCELS OUT of break-even.' },
 };
 const v = (k) => C[k].v;
 
-// ─────────────────────────────────────────────────────────────────────────────
-const money = (n) => (n < 0 ? `-$${Math.abs(n).toFixed(0)}` : `+$${n.toFixed(0)}`);
+const money = (n) => (n < 0 ? `-$${Math.round(Math.abs(n)).toLocaleString()}` : `+$${Math.round(n).toLocaleString()}`);
 const pad = (s, n) => String(s).padStart(n);
 
 /**
- * Blended cost of one Otto message.
- * ⚠️ `deflect` is the share of ALL Otto messages answered by a CANNED answer (PLAN.md 4.8). Those cost
- * exactly ZERO -- no API call is made at all. Canned answers only ever replace SUPPORT-route messages
- * (app questions and pleasantries), never coaching, so the deflection comes out of that half.
+ * Cost of one Otto message.
+ * ⚠️ `deflect` = share of ALL Otto messages answered by a CANNED answer (PLAN 4.8). Those cost ZERO: no API
+ * call is made. Canned answers only ever replace SUPPORT-route traffic (app questions and pleasantries),
+ * never coaching, so it comes out of that half.
  */
-function ottoMsg(deflect = 0) {
+function ottoMsg(deflect) {
   const support = Math.max(0, (1 - v('coachShare')) - deflect);
   return v('coachShare') * v('ottoCoach') + support * v('ottoSupport');
 }
 
-/** AI cost per MONTH for one user sending `perDay` companion messages a day. */
-function monthlyAiCost(perDay, deflect = 0) {
+/** AI cost per MONTH for one ACTIVE user sending `perDay` companion messages a day. */
+function monthlyAiCost(perDay, deflect) {
   const msgs = perDay * 30;
-  const otto = msgs * (1 - v('haloShare')) * ottoMsg(deflect);
-  const halo = msgs * v('haloShare') * v('halo');
-  const tips = v('coachTipsDay') * 30 * v('smartCoach');
-  const est = v('estimatorMo') * v('estimator');
-  return otto + halo + tips + est;
+  return msgs * (1 - v('haloShare')) * ottoMsg(deflect)
+    + msgs * v('haloShare') * v('halo')
+    + v('coachTipsDay') * 30 * v('smartCoach')
+    + v('estimatorMo') * v('estimator');
 }
 
-/** What one Supporter is worth, after Apple, over a lifetime of `months`. */
+/** What one Supporter is worth after Apple, over a lifetime of `months`. */
 function revenuePerSupporter(months) {
   const keep = 1 - v('appleCut');
-  const monthly = v('priceMonthly') * keep * months;
-  const annual = v('priceAnnual') * keep * (months / 12);
-  return (1 - v('annualShare')) * monthly + v('annualShare') * annual;
+  return (1 - v('annualShare')) * v('priceMonthly') * keep * months
+    + v('annualShare') * v('priceAnnual') * keep * (months / 12);
 }
 
-/** Year-one net for a given population. Free users cost 12 months; Supporters cost while subscribed. */
-function net({ installs, conv, perDay, months, activeRate = 1, deflect = 0 }) {
-  const supporters = installs * conv;
-  const free = installs - supporters;
-  const freeCost = free * activeRate * monthlyAiCost(perDay, deflect) * 12;
-  const supCost = supporters * activeRate * monthlyAiCost(perDay * v('supporterMult'), deflect) * Math.min(months, 12);
+/**
+ * Year-one net.
+ * 🔴 `conv` IS A SHARE OF ACTIVE USERS, not of installs. See the header.
+ */
+function net({ installs, conv, perDay, months, deflect = 0, activeRate = v('activeRate') }) {
+  const actives = installs * activeRate;
+  const supporters = actives * conv;
+  const freeActives = actives - supporters;
+  const freeCost = freeActives * monthlyAiCost(perDay, deflect) * 12;
+  const supCost = supporters * monthlyAiCost(perDay * v('supporterMult'), deflect) * Math.min(months, 12);
   return supporters * revenuePerSupporter(months) - freeCost - supCost;
 }
 
-/** Conversion rate at which net crosses zero. */
-function breakEven({ perDay, months, activeRate = 1, deflect = 0 }) {
+/** Conversion (of actives) at which net crosses zero. Independent of install count and active rate. */
+function breakEven({ perDay, months, deflect = 0 }) {
   let lo = 0, hi = 1;
   for (let i = 0; i < 60; i++) {
     const mid = (lo + hi) / 2;
-    if (net({ installs: 100000, conv: mid, perDay, months, activeRate, deflect }) < 0) lo = mid; else hi = mid;
+    if (net({ installs: 100000, conv: mid, perDay, months, deflect }) < 0) lo = mid; else hi = mid;
   }
   return (lo + hi) / 2;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 const SCENARIOS = [
-  { name: 'Light  (1 msg/day)', perDay: 1 },
-  { name: 'Typical(2 msg/day)', perDay: 2 },
-  { name: 'Heavy  (5 msg/day)', perDay: 5 },
+  { name: 'Light (1 msg/day)', perDay: 1 },
+  { name: 'Typical (2/day)', perDay: 2 },
+  { name: 'Heavy (5/day)', perDay: 5 },
 ];
-const LIFETIMES = [1, 3, 6, 12, 24];
-const INSTALLS = [300, 1500, 4000, 8000, 25000, 50000];
-const CONVS = [0.01, 0.02, 0.03, 0.05, 0.10];
-const DEFAULT_MONTHS = 12;
+const LIFETIMES = [3, 6, 12, 24];
+const INSTALLS = [1000, 5000, 10000, 25000, 50000, 100000];
+const CONVS = [0.02, 0.03, 0.05, 0.08, 0.12];
+const DEFLECTS = [0, 0.15, 0.30, 0.45];
+const BASE_MONTHS = 12;
 
-console.log('\n' + '='.repeat(78));
-console.log('PROJECT J -- COST / REVENUE MODEL   (run: node scripts/cost-model.js)');
-console.log('='.repeat(78));
-console.log('NET = subscription revenue after Apple\'s 15% cut MINUS all AI costs.');
-console.log('Fixed costs (Apple $99/yr dev program, Firebase) are EXCLUDED by choice.');
-console.log('Every install is charged a full year of AI. That is the PESSIMISTIC read;');
-console.log('a 30%-active version is printed at the bottom.\n');
+const line = (c = '─') => console.log(c.repeat(96));
+
+console.log('\n' + '='.repeat(96));
+console.log('PROJECT J -- COST / REVENUE MODEL');
+console.log('='.repeat(96));
+console.log(`NET = subscription revenue after Apple's 15% MINUS all AI costs. Fixed costs excluded.`);
+console.log(`ACTIVE RATE ${(v('activeRate') * 100).toFixed(0)}% of installs. CONVERSION IS A SHARE OF ACTIVE USERS, not of installs.`);
+console.log('Canned answers cost ZERO (no API call). "canned %" = share of ALL Otto messages answered by one.');
+console.log('Measured coverage is ~30% of all messages (PLAN 4.8). Rows either side show the range.\n');
 
 // ── 1. COSTS ────────────────────────────────────────────────────────────────
-console.log('─'.repeat(78));
-console.log('1. WHAT USERS COST');
-console.log('─'.repeat(78));
-console.log('                     free user      free user     Supporter     Supporter');
-console.log('                       /month          /year        /month         /year');
+line(); console.log('1. WHAT ONE ACTIVE USER COSTS PER YEAR'); line();
+console.log('                        canned 0%     canned 15%     canned 30%     canned 45%');
 for (const s of SCENARIOS) {
-  const f = monthlyAiCost(s.perDay);
-  const sup = monthlyAiCost(s.perDay * v('supporterMult'));
-  console.log(`${s.name}  ${pad('$' + f.toFixed(3), 12)}  ${pad('$' + (f * 12).toFixed(2), 13)}  ${pad('$' + sup.toFixed(3), 12)}  ${pad('$' + (sup * 12).toFixed(2), 12)}`);
-}
-
-// ── 2. REVENUE ──────────────────────────────────────────────────────────────
-console.log('\n' + '─'.repeat(78));
-console.log('2. WHAT A SUPPORTER IS WORTH  (after Apple\'s 15%)');
-console.log('─'.repeat(78));
-console.log('  stays for      revenue');
-for (const m of LIFETIMES) {
-  console.log(`  ${pad(m + ' months', 9)}   ${pad('$' + revenuePerSupporter(m).toFixed(2), 10)}`);
-}
-
-// ── 3. BREAK-EVEN ───────────────────────────────────────────────────────────
-console.log('\n' + '─'.repeat(78));
-console.log('3. BREAK-EVEN CONVERSION, and NET/YEAR at 3% on 25,000 installs');
-console.log('─'.repeat(78));
-console.log('  stays for   |  1 msg/day        2 msg/day        5 msg/day');
-console.log('              |  b/e    net@3%    b/e    net@3%    b/e    net@3%');
-for (const m of LIFETIMES) {
-  let row = `  ${pad(m + ' mo', 9)}   | `;
-  for (const s of SCENARIOS) {
-    const be = breakEven({ perDay: s.perDay, months: m });
-    const n = net({ installs: 25000, conv: 0.03, perDay: s.perDay, months: m });
-    row += `${pad((be * 100).toFixed(1) + '%', 5)}  ${pad(money(n), 8)}  `;
-  }
+  let row = pad(s.name, 20);
+  for (const d of DEFLECTS) row += pad('$' + (monthlyAiCost(s.perDay, d) * 12).toFixed(2), 15);
   console.log(row);
 }
 
-// ── 4. NET GRIDS ────────────────────────────────────────────────────────────
+// ── 2. REVENUE ──────────────────────────────────────────────────────────────
+console.log(); line(); console.log("2. WHAT ONE SUPPORTER IS WORTH (after Apple's 15%)"); line();
+for (const m of LIFETIMES) console.log(`  stays ${pad(m + ' months', 10)}   ${pad('$' + revenuePerSupporter(m).toFixed(2), 9)}`);
+
+// ── 3. BREAK-EVEN ───────────────────────────────────────────────────────────
+console.log(); line(); console.log('3. BREAK-EVEN CONVERSION (share of ACTIVE users). 12-month Supporters.'); line();
+console.log('                        canned 0%     canned 15%     canned 30%     canned 45%');
 for (const s of SCENARIOS) {
-  console.log('\n' + '─'.repeat(78));
-  console.log(`4. NET PER YEAR -- ${s.name}, Supporters staying ${DEFAULT_MONTHS} months`);
-  console.log('─'.repeat(78));
-  console.log('  installs |' + CONVS.map((c) => pad((c * 100) + '% conv', 11)).join(''));
+  let row = pad(s.name, 20);
+  for (const d of DEFLECTS) row += pad((breakEven({ perDay: s.perDay, months: BASE_MONTHS, deflect: d }) * 100).toFixed(2) + '%', 15);
+  console.log(row);
+}
+console.log('\n  and by how long a Supporter stays (typical usage, canned 30%):');
+for (const m of LIFETIMES) {
+  console.log(`  stays ${pad(m + ' months', 10)}   break-even ${(breakEven({ perDay: 2, months: m, deflect: 0.30 }) * 100).toFixed(2)}%`);
+}
+
+// ── 4. NET GRIDS ────────────────────────────────────────────────────────────
+for (const d of DEFLECTS) {
+  console.log(); line();
+  console.log(`4. NET PER YEAR -- typical usage (2 msgs/day), 12-month Supporters, CANNED ${(d * 100).toFixed(0)}%`);
+  line();
+  console.log('  installs   actives |' + CONVS.map((c) => pad((c * 100) + '% conv', 13)).join(''));
   for (const i of INSTALLS) {
-    let row = `  ${pad(i.toLocaleString(), 8)} |`;
-    for (const c of CONVS) row += pad(money(net({ installs: i, conv: c, perDay: s.perDay, months: DEFAULT_MONTHS })), 11);
+    let row = `  ${pad(i.toLocaleString(), 8)}  ${pad(Math.round(i * v('activeRate')).toLocaleString(), 8)} |`;
+    for (const c of CONVS) row += pad(money(net({ installs: i, conv: c, perDay: 2, months: BASE_MONTHS, deflect: d })), 13);
     console.log(row);
   }
 }
 
-// ── 5. SENSITIVITY ──────────────────────────────────────────────────────────
-console.log('\n' + '─'.repeat(78));
-console.log('5. IF ONLY 30% OF INSTALLS ARE ACTIVE  (net/yr, 25,000 installs, 12-month Supporters)');
-console.log('─'.repeat(78));
-console.log('             |  100% active     30% active');
-for (const s of SCENARIOS) {
-  const a = net({ installs: 25000, conv: 0.03, perDay: s.perDay, months: DEFAULT_MONTHS });
-  const b = net({ installs: 25000, conv: 0.03, perDay: s.perDay, months: DEFAULT_MONTHS, activeRate: 0.3 });
-  console.log(`${s.name} |  ${pad(money(a), 12)}   ${pad(money(b), 12)}`);
-}
-
-// ── 5b. CANNED ANSWERS (PLAN 4.8) ───────────────────────────────────────────
-// ⚠️ MEASURED COVERAGE IS ~60% OF APP QUESTIONS, on three corpora. With app questions running about half
-// of all Otto traffic, that is roughly 30% of ALL messages answered for free. The rows either side of it
-// are there so the number can be read as a range rather than a promise.
-const DEFLECTS = [0, 0.15, 0.30, 0.45];
-const dLabel = (d) => (d === 0 ? '0% (today)' : d === 0.3 ? '30% (measured)' : `${(d * 100).toFixed(0)}%`);
-console.log('\n' + '─'.repeat(78));
-console.log('5b. CANNED ANSWERS: net/yr at 25,000 installs, 12-month Supporters, 30% active');
-console.log('─'.repeat(78));
-console.log('  share of ALL Otto messages canned  |' + SCENARIOS.map((s) => pad(s.name.split('(')[0].trim(), 14)).join(''));
-for (const d of DEFLECTS) {
-  const label = dLabel(d);
-  let row = '  ' + pad(label, 33) + '  |';
-  for (const s of SCENARIOS) {
-    row += pad(money(net({ installs: 25000, conv: 0.03, perDay: s.perDay, months: DEFAULT_MONTHS, activeRate: 0.3, deflect: d })), 14);
-  }
-  console.log(row);
-}
-console.log('\n  break-even conversion at each rate (12-month Supporters, 30% active):');
-console.log('  ' + pad('', 33) + '  |' + SCENARIOS.map((s) => pad(s.name.split('(')[0].trim(), 14)).join(''));
-for (const d of DEFLECTS) {
-  const label = dLabel(d);
-  let row = '  ' + pad(label, 33) + '  |';
-  for (const s of SCENARIOS) row += pad((breakEven({ perDay: s.perDay, months: DEFAULT_MONTHS, activeRate: 0.3, deflect: d }) * 100).toFixed(2) + '%', 14);
+// ── 5. USAGE SENSITIVITY AT THE MEASURED CANNED RATE ────────────────────────
+console.log(); line();
+console.log('5. NET PER YEAR at canned 30%, 12-month Supporters, 5% conversion of actives');
+line();
+console.log('  installs   actives |' + SCENARIOS.map((s) => pad(s.name, 20)).join(''));
+for (const i of INSTALLS) {
+  let row = `  ${pad(i.toLocaleString(), 8)}  ${pad(Math.round(i * v('activeRate')).toLocaleString(), 8)} |`;
+  for (const s of SCENARIOS) row += pad(money(net({ installs: i, conv: 0.05, perDay: s.perDay, months: BASE_MONTHS, deflect: 0.30 })), 20);
   console.log(row);
 }
 
 // ── 6. PROVENANCE ───────────────────────────────────────────────────────────
-console.log('\n' + '─'.repeat(78));
-console.log('6. EVERY NUMBER THIS MODEL USED');
-console.log('─'.repeat(78));
+console.log(); line(); console.log('6. EVERY NUMBER THIS MODEL USED'); line();
 for (const [k, o] of Object.entries(C)) console.log(`  ${pad(k, 14)} = ${pad(o.v, 8)}   ${o.src}`);
 console.log('');

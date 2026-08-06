@@ -13,12 +13,37 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 
 // ── Tunables ────────────────────────────────────────────────────────────────
 
-// Compression quality handed to expo-image-picker (0..1). Lower = smaller
-// payload and cheaper vision billing. 0.4 keeps food clearly readable while
-// pushing typical phone photos toward the under-1MB target. If real photos
-// still come back too large, the next step is expo-image-manipulator for a
-// hard max-dimension resize (that is a native module and needs a rebuild).
-export const IMAGE_QUALITY = 0.4;
+// Compression quality handed to expo-image-picker and to the resize (0..1).
+//
+// 🔴 RAISED 0.4 -> 0.8 ON 2026-08-06, AND THE OLD COMMENT BELOW WAS WRONG IN THE WAY THAT MATTERS.
+// It said lower quality means "cheaper vision billing". It does not. **Anthropic bills an image on its
+// DIMENSIONS, not its file size** (PLAN 4.1: image tokens scale with AREA). A 1568px photo costs the same
+// ~1,550 tokens crisp or mushy, so 0.4 was buying a smaller upload and nothing else.
+// ⚠️ And it was costing something real: heavy JPEG compression destroys exactly the fine detail PORTION
+// estimation depends on (plate rims, a fork for scale, how deep a bowl is). Identifying a muffin survives
+// compression; judging how much is on the plate does not. We were about to protect that detail from a
+// resize while the app was already crushing it for free.
+// ➡️ So the pair is deliberate: MAX_IMAGE_DIM takes the cost out, and the higher quality protects the
+// accuracy that the resize threatens. The only price is a slightly larger upload, which is latency, not money.
+export const IMAGE_QUALITY = 0.8;
+
+// Longest edge, in pixels, that a photo is resized to before it is sent. PLAN 4.1, DECIDED 2026-08-05.
+//
+// ⚠️ THE PHOTO IS ~49% OF AN ESTIMATE'S COST (MEASURED: $0.00465 of $0.00953 on one real photo), which is
+// the finding that made this worth doing. The model is NOT the problem, so Sonnet stays: Justin's
+// 2026-07-31 call that vision is worth it holds, and switching to Haiku would mean finding out whether it
+// reads food worse. This way nobody has to find out.
+// ⚠️ Anthropic scales anything larger to their own 1568px ceiling and bills for THAT, so sending a
+// full-resolution phone photo buys literally nothing. 1568 -> 1024 is ~660 tokens saved, **28% off the
+// whole estimate** ($0.0095 -> $0.0068).
+// ⚠️ WHY NOT SMALLER. Going on down to 784 buys only another ~9% and that is where portion cues genuinely
+// start to go. The curve is steep early and flattens fast. 1024 is the knee.
+// ⚠️ NEVER UPSCALE. Only applied when the longest edge already exceeds this: blowing a small library photo
+// up to 1024 would cost MORE tokens for a worse image.
+// 🔴 The old comment here claimed a resize "is a native module and needs a rebuild". **STALE.**
+// `expo-image-manipulator` is already a dependency and already re-encodes photos in `app/(tabs)/log.tsx`
+// and `app/profile-photo-crop.tsx`. Pure JS, no rebuild.
+export const MAX_IMAGE_DIM = 1024;
 
 const MODEL = 'claude-sonnet-4-6';
 const API_TIMEOUT_MS = 30000; // vision on a complex plate can be slow
@@ -115,9 +140,20 @@ export interface LineItem {
   protein_g: number;
   carbs_g: number;
   fat_g: number;
-  assumption_note: string | null;
   confidence: Confidence;
 }
+// ⚠️ `assumption_note` REMOVED 2026-08-06. It was declared, instructed in the prompt, parsed and stored,
+// and **never rendered on any screen** (grepped every .tsx). So the model paid to type it on every line
+// item and no user ever saw one. Not a bug and nothing was lost: the model was already putting the portion
+// assumption in `portion_description`, which IS displayed, so the prompt now asks for it there.
+// ⚠️ Old stored estimates still carry the field. Harmless: nothing reads it.
+// 🔬 Worth ~10 output tokens per line item, ~2% of an estimate. Small on its own, and taken because output
+// is now the dominant cost here: after the 1024px resize the reply is ~40% of an estimate, the photo ~33%.
+// ❌ NOT DONE, and deliberately: shortening the JSON KEYS themselves ("portion_description" -> "p"). Field
+// names are instructions to the model, not just labels, and the field most at risk is the portion
+// description, which is this feature's whole value. Adding a legend to compensate pushes the net saving to
+// ~5% of an estimate, ~0.3% of the AI bill, in exchange for a real accuracy risk. Bad trade. Do not revisit
+// without a measured reason.
 
 export interface MacroTotals {
   calories: number;
@@ -156,7 +192,7 @@ If an image is provided and it contains no identifiable food or drink, respond w
 Otherwise, set "no_food_detected": false and produce the full estimate below.
 
 ESTIMATION RULES:
-- When portion size is not stated, assume a standard restaurant or home serving and record that assumption in the item's "assumption_note".
+- When portion size is not stated, assume a standard restaurant or home serving and say so in that item's "portion_description".
 - List up to 5 probable hidden additions that are easy to miss (cooking oils, butter, seasoning rubs, sauces or dressings not visible) in the top-level "hidden_items" array as plain phrases. Lean toward more of them when the description is vague or the meal is complex, but never invent items just to reach 5. Favor additions the person likely actually ate (sauces, butter, oils on the food itself) over trace prep residues that barely touch the food. Do NOT inflate line item macros to cover them.
 - Never invent a confident number for something you genuinely cannot judge. If you are unsure about an item, still give your best estimate but mark its "confidence" as "low".
 - Every line item must include a "confidence" of "high", "medium", or "low".
@@ -164,7 +200,7 @@ ESTIMATION RULES:
 
 OUTPUT FORMAT:
 Respond with ONLY valid minified JSON. No markdown, no code fences, no commentary before or after. Use this exact shape:
-{"no_food_detected":false,"meal_name_suggestion":string,"line_items":[{"name":string,"portion_description":string,"calories":number,"protein_g":number,"carbs_g":number,"fat_g":number,"assumption_note":string|null,"confidence":"high"|"medium"|"low"}],"hidden_items":[string]}
+{"no_food_detected":false,"meal_name_suggestion":string,"line_items":[{"name":string,"portion_description":string,"calories":number,"protein_g":number,"carbs_g":number,"fat_g":number,"confidence":"high"|"medium"|"low"}],"hidden_items":[string]}
 
 All numbers are plain integers or decimals (no units inside the numbers). meal_name_suggestion is a short friendly name for the whole meal.`;
 
@@ -210,9 +246,6 @@ function validateResult(raw: any, inputQuality: InputQuality): EstimateResult | 
     protein_g: Math.max(0, Math.round(num(it?.protein_g))),
     carbs_g: Math.max(0, Math.round(num(it?.carbs_g))),
     fat_g: Math.max(0, Math.round(num(it?.fat_g))),
-    assumption_note: typeof it?.assumption_note === 'string' && it.assumption_note.trim()
-      ? it.assumption_note.trim()
-      : null,
     confidence: asConfidence(it?.confidence),
   }));
 

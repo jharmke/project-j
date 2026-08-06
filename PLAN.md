@@ -319,7 +319,37 @@ is what made him think work had been dropped -- it had not, but he had no way to
 | 12 | Is Otto wordier on some topics | 🔴 open -- **4.7** |
 | 13 | Smart Coach packet not sized | ✅ done -- ~200 tokens |
 
-- [ ] **4.1 ✅ DECIDED 2026-08-05: KEEP SONNET. RESIZE THE PHOTO INSTEAD.** Not built.
+- [x] **4.1 ✅ BUILT + DEVICE-VERIFIED 2026-08-06.** Photos resize to 1024px on the longest edge before
+      sending (`resizeForEstimate` in `app/ai-meal-estimator.tsx`, `MAX_IMAGE_DIM` in
+      `services/aiMealEstimator.ts`), JPEG quality raised 0.4 -> 0.8, and the dead `assumption_note` field
+      removed. **MEASURED on the same photo: $0.00953 -> $0.00717, ~25% off an estimate.**
+      ✅ **PORTION ACCURACY HELD, which was the whole risk.** A blueberry muffin held in Justin's hand came
+      back "approx 80-90g **based on hand size comparison**" at 1024px. It still used the hand for scale.
+      🔴 **THE 28% AND THE 890 TOKENS WERE BOTH WRONG, and the route to the saving was not the predicted one.**
+      A 1024px photo at a normal 4:3 aspect measures **~1,048 image tokens, not ~890** (1024x768/750), so the
+      resize alone saved ~500 tokens rather than ~660, worth **~16%**, not 28%. The rest came from removing
+      the dead field and from the reply simply being shorter.
+      🔴 **QUALITY 0.4 WAS PURE LOSS AND NOBODY HAD NOTICED.** The old comment claimed lower quality meant
+      "cheaper vision billing". **Anthropic bills an image on its DIMENSIONS, not its file size**, so 0.4 was
+      buying a smaller upload and nothing else while destroying exactly the fine detail (plate rims, a fork
+      for scale) that PORTION estimation depends on. Raised to 0.8: costs zero tokens, protects the accuracy
+      the resize threatens.
+      ⚠️ **A REAL BUG WAS INTRODUCED AND CAUGHT DURING THE BUILD.** `canSubmit` keys off the DESCRIPTION, not
+      the image, so Analyze stays live while a newly picked photo resizes: the preview showed the new photo
+      while the payload still held the PREVIOUS one. Gated on a `preparingImage` flag.
+      ⚠️ **The silent-failure trap:** the old code read base64 straight off the picker. Resizing the file and
+      still sending that would have saved exactly zero while looking perfectly shipped.
+      ❌ **SHORTENING THE JSON KEYS WAS CONSIDERED AND REJECTED.** Field names are instructions to the model,
+      not labels, and the field most at risk is `portion_description` -- this feature's whole value. With a
+      legend added to compensate the net is ~5% of an estimate (~0.3% of the AI bill) against a real accuracy
+      risk. **Do not re-propose without a measured reason.**
+      🟡 **REMAINING, NOT ACTED ON:** after the resize the REPLY is ~40% of an estimate and the photo ~33%.
+      There is no filler left to cut here (every line is a number the user acts on) but the same arithmetic
+      applies far more profitably to Otto -- see 4.7. Output bills at 5x input everywhere.
+      ⚠️ Output varies run to run (155/205/212/384 observed across four estimates), so do NOT read a single
+      before/after pair as precise. Input is the stable half.
+      (Original decision follows.)
+      **✅ DECIDED 2026-08-05: KEEP SONNET. RESIZE THE PHOTO INSTEAD.**
       **MEASURED, one real photo estimate: $0.00953.** Where it goes:
       | | tokens | cost | share |
       |---|---:|---:|---:|

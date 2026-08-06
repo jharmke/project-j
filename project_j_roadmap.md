@@ -30,6 +30,13 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-08-06 **Meal photos are shrunk before they are sent, and they look BETTER, not worse.** Phone photos
+  went up at full resolution and Anthropic scaled them to their own 1568px ceiling and billed for that, so
+  the extra pixels were thrown away and charged for. Now resized to 1024px on the longest edge, JPEG quality
+  raised 0.4 -> 0.8 (compression saves nothing: images bill on DIMENSIONS, not file size, and 0.4 was
+  destroying the detail portion estimates rely on), and a dead output field removed.
+  **MEASURED, same photo: $0.00953 -> $0.00717, ~25% off.** Device-verified: a muffin still came back
+  "approx 80-90g based on hand size comparison". Status + every correction: `PLAN.md` 4.1.
 - 2026-08-06 **Halo says something real before she asks a question, and stays to one paragraph.** Her two
   voice rules are LOCKED in `SPEC_faith_ai.md` (not sermon-length, always points toward the Word and real
   community) and both were being ignored: a real message got a warm, completely secular reply and another

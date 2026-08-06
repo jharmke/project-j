@@ -10,6 +10,7 @@ import { Text, TextInput } from '@/components/AppText';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -31,7 +32,7 @@ import { DEFAULT_MEAL_SLOTS, MealSlot, getMealDisplayName, loadMealSlots } from 
 import { storageSet } from '../utils/storage';
 import { cancelFoodLogNotification } from '../services/notifications';
 import {
-  Confidence, EstimateResult, IMAGE_QUALITY, LineItem, computeTotals,
+  Confidence, EstimateResult, IMAGE_QUALITY, MAX_IMAGE_DIM, LineItem, computeTotals,
   generateMealEstimate, getRemainingUses, incrementQuota, limitFor, nextResetLabel,
 } from '../services/aiMealEstimator';
 import { Type } from '../typography';
@@ -140,6 +141,8 @@ export default function AIMealEstimatorScreen() {
   const [description, setDescription] = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
+  // True only while a freshly picked photo is being resized. Gates submit so a stale image can never ride.
+  const [preparingImage, setPreparingImage] = useState(false);
   const [imageMime, setImageMime] = useState<string>('image/jpeg');
   const descRef = useRef<TextInput>(null);
 
@@ -222,13 +225,72 @@ export default function AIMealEstimatorScreen() {
     applyPicked(res);
   };
 
-  const applyPicked = (res: ImagePicker.ImagePickerResult) => {
+  // PLAN 4.1. Shrink the photo before it is sent. The picture is ~49% of an estimate's cost (MEASURED),
+  // and a full-resolution phone photo is pure waste: Anthropic scales anything bigger to their own 1568px
+  // ceiling and bills for that, so the extra pixels are thrown away on their side and charged for anyway.
+  //
+  // 🔴 THE TRAP THIS FUNCTION EXISTS TO AVOID. The old code took `a.base64` straight off the picker. Resize
+  // the file but keep sending THAT and the saving is exactly zero while everything still works perfectly --
+  // a silent no-op that looks shipped. **The base64 must come out of the resizer**, which is why this
+  // returns it rather than reading it from the asset.
+  // ⚠️ NEVER UPSCALE: a photo already under the limit is left completely alone.
+  // ⚠️ The longest edge flips with how the phone was held, so the constraint is applied to whichever of
+  // width/height is larger and the other is left to follow. Resizing the wrong axis either does nothing or
+  // squashes the picture.
+  // ⚠️ FREE SIDE EFFECT, and it may be fixing a real bug: this forces a genuine JPEG. The estimator used to
+  // pass the photo's own mime type through, and Anthropic does not accept HEIC. `app/(tabs)/log.tsx` has
+  // the same re-encode with a comment saying a HEIC camera photo does leak through without it. Never
+  // confirmed broken here, closed either way.
+  // ⚠️ FAILS OPEN. If anything throws, the original photo is used. A slightly dearer estimate beats a
+  // feature that will not accept a picture.
+  const resizeForEstimate = async (
+    a: ImagePicker.ImagePickerAsset,
+  ): Promise<{ uri: string; base64: string | null; mime: string }> => {
+    const longest = Math.max(a.width ?? 0, a.height ?? 0);
+    if (!longest || longest <= MAX_IMAGE_DIM) {
+      return { uri: a.uri, base64: a.base64 ?? null, mime: a.mimeType || 'image/jpeg' };
+    }
+    try {
+      const context = ImageManipulator.manipulate(a.uri);
+      context.resize(
+        (a.width ?? 0) >= (a.height ?? 0)
+          ? { width: MAX_IMAGE_DIM }
+          : { height: MAX_IMAGE_DIM },
+      );
+      const rendered = await context.renderAsync();
+      const saved = await rendered.saveAsync({
+        format: SaveFormat.JPEG,
+        compress: IMAGE_QUALITY,
+        base64: true,
+      });
+      if (!saved.base64) throw new Error('no base64 from resize');
+      return { uri: saved.uri, base64: saved.base64, mime: 'image/jpeg' };
+    } catch {
+      return { uri: a.uri, base64: a.base64 ?? null, mime: a.mimeType || 'image/jpeg' };
+    }
+  };
+
+  const applyPicked = async (res: ImagePicker.ImagePickerResult) => {
     if (res.canceled || !res.assets?.[0]) return;
     const a = res.assets[0];
+    // Show the picked photo straight away; the resize is quick but the preview should not wait on it.
     setImageUri(a.uri);
-    setImageBase64(a.base64 ?? null);
-    setImageMime(a.mimeType || 'image/jpeg');
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    // ⚠️ CLEAR THE OLD IMAGE DATA FIRST, and gate submit while the resize runs. Without this there is a
+    // window where the preview shows the NEW photo while `imageBase64` still holds the PREVIOUS one, and
+    // `canSubmit` keys off the description rather than the image, so Analyze is live the whole time.
+    // Tapping it in that window would send the wrong picture with the right preview. Brief, but silent
+    // and impossible to explain afterwards.
+    setImageBase64(null);
+    setPreparingImage(true);
+    try {
+      const out = await resizeForEstimate(a);
+      setImageUri(out.uri);
+      setImageBase64(out.base64);
+      setImageMime(out.mime);
+    } finally {
+      setPreparingImage(false);
+    }
   };
 
   const choosePhoto = () => {
@@ -255,7 +317,9 @@ export default function AIMealEstimatorScreen() {
 
   // ── Submit / estimate ─────────────────────────────────────────────────────────
 
-  const canSubmit = description.trim().length > 0;
+  // ⚠️ `preparingImage` is in here deliberately: the photo is OPTIONAL and this gate keys off the
+  // description, so without it Analyze stays live while a newly picked photo is still being resized.
+  const canSubmit = description.trim().length > 0 && !preparingImage;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;

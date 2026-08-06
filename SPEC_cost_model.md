@@ -326,7 +326,10 @@ numbers are recorded here instead of the code that produced them.** Do this for 
 | ~~Halo prompt~~ | 🔴 **3,987 tokens, NOT 2,465** | **METERED 2026-08-05** off a real call. The old figure was 62% low. Only ~150 short of the 4,096 minimum, so the padding fix is trivial |
 | **Haiku 4.5 cache minimum** | **4,096** | ⚠️ **Minimums DIFFER BY MODEL and this was never checked: Sonnet 4.6 is 1,024.** Any "under the minimum" claim must name its model |
 | Meal estimator prompt | **562 tokens** | METERED. Item O recorded "~2,250" -- wrong |
-| Meal estimator image | ~1,550 tokens (**49% of that call's cost**) | Full-res upload, scaled by Anthropic to their 1568px cap |
+| ~~Meal estimator image~~ | ~~~1,550 tokens (**49% of that call's cost**)~~ | ~~Full-res upload, scaled by Anthropic to their 1568px cap~~ |
+| **Meal estimator image, SINCE 2026-08-06** | **~1,048 tokens** | 🔬 **MEASURED on device.** Resized to 1024px on the longest edge before sending (PLAN 4.1). A 1024px photo at a normal 4:3 aspect is 1024x768/750 = 1,048 tokens. ⚠️ **The pre-build estimate of ~890 was wrong** -- it assumed a narrower aspect than real photos have, which is why the predicted 28% saving was really ~16% from the resize alone. |
+| **A whole estimate, SINCE 2026-08-06** | **$0.00953 -> $0.00717** | **~25% off, MEASURED on the same photo.** Resize plus removing a dead output field. ⚠️ **Output now dominates: ~40% reply, ~33% photo, ~27% prompt.** No filler left to cut here (every line is a number the user acts on), but the same 5x input-to-output ratio applies to Otto at far greater scale -- see PLAN 4.7. |
+| ⚠️ **Image billing is by DIMENSIONS, not file size** | | 🔴 Load-bearing and it was recorded backwards in code for months. JPEG quality changes the upload, **not one token**. The estimator ran at quality 0.4 "for cheaper vision billing", which bought nothing and destroyed the fine detail (plate rims, a fork for scale) that PORTION estimates depend on. Raised to 0.8 alongside the resize. **Never trade image quality for cost again; it is not a trade.** |
 | Router core (always sent) | 6,874 tokens | 4,425 rules + 5 core chapters |
 | Router fallback rate | **73%** | 566 realistic messages |
 | Router when it works | 1.7 chapters, 10,704 total | |

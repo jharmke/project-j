@@ -30,6 +30,14 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-08-05 **Otto can now answer 183 common questions without calling the AI at all.** Navigation how-tos,
+  every achievement's criteria, the money and policy answers, and plain pleasantries like "thanks" all come
+  back instantly and cost NOTHING. Built and tested, **NOT deployed** pending Justin's device test.
+  🔴 **The honest coverage number is ~60%**, measured on three independent corpora: each fresh set lands near
+  60%, and tuning only ever lifts the set in front of you. **Accuracy never moved though: zero wrong answers
+  on all three, and 73/73 correct refusals.** It either answers correctly or hands off to Otto.
+  Detail: `PLAN.md` 4.8. **Next on it: `PLAN.md` 4.11** (keyword capture on a miss, the thumbs feedback now
+  pointing at a specific answer, and building each answer's vocabulary from the knowledge base).
 - 2026-08-05 **Otto stopped carrying the whole app manual to answer "is white rice bad".** About 22,000 of
   the 26,442 tokens sent on every message was the manual: how every screen works, where every button is. He
   now splits in two, Coach (no manual) and Support (full manual), decided per message by one yes/no. Same

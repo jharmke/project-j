@@ -635,6 +635,42 @@ is what made him think work had been dropped -- it had not, but he had no way to
       ⚠️ When a question is ambiguous it goes to **Support** -- having the manual and not needing it wastes
       a little money; needing it and not having it makes Otto invent things about the app.
 - [ ] **4.10** Enumerate which remaining features call the AI at all. Only Smart Coach is fully mapped.
+- [ ] **4.11 🆕 CLOSING THE CANNED-ANSWER COVERAGE GAP. Two ideas, both Justin's, logged 2026-08-05
+      evening. NOT started, and deliberately NOT tonight.**
+      **THE PROBLEM THEY SOLVE:** canned coverage measured **~60% on three independent corpora** (4.8), and
+      more corpora written by me will keep landing at 60%. **I cannot guess my way to the phrasings real
+      people use.** Everything below is about replacing my imagination with evidence.
+      **(a) 🔑 KEYWORD CAPTURE ON A MISS.** When a canned answer does NOT fire and the message goes to Otto,
+      flag it and keep the words we did not recognise. Justin's framing, and it is narrower and safer than
+      mine was: it never touches every message, only app questions we failed on, which is roughly one
+      message in five.
+      ⚠️ **STORE ONLY THE UNRECOGNISED WORDS, NOT THE MESSAGE.** "How do i wipe a meal" stores `wipe` and
+      nothing else: we already know "meal", so it teaches us nothing. The output is a frequency list of
+      words the app does not understand yet, which is directly actionable.
+      🔴 **THREE GUARDS BEFORE THIS SHIPS:** only from messages already routed as APP questions; only keep a
+      word once SEVERAL DIFFERENT ACCOUNTS have typed it (one person's unusual word is never stored, and you
+      cannot reconstruct anybody from a word twenty people used); and drop anything shaped like a name,
+      number or email.
+      ⚠️ **`privacy.html` MUST GO OUT WITH IT.** Justin is fine with updating it. It is honestly describable
+      in one line: *when the app cannot answer a question about itself, it records the words it did not
+      recognise so those answers can be improved.* See [[app_store_compliance]].
+      ⚠️ **NOT URGENT AND USELESS TODAY** -- with one user it collects nothing. It only starts paying at real
+      traffic, so build it any time before launch.
+      **(b) 👍👎 THE THUMBS NOW CARRY REAL WEIGHT (Justin's point).** Otto's replies already have thumbs up
+      and down. Until today a thumbs-down meant "the model wrote something poor", which is hard to act on.
+      **A thumbs-down on a CANNED answer is different: it points at one specific piece of text we wrote, and
+      it is either wrong, stale, or badly worded.** That is the highest-signal feedback in the app and it
+      costs nothing to collect.
+      ➡️ Needs the reply to record WHICH canned answer id produced it, so a thumbs-down names the entry
+      rather than the conversation. Nothing else to build.
+      ⚠️ **DO (a) AND (b) AFTER the knowledge-base vocabulary idea below**, which needs no user data at all
+      and may close much of the gap for free.
+      **(c) 📚 BUILD EACH ANSWER'S VOCABULARY FROM THE KNOWLEDGE BASE instead of by hand.** Today the words
+      each answer recognises are hand-listed by me, which is the guessing. The KB already describes every
+      feature far more richly. **Zero privacy exposure, no user data, no doc changes.** ⚠️ Wider vocabulary
+      means more messages where two answers both look plausible, and those become ties that go to Otto, so
+      it may convert misses into ties rather than into hits. **Measure it the same way: accuracy must stay
+      at zero wrong answers.** Guess: 60% -> low 70s. Try this FIRST.
 
 ### 4b. 🆕 OTTO HANDS FAITH CONVERSATION TO HALO -- ✅ BUILT + DEPLOYED 2026-08-05
 **Not a cost item.** A product-correctness bug found during the 2.2 verification check. Kept separate on

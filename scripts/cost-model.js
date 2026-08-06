@@ -45,15 +45,21 @@ const v = (k) => C[k].v;
 const money = (n) => (n < 0 ? `-$${Math.abs(n).toFixed(0)}` : `+$${n.toFixed(0)}`);
 const pad = (s, n) => String(s).padStart(n);
 
-/** Blended cost of one Otto message, given how many need the manual. */
-function ottoMsg() {
-  return v('coachShare') * v('ottoCoach') + (1 - v('coachShare')) * v('ottoSupport');
+/**
+ * Blended cost of one Otto message.
+ * ⚠️ `deflect` is the share of ALL Otto messages answered by a CANNED answer (PLAN.md 4.8). Those cost
+ * exactly ZERO -- no API call is made at all. Canned answers only ever replace SUPPORT-route messages
+ * (app questions and pleasantries), never coaching, so the deflection comes out of that half.
+ */
+function ottoMsg(deflect = 0) {
+  const support = Math.max(0, (1 - v('coachShare')) - deflect);
+  return v('coachShare') * v('ottoCoach') + support * v('ottoSupport');
 }
 
 /** AI cost per MONTH for one user sending `perDay` companion messages a day. */
-function monthlyAiCost(perDay) {
+function monthlyAiCost(perDay, deflect = 0) {
   const msgs = perDay * 30;
-  const otto = msgs * (1 - v('haloShare')) * ottoMsg();
+  const otto = msgs * (1 - v('haloShare')) * ottoMsg(deflect);
   const halo = msgs * v('haloShare') * v('halo');
   const tips = v('coachTipsDay') * 30 * v('smartCoach');
   const est = v('estimatorMo') * v('estimator');
@@ -69,20 +75,20 @@ function revenuePerSupporter(months) {
 }
 
 /** Year-one net for a given population. Free users cost 12 months; Supporters cost while subscribed. */
-function net({ installs, conv, perDay, months, activeRate = 1 }) {
+function net({ installs, conv, perDay, months, activeRate = 1, deflect = 0 }) {
   const supporters = installs * conv;
   const free = installs - supporters;
-  const freeCost = free * activeRate * monthlyAiCost(perDay) * 12;
-  const supCost = supporters * activeRate * monthlyAiCost(perDay * v('supporterMult')) * Math.min(months, 12);
+  const freeCost = free * activeRate * monthlyAiCost(perDay, deflect) * 12;
+  const supCost = supporters * activeRate * monthlyAiCost(perDay * v('supporterMult'), deflect) * Math.min(months, 12);
   return supporters * revenuePerSupporter(months) - freeCost - supCost;
 }
 
 /** Conversion rate at which net crosses zero. */
-function breakEven({ perDay, months, activeRate = 1 }) {
+function breakEven({ perDay, months, activeRate = 1, deflect = 0 }) {
   let lo = 0, hi = 1;
   for (let i = 0; i < 60; i++) {
     const mid = (lo + hi) / 2;
-    if (net({ installs: 100000, conv: mid, perDay, months, activeRate }) < 0) lo = mid; else hi = mid;
+    if (net({ installs: 100000, conv: mid, perDay, months, activeRate, deflect }) < 0) lo = mid; else hi = mid;
   }
   return (lo + hi) / 2;
 }
@@ -165,6 +171,33 @@ for (const s of SCENARIOS) {
   const a = net({ installs: 25000, conv: 0.03, perDay: s.perDay, months: DEFAULT_MONTHS });
   const b = net({ installs: 25000, conv: 0.03, perDay: s.perDay, months: DEFAULT_MONTHS, activeRate: 0.3 });
   console.log(`${s.name} |  ${pad(money(a), 12)}   ${pad(money(b), 12)}`);
+}
+
+// ── 5b. CANNED ANSWERS (PLAN 4.8) ───────────────────────────────────────────
+// ⚠️ MEASURED COVERAGE IS ~60% OF APP QUESTIONS, on three corpora. With app questions running about half
+// of all Otto traffic, that is roughly 30% of ALL messages answered for free. The rows either side of it
+// are there so the number can be read as a range rather than a promise.
+const DEFLECTS = [0, 0.15, 0.30, 0.45];
+const dLabel = (d) => (d === 0 ? '0% (today)' : d === 0.3 ? '30% (measured)' : `${(d * 100).toFixed(0)}%`);
+console.log('\n' + '─'.repeat(78));
+console.log('5b. CANNED ANSWERS: net/yr at 25,000 installs, 12-month Supporters, 30% active');
+console.log('─'.repeat(78));
+console.log('  share of ALL Otto messages canned  |' + SCENARIOS.map((s) => pad(s.name.split('(')[0].trim(), 14)).join(''));
+for (const d of DEFLECTS) {
+  const label = dLabel(d);
+  let row = '  ' + pad(label, 33) + '  |';
+  for (const s of SCENARIOS) {
+    row += pad(money(net({ installs: 25000, conv: 0.03, perDay: s.perDay, months: DEFAULT_MONTHS, activeRate: 0.3, deflect: d })), 14);
+  }
+  console.log(row);
+}
+console.log('\n  break-even conversion at each rate (12-month Supporters, 30% active):');
+console.log('  ' + pad('', 33) + '  |' + SCENARIOS.map((s) => pad(s.name.split('(')[0].trim(), 14)).join(''));
+for (const d of DEFLECTS) {
+  const label = dLabel(d);
+  let row = '  ' + pad(label, 33) + '  |';
+  for (const s of SCENARIOS) row += pad((breakEven({ perDay: s.perDay, months: DEFAULT_MONTHS, activeRate: 0.3, deflect: d }) * 100).toFixed(2) + '%', 14);
+  console.log(row);
 }
 
 // ── 6. PROVENANCE ───────────────────────────────────────────────────────────

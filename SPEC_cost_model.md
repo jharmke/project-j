@@ -284,7 +284,7 @@ as 30%** (it is 15% under the Small Business Program), **Supporters were silentl
 (the single biggest variable in the whole model), and **no usage level was attached** -- while break-even
 ranges from 2.5% to 8.5% on usage alone. A break-even with no usage and no retention attached is not a fact.
 
-⚠️ **The 1.3% below was always a guess** (40% canned-answer deflection, which section 8 explains cannot be
+⚠️ **The 1.3% below was always a guess** (40% canned-answer deflection). 🔬 **MEASURED 2026-08-05: canned answers cover ~60% of APP questions, which is roughly 30% of ALL Otto messages** (PLAN.md 4.8, three independent corpora). `scripts/cost-model.js` now takes deflection as a dial and prints net and break-even at 0 / 15 / 30 / 45%. The old figure assumed 40% of ALL messages, which was optimistic by a wide margin. Original note follows: 40% deflection, which section 8 explains cannot be
 measured before launch without being circular) and it was nonetheless being quoted as an upside.
 
 (historical text follows)
@@ -405,7 +405,7 @@ rather than the -$497 the uncorrected figure gives.
 all 8 calls. The docs called this Halo's cache "splitting"; there is no cache to split. **Its only lever is
 prompt SIZE** -- there is no traffic level at which caching starts paying for it.
 ⚠️ **The Otto figure below also predates two things that shipped 2026-08-04**: replies are now 46% shorter
-(measured), and routing is still NOT wired in. Re-run `scratchpad/cost-model.js` before quoting these.
+(measured), and routing is still NOT wired in. 🔴 **Re-run `node scripts/cost-model.js` before quoting these.** The old `scratchpad/cost-model.js` this line used to name no longer exists; the replacement is committed.
 
 ---
 

@@ -51,7 +51,7 @@ then quietly skipped.
 |---|---|---|
 | ✅ ~~**2.2 faith-tier rules moved position**~~ | **CLEARED 2026-08-05.** Superseded by 4b, which enforces faith behaviour from the user turn and was device-verified on all three tiers. | Residual: only the 19% of faith messages the detector misses, which fall back to the tails. |
 | 🟡 Smart Coach prompt content | The tips were checked after the FIRST padding pass, before the second. Four rulebook sections have never had their output read. | Worse tips, silently |
-| 🟡 Halo prompt content | Three new voice examples in. Only messages sent were "hi" and "how are you". | Ditto. One real message would settle it |
+| ✅ ~~**Halo prompt content**~~ | **CLEARED 2026-08-06, and one real message did settle it -- badly.** Two substantive replies came back with NO faith content at all and one ran to three paragraphs, against two rules LOCKED in `SPEC_faith_ai.md` line 245. Fixed by moving both rules onto the user turn (see 2.5), measured A/B over three drafts and 31 cases, deployed and device-verified. | Was: worse voice, silently. Now closed. |
 | 🟡 **1.2** skip-the-AI on no-data | Not reachable from an account with full data. | Low -- it is an `if` on a value the engine already computed |
 | 🟡 **1.7** EvR voicing scoped to visible cards | ⚠️ **May not be exercisable by Justin at all** -- with the dev Pro toggle on he sees every card and the narrowed path never runs. Check which account first. | Medium. The upgrade path (blank cards) is the failure mode to watch |
 
@@ -232,6 +232,34 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       ⚠️ Halo's real per-call cost is **$0.00406 metered**, not the $0.0032 in the old docs.
       ⚠️ Once it DOES cache, the old note about the plans catalog varying inside the cached block becomes a
       live problem -- check it then (it is harmless today only because nothing caches).
+- [x] **2.5 🆕 HALO'S TWO LOCKED VOICE RULES NOW RIDE ON THE USER TURN. ✅ BUILT + DEPLOYED + DEVICE-VERIFIED
+      2026-08-06.** Not a cost item; it came out of the 2.3 verification check above and is kept separate so
+      it does not hide inside the cost work. Full detail and every measurement: `functions/src/faithCompanion.ts`.
+      Product side, and the open good-news question: `SPEC_faith_ai.md`.
+      **WHAT WAS WRONG.** `SPEC_faith_ai.md` line 245 LOCKS two things: "concise and conversational (not
+      sermon-length)" and "always points toward the Word and real community". Both were in the system prompt
+      and both were being ignored. Justin's first real message got a warm, completely secular reply.
+      🔴 **AND THE CAUSE WAS NOT RELUCTANCE.** The prompt ALSO carried two hold-back rules that appear nowhere
+      in the spec ("sometimes the caring thing is to listen, not quote a verse"). Explicit behavioural
+      instructions beat identity framing, so the hold-back side won. **A fourth confirmation that a rule Otto
+      or Halo must ACT on cannot live in the system prompt** (see 4b, 4.9). Same mechanism as the pitch, the
+      cap and the faith handoff.
+      🔬 **MEASURED A/B, 31 cases, three drafts** (`functions/_halo_voice.cjs`, the first harness on this
+      project to call the real model rather than test deterministic code).
+      ⚠️ **DRAFT 1 FIXED LENGTH AND NOT FAITH, AND THE REASON WAS THE FINDING.** On an opening message she
+      answered with a clarifying question and nothing else, and a question has nowhere to put faith. Draft 2
+      added ANSWER-THEN-ASK (Justin's call); draft 3 added the technique her own voice example already uses:
+      when they have said too little to be specific, the hook is the INVITATION, not a claim about God.
+      ⚠️ **A CONTRACTION BUG WAS BLAMED ON THE RIDER AND THAT WAS WRONG.** "Tired goes deep, does not it"
+      turned up in a NO-RIDER reply on the next run. Pre-existing, rare, unfixed, logged.
+      🔴 **READ THE REPLIES, NOT THE TALLY.** The harness prints a keyword count and on identical inputs the
+      baseline scored 15, then 16, then 18 across three runs. **At 31 samples against a nondeterministic
+      model that counter cannot separate a real move from noise.** Every conclusion came from reading text.
+      ✅ **DEVICE-VERIFIED 2026-08-06, all five checks:** grounds before asking, greeting stayed two lines,
+      app how-to gave the path plus a jump button, crisis carve-out intact, contractions intact.
+      🟡 **OPEN, LOGGED, NOT BUILT: good news.** "I had a really good day today" still returns no explicit
+      faith. Justin wants it, tastefully, and says it can wait. Detail: `SPEC_faith_ai.md`.
+      ⚠️ Costs ~$0.0003/message because the user turn is never cached. `SPEC_cost_model.md` carries the number.
 - ⏸️ **2.4 PARKED WITH A TRIGGER** (skip the Faith chapter for "Not Right Now" users). Recorded elsewhere as
       a "free win"; it is not. Those 635 tokens sit INSIDE the cached block, so at the cached price they are
       worth about **six hundredths of a cent a message** -- and skipping them needs a SECOND variant of the

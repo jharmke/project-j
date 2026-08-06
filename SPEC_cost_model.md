@@ -9,7 +9,7 @@ install scenario loses money. That is no longer true.
 |---|---|
 | $6.99/month | **$9.99** |
 | Apple takes 30% | **15%** available via the Small Business Program (Justin qualifies; enrolment still a pre-launch to-do) |
-| Halo 25 messages/day free | **10/day since 2026-07-29** -- Halo and Otto now match at 10 free / 30 Supporter |
+| Halo 25 messages/day free | **10/day since 2026-07-29.** 🔴 **THEY NO LONGER MATCH -- corrected 2026-08-06.** This row said "Halo and Otto now match at 10 free / 30 Supporter" and that went stale the same day it was written: **Otto dropped to 5/day on 2026-08-05 (PLAN 3.1) and Halo deliberately stayed at 10.** Halo is ~3% of a free user's bill, so cutting her buys nothing, and free users getting more of the faith companion than the fitness one is the app stating its identity. Device-confirmed 2026-08-06: Halo's in-chat counter reads "of 10 messages left today". **Do not "fix" this back to matching.** |
 | Free users get the full data snapshot | **The tier gate shipped** (THE PLAN item B) |
 
 ⚠️ **HOW THAT HAPPENED, so it does not happen again: the numbers were found by keyword-searching a
@@ -33,6 +33,8 @@ is a derivation.
 |---|---:|---:|---|
 | **Smart Coach** | $0.00387 | **$0.00107** | 72% off. Crossed the 4,096 cache minimum for the first time (PLAN 1.1) and moved to a 1-hour TTL (2.1a) |
 | **Halo** | $0.00406 | **$0.00067** | 83% off on a short reply, ~$0.0011 on a realistic one. Crossed the minimum for the first time (2.3) |
+| ↳ **Halo, CONFIRMED ON REAL TRAFFIC 2026-08-06** | | **cache write 4,203 / read 8,406 over 3 calls** | 🔬 **The first independent confirmation that 2.3 actually took**, read off `ai_cost` -> `byFeature.halo`. One cold call wrote the block, two warm calls read it back, and the meter's own dollar figure ($0.00753235) reconciles to the price table to the cent. ⚠️ **Her cached block measures 4,203 tokens, so the margin over Haiku's 4,096 minimum is 107 tokens (2.5%), not the 132 (3%) recorded in PLAN 2.3.** Tighter, still fine, and the meter catches it if it ever slips (`cacheWriteTokens` returning to 0). |
+| ↳ **Halo voice rider, ADDED 2026-08-06** | | **+~$0.0003/message** | The reply rules ride on the USER TURN, which is never cached, so they bill at $1/M rather than $0.1/M. COUNTED: 1,423 characters on Rooted, 1,616 on Exploring, so ~300 and ~340 tokens at the measured 4.75 chars/token. ➡️ **A realistic warm Halo message therefore costs ~$0.0012, not ~$0.0009.** Deliberate: it buys two rules that are LOCKED in `SPEC_faith_ai.md` and were being ignored. Halo is ~3% of a free user's bill, so this is ~1% of it. Detail and the A/B measurements: `functions/src/faithCompanion.ts`. |
 | **Otto** | ~$0.0043 | unchanged per call | 2.2 collapsed three cached copies into one, which raises the HIT RATE rather than lowering the per-call price |
 
 🔴 **NEITHER SMART COACH NOR HALO HAD EVER CACHED ONCE** before 2026-08-05. Both had been paying full price

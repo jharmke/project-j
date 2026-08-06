@@ -96,8 +96,11 @@ Every one of these is currently making the app more generous than it should be a
       Was marked blocked on 1.1; that turned out to be stale — the Supporter lookup shipped 2026-07-13 and the
       `supporter ? SUPPORTER_CAP : FREE_CAP` branch already existed, it was just that both constants were equal.
       - [x] 🔴 **SUPERSEDED 2026-08-05: Otto is now 5 free / 30 Supporter** (PLAN.md 3.1), cut before launch
-        because a visible limit may be raised later but never tightened. Halo is unchanged at 10 free
-        pending a decision on whether cutting the faith companion fits "faith is never paywalled".
+        because a visible limit may be raised later but never tightened. **Halo stays at 10 free, and that
+        is now DECIDED, not pending (Justin, 2026-08-05, PLAN.md 3.1).** She is ~3% of a free user's AI bill
+        so cutting her buys nothing, and free users getting more of the faith companion than the fitness one
+        is the app stating its own identity. ⚠️ **Do not "finish" this by cutting Halo later.**
+        Re-confirmed on device 2026-08-06: her counter reads "of 10 messages left today".
         (original follows)
       - [x] `appCompanion.ts` — **10 free / 30 Supporter** (deployed). NOTE: 30, not the 25 originally locked —
         deliberate 2026-07-28. 3x free makes the perk read as real and it acts as a runaway backstop, not a

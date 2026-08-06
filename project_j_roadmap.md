@@ -30,6 +30,12 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-08-06 **Halo says something real before she asks a question, and stays to one paragraph.** Her two
+  voice rules are LOCKED in `SPEC_faith_ai.md` (not sermon-length, always points toward the Word and real
+  community) and both were being ignored: a real message got a warm, completely secular reply and another
+  ran to three paragraphs. Fixed by moving both onto the user turn, the same mechanism as the pitch and the
+  faith handoff. Measured A/B over 31 cases and three drafts, deployed and device-verified.
+  Status: `PLAN.md` 2.5. Product detail: `SPEC_faith_ai.md`. Cost: `SPEC_cost_model.md`.
 - 2026-08-06 **Verses written "Psalm 23" instead of "Psalms 23" now load their real text.** `parseReference`
   in `data/bible-web.ts` returned whatever text sat before the numbers, so the singular form 404'd and the
   card silently fell back to the baked KJV wording while the user was set to WEB. Fixed with a
@@ -188,7 +194,8 @@ actually reads every session.
   full debugging story in the archive.
 - 2026-07-29 **Companion caps evened up, and Otto stopped quoting the old price (deployed + verified on
   device).** Halo free 25 -> 10, Halo Supporter 25 -> 30, so both companions are now **10 free / 30
-  Supporter**. Free and Supporter were BOTH 25 on Halo, meaning a paying user got literally nothing extra --
+  Supporter**. ⚠️ **THAT LAST CLAUSE IS STALE AND KEPT AS HISTORY: Otto dropped to 5 free on 2026-08-05 and
+  Halo deliberately did not, so they no longer match. `PLAN.md` 3.1 is the live status.** Free and Supporter were BOTH 25 on Halo, meaning a paying user got literally nothing extra --
   that is now a real Supporter benefit. Faith is still never paywalled; a Supporter just gets a bigger daily
   allowance. 10 not 5 because Halo's unit is a CONVERSATION, not a question, and 5 cuts someone off mid-way.
   ALSO FIXED IN OTTO'S KNOWLEDGE, all three live and wrong before today: he was quoting **$6.99/$69.99**
@@ -1480,8 +1487,11 @@ are separate pre-submission checklists, NOT part of this menu.
     "at current traffic it costs MORE." Backwards: at low traffic the 5-minute cache expires BETWEEN
     messages, so you pay the write price on nearly every call. Measured **$0.0297 -> $0.0042 per message at
     100 msgs/day, 7x**, and identical at high volume. **One line of code, no failure mode.**
-  • 🔴 **HALO'S FIX IS TO MAKE ITS PROMPT BIGGER.** 2,465 tokens is under Haiku's 4,096 cache minimum, so it
-    has never cached and never will. Padding it PAST 4,096 makes it cacheable: **$0.0032 -> ~$0.0007, 6x.**
+  • ✅ ~~**HALO'S FIX IS TO MAKE ITS PROMPT BIGGER.**~~ **DONE 2026-08-05, CONFIRMED ON REAL TRAFFIC
+    2026-08-06. Kept as history; two numbers in it were wrong.** It said 2,465 tokens; the meter read
+    **3,987**. It said "never cached and never will"; **she caches now** -- `ai_cost` -> `byFeature.halo`
+    showed cache write 4,203 and read 8,406 over three calls. Her cached block is **4,203 tokens, 107 over
+    the 4,096 minimum**. `SPEC_cost_model.md` is the live number.
     The safety/theology/crisis blocks are off-limits to CUT, so growing them is the allowed direction.
   • 🔴 **ROUTING (ITEM H) DOES NOT WORK AS BUILT -- PARK IT.** Measured over 566 realistic messages with the
     real `routeChapters()`: **it falls back 73% of the time and sends the entire manual.** It gave up on
@@ -1494,7 +1504,12 @@ are separate pre-submission checklists, NOT part of this menu.
   2. **Faith cache fix** -- move the faith-tier line out of `buildCompanionStable` so three cached copies
      collapse into one that every user shares.
   3. **Pad Halo's prompt past 4,096 tokens** so it caches at all.
-  4. ✅ **DECIDED: free cap 10/day -> 5/day** (Otto and Halo). A monthly 100-message pool was proposed and
+  4. ✅ **DECIDED: free cap 10/day -> 5/day** ~~(Otto and Halo)~~ 🔴 **OTTO ONLY -- corrected 2026-08-06.
+     Justin reversed the Halo half on 2026-08-05 and she stays at 10** (PLAN.md 3.1, which is the live
+     status). She is ~3% of a free user's bill so cutting her buys nothing, and free users getting more of
+     the faith companion than the fitness one is the app stating its identity. The worst-case figure below
+     was computed on the both-cut assumption and is therefore optimistic; `scripts/cost-model.js` is the
+     number. A monthly 100-message pool was proposed and
      Justin killed it, correctly: a daily cap gives thirty pitch moments a month and they come back
      tomorrow; a monthly pool gives one wall and three dead weeks. Worst-case free user drops
      **$26.74 -> $9.61/year** against a Supporter worth $101.88.
@@ -1533,6 +1548,17 @@ are separate pre-submission checklists, NOT part of this menu.
   gating is INSIDE features, not whole chapters, worth ~15% not 40-70%); rewriting the manual denser (it is
   already tight); switching AI provider (cost is prompt-size dominated, not rate dominated); a 100/month
   pool; **removing Otto from free after a trial week -- Justin: "that is drastic." DEAD.**
+- 🔗 **[NEW 2026-08-06] A WHOLE-CHAPTER REFERENCE LIKE "PSALM 100" IS NOT TAPPABLE. Found on device the same
+  session, deliberately parked -- Justin wanted to move on.** Halo answered "can you give me a verse about
+  giving thanks" with Colossians 3:15-17, Philippians 4:4-7 and **Psalm 100**. The first two rendered as gold
+  links; the third rendered as plain text, so she recommended a whole chapter the user cannot open.
+  ➡️ **CAUSE (read, not guessed):** `KNOWN_REF_REGEX` in `utils/faithVerse.ts` requires `Book Chapter:Verse`.
+  A chapter-only reference has no verse number, so it never matches and never becomes a link.
+  ⚠️ **NOT the Psalm/Psalms bug fixed the same day** -- that one was book-name normalisation in
+  `data/bible-web.ts` and is shipped and verified. This is a separate gap in what counts as a reference.
+  ⚠️ **Think about verification before building it.** That file's whole job is confirming a verse exists and
+  capturing its real text; a chapter-only reference has no verse to verify, so linking it and verifying it
+  are genuinely different questions. Do not bolt it into the verse path without deciding which one it is.
 - 🙏 **[NEW 2026-08-06] HALO AND GOOD NEWS: PRAISING GOD WHEN SOMETHING GOES RIGHT. Justin's idea, wants it,
   says it can wait and needs discussion + tuning before anything is built. Full detail: `SPEC_faith_ai.md`,
   "GOOD NEWS" under the companion voice section.** Found while measuring her voice rules on 2026-08-06:
@@ -2482,9 +2508,13 @@ are separate pre-submission checklists, NOT part of this menu.
      caches for the first time, at 10% of the price, with one shared entry instead of three.
      ⚠️ **"CACHING IS NOT THE FIRST LEVER" was inherited from the 1h-TTL pin, which has itself been reversed**
      (see SPEC_cost_model.md section 1). Caching IS the first lever here.
-     ⚠️ **"Halo already has caching switched on" IS FALSE.** Halo's prompt is 2,465 tokens, also under the
-     4,096 minimum -- it has never cached once. (The note below about the plans catalog varying inside the
-     cached block is still worth keeping: it becomes a real problem the moment Halo is padded and DOES cache.)
+     ⚠️ ~~**"Halo already has caching switched on" IS FALSE.** Halo's prompt is 2,465 tokens, also under the
+     4,096 minimum -- it has never cached once.~~ 🔴 **THIS WHOLE NOTE IS NOW STALE, kept as history and
+     wrong in two ways (2026-08-06).** The size was **3,987** when metered, not 2,465, and **she caches now**
+     (padded 2026-08-05, confirmed on real traffic 2026-08-06 at 4,203 tokens cached). ➡️ And the plans
+     catalog worry the original note wanted kept turned out to be **unfounded**: the client builds it once at
+     module load from static data and it is byte-identical for everyone, so it never split the cache.
+     `PLAN.md` 2.3 and `SPEC_cost_model.md` carry the live picture.
      ⚠️ **"Parked until the Otto work (B + H) is finished" no longer holds.** H is parked, and Smart Coach is
      the single biggest AI cost in the app.
      ✅ **The AI Meal Estimator note below is still a live Justin decision (2026-07-31) and has NOT been

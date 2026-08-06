@@ -47,6 +47,49 @@ const BOOK_FILE_NAMES: Record<string, string> = {
 
 const BASE_URL = 'https://raw.githubusercontent.com/aruljohn/Bible-kjv/master';
 
+// ⚠️ BOOK NAME CANONICALISATION. Added 2026-08-06 after a real 404 in Justin's Metro log:
+// `fetchChapter (web) error Psalm 92 [Error: HTTP 404]`.
+//
+// THE BUG. `parseReference` took whatever text sat before the numbers and handed it on untouched, so
+// "Psalm 92:1" produced the book name "Psalm". Every lookup here expects the canonical "Psalms", so
+// `webFileName` built `.../psalm.json` and the fetch 404'd. The KJV path fails the same way: a singular
+// "Psalm" is simply not a key in BOOK_FILE_NAMES.
+// ⚠️ **TEN VERSES IN THE APP ARE WRITTEN SINGULAR** (5 in `components/GratitudeStreakCard.tsx`, 5 in
+// `data/verses.ts`) and every one of them was broken by this. Fixing the parser rather than those ten
+// strings was deliberate: people write "Psalm 23" everywhere, Halo writes it that way too, and editing
+// ten strings would leave the eleventh to break.
+//
+// ⚠️ NOT A NEW IDEA, AND THAT IS THE POINT. `utils/faithVerse.ts` already solved this for Halo's replies
+// with its own alias map (`'psalm': 'Psalms'`), which is exactly why her citations verified fine while the
+// Bible data layer 404'd on the same reference. This closes the gap. Kept deliberately SMALL: only real
+// world variants people and models actually write, not a general fuzzy matcher, because a wrong
+// normalisation would silently serve the wrong book.
+const BOOK_ALIASES: Record<string, string> = {
+  'psalm': 'Psalms',
+  'song of songs': 'Song of Solomon',
+  'canticles': 'Song of Solomon',
+  'revelations': 'Revelation',
+};
+
+/**
+ * Map any reasonable spelling of a book name to the canonical one used by BIBLE_BOOKS,
+ * BOOK_FILE_NAMES and the WEB file names. Unknown names are returned trimmed and unchanged, so a
+ * genuinely fabricated book still fails the same way it did before rather than being coerced.
+ */
+export function canonicalBookName(bookName: string): string {
+  const trimmed = (bookName || '').trim();
+  if (!trimmed) return trimmed;
+  // Already canonical (the common case) -- do nothing.
+  if (trimmed in BOOK_FILE_NAMES) return trimmed;
+  const key = trimmed.toLowerCase().replace(/\s+/g, ' ');
+  if (BOOK_ALIASES[key]) return BOOK_ALIASES[key];
+  // Case and spacing only, e.g. "1  samuel" or "PSALMS".
+  for (const canonical of Object.keys(BOOK_FILE_NAMES)) {
+    if (canonical.toLowerCase() === key) return canonical;
+  }
+  return trimmed;
+}
+
 export type BibleTranslation = 'kjv' | 'web';
 
 // ── WEB (World English Bible) source ────────────────────────────────────────
@@ -185,7 +228,12 @@ export const BIBLE_BOOKS: Book[] = [
 // `translation` defaults to 'kjv' so every existing call site (nothing passes it yet) behaves EXACTLY
 // as before -- same cache keys, same source, zero change. WEB gets its own namespaced cache key
 // (pj_bible_web_...) so the two translations' cached chapters never collide with or overwrite each other.
-export async function fetchChapter(bookName: string, chapterNum: number, translation: BibleTranslation = 'kjv'): Promise<Verse[]> {
+export async function fetchChapter(rawBookName: string, chapterNum: number, translation: BibleTranslation = 'kjv'): Promise<Verse[]> {
+  // ⚠️ Normalised HERE as well as in parseReference, deliberately. Not every caller goes through the
+  // parser: `app/devotional.tsx` passes a book straight off its own data, and Halo's verse verification
+  // passes whatever the model wrote. This is the chokepoint every path funnels through, so it is the one
+  // place that guarantees "Psalm 92" and "Psalms 92" reach the same file and the same cache entry.
+  const bookName = canonicalBookName(rawBookName);
   if (translation === 'web') {
     const cacheKey = `pj_bible_web_${bookName.replace(/\s/g, '_')}_${chapterNum}`;
     try {
@@ -251,7 +299,9 @@ export function parseReference(ref: string): { book: string; chapter: number; ve
   const match = ref.match(/^(.+?)\s+(\d+):(\d+)(?:-(\d+))?$/);
   if (!match) return null;
   return {
-    book: match[1],
+    // Canonicalised so "Psalm 92:1" resolves to Psalms. Callers look this up in BIBLE_BOOKS and pass it
+    // to fetchChapter, and both key off the canonical name. See BOOK_ALIASES above.
+    book: canonicalBookName(match[1]),
     chapter: parseInt(match[2]),
     verseStart: parseInt(match[3]),
     verseEnd: match[4] ? parseInt(match[4]) : undefined,

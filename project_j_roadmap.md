@@ -30,6 +30,15 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-08-06 **Verses written "Psalm 23" instead of "Psalms 23" now load their real text.** `parseReference`
+  in `data/bible-web.ts` returned whatever text sat before the numbers, so the singular form 404'd and the
+  card silently fell back to the baked KJV wording while the user was set to WEB. Fixed with a
+  `canonicalBookName` step in the parser AND in `fetchChapter` (not every caller uses the parser).
+  **Ten verses across `GratitudeStreakCard.tsx` and `data/verses.ts` were affected.** Device-verified on the
+  Gratitude card: Psalm 92:1 now renders the WEB text ("Yahweh") instead of the KJV fallback ("the LORD").
+  ⚠️ Fixed the parser rather than the ten strings on purpose, so the eleventh does not break.
+  🟡 Left alone, logged here: `app/bible.tsx` `navigateToRef` still falls back to `name.startsWith(parsed.book)`,
+  which is now redundant. Harmless today because the exact-name match short-circuits first.
 - 2026-08-05 **Otto can now answer 183 common questions without calling the AI at all.** Navigation how-tos,
   every achievement's criteria, the money and policy answers, and plain pleasantries like "thanks" all come
   back instantly and cost NOTHING. Built and tested, **NOT deployed** pending Justin's device test.
@@ -1524,6 +1533,13 @@ are separate pre-submission checklists, NOT part of this menu.
   gating is INSIDE features, not whole chapters, worth ~15% not 40-70%); rewriting the manual denser (it is
   already tight); switching AI provider (cost is prompt-size dominated, not rate dominated); a 100/month
   pool; **removing Otto from free after a trial week -- Justin: "that is drastic." DEAD.**
+- 🙏 **[NEW 2026-08-06] HALO AND GOOD NEWS: PRAISING GOD WHEN SOMETHING GOES RIGHT. Justin's idea, wants it,
+  says it can wait and needs discussion + tuning before anything is built. Full detail: `SPEC_faith_ai.md`,
+  "GOOD NEWS" under the companion voice section.** Found while measuring her voice rules on 2026-08-06:
+  "I had a really good day today" returns a warm reply with no faith in it, across all three rider drafts.
+  Every other message shape turned; this one never did. ⚠️ **Deliberately not fixed in the same pass** --
+  bolting a God line onto someone's good mood is exactly the platitude the voice rider exists to prevent,
+  so this is a taste question, not a rule question.
 - 🔴 **[NEW 2026-08-04] TWO RULES WERE BROKEN SHIPPING ITEMS L AND M. Found by re-reading the session, not
   by anything catching it.**
   • **ITEM M SHIPPED A WHOLE NEW PROFILE SECTION WITH NO TOOLTIP AND NO TUTORIAL.** CLAUDE.md requires

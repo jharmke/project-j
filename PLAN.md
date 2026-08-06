@@ -500,6 +500,73 @@ is what made him think work had been dropped -- it had not, but he had no way to
       **WRONG-ANSWER rate, not miss rate** -- with 177 candidates the risk is matching the wrong one.
       ⚠️ **Build the third corpus from the collisions the KB ITSELF documents:** PRs vs Records, create vs log
       a recipe, Program vs Routine, Repeat Yesterday vs Find a Meal. Those pairs are where a matcher dies.
+
+      ─────────────────────────────────────────────────────────────────────────────
+      ## 🔨 BUILT 2026-08-05 (evening). NOT DEPLOYED, awaiting Justin's review.
+      `ottoCannedAnswers.ts` (**183 answers**), `ottoCannedMatcher.ts`, wired into `appCompanion.ts`.
+      Harnesses committed: `_canned_audit.cjs`, `_canned_holdout.cjs`.
+
+      **RESULTS**
+      | | tuned corpus | held-out (written after tuning) |
+      |---|---:|---:|
+      | 🔴 **wrong answers** | **0** | **0** |
+      | matched correctly | 71/71 | **47/54 (87%)** |
+      | declined correctly | 30/30 | 22/22 |
+      | collisions resolved | 22/22 | |
+      | stitching | 2/2 | |
+      | assertion failures | 0 | |
+      ⚠️ **THE HELD-OUT NUMBER IS THE HONEST ONE, AND IT IS NOW PART-BURNED.** It scored **61%** on its first
+      run; one round of GENERIC fixes (not per-message patches) took it to 87%. True unseen phrasing sits
+      somewhere between. Same overfitting gap 4.9 showed (100% tuned / 81% unseen).
+      ✅ **THE NUMBER THAT MATTERS HELD THROUGHOUT: zero wrong answers, on every run, on both corpora.**
+
+      **FOUR ASSERTIONS, ALL PASSING**
+      1. No dashes of any kind (em, en, double hyphen, spaced hyphen). Hyphens inside compounds allowed.
+      2. Every `route` is one of the 26 real keys. **158 of 183 answers carry a jump button.**
+      3. **Every stated `A > B` path still exists verbatim in `assistantAppKnowledge.ts`** -- the staleness
+         guard that buys back the single-source-of-truth we gave up by voicing these by hand.
+      4. No Mindful-hidden surface (Macros card, calorie strip, net calories) without a `styleMode` branch.
+
+      **WHAT THE BUILD ITSELF TAUGHT (all found by the harness, none by inspection)**
+      - 🔴 **`return` alone on a line silently returned `undefined`** via automatic semicolon insertion. The
+        tuned corpus fell 71/71 -> 3/71 and reported "unexplained-remainder" on *"how do i log a recipe"*.
+        **That absurdity is what gave it away**: no rule change could break something that simple.
+      - 🔴 **Set-cover stitching could never work.** An answer's `excludes` are evaluated against the WHOLE
+        message, so "how do i log food and how do i log water" disqualified the food answer for containing
+        the word "water". Rewritten to SPLIT on the connector and match each half alone: 0/2 -> 2/2.
+      - 🔴 **Two collisions Justin predicted came true on the first run**: "how many custom foods do I HAVE"
+        matched the LIMIT answer, and "am I on pace for my goal weight" matched the weight-goal answer. Both
+        fixed by a possessive-data guard, with two exemptions the audit then forced: a HOW-TO is never a data
+        question however many time words it holds ("how do i repeat YESTERDAY's meal"), and "do I have TO" is
+        an obligation, not a possession.
+      - ⚠️ **Ambiguous ties are a FEATURE.** When two answers both explain the whole message, the message is
+        ambiguous, not the answers. Picking one is exactly how the wrong one of 183 gets returned, so it goes
+        to Otto. Five ties in the first run, all resolved with `excludes` rather than by picking a winner.
+      - ⚠️ **Almost every held-out miss was ORDINARY FILLER, not a missing topic word** ("whats the FASTEST
+        WAY to log breakfast"). Fixed with generic stopwords and a small synonym layer (wipe->clear,
+        swap->change, buzzing->notification), because adding each miss to a specific answer's vocabulary
+        would be fitting the test, which is what made the first corpus worthless.
+      - ⚠️ **Two harness bugs reported as content failures**, both worth remembering: the path extractor
+        grabbed whole clauses and punctuation, and the KB wraps lines mid-path so a real path read as missing.
+
+      **WIRING, and the position is load-bearing twice**
+      Placed AFTER the cap increment (so a canned answer still spends a message, Justin's call) and AFTER
+      `suffix` is built (so if the app has decided a pitch, cap, decline, safeguard or faith handoff must ride
+      on this message, we never fire and never swallow it). Crisis needs no guard: the client short-circuits
+      it before the call.
+      🔬 **`ai_cost` gains three counters:** `cannedHit`, `cannedMiss` (the coverage gap) and `cannedBlocked`
+      (prices the guard). **Count only, never message text.**
+
+      **⚠️ OPEN, FOR JUSTIN**
+      - **Nothing is cut.** Per instruction, anything questionable stays in and is flagged here instead.
+      - **160 of 183 answers state no explicit path**, so assertion 3 does not cover them. They are mostly
+        achievements and concepts, which have nothing to go stale, but the guard is thinner than it sounds.
+      - **7 held-out misses remain**, all cost-only: "where do i put my weight in", "how do i wipe a meal",
+        "how do i look at an older day", "how do i pause everything for a trip", "the text is too small how
+        do i fix it", "what counts as a net carb" (ambiguous tie), and one more. Each is fixable by widening
+        one answer's vocabulary; I have NOT done so, because that is fitting the held-out set.
+      - **The 99 achievements are generated from a table**, so their phrasing is uniform and slightly flatter
+        than the hand-written ones. Worth reading a few before shipping.
 - [x] **4.9 ✅ BUILT + DEPLOYED + DEVICE-VERIFIED 2026-08-05.** `ottoCoachRouting.ts` answers one yes/no --
       can this be answered without the app manual? -- and `appCompanion.ts` sends the manual only when the
       answer is no. **Built as a STACK, Justin's design:** block 1 is the ~4,400-token rules half, identical

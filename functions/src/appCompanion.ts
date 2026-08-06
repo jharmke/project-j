@@ -20,8 +20,10 @@ import {
   type FaithTier,
 } from './companionSystemPrompt';
 import { assembleAppKnowledge } from './knowledgeChapters';
-import { recordUsage, recordHistorySample } from './aiUsageMeter';
+import { recordUsage, recordHistorySample, recordCannedOutcome } from './aiUsageMeter';
 import { routeCoachOrSupport } from './ottoCoachRouting';
+import { matchCanned } from './ottoCannedMatcher';
+import { CANNED_ANSWERS } from './ottoCannedAnswers';
 
 // NOTE: admin.initializeApp() is already called once in index.ts. Do NOT call it again here.
 //
@@ -388,6 +390,35 @@ export const appCompanion = onCall(
       mayDecline ? DECLINE_WATCH_BLOCK : '',
       pitchAllowed ? PITCH_REQUIRED_BLOCK : '',
     ].filter(Boolean).join('\n\n');
+    // ── PLAN.md 4.8: CANNED ANSWER. No API call at all, so this reply costs ZERO. ──────────────────────
+    // 🔴 POSITION IS LOAD-BEARING, TWICE OVER.
+    //  1. AFTER the cap increment above, because Justin's call is that a canned answer still spends a
+    //     message: hitting the wall is what creates pitch moments, and conversion moves the needle harder
+    //     than cost does. Move this earlier and the cap silently stops counting them.
+    //  2. AFTER `suffix` is built, because `suffix` is how we know the app has decided something must ride
+    //     on THIS message. If it has, a canned answer would silently swallow it: the undereating safeguard
+    //     would never ask its question, the faith handoff would never fire, and a pitch slot the weekly
+    //     budget already approved would evaporate.
+    // ⚠️ Crisis needs no guard here: the client short-circuits a crisis before it ever reaches this call.
+    if (!suffix) {
+      const canned = matchCanned(message, { supporter, faithTier, styleMode }, CANNED_ANSWERS);
+      if (canned.matched) {
+        recordCannedOutcome('otto', uid, 'hit');
+        return {
+          ok: true,
+          reply: canned.matched.route
+            ? `${canned.matched.text} [[route:${canned.matched.route}]]`
+            : canned.matched.text,
+          used: cap.used,
+          cap: dailyCap,
+          pitched: false,
+        };
+      }
+      recordCannedOutcome('otto', uid, 'miss');
+    } else {
+      recordCannedOutcome('otto', uid, 'blocked');
+    }
+
     const messages: Anthropic.MessageParam[] = [
       ...history,
       { role: 'user', content: suffix ? `${message}\n\n${suffix}` : message },

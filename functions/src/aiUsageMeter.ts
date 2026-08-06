@@ -104,6 +104,33 @@ export function recordUsage(
 }
 
 /**
+ * PLAN.md 4.8 INSTRUMENTATION. Three counters, and the ratio between them is the whole point:
+ *  - `cannedHit`     a message answered with NO API call at all. Deflection.
+ *  - `cannedMiss`    we tried and could not match. **This is the coverage gap**, and if it grows while
+ *                    hits stay flat, the answer set has decayed behind the app.
+ *  - `cannedBlocked` a block was attached (pitch, cap, decline, safeguard, faith handoff) so we did not
+ *                    even try. Justin asked for this specifically: it prices the guard.
+ *
+ * 🔴 COUNT ONLY, NEVER THE MESSAGE TEXT (Justin, 2026-08-05). Logging the misses verbatim would be a
+ * ready-made list of what to add next, and it is also new collection of what users type at an AI
+ * assistant, which would need `privacy.html` updated first. The gap gets closed by reading the knowledge
+ * base instead of reading users. **Easy to add, awkward to explain later.**
+ */
+export function recordCannedOutcome(feature: string, uid: string, outcome: 'hit' | 'miss' | 'blocked'): void {
+  try {
+    if (!uid) return;
+    const key = outcome === 'hit' ? 'cannedHit' : outcome === 'miss' ? 'cannedMiss' : 'cannedBlocked';
+    const inc = admin.firestore.FieldValue.increment;
+    const date = todayKey();
+    admin.firestore().collection('ai_cost').doc(`${uid}_${date}`)
+      .set({ uid, date, byFeature: { [feature]: { [key]: inc(1) } } }, { merge: true })
+      .catch((e) => console.error('[aiUsageMeter] canned write failed', { msg: (e as Error)?.message }));
+  } catch (e) {
+    console.error('[aiUsageMeter] canned threw', { msg: (e as Error)?.message });
+  }
+}
+
+/**
  * PLAN.md 4.5 INSTRUMENTATION. How much of a message's full-price input is the conversation being
  * re-sent? Otto has no memory, so the last `MAX_HISTORY_TURNS` messages ride along on every new one and
  * are paid for again each time. Nobody has ever measured what that costs.

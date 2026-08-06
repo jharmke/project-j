@@ -6,6 +6,79 @@ This is the living source of truth for rebuilding Smart Tips into a true hybrid 
 
 ---
 
+## 💰 COST IDEAS, LOGGED 2026-08-06. NONE DECIDED, NONE BUILT.
+Raised in one session and written down before any of them were worked, so nothing depends on either of us
+remembering. **Justin's framing is kept on each.** Ranking and status live in `PLAN.md` section 1; the
+detail is here. ➡️ **Delete an idea from this section the moment it is built or rejected**, so this does not
+turn into a second graveyard.
+
+### 🗺️ FIRST, THE MAP. Every place Smart Coach calls the AI (the dev tool in `settings.tsx` excluded, not
+user facing). Each call dedups **per day per cache key**, so the KEY is what sets the call count.
+| surface | cache key | how often | counted in `scripts/cost-model.js`? |
+|---|---|---|---|
+| Home coach tip | `pj_coach_tip` | 1/day | ✅ yes |
+| Sleep tip | `pj_coach_tip_sleep` | 1/day, **fires from HOME** (`index.tsx` line ~1670), not just the hub | ✅ yes |
+| Recovery tip | `pj_coach_tip_recovery` | 1/day, hub only (`sleep.tsx`) | ❌ **no** |
+| Day Summary | `pj_coach_tip_day_{date}` | once per day EVER viewed, then frozen | ❌ **no** |
+| EvR tip | `pj_coach_tip_evr_{window}` | once per window size | ❌ **no** |
+| EvR card feed | (no key, batched) | 1 per report | ❌ **no** |
+| Weekly | `pj_coach_tip_weekly_{week}` | 1/week | ❌ **no** |
+| Monthly | `pj_coach_tip_monthly_{month}` | 1/month | ❌ **no** |
+✅ **THE EvR CARD FEED IS ALREADY ONE BATCHED CALL**, not one per card. Do not "fix" that.
+✅ **NON-WEARABLE USERS COST NOTHING** on sleep/recovery: `sleep_data_low` and `rec_no_data` are in
+`NO_DATA_RULE_IDS`, so the call short-circuits before the API (PLAN 1.2). ⚠️ Threshold is *fewer than 3 of 7
+nights*, so someone logging sleep manually a few times a week still gets a real call. ⚠️ Never
+device-verified: Justin has full data and cannot reach the path.
+🔴 **SO THE 22%-OF-BILL FIGURE COUNTS 2 OF 8 SURFACES.** Everything below is worth re-costing against that.
+
+### 1. 🔴 THE DAY SUMMARY TIP IS PAID FOR AND USUALLY NEVER SEEN
+`refreshDayCoachTip` returns the **fallback immediately** and fires the AI call **in the background**, saving
+the result for the *next* visit to that same day. **A user who opens a day summary once and moves on reads
+the deterministic version, and the AI version they paid for sits in storage unread.**
+➡️ Cleanest fix in the whole list: zero product loss, because if they never return they never saw it, and if
+they do return they had already read the fallback once anyway.
+⚠️ Corrects two things said in the same session: the day tip DOES freeze (Justin was right, it is keyed to
+the date being viewed, not to today), so "capping how far back you can generate" solves a problem that does
+not exist. Re-opening old days is free.
+
+### 2. SLEEP + RECOVERY IN ONE CALL
+Same shape as the parked 1.5 but a better candidate: both are recovery flavoured and neither is as flagship
+as the Home tip.
+🔴 **JUSTIN'S OPEN QUESTIONS, UNANSWERED:** how would one reply split cleanly into two surfaces? Both tips
+also render TRUNCATED on Home cards, so would the user have to open the hub to get anything? **Should the
+truncated card insight be removed entirely, or replaced with a "tap for the full read" style line?** And
+does one call instead of two save anything meaningful at all?
+
+### 3. PARTIAL VOICING (Justin's idea)
+Today the EvR cards have `claim`, `lever` and `insight` all AI written; `proof` is already deterministic and
+never sent (numeric integrity). Making `claim` deterministic and voicing only `insight` would cut output on
+the single largest call in the system.
+🔴 **JUSTIN'S EXTENSION, and it is the better version of the idea:** a lighter/dumber tip on the HOME card,
+with tapping through to EvR for the full voiced version. *"Less polished but still acceptable in my eyes,
+but may not be worth the savings it provides."* ➡️ Cost it before designing it.
+
+### 4. BATCH API FOR WEEKLY + MONTHLY
+50% off, and the reason batching was parked (*"first open is exactly when someone checks their recovery"*)
+does not apply to a monthly summary nobody is waiting on.
+🔴 **JUSTIN'S OBJECTION, and it is the right one:** *"I just don't know where in the app it would be
+applicable to wait for batching. A lot of our AI stuff is needed instantly."* ➡️ So the question is not
+whether 50% is attractive; it is whether ANY surface tolerates the delay. Answer that before costing it.
+
+### 5. 🔴 THE DRASTIC ONE: AI VOICING BECOMES A SUPPORTER FEATURE
+Every tip already has a complete deterministic version (`packet.fallbackBody`) which is what renders when the
+API fails. Free users would get real, accurate coaching; Supporters get it written like a coach.
+⚠️ **NOT INVISIBLE, and this must not be sold as a free win.** The fallbacks are stitched templates
+(*"Something worth flagging. {diagnosis}. {action}."*). The CONTENT is identical; the VOICE is not.
+✅ **Justin, 2026-08-06: open to it, thinks it could be a solid Supporter selling point, wants a dedicated
+discussion with EXAMPLES and exactly what changes** -- and above all wants to know what it saves first.
+➡️ **COST IT BEFORE DISCUSSING IT.** At $200/yr the discussion is moot; at $4,000 it earns the examples.
+
+### 6. ~~CAP DAY SUMMARY TO RECENT DAYS~~ ❌ DROPPED THE DAY IT WAS RAISED
+Solves nothing: the tip is already frozen per date, so browsing history is free. Kept only so it is not
+re-proposed. Item 1 is the real finding hiding behind it.
+
+---
+
 ## What this is
 A hybrid system:
 - Deterministic code is the BRAIN. It computes every fact, detects the situation, and decides the verdict.

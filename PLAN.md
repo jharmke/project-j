@@ -180,6 +180,24 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       today's tip. Worse than useless.
 - ⏸️ **1.5 PARKED WITH A TRIGGER** (combine Home's two calls into one). See the PARKED table below --
       **$390/yr at 2,500 actives, revisit above ~10,000.** Not deleted.
+- 🆕 **1.8 SIX COST IDEAS RAISED 2026-08-06. NONE DECIDED, NONE BUILT. Detail and Justin's framing on each:
+      `SMART_COACH_SPEC.md`, "COST IDEAS" at the top.** Logged before any were worked so nothing depends on
+      remembering. Take them ONE AT A TIME (Justin's instruction) and delete each from that section as it is
+      built or rejected.
+      🔴 **THE MAP CAME FIRST AND IT CHANGES THE SIZING: `scripts/cost-model.js` counts 2 of 8 surfaces.**
+      Home's coach and sleep tips are in; recovery, Day Summary, the EvR tip, the EvR card feed, weekly and
+      monthly are all uncounted. **So Smart Coach's "22% of the bill" is a floor, not a figure.**
+      | # | idea | state |
+      |---|---|---|
+      | 1 | **The Day Summary tip is paid for and usually never seen** (fallback renders, AI lands in storage for a return visit that mostly does not happen) | 🔴 cleanest win found, zero product loss |
+      | 2 | Sleep + Recovery in one call | open, and it drags in whether the truncated Home card insights stay |
+      | 3 | Partial voicing (deterministic `claim`, voiced `insight`), and a lighter Home card that taps through to EvR | Justin's idea, cost before designing |
+      | 4 | Batch API for weekly + monthly | ⚠️ Justin's objection stands: which surface tolerates a delay AT ALL? |
+      | 5 | 🔴 **AI voicing becomes a Supporter feature** | Justin open to it, wants examples, **wants it COSTED FIRST** |
+      | 6 | ~~Cap Day Summary to recent days~~ | ❌ dropped same day: the tip is already frozen per date |
+      ✅ **TWO THINGS JUSTIN CALLED CORRECTLY AGAINST MY READING:** the Day Summary tip DOES freeze (keyed to
+      the date viewed, not to today, so browsing history is free), and the sleep tip fires from HOME, not only
+      from the hub. Both corrected above.
 - ➡️ Expected: **~$0.37 -> ~$0.10/user/month, DERIVED**, nothing visible changing. Item 0 confirms it.
 
 ### 2. THE CACHE FIXES -- launch build

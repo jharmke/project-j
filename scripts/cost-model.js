@@ -27,9 +27,9 @@
 const C = {
   ottoCoach:    { v: 0.0032,  src: 'DERIVED 2026-08-05 from metered block sizes (PLAN 4.9).' },
   ottoSupport:  { v: 0.0054,  src: 'DERIVED 2026-08-05, same basis.' },
-  halo:         { v: 0.00067, src: 'MEASURED 2026-08-05, warm (PLAN 2.3).' },
+  halo:         { v: 0.00097, src: 'MEASURED 2026-08-05 warm (0.00067, PLAN 2.3) PLUS the 2026-08-06 voice rider, which rides on the UNCACHED user turn at ~300 tokens (~$0.0003). ⚠️ The 0.00067 base is a SHORT reply; a realistic one is nearer $0.0011, so this line is optimistic.' },
   smartCoach:   { v: 0.00107, src: 'MEASURED 2026-08-05, warm (PLAN 1.1).' },
-  estimator:    { v: 0.00953, src: 'MEASURED 2026-08-05, one real photo (PLAN 4.1).' },
+  estimator:    { v: 0.00717, src: 'MEASURED 2026-08-06 on device, same photo before and after the 1024px resize + dead-field removal (PLAN 4.1). Was 0.00953.' },
 
   coachShare:   { v: 0.50, src: 'ASSUMED. ai_cost now counts routeCoach/routeSupport; real traffic replaces this.' },
   haloShare:    { v: 0.20, src: 'ASSUMED share of companion messages going to Halo rather than Otto.' },
@@ -44,7 +44,9 @@ const C = {
   activeRate:   { v: 0.30,  src: 'ASSUMED share of installs still active. ⚠️ CANCELS OUT of break-even.' },
 };
 // ⚠️ ENV OVERRIDES, for scenario work without editing the committed assumptions.
-// e.g.  coachTipsDay=1 estimator=0.0068 node scripts/cost-model.js
+// e.g.  coachTipsDay=1 estimator=0.0095 node scripts/cost-model.js
+// ⚠️ The old example here used estimator=0.0068, which was the PREDICTED post-resize figure. The real
+// measured number is 0.00717 and it is now the committed default, so that example was doubly misleading.
 for (const k of Object.keys(C)) if (process.env[k] !== undefined) C[k] = { v: Number(process.env[k]), src: 'OVERRIDDEN via env for this run' };
 const v = (k) => C[k].v;
 

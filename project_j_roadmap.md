@@ -1555,6 +1555,24 @@ are separate pre-submission checklists, NOT part of this menu.
   gating is INSIDE features, not whole chapters, worth ~15% not 40-70%); rewriting the manual denser (it is
   already tight); switching AI provider (cost is prompt-size dominated, not rate dominated); a 100/month
   pool; **removing Otto from free after a trial week -- Justin: "that is drastic." DEAD.**
+- 💡 **[NEW 2026-08-06] IDEA ONLY, UNDECIDED AND UNDISCUSSED: CANNED ANSWERS FOR HALO'S HOW-TO QUESTIONS.**
+  Justin raised it; nothing agreed, nothing designed, do not treat this as a plan. Recorded so it is not
+  re-derived from scratch later.
+  Her whole how-to surface is the nine entries in the FAITH APP GUIDE (prayer request, verse to rotation,
+  favorite a verse, Today's Message rotation, plans and devotionals, gratitude, journal, faith badges,
+  changing tier). Nine canned answers would cover all of it, and **Otto's matcher and answer system already
+  exist**, so it is reuse rather than a new build.
+  ➡️ **Rough worth: ~$160/yr at 25,000 installs**, on a GUESSED 15% of her traffic being how-tos. ⚠️ That
+  guess is probably high: Otto IS the app guide, Halo is the companion, and people bring her their lives
+  rather than navigation.
+  🔴 **THE TRAP, and it is the reason this is written down at all: DO NOT then delete the guide from her
+  prompt.** It is ~230 tokens and **Halo has only 107 tokens of headroom above Haiku's 4,096 cache minimum**
+  (block measured at 4,203, PLAN 2.3). Dropping under that line stops her caching entirely and takes that
+  block from $0.00042 to $0.0042 a message. **You would pay 10x more to save a fraction of a cent.** The
+  guide stays regardless, as the fallback for whatever the matcher misses.
+  ➡️ **If it is ever picked up, do it AFTER Otto's canned answers are live** (PLAN 4.8), so the deflection
+  rate comes from `cannedHit`/`cannedMiss` on real traffic instead of a guess, and so we are not building on
+  a system that has never met a user.
 - 🔗 **[NEW 2026-08-06] A WHOLE-CHAPTER REFERENCE LIKE "PSALM 100" IS NOT TAPPABLE. Found on device the same
   session, deliberately parked -- Justin wanted to move on.** Halo answered "can you give me a verse about
   giving thanks" with Colossians 3:15-17, Philippians 4:4-7 and **Psalm 100**. The first two rendered as gold

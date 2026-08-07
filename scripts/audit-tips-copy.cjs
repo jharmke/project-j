@@ -80,7 +80,7 @@ Object.keys(calls).filter((id) => !rules[id]).forEach((id) => problems.push(`MIS
 // ⚠️ INJECTED SLOTS. `makeTip` adds these to every tip from `ctx`, so no individual call site passes them
 // and the check below would flag all 45 rules. They carry the surface's period ("this week" / "this month")
 // and its real window length, which is why monthly stopped claiming "your last 7 logged days" over 30 days.
-const INJECTED = new Set(['period', 'window']);
+const INJECTED = new Set(['period', 'window', 'span']);
 ids.forEach((id) => {
   if (!calls[id]) return;
   const all = [...Object.values(rules[id].pools).flat(), ...rules[id].mindful].join(' ');

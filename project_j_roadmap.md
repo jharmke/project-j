@@ -3352,13 +3352,17 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 - [ ] Achievement "pop on the action" timing: action-earned achievements don't pop until next app-open (per-category check gated once/day, runs on open before the action). Fix: run the check right after the qualifying action + let a same-day action bypass the once/day gate. BEST DONE with the notification-hub work.
 - [KILLED 2026-07-05] "Manage in Settings" in-app hotlink -- NOT VIABLE. Linking.openSettings() only opens the app's generic iOS page (Local Network / Camera / Siri / Cellular), which has NO Apple Health row, and iOS exposes no deep-link into the Health data-access screen. A button there would mislead. RESOLVED INSTEAD via Otto: his KB gives the correct manual route (Settings > Privacy & Security > Health > Project J, then toggle data types) and is told never to point at the app's iOS page or the in-app Health section. Deployed 2026-07-05.
 - [ ] "View all achievements" button in the Stats Records or Streaks section (trophy icon in the header is buried).
-- [ ] 🟡 **[SMALL, LOW PRIORITY] Three tips say "in the last two weeks" and monthly cannot correct them.**
-  `weight_plateau` and `weight_infrequent` run on the 14-day window, which monthly also overrides with the
-  whole month. `{period}` cannot fix these: on weekly it would render "this week" for a rule that genuinely
-  looks at 14 days, which would be a NEW lie. Closing it properly needs a third token carrying the 14-day
-  window. ⚠️ **Severity is much lower than the bug below**: "in the last two weeks" on a monthly summary
-  understates the window, where the original said "22 of your last 7 logged nights", which is impossible.
-  Judged shippable 2026-08-07.
+- [x] ✅ **FIXED 2026-08-07: three tips said "in the last two weeks" on a monthly summary.**
+  `weight_plateau` and `weight_infrequent` run on the 14-day window, which monthly overrides with the whole
+  month. ⚠️ **`{period}` could NOT fix these** -- on a weekly surface it renders "this week" for a rule that
+  genuinely looks at fourteen days, which would have been a NEW inaccuracy rather than a fix. Closed with a
+  third token, `{span}`, carrying a PHRASE rather than a number ("two weeks" / "the month") so the weekly
+  wording is unchanged and only monthly moves.
+  ✅ **Justin refused to ship the imprecision** ("cant ship it broken") after it was judged shippable. He was
+  right: it was three sentences and one context field.
+  ❌ **Dropping those rules from monthly was considered and rejected** -- a plateau is arguably the most
+  useful thing a monthly summary can surface, and removing a real verdict to dodge a wording problem is the
+  wrong trade.
 - [x] ✅ **FIXED 2026-08-07: the monthly summary passed a 30-day window into the 7-day slot.**
   `computeCoachPacketMonthly` calls `runAllRules(monthDays, monthDays.slice(0,5), monthDays, ...)`, so rules
   count qualifying days across the whole month and drop that number into copy written for a week. Result:

@@ -596,13 +596,13 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     db: {
       urgent_lose: [
         'Weight has been flat for about {days} days despite consistent logging. A plateau usually means one of three things: calories are closer to maintenance than they appear, burn is being overestimated, or logging has some gaps.',
-        'No meaningful weight change in two weeks. Plateaus almost always have a cause. The most common are logging gaps, liquid calories, and burn accuracy.',
+        'No meaningful weight change over {span}. Plateaus almost always have a cause. The most common are logging gaps, liquid calories, and burn accuracy.',
         'Weight has been flat for {days} days while targeting a cut. That usually means the actual deficit is smaller than the numbers suggest.',
       ],
       urgent_gain: [
         'Weight has not moved in about {days} days while targeting a gain. On a bulk, a plateau means intake probably needs to go up.',
         'Flat weight for {days} days on a gaining goal. The body needs a consistent surplus to build. Intake may need to increase.',
-        'No weight change over the last two weeks while bulking. Worth checking intake. The surplus may have closed.',
+        'No weight change over {span} while bulking. Worth checking intake. The surplus may have closed.',
       ],
     },
     mindful: [
@@ -666,7 +666,7 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       insight_all: [
-        'Only {count} weigh-ins in the last two weeks. Consistent weigh-ins at the same time of day give a much clearer picture of what is actually happening.',
+        'Only {count} weigh-ins over {span}. Consistent weigh-ins at the same time of day give a much clearer picture of what is actually happening.',
         'Sparse weigh-in data {period}. Hard to spot a trend with only {count} data points. Daily weigh-ins at the same time dramatically improve the signal.',
         'Few weigh-ins {period}. The trend is hard to read without consistent data. Same time of morning before eating gives the most accurate picture.',
       ],

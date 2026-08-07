@@ -256,17 +256,12 @@ export default function MonthlySummaryScreen() {
 
         if (raw && !TIPS_GATED) {
           const homeRuleId = homeCache?.packet.ruleId ?? null;
-          // 🔴 HARDCODED TRUE. MONTHLY IS DELIBERATELY NOT GATED (Justin, 2026-08-07). PLAN.md 1.9.
-          // ⚠️ THE REASON IS A COPY BUG, NOT A PRODUCT DECISION. `computeCoachPacketMonthly` calls
-          // `runAllRules(monthDays, ..., monthDays, ...)`, passing up to 30 days into the SEVEN-day slot, so
-          // a deterministic tip can read "excellent on 22 of your last 7 logged nights". Weekly is fine: it
-          // passes a real 7-day window. Monthly is the only surface that does this.
-          // ➡️ Gating monthly would make that absurdity the DEFAULT view for every free user, so monthly
-          // stays voiced for everyone until the copy is period-aware. It is the cheapest surface in the
-          // system (~$0.006/user/yr, ~$45/yr at 25k installs), so this costs almost nothing.
-          // ⚠️ DO NOT DOCUMENT THIS EXCEPTION USER-FACING. "Supporter coaching, except monthly" is confusing
-          // and temporary, and nobody complains about getting more than they were promised.
-          refreshCoachTipMonthly(true, raw.monthStart, raw.monthEnd, homeRuleId)
+          // ✅ GATED like every other surface as of 2026-08-07. PLAN.md 1.9.
+          // ⚠️ It was briefly hardcoded `true` because the deterministic copy could read "excellent on 22 of
+          // your last 7 logged nights": `computeCoachPacketMonthly` passes the whole month into the SEVEN-day
+          // slot. That is fixed. Copy now carries {period}, {window} and {span}, filled from `monthCtx`, so a
+          // monthly tip says "this month" and "your last 30 logged days".
+          refreshCoachTipMonthly(isSupporter, raw.monthStart, raw.monthEnd, homeRuleId)
             .then(cache => { setCoachCache(cache); setCoachLoading(false); })
             .catch(() => { setCoachLoading(false); });
         } else {
@@ -434,7 +429,11 @@ export default function MonthlySummaryScreen() {
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/diagnostic-report'); }}
                 style={{ marginTop: 12, alignSelf: 'center' }}
               >
-                <Text style={{ fontSize: 11, color: accent, fontFamily: Type.uiSemibold }}>View in Effort vs Results</Text>
+                {/* PLAN.md 1.9 signpost. Same wording as Home and weekly (Justin: "just make them the
+                    same"). Replaces the footer, tap still goes to Effort vs Results. */}
+                <Text style={{ fontSize: 11, color: accent, fontFamily: Type.uiSemibold }}>
+                  {isSupporter ? 'View in Effort vs Results' : 'Read against your numbers with the Supporter plan'}
+                </Text>
               </TouchableOpacity>
             </View>
           ) : null}

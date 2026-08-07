@@ -144,6 +144,12 @@ export interface EngineContext {
   // ⚠️ Defaults are the WEEK values, so every existing surface reads exactly as it did before.
   periodLabel: string;         // "this week" | "this month"
   periodWindow: number;        // 7 | the real number of days in the month window
+  // ⚠️ A SECOND SPAN, FOR THE 14-DAY RULES. `weight_plateau` and `weight_infrequent` evaluate w14, not w7,
+  // so {period} is wrong for them: on a weekly surface it would render "this week" for a rule that really
+  // does look at fourteen days, which would be a NEW inaccuracy rather than a fix.
+  // ⚠️ It is a PHRASE, not a number, so "over two weeks" stays exactly as written today and only monthly
+  // changes. A number would have forced "over 14 days", which reads worse everywhere for no gain.
+  spanLabel: string;           // "two weeks" | "this month"
 }
 
 interface CandidateTip {
@@ -544,6 +550,7 @@ export async function buildEngineContext(todayKey: string): Promise<EngineContex
     // Monthly overrides both in `computeCoachPacketMonthly`.
     periodLabel: 'this week',
     periodWindow: 7,
+    spanLabel: 'two weeks',
   };
 }
 
@@ -750,7 +757,7 @@ function makeTip(
   // requiring every one to pass the period would guarantee some drift. Injecting once means a rule author
   // writes "{period}" in copy and it is simply correct on every surface.
   // ⚠️ `...slots` LAST so an explicit slot always wins over the injected default.
-  const withPeriod = { period: ctx.periodLabel, window: ctx.periodWindow, ...slots };
+  const withPeriod = { period: ctx.periodLabel, window: ctx.periodWindow, span: ctx.spanLabel, ...slots };
   const { body, variantIndex } = pickBody(ruleId, poolKey, store, withPeriod, useMindful);
   if (!body) return null;
   return {
@@ -3798,7 +3805,10 @@ export async function computeCoachPacketMonthly(
     // June summary (Justin, 2026-08-07).
     // ⚠️ `w5` genuinely IS five days here (`monthDays.slice(0, 5)`), so the "last 5 days" copy stays correct
     // and is deliberately NOT tokenised.
-    const monthCtx: EngineContext = { ...ctx, periodLabel: 'this month', periodWindow: windowDays };
+    // ⚠️ `spanLabel` is "the month", not "this month". The three sentences that use it read "over {span}",
+    // and "over this month" is clunky where "over the month" is not. Small thing, but this is the copy a
+    // free user actually reads now.
+    const monthCtx: EngineContext = { ...ctx, periodLabel: 'this month', periodWindow: windowDays, spanLabel: 'the month' };
     const rawCandidates = runAllRules(monthDays, monthDays.slice(0, 5), monthDays, monthCtx, tipStore);
     const suppressed = applyMindfulSuppression(rawCandidates, ctx);
 

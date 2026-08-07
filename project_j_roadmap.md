@@ -3340,6 +3340,13 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 - [ ] Achievement "pop on the action" timing: action-earned achievements don't pop until next app-open (per-category check gated once/day, runs on open before the action). Fix: run the check right after the qualifying action + let a same-day action bypass the once/day gate. BEST DONE with the notification-hub work.
 - [KILLED 2026-07-05] "Manage in Settings" in-app hotlink -- NOT VIABLE. Linking.openSettings() only opens the app's generic iOS page (Local Network / Camera / Siri / Cellular), which has NO Apple Health row, and iOS exposes no deep-link into the Health data-access screen. A button there would mislead. RESOLVED INSTEAD via Otto: his KB gives the correct manual route (Settings > Privacy & Security > Health > Project J, then toggle data types) and is told never to point at the app's iOS page or the in-app Health section. Deployed 2026-07-05.
 - [ ] "View all achievements" button in the Stats Records or Streaks section (trophy icon in the header is buried).
+- [ ] [KNOWN ISSUE, seen ONCE, cause unknown] **An Otto reply rendered truncated mid-word.** 2026-08-07,
+  a coach-route answer ended at "...and that momentum m" with no ellipsis. Justin opened a new thread, asked
+  the identical question, and it came back complete. **NOT the token ceiling**: `MAX_TOKENS` is 800 and that
+  whole 10-message session produced 498 output tokens total, so nothing came close. Unknown whether the
+  stored text is truncated or a container is clipping it. ⚠️ **Do not go hunting on one occurrence** -- if it
+  recurs, screenshot it AND check whether the text is short in the message list or only on screen, which
+  separates a bad response from a render bug in one step.
 - [ ] [TS CLEANUP, low] add-food.tsx line ~1526: pre-existing tsc error -- the favorite object built on heart-tap isn't assignable to MyFood[] (MyFood type drifted from the object shape: brand/isMyFood/fsId/type). Runtime-safe (Metro strips types, fields have safe defaults), no crash/data loss. Just makes the file not tsc-clean. Tidy the MyFood type or the object shape eventually.
 
 ---

@@ -27,6 +27,10 @@ is a derivation.
 
 **Metered 2026-08-05, BEFORE the fixes:** Smart Coach **$0.00387** · Halo **$0.00406** · Otto cold
 **$0.0331** / warm **~$0.0043** · meal estimator with a photo **$0.00953**.
+⚠️ **THAT ESTIMATOR FIGURE IS THE 2026-08-05 "BEFORE". It is now $0.00717** (1024px resize + quality 0.8 +
+a dead output field removed, PLAN 4.1, measured on the same photo). ⚠️ **And Halo is no longer $0.00067**:
+her voice rider adds ~$0.0003 on the uncached user turn, so ~$0.00097. `scripts/cost-model.js` carries both
+live values; this line is kept as the day-one reading.
 
 ### ✅ AND AFTER, SAME DAY -- ALSO METERED, NOT PROJECTED
 | | before | after (warm) | |

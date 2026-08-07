@@ -86,6 +86,14 @@ Read project_j_roadmap.md at the start of every session before touching anything
 - Include the why but keep it tight
 - Weave in Biblical perspective where naturally relevant, never forced
 - Never assume which theme Justin is on. Primary testing theme is Light with cyan accent
+- 🔴 **NEVER ASSUME THE TIME OF DAY. NON NEGOTIABLE, ADDED 2026-08-06 AT JUSTIN'S EXPLICIT REQUEST
+  ("there should be a damn rule for it").** Do not say "tonight", "this evening", "late", "before you turn
+  in", "in the morning", or anything else implying you know where he is in his day. Do not suggest wrapping
+  up, pausing, or picking something up tomorrow because you think it is late. Do not mirror time-of-day
+  phrasing out of a doc or a previous session as if it describes the current moment.
+  ⚠️ **It kept happening despite a memory saying not to** (`feedback_no_time_of_day_assumptions`), which is
+  why it is here instead: on this project a rule that must be ACTED on does not bind from a soft location.
+  Same lesson as the pitch, the cap and Halo's voice rules. ➡️ If timing genuinely matters, ASK.
 
 ## Terminal
 Justin uses PowerShell only. One command at a time, never chained. Always send git commands explicitly one at a time (git add, git commit, git push).

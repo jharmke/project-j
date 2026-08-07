@@ -91,7 +91,8 @@ actually reads every session.
   hidden. **$0.00387 -> $0.00107 a call, device-verified.** Detail: `PLAN.md` 1.
 - 2026-08-05 **Halo had never cached once, and neither had Smart Coach.** Both prompts sat about a hundred
   tokens under the 4,096 minimum, so both paid full price for identical text on every message since launch.
-  Halo **$0.00406 -> $0.00067**. Otto's three cached copies (one per faith tier) collapsed into one shared
+  Halo **$0.00406 -> $0.00067** ⚠️ **(that 0.00067 is the 2026-08-05 reading; her voice rider added ~$0.0003
+  on 2026-08-06, so ~$0.00097 now. `scripts/cost-model.js` is live.)** Otto's three cached copies (one per faith tier) collapsed into one shared
   copy. Detail: `PLAN.md` 2.
 - 2026-08-05 **Otto stopped counselling people about prayer.** A Not Right Now user asked "is it okay to pray
   about lust?" and got a full pastoral answer, with no handoff -- a violation for every tier. The rule was

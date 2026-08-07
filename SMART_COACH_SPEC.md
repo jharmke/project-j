@@ -12,6 +12,14 @@ remembering. **Justin's framing is kept on each.** Ranking and status live in `P
 detail is here. ➡️ **Delete an idea from this section the moment it is built or rejected**, so this does not
 turn into a second graveyard.
 
+➡️ **RELATED, BUT DELIBERATELY NOT IN THIS LIST: trimming Otto's 22,049-token app manual.** That is an OTTO
+item and it lives in `PLAN.md`'s PARKED WITH A TRIGGER table, not here. **Do not copy it in.**
+⚠️ **AND DO NOT CONFUSE IT WITH ITS DEAD TWIN.** `PLAN.md` holds BOTH:
+- ❌ *"Rewriting the manual DENSER"* -- **DECIDED AGAINST.** Read, already tight. Dead. Stop re-proposing it.
+- ⏸️ *"TRIM the manual itself"* -- **PARKED**, worth **UNKNOWN**, needs canned answers live AND the meter
+  showing how often the manual is genuinely reached. Its own entry ends "do not attempt it on a hunch."
+Saying "trim Otto's manual" without which one you mean is how the dead idea keeps coming back (2026-08-06).
+
 ### 🗺️ FIRST, THE MAP. Every place Smart Coach calls the AI (the dev tool in `settings.tsx` excluded, not
 user facing). Each call dedups **per day per cache key**, so the KEY is what sets the call count.
 | surface | cache key | how often | counted in `scripts/cost-model.js`? |

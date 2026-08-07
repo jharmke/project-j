@@ -54,7 +54,7 @@ Read project_j_roadmap.md at the start of every session before touching anything
   | App/functions code that ships behaviour | `PLAN.md` status + **`project_j_roadmap.md` RECENTLY SHIPPED (one line)** |
   | A prompt, rulebook or model behaviour | that feature's own spec (`SMART_COACH_SPEC.md`, `SPEC_otto.md`, ...) |
   | Anything with a cost | `SPEC_cost_model.md` |
-  | Anything user-facing | `tooltipRegistry.ts` + `data/tutorials.ts` + Otto's KB (rule further down) + any modal/onboarding copy stating the fact + `LAUNCH_CHECKLIST.md` + canned answers (once 4.8 ships) |
+  | Anything user-facing | `tooltipRegistry.ts` + `data/tutorials.ts` + Otto's KB (rule further down) + any modal/onboarding copy stating the fact + `LAUNCH_CHECKLIST.md` + **`functions/src/ottoCannedAnswers.ts`** (LIVE since 2026-08-07: 183 answers that state paths, caps and prices out loud, and an assertion fails the build if a path no longer exists verbatim in the KB) |
   | 🔴 **A NUMBER A USER CAN SEE** (a cap, a limit, a price, an allowance) | **ALL of the above, and grep for the VALUE, not the feature name.** Added 2026-08-05: dropping Otto's free cap 10 -> 5 was called "a one-line change" and touched FOUR files -- the constant, Otto's KB (he states caps out loud and would have told users 10), a modal promising it in copy, and the launch checklist. Only a grep found them. ✅ The in-chat counter needed nothing because it reads the cap off the server response -- **prefer a surface that reads the value over one that states it.** |
   ⚠️ **Updating ONE doc is the trap.** The miss is never "I forgot the docs", it is "I updated the one I was
   looking at". Name each file and check it.

@@ -514,7 +514,9 @@ is what made him think work had been dropped -- it had not, but he had no way to
       it, not a doc pass. **Do not delete the pointer; delete the duplicate.**
       ⚠️ The old note here claimed "once the prompt shrinks, output is ~70% of the remaining cost, so this
       gets MORE valuable". **Measured: output is ~55% of a coach-route message and there is no fat in it.**
-- [ ] **4.8 SPECCED IN FULL 2026-08-05, NOTHING BUILT.** Canned answers for fixed-answer app questions:
+- [x] **4.8 ✅ DEPLOYED + DEVICE-VERIFIED 2026-08-07.** (Header below was "SPECCED, NOTHING BUILT"; the
+      build, the deploy and the inert-gate bug are all recorded further down this item.) Canned answers for
+      fixed-answer app questions:
       no API call at all, so the reply costs **zero**, not less. It deflects the EXPENSIVE messages -- an app
       question is a Support-route message at $0.0054.
       **🔢 THE INVENTORY (read all 972 lines of `assistantAppKnowledge.ts` to build it):**
@@ -639,9 +641,28 @@ is what made him think work had been dropped -- it had not, but he had no way to
       a recipe, Program vs Routine, Repeat Yesterday vs Find a Meal. Those pairs are where a matcher dies.
 
       ─────────────────────────────────────────────────────────────────────────────
-      ## 🔨 BUILT 2026-08-05 (evening). NOT DEPLOYED, awaiting Justin's review.
+      ## ✅ DEPLOYED + DEVICE-VERIFIED 2026-08-07. Live and firing.
       `ottoCannedAnswers.ts` (**183 answers**), `ottoCannedMatcher.ts`, wired into `appCompanion.ts`.
       Harnesses committed: `_canned_audit.cjs`, `_canned_holdout.cjs`.
+      🔴 **AND IT SHIPPED INERT FOR ITS FIRST DAY. THE GATE WAS WRONG AND NOTHING ON SCREEN SHOWED IT.**
+      The canned check ran under `if (!suffix)`, meaning "only when the app has nothing extra riding on this
+      message". But `suffix` ALWAYS contains `REPLY_SHAPE_BLOCK`, which is attached to every single message,
+      so it was never empty and **the matcher never ran once**. Justin's 10-message test metered
+      `cannedBlocked: 10, cannedHit: 0` with every reply AI-written at full price.
+      ⚠️ **EVERY REPLY LOOKED CORRECT**, which is why only the counter could have caught it. Otto answered
+      all ten perfectly well and charged $0.0721 for the privilege.
+      ✅ **Fixed by gating on the CONDITIONAL riders only** (`ridersOnThisMessage`), derived by filtering
+      `REPLY_SHAPE_BLOCK` out of the array rather than restating the conditions as a boolean -- so a sixth
+      rider added later is counted automatically and cannot silently switch the feature off again.
+      ✅ **VERIFIED ON DEVICE the same day, and the meter is the proof:** `cannedHit` 0 -> 3, `cannedBlocked`
+      held at 10, and **`calls` and `usd` did not move at all.** Three answers for zero cents.
+      🔴 **IT ALSO CAUGHT A LIVE CONFABULATION, which is the product argument for this feature rather than
+      the cost one.** Asked "what do I get for the summit", pre-fix Otto invented *"a step-goal achievement
+      for hitting your step target 100 times"*. The Summit is the WEIGHT badge for reaching goal weight. He
+      also told Justin that Well Worn counts *"each day you reach 10,000 steps"* when the step goal is
+      whatever the user set. Both are now exact one-line facts with no model involved.
+      ⚠️ **THE LESSON, AND IT IS THE SAME ONE AS 4.7 AND THE DAY SUMMARY TIP:** the code was read, reviewed
+      and committed as done without ever being RUN. See [[feedback_verify_the_call_site]].
 
       **RESULTS -- THREE CORPORA, THE THIRD WRITTEN AFTER ALL TUNING**
       | | corpus 1 (tuned) | corpus 2 (tuned once) | **corpus 3 (never tuned)** |
@@ -945,7 +966,7 @@ annual figure at a few scales before calling something too small to bother with.
 | **Combine Home's two Smart Coach calls into one** (was 1.5) | $0.013/user/mo -- **$390/yr at 2,500 actives, $1,560 at 10k, $7,800 at 50k** | One call would have to produce TWO tips for two different surfaces: needs new output parsing, both tips fail together if parsing breaks, and a model doing two jobs at once tends to do both worse. Not worth risking the two flagship tips at today's size. | **Above ~10,000 active users**, or if the two Home tips are ever rewritten anyway |
 | **Batch API (50% off) for Smart Coach** | ~$0.05/user/mo | The surfaces where batching is safe (weekly, monthly) are worth ~$0.003/mo; the ones worth real money are daily. **Justin's deciding reason: first open is exactly when someone checks their recovery and sleep read, and batching fails at that moment.** | If a genuinely non-interactive AI feature appears, or if tips ever stop being read on first open |
 | 🆕 **CUT AI VOICING ON THE DAY SUMMARY PAGE ENTIRELY** (Justin, 2026-08-07) | Unknown -- **~$100/yr to ~$2,900/yr at 25,000 installs.** DERIVED from $0.00107/call (MEASURED). The whole range is one unknown: how many people tap through to the page. | **The frequency cannot be known before launch, and the old sizing was wrong in BOTH directions.** It was $2,900/yr, then downgraded 2026-08-06 to "cents per user" on the reasoning that the page is only reachable through Stats > Reports. 🔴 **Justin found a SECOND ENTRY POINT on device 2026-08-07: the daily Day Summary modal's own "View Full Breakdown" button**, which puts the ceiling back at one call per user per day. ⚠️ Same lesson as [[feedback_check_duplicate_entry_points]] -- the surface was costed from one route in. **Justin leans NO**: it makes the page permanently worse, and the tip is FROZEN per date so re-visits are already free. ➡️ And it may become moot: if Supporter-gated voicing (`SMART_COACH_SPEC.md` idea 5) ships, free users lose the day tip anyway. | **Once `ai_cost` -> `byFeature.coach.surfaces.day` has real post-launch traffic.** Divide it by actives over the same window and the tap-through rate falls straight out. The counter already ships. |
-| 🆕 **TRIM THE APP MANUAL ITSELF once canned answers are live** (Justin's idea, 2026-08-05) | Unknown -- potentially large, it is 22,049 of Otto's 26,474 tokens | **Cannot be done yet, and the reason is the safety story.** The manual is the FALLBACK: canned answers only fire when the matcher is certain, and matchers miss 8-20% of unseen phrasing however carefully built (measured, 4.9). Trim it and every miss stops costing a fraction of a cent and starts being "Otto does not know". ⚠️ **And it cannot be half-removed** -- there is no state where he knows a feature exists but not how to reach it; the path is in the text or it is not. | **Once canned answers have shipped AND the meter shows how often the manual is still genuinely reached.** If that number collapses, this becomes a real conversation backed by data instead of a hunch. Do not attempt it on a hunch. |
+| 🆕 **TRIM THE APP MANUAL ITSELF once canned answers are live** (Justin's idea, 2026-08-05) | Unknown -- potentially large, it is 22,049 of Otto's 26,474 tokens | **Cannot be done yet, and the reason is the safety story.** The manual is the FALLBACK: canned answers only fire when the matcher is certain, and matchers miss 8-20% of unseen phrasing however carefully built (measured, 4.9). Trim it and every miss stops costing a fraction of a cent and starts being "Otto does not know". ⚠️ **And it cannot be half-removed** -- there is no state where he knows a feature exists but not how to reach it; the path is in the text or it is not. | ✅ **CONDITION 1 MET 2026-08-07: canned answers are live and firing.** ⏳ Condition 2 outstanding: the meter must show how often the manual is still genuinely reached (`cannedMiss` against `cannedHit` on real traffic, not Justin's). If that number collapses, this becomes a real conversation backed by data instead of a hunch. **Do not attempt it on a hunch.** 🔴 **AND THE 8-20% FIGURE IN THE COLUMN LEFT IS THE WRONG ONE FOR THIS DECISION.** That is 4.9's routing detector. The number that governs a trim is the CANNED matcher's own coverage, **MEASURED at ~60% on a never-tuned corpus, i.e. a ~40% miss rate** (4.8). Every one of those misses is a message the manual currently catches. **That makes trimming more dangerous than this row originally read, not less.** |
 
 ## ❌ DECIDED AGAINST -- do not re-propose without new evidence
 

@@ -373,7 +373,7 @@ export const appCompanion = onCall(
     // the system half is exactly what Otto has been ignoring.
     const faithHandoff = data.faithHandoff === true;
     const faithHandoffRepeat = data.faithHandoffRepeat === true;
-    const suffix = [
+    const suffixParts = [
       // ⚠️ THE HANDOFF LEADS. If a message is faith, nothing else matters: Otto is not answering it, so a
       // workout cap or a pitch riding underneath would be attached to a reply that never happens.
       faithHandoff ? buildFaithHandoffBlock(faithTier, faithHandoffRepeat) : '',
@@ -396,18 +396,33 @@ export const appCompanion = onCall(
       capsWorkout ? buildWorkoutCapBlock(workoutCut) : '',
       mayDecline ? DECLINE_WATCH_BLOCK : '',
       pitchAllowed ? PITCH_REQUIRED_BLOCK : '',
-    ].filter(Boolean).join('\n\n');
+    ].filter(Boolean);
+    const suffix = suffixParts.join('\n\n');
+    // 🔴 WHAT THE CANNED GATE BELOW ACTUALLY NEEDS TO KNOW: has the APP decided something must ride on THIS
+    // message? That means the CONDITIONAL blocks only. `REPLY_SHAPE_BLOCK` is on every single message and is
+    // an instruction to the MODEL about how to write its reply, which a canned answer never involves.
+    // 🔴 THIS EXACT LINE IS WHY CANNED ANSWERS DID NOTHING FOR THEIR FIRST DAY IN PRODUCTION.
+    // The gate was `if (!suffix)`. `suffix` always contains `REPLY_SHAPE_BLOCK`, so it is NEVER empty, so the
+    // matcher NEVER ran. Found 2026-08-07 from the meter, not from reading the code: Justin's 10-message test
+    // metered `cannedBlocked: 10, cannedHit: 0` and every reply came back AI-written at full price. The
+    // replies all looked fine, which is exactly why nothing but the counter could have caught it.
+    // ⚠️ DERIVED FROM THE ARRAY ON PURPOSE, not restated as a boolean: add a new conditional rider above and
+    // this gate counts it automatically. A hand-written `safeguardActive || capsWorkout || ...` would silently
+    // fall out of date the first time someone adds a sixth block.
+    const ridersOnThisMessage = suffixParts.filter(p => p !== REPLY_SHAPE_BLOCK);
     // ── PLAN.md 4.8: CANNED ANSWER. No API call at all, so this reply costs ZERO. ──────────────────────
     // 🔴 POSITION IS LOAD-BEARING, TWICE OVER.
     //  1. AFTER the cap increment above, because Justin's call is that a canned answer still spends a
     //     message: hitting the wall is what creates pitch moments, and conversion moves the needle harder
     //     than cost does. Move this earlier and the cap silently stops counting them.
-    //  2. AFTER `suffix` is built, because `suffix` is how we know the app has decided something must ride
+    //  2. AFTER the riders are built, because they are how we know the app has decided something must ride
     //     on THIS message. If it has, a canned answer would silently swallow it: the undereating safeguard
     //     would never ask its question, the faith handoff would never fire, and a pitch slot the weekly
     //     budget already approved would evaporate.
     // ⚠️ Crisis needs no guard here: the client short-circuits a crisis before it ever reaches this call.
-    if (!suffix) {
+    // ⚠️ GATE ON `ridersOnThisMessage`, NEVER ON `suffix` -- see the note where it is built. Testing `suffix`
+    // switches this whole feature off and nothing on screen looks wrong.
+    if (ridersOnThisMessage.length === 0) {
       const canned = matchCanned(message, { supporter, faithTier, styleMode }, CANNED_ANSWERS);
       if (canned.matched) {
         recordCannedOutcome('otto', uid, 'hit');

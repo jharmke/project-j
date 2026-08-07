@@ -30,6 +30,13 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-08-07 **Otto's 183 canned answers are LIVE.** Fixed-answer app questions (navigation how-tos,
+  achievement definitions, price and policy, pleasantries) are now answered server-side with **no API call
+  at all**, so they cost zero rather than $0.0054. Deployed, then found inert: the gate ran under a
+  condition that is true on every message, so the matcher never fired once and every reply came back
+  AI-written at full price with nothing on screen looking wrong. **Only the cost meter caught it.**
+  Device-verified after the fix: `cannedHit` 0 -> 3 while `calls` and `usd` did not move. It also killed a
+  live confabulation, Otto inventing the wrong criteria for The Summit badge. Detail: `PLAN.md` 4.8.
 - 2026-08-06 **Meal photos are shrunk before they are sent, and they look BETTER, not worse.** Phone photos
   went up at full resolution and Anthropic scaled them to their own 1568px ceiling and billed for that, so
   the extra pixels were thrown away and charged for. Now resized to 1024px on the longest edge, JPEG quality

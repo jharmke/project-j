@@ -73,6 +73,38 @@ API fails. Free users would get real, accurate coaching; Supporters get it writt
 discussion with EXAMPLES and exactly what changes** -- and above all wants to know what it saves first.
 ➡️ **COST IT BEFORE DISCUSSING IT.** At $200/yr the discussion is moot; at $4,000 it earns the examples.
 
+### 7. 🔬 THE DEDUP IS "ONCE PER DAY PER SCENARIO", NOT ONCE PER DAY. MEASURE AT LAUNCH, DO NOT TOUCH YET.
+Found 2026-08-06 while working out why Justin's `ai_cost` showed **9 coach calls in one day** when the cost
+model assumes 2. `computeCoachPacket` only carries the "already generated" marker forward when the verdict
+is unchanged:
+`aiBody: (sameScenario && existing?.aiBody) ? existing.aiBody : null`
+➡️ So logging food, syncing a workout or recording sleep can flip the rule ID, wipe the marker, and buy
+another AI call. **A user whose data moves through the day pays several times over.**
+✅ **AND IT IS PROBABLY CORRECT.** If the verdict genuinely changed, the old tip is now WRONG: a tip about
+protein when the real issue has become sleep is worse than a tip that costs a fraction of a cent. **Do not
+"fix" this as waste.** Changing it means deciding a stale tip is acceptable, which is a product call.
+🔴 **WHEN IT GETS MEASURED: AT LAUNCH, NOT BEFORE, AND THIS IS NOT A DELAY WE CHOSE.** How often a verdict
+flips is USER BEHAVIOUR. Justin is one person doing dev testing, so his own numbers are a measurement of
+this project's testing, not of users. Same reason `coachShare` and the canned deflection rate are still
+ASSUMED. ➡️ **The instrument already exists**: `byFeature.coach.surfaces.{home|sleep|...}` shipped
+2026-08-06. Divide each surface's count by active users over the same window and the real rate falls out.
+⚠️ **Any reading taken before 2026-08-06 is a different baseline**, because the UTC date bug below was
+inflating counts on top of this.
+
+### 8. ✅ FIXED 2026-08-06: THE COACH THOUGHT A NEW DAY STARTED AT 7PM CENTRAL
+`generateCoachTip` decided "already generated today" against `new Date().toISOString().slice(0,10)`, which
+is **UTC**, while `computeCoachPacket` and every other daily key in the app use the LOCAL date. The two
+halves of the same flow disagreed about what day it was.
+➡️ At 7pm Central (5pm Pacific) the UTC day rolled over, the dedup failed, and the tip regenerated **on
+identical data, for the same local day, while the app's own screens still said today.** Anyone opening the
+app morning and evening paid twice for the home tip and twice for the sleep tip.
+✅ Fixed by EXPORTING `todayDateKey()` from `smartTipsEngine.ts` and using that one implementation in both
+places, rather than writing a second correct copy that could drift again.
+⚠️ **`aiUsageMeter.ts` STAYS ON UTC deliberately.** It runs server-side and cannot know a user's timezone,
+so an `ai_cost` document is a UTC day and evening activity lands on the next one. **Reporting quirk to
+remember when reading frequencies, not a bug.**
+⚠️ Found only because a freshly written `ai_cost` doc was dated tomorrow and Justin asked why.
+
 ### 6. ~~CAP DAY SUMMARY TO RECENT DAYS~~ ❌ DROPPED THE DAY IT WAS RAISED
 Solves nothing: the tip is already frozen per date, so browsing history is free. Kept only so it is not
 re-proposed. Item 1 is the real finding hiding behind it.

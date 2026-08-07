@@ -106,7 +106,19 @@ export const aiProxy = onCall(
       temperature?: unknown;
       system?: unknown;
       messages?: unknown;
+      surface?: unknown;
     };
+
+    // ⚠️ METERING ONLY (PLAN.md 1.8). Which Smart Coach screen this came from. It is deliberately NOT part
+    // of `feature`, which drives the abuse counter's collection, DAILY_CAPS and CACHE_TTL below: renaming
+    // that per surface would split the cap eight ways and lose the 1-hour TTL. An unrecognised or missing
+    // value is simply dropped, so an older client that sends nothing keeps working exactly as before.
+    const KNOWN_SURFACES = new Set([
+      'home', 'sleep', 'recovery', 'day', 'evr', 'evr_cards', 'weekly', 'monthly',
+    ]);
+    const surface = typeof body.surface === 'string' && KNOWN_SURFACES.has(body.surface)
+      ? body.surface
+      : undefined;
 
     // 2. Validate feature + model + request shape.
     const feature = body.feature === 'coach' || body.feature === 'estimator' ? body.feature : '';
@@ -180,7 +192,7 @@ export const aiProxy = onCall(
       });
       // PLAN.md item 0: record what this actually cost. Fire and forget -- never awaited, never throws,
       // writes to its own `ai_cost` collection so it cannot touch the cap counters above.
-      recordUsage(feature, uid, model, response.usage);
+      recordUsage(feature, uid, model, response.usage, undefined, surface);
       // response.content is [{ type: 'text', text }, ...] -- same shape the direct HTTP call
       // returned, which both clients read as data.content[0].text.
       return { ok: true, data: response };

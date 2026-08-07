@@ -195,6 +195,17 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       | 4 | Batch API for weekly + monthly | ⚠️ Justin's objection stands: which surface tolerates a delay AT ALL? |
       | 5 | 🔴 **AI voicing becomes a Supporter feature** | Justin open to it, wants examples, **wants it COSTED FIRST** |
       | 6 | ~~Cap Day Summary to recent days~~ | ❌ dropped same day: the tip is already frozen per date |
+      | 7 | 🔬 **The dedup is "once per day per SCENARIO", not once per day** -- a changed verdict wipes the marker and buys another call. Justin's real doc showed **9 coach calls in a day** against the model's 2. | ⏸️ **MEASURE AT LAUNCH, DO NOT TOUCH.** Probably correct behaviour: a stale tip is worse than a cheap one. Instrument shipped (`surfaces` counters); the rate is user behaviour and solo data cannot produce it. |
+      | 8 | ✅ **FIXED 2026-08-06: the coach thought a new day began at 7pm Central.** `generateCoachTip` deduped on the UTC date while the engine and the whole app use LOCAL, so the tip regenerated on identical data for the same local day. Morning-and-evening users paid twice for both Home tips. | ✅ done, one shared `todayDateKey()` |
+      🔬 **METERING SHIPPED 2026-08-06 so the six uncounted surfaces stop being guesses:** every Smart Coach
+      call now reports which screen it came from, landing in `ai_cost` -> `byFeature.coach.surfaces`.
+      ⚠️ **Deliberately a SEPARATE field from `feature`**, which drives the abuse-cap collection, `DAILY_CAPS`
+      and `CACHE_TTL` in `aiProxy.ts` -- renaming that per surface would have split the cap eight ways and
+      silently dropped Smart Coach back to a 5-minute cache.
+      ⚠️ **The label is derived from the CACHE KEY**, not threaded through the seven wrappers: the key already
+      encodes the surface uniquely and is the same value that decides whether a call happens at all, so it
+      cannot drift. Two callers bypass that path and are labelled by hand (the batched EvR card feed, and the
+      Day Summary tip that runs in the background).
       ✅ **TWO THINGS JUSTIN CALLED CORRECTLY AGAINST MY READING:** the Day Summary tip DOES freeze (keyed to
       the date viewed, not to today, so browsing history is free), and the sleep tip fires from HOME, not only
       from the hub. Both corrected above.

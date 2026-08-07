@@ -22,6 +22,7 @@ import {
   loadCoachTipCacheMonthly,
   loadCoachTipCacheSleep,
   loadCoachTipCacheRecovery,
+  todayDateKey,
 } from './smartTipsEngine';
 import { DayScore, DayScoreInput } from './dayScore';
 import { app } from '../firebaseConfig';
@@ -347,11 +348,35 @@ function cleanupPass(
 // server-side instead of in the app bundle. Returns the assistant text; throws on any failure so
 // the callers' existing try/catch fallbacks render the templated tip. The Firebase callable's own
 // timeout replaces the old AbortController.
+// ⚠️ WHICH SMART COACH SCREEN THIS CALL CAME FROM (PLAN.md 1.8). Metering only: it rides beside `feature`,
+// never inside it, because `feature` drives the abuse cap, the daily cap and the cache TTL server-side.
+//
+// 🔴 WHY IT IS DERIVED FROM THE CACHE KEY RATHER THAN PASSED DOWN. Seven separate wrappers funnel into
+// `generateCoachTip`, and threading a new argument through all of them is seven chances to pass the wrong
+// one or miss a caller entirely. The cache key ALREADY encodes the surface uniquely, and it is the same
+// value that decides whether a call happens at all, so this cannot drift out of step with reality.
+// ⚠️ ORDER MATTERS: `pj_coach_tip` is a prefix of every other key, so it has to be tested LAST, as an exact
+// match. Put it first and every surface reports as "home".
+export type CoachSurface =
+  | 'home' | 'sleep' | 'recovery' | 'day' | 'evr' | 'evr_cards' | 'weekly' | 'monthly';
+
+function surfaceFromKey(cacheKey: string): CoachSurface | undefined {
+  if (cacheKey.startsWith('pj_coach_tip_sleep')) return 'sleep';
+  if (cacheKey.startsWith('pj_coach_tip_recovery')) return 'recovery';
+  if (cacheKey.startsWith('pj_coach_tip_day_')) return 'day';
+  if (cacheKey.startsWith('pj_coach_tip_evr_')) return 'evr';
+  if (cacheKey.startsWith('pj_coach_tip_weekly_')) return 'weekly';
+  if (cacheKey.startsWith('pj_coach_tip_monthly_')) return 'monthly';
+  if (cacheKey === COACH_TIP_KEY) return 'home';
+  return undefined;
+}
+
 async function callWithTimeout(
   systemPrompt: string,
   userMessage: string,
   maxTokens: number = 300,
   timeoutMs: number = API_TIMEOUT_MS,
+  surface?: CoachSurface,
 ): Promise<string> {
   const callable = httpsCallable(getFunctions(app), 'aiProxy', { timeout: timeoutMs });
   const res = await callable({
@@ -360,6 +385,7 @@ async function callWithTimeout(
     max_tokens: maxTokens,
     system: systemPrompt,
     messages: [{ role: 'user', content: userMessage }],
+    ...(surface ? { surface } : {}),
   });
   const payload = (res.data ?? {}) as { ok?: boolean; data?: any; reason?: string };
   if (!payload.ok || !payload.data) throw new Error(`aiProxy ${payload.reason ?? 'failed'}`);
@@ -388,7 +414,18 @@ export async function generateCoachTip(
   cache: CoachTipCache,
   cacheKey: string = COACH_TIP_KEY,
 ): Promise<CoachTipCache> {
-  const todayKey = new Date().toISOString().slice(0, 10);
+  // 🔴 WAS `new Date().toISOString().slice(0, 10)`, WHICH IS UTC. Fixed 2026-08-06.
+  // `computeCoachPacket` in `smartTipsEngine.ts` builds its packet against the LOCAL date, and so does
+  // every other daily key in this app. This function decided "already generated today" against the UTC
+  // date, so the two halves of the SAME flow disagreed about what day it was.
+  // ⚠️ WHAT IT COST: at 7pm Central (5pm Pacific) the UTC day rolled over, the dedup failed, and the tip
+  // was regenerated **on identical data, for the same local day, while the app's own screens still said
+  // today**. Anyone who opened the app in the morning and again in the evening paid twice for the home tip
+  // and twice for the sleep tip. Found 2026-08-06 when a freshly written `ai_cost` doc was dated tomorrow.
+  // ⚠️ `aiUsageMeter.ts` DELIBERATELY STAYS ON UTC: it runs server-side and cannot know the user's
+  // timezone. So an `ai_cost` document is a UTC day and a user's evening lands on the next one. That is a
+  // reporting quirk to remember when reading frequencies, not a bug to fix.
+  const todayKey = todayDateKey();
 
   // Already generated today: return as-is
   if (cache.aiBody && cache.aiGeneratedDate === todayKey) {
@@ -430,7 +467,9 @@ export async function generateCoachTip(
   let updatedCache: CoachTipCache;
 
   try {
-    const rawOutput = await callWithTimeout(systemPrompt, userMessage);
+    const rawOutput = await callWithTimeout(
+      systemPrompt, userMessage, undefined, undefined, surfaceFromKey(cacheKey),
+    );
     const { passed, cleaned, reason } = cleanupPass(rawOutput, cache.packet);
 
     if (passed) {
@@ -593,7 +632,9 @@ export async function voiceDiagnosticCards<T extends { id: string; claim: string
     JSON.stringify(cards.map(c => ({ id: c.id, tone: c.tone, claim: c.claim, lever: c.lever })));
 
   try {
-    const raw = await callWithTimeout(systemPrompt, userMessage, 1100, 20000);
+    // The EvR card feed. One batched call for the WHOLE ranked feed, not one per card, so this counter
+    // reads as "reports voiced", not "cards voiced".
+    const raw = await callWithTimeout(systemPrompt, userMessage, 1100, 20000, 'evr_cards');
     const voiced = parseVoicedCards(raw);
     if (!voiced) { lastVoiceDebug = `parse failed; raw[0..140]: ${raw.slice(0, 140)}`; return cards; }
     lastVoiceDebug = `ok: ${Object.keys(voiced).length} voiced`;
@@ -925,7 +966,9 @@ export async function refreshDayCoachTip(
   // Fire AI call in background. Result is saved to storage and shown on next visit.
   const modeKey = mode.toLowerCase() as keyof typeof VOICE_EXAMPLES;
   const bgSystemPrompt = `${RULEBOOK}\n\n${VOICE_EXAMPLES[modeKey] ?? VOICE_EXAMPLES.balanced}`;
-  callWithTimeout(bgSystemPrompt, formatPacketMessage(packet))
+  // ⚠️ Labelled explicitly rather than via surfaceFromKey: this one bypasses `generateCoachTip` entirely
+  // and calls the model in the background, which is exactly why its cost was invisible.
+  callWithTimeout(bgSystemPrompt, formatPacketMessage(packet), undefined, undefined, 'day')
     .then(rawOutput => {
       const { passed, cleaned } = cleanupPass(rawOutput, packet);
       const aiCache: CoachTipCache = { packet, aiBody: passed ? cleaned : null, aiGeneratedDate: dateKey, fallbackUsed: !passed };

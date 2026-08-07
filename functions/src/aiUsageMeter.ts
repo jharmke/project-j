@@ -55,6 +55,20 @@ export function recordUsage(
    * trying to measure. Read `routeCoach / (routeCoach + routeSupport)` off production.
    */
   route?: 'coach' | 'support',
+  /**
+   * PLAN.md 1.8. WHICH Smart Coach screen made this call. Counts only, no message text.
+   *
+   * ⚠️ WHY IT IS A SEPARATE ARGUMENT AND NOT PART OF `feature`. `feature` drives three load-bearing things
+   * in `aiProxy.ts`: the abuse cap counter's Firestore collection (`ai_usage_{feature}`), `DAILY_CAPS` and
+   * `CACHE_TTL`. Renaming it per surface would split the cap counter eight ways, look up an undefined cap
+   * and lose the 1-hour TTL. This rides alongside instead and touches nothing but the meter.
+   *
+   * 🔴 WHAT IT IS FOR. `scripts/cost-model.js` counts **2 of Smart Coach's 8 AI surfaces** because nobody
+   * knew how often the other six fire, and that is USER BEHAVIOUR: no amount of reading the code says how
+   * often somebody opens the Sleep hub or scrolls to a day summary. This makes those frequencies MEASURED
+   * at launch instead of assumed forever, which is the same reason the meter itself exists.
+   */
+  surface?: string,
 ): void {
   try {
     if (!usage || !uid) return;
@@ -91,6 +105,8 @@ export function recordUsage(
               cacheReadTokens: inc(readTok), cacheWriteTokens: inc(writeTok), usd: inc(usd),
               model,
               ...(route ? { [route === 'coach' ? 'routeCoach' : 'routeSupport']: inc(1) } : {}),
+              // Sanitised to a short safe key so a malformed client can never write an arbitrary field name.
+              ...(surface && /^[a-z_]{1,20}$/.test(surface) ? { surfaces: { [surface]: inc(1) } } : {}),
             },
           },
         },

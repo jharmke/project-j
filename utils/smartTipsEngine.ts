@@ -175,7 +175,12 @@ function simpleHash(s: string): number {
   return h >>> 0;
 }
 
-function todayDateKey(): string {
+// ⚠️ EXPORTED 2026-08-06 so `coachAI.ts` shares this ONE implementation. It used to have its own, built
+// from `toISOString().slice(0,10)`, which is UTC -- so the two halves of the same flow disagreed about what
+// day it was and the tip regenerated on identical data at 7pm Central. Local is correct here and it is what
+// the rest of the app already does everywhere (achievementProgress, adaptiveTdee, bodyMeasurements,
+// calorieTarget, challenges). **Do not reintroduce a second copy.**
+export function todayDateKey(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }

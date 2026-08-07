@@ -248,11 +248,14 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       ⚠️ **THE "DID IT ACTUALLY RUN" TRAP WAS DESIGNED OUT OF THE TEST:** a counter that does not move looks
       identical whether the gate held or no rule fired. Justin confirmed real text on every surface, so the
       engine produced verdicts and the gate is what stopped the calls.
-      🔴 **MONTHLY IS DELIBERATELY LEFT UNGATED.** Not a product call: `computeCoachPacketMonthly` passes a
-      30-day window into the 7-day slot, so its deterministic copy can say "22 of your last 7 logged nights".
-      Gating it would make that the default free experience. Costs ~$45/yr at 25k installs.
-      **Full detail and the likely fix: `project_j_roadmap.md`, PARKED SMALL IDEAS.**
-      ⚠️ Cost model is therefore ~$0.006/user/yr optimistic while this stands. Not worth re-running.
+      ✅ **MONTHLY IS GATED LIKE EVERY OTHER SURFACE.** It was held back for about an hour on 2026-08-07
+      while a copy bug was fixed, and this entry said "deliberately left ungated" in the meantime.
+      ⚠️ **The bug was worth holding for:** `computeCoachPacketMonthly` passes a 30-day window into the
+      SEVEN-day slot, so its deterministic copy could read "22 of your last 7 logged nights", and gating
+      would have made that impossible sentence the default free experience. Fixed with `{period}`,
+      `{window}` and `{span}` tokens across 181 phrases. Detail: `project_j_roadmap.md`.
+      ➡️ Justin refused to ship the smaller residual ("cant ship it broken") after it was judged shippable,
+      and he was right: it was three sentences and one context field.
       🔴 **THE "FAIL OPEN" SPEC IN THIS ITEM WAS WRONG AND WAS CAUGHT BEFORE BUILDING.** `loading` is briefly
       true on EVERY cold start, so "voice it while membership resolves" would have voiced a tip for every
       free user on every launch and deleted most of the saving. **Every call site now WAITS** (`if
@@ -1118,8 +1121,17 @@ Read per call, changeable without an App Store update.
 - [ ] **7.2** Revenue levers never properly discussed: price, annual push, tip jar. Cost cutting can only
       ever take you to zero.
       🔬 **MODELLED 2026-08-05, two findings worth keeping:**
-      - **Price is the strongest single lever nobody has touched.** At $12.99 break-even falls to ~2.2% with
-        nothing else changing; at $6.99 it rises past 4%.
+      - **Price is the strongest single lever nobody has touched.** ⚠️ **RE-RUN 2026-08-07 after gating
+        shipped; the 2026-08-05 figures below are superseded.** At typical usage and canned 30%:
+        | price | break-even |
+        |---|---:|
+        | $6.99 | 2.64% |
+        | **$9.99 (today)** | **2.02%** |
+        | $12.99 | 1.64% |
+        ➡️ The FINDING is unchanged and is arguably stronger: $3 of price is worth more than the entire
+        coaching gate was. **Superseded original: "at $12.99 break-even falls to ~2.2%; at $6.99 it rises
+        past 4%"** -- those were computed before gating and before the six uncounted coach surfaces were
+        added to the model.
       - 🔴 **PUSHING ANNUAL MAKES BREAK-EVEN SLIGHTLY WORSE, not better.** $89.99 against $119.88 of monthly
         payments is a **25% discount**. A 6-month monthly subscriber is worth $50.94; an annual one $76.49.
         **So annual only wins if it genuinely doubles retention** -- which contractually it does, since an

@@ -71,9 +71,17 @@ Phase 2. Revert those before granting entitlements and every tester drops to the
       ⚠️ STILL UNVERIFIED IN THE WILD: the API-lookup path only fires when a granted tester actually messages
       Otto. Confirm from the logs (look for a membership record with `lastEventType: 'API_LOOKUP'`) the first
       time one of them does. Zero user impact if it's broken today — both cap tiers are equal during beta.
-      The AI caps live server-side, but they have **no Supporter tier** — there is one cap for everyone
-      (appCompanion.ts:37, faithCompanion.ts:29). The locked design is Otto 10 free / 25 Supporter and
-      Halo 25/25, which the server currently cannot express.
+      🔴 **THIS PARAGRAPH WAS STALE IN THREE WAYS AND IS CORRECTED HERE, 2026-08-07.** It said the AI caps
+      have "no Supporter tier, one cap for everyone, which the server currently cannot express", and gave
+      the locked design as "Otto 10 free / 25 Supporter and Halo 25/25". **All of that is out of date.**
+      ✅ The server DOES express both tiers: `FREE_DAILY_CAP` and `SUPPORTER_DAILY_CAP` in both
+      `appCompanion.ts` and `faithCompanion.ts`, chosen off the server's own membership record.
+      ✅ **REAL VALUES, read out of the code: Otto 5 free / 30 Supporter. Halo 10 free / 30 Supporter.**
+      ⚠️ Otto's free cap was cut 10 -> 5 on 2026-08-05 (`PLAN.md` 3.1) and Halo was deliberately NOT cut
+      alongside it, so free users get more of the faith companion than the fitness one.
+      ⚠️ **PLAN 3.1 NAMED THIS FILE AS ONE OF THE FOUR PLACES STATING THAT NUMBER AND IT STILL WENT STALE**,
+      because the numbers here are written "10 free / 25 Supporter" rather than "10/day", so a grep for the
+      value missed it. **Grep for the number in more than one shape.**
       ⚠️ **Do not just trust a client flag.** If the app sends `isSupporter: true` and the server believes it,
       anyone can spoof it and run up the Anthropic bill. This is the one place in the system where a lie costs
       real money.

@@ -3405,6 +3405,12 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
   stored text is truncated or a container is clipping it. ⚠️ **Do not go hunting on one occurrence** -- if it
   recurs, screenshot it AND check whether the text is short in the message list or only on screen, which
   separates a bad response from a render bug in one step.
+- [ ] 🟡 **[CLEANUP, low risk, do not forget] Delete the dead `TIPS_GATED` flag.** It predates real
+  membership gating (`PLAN.md` 1.9, shipped 2026-08-07) and its comment used to say "flip true pre-launch".
+  🔴 **Flipping it true would silently stop monthly summaries calling the AI for EVERYONE, Supporters
+  included** -- it is referenced in one live place (`monthly-summary.tsx`) and imported-but-unused in
+  `weekly-summary.tsx`. The comment in `smartTipsEngine.ts` now says all of this loudly, so the trap is
+  defused; the flag and its two imports still want removing.
 - [ ] [TS CLEANUP, low] add-food.tsx line ~1526: pre-existing tsc error -- the favorite object built on heart-tap isn't assignable to MyFood[] (MyFood type drifted from the object shape: brand/isMyFood/fsId/type). Runtime-safe (Metro strips types, fields have safe defaults), no crash/data loss. Just makes the file not tsc-clean. Tidy the MyFood type or the object shape eventually.
 
 ---

@@ -23,7 +23,16 @@ function dayFullyExcluded(day: any): boolean {
 }
 
 // ── Config ────────────────────────────────────────────────────────────────────
-export const TIPS_GATED = false;          // TestFlight: gate off. Flip true pre-launch.
+// 🔴 DEAD FLAG. DO NOT FLIP IT TRUE, DESPITE WHAT THIS COMMENT USED TO SAY ("TestFlight: gate off. Flip
+// true pre-launch."). Marked 2026-08-07.
+// ⚠️ Real membership gating shipped on 2026-08-07 (`PLAN.md` 1.9) and runs off `isSupporter`, passed into
+// `coachAI.ts`. This flag predates it and is now referenced in exactly ONE live place: `monthly-summary.tsx`
+// skips its coach call when it is true. `weekly-summary.tsx` imports it and never uses it.
+// ➡️ SO FLIPPING IT TRUE WOULD DO ONE THING ONLY: silently stop monthly summaries from calling the AI FOR
+// EVERYONE, Supporters included. That is not "gating for the free tier", it is breaking a paid feature.
+// ➡️ Safe to delete along with its two imports; left in place only because removing it is a code change and
+// this note is not. Logged as cleanup.
+export const TIPS_GATED = false;
 const RATE_LIMIT_PER_DAY = 0;            // 0 = disabled (parked until launch)
 const TOPIC_LEDGER_TTL_DAYS = 14;
 const SMART_TIPS_KEY = 'pj_smart_tips';

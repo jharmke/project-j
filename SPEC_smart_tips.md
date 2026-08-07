@@ -1,5 +1,16 @@
 # HANDOFF SPEC: Smart Tips
 
+> 🔴 **HISTORICAL SCOPING DOC. READ `SMART_COACH_SPEC.md` AND `PLAN.md` FIRST; WHERE THEY DISAGREE WITH THIS
+> FILE, THEY WIN.** Banner added 2026-08-07.
+> The status line below still says "no code written yet". That was true on 2026-05-31 and has not been true
+> for months: the rules engine, the copy pools and the hybrid AI coach are all built, shipped and running.
+> ⚠️ **ITS GATING STATEMENTS ARE THE MOST OUT OF DATE PART.** This file says things like "ungated, every
+> user sees it regardless of tier, never paywalled". **AI VOICING BECAME A SUPPORTER FEATURE ON 2026-08-07**
+> (`PLAN.md` 1.9): every user still gets every coaching insight on every surface, but only Supporters get it
+> written from their own averages, streaks and trends. Do not quote this file on who gets what.
+> ✅ Still useful for: the trigger/scenario design thinking, the copy philosophy, and the reasoning behind
+> decisions that are now in the code.
+
 Status: SCOPING COMPLETE. All Section 16 carry-forward open items (1 through 9) resolved. No code written yet. Remaining open items (Section 14: exact price point, free-tier rate-limit cap, per-rule copy expansion) are non-blockers handled at build time. The one gate between here and building is the Day Score goal-snapshot + recompute-on-edit work (item 9, on the roadmap), which the Day Takeaway and Weekly/Monthly engines hard-depend on.
 This doc is the complete handoff for a build session, alongside TRIGGER_LIBRARY.md.
 Created: 2026-05-31

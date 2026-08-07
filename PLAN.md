@@ -189,7 +189,7 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       monthly are all uncounted. **So Smart Coach's "22% of the bill" is a floor, not a figure.**
       | # | idea | state |
       |---|---|---|
-      | 1 | **The Day Summary tip is paid for and never seen** | ✅ **FIXED + DEVICE-VERIFIED 2026-08-07 -- see 4.10.** Not by cutting the call but by DELIVERING it: loading state, voiced version on the visit that paid for it, plain version demoted to the failure path. |
+      | 1 | **The Day Summary tip is paid for and never seen** | ✅ **FIXED + DEVICE-VERIFIED 2026-08-07 -- see 4.12.** Not by cutting the call but by DELIVERING it: loading state, voiced version on the visit that paid for it, plain version demoted to the failure path. |
       | 2 | Sleep + Recovery in one call | ❌ **CLOSED 2026-08-07, KILLED BY 1.9.** ~$1,500/yr at 25k before gating, **~$45/yr after.** ➡️ Its one surviving PRODUCT question moved out: should the truncated Home card insights become a "tap for the full read" line? That belongs with the Home card work, not a cost list. |
       | 3 | Partial voicing (deterministic `claim`, voiced `insight`), and a lighter Home card that taps through to EvR | ❌ **CLOSED 2026-08-07, KILLED BY 1.9.** ~$180/yr before, **~$5/yr after.** ✅ **And Justin's extension gets DELIVERED FREE:** under gating the free Home card IS the lighter version and EvR is the full read. |
       | 4 | Batch API for weekly + monthly | ❌ **CLOSED 2026-08-07, KILLED BY 1.9.** ~$100/yr before, **~$4/yr after.** Justin's objection (which surface tolerates a delay AT ALL?) went three sessions unanswered and never needed answering. |
@@ -580,7 +580,10 @@ is what made him think work had been dropped -- it had not, but he had no way to
       🔴 Corrections this replaced: the estimate was $0.0165 (74% high); item O recorded the prompt as
       "~2,250 tokens" when it is **562**; and a same-day claim that caching the prompt would recover most of
       the Haiku saving was wrong -- at 562 tokens caching it saves about 2%.
-- [x] **4.10 ✅ BUILT + DEVICE-VERIFIED 2026-08-07. THE DAY SUMMARY TIP IS NOW DELIVERED, NOT THROWN AWAY.**
+- [x] **4.12 ✅ BUILT + DEVICE-VERIFIED 2026-08-07. THE DAY SUMMARY TIP IS NOW DELIVERED, NOT THROWN AWAY.**
+      ⚠️ **RENUMBERED 4.10 -> 4.12 on 2026-08-07 because it collided with the EXISTING 4.10** ("enumerate
+      which remaining features call the AI at all"), which Justin has been tracking since 2026-08-05. Two
+      items shared a number for a day. Nothing was lost; the old 4.10 is untouched and still open.
       `refreshDayCoachTip` returned the plain fallback instantly and fired the AI in the BACKGROUND, storing
       the result for a second visit to that same date. Justin found it on device: tap "View Full Breakdown",
       land on the page, read the stitched template, and the voiced version you just paid for only appears if

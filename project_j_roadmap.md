@@ -3352,18 +3352,36 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 - [ ] Achievement "pop on the action" timing: action-earned achievements don't pop until next app-open (per-category check gated once/day, runs on open before the action). Fix: run the check right after the qualifying action + let a same-day action bypass the once/day gate. BEST DONE with the notification-hub work.
 - [KILLED 2026-07-05] "Manage in Settings" in-app hotlink -- NOT VIABLE. Linking.openSettings() only opens the app's generic iOS page (Local Network / Camera / Siri / Cellular), which has NO Apple Health row, and iOS exposes no deep-link into the Health data-access screen. A button there would mislead. RESOLVED INSTEAD via Otto: his KB gives the correct manual route (Settings > Privacy & Security > Health > Project J, then toggle data types) and is told never to point at the app's iOS page or the in-app Health section. Deployed 2026-07-05.
 - [ ] "View all achievements" button in the Stats Records or Streaks section (trophy icon in the header is buried).
-- [ ] 🔴 **[BLOCKS GATING MONTHLY] The monthly summary passes a 30-day window into the 7-day slot.**
+- [ ] 🟡 **[SMALL, LOW PRIORITY] Three tips say "in the last two weeks" and monthly cannot correct them.**
+  `weight_plateau` and `weight_infrequent` run on the 14-day window, which monthly also overrides with the
+  whole month. `{period}` cannot fix these: on weekly it would render "this week" for a rule that genuinely
+  looks at 14 days, which would be a NEW lie. Closing it properly needs a third token carrying the 14-day
+  window. ⚠️ **Severity is much lower than the bug below**: "in the last two weeks" on a monthly summary
+  understates the window, where the original said "22 of your last 7 logged nights", which is impossible.
+  Judged shippable 2026-08-07.
+- [x] ✅ **FIXED 2026-08-07: the monthly summary passed a 30-day window into the 7-day slot.**
   `computeCoachPacketMonthly` calls `runAllRules(monthDays, monthDays.slice(0,5), monthDays, ...)`, so rules
   count qualifying days across the whole month and drop that number into copy written for a week. Result:
   *"excellent on 22 of your last 7 logged nights"*, and every normal monthly tip says "this week" (134
   instances of that phrase in `utils/smartTipsCopy.ts`).
   ✅ **WEEKLY IS FINE** and this is the only affected surface: weekly passes a real 7-day window.
   ⚠️ **Pre-existing, not caused by the gating work** -- the deterministic copy only showed when an API call
-  failed. But gating would make it the DEFAULT for every free user, so **monthly is deliberately left
-  ungated** (`monthly-summary.tsx` passes `true`). Costs ~$45/yr at 25k installs. PLAN.md 1.9.
-  ➡️ **LIKELY FIX, NOT YET SCOPED:** a period token, so "this week" and "last 7 logged days" become slots
-  filled per surface and the existing 350+ sentences survive. The alternative is writing monthly-specific
-  pools for 45 rules. **Scope it before promising a size.** Found by Justin reading a June summary.
+  failed, but gating would have made it the default for every free user. Found by Justin reading a June
+  summary and asking why it said "this week".
+  ✅ **FIXED WITH A PERIOD TOKEN, not with monthly-specific pools.** `EngineContext` now carries
+  `periodLabel` and `periodWindow`; `makeTip` injects them as `{period}` and `{window}` into every tip, so a
+  rule author writes the token once and it is correct on every surface. `computeCoachPacketMonthly` builds a
+  `monthCtx` with the real month length. **181 phrases converted across 45 rules.**
+  ✅ **EVERY NON-MONTHLY SURFACE RENDERS BYTE-IDENTICAL TEXT** (`{period}` = "this week", `{window}` = 7),
+  which is what made this safe to do in one pass.
+  🔴 **A BLIND FIND-AND-REPLACE WOULD HAVE SHIPPED NONSENSE, and the guard against that was an assertion
+  script, not care.** Four sentences use "week" to mean an easier week of TRAINING ("your body might be
+  asking for a lighter week"). Substituting those gives "asking for a lighter this month". The apply script
+  asserted an exact occurrence count per edit AND that all four training sentences survived, and it aborted
+  without writing when two of the counts were off by one.
+  ⚠️ **`w5` was deliberately NOT tokenised**: monthly genuinely passes five days there, so "the last 5 days"
+  is already true on every surface.
+  🟡 Residual: the three "in the last two weeks" sentences above. Judged shippable.
 - [ ] [KNOWN ISSUE, seen ONCE, cause unknown] **An Otto reply rendered truncated mid-word.** 2026-08-07,
   a coach-route answer ended at "...and that momentum m" with no ellipsis. Justin opened a new thread, asked
   the identical question, and it came back complete. **NOT the token ceiling**: `MAX_TOKENS` is 800 and that

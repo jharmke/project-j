@@ -344,8 +344,8 @@ is what made him think work had been dropped -- it had not, but he had no way to
 | 8 | Otto's cap is server-side | ✅ nothing to do -- enables 3.1 |
 | 9 | Estimator's cap is client-side | 🔴 open -- **4.2** |
 | 10 | History capped at 12 turns | ✅ measured + closed, LEAVE AT 12 -- **4.5** |
-| 11 | Otto's 4,425 tokens of rules unread | 🔴 open -- **4.6** |
-| 12 | Is Otto wordier on some topics | 🔴 open -- **4.7** |
+| 11 | Otto's 4,425 tokens of rules unread | ✅ **read + closed 2026-08-06 -- ~3% cuttable, declined** -- **4.6** |
+| 12 | Is Otto wordier on some topics | ✅ **measured + closed 2026-08-06 -- he already complies** -- **4.7** (lives in the 4.4 block) |
 | 13 | Smart Coach packet not sized | ✅ done -- ~200 tokens |
 
 - [x] **4.1 ✅ BUILT + DEVICE-VERIFIED 2026-08-06.** Photos resize to 1024px on the longest edge before
@@ -492,10 +492,28 @@ is what made him think work had been dropped -- it had not, but he had no way to
       ⚠️ **HALO HAS THE SAME UNMEASURED 12-TURN CAP** (`faithCompanion.ts`). Not measured; do not assume this
       result transfers, her prompt is a seventh the size so the arithmetic is different.
       ➡️ Corrects the same-day claim that history explained the ~2,200-token gap. It is 38% of it, not all.
-- [ ] **4.6** Otto's 4,425 tokens of standing rules -- never once read for cuttable content.
-- [ ] **4.7** A second Otto reply-shortening pass, and whether he is wordier on some topics than others.
-      ⚠️ Once the prompt shrinks, **output is ~70% of the remaining cost**, so this gets MORE valuable, not
-      less.
+- [x] **4.6 ✅ READ AND CLOSED 2026-08-06. NOT WORTH CUTTING.** Read end to end looking for redundancy.
+      **~3% is genuinely cuttable** (two rules stated twice: "only name a metric that appears in the
+      snapshot", and "do not invent a path" restated better in the next paragraph). ~150 tokens of 4,425,
+      inside a CACHED block, so it is rounding-error money in exchange for editing safety rules. **Declined.**
+      ⚠️ Most of that text is scar tissue from real failures (the "never invent a fact about this person"
+      section cites the time Otto stated a birthday off a profile that carries none). Do not mistake length
+      for fat.
+      🟡 **ONE REAL FINDING, NOT A COST ONE, LOGGED NOT FIXED:** `TIER_NRN` still says *"never point them to
+      Halo"*, which Justin REVERSED on 2026-08-05 -- `FAITH_HANDOFF_BLOCK_NRN` names her deliberately, a few
+      lines below in the same file. Otto's prompt carries a rule and its reversal. The handoff wins where the
+      detector fires (81%); on the ~19% it misses, an NRN user gets the old behaviour. Worst case he is more
+      RESERVED than intended, so nothing is exposed. **Justin's call 2026-08-06: leave it, it is functional.**
+      ⚠️ **The original wording of this item ("never once read") was too strong** and Justin pushed back
+      correctly: that text has been written, edited and red-teamed many times. What had never happened was a
+      read hunting specifically for redundancy.
+- ➡️ **4.7 was renumbered into the 4.4 block above and is CLOSED.** Otto already writes 3.3 sentences and
+      0/18 replies exceed one paragraph; an added length rider made it WORSE. Full measurement lives with
+      4.4. ⚠️ **This pointer exists because a duplicate open `[ ] 4.7` survived here for several hours on
+      2026-08-06 while the closed version sat higher up the file.** A background contradiction sweep caught
+      it, not a doc pass. **Do not delete the pointer; delete the duplicate.**
+      ⚠️ The old note here claimed "once the prompt shrinks, output is ~70% of the remaining cost, so this
+      gets MORE valuable". **Measured: output is ~55% of a coach-route message and there is no fat in it.**
 - [ ] **4.8 SPECCED IN FULL 2026-08-05, NOTHING BUILT.** Canned answers for fixed-answer app questions:
       no API call at all, so the reply costs **zero**, not less. It deflects the EXPENSIVE messages -- an app
       question is a Support-route message at $0.0054.
@@ -940,7 +958,7 @@ annual figure at a few scales before calling something too small to bother with.
 | Cutting Smart Coach surfaces / templates-for-free-users | Unnecessary once 1.1-1.5 land. |
 | **Batch API (50% off) for Smart Coach** | ⏸️ **Parked, not ruled out.** The surfaces where it is safe (weekly, monthly) are worth ~$0.003/mo; the surfaces worth real money are daily. **Justin's deciding reason: first open is exactly when someone checks their recovery and sleep read, and batching fails at that moment.** |
 | Shortening Smart Coach replies | Rulebook already says 2-3 sentences and requires connecting two signals. One sentence cannot. No fat. |
-| **Answering Bible verse lookups from local data instead of Halo** | ❌ **DECLINED 2026-08-05 on cost, kept here because the idea is sound and will come back.** The whole Bible ships in the app (`data/bible-web.ts`), so "what does John 3:16 say" is a local lookup needing no AI. **But it only ever covers reciting the text** -- what it MEANS, how it applies, anything at all interpretive, is Halo's and always will be. Halo is the cheapest AI in the app at $0.00067/message, so deflecting even a fifth of her traffic saves **~$144/yr at 25,000 installs**. Rounding error. ➡️ **The real argument is ACCURACY, not money** -- a lookup returns the actual text where a model can misquote scripture, which matters more in a faith app than most. Revisit as a correctness feature if misquoting is ever observed. |
+| **Answering Bible verse lookups from local data instead of Halo** | ❌ **DECLINED 2026-08-05 on cost, kept here because the idea is sound and will come back.** The whole Bible ships in the app (`data/bible-web.ts`), so "what does John 3:16 say" is a local lookup needing no AI. **But it only ever covers reciting the text** -- what it MEANS, how it applies, anything at all interpretive, is Halo's and always will be. Halo is the cheapest AI in the app at $0.00067/message ⚠️ **(~$0.00097 since her voice rider shipped 2026-08-06; `scripts/cost-model.js` is live)**, so deflecting even a fifth of her traffic saves **~$144/yr at 25,000 installs**. Rounding error. ➡️ **The real argument is ACCURACY, not money** -- a lookup returns the actual text where a model can misquote scripture, which matters more in a faith app than most. Revisit as a correctness feature if misquoting is ever observed. |
 | **Cutting Otto's 12-message history cap** | ❌ **MEASURED AND REJECTED 2026-08-05, see 4.5.** History is 38% of full-price input but **5% of the bill**. A free user on the 5/day cap tops out at 9 messages and never reaches 12, so trimming bills Supporters almost exclusively. And it backfires: the cold write is per-conversation, so shorter history means fewer messages to spread it across. **Do not re-propose without new evidence.** |
 
 ---

@@ -1123,15 +1123,15 @@ Read per call, changeable without an App Store update.
       ➡️ **IF** a confirmation email titled *"We've received your request to join the App Store Small
       Business Program"* exists, the application is queued and waiting is correct. **IF NOT, the application
       never registered** and must be resubmitted at developer.apple.com/app-store/small-business-program.
-      ⚠️ This entry has claimed since 2026-07-29 that both applications were "confirmed received". **FIND
-      THOSE TWO EMAILS AND VERIFY THAT CLAIM** -- if they do not exist, three weeks of waiting were spent on
-      applications Apple never got.
-      🔴 **AND THERE IS AN ACTION ITEM IN THE REPLY THAT IS EASY TO SKIM PAST: the latest PAID APPS AGREEMENT
-      (Schedule 2) must be reviewed and accepted in App Store Connect.** If Schedule 2 is not Active, the
-      Small Business application can sit indefinitely. **App Store Connect > Business > Agreements.** Two
-      minutes to check and the single most likely explanation for the stall.
-      ➡️ If the confirmation emails DO exist, reply to case 20000129383326 with them attached rather than
-      waiting until 2026-08-19. That turns "no response" into "here is proof, please look".
+      ✅ **BOTH VERIFIED BY JUSTIN 2026-08-07 AND BOTH ARE CLEAN.** The two confirmation emails EXIST, so the
+      applications did register. The Paid Apps agreement (Schedule 2) IS active in App Store Connect.
+      ➡️ **SO THE DELAY IS ENTIRELY ON APPLE'S SIDE.** Both plausible self-inflicted causes are ruled out;
+      do not re-check them. ⚠️ Two applications, both confirmed received, Schedule 2 active, and Apple's own
+      2026-08-07 reply still says "you aren't currently participating" -- that is a stuck queue, not a
+      missing form.
+      ➡️ **NEXT ACTION: reply to case 20000129383326 with both confirmation emails attached**, rather than
+      waiting until 2026-08-19. Apple asserted non-participation; the confirmations contradict that, and a
+      case number with evidence is the only lever available.
       ⚠️ Typical turnaround is 6-10 days with no official timeline published; Justin was at 23. No revenue
       yet, so the delay has cost nothing. Chase again ~2026-08-19 with the Case ID if silent. Worth ~21% more revenue per subscription, more than every AI optimisation
       here combined.

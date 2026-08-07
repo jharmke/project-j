@@ -101,7 +101,19 @@ const WEEK_PERKS = [
   'Otto builds workouts straight into your Workout tab',
   'He puts meals together from food you actually eat',
   'His answers use your real numbers',
-  '30 messages a day with Otto and Halo, up from 10',
+  // 🔴 THERE IS DELIBERATELY NO COACHING BULLET HERE (Justin's call, 2026-08-07), even though coaching from
+  // your own numbers IS part of the free week and IS named on the day 8 step-down.
+  // Two reasons. FIT: it was the only bullet that wrapped to two lines and it pushed the last card off the
+  // bottom of the screen on device, and this list already only just fits. VOICE: a new user has never seen
+  // the general version, so the difference means nothing to them yet. They will have lived with it for
+  // seven days by the time `FirstWeekEndedModal` explains what changed, which is where it lands.
+  // ⚠️ Do not "restore the missing perk" without re-checking the screen height first.
+  // 🔴 WAS "up from 10", WHICH WAS WRONG FOR OTTO. His free cap was cut 10 -> 5 on 2026-08-05 (PLAN.md 3.1)
+  // and this line was never updated, so onboarding promised 10 and the day 8 notice said 5. That pairing is
+  // the whole point of naming numbers here, and it was quietly broken for two days.
+  // ⚠️ ORDER IS LOAD-BEARING: Otto pairs with 5, Halo with 10. Do not reorder the names without reordering
+  // the numbers. Day 8 states them separately ("5 with him, 10 with Halo") and must keep agreeing.
+  '30 messages a day with Otto and Halo, up from 5 and 10',
   'Custom Reports, Comparison and your full Effort vs Results open up',
   '100 AI Meal Estimates a month, up from 5',
 ];

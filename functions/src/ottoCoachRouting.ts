@@ -164,6 +164,17 @@ const ENTITLEMENT_PATTERNS_STRICT: RegExp[] = [
   /\bleft (today|this month)\b/,
   /\bis there a (cap|limit)\b/,
   /\bam i (limited|capped)\b/,
+  // 🔴 "IS <ANYTHING> FREE" IS ALWAYS A PLAN QUESTION. Added 2026-08-07.
+  // ⚠️ Bare "free" was NOT an app term (only "free plan", "free version", "free bit"), so a question that
+  // paired it with a wellness noun routed to COACH, which means the app manual is never attached and the
+  // no-guess rule in the system prompt fires on an empty map.
+  // ⚠️ FOUND THE EXPENSIVE WAY: "is the sleep tip free" was answered with "I want to be certain rather than
+  // guess, check Settings then Help" THREE TIMES ACROSS THREE DEPLOYS while the knowledge base was edited
+  // and re-edited. The KB was never in the room. Same failure class as the documented "how many messages do
+  // I get a day" miss below. ➡️ If a KB edit does not change an answer, check the ROUTER before editing again.
+  /\bis\b.{0,30}\bfree\b/,
+  /\b(are|do) .{0,30}\b(cost|free)\b/,
+  /\bhave to pay\b/,
 ];
 const ENTITLEMENT_PATTERNS_SOFT: RegExp[] = [
   /\bhow many\b.{0,40}\bdo i (get|have|receive)\b/,

@@ -37,11 +37,10 @@ const C = {
   coachOtherYr: { v: 0.12, src: 'ASSUMED 2026-08-07. The SIX surfaces this model used to ignore entirely, per free user per year: recovery ~$0.077 (6 hub opens/mo), weekly ~$0.026, EvR card feed ~$0.018 (free users voice ONE card, PLAN 1.7), day summary ~$0.006, monthly ~$0.006. ⚠️ The EvR *tip* is $0: both report screens call refreshCoachTip("home") and share the home cache key, so it is the same call (VERIFIED 2026-08-07, refreshCoachTipEvr has no callers). ⚠️ Frequencies are ASSUMED; only the $0.00107 per-call price is MEASURED. Fixes the "counts 2 of 8 surfaces" gap flagged in PLAN 1.8.' },
   // 🔴 THE GATING DIAL. 0 = today (everyone gets AI-voiced coaching). 1 = AI voicing is Supporter-only and
   // free users read the deterministic copy from utils/smartTipsCopy.ts, which costs nothing.
-  // ⚠️ DEFAULTS TO 0 ON PURPOSE. The decision is made (PLAN 1.9) but NOT BUILT, so 0 is what is actually
-  // true in the app today and this script must never describe a world that does not exist yet.
-  // ➡️ Run `gateCoachFree=1 node scripts/cost-model.js` to see the gated world. FLIP THIS DEFAULT TO 1 THE
-  // DAY IT SHIPS, and note it in PLAN 1.9.
-  gateCoachFree:{ v: 0,    src: 'DECIDED 2026-08-07, NOT BUILT. 0 = todays reality. Flip to 1 when gating ships.' },
+  // ✅ FLIPPED TO 1 ON 2026-08-07, THE DAY IT SHIPPED. Free users now generate NO coach call on any of the
+  // six surfaces (device-verified: 11 calls before the test, 11 after). This is the app's real behaviour.
+  // ➡️ Run `gateCoachFree=0 node scripts/cost-model.js` to see the pre-gating world for comparison.
+  gateCoachFree:{ v: 1,    src: 'BUILT + DEVICE-VERIFIED 2026-08-07 (PLAN 1.9). Free users generate no coach call.' },
   estimatorMo:  { v: 2,    src: 'ASSUMED photos/month. Free cap is 5/month.' },
   supporterMult:{ v: 2,    src: 'ASSUMED. Supporters message ~2x a free user.' },
 

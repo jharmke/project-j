@@ -37,6 +37,13 @@ type Perk = { icon: string; title: string; body: string; gold?: boolean; sprout?
 const PERKS: Perk[] = [
   { icon: 'sparkles', title: 'Otto Gets To Work', body: "He works from everything you've logged, and builds workouts into your Workout tab and meals from food you actually eat." },
   { icon: 'chatbubbles', title: 'More AI Room', body: '30 messages a day with Otto and Halo, and 100 meal estimates a month.' },
+  // ⚠️ ADDED 2026-08-07 (PLAN.md 1.9). Placed THIRD, not first: the comment above records an earlier
+  // decision that the two Otto rows lead, and this respects it. It sits directly after them because all
+  // three are the same idea, the AI working from the user's own data, before the list turns into unlocks.
+  // 🔴 THE BODY MUST NOT IMPLY COACHING IS OTHERWISE ABSENT. Free users get every insight, pattern and
+  // recommendation on every coaching surface; what the plan changes is that it is written in their real
+  // figures. Same rule in Otto's KB and in the day 8 step-down. Never reword this to "unlock your coaching".
+  { icon: 'analytics', title: 'Coaching From Your Numbers', body: 'Your coach speaks in your real averages, streaks and trends instead of general terms.' },
   { icon: 'bar-chart', title: 'Deeper Reports', body: 'Custom Reports, Comparison, and your full Effort vs Results.' },
   // ⚠️ "HIGHER LIMITS" WAS WRONG AND UNDERSOLD IT BADLY (Justin caught this): SEVEN of the eight caps go
   // fully UNLIMITED on the Supporter plan -- only meal slots stay finite, going 5 to 8. The old body also

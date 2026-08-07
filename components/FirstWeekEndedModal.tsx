@@ -45,6 +45,14 @@ const FREE_TIER = [
   // get MORE of the faith companion than the fitness one. One line covering both was only ever right while
   // the two numbers matched, and they are not going to match again.
   '5 messages a day with him, 10 with Halo',
+  // ⚠️ ADDED 2026-08-07 with PLAN.md 1.9. Placed THIRD, and both constraints are real: the Otto capability
+  // line stays first (an earlier decision recorded above), and this cannot sit between the two Otto bullets
+  // because "5 messages a day with HIM" needs Otto as the nearest antecedent.
+  // 🔴 "STILL SEES THE WHOLE PICTURE" IS LOAD-BEARING AND FACTUALLY REQUIRED. Justin rejected four earlier
+  // drafts for implying the coach loses access to their data. It does not: the verdict is computed from the
+  // same logged data either way. ONLY THE WORDING CHANGES. Never write this as "can no longer see",
+  // "stops reading your numbers" or anything implying lost access.
+  'Your coach still sees the whole picture, but speaks in general terms rather than around your own numbers',
   '5 AI Meal Estimates a month',
   'Your reports go back to the free view',
   'Room to keep building, within free limits',

@@ -1572,8 +1572,8 @@ export const TUTORIALS: Tutorial[] = [
         noTabBarOffset: true,
         title: 'COACH INSIGHT',
         body: {
-          discipline: 'This AI headline synthesizes your top finding into one prioritized call to action. It reads your actual data, not a template. Shows up once the engine has enough to say something real.',
-          balanced: 'The Coach Insight box is an AI headline that ties your top finding into a single clear takeaway. It appears once the engine has enough logged data to make a meaningful read.',
+          discipline: 'This headline synthesizes your top finding into one prioritized call to action. On the Supporter plan it is written from your actual averages and trends rather than in general terms. Shows up once the engine has enough to say something real.',
+          balanced: 'The Coach Insight box ties your top finding into a single clear takeaway. It appears once the engine has enough logged data to make a meaningful read. On the Supporter plan it is written from your actual numbers rather than in general terms.',
           mindful: 'This box offers one observation drawn from your data. It shows up once the engine has enough to say something real. Take it as a starting point.',
         },
       },

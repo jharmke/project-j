@@ -641,7 +641,11 @@ const MONEY: CannedAnswer[] = [
     excludes: ['trial', 'messages', 'limit'],
     route: 'profile',
     answer:
-      "Most of it. Barcode scanning, food logging and macro tracking, workouts, stats, sleep and recovery scores, every faith feature, Smart Coach tips, and all the Day, Weekly and Monthly summaries including their coaching. The Supporter plan adds custom reports, comparisons, the deeper Effort vs Results cards, bigger AI allowances, and it lifts the limits on how much you can create.",
+      // ⚠️ "including their coaching" IS STILL TRUE AND IS DELIBERATE (PLAN.md 1.9). Free users get every
+      // coaching insight on every surface. What the Supporter plan changes is that the coach reads their
+      // ACTUAL numbers rather than describing the pattern in general terms, which is why it is listed below
+      // as something the plan adds and NOT removed from the free list above.
+      "Most of it. Barcode scanning, food logging and macro tracking, workouts, stats, sleep and recovery scores, every faith feature, Smart Coach tips, and all the Day, Weekly and Monthly summaries including their coaching. The Supporter plan adds coaching written from your own numbers, custom reports, comparisons, the deeper Effort vs Results cards, bigger AI allowances, and it lifts the limits on how much you can create.",
   },
   {
     id: 'money.faithfree',

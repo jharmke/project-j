@@ -3410,6 +3410,22 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 ---
 
 ## ⭐ HIGH-PRIORITY OPEN (bigger tracks)
+- 🔴 **[HIGH] [NEW 2026-08-07] SMALL SCREEN PASS. Every screen in this app has only ever been reviewed on an
+  iPhone Pro Max.** Justin raised it after his wife's iPhone SE showed him a different app than his own.
+  ➡️ **The gap is not small: a Pro Max is 430x932pt, an SE is 375x667pt. That is ~40% more vertical space.**
+  A screen that fills Justin's phone has 265 fewer points to work with on hers.
+  🔬 **THIS IS NOT THEORETICAL, IT WAS PROVEN THE DAY IT WAS LOGGED.** The onboarding All Set screen cut its
+  last card off **on Justin's own Pro Max** after ONE bullet was added, which means it has been cutting off
+  worse on every smaller phone the entire time and nobody could see it.
+  ⚠️ **Screens most at risk are the ones that must fit without scrolling, or that only just fit:**
+  onboarding (all six steps plus All Set), every centred modal (the app standard is a floating card, and a
+  card that outgrows the viewport is the failure mode), `FirstWeekEndedModal`, `CapWallModal`,
+  `DaySummaryModal`, and the Support screen.
+  ⚠️ **AND IT COMPOUNDS WITH DYNAMIC TYPE.** A small phone with system text turned up is the real worst case,
+  and `SPEC_accessibility.md` already documents that shipping broken once (Justin's uncle found it on
+  TestFlight). Test the two together, not separately.
+  ➡️ **Justin's call 2026-08-07: do this after the monetization work is finished.** Not before launch is
+  decided; this is a "people cannot read the app" problem, not a polish one.
 - [HIGH] Onboarding full pass -- functionality sweep AND apply the new gradient/aesthetic treatment across all onboarding screens. Dedicated session. app/onboarding/*.
 - [HIGH] Lifting analytics layer (DEEPER stats only -- core PR feature already SHIPPED 2026-07-04: per-lift PR detection + revoke/honesty engine, All-PRs home + per-lift Records, Otto PR data). REMAINING/parked: 1RM trend as a graphable stat, surface PRs in EvR, volume per muscle group. Full spec: SPEC_lifting_log.md. PARKED for now (Justin 2026-07-05, not the next session).
 - [HIGH] Tutorial + tooltip full audit -- in progress, tab by tab (batches of 3, device-tested each). REMAINING: spotlight lag (TestFlight verify), hidden-card guard, Log Today's Total interactive tutorial, tooltip audit + wording passes, flag every card missing a (i). data/tutorials.ts + tooltipRegistry.ts.

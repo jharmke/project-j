@@ -3352,6 +3352,18 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 - [ ] Achievement "pop on the action" timing: action-earned achievements don't pop until next app-open (per-category check gated once/day, runs on open before the action). Fix: run the check right after the qualifying action + let a same-day action bypass the once/day gate. BEST DONE with the notification-hub work.
 - [KILLED 2026-07-05] "Manage in Settings" in-app hotlink -- NOT VIABLE. Linking.openSettings() only opens the app's generic iOS page (Local Network / Camera / Siri / Cellular), which has NO Apple Health row, and iOS exposes no deep-link into the Health data-access screen. A button there would mislead. RESOLVED INSTEAD via Otto: his KB gives the correct manual route (Settings > Privacy & Security > Health > Project J, then toggle data types) and is told never to point at the app's iOS page or the in-app Health section. Deployed 2026-07-05.
 - [ ] "View all achievements" button in the Stats Records or Streaks section (trophy icon in the header is buried).
+- [ ] 🟡 **[SMALL] The undereating SAFETY tip is still a stitched template.** `"Something worth flagging.
+  {diagnosis}. {action}."` It bypasses all 45 rules and their copy pools, so where every other tip now draws
+  from five written variants, this one is machine-assembled and worded identically every time.
+  ⚠️ **It is the most serious thing the coach ever says, and under `PLAN.md` 1.9 it is now what free users
+  get for it.** This is the one place the old "the fallbacks are stitched templates" criticism is still true,
+  and it is the worst place for that to be true. ➡️ Give the safety verdicts real written variants.
+  ✅ The confusing wording inside it was fixed separately, below.
+- [x] ✅ **FIXED 2026-08-07: the safety tip said "averaged N calories over 5 logged days".**
+  It reads as "you only logged 5 days" when it means "on the 5 days that came in severely low", and it sat
+  directly above a calendar reading "17 of 31 days logged", so the two numbers looked like a contradiction
+  and were not. Now "on 5 of the days you logged". ⚠️ That string is ALSO the diagnosis handed to the model,
+  so the clearer sentence improves the voiced path too. Found by Justin on a May summary.
 - [x] ✅ **FIXED 2026-08-07: three tips said "in the last two weeks" on a monthly summary.**
   `weight_plateau` and `weight_infrequent` run on the 14-day window, which monthly overrides with the whole
   month. ⚠️ **`{period}` could NOT fix these** -- on a weekly surface it renders "this week" for a rule that

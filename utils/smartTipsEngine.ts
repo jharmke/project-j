@@ -2609,7 +2609,12 @@ function checkFamily9Safety(w7: WindowDay[], ctx: EngineContext): Safety9Result 
         veryLow.length >= 6 ? 'strong' : veryLow.length >= 4 ? 'moderate' : 'mild';
       return {
         scenario: '9.1',
-        diagnosis: `Intake has averaged ${avgCal} calories over ${veryLow.length} logged days, significantly below the estimated BMR of ${avgBmr}`,
+        // ⚠️ WORDING FIXED 2026-08-07. This said "averaged N calories over 5 logged days", which reads as
+        // "you only logged 5 days" when it means "on the 5 days that came in severely low". Justin caught it
+        // on a May summary sitting directly above a calendar reading "17 of 31 days logged", where the two
+        // numbers looked like a contradiction and were not.
+        // ⚠️ The diagnosis is ALSO what the model is given, so a clearer sentence improves both paths.
+        diagnosis: `Intake has averaged ${avgCal} calories on ${veryLow.length} of the days you logged, significantly below the estimated BMR of ${avgBmr}`,
         action: 'Bring intake closer to BMR to protect muscle mass and metabolic rate',
         facts: { avgCal, avgBmr, daysLow: veryLow.length },
         careSeverity: severity,

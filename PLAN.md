@@ -306,7 +306,22 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       ⚠️ **It fails LOUDLY with exit 2 if its own parser matches nothing**, because a broken parser otherwise
       reports a clean bill of health. That is not hypothetical: this script reported false problems FOUR
       times during the audit and the copy was right every time.
-      ⏳ **NOT DONE, AND WORTH KNOWING:** only ~a quarter of the 315 variants were read closely for QUALITY.
+      ✍️ **DEPTH PASS STARTED 2026-08-07. 315 -> 351 variants (+36).** Two variants added to every pool on
+      the six highest-frequency rules (calorie pace, small gap, protein, calorie consistency, activity,
+      logging consistency), standard and Mindful both. Justin read batch 1 in full and approved the voice.
+      🔴 **WRITTEN TO DELIBERATELY AVOID FOUR HOUSE TICS, and this was Justin's call after seeing the counts:
+      "We noticed" x36, "Worth ..." x27, "most days this week" x16, "than most people realize" x8.**
+      ➡️ Deeper rotation buys nothing if every variant opens the same way. **Verified: those four counts did
+      not move while 36 sentences were added.** Rejected: rewriting the EXISTING copy to thin the tics out
+      (bigger job, touches sentences that work). Kept as an option, not a plan.
+      🟡 **ONE FINDING LOGGED, NOT FIXED, NEEDS JUSTIN'S VOICE CALL:** `log_consistency_low.urgent` says
+      *"The app cannot give you useful patterns without consistent input."* Every other variant in that same
+      rule speaks as "we" ("the patterns we can surface", "we work with whatever you give us"), so one line
+      switches to third person and calls the app a machine that cannot do things.
+      🔴 **AND IT CORRECTS AN AUDIT CLAIM MADE EARLIER THE SAME DAY: "no copy anywhere describes how the app
+      works" WAS WRONG.** The grep behind it was case-sensitive and missed "The app". One instance, found by
+      reading rather than by the script.
+      ⏳ **NOT DONE, AND WORTH KNOWING:** only ~a quarter of the variants were read closely for QUALITY.
       Every mechanical class is complete and clean; "is this sentence well written and still good advice" is
       not. ➡️ **The recommended next writing job is DEPTH, not correction:** every pool is exactly 3 variants,
       so a user hitting the same verdict cycles all three and repeats on day four. The rules that fire most

@@ -209,8 +209,33 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       ✅ **TWO THINGS JUSTIN CALLED CORRECTLY AGAINST MY READING:** the Day Summary tip DOES freeze (keyed to
       the date viewed, not to today, so browsing history is free), and the sleep tip fires from HOME, not only
       from the hub. Both corrected above.
-- [~] **1.9 AI VOICING BECOMES A SUPPORTER FEATURE. ✅ THE GATE IS BUILT AND DEVICE-VERIFIED 2026-08-07.
-      ⏳ The signposts are NOT built.**
+- [x] **1.9 AI VOICING IS A SUPPORTER FEATURE. ✅ BUILT, DEVICE-VERIFIED, DEPLOYED AND SHIPPED 2026-08-07,
+      ALL THREE STEPS.** The gate, the signposts, and the copy sweep.
+      📉 **`scripts/cost-model.js` now runs with `gateCoachFree=1` as its default, because that is the app's
+      real behaviour. Break-even fell 2.97% -> 2.02%.**
+      ✅ **STEP 2, THE SIGNPOSTS.** Home Smart Tip page 1, weekly and monthly now show free users "Read
+      against your numbers with the Supporter plan" in place of the "View in Effort vs Results" footer. The
+      tap still goes to the report, deliberately: a free user landing there meets seven frosted cards and a
+      Become a Supporter button, which sells better than a pricing screen.
+      ⚠️ **PAGE 1 ONLY on Home, and it is load-bearing.** Pages 2 and 3 are deterministic engine tips that a
+      Supporter sees IDENTICALLY, so signposting them would advertise an upgrade that does not exist there.
+      ✅ Shown in Mindful too (Justin: "we sell to them too. it isnt too aggressive").
+      ✅ **STEP 3, THE COPY SWEEP.** Otto's KB, the canned answer, the day 8 step-down, the Supporter page
+      perk list, onboarding and two tutorial variants. **Framing locked: coaching is FREE, how it is WRITTEN
+      is the Supporter part.** Lead with yes, never "coaching is a Supporter feature".
+      🔴 **THE SWEEP FOUND A FIFTH PLACE STATING OTTO'S FREE CAP, AND IT WAS WRONG.** Onboarding promised
+      "30 messages a day, up from 10" when his free cap has been 5 since 2026-08-05. PLAN 3.1 found four
+      places and called it "never a one-line change"; it was five, and the missed one sat in the exact screen
+      whose numbers are supposed to be quoted back on day 8 so the ending reads as a promise kept.
+      🔴 **AND THE REAL BUG WAS NOT IN THE KB AT ALL. THREE DEPLOYS WERE SPENT EDITING SOMETHING OTTO NEVER
+      SAW.** "Is the sleep tip free" routed to the COACH side, which by design does not receive the app
+      manual, so the system prompt's no-guess rule fired on an empty map and he deflected to Settings > Help.
+      Bare "free" was not an entitlement pattern (only "free plan", "free version"). Fixed in
+      `ottoCoachRouting.ts`, verified against all four routing corpora, zero dangerous misroutes.
+      ➡️ **THE RULE THAT CAME OUT OF IT, now in the code: if a KB edit does not change an answer, check the
+      ROUTER before editing the KB again.** Same family as [[feedback_verify_the_call_site]].
+      ⏳ **NOT VISUALLY CONFIRMED BY JUSTIN (small, none behavioural):** the re-tested sleep tip answer after
+      the router fix, the two tutorial variants, and the reworded safety diagnosis on a May summary.
       ✅ **STEP 1 OF 3 DONE: the gate.** `isSupporter` is a required FIRST argument on every export of
       `coachAI.ts`, so the compiler enumerated all 11 call sites across 8 files. It found the one nobody had
       listed by hand (`diagnostic-report.tsx` fires the HOME tip when a report is generated).

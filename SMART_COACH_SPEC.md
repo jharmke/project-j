@@ -53,37 +53,22 @@ found a second entry point on device: the modal's own "View Full Breakdown" butt
 back at one call per user per day. ➡️ **Verify WHICH component makes the call, and check for a SECOND way in,
 before costing any idea in this section.**
 
-### 2. SLEEP + RECOVERY IN ONE CALL
-Same shape as the parked 1.5 but a better candidate: both are recovery flavoured and neither is as flagship
-as the Home tip.
-🔴 **JUSTIN'S OPEN QUESTIONS, UNANSWERED:** how would one reply split cleanly into two surfaces? Both tips
-also render TRUNCATED on Home cards, so would the user have to open the hub to get anything? **Should the
-truncated card insight be removed entirely, or replaced with a "tap for the full read" style line?** And
-does one call instead of two save anything meaningful at all?
+### 2, 3, 4 -- ❌ ALL THREE CLOSED 2026-08-07. KILLED BY THE GATING DECISION, NOT ON THEIR MERITS.
+Sleep+Recovery in one call, partial voicing, and the Batch API all saved money on COACH CALLS. Gating AI
+voicing to Supporters (`PLAN.md` 1.9) removes coach calls from ~97% of users, so each is now worth 3% of what
+it was: **~$45, ~$5 and ~$4 a year at 25,000 installs.** Full before/after figures and the two things worth
+keeping from them: `PLAN.md` 1.8 table. ⚠️ **They come back to life ONLY if the gating decision is reversed.**
 
-### 3. PARTIAL VOICING (Justin's idea)
-Today the EvR cards have `claim`, `lever` and `insight` all AI written; `proof` is already deterministic and
-never sent (numeric integrity). Making `claim` deterministic and voicing only `insight` would cut output on
-the single largest call in the system.
-🔴 **JUSTIN'S EXTENSION, and it is the better version of the idea:** a lighter/dumber tip on the HOME card,
-with tapping through to EvR for the full voiced version. *"Less polished but still acceptable in my eyes,
-but may not be worth the savings it provides."* ➡️ Cost it before designing it.
-
-### 4. BATCH API FOR WEEKLY + MONTHLY
-50% off, and the reason batching was parked (*"first open is exactly when someone checks their recovery"*)
-does not apply to a monthly summary nobody is waiting on.
-🔴 **JUSTIN'S OBJECTION, and it is the right one:** *"I just don't know where in the app it would be
-applicable to wait for batching. A lot of our AI stuff is needed instantly."* ➡️ So the question is not
-whether 50% is attractive; it is whether ANY surface tolerates the delay. Answer that before costing it.
-
-### 5. 🔴 THE DRASTIC ONE: AI VOICING BECOMES A SUPPORTER FEATURE
-Every tip already has a complete deterministic version (`packet.fallbackBody`) which is what renders when the
-API fails. Free users would get real, accurate coaching; Supporters get it written like a coach.
-⚠️ **NOT INVISIBLE, and this must not be sold as a free win.** The fallbacks are stitched templates
-(*"Something worth flagging. {diagnosis}. {action}."*). The CONTENT is identical; the VOICE is not.
-✅ **Justin, 2026-08-06: open to it, thinks it could be a solid Supporter selling point, wants a dedicated
-discussion with EXAMPLES and exactly what changes** -- and above all wants to know what it saves first.
-➡️ **COST IT BEFORE DISCUSSING IT.** At $200/yr the discussion is moot; at $4,000 it earns the examples.
+### 5. ✅ AI VOICING BECOMES A SUPPORTER FEATURE -- DECIDED 2026-08-07. Status and full reasoning: `PLAN.md` 1.9.
+Justin: *"A for free users seems like the obvious answer."* Costed first as he required, then discussed
+against real before/after text pulled from `smartTipsCopy.ts` and the coach's own prompt.
+🔴 **THE FRAMING THIS SECTION ORIGINALLY CARRIED WAS WRONG, AND CORRECTING IT IS WHY THE DECISION WENT THE WAY
+IT DID.** It said the fallbacks are stitched templates (*"Something worth flagging. {diagnosis}. {action}."*)
+and that the CONTENT is identical while the VOICE differs. **Both halves are backwards.** That template fires
+on two edge paths only; every normal tip falls back to hand-written copy (45 rules, ~129 variants, split by
+goal, separate Mindful pool, rotated so the same verdict reads differently three days running).
+➡️ **The voice is fine on both sides. What a free user loses is their own numbers.** Do not restate the old
+framing anywhere; it undersold the free tier and oversold the upgrade at the same time.
 
 ### 7. 🔬 THE DEDUP IS "ONCE PER DAY PER SCENARIO", NOT ONCE PER DAY. MEASURE AT LAUNCH, DO NOT TOUCH YET.
 Found 2026-08-06 while working out why Justin's `ai_cost` showed **9 coach calls in one day** when the cost

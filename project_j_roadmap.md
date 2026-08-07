@@ -1493,6 +1493,13 @@ WINS. Items graduate UP here from the backlog sections so good ideas don't rot d
 ships it leaves this list. Always offer at least one QUICK WIN when Justin asks what's next, and pull a
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
+- 🔴 **[NOW] [NEW 2026-08-07] AI VOICING BECOMES A SUPPORTER FEATURE. DECIDED, NOT BUILT.** Free users get
+  the deterministic coaching copy on all six coach surfaces; Supporters get it written from their own
+  numbers. Biggest change to the free/paid line since launch planning began: break-even 2.97% -> 2.02%.
+  **Status, reasoning, the watch list and the four traps: `PLAN.md` 1.9.** Do not restate any of it here.
+  ➡️ **NEXT STEP IS NOT THE BUILD.** Audit `utils/smartTipsCopy.ts` (45 rules, ~129 variants) for staleness
+  first: under gating those pools ARE the free product, and adding to them is free forever where improving
+  the AI bills on every call.
 - 🔴 **[NOW] [NEW 2026-08-05 EVENING] VERIFY WE CAN MEASURE ACTIVES, CONVERSION AND RETENTION. Pre-launch,
   not tonight. Full detail: `PLAN.md` 7.3.** We instrumented AI cost to the cent and it turned out to be the
   solved problem ($2.64 per active user per year). **Actives, conversion and retention are what decide

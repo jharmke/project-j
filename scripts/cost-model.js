@@ -33,7 +33,15 @@ const C = {
 
   coachShare:   { v: 0.50, src: 'ASSUMED. ai_cost now counts routeCoach/routeSupport; real traffic replaces this.' },
   haloShare:    { v: 0.20, src: 'ASSUMED share of companion messages going to Halo rather than Otto.' },
-  coachTipsDay: { v: 2,    src: 'MEASURED behaviour: Home fires smart_tip + sleep per day (PLAN 1.3).' },
+  coachTipsDay: { v: 2,    src: 'MEASURED behaviour: Home fires smart_tip + sleep per day (PLAN 1.3). ⚠️ These are the TWO DAILY surfaces only. The other six are in coachOtherYr.' },
+  coachOtherYr: { v: 0.12, src: 'ASSUMED 2026-08-07. The SIX surfaces this model used to ignore entirely, per free user per year: recovery ~$0.077 (6 hub opens/mo), weekly ~$0.026, EvR card feed ~$0.018 (free users voice ONE card, PLAN 1.7), day summary ~$0.006, monthly ~$0.006. ⚠️ The EvR *tip* is $0: both report screens call refreshCoachTip("home") and share the home cache key, so it is the same call (VERIFIED 2026-08-07, refreshCoachTipEvr has no callers). ⚠️ Frequencies are ASSUMED; only the $0.00107 per-call price is MEASURED. Fixes the "counts 2 of 8 surfaces" gap flagged in PLAN 1.8.' },
+  // 🔴 THE GATING DIAL. 0 = today (everyone gets AI-voiced coaching). 1 = AI voicing is Supporter-only and
+  // free users read the deterministic copy from utils/smartTipsCopy.ts, which costs nothing.
+  // ⚠️ DEFAULTS TO 0 ON PURPOSE. The decision is made (PLAN 1.9) but NOT BUILT, so 0 is what is actually
+  // true in the app today and this script must never describe a world that does not exist yet.
+  // ➡️ Run `gateCoachFree=1 node scripts/cost-model.js` to see the gated world. FLIP THIS DEFAULT TO 1 THE
+  // DAY IT SHIPS, and note it in PLAN 1.9.
+  gateCoachFree:{ v: 0,    src: 'DECIDED 2026-08-07, NOT BUILT. 0 = todays reality. Flip to 1 when gating ships.' },
   estimatorMo:  { v: 2,    src: 'ASSUMED photos/month. Free cap is 5/month.' },
   supporterMult:{ v: 2,    src: 'ASSUMED. Supporters message ~2x a free user.' },
 
@@ -64,12 +72,22 @@ function ottoMsg(deflect) {
   return v('coachShare') * v('ottoCoach') + support * v('ottoSupport');
 }
 
-/** AI cost per MONTH for one ACTIVE user sending `perDay` companion messages a day. */
-function monthlyAiCost(perDay, deflect) {
+/**
+ * AI cost per MONTH for one ACTIVE user sending `perDay` companion messages a day.
+ * ⚠️ `supporter` MATTERS ONLY FOR THE COACH TERM, and only when `gateCoachFree` is on. Companion volume is
+ * handled by the caller passing a larger `perDay` (see `supporterMult`), not by this flag.
+ */
+function monthlyAiCost(perDay, deflect, supporter = false) {
   const msgs = perDay * 30;
+  // 🔴 A GATED FREE USER GENERATES NO COACH CALL AT ALL. Not a cheaper one: the deterministic copy is a
+  // local string lookup, so the whole term goes to zero. Same shape as the NO_DATA short-circuit (PLAN 1.2).
+  const coachOn = supporter || v('gateCoachFree') !== 1;
+  const coachMo = coachOn
+    ? v('coachTipsDay') * 30 * v('smartCoach') + v('coachOtherYr') / 12
+    : 0;
   return msgs * (1 - v('haloShare')) * ottoMsg(deflect)
     + msgs * v('haloShare') * v('halo')
-    + v('coachTipsDay') * 30 * v('smartCoach')
+    + coachMo
     + v('estimatorMo') * v('estimator');
 }
 
@@ -88,8 +106,8 @@ function net({ installs, conv, perDay, months, deflect = 0, activeRate = v('acti
   const actives = installs * activeRate;
   const supporters = actives * conv;
   const freeActives = actives - supporters;
-  const freeCost = freeActives * monthlyAiCost(perDay, deflect) * 12;
-  const supCost = supporters * monthlyAiCost(perDay * v('supporterMult'), deflect) * Math.min(months, 12);
+  const freeCost = freeActives * monthlyAiCost(perDay, deflect, false) * 12;
+  const supCost = supporters * monthlyAiCost(perDay * v('supporterMult'), deflect, true) * Math.min(months, 12);
   return supporters * revenuePerSupporter(months) - freeCost - supCost;
 }
 
@@ -126,11 +144,22 @@ console.log('Canned answers cost ZERO (no API call). "canned %" = share of ALL O
 console.log('Measured coverage is ~30% of all messages (PLAN 4.8). Rows either side show the range.\n');
 
 // ── 1. COSTS ────────────────────────────────────────────────────────────────
-line(); console.log('1. WHAT ONE ACTIVE USER COSTS PER YEAR'); line();
+line(); console.log('1. WHAT ONE FREE ACTIVE USER COSTS PER YEAR'); line();
+// ⚠️ THIS TABLE IS THE FREE USER, who is ~97% of actives at 3% conversion. A Supporter costs more
+// (supporterMult on companion volume, and the coach term they always keep). Called out because the row
+// label used to say "one active user" and got quoted as though it covered everybody.
+if (v('gateCoachFree') === 1) console.log('  🔴 gateCoachFree=1: free users generate NO coach call. Supporters still do.');
 console.log('                        canned 0%     canned 15%     canned 30%     canned 45%');
 for (const s of SCENARIOS) {
   let row = pad(s.name, 20);
-  for (const d of DEFLECTS) row += pad('$' + (monthlyAiCost(s.perDay, d) * 12).toFixed(2), 15);
+  for (const d of DEFLECTS) row += pad('$' + (monthlyAiCost(s.perDay, d, false) * 12).toFixed(2), 15);
+  console.log(row);
+}
+console.log();
+console.log('  and one SUPPORTER (2x companion volume, always keeps the coach):');
+for (const s of SCENARIOS) {
+  let row = pad(s.name, 20);
+  for (const d of DEFLECTS) row += pad('$' + (monthlyAiCost(s.perDay * v('supporterMult'), d, true) * 12).toFixed(2), 15);
   console.log(row);
 }
 

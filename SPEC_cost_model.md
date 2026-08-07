@@ -368,13 +368,26 @@ of 1) hurts more than it looks.
 
 ## THE INPUTS
 
-**VERIFIED IN CODE (cannot be stale):**
-- Otto: **10/day free, 30/day Supporter** (`functions/src/appCompanion.ts`)
-- Halo: **10/day free, 30/day Supporter** (`functions/src/faithCompanion.ts`)
+**READ OUT OF THE CODE (re-verified 2026-08-07):**
+🔴 **THIS HEADING USED TO SAY "VERIFIED IN CODE (CANNOT BE STALE)" AND THE FIRST LINE UNDER IT WAS STALE.**
+A value copied out of code is a SNAPSHOT, not a live reading, and labelling it un-stale is what stops anyone
+re-checking it. Otto's free cap moved 10 -> 5 on 2026-08-05 (`PLAN.md` 3.1) and this line did not.
+➡️ **Re-read these against the code whenever they matter. There is no such thing as a fact that cannot go stale.**
+- Otto: **5/day free, 30/day Supporter** (`functions/src/appCompanion.ts`, `FREE_DAILY_CAP` / `SUPPORTER_DAILY_CAP`)
+- Halo: **10/day free, 30/day Supporter** (`functions/src/faithCompanion.ts`) -- deliberately NOT cut with
+  Otto's; whether free should rise to match is open in `PLAN.md` 3.1
 - Smart Coach + AI Meal Estimator server safety caps: 100/day and 60/day (`functions/src/aiProxy.ts`).
   These are abuse backstops, NOT the product quota -- the estimator's real free limit is client-side.
 
 **ASSUMPTIONS (each one is a lever; change it and re-run):**
+🔴 **SUPERSEDED. THIS TABLE AND THE TWO BOLD RESULT LINES UNDER IT ARE A HISTORICAL RECORD, NOT THE NUMBERS.
+Marked 2026-08-07, deliberately NOT rewritten** -- the layered corrections below are the useful part and
+editing the values in place would destroy the record of what was believed when.
+➡️ **THE NUMBER IS `node scripts/cost-model.js`.** Every per-call figure in this table has since been MEASURED
+off `ai_cost` and several were wildly out (the estimator line says ~$0.02 against a measured $0.00717).
+➡️ **AND THE STRUCTURE CHANGED, not just the values:** AI voicing becomes Supporter-only (`PLAN.md` 1.9,
+DECIDED 2026-08-07, NOT BUILT), so a free user's coach cost goes to **zero** rather than shrinking. The script
+carries that as the `gateCoachFree` dial, defaulting to today's reality. Run it both ways.
 | Input | Value | Where it comes from |
 |---|---|---|
 | Price | $9.99/month | Live from RevenueCat; never hardcoded in the app |

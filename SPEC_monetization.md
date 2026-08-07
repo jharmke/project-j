@@ -224,6 +224,15 @@ they only appear for real free users in a release build.
 DONE THIS SESSION (in order, committed):
 1. COACH INSIGHT = FREE everywhere. Removed the 3 Coach Insight "PRO" locked branches (weekly-summary,
    monthly-summary, diagnostic-report-view). Coaching is free for all, permanently.
+   🔴 **"PERMANENTLY" DID NOT SURVIVE. REVERSED 2026-08-07 (`PLAN.md` 1.9): AI VOICING IS SUPPORTER-ONLY.**
+   Marked in place rather than rewritten, because this is a record of what was done that day.
+   ⚠️ **THE DISTINCTION THAT MAKES THE REVERSAL DEFENSIBLE: coaching is still free for all.** Every verdict,
+   every finding and every action is deterministic and unchanged for free users. What is now paid is having
+   it WRITTEN FROM YOUR OWN NUMBERS. The line moved from "do you get coaching" to "does the coaching read
+   your data", which is not the same wall this entry took down.
+   ✅ **AND THIS IS THE MOST USEFUL LINE IN THIS FILE FOR THE BUILD: those three locked branches ALREADY
+   EXISTED AND ARE IN GIT HISTORY.** Whoever builds 1.9 should read them before designing a locked state
+   from scratch, on the same principle as [[feedback_verify_against_working_reference]].
 2. PRO -> SUPPORTER user-facing rename COMPLETE. Gate chips (Day-vs-Day, Patterns, Monthly-Summaries-in-Stats)
    now read "SUPPORTER"; estimator modal + Day-vs-Day toast reworded. Left alone on purpose: settings.tsx
    dev-toggle label (dies at launch) + reports.tsx code comments (not user-facing).
@@ -351,14 +360,23 @@ OPEN NOTES / IDEAS -- DO NOT LOSE:
    later if conversion needs a nudge). Rationale: covers a typical Supporter's AI cost ~1.5-2x over and the
    average Supporter far more; the free CAPS + the account spend cap (NOT the price) are what bound worst-case
    cost. Existing subscribers keep their rate if the price ever rises.
-3. FREE + SUPPORTER CAPS (LOCKED 2026-07-11):
-   - Otto (Haiku, general): free 10/day, Supporter 25/day. 50/day was rejected -- 50 x 30 ~= 1,500 msgs ~=
-     $12/mo, ~2.5x the ~$4.89 net; 25/day keeps a single-feature whale near break-even and no normal user hits it.
-   - Halo (Haiku, FAITH): 25/day for EVERYONE, free and Supporter identical. NOT a Supporter perk. Deliberately
-     the MOST generous cap in the app (free Otto 10 vs free Halo 25 encodes "faith is what we're most generous
-     with"). 8 was too low -- deep faith conversations run 15-30 turns and walling mid-conversation is the worst
-     moment to wall. Biggest single free-tier cost lever (~$6/mo if maxed daily, realistically $1-2); a deliberate,
-     on-brand place to spend generosity since faith is never upcharged (Chick-fil-A model).
+3. FREE + SUPPORTER CAPS (locked 2026-07-11, 🔴 **THREE OF THEM SUPERSEDED SINCE -- CORRECTED AGAINST THE
+   CODE 2026-08-07**. The reasoning below is kept because it is still the reasoning; only the numbers moved.
+   ⚠️ **This block is cited from several other files as the source of truth for caps, which is exactly why it
+   being stale mattered.** Live values are read off `appCompanion.ts` / `faithCompanion.ts`.):
+   - Otto (Haiku, general): 🔴 **free 5/day, Supporter 30/day** (was 10 / 25 here). The free cap was cut
+     10 -> 5 deliberately BEFORE launch, `PLAN.md` 3.1, on the rule that a visible limit may be raised later
+     but never tightened. Original note, still true as reasoning: 50/day was rejected -- 50 x 30 ~= 1,500 msgs
+     ~= $12/mo, ~2.5x the ~$4.89 net; a bounded cap keeps a single-feature whale near break-even.
+   - Halo (Haiku, FAITH): 🔴 **free 10/day, Supporter 30/day.** This said "25/day for EVERYONE, free and
+     Supporter identical, NOT a Supporter perk" and **the code has never matched that.**
+     ✅ Halo's free cap was deliberately NOT cut alongside Otto's (Justin, 2026-08-05): she is ~3% of a free
+     user's AI bill, and free users getting more of the faith companion than the fitness one is the app
+     stating its identity. **That intent survives -- free Halo 10 vs free Otto 5 still encodes it.**
+     ⚠️ **But 10 vs 30 does mean faith is somewhat upcharged, against the philosophy in this very block. That
+     is a LIVE OPEN DECISION and it lives in `PLAN.md` 3.1.** The only safe direction is raising free.
+     Original reasoning, still true: 8 was too low -- deep faith conversations run 15-30 turns and walling
+     mid-conversation is the worst moment to wall.
    - AI Meal Estimator (Sonnet, the pricey call): free 5/month, Supporter 100/month. Free 5 = a real taste (full
      free food logging via search/barcode/manual already exists; the AI photo estimate is the convenience layer).
      Supporter 100 covers "every meal, 3x/day, 30 days" (~90) + headroom; ~$2-3/mo cost, more than covered by the
@@ -367,9 +385,14 @@ OPEN NOTES / IDEAS -- DO NOT LOSE:
      Comparison (the WHOLE tool -- all period presets AND Day-vs-Day): free locked, Supporter on. (EXPANDED
      2026-07-12 from just Day-vs-Day to the entire Comparison feature; gated at the comparison-report screen +
      the Stats entry card. Built 2026-07-12.)
-   - Smart Coach (Sonnet, auto-fires, NOT gated): FREE FOR ALL. Biggest free-tier Sonnet exposure; watch on the
-     monitoring dashboard. If cost runs hot post-launch, lever = only the home tip auto-generates AI (sleep/
-     recovery/day-summary generate on open).
+   - Smart Coach: 🔴 **AI VOICING IS SUPPORTER-ONLY. ✅ DECIDED 2026-08-07, ❌ NOT BUILT** (`PLAN.md` 1.9).
+     Free users get the full deterministic coaching copy from `utils/smartTipsCopy.ts`; Supporters get it
+     written from their own numbers. **This is the single largest change to the free/paid line since launch
+     planning began: ~$0.90/free active/yr, break-even 2.97% -> 2.02%.**
+     ⚠️ **TWO THINGS THE OLD LINE HERE GOT WRONG.** It said "Sonnet" -- **Smart Coach runs on Haiku**
+     (`utils/coachAI.ts`), the ESTIMATOR is the Sonnet one, so "biggest free-tier Sonnet exposure" was never
+     true of this feature. And its proposed lever ("only the home tip auto-generates AI") is now moot.
+     ⚠️ Until the build lands, free users still get voicing. This line records an intention, not the app.
    - PHILOSOPHY: cheap Haiku features stay generous; the expensive Sonnet estimator is tighter-free / generous-paid.
      Supporter caps are HIGH but BOUNDED (never literally unlimited) so no single feature can run away; the rare
      max-everything whale (~$10-12/mo) is subsidized by the many light Supporters + the account-cap backstop.
@@ -2237,10 +2260,24 @@ slots. What they do is make the bundle feel like a real product rather than "AI 
 someone is already deciding. The AI remains the actual reason to subscribe.
 
 ## PERKS LIST (what Supporter unlocks -- exact caps in LOCKED DECISIONS #3)
+🔴 **THREE NUMBERS IN THIS LIST WERE STALE AND WERE CORRECTED AGAINST THE CODE 2026-08-07.** They are read
+off `appCompanion.ts`, `faithCompanion.ts` and `services/aiMealEstimator.ts`, not off a previous doc.
 - AI Meal Estimator: free 5/month; Supporter 100/month (Sonnet; most defensible paid line -- real $/call).
-- Otto (appCompanion): free 10/day; Supporter 25/day (Haiku).
-- Halo (faithCompanion): 25/day for EVERYONE -- NOT a Supporter perk. Listed here only to record that faith was
-  deliberately EXCLUDED from the paid tier (never upcharged).
+- Otto (appCompanion): **free 5/day; Supporter 30/day** (Haiku). ⚠️ Was recorded here as 10 and 25. The free
+  cap was cut 10 -> 5 deliberately BEFORE launch (`PLAN.md` 3.1) on the rule that a visible limit may be
+  raised later but never tightened.
+- Halo (faithCompanion): **free 10/day; Supporter 30/day.** 🔴 **This line used to read "25/day for EVERYONE
+  -- NOT a Supporter perk", and the code has never matched that.** Halo's free cap was deliberately NOT cut
+  alongside Otto's (Justin, 2026-08-05: she is ~3% of a free user's AI bill, and free users getting more of
+  the faith companion than the fitness one is the app stating its identity). ⚠️ **But 10 vs 30 does mean
+  faith is somewhat upcharged, which is not quite what CLAUDE.md says. That is a LIVE OPEN DECISION and it
+  lives in `PLAN.md` 3.1, not here.** The only safe direction is RAISING free.
+- 🆕 **Smart Coach AI voicing: Supporter only. ✅ DECIDED 2026-08-07, ❌ NOT BUILT** (`PLAN.md` 1.9). Free
+  users get the full deterministic coaching copy; Supporters get it written from their own numbers.
+  ⚠️ **DRAFT WORDING, NEEDS JUSTIN'S PASS BEFORE IT GOES IN ANY MODAL:** *"Coaching written from your numbers.
+  Your coach reads your actual averages, your streaks and your trends, and tells you what they mean."*
+  ➡️ Whatever the final words are, they must land in the Support screen, `FirstWeekEndedModal.tsx` (the taste
+  ending is where the difference is felt), Otto's KB, and the canned answer for what the plan adds.
 - Custom Reports (app/reports.tsx): free = no access; Supporter = full.
 - Day-vs-Day comparison (app/comparison-report.tsx): free = locked; Supporter = on.
 - Supporter badge / recognition: Supporter (and Tip givers) only.
@@ -2249,13 +2286,21 @@ someone is already deciding. The AI remains the actual reason to subscribe.
 
 ## FREE-TIER LIMITS + SUPPORTER CAPS (LOCKED 2026-07-11 -- set these at launch; full rationale in DECISIONS #3)
 Currently beta-inflated (see REVERT list). Final caps:
+🔴 **CORRECTED AGAINST THE CODE 2026-08-07. The three cap lines below had drifted; these are the real values.**
 - AI Meal Estimator (FREE_LIMIT / PRO_LIMIT, services/aiMealEstimator.ts): free 5/month, Supporter 100/month.
-- Otto (FREE_DAILY_CAP, functions/src/appCompanion.ts): free 10/day, Supporter 25/day.
-- Halo (FREE_DAILY_CAP, functions/src/faithCompanion.ts): 25/day for EVERYONE (free = Supporter; faith not
-  upcharged). NOTE: this RAISES Halo from the old intended 5/day -- 8 was too low for real faith conversations.
+- Otto (FREE_DAILY_CAP / SUPPORTER_DAILY_CAP, functions/src/appCompanion.ts): **free 5/day, Supporter 30/day.**
+  (Was recorded as 10 / 25.)
+- Halo (FREE_DAILY_CAP / SUPPORTER_DAILY_CAP, functions/src/faithCompanion.ts): **free 10/day, Supporter
+  30/day.** (Was recorded as "25/day for everyone", which the code has never done.) ⚠️ Whether free should be
+  raised to match is an OPEN DECISION in `PLAN.md` 3.1. ⚠️ `faithCompanion.ts` also carries a code comment
+  saying "a Supporter does not get more of Halo than a free user", which is false today. Logged in 3.1.
 - Custom Reports: free locked (REPORTS_BETA_OPEN -> false), Supporter full.
 - Day-vs-Day: free locked, Supporter on.
-- Smart Coach (Sonnet via aiProxy): free for all, not gated; monitor as the top free-tier Sonnet cost.
+- 🆕 **Smart Coach AI voicing: ✅ DECIDED 2026-08-07 to be Supporter-only, ❌ NOT BUILT** (`PLAN.md` 1.9).
+  ⚠️ **The old line here said "free for all, not gated; monitor as the top free-tier Sonnet cost."** It was
+  right about the cost and that is exactly why it changed. **Smart Coach runs on Haiku, not Sonnet** (the
+  estimator is the Sonnet one), so that half was wrong when written. Until the build lands, free users still
+  get voicing and this line describes an intention, not the app.
 
 ## SUPPORTER BADGE / RECOGNITION (DECIDED 2026-07-11 -- full detail in LOCKED DECISIONS #5)
 - FORM: a warm one-time thank-you moment + a quiet persistent gold SPROUT badge on the avatar (+ gold ring),
@@ -2388,7 +2433,14 @@ Firestore -- Otto = `ai_usage_companion`, Halo = `ai_usage`, Smart Coach = `ai_u
 user (a new day overwrites it) so no history is retained; (2) they are COUNTS, not cost -- the Cloud Functions
 receive `response.usage` (real input/output/cache tokens) from Anthropic and currently discard it.
 
-MODELS/COST DRIVERS (verified 2026-07-11, for reading the dashboards): Estimator + Smart Coach = Sonnet 4.6
+MODELS/COST DRIVERS 🔴 **STALE IN TWO WAYS, CORRECTED 2026-08-07. Do not read the dashboards off the old
+version.** (1) **Smart Coach is HAIKU, not Sonnet** (`utils/coachAI.ts` = `claude-haiku-4-5`); the ESTIMATOR
+is the only Sonnet feature (`claude-sonnet-4-6`). So the console's Sonnet line is the estimator ALONE, and
+the Haiku line is coach + Otto + Halo. (2) **Every per-call figure below was a guess and all four are now
+MEASURED** -- see the table in `PLAN.md` 0.1, or run `scripts/cost-model.js`. The guesses were badly off:
+coach was guessed at ~$0.02 and measures **$0.00107 warm** (~20x out), the estimator ~$0.02 against a
+measured **$0.00717**. ⚠️ **Quote the meter, never this paragraph.**
+(ORIGINAL, KEPT ONLY AS THE RECORD OF WHAT WAS BELIEVED ON 2026-07-11): Estimator + Smart Coach = Sonnet 4.6
 ($3/$15 per M tokens) via aiProxy; Otto + Halo = Haiku 4.5 ($1/$5 per M) via appCompanion/faithCompanion. So on
 the Anthropic console the Sonnet line ~= estimator + coach and the Haiku line ~= Otto + Halo. Rough per-call:
 estimator ~$0.02 (photo+prompt), coach tip ~$0.02 (big uncached rulebook, 300-tok out), Otto/Halo ~$0.007-0.01

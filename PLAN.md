@@ -190,10 +190,10 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       | # | idea | state |
       |---|---|---|
       | 1 | **The Day Summary tip is paid for and never seen** | ✅ **FIXED + DEVICE-VERIFIED 2026-08-07 -- see 4.10.** Not by cutting the call but by DELIVERING it: loading state, voiced version on the visit that paid for it, plain version demoted to the failure path. |
-      | 2 | Sleep + Recovery in one call | open, and it drags in whether the truncated Home card insights stay |
-      | 3 | Partial voicing (deterministic `claim`, voiced `insight`), and a lighter Home card that taps through to EvR | Justin's idea, cost before designing |
-      | 4 | Batch API for weekly + monthly | ⚠️ Justin's objection stands: which surface tolerates a delay AT ALL? |
-      | 5 | 🔴 **AI voicing becomes a Supporter feature** | Justin open to it, wants examples, **wants it COSTED FIRST** |
+      | 2 | Sleep + Recovery in one call | ❌ **CLOSED 2026-08-07, KILLED BY 1.9.** ~$1,500/yr at 25k before gating, **~$45/yr after.** ➡️ Its one surviving PRODUCT question moved out: should the truncated Home card insights become a "tap for the full read" line? That belongs with the Home card work, not a cost list. |
+      | 3 | Partial voicing (deterministic `claim`, voiced `insight`), and a lighter Home card that taps through to EvR | ❌ **CLOSED 2026-08-07, KILLED BY 1.9.** ~$180/yr before, **~$5/yr after.** ✅ **And Justin's extension gets DELIVERED FREE:** under gating the free Home card IS the lighter version and EvR is the full read. |
+      | 4 | Batch API for weekly + monthly | ❌ **CLOSED 2026-08-07, KILLED BY 1.9.** ~$100/yr before, **~$4/yr after.** Justin's objection (which surface tolerates a delay AT ALL?) went three sessions unanswered and never needed answering. |
+      | 5 | 🔴 **AI voicing becomes a Supporter feature** | ✅ **DECIDED 2026-08-07 -- see 1.9.** Costed first as Justin required, then discussed against real before/after text pulled from the actual files. |
       | 6 | ~~Cap Day Summary to recent days~~ | ❌ dropped same day: the tip is already frozen per date |
       | 7 | ~~The dedup is "once per day per SCENARIO"~~ **✅ DEVICE-TESTED 2026-08-06 AND LARGELY A FALSE ALARM.** Logging 1,120 calories did not flip the verdict; a cold reload did not regenerate. **Ordinary use buys no extra calls.** The 9-calls-in-a-day figure was a UTC document spanning TWO local mornings plus the 7pm bug now fixed. | ⏸️ Real frequency still worth reading at launch, but **not a cost emergency. Do not re-raise without new evidence.** |
       | 8 | ✅ **FIXED 2026-08-06: the coach thought a new day began at 7pm Central.** `generateCoachTip` deduped on the UTC date while the engine and the whole app use LOCAL, so the tip regenerated on identical data for the same local day. Morning-and-evening users paid twice for both Home tips. | ✅ done, one shared `todayDateKey()` |
@@ -209,6 +209,58 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       ✅ **TWO THINGS JUSTIN CALLED CORRECTLY AGAINST MY READING:** the Day Summary tip DOES freeze (keyed to
       the date viewed, not to today, so browsing history is free), and the sleep tip fires from HOME, not only
       from the hub. Both corrected above.
+- 🔴 **1.9 AI VOICING BECOMES A SUPPORTER FEATURE. ✅ DECIDED 2026-08-07 (Justin: "A for free users seems
+      like the obvious answer"). ❌ NOT BUILT. NOT A LINE OF CODE EXISTS.**
+      Free users read the deterministic copy from `utils/smartTipsCopy.ts` on every coach surface; Supporters
+      get the AI-voiced version. **`scripts/cost-model.js gateCoachFree=1` is the number** -- do not copy
+      figures out of here, run it.
+      | at 25k installs, 3% conv, canned 30% | net/yr | break-even |
+      |---|---:|---:|
+      | today | **+$240** | 2.97% |
+      | gated | **+$6,717** | 2.02% |
+      🔴 **THE SPEC'S PREMISE FOR THIS IDEA WAS WRONG AND THE CORRECTION IS THE WHOLE ARGUMENT.**
+      `SMART_COACH_SPEC.md` described the free fallback as a stitched template
+      (*"Something worth flagging. {diagnosis}. {action}."*) and said the CONTENT is identical while the VOICE
+      differs. **Both halves are backwards.** That template fires on only two edge paths (a safety verdict and
+      a no-data verdict). Every normal tip falls back to `selected.body` -- **hand-written copy, 45 rules and
+      ~129 variants, split by goal bucket, with a separate pool written for Mindful**, rotated round-robin by
+      `pickVariant` so the same verdict gives a different sentence three days running.
+      ➡️ **So the voice is fine on both sides. What a free user loses is THEIR OWN NUMBERS.** The fallback
+      knows which verdict fired and says a well-written generic thing; the AI cites the actual deficit, the
+      actual sleep average, the actual days, and connects two signals.
+      ✅ **That is a BETTER paywall, not a worse one:** "your coach reads your actual numbers" fits in a
+      screenshot, and it is the first Supporter feature that is an upgrade in KIND rather than in quantity.
+      🔴 **AND THERE IS NO CLEVER MIDDLE. The money and the pain are perfectly correlated.**
+      | surface | $/free user/yr | fallback quality |
+      |---|---:|---|
+      | Home coach tip **= the EvR insight, ONE call** | $0.385 | generic |
+      | Sleep tip (only fires with 3+ of 7 nights of data) | $0.385 | generic |
+      | Recovery | $0.077 | **already fully numeric** ("Recovery is 62 today with HRV below your norm") |
+      | Weekly / EvR card feed / day / monthly | $0.056 | mixed; day summary is **already fully numeric** |
+      ➡️ The two surfaces worth **85%** of the saving are exactly the two whose fallback is generic. The
+      surfaces that would cost the user nothing to give up are worth **$0.08 of $0.90**.
+      ❌ **"KEEP HOME + EvR VOICED, GATE THE REST" WAS CONSIDERED AND REJECTED** (was worth ~$3,768/yr at 25k
+      vs $6,569). It gives up 43% of the money to protect surfaces, and it makes the feature behave
+      differently on different screens for a reason the user cannot perceive.
+      ✅ **VERIFIED, AND IT MAKES THE BUILD SMALLER THAN IT LOOKS:**
+      - **The Home Smart Tip card ALREADY HAS A NO-AI STATE.** It is a 3-page carousel: page 0 is the voiced
+        insight, **pages 1-2 are already deterministic engine tips**. With no coach cache it fills all three
+        pages deterministically, a path that already exists. The shop window is already two-thirds plain.
+      - **The 7-day taste gives a real taste.** `grantFirstWeek` grants a genuine RevenueCat promotional
+        entitlement, so a new user gets ~7 days of voiced coaching and then feels it go generic. The
+        conversion moment is already built; `FirstWeekEndedModal.tsx` is where it should be named.
+      ⚠️ **WATCH LIST FOR THE BUILD (each of these has already bitten this project once):**
+      1. **The membership race** -- `isSupporter` must be in the effect deps, or a Supporter whose membership
+         has not resolved gets the free path. Hit in both 1.3 and 1.7.
+      2. **FAIL OPEN.** If membership cannot resolve, VOICE it. A free user getting one free voiced tip is a
+         far better failure than a paying user reading the generic one. (Justin's call still open.)
+      3. **Frozen past periods.** Weekly/monthly/day tips freeze per period, so someone upgrading in March
+         keeps plain tips for January. Believed correct and honest, but it is a decision, not an accident.
+      4. **Every place that states what the plan includes** -- Otto's KB, the canned answer for "what does the
+         plan add", `SPEC_monetization.md`, the modals. Same sweep that caught four files on Otto's cap.
+      ➡️ **NEXT STEP IS NOT THE BUILD.** It is auditing `utils/smartTipsCopy.ts` for staleness (Justin's call,
+      2026-08-07): under gating those pools ARE the free product, and neither of us knows what state they are
+      in. **Deepening a pool is free forever; improving the AI is a bill that arrives on every call.**
 - ➡️ Expected: **~$0.37 -> ~$0.10/user/month, DERIVED**, nothing visible changing. Item 0 confirms it.
 
 ### 2. THE CACHE FIXES -- launch build

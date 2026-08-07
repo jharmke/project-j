@@ -203,6 +203,88 @@ for (const i of INSTALLS) {
   console.log(row);
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// SCENARIO MATRIX. Added 2026-08-07 at Justin's request: "a bunch of different scenarios ... most
+// importantly tables should have net there as well."
+// ⚠️ SEVEN THINGS MOVE NET and they cannot all be crossed without producing noise. Each table below holds
+// everything fixed except TWO, names what it fixed, and always prints NET.
+// ⚠️ Anything not being varied sits at the committed assumption in section 6. Change one there and every
+// table moves together, which is the point of them living in one script.
+// ═════════════════════════════════════════════════════════════════════════════
+
+// ── 7. ACTIVE RATE. The one that cancels out of break-even and absolutely does not cancel out of NET. ──
+console.log(); line();
+console.log('7. NET PER YEAR by ACTIVE RATE x CONVERSION  (25,000 installs, 12-mo, typical usage, canned 30%)');
+line();
+console.log('  ⚠️ activeRate is ASSUMED at 30% and has never been measured. It scales BOTH cost and revenue,');
+console.log('     so it vanishes from break-even, but it is close to a straight multiplier on net.');
+const ACTIVE_RATES = [0.10, 0.15, 0.20, 0.30, 0.40];
+console.log('  active% |' + CONVS.map((c) => pad((c * 100).toFixed(0) + '% conv', 13)).join(''));
+for (const ar of ACTIVE_RATES) {
+  let row = `  ${pad((ar * 100).toFixed(0) + '%', 7)} |`;
+  for (const c of CONVS) row += pad(money(net({ installs: 25000, conv: c, perDay: 2, months: BASE_MONTHS, deflect: 0.30, activeRate: ar })), 13);
+  console.log(row);
+}
+
+// ── 8. SUPPORTER LIFETIME. The single largest assumption in the whole model. ──
+console.log(); line();
+console.log('8. NET PER YEAR by HOW LONG A SUPPORTER STAYS x CONVERSION  (25,000 installs, typical, canned 30%)');
+line();
+console.log('  🔴 THE BIGGEST UNKNOWN IN THIS FILE. Nobody has measured churn; 12 months is a guess, and at');
+console.log('     6 months break-even roughly doubles. RevenueCat should answer this at launch (PLAN 7.3).');
+console.log('  stays   |' + CONVS.map((c) => pad((c * 100).toFixed(0) + '% conv', 13)).join(''));
+for (const m of LIFETIMES) {
+  let row = `  ${pad(m + ' mo', 7)} |`;
+  for (const c of CONVS) row += pad(money(net({ installs: 25000, conv: c, perDay: 2, months: m, deflect: 0.30 })), 13);
+  console.log(row);
+}
+
+// ── 9. MESSAGE MIX. What share of Otto traffic is coaching vs app questions. ──
+// ⚠️ MUTATES THE CONSTANT AROUND THE LOOP because `ottoMsg` reads it through `v()`. Restored immediately
+// after. Deliberate and contained: the alternative is threading a share argument through five functions
+// for one table.
+console.log(); line();
+console.log('9. NET PER YEAR by MESSAGE MIX x CONVERSION  (25,000 installs, 12-mo, typical, canned 30%)');
+line();
+console.log('  A COACHING message costs $' + v('ottoCoach').toFixed(4) + ' (no app manual sent).');
+console.log('  An APP/SUPPORT message costs $' + v('ottoSupport').toFixed(4) + ' (the 22k-token manual rides along).');
+console.log('  ⚠️ coachShare is ASSUMED at 50%. ai_cost counts routeCoach/routeSupport, so real traffic replaces it.');
+const MIXES = [0.2, 0.35, 0.5, 0.65, 0.8];
+const trueCoachShare = C.coachShare.v;
+console.log('  coaching% |' + CONVS.map((c) => pad((c * 100).toFixed(0) + '% conv', 13)).join(''));
+for (const mix of MIXES) {
+  C.coachShare.v = mix;
+  let row = `  ${pad((mix * 100).toFixed(0) + '%', 9)} |`;
+  for (const c of CONVS) row += pad(money(net({ installs: 25000, conv: c, perDay: 2, months: BASE_MONTHS, deflect: 0.30 })), 13);
+  console.log(row);
+}
+C.coachShare.v = trueCoachShare;
+
+// ── 10. THREE NAMED WORLDS. Every assumption moved together, not one at a time. ──
+// 🔴 THIS IS THE TABLE TO QUOTE. The ones above move a single dial and flatter the model: real outcomes
+// move several at once and in the SAME direction. A bad world is not just low conversion, it is low
+// conversion AND short lifetimes AND fewer actives.
+console.log(); line();
+console.log('10. THREE WORLDS, every assumption moved together');
+line();
+const WORLDS = [
+  { name: 'BEAR ', activeRate: 0.15, conv: 0.02, months: 6, perDay: 3, deflect: 0.15 },
+  { name: 'BASE ', activeRate: 0.30, conv: 0.03, months: 12, perDay: 2, deflect: 0.30 },
+  { name: 'BULL ', activeRate: 0.40, conv: 0.05, months: 18, perDay: 2, deflect: 0.45 },
+];
+for (const w of WORLDS) {
+  console.log(`  ${w.name}: ${(w.activeRate * 100).toFixed(0)}% active, ${(w.conv * 100).toFixed(0)}% convert, ${w.months}-mo lifetime, ${w.perDay} msg/day, canned ${(w.deflect * 100).toFixed(0)}%`);
+}
+console.log('  installs  |' + WORLDS.map((w) => pad(w.name.trim(), 15)).join('') + pad('supporters (base)', 20));
+for (const i of INSTALLS) {
+  let row = `  ${pad(i.toLocaleString(), 9)} |`;
+  for (const w of WORLDS) row += pad(money(net({ installs: i, conv: w.conv, perDay: w.perDay, months: w.months, deflect: w.deflect, activeRate: w.activeRate })), 15);
+  row += pad(Math.round(i * 0.30 * 0.03).toLocaleString(), 20);
+  console.log(row);
+}
+console.log('  ⚠️ BEAR IS NOT THE FLOOR. It still assumes people convert at all and that nobody churns in');
+console.log('     month one. The real floor is zero conversion, where net is simply the AI bill, negative.');
+
 // ── 6. PROVENANCE ───────────────────────────────────────────────────────────
 console.log(); line(); console.log('6. EVERY NUMBER THIS MODEL USED'); line();
 for (const [k, o] of Object.entries(C)) console.log(`  ${pad(k, 14)} = ${pad(o.v, 8)}   ${o.src}`);

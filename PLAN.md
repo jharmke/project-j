@@ -314,10 +314,13 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       ➡️ Deeper rotation buys nothing if every variant opens the same way. **Verified: those four counts did
       not move while 36 sentences were added.** Rejected: rewriting the EXISTING copy to thin the tics out
       (bigger job, touches sentences that work). Kept as an option, not a plan.
-      🟡 **ONE FINDING LOGGED, NOT FIXED, NEEDS JUSTIN'S VOICE CALL:** `log_consistency_low.urgent` says
-      *"The app cannot give you useful patterns without consistent input."* Every other variant in that same
-      rule speaks as "we" ("the patterns we can surface", "we work with whatever you give us"), so one line
-      switches to third person and calls the app a machine that cannot do things.
+      ✅ **FIXED 2026-08-07 (Justin caught it and called it himself).** `log_consistency_low.urgent` said
+      *"The app cannot give you useful patterns without consistent input."* Every other variant in that rule
+      speaks as "we" ("the patterns we can surface", "we work with whatever you give us"), so one line
+      switched to third person and called the app a machine that cannot do things.
+      ➡️ **The pronoun was not the real problem.** Its neighbours describe what IS possible; that one
+      described what the app CANNOT do, which reads as the app blaming the user for its own limits. Both
+      fixed at once: *"There is not enough here yet for us to surface anything useful."*
       🔴 **AND IT CORRECTS AN AUDIT CLAIM MADE EARLIER THE SAME DAY: "no copy anywhere describes how the app
       works" WAS WRONG.** The grep behind it was case-sensitive and missed "The app". One instance, found by
       reading rather than by the script.

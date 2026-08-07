@@ -689,7 +689,7 @@ export const RULE_COPY: Record<string, RuleCopy> = {
       ],
       urgent: [
         'Very few logged days this week, just {days}. Without consistent data, it is hard to know what is actually happening.',
-        'Almost no logging this week. The app cannot give you useful patterns without consistent input.',
+        'Almost no logging this week. There is not enough here yet for us to surface anything useful.',
         'Only {days} logged days this week. Even partial logs are better than none. They help us understand the picture.',
         'Just {days} logged days this week. There is not quite enough here yet to say anything useful about what is happening.',
         'Very little logged this week. Even a few more days would be enough to start seeing the shape of things.',

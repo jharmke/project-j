@@ -3352,6 +3352,18 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 - [ ] Achievement "pop on the action" timing: action-earned achievements don't pop until next app-open (per-category check gated once/day, runs on open before the action). Fix: run the check right after the qualifying action + let a same-day action bypass the once/day gate. BEST DONE with the notification-hub work.
 - [KILLED 2026-07-05] "Manage in Settings" in-app hotlink -- NOT VIABLE. Linking.openSettings() only opens the app's generic iOS page (Local Network / Camera / Siri / Cellular), which has NO Apple Health row, and iOS exposes no deep-link into the Health data-access screen. A button there would mislead. RESOLVED INSTEAD via Otto: his KB gives the correct manual route (Settings > Privacy & Security > Health > Project J, then toggle data types) and is told never to point at the app's iOS page or the in-app Health section. Deployed 2026-07-05.
 - [ ] "View all achievements" button in the Stats Records or Streaks section (trophy icon in the header is buried).
+- [ ] 🔴 **[BLOCKS GATING MONTHLY] The monthly summary passes a 30-day window into the 7-day slot.**
+  `computeCoachPacketMonthly` calls `runAllRules(monthDays, monthDays.slice(0,5), monthDays, ...)`, so rules
+  count qualifying days across the whole month and drop that number into copy written for a week. Result:
+  *"excellent on 22 of your last 7 logged nights"*, and every normal monthly tip says "this week" (134
+  instances of that phrase in `utils/smartTipsCopy.ts`).
+  ✅ **WEEKLY IS FINE** and this is the only affected surface: weekly passes a real 7-day window.
+  ⚠️ **Pre-existing, not caused by the gating work** -- the deterministic copy only showed when an API call
+  failed. But gating would make it the DEFAULT for every free user, so **monthly is deliberately left
+  ungated** (`monthly-summary.tsx` passes `true`). Costs ~$45/yr at 25k installs. PLAN.md 1.9.
+  ➡️ **LIKELY FIX, NOT YET SCOPED:** a period token, so "this week" and "last 7 logged days" become slots
+  filled per surface and the existing 350+ sentences survive. The alternative is writing monthly-specific
+  pools for 45 rules. **Scope it before promising a size.** Found by Justin reading a June summary.
 - [ ] [KNOWN ISSUE, seen ONCE, cause unknown] **An Otto reply rendered truncated mid-word.** 2026-08-07,
   a coach-route answer ended at "...and that momentum m" with no ellipsis. Justin opened a new thread, asked
   the identical question, and it came back complete. **NOT the token ceiling**: `MAX_TOKENS` is 800 and that

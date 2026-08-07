@@ -22,6 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '../theme';
+import { useMembership } from '../MembershipContext';
 import TooltipIcon from '../components/TooltipIcon';
 import { useToast } from '../components/Toast';
 import { ScoreRing } from '../components/DaySummaryModal';
@@ -50,6 +51,8 @@ function formatLongDate(dateKey: string): string {
 
 export default function DaySummaryScreen() {
   const { date } = useLocalSearchParams<{ date: string }>();
+  // PLAN.md 1.9. AI voicing is a Supporter feature; free users read the written fallback copy.
+  const { isSupporter, loading: membershipLoading } = useMembership();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
@@ -194,7 +197,7 @@ export default function DaySummaryScreen() {
 
           // AI coaching tip for any scored day
           if (inp) {
-            refreshDayCoachTip(date, sc, inp, currentMode, faithJourney, weightGoal)
+            refreshDayCoachTip(isSupporter, date, sc, inp, currentMode, faithJourney, weightGoal)
               .then(cache => {
                 const body = resolveTipBody(cache);
                 if (body) setDayCoachBody(body);
@@ -213,7 +216,10 @@ export default function DaySummaryScreen() {
 
       setLoading(false);
     })();
-  }, [date]);
+    // 🔴 PLAN.md 1.9. `membershipLoading` in the deps, same reason as weekly and monthly. ⚠️ Extra reason
+    // here: nothing is written to storage on the free path, so a re-run after membership lands actually
+    // voices the day rather than being blocked by a stored "already seen" record.
+  }, [date, membershipLoading, isSupporter]);
 
   const accent = theme.accentBlueRaw;
 

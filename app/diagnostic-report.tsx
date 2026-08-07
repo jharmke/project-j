@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastRenderer, useToast } from '../components/Toast';
 import TooltipIcon from '../components/TooltipIcon';
 import { useTheme } from '../theme';
+import { useMembership } from '../MembershipContext';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import {
@@ -86,6 +87,9 @@ async function countLoggedDaysInWindow(windowDays: number): Promise<number> {
 // ── Main screen ────────────────────────────────────────────────────────────────
 
 export default function DiagnosticReportScreen() {
+  // PLAN.md 1.9. ⚠️ THIS SCREEN IS THE EASILY-MISSED ONE: generating a report fires the HOME coach tip, so
+  // without this gate a free user still buys a voiced tip just by generating a report.
+  const { isSupporter, loading: membershipLoading } = useMembership();
   const insets = useSafeAreaInsets();
   const { theme: t } = useTheme();
   const { showToast } = useToast();
@@ -138,10 +142,17 @@ export default function DiagnosticReportScreen() {
       // instead of the view later showing whatever the live home tip happens to be. Best-effort:
       // on failure the report saves without a snapshot and the view falls back to the live tip.
       let coachInsight: string | undefined;
-      try {
-        const cache = await refreshCoachTip('home', 14);
-        coachInsight = resolveTipBody(cache) || undefined;
-      } catch {}
+      // 🔴 PLAN.md 1.9. SKIP ENTIRELY IF MEMBERSHIP HAS NOT RESOLVED, and the reason is specific to this
+      // screen: the insight is SNAPSHOTTED INTO THE REPORT FOREVER. Guessing wrong here does not correct
+      // itself on the next open the way the daily tips do; a Supporter would be stuck with the free version
+      // of a report permanently. Saving no snapshot is already a supported path (the view falls back to the
+      // live tip), so skipping is strictly safer than guessing.
+      if (!membershipLoading) {
+        try {
+          const cache = await refreshCoachTip(isSupporter, 'home', 14);
+          coachInsight = resolveTipBody(cache) || undefined;
+        } catch {}
+      }
       await saveReport({ ...report, coachInsight });
       const updated = await loadSavedReports();
       setSavedReports(updated);

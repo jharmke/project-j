@@ -31,6 +31,7 @@ import { CardWash } from '../components/GradientCard';
 import { METRIC_DRILLDOWNS } from '../data/metricDrilldowns';
 import { useHealthKit } from '../useHealthKit';
 import { useTheme, RECOVERY_PURPLE } from '../theme';
+import { useMembership } from '../MembershipContext';
 import { refreshCoachTipSleep, refreshCoachTipRecovery, resolveTipBody } from '../utils/coachAI';
 import { loadCoachTipCacheSleep, loadCoachTipCacheRecovery, CoachTipCache } from '../utils/smartTipsEngine';
 import { Type, numLine } from '../typography';
@@ -539,6 +540,8 @@ function recoveryCoachTip(result: RecoveryResult, styleMode: string, mindfulGrow
 }
 
 export default function SleepHub() {
+  // PLAN.md 1.9. AI voicing is a Supporter feature; free users read the written fallback copy.
+  const { isSupporter, loading: membershipLoading } = useMembership();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const { sleepHours, sleepStages, sleepTimes, sleepAwakeMs, sleepAwakeCount, fetchSleepHistory, fetchLastNightSegments, fetchRecoverySignals } = useHealthKit();
@@ -608,9 +611,11 @@ export default function SleepHub() {
   useEffect(() => {
     let cancelled = false;
     loadCoachTipCacheSleep().then(c => { if (!cancelled && c) setSleepCoachCache(c); }).catch(() => {});
-    refreshCoachTipSleep(14).then(c => { if (!cancelled) setSleepCoachCache(c); }).catch(() => {});
+    // PLAN.md 1.9. Wait for membership: running while it resolves would hand a Supporter the free version.
+    if (membershipLoading) return;
+    refreshCoachTipSleep(isSupporter, 14).then(c => { if (!cancelled) setSleepCoachCache(c); }).catch(() => {});
     return () => { cancelled = true; };
-  }, []);
+  }, [membershipLoading, isSupporter]);
 
   // Recovery Coach (pattern detection, recovery-scoped). Lazy on Recovery tab open;
   // passes today's live snapshot so the brain can cite the real signal standing.
@@ -900,9 +905,11 @@ export default function SleepHub() {
       resp: recoveryResult.resp ? { value: recoveryResult.resp.value, delta: recoveryResult.resp.delta, isPositive: recoveryResult.resp.isPositive } : null,
     };
     loadCoachTipCacheRecovery().then(c => { if (!cancelled && c) setRecoveryCoachCache(c); }).catch(() => {});
-    refreshCoachTipRecovery(live, 14).then(c => { if (!cancelled) setRecoveryCoachCache(c); }).catch(() => {});
+    // PLAN.md 1.9. Wait for membership, same reason as the sleep tip above.
+    if (membershipLoading) return;
+    refreshCoachTipRecovery(isSupporter, live, 14).then(c => { if (!cancelled) setRecoveryCoachCache(c); }).catch(() => {});
     return () => { cancelled = true; };
-  }, [activeTab, recoveryResult]);
+  }, [activeTab, recoveryResult, membershipLoading, isSupporter]);
 
   // Load historical Recovery Scores from pj_<date> for the trend chart.
   useEffect(() => {

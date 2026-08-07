@@ -13,6 +13,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
+import { useMembership } from '../MembershipContext';
 import { ScoreRing } from '../components/DaySummaryModal';
 import DaySummaryModal from '../components/DaySummaryModal';
 import TooltipIcon from '../components/TooltipIcon';
@@ -131,6 +132,8 @@ function SubBlock({ left, right }: {
 
 export default function WeeklySummaryScreen() {
   const { weekStart } = useLocalSearchParams<{ weekStart: string }>();
+  // PLAN.md 1.9. AI voicing is a Supporter feature; free users read the written fallback copy.
+  const { isSupporter, loading: membershipLoading } = useMembership();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const accent = theme.accentBlueRaw;
@@ -182,7 +185,7 @@ export default function WeeklySummaryScreen() {
           const weekEnd = raw.weekEnd;
           const homeRuleId = homeCache?.packet.ruleId ?? null;
           const wStart = weekStart as string;
-          refreshCoachTipWeekly(wStart, weekEnd, homeRuleId)
+          refreshCoachTipWeekly(isSupporter, wStart, weekEnd, homeRuleId)
             .then(cache => { setCoachCache(cache); setCoachLoading(false); })
             .catch(() => { setCoachLoading(false); });
         } else {
@@ -194,7 +197,10 @@ export default function WeeklySummaryScreen() {
       setLoading(false);
     };
     load();
-  }, [weekStart]);
+    // 🔴 PLAN.md 1.9. `membershipLoading` IS IN THE DEPS ON PURPOSE. RevenueCat resolves asynchronously, so
+    // without it a Supporter who opens this screen during startup reads `isSupporter` as false and gets the
+    // free version with no second pass. Re-running is safe: the week's tip is frozen once voiced.
+  }, [weekStart, membershipLoading, isSupporter]);
 
   const openDayModal = async (dateKey: string) => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);

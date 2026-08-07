@@ -8,6 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
+import { useMembership } from '../MembershipContext';
 import { ScoreRing } from '../components/DaySummaryModal';
 import DaySummaryModal from '../components/DaySummaryModal';
 import TooltipIcon from '../components/TooltipIcon';
@@ -205,6 +206,8 @@ function CalendarGrid({ days, isMindful, theme, onDayPress }: {
 
 export default function MonthlySummaryScreen() {
   const { monthKey } = useLocalSearchParams<{ monthKey: string }>();
+  // PLAN.md 1.9. AI voicing is a Supporter feature; free users read the written fallback copy.
+  const { isSupporter, loading: membershipLoading } = useMembership();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const accent = theme.accentBlueRaw;
@@ -253,7 +256,17 @@ export default function MonthlySummaryScreen() {
 
         if (raw && !TIPS_GATED) {
           const homeRuleId = homeCache?.packet.ruleId ?? null;
-          refreshCoachTipMonthly(raw.monthStart, raw.monthEnd, homeRuleId)
+          // 🔴 HARDCODED TRUE. MONTHLY IS DELIBERATELY NOT GATED (Justin, 2026-08-07). PLAN.md 1.9.
+          // ⚠️ THE REASON IS A COPY BUG, NOT A PRODUCT DECISION. `computeCoachPacketMonthly` calls
+          // `runAllRules(monthDays, ..., monthDays, ...)`, passing up to 30 days into the SEVEN-day slot, so
+          // a deterministic tip can read "excellent on 22 of your last 7 logged nights". Weekly is fine: it
+          // passes a real 7-day window. Monthly is the only surface that does this.
+          // ➡️ Gating monthly would make that absurdity the DEFAULT view for every free user, so monthly
+          // stays voiced for everyone until the copy is period-aware. It is the cheapest surface in the
+          // system (~$0.006/user/yr, ~$45/yr at 25k installs), so this costs almost nothing.
+          // ⚠️ DO NOT DOCUMENT THIS EXCEPTION USER-FACING. "Supporter coaching, except monthly" is confusing
+          // and temporary, and nobody complains about getting more than they were promised.
+          refreshCoachTipMonthly(true, raw.monthStart, raw.monthEnd, homeRuleId)
             .then(cache => { setCoachCache(cache); setCoachLoading(false); })
             .catch(() => { setCoachLoading(false); });
         } else {
@@ -265,7 +278,9 @@ export default function MonthlySummaryScreen() {
       setLoading(false);
     };
     load();
-  }, [monthKey]);
+    // 🔴 PLAN.md 1.9. `membershipLoading` in the deps, same reason as weekly: without it a Supporter opening
+    // this during startup gets the free version and never a second pass. The month's tip freezes once voiced.
+  }, [monthKey, membershipLoading, isSupporter]);
 
   const openDayModal = async (dateKey: string) => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);

@@ -209,8 +209,34 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       ✅ **TWO THINGS JUSTIN CALLED CORRECTLY AGAINST MY READING:** the Day Summary tip DOES freeze (keyed to
       the date viewed, not to today, so browsing history is free), and the sleep tip fires from HOME, not only
       from the hub. Both corrected above.
-- 🔴 **1.9 AI VOICING BECOMES A SUPPORTER FEATURE. ✅ DECIDED 2026-08-07 (Justin: "A for free users seems
-      like the obvious answer"). ❌ NOT BUILT. NOT A LINE OF CODE EXISTS.**
+- [~] **1.9 AI VOICING BECOMES A SUPPORTER FEATURE. ✅ THE GATE IS BUILT AND DEVICE-VERIFIED 2026-08-07.
+      ⏳ The signposts are NOT built.**
+      ✅ **STEP 1 OF 3 DONE: the gate.** `isSupporter` is a required FIRST argument on every export of
+      `coachAI.ts`, so the compiler enumerated all 11 call sites across 8 files. It found the one nobody had
+      listed by hand (`diagnostic-report.tsx` fires the HOME tip when a report is generated).
+      🔬 **DEVICE-VERIFIED ON THE FREE ACCOUNT, and the meter is the proof.** Baseline `calls: 11`
+      (day 4, home 4, sleep 3). Justin then cleared the coach cache, cold-started, and opened Home (all 3
+      pages), the sleep hub (both coaches), weekly, monthly, two unseen day summaries and a freshly generated
+      EvR report. **`calls` still 11. Every surface counter unchanged. No `weekly`, `monthly` or `evr_cards`
+      key ever appeared. `usd` did not move.** And every surface rendered real coaching text: nothing blank,
+      nothing stuck loading.
+      ⚠️ **THE "DID IT ACTUALLY RUN" TRAP WAS DESIGNED OUT OF THE TEST:** a counter that does not move looks
+      identical whether the gate held or no rule fired. Justin confirmed real text on every surface, so the
+      engine produced verdicts and the gate is what stopped the calls.
+      🔴 **MONTHLY IS DELIBERATELY LEFT UNGATED.** Not a product call: `computeCoachPacketMonthly` passes a
+      30-day window into the 7-day slot, so its deterministic copy can say "22 of your last 7 logged nights".
+      Gating it would make that the default free experience. Costs ~$45/yr at 25k installs.
+      **Full detail and the likely fix: `project_j_roadmap.md`, PARKED SMALL IDEAS.**
+      ⚠️ Cost model is therefore ~$0.006/user/yr optimistic while this stands. Not worth re-running.
+      🔴 **THE "FAIL OPEN" SPEC IN THIS ITEM WAS WRONG AND WAS CAUGHT BEFORE BUILDING.** `loading` is briefly
+      true on EVERY cold start, so "voice it while membership resolves" would have voiced a tip for every
+      free user on every launch and deleted most of the saving. **Every call site now WAITS** (`if
+      (membershipLoading) return;` with `[membershipLoading, isSupporter]` in the deps), matching how
+      `MembershipContext` already gates `enforceIconEntitlement`.
+      ⚠️ `diagnostic-report.tsx` skips the coach snapshot entirely while membership is unresolved, because
+      that insight is frozen INTO the report forever and would not self-correct on a later open.
+      (Original decision follows.)
+      ✅ **DECIDED 2026-08-07 (Justin: "A for free users seems like the obvious answer").**
       Free users read the deterministic copy from `utils/smartTipsCopy.ts` on every coach surface; Supporters
       get the AI-voiced version. **`scripts/cost-model.js gateCoachFree=1` is the number** -- do not copy
       figures out of here, run it.

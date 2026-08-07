@@ -410,10 +410,35 @@ const NO_DATA_RULE_IDS = new Set([
   'rec_no_data',                 // recovery tab: no recovery snapshots at all
 ]);
 
+/**
+ * 🔴 `isSupporter` IS FIRST AND REQUIRED ON EVERY EXPORT IN THIS FILE. PLAN.md 1.9.
+ * AI voicing is a Supporter feature; a free user reads `packet.fallbackBody`, which is real written coaching
+ * out of `utils/smartTipsCopy.ts`, and NO API CALL IS MADE AT ALL.
+ * ⚠️ **It is first and required so the COMPILER finds every call site.** There are 11 of them across 8
+ * files, including one nobody had listed (`diagnostic-report.tsx` fires the Home tip when a report is
+ * generated). Missing one is not a visible bug: the tip still renders, it just quietly costs money.
+ * ⚠️ **NEVER DEFAULT IT TO `true`** as a convenience. A default turns a missed call site from a compile
+ * error back into a silent leak, which is the entire reason it is shaped this way.
+ * 🔴 **AND NEVER PASS `true` WHILE MEMBERSHIP IS STILL LOADING.** `MembershipContext` reports
+ * `loading: true` briefly on EVERY cold start, so "assume Supporter until we know" would voice a tip for
+ * every free user on every launch and delete most of the saving. Callers must WAIT for `loading` to be
+ * false, the same way `MembershipContext` gates `enforceIconEntitlement`.
+ */
 export async function generateCoachTip(
+  isSupporter: boolean,
   cache: CoachTipCache,
   cacheKey: string = COACH_TIP_KEY,
 ): Promise<CoachTipCache> {
+  // ── PLAN.md 1.9. Free tier: no API call, ever. ──
+  // Mirrors the NO_DATA path below: stamp the date so a screen re-focus does not rewrite storage on a loop,
+  // and leave `aiBody` null so `resolveTipBody` returns the written fallback copy.
+  if (!isSupporter) {
+    const todayK = todayDateKey();
+    if (cache.fallbackUsed && cache.aiGeneratedDate === todayK) return cache;
+    const free: CoachTipCache = { ...cache, aiBody: null, aiGeneratedDate: todayK, fallbackUsed: true };
+    try { await storageSet(cacheKey, JSON.stringify(free)); } catch {}
+    return free;
+  }
   // 🔴 WAS `new Date().toISOString().slice(0, 10)`, WHICH IS UTC. Fixed 2026-08-06.
   // `computeCoachPacket` in `smartTipsEngine.ts` builds its packet against the LOCAL date, and so does
   // every other daily key in this app. This function decided "already generated today" against the UTC
@@ -505,42 +530,46 @@ export async function generateCoachTip(
 
 // Convenience: compute packet + call AI in one shot. Used by surfaces.
 export async function refreshCoachTip(
+  isSupporter: boolean,
   surface: 'home' | 'day_summary' | 'evr' = 'home',
   windowDays: number = 14,
 ): Promise<CoachTipCache> {
   const cache = await computeCoachPacket(surface, windowDays);
-  return generateCoachTip(cache);
+  return generateCoachTip(isSupporter, cache);
 }
 
 // EvR-specific refresh: computes its own packet (deduped from home), calls AI,
 // and saves to the window-specific EvR cache key. Never touches pj_coach_tip.
 export async function refreshCoachTipEvr(
+  isSupporter: boolean,
   windowDays: number,
   homeRuleId: string | null,
 ): Promise<CoachTipCache> {
   const evrCacheKey = `pj_coach_tip_evr_${windowDays}`;
   const cache = await computeCoachPacketEvr(windowDays, homeRuleId);
-  return generateCoachTip(cache, evrCacheKey);
+  return generateCoachTip(isSupporter, cache, evrCacheKey);
 }
 
 // Sleep Hub coach: computes the sleep-scoped packet, calls AI, saves to the sleep
 // cache key. Never touches pj_coach_tip (the home tip). Lazy: called when the hub opens.
 export async function refreshCoachTipSleep(
+  isSupporter: boolean,
   windowDays: number = 14,
 ): Promise<CoachTipCache> {
   const cache = await computeCoachPacketSleep(windowDays);
-  return generateCoachTip(cache, 'pj_coach_tip_sleep');
+  return generateCoachTip(isSupporter, cache, 'pj_coach_tip_sleep');
 }
 
 // Recovery tab coach: computes the recovery-scoped packet (pattern detection over
 // the window) from the live snapshot + stored recovery history, calls AI, saves to
 // the recovery cache key. Never touches the home or sleep tips. Lazy on hub open.
 export async function refreshCoachTipRecovery(
+  isSupporter: boolean,
   live: RecoveryLiveToday,
   windowDays: number = 14,
 ): Promise<CoachTipCache> {
   const cache = await computeCoachPacketRecovery(live, windowDays);
-  return generateCoachTip(cache, 'pj_coach_tip_recovery');
+  return generateCoachTip(isSupporter, cache, 'pj_coach_tip_recovery');
 }
 
 // Return the best available tip body: AI if available, fallback otherwise.
@@ -618,11 +647,17 @@ export function getLastVoiceDebug(): string | null { return lastVoiceDebug; }
 // insight sentence added. On no API key, timeout, or any parse failure, returns the
 // cards unchanged (deterministic fallback) so the feed always renders.
 export async function voiceDiagnosticCards<T extends { id: string; claim: string; proof: string; lever: string; tone: string; insight?: string }>(
+  isSupporter: boolean,
   cards: T[],
   mode: string = 'balanced',
 ): Promise<T[]> {
   lastVoiceDebug = null;
   if (cards.length === 0) return cards;
+  // PLAN.md 1.9. Free tier: cards keep their deterministic `claim`, `proof` and `lever` and simply carry no
+  // `insight`. ⚠️ Nothing renders blank as a result: a free user already only sees ONE card, and its
+  // AI-written fields sit under a full-card blur (PLAN 1.7). Returning the cards untouched is the same
+  // shape the screen already handles when the API fails.
+  if (!isSupporter) return cards;
 
   const isMindful = mode.toLowerCase() === 'mindful';
   const systemPrompt = isMindful
@@ -660,6 +695,7 @@ export async function voiceDiagnosticCards<T extends { id: string; claim: string
 // Weekly-specific refresh: computes its own packet (fixed date range, deduped
 // from home), calls AI, and saves to the week-specific cache key.
 export async function refreshCoachTipWeekly(
+  isSupporter: boolean,
   weekStart: string,
   weekEnd: string,
   homeRuleId: string | null,
@@ -667,13 +703,17 @@ export async function refreshCoachTipWeekly(
   const cacheKey = `pj_coach_tip_weekly_${weekStart}`;
   const existing = await loadCoachTipCacheWeekly(weekStart);
   // Already has AI body: return cached (generated once, never regenerated)
+  // ⚠️ NOTE FOR THE UPGRADE PATH: a week voiced while they were a Supporter stays voiced forever, and a week
+  // that was NOT voiced stays plain forever, because the packet is frozen per period. Deliberate (PLAN 1.9):
+  // they were not a member that week. Do not "fix" it by regenerating history.
   if (existing?.aiBody && existing.aiGeneratedDate) return existing;
 
   const cache = await computeCoachPacketWeekly(weekStart, weekEnd, homeRuleId);
-  return generateCoachTip(cache, cacheKey);
+  return generateCoachTip(isSupporter, cache, cacheKey);
 }
 
 export async function refreshCoachTipMonthly(
+  isSupporter: boolean,
   monthStart: string,
   monthEnd: string,
   homeRuleId: string | null,
@@ -684,7 +724,7 @@ export async function refreshCoachTipMonthly(
   if (existing?.aiBody && existing.aiGeneratedDate) return existing;
 
   const cache = await computeCoachPacketMonthly(monthStart, monthEnd, homeRuleId);
-  return generateCoachTip(cache, cacheKey);
+  return generateCoachTip(isSupporter, cache, cacheKey);
 }
 
 // ── Day Summary: per-day coaching tip ─────────────────────────────────────────
@@ -938,6 +978,7 @@ function buildDayCoachPacket(
 }
 
 export async function refreshDayCoachTip(
+  isSupporter: boolean,
   dateKey: string,
   score: DayScore,
   input: DayScoreInput,
@@ -960,8 +1001,17 @@ export async function refreshDayCoachTip(
   const week = await loadWeekContext(dateKey);
   const packet = buildDayCoachPacket(dateKey, score, input, week, mode, faithTier, weightGoal);
 
-  // The plain stitched version. From here it is the FAILURE PATH ONLY, never what shows while we wait.
+  // The written fallback. For a FREE user this is the product (PLAN 1.9); for a Supporter it is the failure
+  // path only, never what shows while we wait.
   const fallbackCache: CoachTipCache = { packet, aiBody: null, aiGeneratedDate: null, fallbackUsed: true };
+
+  // ── PLAN.md 1.9. Free tier: no API call. ──
+  // ⚠️ MUST SIT AFTER the packet is built and BEFORE the call. The screen needs a real packet either way,
+  // since `resolveTipBody` reads `packet.fallbackBody`.
+  // ⚠️ Nothing is written to storage on this path ON PURPOSE. The fast path above requires `aiBody`, so a
+  // free user simply recomputes a local packet on each visit, and the day voices properly the moment they
+  // upgrade. Storing a "seen while free" record would freeze the plain version onto that date forever.
+  if (!isSupporter) return fallbackCache;
 
   // 🔴 AWAITED, NOT FIRE-AND-FORGET. Changed 2026-08-07.
   // This used to return `fallbackCache` immediately and fire the AI call in the background, saving the

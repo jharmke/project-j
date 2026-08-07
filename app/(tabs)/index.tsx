@@ -1652,6 +1652,8 @@ export default function HomeScreen() {
     // that looks fixed and is not.
     // ⚠️ FAILS OPEN (`!== false`). If the setting is missing or unreadable we still generate: a wasted call
     // costs a fraction of a cent, a missing tip is a broken feature.
+    // 🔴 MEMBERSHIP MUST HAVE RESOLVED BEFORE EITHER TIP IS TOUCHED. See the note on the deps below.
+    if (membershipLoading) return;
     (async () => {
       let visible: Record<string, boolean> = DEFAULT_VISIBLE;
       try {
@@ -1663,14 +1665,22 @@ export default function HomeScreen() {
       } catch {}
       // AI coach tip. Renders fallback from cache immediately, updates to AI body when generation completes.
       if (visible.smart_tip !== false) {
-        refreshCoachTip('home', 14).then(cache => { setCoachCache(cache); }).catch(() => {});
+        refreshCoachTip(isSupporter, 'home', 14).then(cache => { setCoachCache(cache); }).catch(() => {});
       }
       // Sleep Coach for the home sleep card.
       if (visible.sleep !== false) {
-        refreshCoachTipSleep(14).then(c => setSleepCoachCache(c)).catch(() => {});
+        refreshCoachTipSleep(isSupporter, 14).then(c => setSleepCoachCache(c)).catch(() => {});
       }
     })();
-  }, []));
+    // 🔴 PLAN.md 1.9. WAITS FOR MEMBERSHIP, AND THE DEPS ARE LOAD-BEARING.
+    // `membershipLoading` is briefly TRUE on every cold start while RevenueCat resolves. Running before it
+    // settles would read `isSupporter` as false and hand a Supporter the free experience, so the effect
+    // returns early and re-runs when it lands.
+    // ⚠️ THE OPPOSITE SHORTCUT IS WORSE AND WAS REJECTED: "assume Supporter until we know" would voice a tip
+    // for EVERY free user on EVERY launch and delete most of the saving this feature exists for.
+    // ⚠️ Re-running is safe and cheap: `generateCoachTip` dedups on the local date, so a second pass on the
+    // same day returns the cached tip without touching the API.
+  }, [membershipLoading, isSupporter]));
 
   // ── Load the active challenge + live progress for the home challenge card ──
   useFocusEffect(useCallback(() => {

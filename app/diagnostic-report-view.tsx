@@ -747,7 +747,7 @@ export default function DiagnosticReportViewScreen() {
           // First view: show skeletons while voicing, then reveal voiced in one shot. On any
           // failure/timeout, finally() clears the flag so the deterministic baseCards reveal.
           setCardsVoicing(true);
-          voiceDiagnosticCards(toVoice, mode)
+          voiceDiagnosticCards(isPro, toVoice, mode)
             .then(voiced => {
               // Merge back over the untouched tail so the locked cards keep their deterministic text.
               const merged = [...voiced, ...baseCards.slice(visibleCount)];
@@ -783,7 +783,7 @@ export default function DiagnosticReportViewScreen() {
           const cachedIsTodaysFinal = !!cachedHome && cachedHome.packet.computedDate === todayKey;
           if (cachedIsTodaysFinal) { setCoachBody(resolveTipBody(cachedHome) || null); setCoachLoading(false); }
           else { setCoachBody(null); setCoachLoading(true); }
-          refreshCoachTip('home', 14)
+          refreshCoachTip(isPro, 'home', 14)
             .then(cache => { setCoachBody(resolveTipBody(cache) || null); setCoachLoading(false); })
             .catch(() => setCoachLoading(false));
         }

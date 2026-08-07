@@ -2961,7 +2961,10 @@ export default function SettingsScreen() {
                 }
                 let mode = 'balanced';
                 try { const s = await AsyncStorage.getItem('pj_settings'); if (s) { const d = JSON.parse(s); if (d.styleMode) mode = d.styleMode; } } catch {}
-                const cards = await voiceDiagnosticCards(rawCards, mode);
+                // ⚠️ HARDCODED TRUE, and it is correct. This is Justin's dev tool for reading raw voiced
+                // output; gating it on real membership would make it silently return unvoiced cards on a
+                // free test account and look broken. PLAN.md 1.9.
+                const cards = await voiceDiagnosticCards(true, rawCards, mode);
                 const voicedAny = cards.some(c => !!c.insight);
                 const debug = getLastVoiceDebug();
                 const body = cards.map((c, i) =>

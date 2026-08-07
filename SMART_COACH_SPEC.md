@@ -83,7 +83,19 @@ another AI call. **A user whose data moves through the day pays several times ov
 ✅ **AND IT IS PROBABLY CORRECT.** If the verdict genuinely changed, the old tip is now WRONG: a tip about
 protein when the real issue has become sleep is worse than a tip that costs a fraction of a cent. **Do not
 "fix" this as waste.** Changing it means deciding a stale tip is acceptable, which is a product call.
-🔴 **WHEN IT GETS MEASURED: AT LAUNCH, NOT BEFORE, AND THIS IS NOT A DELAY WE CHOSE.** How often a verdict
+✅ **DEVICE-TESTED 2026-08-06 EVENING, AND IT IS MUCH SMALLER THAN IT LOOKED.** Two controlled tests against
+the live surface counters, baseline `surfaces.home: 2`:
+| test | result |
+|---|---|
+| logged a 1,120-calorie entry with full macros, left Home, returned | **no change.** The verdict did not flip |
+| reloaded the app cold, landed on Home | **no change.** The dedup holds across restarts |
+➡️ **So ordinary use does NOT buy extra calls.** The scenario reset exists but is not sensitive to the
+things a user does all day, which was the actual worry.
+➡️ **AND THE 9 CALLS HAVE A DULL EXPLANATION.** Under the old UTC key, the `2026-08-06` document spanned
+**7pm Aug 5 to 7pm Aug 6 local** -- TWO local mornings in one doc. Two mornings of Home opens is already 4
+calls (home + sleep, twice), plus the 7pm regeneration, plus whatever reports were opened during a long
+working session. **Nothing was broken.** ⚠️ Do not re-raise this as a cost emergency without new evidence.
+🔬 **STILL WORTH THE LAUNCH READING**, just not urgently: How often a verdict
 flips is USER BEHAVIOUR. Justin is one person doing dev testing, so his own numbers are a measurement of
 this project's testing, not of users. Same reason `coachShare` and the canned deflection rate are still
 ASSUMED. ➡️ **The instrument already exists**: `byFeature.coach.surfaces.{home|sleep|...}` shipped

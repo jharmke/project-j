@@ -276,8 +276,42 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       artefacts: a regex needing a newline that single-line calls do not have, ES6 shorthand `{ delta }`
       having no colon, and the last rule's chunk swallowing the rest of the file. **Every flag was
       hand-checked before being reported.** See [[feedback_detectors_are_brittle]].
-      ⏳ **CONTENT HALF STILL OPEN:** the 306 variants have not been read against how the app behaves today,
-      which is the staleness question Justin actually asked. Structure is clean; wording is unread.
+      🔬 **CONTENT PASS DONE 2026-08-07. THREE FIXES, ALL THE SAME MISTAKE: copy written for ONE goal sitting
+      in a pool that EVERY goal reads.**
+      1. 🔴 **`protein_under` was telling BULKING users "at a deficit, low protein means more of the weight
+         you lose comes from muscle"** and "this is the one macro that cannot slide on a cut". The rule has
+         no goal guard. ⚠️ **Not an edge case: `rankCandidates` makes protein_under a TOP priority rule for
+         the gain bucket**, so it was one of the first tips a bulking user ever saw. Fixed with
+         `pattern_gain` / `urgent_gain` pools, selected by explicit ternary in `ruleProteinUnder`.
+         🔴 **THE TERNARY IS DELIBERATE, NOT A TEMPLATE STRING.** `pickBody` falls back
+         `db[poolKey] ?? db['insight_all'] ?? db['pattern']`, so a miss on `urgent_lose` would silently serve
+         the PATTERN pool to an URGENT tip. Only the gain bucket names a pool, so only it can miss.
+      2. 🟡 `active_low` said "On a cut, every bit of that gap matters" to every goal. Reworded.
+      3. 🟡 `fat_high` said fat is "where a surplus quietly comes from", which reads as a warning to someone
+         deliberately building one. Reworded.
+      🟡 **KNOWN RESIDUAL, ACCEPTED, NOT FIXED:** protein_under's lose/maintain copy still says "at a
+      deficit", which is right for lose and slightly off for MAINTAIN. Lower priority for that bucket and it
+      would need a third pool. Recorded in the guard's allowlist so it is visible rather than forgotten.
+      ✅ **VERIFIED CORRECT, so these are oversights and not a pattern:** `weekend_spike` and
+      `cross_high_burn_overeating` both `return null` for the gain bucket before firing. Someone wrote those
+      carefully; protein and activity just never got the same treatment.
+      ✅ **ALSO CHECKED AND CLEAN:** every "last 5 days" / "last 7 logged days" claim matches the window its
+      rule actually uses; every hardcoded number matches the code (deep sleep 15%, workout completion 60%,
+      fasting window 30 minutes); **no copy anywhere describes how the app works**, so nothing in here goes
+      stale when a screen changes; the recovery section (newest copy) is clean.
+      🔒 **AND IT IS NOW MECHANISED: `scripts/audit-tips-copy.cjs`, committed, exits non-zero on a problem.**
+      Catches dead copy, missing copy, unfilled placeholders, goal mismatch, double dashes and thin pools.
+      ⚠️ **It carries an ALLOWLIST WITH A STATED REASON PER ENTRY** (rules that bail out for a bucket may
+      safely speak to the rest). Adding to it without verifying the bail-out in the engine defeats the guard.
+      ⚠️ **It fails LOUDLY with exit 2 if its own parser matches nothing**, because a broken parser otherwise
+      reports a clean bill of health. That is not hypothetical: this script reported false problems FOUR
+      times during the audit and the copy was right every time.
+      ⏳ **NOT DONE, AND WORTH KNOWING:** only ~a quarter of the 315 variants were read closely for QUALITY.
+      Every mechanical class is complete and clean; "is this sentence well written and still good advice" is
+      not. ➡️ **The recommended next writing job is DEPTH, not correction:** every pool is exactly 3 variants,
+      so a user hitting the same verdict cycles all three and repeats on day four. The rules that fire most
+      (protein, calorie pace, logging consistency) are where a 4th/5th variant is worth most, and under 1.9
+      that is free forever where AI quality bills on every call.
 - ➡️ Expected: **~$0.37 -> ~$0.10/user/month, DERIVED**, nothing visible changing. Item 0 confirms it.
 
 ### 2. THE CACHE FIXES -- launch build

@@ -114,6 +114,20 @@ export const RULE_COPY: Record<string, RuleCopy> = {
         'Well under your protein target for most of the last week. That level of shortfall makes it hard to hold onto muscle while cutting.',
         'Protein has been very low for several days running. This is the one macro that really cannot slide on a cut.',
       ],
+      // Added 2026-08-07. The `pattern` and `urgent` pools above are written for someone CUTTING ("at a
+      // deficit", "while cutting", "on a cut") and this rule has no goal guard, so a user trying to GAIN
+      // was reading all of it. ⚠️ Not an edge case: `rankCandidates` lists protein_under as a TOP priority
+      // rule for the gain bucket, so it is one of the first tips a bulking user sees.
+      pattern_gain: [
+        'Protein has been below your {goal}g target on {days} of your last 7 logged days. On a bulk, protein is what decides whether the weight you add is muscle or not.',
+        'Most days this week came in under your protein goal. Building tissue needs the raw material, and that is protein.',
+        'Protein has been under target most days this week. A surplus without enough protein tends to add more fat than muscle.',
+      ],
+      urgent_gain: [
+        'Protein has been significantly below your {goal}g goal for {days} of the last 5 days. On a bulk that gap directly limits how much of the gain is muscle.',
+        'Well under your protein target for most of the last week. The surplus is doing its job, but the protein is not there to use it.',
+        'Protein has been very low for several days running. On a gaining goal this is the one macro that decides what the weight is made of.',
+      ],
     },
     mindful: [
       'Protein has been on the lower side this week. It plays a bigger role than most people realize in how you feel and recover day to day.',
@@ -144,7 +158,7 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern: [
-        'Fat has been above your {goal}g target on {days} of your last 7 logged days. Fat is calorie dense, so it is often where a surplus quietly comes from.',
+        'Fat has been above your {goal}g target on {days} of your last 7 logged days. Fat is calorie dense, so it is often where extra calories hide.',
         'Most days this week came in over your fat goal. Worth a look at the higher-fat foods, since they add up fast on the calorie side.',
         'Fat intake has been over target most of the week. Not a problem on its own, but it is the easiest macro to overshoot calories with.',
       ],
@@ -391,7 +405,7 @@ export const RULE_COPY: Record<string, RuleCopy> = {
       pattern: [
         'Active calorie burn has been below your goal most days this week.',
         'Burn has been below your active calorie goal most days. The gap between eat and burn numbers is tighter than it looks.',
-        'Active calories have been consistently below goal this week. On a cut, every bit of that gap matters.',
+        'Active calories have been consistently below goal this week. That gap is bigger than most people expect.',
       ],
       urgent_lose: [
         'Active burn has been significantly below your goal for {days} of the last 5 days. With low burn and a cut, the deficit is probably much smaller than it appears.',

@@ -846,14 +846,22 @@ function ruleProteinUnder(w7: WindowDay[], w5: WindowDay[], ctx: EngineContext, 
   if (ctx.proteinGoalG <= 0) return null;
   const { proteinGoalG } = ctx;
 
+  // ⚠️ GOAL-KEYED POOLS. Added 2026-08-07: the plain `urgent`/`pattern` copy is written for someone cutting
+  // ("at a deficit", "while cutting"), and this rule has no goal guard, so a GAINING user was reading it.
+  // 🔴 EXPLICIT TERNARY, NOT a `urgent_${ctx.goalBucket}` template. `pickBody`'s fallback chain is
+  // `db[poolKey] ?? db['insight_all'] ?? db['pattern']`, so a miss on `urgent_lose` would silently serve the
+  // PATTERN pool to an URGENT tip. Only the gain bucket has its own pool, so only the gain bucket names one.
+  const urgentPool = ctx.goalBucket === 'gain' ? 'urgent_gain' : 'urgent';
+  const patternPool = ctx.goalBucket === 'gain' ? 'pattern_gain' : 'pattern';
+
   const urgentQual = w5.filter(d => d.hasFoodData && d.protein < proteinGoalG * 0.5);
   if (urgentQual.length >= 3 && meetsLoggingGate(w5, 4)) {
-    return makeTip('protein_under', 'urgent', false, 'urgent', ctx, store, { goal: Math.round(proteinGoalG), days: urgentQual.length });
+    return makeTip('protein_under', 'urgent', false, urgentPool, ctx, store, { goal: Math.round(proteinGoalG), days: urgentQual.length });
   }
 
   const patternQual = w7.filter(d => d.hasFoodData && d.protein < proteinGoalG * 0.8);
   if (patternQual.length >= 4 && meetsLoggingGate(w7, 6)) {
-    return makeTip('protein_under', 'pattern', false, 'pattern', ctx, store, { goal: Math.round(proteinGoalG), days: patternQual.length });
+    return makeTip('protein_under', 'pattern', false, patternPool, ctx, store, { goal: Math.round(proteinGoalG), days: patternQual.length });
   }
 
   return null;

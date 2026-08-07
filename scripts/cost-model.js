@@ -212,78 +212,154 @@ for (const i of INSTALLS) {
 // table moves together, which is the point of them living in one script.
 // ═════════════════════════════════════════════════════════════════════════════
 
-// ── 7. ACTIVE RATE. The one that cancels out of break-even and absolutely does not cancel out of NET. ──
-console.log(); line();
-console.log('7. NET PER YEAR by ACTIVE RATE x CONVERSION  (25,000 installs, 12-mo, typical usage, canned 30%)');
-line();
-console.log('  ⚠️ activeRate is ASSUMED at 30% and has never been measured. It scales BOTH cost and revenue,');
-console.log('     so it vanishes from break-even, but it is close to a straight multiplier on net.');
-const ACTIVE_RATES = [0.10, 0.15, 0.20, 0.30, 0.40];
-console.log('  active% |' + CONVS.map((c) => pad((c * 100).toFixed(0) + '% conv', 13)).join(''));
-for (const ar of ACTIVE_RATES) {
-  let row = `  ${pad((ar * 100).toFixed(0) + '%', 7)} |`;
-  for (const c of CONVS) row += pad(money(net({ installs: 25000, conv: c, perDay: 2, months: BASE_MONTHS, deflect: 0.30, activeRate: ar })), 13);
-  console.log(row);
+// ═════════════════════════════════════════════════════════════════════════════
+// THE SCENARIO BOOK. Added 2026-08-07 at Justin's request, after a first attempt gave him ONE combined
+// table and a lot of prose: "i want a bunch of tables and scenarios, not just one".
+//
+// EVERY table below is the SAME SHAPE ON PURPOSE: installs down the side, conversion across the top, NET in
+// every cell. One dial changes per table, and the heading says which. That way any two tables can be read
+// against each other by eye without re-reading the axes.
+//
+// ⚠️ CONVERSION STARTS AT 1%. Break-even sits near 2%, so a table starting at 2% hides the entire losing
+// half of the range. The 1% column is there to show what below-water actually costs.
+// ⚠️ EVERYTHING NOT NAMED IN A HEADING sits at the committed assumption in the constants block. Change one
+// there and every table in the book moves together, which is the whole reason they live in one script.
+// ═════════════════════════════════════════════════════════════════════════════
+
+const BOOK_INSTALLS = [1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000];
+const BOOK_CONVS = [0.01, 0.02, 0.03, 0.05, 0.06, 0.08, 0.12];
+const wide = (c = '─') => console.log(c.repeat(108));
+
+/**
+ * One table: installs x conversion, net in the cell.
+ * `over` carries whatever this table is varying; anything absent falls back to the committed assumption.
+ */
+function netTable(title, note, over = {}) {
+  console.log('');
+  wide();
+  console.log(title);
+  if (note) console.log('  ' + note);
+  wide();
+  console.log('  installs   actives |' + BOOK_CONVS.map((c) => pad((c * 100).toFixed(0) + '%', 12)).join(''));
+  const ar = over.activeRate ?? v('activeRate');
+  for (const i of BOOK_INSTALLS) {
+    let row = `  ${pad(i.toLocaleString(), 8)}  ${pad(Math.round(i * ar).toLocaleString(), 8)} |`;
+    for (const c of BOOK_CONVS) {
+      row += pad(money(net({
+        installs: i,
+        conv: c,
+        perDay: over.perDay ?? 2,
+        months: over.months ?? BASE_MONTHS,
+        deflect: over.deflect ?? 0.30,
+        activeRate: ar,
+      })), 12);
+    }
+    console.log(row);
+  }
 }
 
-// ── 8. SUPPORTER LIFETIME. The single largest assumption in the whole model. ──
-console.log(); line();
-console.log('8. NET PER YEAR by HOW LONG A SUPPORTER STAYS x CONVERSION  (25,000 installs, typical, canned 30%)');
-line();
-console.log('  🔴 THE BIGGEST UNKNOWN IN THIS FILE. Nobody has measured churn; 12 months is a guess, and at');
-console.log('     6 months break-even roughly doubles. RevenueCat should answer this at launch (PLAN 7.3).');
-console.log('  stays   |' + CONVS.map((c) => pad((c * 100).toFixed(0) + '% conv', 13)).join(''));
-for (const m of LIFETIMES) {
-  let row = `  ${pad(m + ' mo', 7)} |`;
-  for (const c of CONVS) row += pad(money(net({ installs: 25000, conv: c, perDay: 2, months: m, deflect: 0.30 })), 13);
-  console.log(row);
+console.log('\n');
+wide('═');
+console.log('THE SCENARIO BOOK -- every table is installs x conversion, and every cell is NET FOR YEAR ONE');
+wide('═');
+console.log('Unless a heading says otherwise: 30% of installs active, 12-month Supporters, 2 messages/day,');
+console.log('canned answers catching 30%, coaching 50% of Otto traffic, $9.99 / $89.99, Apple keeping 15%.');
+
+// ── A. USAGE ────────────────────────────────────────────────────────────────
+console.log('\n');
+wide('━');
+console.log('A. HOW MUCH PEOPLE USE THE AI');
+console.log('   The only lever here that a heavy user makes worse. Everything else in the book is upside.');
+wide('━');
+for (const p of [1, 2, 3, 5, 8]) {
+  netTable(
+    `A${[1, 2, 3, 5, 8].indexOf(p) + 1}. ${p} companion message${p === 1 ? '' : 's'} per day`,
+    p >= 5 ? 'A Supporter sends 2x this, so the heavy rows are carrying real cost on the paying side too.' : '',
+    { perDay: p },
+  );
 }
 
-// ── 9. MESSAGE MIX. What share of Otto traffic is coaching vs app questions. ──
-// ⚠️ MUTATES THE CONSTANT AROUND THE LOOP because `ottoMsg` reads it through `v()`. Restored immediately
-// after. Deliberate and contained: the alternative is threading a share argument through five functions
-// for one table.
-console.log(); line();
-console.log('9. NET PER YEAR by MESSAGE MIX x CONVERSION  (25,000 installs, 12-mo, typical, canned 30%)');
-line();
-console.log('  A COACHING message costs $' + v('ottoCoach').toFixed(4) + ' (no app manual sent).');
-console.log('  An APP/SUPPORT message costs $' + v('ottoSupport').toFixed(4) + ' (the 22k-token manual rides along).');
-console.log('  ⚠️ coachShare is ASSUMED at 50%. ai_cost counts routeCoach/routeSupport, so real traffic replaces it.');
-const MIXES = [0.2, 0.35, 0.5, 0.65, 0.8];
-const trueCoachShare = C.coachShare.v;
-console.log('  coaching% |' + CONVS.map((c) => pad((c * 100).toFixed(0) + '% conv', 13)).join(''));
-for (const mix of MIXES) {
+// ── B. SUPPORTER LIFETIME ───────────────────────────────────────────────────
+console.log('\n');
+wide('━');
+console.log('B. HOW LONG A SUPPORTER STAYS');
+console.log('   🔴 THE BIGGEST UNMEASURED NUMBER IN THE MODEL. Nobody has churn data yet (PLAN 7.3).');
+console.log('   Revenue scales with it directly; cost does not fall when they leave, it just stops.');
+wide('━');
+for (const m of [3, 6, 9, 12, 18, 24]) {
+  netTable(`B${[3, 6, 9, 12, 18, 24].indexOf(m) + 1}. Supporters stay ${m} months`, '', { months: m });
+}
+
+// ── C. ACTIVE RATE ──────────────────────────────────────────────────────────
+console.log('\n');
+wide('━');
+console.log('C. HOW MANY INSTALLS STAY ACTIVE');
+console.log('   ⚠️ This CANCELS OUT of break-even (it scales cost and revenue alike) and does NOT cancel');
+console.log('   out of net. Below break-even a higher active rate loses MORE, not less.');
+wide('━');
+for (const ar of [0.10, 0.15, 0.20, 0.30, 0.40, 0.50]) {
+  netTable(`C${[0.10, 0.15, 0.20, 0.30, 0.40, 0.50].indexOf(ar) + 1}. ${(ar * 100).toFixed(0)}% of installs still active`, '', { activeRate: ar });
+}
+
+// ── D. MESSAGE MIX ──────────────────────────────────────────────────────────
+// ⚠️ MUTATES THE CONSTANT AROUND EACH TABLE because `ottoMsg` reads it through `v()`. Restored after.
+// Contained and deliberate: threading a share argument through five functions for one section is worse.
+console.log('\n');
+wide('━');
+console.log('D. WHAT PEOPLE ASK OTTO ABOUT');
+console.log(`   A COACHING message costs ${v('ottoCoach').toFixed(4)}: no app manual is sent.`);
+console.log(`   An APP question costs ${v('ottoSupport').toFixed(4)}: the 22k-token manual rides along.`);
+console.log('   ⚠️ Canned answers only ever replace APP questions, so a high-coaching mix also has less');
+console.log('   for them to deflect. The two dials are not independent.');
+wide('━');
+const savedShare = C.coachShare.v;
+for (const mix of [0.2, 0.35, 0.5, 0.65, 0.8]) {
   C.coachShare.v = mix;
-  let row = `  ${pad((mix * 100).toFixed(0) + '%', 9)} |`;
-  for (const c of CONVS) row += pad(money(net({ installs: 25000, conv: c, perDay: 2, months: BASE_MONTHS, deflect: 0.30 })), 13);
-  console.log(row);
+  netTable(
+    `D${[0.2, 0.35, 0.5, 0.65, 0.8].indexOf(mix) + 1}. ${(mix * 100).toFixed(0)}% coaching / ${(100 - mix * 100).toFixed(0)}% app questions`,
+    '',
+    {},
+  );
 }
-C.coachShare.v = trueCoachShare;
+C.coachShare.v = savedShare;
 
-// ── 10. THREE NAMED WORLDS. Every assumption moved together, not one at a time. ──
-// 🔴 THIS IS THE TABLE TO QUOTE. The ones above move a single dial and flatter the model: real outcomes
-// move several at once and in the SAME direction. A bad world is not just low conversion, it is low
-// conversion AND short lifetimes AND fewer actives.
-console.log(); line();
-console.log('10. THREE WORLDS, every assumption moved together');
-line();
-const WORLDS = [
-  { name: 'BEAR ', activeRate: 0.15, conv: 0.02, months: 6, perDay: 3, deflect: 0.15 },
-  { name: 'BASE ', activeRate: 0.30, conv: 0.03, months: 12, perDay: 2, deflect: 0.30 },
-  { name: 'BULL ', activeRate: 0.40, conv: 0.05, months: 18, perDay: 2, deflect: 0.45 },
+// ── E. CANNED DEFLECTION ────────────────────────────────────────────────────
+console.log('\n');
+wide('━');
+console.log('E. HOW OFTEN A CANNED ANSWER CATCHES THE MESSAGE');
+console.log('   Measured coverage is ~30% of ALL Otto messages (PLAN 4.8, three corpora). A canned answer');
+console.log('   costs zero: no API call is made at all.');
+wide('━');
+for (const d of [0, 0.15, 0.30, 0.45, 0.60]) {
+  netTable(`E${[0, 0.15, 0.30, 0.45, 0.60].indexOf(d) + 1}. ${(d * 100).toFixed(0)}% of messages answered from the canned bank`, '', { deflect: d });
+}
+
+// ── F. COMBINED ─────────────────────────────────────────────────────────────
+// 🔴 THE ONLY HONEST TABLE IN THE BOOK, and the reason is that every table above moves ONE dial while
+// holding the rest at the committed assumption. Real outcomes do not arrive one dial at a time: the world
+// where few people convert is usually also the world where they leave early and fewer stay active.
+console.log('\n');
+wide('━');
+console.log('F. SEVERAL DIALS MOVING TOGETHER');
+console.log('   Every table above moves one thing and holds the rest at plan. Reality does not do that.');
+console.log('   These three move active rate, lifetime, usage and deflection together, and read conversion');
+console.log('   off the top like every other table.');
+wide('━');
+const COMBOS = [
+  { n: 'F1. CAUTIOUS', activeRate: 0.15, months: 6, perDay: 3, deflect: 0.15 },
+  { n: 'F2. PLANNED ', activeRate: 0.30, months: 12, perDay: 2, deflect: 0.30 },
+  { n: 'F3. STRONG  ', activeRate: 0.40, months: 18, perDay: 2, deflect: 0.45 },
 ];
-for (const w of WORLDS) {
-  console.log(`  ${w.name}: ${(w.activeRate * 100).toFixed(0)}% active, ${(w.conv * 100).toFixed(0)}% convert, ${w.months}-mo lifetime, ${w.perDay} msg/day, canned ${(w.deflect * 100).toFixed(0)}%`);
+for (const w of COMBOS) {
+  netTable(
+    `${w.n}`,
+    `${(w.activeRate * 100).toFixed(0)}% active, ${w.months}-month Supporters, ${w.perDay} msgs/day, canned ${(w.deflect * 100).toFixed(0)}%`,
+    w,
+  );
 }
-console.log('  installs  |' + WORLDS.map((w) => pad(w.name.trim(), 15)).join('') + pad('supporters (base)', 20));
-for (const i of INSTALLS) {
-  let row = `  ${pad(i.toLocaleString(), 9)} |`;
-  for (const w of WORLDS) row += pad(money(net({ installs: i, conv: w.conv, perDay: w.perDay, months: w.months, deflect: w.deflect, activeRate: w.activeRate })), 15);
-  row += pad(Math.round(i * 0.30 * 0.03).toLocaleString(), 20);
-  console.log(row);
-}
-console.log('  ⚠️ BEAR IS NOT THE FLOOR. It still assumes people convert at all and that nobody churns in');
-console.log('     month one. The real floor is zero conversion, where net is simply the AI bill, negative.');
+console.log('');
+console.log('  ⚠️ F1 IS NOT THE FLOOR. It still assumes people convert and that nobody churns in month one.');
+console.log('     The true floor is zero conversion, where net is just the AI bill and every cell is red.');
 
 // ── 6. PROVENANCE ───────────────────────────────────────────────────────────
 console.log(); line(); console.log('6. EVERY NUMBER THIS MODEL USED'); line();

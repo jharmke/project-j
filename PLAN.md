@@ -1125,13 +1125,16 @@ Read per call, changeable without an App Store update.
       never registered** and must be resubmitted at developer.apple.com/app-store/small-business-program.
       ✅ **BOTH VERIFIED BY JUSTIN 2026-08-07 AND BOTH ARE CLEAN.** The two confirmation emails EXIST, so the
       applications did register. The Paid Apps agreement (Schedule 2) IS active in App Store Connect.
-      ➡️ **SO THE DELAY IS ENTIRELY ON APPLE'S SIDE.** Both plausible self-inflicted causes are ruled out;
-      do not re-check them. ⚠️ Two applications, both confirmed received, Schedule 2 active, and Apple's own
-      2026-08-07 reply still says "you aren't currently participating" -- that is a stuck queue, not a
-      missing form.
-      ➡️ **NEXT ACTION: reply to case 20000129383326 with both confirmation emails attached**, rather than
-      waiting until 2026-08-19. Apple asserted non-participation; the confirmations contradict that, and a
-      case number with evidence is the only lever available.
+      ➡️ **SO THE DELAY IS ON APPLE'S SIDE.** Both plausible self-inflicted causes are ruled out; do not
+      re-check them.
+      ⚠️ **AND THERE IS NO CONTRADICTION IN APPLE'S REPLY, despite how it first reads. Justin caught this.**
+      "You aren't currently participating" and "our teams will contact you after they complete your
+      application review" describe the SAME state: applied, in review, not yet enrolled. Do not write to
+      Apple claiming their message contradicts the confirmation emails, because it does not.
+      ➡️ **THE ONLY REAL LEVER IS THE TIMELINE.** Typical turnaround is 6-10 days with no published SLA;
+      this is ~3.5 weeks from the first submission. **Ask how long review is currently taking and whether
+      anything is outstanding on our side**, referencing case 20000129383326. No revenue yet, so the delay
+      has cost nothing so far.
       ⚠️ Typical turnaround is 6-10 days with no official timeline published; Justin was at 23. No revenue
       yet, so the delay has cost nothing. Chase again ~2026-08-19 with the Case ID if silent. Worth ~21% more revenue per subscription, more than every AI optimisation
       here combined.

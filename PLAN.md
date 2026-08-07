@@ -1117,7 +1117,21 @@ Read per call, changeable without an App Store update.
 ### 7. NOT AI, AND BIGGER THAN MOST OF THIS
 - [~] **7.1 Apple Small Business Program.** ⚠️ **APPLIED TWICE, NO RESPONSE** (2026-07-13 and 2026-07-29,
       both confirmed received). **NOT a to-do for Justin to start -- do not recommend enrolling again.**
-      ✅ **CONTACTED 2026-08-05 via Agreements and Contracts. AWAITING REPLY -- still open.**
+      ✅ **CONTACTED 2026-08-05 via Agreements and Contracts. APPLE REPLIED 2026-08-07, case
+      20000129383326** (Akhilesh, Developer Support). ⚠️ **THE REPLY IS NOT "KEEP WAITING", IT IS A
+      CONDITIONAL, AND IT CONFIRMS WE ARE STILL NOT ENROLLED.**
+      ➡️ **IF** a confirmation email titled *"We've received your request to join the App Store Small
+      Business Program"* exists, the application is queued and waiting is correct. **IF NOT, the application
+      never registered** and must be resubmitted at developer.apple.com/app-store/small-business-program.
+      ⚠️ This entry has claimed since 2026-07-29 that both applications were "confirmed received". **FIND
+      THOSE TWO EMAILS AND VERIFY THAT CLAIM** -- if they do not exist, three weeks of waiting were spent on
+      applications Apple never got.
+      🔴 **AND THERE IS AN ACTION ITEM IN THE REPLY THAT IS EASY TO SKIM PAST: the latest PAID APPS AGREEMENT
+      (Schedule 2) must be reviewed and accepted in App Store Connect.** If Schedule 2 is not Active, the
+      Small Business application can sit indefinitely. **App Store Connect > Business > Agreements.** Two
+      minutes to check and the single most likely explanation for the stall.
+      ➡️ If the confirmation emails DO exist, reply to case 20000129383326 with them attached rather than
+      waiting until 2026-08-19. That turns "no response" into "here is proof, please look".
       ⚠️ Typical turnaround is 6-10 days with no official timeline published; Justin was at 23. No revenue
       yet, so the delay has cost nothing. Chase again ~2026-08-19 with the Case ID if silent. Worth ~21% more revenue per subscription, more than every AI optimisation
       here combined.
@@ -1140,7 +1154,27 @@ Read per call, changeable without an App Store update.
         **So annual only wins if it genuinely doubles retention** -- which contractually it does, since an
         annual subscriber cannot churn in month three. It is a trade (certainty for margin), not free money.
         Do not "push annual" on the assumption it helps; it helps only through retention.
-- [ ] **7.3 🆕 VERIFY WE CAN MEASURE ACTIVES, CONVERSION AND RETENTION. BEFORE LAUNCH (Justin, 2026-08-05).**
+- [ ] ⏸️ **7.3 PINNED 2026-08-07 by Justin. Investigated, not started. VERIFY WE CAN MEASURE ACTIVES,
+      CONVERSION AND RETENTION. BEFORE LAUNCH.**
+      🔬 **WHAT THE 2026-08-07 INVESTIGATION FOUND, so nobody re-derives it:**
+      1. **Conversion + churn: the plumbing EXISTS.** `react-native-purchases` is installed and
+         `revenueCatWebhook.ts` is deployed, so RevenueCat should report both. ➡️ **The whole task is Justin
+         opening the dashboard** and confirming what it actually reports and how it counts a conversion.
+         ⚠️ The 7-day promotional grants may muddy that definition; check specifically.
+      2. **Actives: NOTHING measures it. Zero analytics packages installed** (no Firebase Analytics, no
+         Amplitude, nothing) and no `logEvent` calls anywhere in the app.
+      3. 🔴 **AND GATING BROKE THE ACCIDENTAL PROXY WE HAD, on the same day.** Until 2026-08-07 every free
+         user who opened Home fired two Smart Coach calls, which wrote an `ai_cost` doc for that uid that
+         day. That made `ai_cost` a near-perfect stand-in for daily actives that nobody designed.
+         **Post-gating a free user generates NO AI call unless they message Otto**, so that proxy is gone.
+         ⚠️ Nobody would notice until reading actives at launch and finding the number quietly means
+         "people who talked to Otto". **This is a real cost of 1.9 and it was not anticipated.**
+      ➡️ **TWO WAYS TO FIX ACTIVES.** Cheap: one Firestore doc per user holding `lastSeen`, written once a
+      day when the date changes; DAU is a count query on today, MAU on the last 30 days. No native module,
+      no rebuild, uses the Firebase JS SDK already installed. Thorough: add Firebase Analytics for real
+      DAU/MAU/retention cohorts, which needs a native module and a fresh dev build.
+      (Original note follows.)
+      **VERIFY WE CAN MEASURE ACTIVES, CONVERSION AND RETENTION. BEFORE LAUNCH (Justin, 2026-08-05).**
       🔴 **THE UNCOMFORTABLE OBSERVATION THAT PROMPTED THIS: we instrumented the solved problem.** `ai_cost`
       knows every token, cache read and route decision to the cent, and AI cost turned out to be the part
       that was already fine ($2.64 per active user per year). **The three numbers that actually decide

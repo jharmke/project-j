@@ -4258,8 +4258,22 @@ export default function HomeScreen() {
                           to ink density, and it costs no colour. */}
                       <GradientTitle title={displayTitle} color={theme.textSecondary} style={{ fontSize: 15, fontFamily: Type.voiceBold, lineHeight: 22, marginBottom: 6 }} />
                       <Text numberOfLines={3} ellipsizeMode="tail" style={{ fontSize: 13, fontFamily: Type.voice, color: theme.textSecondary, lineHeight: 22, marginBottom: 12 }}>{displayBody}</Text>
+                      {/* PLAN.md 1.9 SIGNPOST.
+                          🔴 PAGE 0 ONLY, AND THAT IS LOAD-BEARING. Page 0 is the AI-voiced coach insight;
+                          pages 1 and 2 are deterministic engine tips that a Supporter sees IDENTICALLY.
+                          Putting the line on those would advertise an upgrade that does not exist there.
+                          ⚠️ It REPLACES the existing footer rather than sitting beside it. The card is a
+                          single tap target and already ends in an accent line with a chevron; two would be
+                          two blue arrows meaning different things.
+                          ✅ THE TAP STILL GOES TO EFFORT VS RESULTS, deliberately. A free user landing there
+                          sees one readable card and seven frosted ones with "Become a Supporter" already
+                          built in, which sells far better than a pricing screen. */}
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: theme.accentBlueRaw }}>View in Effort vs Results</Text>
+                        <Text style={{ fontSize: 11, fontFamily: Type.uiSemibold, color: theme.accentBlueRaw }}>
+                          {isFirst && coachCache && !isSupporter
+                            ? 'Read against your numbers with the Supporter plan'
+                            : 'View in Effort vs Results'}
+                        </Text>
                         <Ionicons name="chevron-forward" size={12} color={theme.accentBlueRaw} />
                       </View>
                     </View>

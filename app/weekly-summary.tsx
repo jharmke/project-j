@@ -340,7 +340,12 @@ export default function WeeklySummaryScreen() {
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/diagnostic-report'); }}
                 style={{ marginTop: 12, alignSelf: 'center' }}
               >
-                <Text style={{ fontSize: 11, color: accent, fontFamily: Type.uiSemibold }}>View in Effort vs Results</Text>
+                {/* PLAN.md 1.9 signpost. Same wording as Home on purpose (Justin's call: "just make them
+                    the same"). Replaces the footer rather than adding a second line, and the tap still goes
+                    to Effort vs Results where the locked cards make the case. */}
+                <Text style={{ fontSize: 11, color: accent, fontFamily: Type.uiSemibold }}>
+                  {isSupporter ? 'View in Effort vs Results' : 'Read against your numbers with the Supporter plan'}
+                </Text>
               </TouchableOpacity>
             </View>
           ) : null}

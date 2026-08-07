@@ -22,24 +22,24 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern_lose: [
-        'Net has been above your deficit target most days this week, closer to maintenance than a cut.',
-        'Most days this week landed above your deficit goal. The math on weight loss needs a consistent gap.',
-        'You have been running a smaller deficit than intended on most days this week. Worth tightening up.',
+        'Net has been above your deficit target most days {period}, closer to maintenance than a cut.',
+        'Most days {period} landed above your deficit goal. The math on weight loss needs a consistent gap.',
+        'You have been running a smaller deficit than intended on most days {period}. Worth tightening up.',
         'The deficit has been shallower than planned for most of the week. The scale responds to the weekly total, not to any single day.',
         'Eating has been landing closer to maintenance than to your target. Tightening that gap even slightly, and holding it, is what shows up on the scale.',
       ],
       pattern_maintain: [
-        'You have been in a consistent surplus this week while trying to maintain. Worth pulling things back a touch.',
+        'You have been in a consistent surplus {period} while trying to maintain. Worth pulling things back a touch.',
         'Net has been above your maintenance target most days, a small but consistent surplus.',
-        'Most days this week have run above target. Not by a lot, but consistently.',
+        'Most days {period} have run above target. Not by a lot, but consistently.',
         'Intake has been running just above maintenance rather than on it. A steady drift like this is easier to correct now than after a month of it.',
         'You have been sitting a little above your target most of the week. Small enough to miss day to day, big enough to see over a month.',
       ],
     },
     mindful: [
       'We noticed food intake has been running a little higher than your goal most days. Just something to hold in mind.',
-      'Eating has been a touch above your target most days this week. Worth a gentle check-in.',
-      'Things have been a little fuller than your goal this week. Not a big deal, just worth noticing.',
+      'Eating has been a touch above your target most days {period}. Worth a gentle check-in.',
+      'Things have been a little fuller than your goal {period}. Not a big deal, just worth noticing.',
       'Eating has been running a little above your goal lately. Nothing alarming, just a pattern showing up in the numbers.',
       'There has been a bit more food than your target on recent days. Something to sit with rather than something to fix.',
     ],
@@ -50,25 +50,25 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern_gain: [
-        'You have been under your intake goal for most days this week. Hard to build when consistently under-fueling.',
-        'Intake has been below target most days this week. That shortfall makes it significantly harder to add mass.',
-        'Most days this week have been under your intake goal. On a bulk, that is the one thing you cannot afford to miss.',
+        'You have been under your intake goal for most days {period}. Hard to build when consistently under-fueling.',
+        'Intake has been below target most days {period}. That shortfall makes it significantly harder to add mass.',
+        'Most days {period} have been under your intake goal. On a bulk, that is the one thing you cannot afford to miss.',
       ],
       urgent_gain: [
         'Intake has been well below your bulk target for {days} of the last 5 days. Consistent under-fueling stalls progress.',
-        'Significantly under your intake goal most of this week. The surplus you need is not there.',
+        'Significantly under your intake goal most of {period}. The surplus you need is not there.',
         'Several days in a row under your gaining target. Push intake higher or progress stalls.',
       ],
       pattern_maintain: [
-        'Net has been running below your maintenance target most days this week.',
+        'Net has been running below your maintenance target most days {period}.',
         'You have been in a small deficit while trying to maintain. Worth checking in on intake.',
         'Intake has been running lower than your maintenance goal on most days.',
       ],
     },
     mindful: [
-      'We noticed food intake has been on the lighter side this week. Making sure you are eating enough is just as important as what you eat.',
+      'We noticed food intake has been on the lighter side {period}. Making sure you are eating enough is just as important as what you eat.',
       'Intake has been a bit lower than your target most days. Your body does its best work when it is well-fueled.',
-      'Things have been a little lighter this week in terms of eating. Worth checking in with yourself.',
+      'Things have been a little lighter {period} in terms of eating. Worth checking in with yourself.',
     ],
   },
 
@@ -79,7 +79,7 @@ export const RULE_COPY: Record<string, RuleCopy> = {
       pattern_lose: [
         'You have been consistently just a little short of your deficit goal. The most common culprits are liquid calories, cooking oils, sauces, and bites that do not make it into the log.',
         'The deficit has been close but not quite there most days. Small unlogged things add up fast: coffee drinks, tastes while cooking, condiments.',
-        'Most days this week have been just slightly above your target, a really small gap but consistent. Liquid calories and unlogged bites are usually where it hides.',
+        'Most days {period} have been just slightly above your target, a really small gap but consistent. Liquid calories and unlogged bites are usually where it hides.',
         'The gap has been small, and it has been there nearly every day. When a miss is this consistent, the cause is usually something routine: the same drink, the same handful, the same splash of oil.',
         'Close to your target most days without quite landing under it. A steady miss this size almost always traces back to a habit rather than one big day.',
       ],
@@ -98,14 +98,14 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       insight_all: [
-        'One higher day this week, but {days} days were right on track. One meal does not make or break progress. The pattern is what matters.',
+        'One higher day {period}, but {days} days were right on track. One meal does not make or break progress. The pattern is what matters.',
         'The week overall was solid with one outlier day. That is normal. What you do consistently is what counts.',
         'Strong week overall with one day that ran high. One data point does not define a pattern.',
       ],
     },
     mindful: [
-      'One day this week looked different from the others. That is completely normal. The overall week still looked good.',
-      'There was one higher day this week in an otherwise steady pattern. One day is just one day.',
+      'One day {period} looked different from the others. That is completely normal. The overall week still looked good.',
+      'There was one higher day {period} in an otherwise steady pattern. One day is just one day.',
       'The week had one day that stood out. That is part of a real, balanced life.',
     ],
   },
@@ -115,11 +115,11 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern: [
-        'Protein has been below your {goal}g target on {days} of your last 7 logged days. At a deficit, low protein means more of the weight you lose comes from muscle.',
-        'Most days this week came in under your protein goal. At a deficit, that gap matters more than people realize.',
-        'Protein has been consistently below target this week. It is one of those things that compounds quietly.',
+        'Protein has been below your {goal}g target on {days} of your last {window} logged days. At a deficit, low protein means more of the weight you lose comes from muscle.',
+        'Most days {period} came in under your protein goal. At a deficit, that gap matters more than people realize.',
+        'Protein has been consistently below target {period}. It is one of those things that compounds quietly.',
         'Protein has come in under target on most of your logged days. When calories are limited, protein is what protects the muscle you already have.',
-        'Your protein has been running short of goal this week. Of everything on the plate, it is the number that decides how much of the loss is fat.',
+        'Your protein has been running short of goal {period}. Of everything on the plate, it is the number that decides how much of the loss is fat.',
       ],
       urgent: [
         'Protein has been significantly below your {goal}g goal for {days} of the last 5 days. At a deficit with low protein, fat loss and muscle loss start to look the same.',
@@ -133,11 +133,11 @@ export const RULE_COPY: Record<string, RuleCopy> = {
       // was reading all of it. ⚠️ Not an edge case: `rankCandidates` lists protein_under as a TOP priority
       // rule for the gain bucket, so it is one of the first tips a bulking user sees.
       pattern_gain: [
-        'Protein has been below your {goal}g target on {days} of your last 7 logged days. On a bulk, protein is what decides whether the weight you add is muscle or not.',
-        'Most days this week came in under your protein goal. Building tissue needs the raw material, and that is protein.',
-        'Protein has been under target most days this week. A surplus without enough protein tends to add more fat than muscle.',
+        'Protein has been below your {goal}g target on {days} of your last {window} logged days. On a bulk, protein is what decides whether the weight you add is muscle or not.',
+        'Most days {period} came in under your protein goal. Building tissue needs the raw material, and that is protein.',
+        'Protein has been under target most days {period}. A surplus without enough protein tends to add more fat than muscle.',
         'Protein has been under your target on most logged days. Extra calories build tissue only when there is protein there to build with.',
-        'Your protein has been short of goal this week. The surplus sets the ceiling on how much you can gain, but protein decides what kind of weight it is.',
+        'Your protein has been short of goal {period}. The surplus sets the ceiling on how much you can gain, but protein decides what kind of weight it is.',
       ],
       urgent_gain: [
         'Protein has been significantly below your {goal}g goal for {days} of the last 5 days. On a bulk that gap directly limits how much of the gain is muscle.',
@@ -148,10 +148,10 @@ export const RULE_COPY: Record<string, RuleCopy> = {
       ],
     },
     mindful: [
-      'Protein has been on the lower side this week. It plays a bigger role than most people realize in how you feel and recover day to day.',
-      'We noticed protein intake has been lighter this week. It is one of those quiet things that affects energy and how satisfied you feel after eating.',
+      'Protein has been on the lower side {period}. It plays a bigger role than most people realize in how you feel and recover day to day.',
+      'We noticed protein intake has been lighter {period}. It is one of those quiet things that affects energy and how satisfied you feel after eating.',
       'Protein has been below where it could be most days. Worth thinking about, not for numbers, just for how you feel.',
-      'Protein has been sitting lower than usual this week. It tends to be the thing that quietly affects how full you feel and how well you bounce back.',
+      'Protein has been sitting lower than usual {period}. It tends to be the thing that quietly affects how full you feel and how well you bounce back.',
       'There has been less protein than usual on your plate lately. No need to make a project of it, though your body does notice.',
     ],
   },
@@ -161,14 +161,14 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: true,
     db: {
       insight_all: [
-        'Protein has been consistently strong this week, above goal on {days} of your last 7 logged days. That kind of consistency adds up.',
+        'Protein has been consistently strong {period}, above goal on {days} of your last {window} logged days. That kind of consistency adds up.',
         'Solid protein intake across most of the week. One of the best things you can do for your body regardless of your goal.',
-        'Protein above target most days this week. That is exactly the pattern that supports recovery and keeps hunger in check.',
+        'Protein above target most days {period}. That is exactly the pattern that supports recovery and keeps hunger in check.',
       ],
     },
     mindful: [
-      'Protein has been consistently strong this week. That is doing good work for your energy and recovery.',
-      'You have been fueling well this week. Strong protein across most days is something worth celebrating.',
+      'Protein has been consistently strong {period}. That is doing good work for your energy and recovery.',
+      'You have been fueling well {period}. Strong protein across most days is something worth celebrating.',
       'Protein has been above goal most days. That quiet consistency makes a real difference in how you feel.',
     ],
   },
@@ -178,15 +178,15 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern: [
-        'Fat has been above your {goal}g target on {days} of your last 7 logged days. Fat is calorie dense, so it is often where extra calories hide.',
-        'Most days this week came in over your fat goal. Worth a look at the higher-fat foods, since they add up fast on the calorie side.',
+        'Fat has been above your {goal}g target on {days} of your last {window} logged days. Fat is calorie dense, so it is often where extra calories hide.',
+        'Most days {period} came in over your fat goal. Worth a look at the higher-fat foods, since they add up fast on the calorie side.',
         'Fat intake has been over target most of the week. Not a problem on its own, but it is the easiest macro to overshoot calories with.',
       ],
     },
     mindful: [
-      'Fat has been on the higher side this week. It is the most calorie dense macro, so small changes there move your totals more than you would expect.',
+      'Fat has been on the higher side {period}. It is the most calorie dense macro, so small changes there move your totals more than you would expect.',
       'We noticed fat intake has been running a bit high most days. Something to be aware of, since it carries more calories per gram than carbs or protein.',
-      'Fat has been above where it usually sits this week. Worth a gentle look, just to stay aware of where your calories come from.',
+      'Fat has been above where it usually sits {period}. Worth a gentle look, just to stay aware of where your calories come from.',
     ],
   },
 
@@ -195,15 +195,15 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern: [
-        'Carbs have been above your {goal}g target on {days} of your last 7 logged days. Worth checking whether they are fueling your training or just adding up.',
-        'Most days this week came in over your carb goal. Timing more of them around workouts can make them work harder for you.',
+        'Carbs have been above your {goal}g target on {days} of your last {window} logged days. Worth checking whether they are fueling your training or just adding up.',
+        'Most days {period} came in over your carb goal. Timing more of them around workouts can make them work harder for you.',
         'Carb intake has been over target most of the week. Not inherently a problem, but worth knowing where they are landing in your day.',
       ],
     },
     mindful: [
-      'Carbs have been on the higher side this week. They are your main fuel source, so it is more about timing than cutting.',
+      'Carbs have been on the higher side {period}. They are your main fuel source, so it is more about timing than cutting.',
       'We noticed carb intake has been running a bit high most days. Something to be aware of, especially around how it lines up with your activity.',
-      'Carbs have been above where they usually sit this week. Worth a gentle look at when in the day they tend to show up.',
+      'Carbs have been above where they usually sit {period}. Worth a gentle look at when in the day they tend to show up.',
     ],
   },
 
@@ -212,9 +212,9 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern: [
-        'Water intake has been below your {goal}oz goal on most days this week.',
+        'Water intake has been below your {goal}oz goal on most days {period}.',
         'Hydration has been well below target most days. Easy one to let slide but it affects everything.',
-        'Water has been consistently short this week. Even a little dehydration makes a surprising difference in energy and hunger.',
+        'Water has been consistently short {period}. Even a little dehydration makes a surprising difference in energy and hunger.',
       ],
       urgent: [
         'Water has been very low for several days, well under half your goal on most days. Dehydration at this level affects focus, energy, and appetite.',
@@ -224,7 +224,7 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     },
     mindful: [
       'Staying hydrated makes such a difference in how you feel. We noticed it has been on the lower side lately. Small sips throughout the day add up.',
-      'Water has been lighter this week. Hydration affects energy, mood, and hunger more than most people realize.',
+      'Water has been lighter {period}. Hydration affects energy, mood, and hunger more than most people realize.',
       'We noticed hydration has been below where it could be. Even small increases throughout the day can make a real difference in how you feel.',
     ],
   },
@@ -234,15 +234,15 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: true,
     db: {
       insight_all: [
-        'Water goal hit on {days} of your last 7 logged days. That consistency is doing more for you than you probably realize.',
-        'Hydration has been excellent this week. Consistently hitting your water goal is one of the highest-leverage habits you can build.',
-        'Nearly perfect hydration this week. That consistency shows up in energy, focus, and recovery.',
+        'Water goal hit on {days} of your last {window} logged days. That consistency is doing more for you than you probably realize.',
+        'Hydration has been excellent {period}. Consistently hitting your water goal is one of the highest-leverage habits you can build.',
+        'Nearly perfect hydration {period}. That consistency shows up in energy, focus, and recovery.',
       ],
     },
     mindful: [
-      'You have been staying so well hydrated this week. That is a real act of care for your body.',
-      'Water goal hit almost every day this week. That kind of quiet consistency matters more than most people know.',
-      'Nearly perfect hydration this week. You are giving your body something it really needs.',
+      'You have been staying so well hydrated {period}. That is a real act of care for your body.',
+      'Water goal hit almost every day {period}. That kind of quiet consistency matters more than most people know.',
+      'Nearly perfect hydration {period}. You are giving your body something it really needs.',
     ],
   },
 
@@ -251,14 +251,14 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern: [
-        'Fiber has been well below the recommended {goal}g on most days this week. Low fiber tends to go hand in hand with a more processed diet.',
-        'Fiber intake has been consistently low this week. It plays a bigger role in hunger management and food quality than most people give it credit for.',
+        'Fiber has been well below the recommended {goal}g on most days {period}. Low fiber tends to go hand in hand with a more processed diet.',
+        'Fiber intake has been consistently low {period}. It plays a bigger role in hunger management and food quality than most people give it credit for.',
         'Fiber has been running low most days. Worth looking at where it comes in, or does not.',
       ],
     },
     mindful: [
-      'Fiber has been on the lower side this week. Foods high in fiber tend to be the ones that keep you feeling satisfied longer.',
-      'We noticed fiber has been lighter this week. It is one of those quiet factors that affects how full and energized you feel.',
+      'Fiber has been on the lower side {period}. Foods high in fiber tend to be the ones that keep you feeling satisfied longer.',
+      'We noticed fiber has been lighter {period}. It is one of those quiet factors that affects how full and energized you feel.',
       'Fiber intake has been low most days. It tends to track with how processed the diet is, something to pay attention to.',
     ],
   },
@@ -268,8 +268,8 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern: [
-        'Sodium has been running high on most days this week, above {threshold}mg on {days} of your last 7 logged days.',
-        'Consistently high sodium this week. At these levels it can affect how you feel day to day, especially energy and bloating.',
+        'Sodium has been running high on most days {period}, above {threshold}mg on {days} of your last {window} logged days.',
+        'Consistently high sodium {period}. At these levels it can affect how you feel day to day, especially energy and bloating.',
         'Sodium has been well above recommended most days. Worth looking at where it is coming from. It hides in a lot of unexpected places.',
       ],
       urgent: [
@@ -279,9 +279,9 @@ export const RULE_COPY: Record<string, RuleCopy> = {
       ],
     },
     mindful: [
-      'Sodium has been on the higher side this week. High sodium can affect how rested and energized you feel, worth being aware of.',
+      'Sodium has been on the higher side {period}. High sodium can affect how rested and energized you feel, worth being aware of.',
       'We noticed sodium has been elevated lately. It can affect how your body feels in ways that are not always obvious.',
-      'Sodium intake has been a bit high this week. It is one of those things that quietly affects energy levels and how you feel overall.',
+      'Sodium intake has been a bit high {period}. It is one of those things that quietly affects energy levels and how you feel overall.',
     ],
   },
 
@@ -290,13 +290,13 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern: [
-        'Sugar has been running high on most days this week. At these levels it can make hunger harder to manage and energy less consistent.',
-        'Consistently high sugar intake this week. Blood sugar spikes and crashes are the main way this shows up in how you feel day to day.',
+        'Sugar has been running high on most days {period}. At these levels it can make hunger harder to manage and energy less consistent.',
+        'Consistently high sugar intake {period}. Blood sugar spikes and crashes are the main way this shows up in how you feel day to day.',
         'Sugar has been above recommended most days. Worth looking at where it is coming from. Drinks and sauces are often the hidden source.',
       ],
     },
     mindful: [
-      'Sugar has been a bit high this week. It can affect how steady your energy feels throughout the day.',
+      'Sugar has been a bit high {period}. It can affect how steady your energy feels throughout the day.',
       'We noticed sugar intake has been elevated. High sugar days sometimes make hunger feel harder to manage.',
       'Sugar has been running high most days. Energy tends to feel less consistent when sugar is elevated, just something to be aware of.',
     ],
@@ -307,18 +307,18 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: true,
     db: {
       insight_all: [
-        'Calorie goal hit {days} of your last 7 logged days. That kind of consistency is exactly what produces results over time.',
-        'Nearly perfect on your calorie goal this week. Building this as a daily habit is more valuable than any single perfect day.',
-        'You have been hitting your goal almost every day this week. Consistency like this is where the real change happens.',
-        'Your calorie goal came in on {days} of the last 7 logged days. Weeks like this are what a trend line is actually made of.',
-        'Close to target nearly every day this week. Results tend to come from stacking ordinary days like these, not from any single standout one.',
+        'Calorie goal hit {days} of your last {window} logged days. That kind of consistency is exactly what produces results over time.',
+        'Nearly perfect on your calorie goal {period}. Building this as a daily habit is more valuable than any single perfect day.',
+        'You have been hitting your goal almost every day {period}. Consistency like this is where the real change happens.',
+        'Your calorie goal came in on {days} of the last {window} logged days. Weeks like this are what a trend line is actually made of.',
+        'Close to target nearly every day {period}. Results tend to come from stacking ordinary days like these, not from any single standout one.',
       ],
     },
     mindful: [
-      'You have been showing up for yourself this week, consistently staying close to your goal. That takes real intention.',
-      'Most days this week you have been right on track. That kind of steady effort is worth acknowledging.',
+      'You have been showing up for yourself {period}, consistently staying close to your goal. That takes real intention.',
+      'Most days {period} you have been right on track. That kind of steady effort is worth acknowledging.',
       'Seven days of staying close to your goal. That is not luck. That is a habit forming.',
-      'You stayed close to your goal nearly every day this week. That steadiness is its own kind of progress.',
+      'You stayed close to your goal nearly every day {period}. That steadiness is its own kind of progress.',
       'A week of landing near your target, day after day. Quiet consistency like that is easy to overlook and easy to underrate.',
     ],
   },
@@ -330,9 +330,9 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern: [
-        'Sleep scores have been lower than usual most nights this week. Recovery happens during sleep. It is worth prioritizing.',
-        'Consistently lower sleep scores this week. Poor sleep affects hunger, energy, and workout performance more than most people expect.',
-        'Sleep quality has been lower than usual on {days} of your last 7 logged nights.',
+        'Sleep scores have been lower than usual most nights {period}. Recovery happens during sleep. It is worth prioritizing.',
+        'Consistently lower sleep scores {period}. Poor sleep affects hunger, energy, and workout performance more than most people expect.',
+        'Sleep quality has been lower than usual on {days} of your last {window} logged nights.',
       ],
       urgent: [
         'Sleep has been poor for {days} nights in a row, significantly below a healthy threshold. At this level, recovery, hunger, and performance are all affected.',
@@ -342,7 +342,7 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     },
     mindful: [
       'Sleep has not been great lately. Rest is where your body does its best work. Even small changes to your routine before bed can make a difference.',
-      'We noticed sleep has been a little rough this week. Your body is telling you something. It might be worth listening.',
+      'We noticed sleep has been a little rough {period}. Your body is telling you something. It might be worth listening.',
       'Sleep has been lighter on quality lately. Rest matters so much for how you feel. Even a small improvement in your bedtime routine can shift things.',
     ],
   },
@@ -352,9 +352,9 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern: [
-        'You have been getting less sleep than your goal most nights this week.',
-        'Sleep has been consistently short this week. Chronic mild sleep debt builds up faster than most people realize.',
-        'Most nights this week have come in under your sleep goal. Recovery and appetite regulation both take a hit when sleep is consistently short.',
+        'You have been getting less sleep than your goal most nights {period}.',
+        'Sleep has been consistently short {period}. Chronic mild sleep debt builds up faster than most people realize.',
+        'Most nights {period} have come in under your sleep goal. Recovery and appetite regulation both take a hit when sleep is consistently short.',
       ],
       urgent: [
         'Sleep has been significantly short for {days} of the last 5 nights. That level of shortfall compounds quickly.',
@@ -364,8 +364,8 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     },
     mindful: [
       'Rest has been on the shorter side lately. Your body does its best recovery work while you sleep. Even small improvements in sleep time make a real difference.',
-      'Sleep has been a bit shorter than ideal this week. How are you feeling? It is worth finding ways to protect that rest time.',
-      'We noticed sleep has been lighter this week in terms of hours. Rest is one of the most powerful things you can do for yourself.',
+      'Sleep has been a bit shorter than ideal {period}. How are you feeling? It is worth finding ways to protect that rest time.',
+      'We noticed sleep has been lighter {period} in terms of hours. Rest is one of the most powerful things you can do for yourself.',
     ],
   },
 
@@ -374,13 +374,13 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern: [
-        'Your bedtime has been varying by over an hour most nights this week. Inconsistent sleep timing disrupts your body clock even when total hours are adequate.',
-        'Bedtime has been all over the place this week. A consistent bedtime often matters more than total hours for sleep quality.',
+        'Your bedtime has been varying by over an hour most nights {period}. Inconsistent sleep timing disrupts your body clock even when total hours are adequate.',
+        'Bedtime has been all over the place {period}. A consistent bedtime often matters more than total hours for sleep quality.',
         'Sleep timing has been inconsistent most nights. Your body clock runs on regularity. The variance is likely affecting sleep quality.',
       ],
     },
     mindful: [
-      'Sleep timing has been a bit different each night this week. A consistent bedtime is one of the simplest things you can do for sleep quality.',
+      'Sleep timing has been a bit different each night {period}. A consistent bedtime is one of the simplest things you can do for sleep quality.',
       'We noticed bedtime has varied a lot lately. The body thrives on rhythm. Even a loose consistent window makes a difference.',
       'Sleep has been at different times each night. Consistency in when you sleep often matters as much as how long.',
     ],
@@ -391,15 +391,15 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: true,
     db: {
       insight_all: [
-        'Sleep scores have been excellent on {days} of your last 7 logged nights. Strong recovery like this compounds over time.',
-        'Consistently excellent sleep this week. Recovery is where adaptation happens. You are doing this right.',
+        'Sleep scores have been excellent on {days} of your last {window} logged nights. Strong recovery like this compounds over time.',
+        'Consistently excellent sleep {period}. Recovery is where adaptation happens. You are doing this right.',
         'Sleep has been strong across most of the week. That kind of recovery makes every other part of your effort work better.',
       ],
     },
     mindful: [
-      'Sleep has been really good this week, restful nights most of the time. Rest well done.',
+      'Sleep has been really good {period}, restful nights most of the time. Rest well done.',
       'What a good week for sleep. Your body is getting the recovery it needs.',
-      'Sleep has been excellent this week. You are giving yourself something really valuable.',
+      'Sleep has been excellent {period}. You are giving yourself something really valuable.',
     ],
   },
 
@@ -408,15 +408,15 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern: [
-        'Deep sleep has been below 15% most nights this week. Alcohol, heavy meals close to bedtime, and screen time are the most common causes.',
+        'Deep sleep has been below 15% most nights {period}. Alcohol, heavy meals close to bedtime, and screen time are the most common causes.',
         'Deep sleep percentage has been consistently lower than ideal. It is the most restorative sleep stage. Worth protecting.',
-        'Most nights this week have had lower than ideal deep sleep. The usual culprits: alcohol within 3 hours of bed, eating late, and blue light exposure.',
+        'Most nights {period} have had lower than ideal deep sleep. The usual culprits: alcohol within 3 hours of bed, eating late, and blue light exposure.',
       ],
     },
     mindful: [
-      'Deep sleep has been lighter this week. Small changes to your wind-down routine can make a real difference in how rested you feel.',
+      'Deep sleep has been lighter {period}. Small changes to your wind-down routine can make a real difference in how rested you feel.',
       'We noticed deep sleep has been on the lower side. A calmer evening routine tends to help, whatever that looks like for you.',
-      'Sleep has been less restorative this week in terms of deep rest. It might be worth thinking about what your evenings look like before bed.',
+      'Sleep has been less restorative {period} in terms of deep rest. It might be worth thinking about what your evenings look like before bed.',
     ],
   },
 
@@ -427,9 +427,9 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern: [
-        'Active calorie burn has been below your goal most days this week.',
+        'Active calorie burn has been below your goal most days {period}.',
         'Burn has been below your active calorie goal most days. The gap between eat and burn numbers is tighter than it looks.',
-        'Active calories have been consistently below goal this week. That gap is bigger than most people expect.',
+        'Active calories have been consistently below goal {period}. That gap is bigger than most people expect.',
         'Active burn has been sitting under your goal for most of the week. Your eat and burn numbers are closer together than they look.',
         'Movement has been producing less burn than your goal assumes. That shifts what the rest of your numbers actually mean.',
       ],
@@ -443,8 +443,8 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     },
     mindful: [
       'Movement has been lighter than usual lately. Even short walks can make a big difference in how you feel throughout the day.',
-      'We noticed activity has been lower this week. Any movement is good movement. It does not have to be a full workout.',
-      'Things have been a bit more sedentary this week. How are you feeling? Sometimes the body just needs to move a little.',
+      'We noticed activity has been lower {period}. Any movement is good movement. It does not have to be a full workout.',
+      'Things have been a bit more sedentary {period}. How are you feeling? Sometimes the body just needs to move a little.',
       'Movement has been on the lighter side this past week. Even a short walk counts, and it does not have to look like training.',
       'There has been less activity than usual lately. Bodies go through quieter stretches, and easing back in is enough.',
     ],
@@ -472,15 +472,15 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern: [
-        'Steps have been below your {goal} goal on {days} of your last 7 logged days. Daily step count is one of the most underrated variables in the whole system.',
-        'Step goal missed most days this week. Small habit changes, parking further away, taking the stairs, add up more than a single workout.',
-        'Steps have been consistently below goal this week. Movement outside of formal exercise has a big impact on total daily burn.',
+        'Steps have been below your {goal} goal on {days} of your last {window} logged days. Daily step count is one of the most underrated variables in the whole system.',
+        'Step goal missed most days {period}. Small habit changes, parking further away, taking the stairs, add up more than a single workout.',
+        'Steps have been consistently below goal {period}. Movement outside of formal exercise has a big impact on total daily burn.',
       ],
     },
     mindful: [
-      'Steps have been lighter this week. Moving throughout the day, not just in workouts, makes a real difference in how you feel.',
+      'Steps have been lighter {period}. Moving throughout the day, not just in workouts, makes a real difference in how you feel.',
       'We noticed steps have been below goal most days. Small bits of movement throughout the day add up in ways that are easy to underestimate.',
-      'Daily steps have been lower this week. Even short walks during the day can shift your energy and mood significantly.',
+      'Daily steps have been lower {period}. Even short walks during the day can shift your energy and mood significantly.',
     ],
   },
 
@@ -489,15 +489,15 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: true,
     db: {
       insight_all: [
-        'Active calorie goal hit {days} of your last 7 logged days. That kind of sustained burn adds up significantly over a week.',
-        'Nearly every day this week has hit the active calorie goal. Strong work. This is what creates a meaningful gap between eat and burn.',
-        'Active burn above goal almost every day this week. Consistency here compounds in a way that no single workout ever will.',
+        'Active calorie goal hit {days} of your last {window} logged days. That kind of sustained burn adds up significantly over a week.',
+        'Nearly every day {period} has hit the active calorie goal. Strong work. This is what creates a meaningful gap between eat and burn.',
+        'Active burn above goal almost every day {period}. Consistency here compounds in a way that no single workout ever will.',
       ],
     },
     mindful: [
-      'You have been moving consistently this week, hitting your activity goal most days. That is worth celebrating.',
-      'Activity has been really strong this week. You are showing up for your body in a real way.',
-      'Most days this week you have been active and moving. That consistency is doing more for you than you probably realize.',
+      'You have been moving consistently {period}, hitting your activity goal most days. That is worth celebrating.',
+      'Activity has been really strong {period}. You are showing up for your body in a real way.',
+      'Most days {period} you have been active and moving. That consistency is doing more for you than you probably realize.',
     ],
   },
 
@@ -506,14 +506,14 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: true,
     db: {
       insight_all: [
-        'Step goal hit {days} of your last 7 logged days. Your daily movement habits are in a genuinely strong place.',
-        'Nearly perfect steps this week. Daily movement at this level makes everything else, sleep, hunger, mood, work better.',
+        'Step goal hit {days} of your last {window} logged days. Your daily movement habits are in a genuinely strong place.',
+        'Nearly perfect steps {period}. Daily movement at this level makes everything else, sleep, hunger, mood, work better.',
         'Consistent step goal achievement all week. This is the kind of habit that silently does a lot of heavy lifting.',
       ],
     },
     mindful: [
-      'You have been moving a lot this week, hitting your step goal most days. That is a beautiful habit.',
-      'Step goal hit almost every day this week. Your body is getting so much good movement.',
+      'You have been moving a lot {period}, hitting your step goal most days. That is a beautiful habit.',
+      'Step goal hit almost every day {period}. Your body is getting so much good movement.',
       'Really strong week for steps. Moving through your day like this has ripple effects on how you feel in every way.',
     ],
   },
@@ -523,15 +523,15 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern: [
-        'Workout completion has been below 60% on most scheduled days this week. Finishing what is on the plan is where the adaptation actually happens.',
-        'Most scheduled workouts this week were partially completed. The reps you leave in the tank are the ones that matter most.',
-        'Workout sessions have been cut short more often than not this week. Are the sessions too long, too hard, or is something else getting in the way?',
+        'Workout completion has been below 60% on most scheduled days {period}. Finishing what is on the plan is where the adaptation actually happens.',
+        'Most scheduled workouts {period} were partially completed. The reps you leave in the tank are the ones that matter most.',
+        'Workout sessions have been cut short more often than not {period}. Are the sessions too long, too hard, or is something else getting in the way?',
       ],
     },
     mindful: [
-      'Workouts have been a bit shorter or less complete than usual this week. That is okay. Just checking in. Is there anything making it harder to show up?',
+      'Workouts have been a bit shorter or less complete than usual {period}. That is okay. Just checking in. Is there anything making it harder to show up?',
       'We noticed workouts have been a little less complete lately. How are you feeling? Sometimes the plan needs adjusting.',
-      'Workouts have been a bit lighter this week. There is no judgment here, just noticing.',
+      'Workouts have been a bit lighter {period}. There is no judgment here, just noticing.',
     ],
   },
 
@@ -542,15 +542,15 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern: [
-        'Your fasting window has been inconsistent on {days} of your last 7 logged IF days. The consistency is where the benefit comes from, more than any single day.',
-        'IF window has been broken or skipped most days this week. A consistent window, even a shorter one, is more effective than a perfect window most days.',
-        'Fasting consistency has been lower this week. The regularity of the pattern matters more than the exact hours.',
+        'Your fasting window has been inconsistent on {days} of your last {window} logged IF days. The consistency is where the benefit comes from, more than any single day.',
+        'IF window has been broken or skipped most days {period}. A consistent window, even a shorter one, is more effective than a perfect window most days.',
+        'Fasting consistency has been lower {period}. The regularity of the pattern matters more than the exact hours.',
       ],
     },
     mindful: [
-      'The fasting window has been a bit irregular this week. That is okay. Sometimes life gets in the way. The consistency is what matters over time.',
+      'The fasting window has been a bit irregular {period}. That is okay. Sometimes life gets in the way. The consistency is what matters over time.',
       'We noticed the fasting window has been less consistent. How is it feeling? Sometimes adjusting the window itself helps more than pushing through.',
-      'IF has been a bit sporadic this week. No pressure. Even a looser consistent window is better than inconsistency.',
+      'IF has been a bit sporadic {period}. No pressure. Even a looser consistent window is better than inconsistency.',
     ],
   },
 
@@ -559,9 +559,9 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern: [
-        'The eating window has been running about {avg} hours longer than intended on most days this week. Evening eating tends to be where extra calories sneak in.',
-        'Window has been closing later than planned on {days} of your last 7 logged IF days. Late-night eating is one of the most consistent patterns in exceeding calorie goals.',
-        'Most days this week the eating window ran significantly longer than the {method} target. Worth looking at what is driving the late extension.',
+        'The eating window has been running about {avg} hours longer than intended on most days {period}. Evening eating tends to be where extra calories sneak in.',
+        'Window has been closing later than planned on {days} of your last {window} logged IF days. Late-night eating is one of the most consistent patterns in exceeding calorie goals.',
+        'Most days {period} the eating window ran significantly longer than the {method} target. Worth looking at what is driving the late extension.',
       ],
     },
     mindful: [
@@ -576,15 +576,15 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: true,
     db: {
       insight_all: [
-        'Fasting window hit within 30 minutes of target on {days} of your last 7 logged days. That discipline is where IF actually delivers its benefit.',
-        'Incredibly consistent fasting window this week. This level of adherence is what separates IF as a real tool from a loose concept.',
-        'Window consistency has been excellent this week. The metabolic benefit of IF comes from exactly this kind of regularity.',
+        'Fasting window hit within 30 minutes of target on {days} of your last {window} logged days. That discipline is where IF actually delivers its benefit.',
+        'Incredibly consistent fasting window {period}. This level of adherence is what separates IF as a real tool from a loose concept.',
+        'Window consistency has been excellent {period}. The metabolic benefit of IF comes from exactly this kind of regularity.',
       ],
     },
     mindful: [
-      'Your fasting rhythm has been really consistent this week. That kind of routine can feel grounding.',
+      'Your fasting rhythm has been really consistent {period}. That kind of routine can feel grounding.',
       'The fasting window has been steady and consistent all week. Building a rhythm like this is meaningful.',
-      'Really consistent with the fasting window this week. Routines like this tend to make everything feel more manageable.',
+      'Really consistent with the fasting window {period}. Routines like this tend to make everything feel more manageable.',
     ],
   },
 
@@ -617,12 +617,12 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern_lose: [
-        'Weight has been trending up this week while you are targeting a cut. The net calorie picture is worth a closer look.',
-        'Moving in the wrong direction on the scale this week. Something in the pattern, logging, burn, or intake, is not matching the goal.',
+        'Weight has been trending up {period} while you are targeting a cut. The net calorie picture is worth a closer look.',
+        'Moving in the wrong direction on the scale {period}. Something in the pattern, logging, burn, or intake, is not matching the goal.',
         'Weight has been climbing while you are trying to cut. That usually means the actual deficit is not as large as it appears.',
       ],
       pattern_gain: [
-        'Weight has been drifting down this week while you are trying to build. Intake probably needs to go higher.',
+        'Weight has been drifting down {period} while you are trying to build. Intake probably needs to go higher.',
         'Moving in the wrong direction while bulking. The surplus may have closed. Worth pushing intake up.',
         'Weight trending down on a gaining goal. The body needs a consistent surplus to build. Intake needs to be higher.',
       ],
@@ -639,19 +639,19 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: true,
     db: {
       insight_lose: [
-        'Weight has been trending in the right direction this week, moving at a pace consistent with your {paceLabel} goal. The pattern is working.',
-        'Solid weight trend this week, moving toward your goal at a healthy rate. Keep doing what you are doing.',
+        'Weight has been trending in the right direction {period}, moving at a pace consistent with your {paceLabel} goal. The pattern is working.',
+        'Solid weight trend {period}, moving toward your goal at a healthy rate. Keep doing what you are doing.',
         'Weight is moving in the right direction and at a meaningful pace. This is what consistent effort looks like.',
       ],
       insight_maintain: [
-        'Weight has been remarkably stable this week, within a very tight range. That is exactly what maintaining looks like when the pattern is right.',
-        'Extremely consistent weight this week. Maintenance is harder than most people realize. You are doing it well.',
+        'Weight has been remarkably stable {period}, within a very tight range. That is exactly what maintaining looks like when the pattern is right.',
+        'Extremely consistent weight {period}. Maintenance is harder than most people realize. You are doing it well.',
         'Weight has barely moved all week while targeting maintenance. Solid execution.',
       ],
       insight_gain: [
-        'Weight has been trending up at a healthy pace this week, consistent with your gaining goal. The surplus is working.',
-        'Good weight trend this week on a gaining goal. Moving in the right direction at a rate that suggests quality gain.',
-        'Weight is climbing at a solid pace this week. Stay the course.',
+        'Weight has been trending up at a healthy pace {period}, consistent with your gaining goal. The surplus is working.',
+        'Good weight trend {period} on a gaining goal. Moving in the right direction at a rate that suggests quality gain.',
+        'Weight is climbing at a solid pace {period}. Stay the course.',
       ],
     },
     mindful: [
@@ -667,8 +667,8 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     db: {
       insight_all: [
         'Only {count} weigh-ins in the last two weeks. Consistent weigh-ins at the same time of day give a much clearer picture of what is actually happening.',
-        'Sparse weigh-in data this week. Hard to spot a trend with only {count} data points. Daily weigh-ins at the same time dramatically improve the signal.',
-        'Few weigh-ins this week. The trend is hard to read without consistent data. Same time of morning before eating gives the most accurate picture.',
+        'Sparse weigh-in data {period}. Hard to spot a trend with only {count} data points. Daily weigh-ins at the same time dramatically improve the signal.',
+        'Few weigh-ins {period}. The trend is hard to read without consistent data. Same time of morning before eating gives the most accurate picture.',
       ],
     },
     mindful: [],
@@ -681,25 +681,25 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern: [
-        'Only {days} logged days this week. The patterns we can surface are only as good as the data we have to work with.',
-        'Logging has been sparse this week, {days} out of 7 days. Consistent logging is what makes the insights useful.',
+        'Only {days} logged days {period}. The patterns we can surface are only as good as the data we have to work with.',
+        'Logging has been sparse {period}, {days} out of 7 days. Consistent logging is what makes the insights useful.',
         'Light logging week, {days} days with entries. The more complete the picture, the more meaningful what we surface.',
-        'Only {days} days with entries this week. Patterns need a few more days behind them before they mean much.',
+        'Only {days} days with entries {period}. Patterns need a few more days behind them before they mean much.',
         'A thin week for logging, {days} days in total. The picture sharpens quickly once there is a little more to read.',
       ],
       urgent: [
-        'Very few logged days this week, just {days}. Without consistent data, it is hard to know what is actually happening.',
-        'Almost no logging this week. There is not enough here yet for us to surface anything useful.',
-        'Only {days} logged days this week. Even partial logs are better than none. They help us understand the picture.',
-        'Just {days} logged days this week. There is not quite enough here yet to say anything useful about what is happening.',
-        'Very little logged this week. Even a few more days would be enough to start seeing the shape of things.',
+        'Very few logged days {period}, just {days}. Without consistent data, it is hard to know what is actually happening.',
+        'Almost no logging {period}. There is not enough here yet for us to surface anything useful.',
+        'Only {days} logged days {period}. Even partial logs are better than none. They help us understand the picture.',
+        'Just {days} logged days {period}. There is not quite enough here yet to say anything useful about what is happening.',
+        'Very little logged {period}. Even a few more days would be enough to start seeing the shape of things.',
       ],
     },
     mindful: [
-      'Logging has been lighter this week. No worries at all. Even a partial log helps us understand your patterns better.',
-      'We noticed fewer logged days this week. Whatever you are able to log is helpful. There is no pressure to be perfect.',
+      'Logging has been lighter {period}. No worries at all. Even a partial log helps us understand your patterns better.',
+      'We noticed fewer logged days {period}. Whatever you are able to log is helpful. There is no pressure to be perfect.',
       'Logging has been a bit sparse. That is okay. We work with whatever you give us, and every entry adds to the picture.',
-      'Logging has been light this week, and that is completely fine. Whatever you record still adds to the picture.',
+      'Logging has been light {period}, and that is completely fine. Whatever you record still adds to the picture.',
       'Fewer entries than usual lately. No pressure to catch up, and anything you log from here helps.',
     ],
   },

@@ -77,11 +77,15 @@ ids.filter((id) => !calls[id]).forEach((id) => problems.push(`DEAD COPY: ${id} i
 Object.keys(calls).filter((id) => !rules[id]).forEach((id) => problems.push(`MISSING COPY: rule ${id} fires with no copy`));
 
 // ── 2. A placeholder the engine never fills renders literally on screen ──────
+// ⚠️ INJECTED SLOTS. `makeTip` adds these to every tip from `ctx`, so no individual call site passes them
+// and the check below would flag all 45 rules. They carry the surface's period ("this week" / "this month")
+// and its real window length, which is why monthly stopped claiming "your last 7 logged days" over 30 days.
+const INJECTED = new Set(['period', 'window']);
 ids.forEach((id) => {
   if (!calls[id]) return;
   const all = [...Object.values(rules[id].pools).flat(), ...rules[id].mindful].join(' ');
   [...new Set([...all.matchAll(/\{(\w+)\}/g)].map((x) => x[1]))]
-    .filter((s) => !calls[id].has(s))
+    .filter((s) => !calls[id].has(s) && !INJECTED.has(s))
     .forEach((s) => problems.push(`UNFILLED PLACEHOLDER: ${id} uses {${s}} but no makeTip call passes it`));
 });
 

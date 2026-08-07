@@ -137,6 +137,13 @@ export interface EngineContext {
   paceLabel: string;
   loggingStreak: number;       // true consecutive food-logged days ending today/yesterday
   todayKey: string;
+  // 🔴 PERIOD, FOR THE COPY. Added 2026-08-07. Every variant in `smartTipsCopy.ts` used to hardcode "this
+  // week" and "your last 7 logged days", but MONTHLY passes up to 30 days into the 7-day slot
+  // (`runAllRules(monthDays, ..., monthDays, ...)`), so a monthly tip could read "excellent on 22 of your
+  // last 7 logged nights". Copy now uses {period} and {window}; `makeTip` fills both from here.
+  // ⚠️ Defaults are the WEEK values, so every existing surface reads exactly as it did before.
+  periodLabel: string;         // "this week" | "this month"
+  periodWindow: number;        // 7 | the real number of days in the month window
 }
 
 interface CandidateTip {
@@ -533,6 +540,10 @@ export async function buildEngineContext(todayKey: string): Promise<EngineContex
     paceLabel: PACE_LABELS[weightGoal] ?? 'Maintain',
     loggingStreak,
     todayKey,
+    // Week is the default because every surface except Monthly genuinely runs on a 7-day window.
+    // Monthly overrides both in `computeCoachPacketMonthly`.
+    periodLabel: 'this week',
+    periodWindow: 7,
   };
 }
 
@@ -735,7 +746,12 @@ function makeTip(
   const rule = RULE_COPY[ruleId];
   if (!rule) return null;
   const useMindful = ctx.isMindful && (positive || ctx.mindfulGrowthAreas);
-  const { body, variantIndex } = pickBody(ruleId, poolKey, store, slots, useMindful);
+  // 🔴 {period} AND {window} ARE INJECTED HERE, NOT PASSED BY EACH RULE. There are 55 makeTip call sites and
+  // requiring every one to pass the period would guarantee some drift. Injecting once means a rule author
+  // writes "{period}" in copy and it is simply correct on every surface.
+  // ⚠️ `...slots` LAST so an explicit slot always wins over the injected default.
+  const withPeriod = { period: ctx.periodLabel, window: ctx.periodWindow, ...slots };
+  const { body, variantIndex } = pickBody(ruleId, poolKey, store, withPeriod, useMindful);
   if (!body) return null;
   return {
     ruleId, tier, title: rule.title, body,
@@ -3776,7 +3792,14 @@ export async function computeCoachPacketMonthly(
       fallbackBody: `The coach has ${loggedCount} logged days to work with this month. Log food on 14 or more days to get a full monthly coaching insight.`,
     };
   } else {
-    const rawCandidates = runAllRules(monthDays, monthDays.slice(0, 5), monthDays, ctx, tipStore);
+    // 🔴 MONTH-SCOPED CONTEXT. `runAllRules` takes (w7, w5, w14) and monthly deliberately passes the WHOLE
+    // MONTH as the 7-day window, so `{days}` counts across up to 30 days. Without this the copy would still
+    // say "of your last 7 logged days" and produce "22 of your last 7", which is what a free user saw on a
+    // June summary (Justin, 2026-08-07).
+    // ⚠️ `w5` genuinely IS five days here (`monthDays.slice(0, 5)`), so the "last 5 days" copy stays correct
+    // and is deliberately NOT tokenised.
+    const monthCtx: EngineContext = { ...ctx, periodLabel: 'this month', periodWindow: windowDays };
+    const rawCandidates = runAllRules(monthDays, monthDays.slice(0, 5), monthDays, monthCtx, tipStore);
     const suppressed = applyMindfulSuppression(rawCandidates, ctx);
 
     const excludeIds = [homeRuleId, persistedLastRuleId].filter((id): id is string => !!id);

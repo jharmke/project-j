@@ -65,7 +65,7 @@ against real before/after text pulled from `smartTipsCopy.ts` and the coach's ow
 🔴 **THE FRAMING THIS SECTION ORIGINALLY CARRIED WAS WRONG, AND CORRECTING IT IS WHY THE DECISION WENT THE WAY
 IT DID.** It said the fallbacks are stitched templates (*"Something worth flagging. {diagnosis}. {action}."*)
 and that the CONTENT is identical while the VOICE differs. **Both halves are backwards.** That template fires
-on two edge paths only; every normal tip falls back to hand-written copy (45 rules, ~129 variants, split by
+on two edge paths only; every normal tip falls back to hand-written copy (45 rules, 306 variants, split by
 goal, separate Mindful pool, rotated so the same verdict reads differently three days running).
 ➡️ **The voice is fine on both sides. What a free user loses is their own numbers.** Do not restate the old
 framing anywhere; it undersold the free tier and oversold the upgrade at the same time.

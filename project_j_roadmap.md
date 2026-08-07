@@ -1497,7 +1497,7 @@ are separate pre-submission checklists, NOT part of this menu.
   the deterministic coaching copy on all six coach surfaces; Supporters get it written from their own
   numbers. Biggest change to the free/paid line since launch planning began: break-even 2.97% -> 2.02%.
   **Status, reasoning, the watch list and the four traps: `PLAN.md` 1.9.** Do not restate any of it here.
-  ➡️ **NEXT STEP IS NOT THE BUILD.** Audit `utils/smartTipsCopy.ts` (45 rules, ~129 variants) for staleness
+  ➡️ **NEXT STEP IS NOT THE BUILD.** Audit `utils/smartTipsCopy.ts` (45 rules, 306 variants) for staleness
   first: under gating those pools ARE the free product, and adding to them is free forever where improving
   the AI bills on every call.
 - 🔴 **[NOW] [NEW 2026-08-05 EVENING] VERIFY WE CAN MEASURE ACTIVES, CONVERSION AND RETENTION. Pre-launch,

@@ -223,7 +223,7 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       (*"Something worth flagging. {diagnosis}. {action}."*) and said the CONTENT is identical while the VOICE
       differs. **Both halves are backwards.** That template fires on only two edge paths (a safety verdict and
       a no-data verdict). Every normal tip falls back to `selected.body` -- **hand-written copy, 45 rules and
-      ~129 variants, split by goal bucket, with a separate pool written for Mindful**, rotated round-robin by
+      306 variants across 102 pools**, split by goal bucket, with a separate pool written for Mindful, rotated round-robin by
       `pickVariant` so the same verdict gives a different sentence three days running.
       ➡️ **So the voice is fine on both sides. What a free user loses is THEIR OWN NUMBERS.** The fallback
       knows which verdict fired and says a well-written generic thing; the AI cites the actual deficit, the
@@ -258,9 +258,26 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
          keeps plain tips for January. Believed correct and honest, but it is a decision, not an accident.
       4. **Every place that states what the plan includes** -- Otto's KB, the canned answer for "what does the
          plan add", `SPEC_monetization.md`, the modals. Same sweep that caught four files on Otto's cap.
-      ➡️ **NEXT STEP IS NOT THE BUILD.** It is auditing `utils/smartTipsCopy.ts` for staleness (Justin's call,
-      2026-08-07): under gating those pools ARE the free product, and neither of us knows what state they are
-      in. **Deepening a pool is free forever; improving the AI is a bill that arrives on every call.**
+      ➡️ **NEXT STEP IS NOT THE BUILD.** It is auditing `utils/smartTipsCopy.ts` (Justin's call, 2026-08-07):
+      under gating those pools ARE the free product. **Deepening a pool is free forever; improving the AI is
+      a bill that arrives on every call.**
+      🔬 **STRUCTURAL HALF DONE 2026-08-07** (`scratchpad/audit_copy.cjs`, read-only). **The copy is in good
+      shape:** 45/45 rules have copy and fire, **306 variants across 102 pools** (an earlier "~129" here was
+      a bad grep that missed the Mindful pools), no pool under 3 variants, no dead copy, no unfilled slot,
+      zero double dashes.
+      ✅ **ONE REAL GAP FOUND AND FIXED: `cross_workout_intake` had an EMPTY Mindful pool**, so a Mindful
+      user with growth areas enabled fell through to *"rest days are quietly becoming eating days"* and *"the
+      discipline from training days does not always carry over"*. Three Mindful variants written.
+      ✅ **`weight_infrequent`'s empty Mindful pool is CORRECT, not a gap** -- the rule is suppressed twice
+      for Mindful (returns null in `ruleWeightInfrequent`, and blocked again in `applyMindfulSuppression`),
+      so the tip can never reach a Mindful user. Nothing to write. **Verified before "fixing" it.**
+      🔴 **THE AUDIT SCRIPT WAS WRONG FOUR TIMES AND THE COPY WAS RIGHT EVERY TIME.** It reported all 45
+      rules dead, then 11 rules printing raw `{delta}` to users, then three more, then the weigh-in gap. All
+      artefacts: a regex needing a newline that single-line calls do not have, ES6 shorthand `{ delta }`
+      having no colon, and the last rule's chunk swallowing the rest of the file. **Every flag was
+      hand-checked before being reported.** See [[feedback_detectors_are_brittle]].
+      ⏳ **CONTENT HALF STILL OPEN:** the 306 variants have not been read against how the app behaves today,
+      which is the staleness question Justin actually asked. Structure is clean; wording is unread.
 - ➡️ Expected: **~$0.37 -> ~$0.10/user/month, DERIVED**, nothing visible changing. Item 0 confirms it.
 
 ### 2. THE CACHE FIXES -- launch build

@@ -768,7 +768,15 @@ export const RULE_COPY: Record<string, RuleCopy> = {
         'Workout days and rest days are showing very different net calorie numbers, about {delta} kcal apart. Rest days are where the deficit tends to close.',
       ],
     },
-    mindful: [],
+    // Added 2026-08-07. This pool was EMPTY, so a Mindful user with growth areas turned on fell through to
+    // the standard copy above and read "rest days are quietly becoming eating days" and "the discipline
+    // from training days does not always carry over". Opting into growth areas means they want the signal,
+    // not the judgment framing Mindful exists to avoid.
+    mindful: [
+      'We noticed eating tends to be a little fuller on days without a workout, around {delta} calories more than training days. Bodies ask for different things on different days, and noticing the pattern is the useful part.',
+      'There is a gentle pattern here: intake runs about {delta} calories higher on rest days than on days you train. Worth holding in mind, not worth worrying about.',
+      'Rest days and training days are showing different intake patterns, about {delta} calories apart. Nothing wrong with that. That is simply what your data is showing you.',
+    ],
   },
 
   cross_steps_sleep: {

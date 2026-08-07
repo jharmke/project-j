@@ -189,7 +189,7 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       monthly are all uncounted. **So Smart Coach's "22% of the bill" is a floor, not a figure.**
       | # | idea | state |
       |---|---|---|
-      | 1 | **The Day Summary tip is paid for and never seen** (fallback renders, AI lands in storage for a return visit that mostly does not happen) | 🟡 **DOWNGRADED 2026-08-06: real but SMALL.** The daily pop-up modal makes no AI call at all; only the Stats > Reports screen does. Cents/user/yr, not the $2,900/yr at 25k installs first claimed. Zero-risk cut whenever we are next in that file. |
+      | 1 | **The Day Summary tip is paid for and never seen** | ✅ **FIXED + DEVICE-VERIFIED 2026-08-07 -- see 4.10.** Not by cutting the call but by DELIVERING it: loading state, voiced version on the visit that paid for it, plain version demoted to the failure path. |
       | 2 | Sleep + Recovery in one call | open, and it drags in whether the truncated Home card insights stay |
       | 3 | Partial voicing (deterministic `claim`, voiced `insight`), and a lighter Home card that taps through to EvR | Justin's idea, cost before designing |
       | 4 | Batch API for weekly + monthly | ⚠️ Justin's objection stands: which surface tolerates a delay AT ALL? |
@@ -405,6 +405,24 @@ is what made him think work had been dropped -- it had not, but he had no way to
       🔴 Corrections this replaced: the estimate was $0.0165 (74% high); item O recorded the prompt as
       "~2,250 tokens" when it is **562**; and a same-day claim that caching the prompt would recover most of
       the Haiku saving was wrong -- at 562 tokens caching it saves about 2%.
+- [x] **4.10 ✅ BUILT + DEVICE-VERIFIED 2026-08-07. THE DAY SUMMARY TIP IS NOW DELIVERED, NOT THROWN AWAY.**
+      `refreshDayCoachTip` returned the plain fallback instantly and fired the AI in the BACKGROUND, storing
+      the result for a second visit to that same date. Justin found it on device: tap "View Full Breakdown",
+      land on the page, read the stitched template, and the voiced version you just paid for only appears if
+      you come back. It now awaits the call behind a loading state (`dayCoachLoading` in `day-summary.tsx`),
+      which is the shape weekly and monthly have always had.
+      ✅ **DEVICE-VERIFIED, all three checks:** opened to a loading state, the day counter went up by exactly
+      1, and re-opening the same date showed the voiced version with **no new call**.
+      ⚠️ **COST-NEUTRAL, and do not let it be written up as a saving.** Same one call per date. It converts a
+      wasted call into a delivered one.
+      🔴 **THE TRAP THAT WAS DELIBERATELY NOT WALKED INTO: `aiGeneratedDate` MEANS SOMETHING DIFFERENT HERE.**
+      Everywhere else it means "written today" and drives the daily dedup, so `generateCoachTip` stamps
+      `todayKey`. On the day tip it means "this is the tip FOR this date" and is matched against `dateKey`.
+      Routing this through the shared path would stamp every past day with today, break the match on the next
+      visit, and **make browsing your own history buy a fresh call on every single open, forever.** The
+      bypass is deliberate; a future tidy-up that "unifies" these two paths reintroduces it.
+      ⚠️ A failed call saves NOTHING on purpose, so the next visit retries. A failure must never freeze a
+      date onto the plain version.
 - [ ] **4.2** The estimator's 5/month cap is **client-side** (AsyncStorage). A modified client could burn
       60 Sonnet calls/day through the server backstop -- about $1/day. Wants a server-side cap.
 - [x] **4.3 ✅ BUILT + DEPLOYED + DEVICE-VERIFIED 2026-08-05.** The per-user half of Otto's prompt is now

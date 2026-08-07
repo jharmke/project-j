@@ -39,29 +39,19 @@ nights*, so someone logging sleep manually a few times a week still gets a real 
 device-verified: Justin has full data and cannot reach the path.
 🔴 **SO THE 22%-OF-BILL FIGURE COUNTS 2 OF 8 SURFACES.** Everything below is worth re-costing against that.
 
-### 1. 🟡 THE DAY SUMMARY TIP IS PAID FOR AND NEVER SEEN. REAL, BUT SMALL. (downgraded 2026-08-06)
-🔴 **SIZED AT UP TO $2,900/YR AT 25,000 INSTALLS AND THAT WAS WRONG. Justin caught it with one question:
-"what shows on the day summary modal, the one that pops every day?"**
-✅ **`components/DaySummaryModal.tsx` MAKES NO AI CALL.** It builds its text from `winAndCoachLines(score,
-...)`, a local deterministic function. **The thing users actually see every day is free.**
-➡️ The AI day tip exists ONLY on the full `app/day-summary.tsx` screen, reached through Stats > Reports,
-which is exactly the place Justin said people rarely go. So it fires when somebody browses to an old day
-they have never opened, not daily. **Cents per user per year, not 39 cents.**
-⚠️ **THE MISTAKE TO NOT REPEAT ON THE OTHER FIVE IDEAS:** the figure came from assuming that the thing which
-pops daily is the thing which costs. It is a different component. **Verify WHICH component makes the call
-before costing any idea in this section.** Same error as the reply-shape block earlier the same day.
-✅ Device-confirmed 2026-08-06: opening an unseen day summary increments `surfaces.day`; re-opening the same
-one does not.
-
-#### (original finding, still true, just small)
-`refreshDayCoachTip` returns the **fallback immediately** and fires the AI call **in the background**, saving
-the result for the *next* visit to that same day. **A user who opens a day summary once and moves on reads
-the deterministic version, and the AI version they paid for sits in storage unread.**
-➡️ Cleanest fix in the whole list: zero product loss, because if they never return they never saw it, and if
-they do return they had already read the fallback once anyway.
-⚠️ Corrects two things said in the same session: the day tip DOES freeze (Justin was right, it is keyed to
-the date being viewed, not to today), so "capping how far back you can generate" solves a problem that does
-not exist. Re-opening old days is free.
+### 1. ✅ FIXED + DEVICE-VERIFIED 2026-08-07. The Day Summary tip is now DELIVERED, not thrown away.
+The waste was real and the fix was NOT to stop paying: it was to show what the call already bought. The page
+returned the plain stitched fallback instantly and fired the AI in the background for a *second* visit to
+that same date, which nobody makes. It now holds a loading state and renders the voiced version on the visit
+that paid for it, with the plain version reserved for a genuine failure. **Same one call per date, same cost,
+value now delivered.** Status: `PLAN.md` 4.10. Whether to cut day voicing ENTIRELY is parked with a trigger
+in `PLAN.md`, not here.
+🔴 **THE SIZING LESSON THAT MUST SURVIVE, because it was wrong TWICE in opposite directions.** First $2,900/yr
+at 25k installs (assumed the daily pop-up modal made the call: it makes none, `DaySummaryModal.tsx` builds its
+text locally). Then "cents per user" (assumed the page was only reachable via Stats > Reports). **Justin then
+found a second entry point on device: the modal's own "View Full Breakdown" button**, which puts the ceiling
+back at one call per user per day. ➡️ **Verify WHICH component makes the call, and check for a SECOND way in,
+before costing any idea in this section.**
 
 ### 2. SLEEP + RECOVERY IN ONE CALL
 Same shape as the parked 1.5 but a better candidate: both are recovery flavoured and neither is as flagship

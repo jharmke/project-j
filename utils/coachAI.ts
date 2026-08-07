@@ -960,21 +960,38 @@ export async function refreshDayCoachTip(
   const week = await loadWeekContext(dateKey);
   const packet = buildDayCoachPacket(dateKey, score, input, week, mode, faithTier, weightGoal);
 
-  // Return fallback immediately so the card shows without waiting for the AI call
+  // The plain stitched version. From here it is the FAILURE PATH ONLY, never what shows while we wait.
   const fallbackCache: CoachTipCache = { packet, aiBody: null, aiGeneratedDate: null, fallbackUsed: true };
 
-  // Fire AI call in background. Result is saved to storage and shown on next visit.
+  // 🔴 AWAITED, NOT FIRE-AND-FORGET. Changed 2026-08-07.
+  // This used to return `fallbackCache` immediately and fire the AI call in the background, saving the
+  // result for the NEXT visit to this date. Justin found it on device: tap "View Full Breakdown" on the
+  // daily modal, land here, and you read the stitched template while the voiced version you just paid for
+  // sits in storage waiting for a second visit that nobody makes. **The call was bought and thrown away.**
+  // ⚠️ The screen now shows a loading state until this resolves (`app/day-summary.tsx`), which is the same
+  // shape weekly and monthly have always had. This changes NOTHING about cost: same one call per date.
   const modeKey = mode.toLowerCase() as keyof typeof VOICE_EXAMPLES;
-  const bgSystemPrompt = `${RULEBOOK}\n\n${VOICE_EXAMPLES[modeKey] ?? VOICE_EXAMPLES.balanced}`;
-  // ⚠️ Labelled explicitly rather than via surfaceFromKey: this one bypasses `generateCoachTip` entirely
-  // and calls the model in the background, which is exactly why its cost was invisible.
-  callWithTimeout(bgSystemPrompt, formatPacketMessage(packet), undefined, undefined, 'day')
-    .then(rawOutput => {
-      const { passed, cleaned } = cleanupPass(rawOutput, packet);
-      const aiCache: CoachTipCache = { packet, aiBody: passed ? cleaned : null, aiGeneratedDate: dateKey, fallbackUsed: !passed };
-      storageSet(cacheKey, JSON.stringify(aiCache)).catch(() => {});
-    })
-    .catch(() => {});
-
-  return fallbackCache;
+  const daySystemPrompt = `${RULEBOOK}\n\n${VOICE_EXAMPLES[modeKey] ?? VOICE_EXAMPLES.balanced}`;
+  // ⚠️ Labelled explicitly rather than via surfaceFromKey: this one bypasses `generateCoachTip` entirely.
+  // 🔴 AND THAT BYPASS IS DELIBERATE -- DO NOT "TIDY" IT ONTO THE SHARED PATH.
+  // `aiGeneratedDate` means something DIFFERENT here than anywhere else in this file. Everywhere else it
+  // means "written today" and drives the daily dedup, so `generateCoachTip` stamps `todayKey`. Here it
+  // means "this is the tip FOR this date", and the fast path at the top of this function matches it against
+  // `dateKey`. Route this through the shared path and every past day you open would be stamped with today,
+  // stop matching on the next visit, and buy a fresh call -- **browsing your own history would cost money
+  // on every single open, forever.**
+  try {
+    const rawOutput = await callWithTimeout(
+      daySystemPrompt, formatPacketMessage(packet), undefined, undefined, 'day',
+    );
+    const { passed, cleaned } = cleanupPass(rawOutput, packet);
+    const aiCache: CoachTipCache = { packet, aiBody: passed ? cleaned : null, aiGeneratedDate: dateKey, fallbackUsed: !passed };
+    try { await storageSet(cacheKey, JSON.stringify(aiCache)); } catch {}
+    return aiCache;
+  } catch {
+    // Timed out, offline, or the proxy refused. The plain version is the failure path, same as weekly.
+    // ⚠️ NOTHING IS SAVED HERE ON PURPOSE. A failed call must never freeze this date onto the plain
+    // version: with no stored record the fast path cannot match and the next visit tries again.
+    return fallbackCache;
+  }
 }

@@ -30,6 +30,11 @@ actually reads every session.
 ---
 
 ## 🆕 RECENTLY SHIPPED (one line each; full detail in project_j_roadmap_archive.md)
+- 2026-08-07 **The Day Summary coach tip is now delivered instead of thrown away.** The page showed the
+  plain stitched version and fired the AI in the background for a *second* visit to that date, which nobody
+  makes: the call was bought and the result never read. Now it holds a loading state and renders the voiced
+  version on the visit that paid for it, with the plain version demoted to the failure path. Same one call
+  per date, so this costs nothing extra. Browsing old days stays free. Detail: `PLAN.md` 4.10.
 - 2026-08-07 **Otto's 183 canned answers are LIVE.** Fixed-answer app questions (navigation how-tos,
   achievement definitions, price and policy, pleasantries) are now answered server-side with **no API call
   at all**, so they cost zero rather than $0.0054. Deployed, then found inert: the gate ran under a

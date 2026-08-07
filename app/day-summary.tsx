@@ -60,6 +60,9 @@ export default function DaySummaryScreen() {
   const [confirmingExclude, setConfirmingExclude] = useState(false);
   const [contextLine, setContextLine] = useState('');
   const [dayCoachBody, setDayCoachBody] = useState<string | null>(null);
+  // Starts TRUE so the tip area holds a loading state on first paint instead of flashing the plain
+  // stitched version and swapping it out. Every path below must clear it or the spinner never stops.
+  const [dayCoachLoading, setDayCoachLoading] = useState(true);
   // The page renders in the user's CURRENT coaching mode (colors, celebration,
   // labels, copy), not the mode frozen into the score. The score NUMBER and
   // sub-scores stay frozen via the snapshot; only presentation follows current mode,
@@ -196,10 +199,17 @@ export default function DaySummaryScreen() {
                 const body = resolveTipBody(cache);
                 if (body) setDayCoachBody(body);
               })
-              .catch(() => {});
+              .catch(() => {})
+              .finally(() => setDayCoachLoading(false));
+          } else {
+            setDayCoachLoading(false);
           }
+        } else {
+          setDayCoachLoading(false);
         }
-      } catch {}
+      } catch {
+        setDayCoachLoading(false);
+      }
 
       setLoading(false);
     })();
@@ -378,8 +388,31 @@ export default function DaySummaryScreen() {
             Now: an opaque CARD (which the tint recipe silently assumes behind it -- same lesson as
             accentBlueBgOpaque and MembershipCard), with the tint as a BOX inside holding the coach's words.
             The same fix belongs on weekly, monthly and the EvR report -- all four were the same one-layer
-            shape, and this makes every coach surface in the app structurally identical. */}
-        {!!dayCoachBody && (
+            shape, and this makes every coach surface in the app structurally identical.
+            🔴 LOADING STATE ADDED 2026-08-07, matching weekly and monthly, which have always had one.
+            The tip area holds a spinner until the voiced version lands; the plain stitched version shows
+            ONLY if the call actually failed. It used to render the plain version instantly and the voiced
+            one never appeared on this visit at all -- you had to open the same date a second time. */}
+        {dayCoachLoading ? (
+          <View style={{
+            backgroundColor: `${accent}12`,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: `${accent}50`,
+            padding: 14,
+            marginBottom: 12,
+            shadowColor: theme.cardShadow,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: theme.cardShadowOpacity,
+            shadowRadius: 12,
+            elevation: 6,
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <ActivityIndicator size="small" color={accent} />
+              <Text style={{ fontSize: 13, fontFamily: Type.ui, color: theme.textMuted, fontStyle: 'italic' }}>Analyzing your day...</Text>
+            </View>
+          </View>
+        ) : !!dayCoachBody ? (
           <View style={{
             backgroundColor: theme.bgCard,
             borderRadius: 12,
@@ -407,7 +440,7 @@ export default function DaySummaryScreen() {
               </Text>
             </View>
           </View>
-        )}
+        ) : null}
 
         {presentCats.length < 3 && (
           <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: Type.ui, marginTop: 2, marginBottom: 12, textAlign: 'center', fontStyle: 'italic' }}>

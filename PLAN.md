@@ -189,7 +189,7 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       monthly are all uncounted. **So Smart Coach's "22% of the bill" is a floor, not a figure.**
       | # | idea | state |
       |---|---|---|
-      | 1 | **The Day Summary tip is paid for and usually never seen** (fallback renders, AI lands in storage for a return visit that mostly does not happen) | 🔴 cleanest win found, zero product loss |
+      | 1 | **The Day Summary tip is paid for and never seen** (fallback renders, AI lands in storage for a return visit that mostly does not happen) | 🟡 **DOWNGRADED 2026-08-06: real but SMALL.** The daily pop-up modal makes no AI call at all; only the Stats > Reports screen does. Cents/user/yr, not the $2,900/yr at 25k installs first claimed. Zero-risk cut whenever we are next in that file. |
       | 2 | Sleep + Recovery in one call | open, and it drags in whether the truncated Home card insights stay |
       | 3 | Partial voicing (deterministic `claim`, voiced `insight`), and a lighter Home card that taps through to EvR | Justin's idea, cost before designing |
       | 4 | Batch API for weekly + monthly | ⚠️ Justin's objection stands: which surface tolerates a delay AT ALL? |

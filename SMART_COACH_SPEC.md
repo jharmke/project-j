@@ -31,7 +31,21 @@ nights*, so someone logging sleep manually a few times a week still gets a real 
 device-verified: Justin has full data and cannot reach the path.
 🔴 **SO THE 22%-OF-BILL FIGURE COUNTS 2 OF 8 SURFACES.** Everything below is worth re-costing against that.
 
-### 1. 🔴 THE DAY SUMMARY TIP IS PAID FOR AND USUALLY NEVER SEEN
+### 1. 🟡 THE DAY SUMMARY TIP IS PAID FOR AND NEVER SEEN. REAL, BUT SMALL. (downgraded 2026-08-06)
+🔴 **SIZED AT UP TO $2,900/YR AT 25,000 INSTALLS AND THAT WAS WRONG. Justin caught it with one question:
+"what shows on the day summary modal, the one that pops every day?"**
+✅ **`components/DaySummaryModal.tsx` MAKES NO AI CALL.** It builds its text from `winAndCoachLines(score,
+...)`, a local deterministic function. **The thing users actually see every day is free.**
+➡️ The AI day tip exists ONLY on the full `app/day-summary.tsx` screen, reached through Stats > Reports,
+which is exactly the place Justin said people rarely go. So it fires when somebody browses to an old day
+they have never opened, not daily. **Cents per user per year, not 39 cents.**
+⚠️ **THE MISTAKE TO NOT REPEAT ON THE OTHER FIVE IDEAS:** the figure came from assuming that the thing which
+pops daily is the thing which costs. It is a different component. **Verify WHICH component makes the call
+before costing any idea in this section.** Same error as the reply-shape block earlier the same day.
+✅ Device-confirmed 2026-08-06: opening an unseen day summary increments `surfaces.day`; re-opening the same
+one does not.
+
+#### (original finding, still true, just small)
 `refreshDayCoachTip` returns the **fallback immediately** and fires the AI call **in the background**, saving
 the result for the *next* visit to that same day. **A user who opens a day summary once and moves on reads
 the deterministic version, and the AI version they paid for sits in storage unread.**

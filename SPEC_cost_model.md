@@ -439,6 +439,16 @@ that was gone. The new one is committed and prints its own assumptions with prov
 assumption in the script and re-run.
 **Differences from the tables below:** Apple's cut is **15%** (Small Business Program), not 30%; subscriber
 LIFETIME is an axis rather than an assumed 12 months; and Supporters are charged AI cost too.
+🔴 **BUG FIXED IN THE SCRIPT 2026-08-08 -- EVERY SHORT-LIFETIME FIGURE PRINTED BEFORE THAT DATE WAS TOO
+PESSIMISTIC.** `revenuePerSupporter()` PRORATED the annual price (`priceAnnual * months/12`), so an annual
+subscriber on a 6-month lifetime was credited **$38 of a $76.49 payment they had already made in full.**
+Nobody pays a fraction of an annual subscription: they cannot churn early, only decline to renew. Annual
+terms paid is now `ceil(months / 12)`.
+➡️ **Affects the 3, 6 and 9-month rows only** (12 and 24 were already whole terms and did not move). At the
+30% annual share it understated a 6-month Supporter by **~24%**, which is the exact range the model is
+stress-tested in. **Re-run before quoting any short-lifetime number.**
+⚠️ **AND IT MAY OVERTURN A RECORDED FINDING:** `PLAN.md` 7.2 says "pushing annual makes break-even slightly
+WORSE". That was computed against the prorated figure. **Re-check it before quoting.**
 ⚠️ `$0.218` below is per free user per **MONTH**, not per year. The label is ambiguous and it was misread
 once already.
 

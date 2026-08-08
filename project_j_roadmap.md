@@ -1493,13 +1493,24 @@ WINS. Items graduate UP here from the backlog sections so good ideas don't rot d
 ships it leaves this list. Always offer at least one QUICK WIN when Justin asks what's next, and pull a
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
-- 🔴 **[NOW] [NEW 2026-08-07] AI VOICING BECOMES A SUPPORTER FEATURE. DECIDED, NOT BUILT.** Free users get
-  the deterministic coaching copy on all six coach surfaces; Supporters get it written from their own
-  numbers. Biggest change to the free/paid line since launch planning began: break-even 2.97% -> 2.02%.
+- 🔴 **[NOW] [NEW 2026-08-08] MAKE THE FREE TIER ANSWER MORE, WITHOUT AN AI CALL.** Two linked items, both
+  in `PLAN.md` where the detail lives -- **do not copy any of it here.**
+  ➡️ **`PLAN.md` 4.13** -- a general nutrition & fitness canned library (~198 topics drafted) so a free
+  user's fitness question is answered for zero cost. UNDER DISCUSSION, nothing decided.
+  ➡️ **`PLAN.md` 4.11(a)** -- capture the words Otto did not recognise on a miss, so REAL user phrasing
+  grows the library over time. **Escalated 2026-08-08 at Justin's explicit request** ("i want to make sure
+  that isnt lost"): it is no longer a cost tweak, it is the only honest route to finishing the free tier,
+  because three hand-written test corpora all plateaued at ~60%.
+- ✅ **[SHIPPED 2026-08-07] AI VOICING BECAME A SUPPORTER FEATURE.** Free users get the deterministic
+  coaching copy on all six coach surfaces; Supporters get it written from their own numbers. Biggest change
+  to the free/paid line since launch planning began: break-even 2.97% -> 2.02%.
   **Status, reasoning, the watch list and the four traps: `PLAN.md` 1.9.** Do not restate any of it here.
-  ➡️ **NEXT STEP IS NOT THE BUILD.** Audit `utils/smartTipsCopy.ts` (45 rules, 306 variants) for staleness
-  first: under gating those pools ARE the free product, and adding to them is free forever where improving
-  the AI bills on every call.
+  ⚠️ **THIS LINE READ "DECIDED, NOT BUILT" UNTIL 2026-08-08**, a day after all three steps shipped and were
+  device-verified, while sitting at the TOP of the queue telling Justin to build something already done.
+  Found by a contradiction grep, not by a doc pass. `PLAN.md` was correct throughout -- which is exactly the
+  failure mode PLAN.md was created to end: the file being looked at was right, so nobody checked the other.
+  ✅ The `utils/smartTipsCopy.ts` audit named here as "the next step" is also DONE (structural, content and
+  depth passes; 45 rules, 351 variants, guarded by `scripts/audit-tips-copy.cjs`). See `PLAN.md` 1.9.
 - 🔴 **[NOW] [NEW 2026-08-05 EVENING] VERIFY WE CAN MEASURE ACTIVES, CONVERSION AND RETENTION. Pre-launch,
   not tonight. Full detail: `PLAN.md` 7.3.** We instrumented AI cost to the cent and it turned out to be the
   solved problem ($2.64 per active user per year). **Actives, conversion and retention are what decide

@@ -90,11 +90,25 @@ function monthlyAiCost(perDay, deflect, supporter = false) {
     + v('estimatorMo') * v('estimator');
 }
 
-/** What one Supporter is worth after Apple, over a lifetime of `months`. */
+/**
+ * What one Supporter is worth after Apple, over a lifetime of `months`.
+ *
+ * 🔴 THE ANNUAL HALF USED TO BE PRORATED (`priceAnnual * months/12`) AND THAT WAS WRONG.
+ * Nobody pays a fraction of an annual subscription. An annual subscriber who leaves at month 6
+ * still paid the FULL $89.99 up front and Apple has already forwarded it -- they cannot churn
+ * early, they can only decline to renew. Proration understated every short-lifetime scenario by
+ * ~24% at the 30% annual share, which is exactly the range (3, 6, 9 months) we stress-test in.
+ * ➡️ Annual terms PAID = ceil(months / 12). 6 months -> 1 term. 12 -> 1. 18 -> 2. 24 -> 2.
+ * ⚠️ This makes the annual half a STEP function, so B-series tables now jump at each 12-month
+ *    boundary. That is real, not an artefact: month 13 means they renewed.
+ * ⚠️ AND IT MAY OVERTURN A RECORDED FINDING. PLAN 7.2 says "pushing annual makes break-even
+ *    slightly WORSE". That was computed against the prorated figure. Re-check it before quoting.
+ */
 function revenuePerSupporter(months) {
   const keep = 1 - v('appleCut');
+  const annualTerms = Math.max(1, Math.ceil(months / 12));
   return (1 - v('annualShare')) * v('priceMonthly') * keep * months
-    + v('annualShare') * v('priceAnnual') * keep * (months / 12);
+    + v('annualShare') * v('priceAnnual') * keep * annualTerms;
 }
 
 /**

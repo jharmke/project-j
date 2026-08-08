@@ -998,6 +998,17 @@ is what made him think work had been dropped -- it had not, but he had no way to
       flag it and keep the words we did not recognise. Justin's framing, and it is narrower and safer than
       mine was: it never touches every message, only app questions we failed on, which is roughly one
       message in five.
+      🔴 **ESCALATED 2026-08-08 AT JUSTIN'S EXPLICIT REQUEST ("i want to make sure that isnt lost"). THIS IS
+      NO LONGER A COST OPTIMISATION, IT IS THE MECHANISM THAT FINISHES THE FREE TIER.** What changed: the
+      general nutrition/fitness canned library (4.13) makes a MISS USER-VISIBLE for the first time. Today a
+      miss is invisible -- Otto answers it anyway and nobody knows. Under 4.13 a free user's unmatched
+      question gets a Supporter-pointed answer instead of an answer, so **every gap in the library is now a
+      free user being sold to instead of helped.**
+      ➡️ **AND IT IS THE ONLY HONEST ROUTE TO COMPLETENESS.** Three independently written corpora all landed
+      at ~60%; my imagination demonstrably plateaus there (4.8). Real phrasing is the only input that has
+      never been tried. **The library cannot be finished any other way.**
+      ➡️ **Justin's standing intent: a CONTINUOUS loop, not a one-off audit** -- real questions in, library
+      grows, free tier gets better over time without the AI bill moving.
       ⚠️ **STORE ONLY THE UNRECOGNISED WORDS, NOT THE MESSAGE.** "How do i wipe a meal" stores `wipe` and
       nothing else: we already know "meal", so it teaches us nothing. The output is a frequency list of
       words the app does not understand yet, which is directly actionable.
@@ -1025,6 +1036,41 @@ is what made him think work had been dropped -- it had not, but he had no way to
       means more messages where two answers both look plausible, and those become ties that go to Otto, so
       it may convert misses into ties rather than into hits. **Measure it the same way: accuracy must stay
       at zero wrong answers.** Guess: 60% -> low 70s. Try this FIRST.
+- [ ] **4.13 🆕 A GENERAL NUTRITION & FITNESS CANNED LIBRARY, so a free user's fitness question is answered
+      without an AI call. UNDER DISCUSSION 2026-08-08, NOTHING DECIDED, NOTHING BUILT.**
+      ⚠️ **Logged now only so the work is not lost. Do NOT treat any of this as agreed.** Working drafts live
+      in the session scratchpad (`DRAFT_otto_coach_gate.md`, `DRAFT_general_canned_topics.md`); they get
+      folded in here and deleted as each piece closes.
+      **THE IDEA (Justin's).** Today free users' Otto answers general fitness questions with a paid AI call.
+      Pre-write the general answers instead: ~198 topics drafted across nutrition, training, recovery,
+      weight/progress, consistency, myths, gym practicalities, named diets, label literacy and safety.
+      🔴 **THE LINE JUSTIN DREW, AND IT IS THE WHOLE DESIGN:** general PRINCIPLES are in ("how much protein
+      should I eat", "how many rest days"); per-food and per-exercise RULINGS are out ("is white rice bad").
+      Rulings are unbounded and would never be finished; principles are a finite list with an end.
+      ✅ **ALREADY CORRECTED ONCE:** free users' Otto has **no access to their numbers today** -- `FREE_TIER_BLOCK`
+      in `companionSystemPrompt.ts` states it outright. So the "we read YOUR numbers" paywall already exists
+      and already holds. This item is a COST cut, not a product-consistency fix. An earlier claim in this
+      session that free Otto was a "side door" on 1.9's gate was **wrong**.
+      🔴 **THE THING THAT CHANGES EVERYTHING ELSE: A MISS BECOMES USER-VISIBLE.** Today an unmatched question
+      falls through to Otto invisibly. Here it lands on a Supporter-pointed answer. **So coverage stops being
+      a cost question and becomes a product question**, which is why 4.11(a) was escalated above.
+      **OPEN, NOT DECIDED:** what the miss/pitch answer actually says; whether accuracy is protected by
+      splitting the library in two and letting `ottoCoachRouting.ts` pick which half to search (proposed,
+      unmeasured); the Mindful second versions (~25 of the topics collide with Mindful's rules against
+      deficit maths and weight-loss prescriptions); and the exclusion list below.
+      🔴 **HARD REQUIREMENT, JUSTIN 2026-08-08: DISORDERED-EATING-ADJACENT QUESTIONS GET A REAL, CARING,
+      PRE-WRITTEN ANSWER -- NOT A NUMBER AND NOT A REFUSAL.** "How little can I eat", "how do I lose 20lb in
+      a month". A pre-written target there is the app handing out a harmful number with no judgement in the
+      loop. Routes to the existing undereating safeguard (item L) / crisis path. **Explicit exclusion list,
+      never an oversight.** Same treatment for the 8 medical/safety topics, where canning is the SAFEST
+      option precisely because it makes improvising impossible.
+      ⚠️ **RISK TO WATCH IS COLLISIONS, NOT COVERAGE.** The matcher's zero-wrong-answers record was set on
+      183 answers in ONE domain. At ~380 across two very different domains that record proves much less.
+      ⚠️ Every answer needs the CLAUDE.md health disclaimer.
+      ⚠️ **FAITH MUST NOT BE CAUGHT BY ANY OF THIS.** A faith message with no app noun ("I'm struggling to
+      trust God right now") lands on `coach-by-elimination` in `ottoCoachRouting.ts` and would be gated.
+      The faith handoff must be checked FIRST and must fail OPEN. Detector measured ~81% (4b), so it does
+      not fully cover the case on its own.
 
 ### 4b. 🆕 OTTO HANDS FAITH CONVERSATION TO HALO -- ✅ BUILT + DEPLOYED 2026-08-05
 **Not a cost item.** A product-correctness bug found during the 2.2 verification check. Kept separate on

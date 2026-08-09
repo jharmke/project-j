@@ -118,7 +118,7 @@ returned early. **The first Home-tab open on a fresh day is the clean test.**
       ⚠️ Touches `ai_cost` only, never `ai_usage*` (the caps and pitch budget). Blast radius of a bug here
       is a wrong number in a report, never a lost cap or a granted entitlement.
       (Original note follows.)
-- [ ] **0.2 🆕 THE METER HAS NO RETENTION RULE -- a gap WE created 2026-08-05.** It writes one Firestore
+      ⤷ (superseded, kept for the reasoning) **0.2 THE METER HAS NO RETENTION RULE -- a gap WE created 2026-08-05.** It writes one Firestore
       document per user per day, forever. At 10,000 users that is **3.65 million documents a year** with
       nothing ever deleting them.
       ⚠️ Not a cost problem (Firestore storage is cheap) -- a **tidiness problem that gets harder to fix the
@@ -1101,8 +1101,15 @@ is what made him think work had been dropped -- it had not, but he had no way to
       means more messages where two answers both look plausible, and those become ties that go to Otto, so
       it may convert misses into ties rather than into hits. **Measure it the same way: accuracy must stay
       at zero wrong answers.** Guess: 60% -> low 70s. Try this FIRST.
-- [ ] **4.13 🆕 A GENERAL NUTRITION & FITNESS CANNED LIBRARY, so a free user's fitness question is answered
-      without an AI call. UNDER DISCUSSION 2026-08-08, NOTHING DECIDED, NOTHING BUILT.**
+- [x] **4.13 ✅ BUILT, DEPLOYED AND DEVICE-VERIFIED 2026-08-09. A FREE USER'S COACHING QUESTION NEVER
+      REACHES THE AI.** 137 general answers, the coach gate, the pitch copy and the escalation are all live
+      and confirmed on Justin's phone. **Free-user coaching cost is $0**, and `scripts/cost-model.js` knows
+      it (`gateOttoFree=1`): typical free user $1.86 -> $0.93/yr, break-even 2.02% -> 1.03%.
+      ⏳ **RESIDUALS, none blocking:** the category-specific case A tails (needs a personal question mapped
+      onto its general answer) and coverage beyond 26% on conversational phrasing (4.15).
+      (Original entry follows, kept for the reasoning and the rejected options.)
+      ⤷ **4.13 A GENERAL NUTRITION & FITNESS CANNED LIBRARY, so a free user's fitness question is answered
+      without an AI call. Logged 2026-08-08 while still under discussion.**
       ⚠️ **Logged now only so the work is not lost. Do NOT treat any of this as agreed.** Working drafts live
       in the session scratchpad (`DRAFT_otto_coach_gate.md`, `DRAFT_general_canned_topics.md`); they get
       folded in here and deleted as each piece closes.
@@ -1650,7 +1657,7 @@ Read per call, changeable without an App Store update.
         **So annual only wins if it genuinely doubles retention** -- which contractually it does, since an
         annual subscriber cannot churn in month three. It is a trade (certainty for margin), not free money.
         Do not "push annual" on the assumption it helps; it helps only through retention.
-- [ ] ⏸️ **7.3 PINNED 2026-08-07 by Justin. Investigated, not started. VERIFY WE CAN MEASURE ACTIVES,
+- [x] ✅ **7.3 ANSWERED 2026-08-09. VERIFY WE CAN MEASURE ACTIVES,
       CONVERSION AND RETENTION. BEFORE LAUNCH.**
       🔬 **WHAT THE 2026-08-07 INVESTIGATION FOUND, so nobody re-derives it:**
       1. ✅ **CHECKED IN THE DASHBOARD 2026-08-09. THE PLUMBING WORKS AND THE NUMBER IS A TRAP.**

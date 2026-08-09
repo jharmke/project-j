@@ -66,8 +66,12 @@ const NUTRITION_CORE: CannedAnswer[] = [
     excludes: ['powder', 'shake', 'supplement', 'whey', 'casein', 'vegan', 'vegetarian', 'plant',
                'one sitting', 'absorb', 'spread', 'change', 'edit', 'set my', 'where', 'card', 'preset',
                'log', 'track'],
-    answer:
-      "Most people training regularly land somewhere around 0.7 to 1g per pound of bodyweight. Higher end if you are in a deficit, since protein is what protects muscle while you lose. Below about 0.5g per pound is where most people start leaving results on the table.",
+    // ⚠️ MINDFUL BRANCH. "Higher end if you are in a deficit" and "leaving results on the table" are both
+    // deficit framing and mild judgment. The number itself is unchanged, per the honest-numbers rule.
+    answer: (c) =>
+      c.styleMode === 'mindful'
+        ? "Most people training regularly land somewhere around 0.7 to 1g per pound of bodyweight. It matters most when you are eating less than you burn, since protein is what protects muscle. Below about 0.5g per pound is where most people notice the difference."
+        : "Most people training regularly land somewhere around 0.7 to 1g per pound of bodyweight. Higher end if you are in a deficit, since protein is what protects muscle while you lose. Below about 0.5g per pound is where most people start leaving results on the table.",
   },
   {
     id: 'gen.calories_to_lose',

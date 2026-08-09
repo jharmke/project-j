@@ -1493,14 +1493,15 @@ WINS. Items graduate UP here from the backlog sections so good ideas don't rot d
 ships it leaves this list. Always offer at least one QUICK WIN when Justin asks what's next, and pull a
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
-- 🔴 **[NOW] [NEW 2026-08-08] MAKE THE FREE TIER ANSWER MORE, WITHOUT AN AI CALL.** Two linked items, both
-  in `PLAN.md` where the detail lives -- **do not copy any of it here.**
-  ➡️ **`PLAN.md` 4.13** -- a general nutrition & fitness canned library (~198 topics drafted) so a free
-  user's fitness question is answered for zero cost. UNDER DISCUSSION, nothing decided.
-  ➡️ **`PLAN.md` 4.11(a)** -- capture the words Otto did not recognise on a miss, so REAL user phrasing
-  grows the library over time. **Escalated 2026-08-08 at Justin's explicit request** ("i want to make sure
-  that isnt lost"): it is no longer a cost tweak, it is the only honest route to finishing the free tier,
-  because three hand-written test corpora all plateaued at ~60%.
+- ✅ **[SHIPPED 2026-08-09] THE FREE TIER ANSWERS WITHOUT AN AI CALL. A free user's coaching question never
+  reaches the AI.** 137 general nutrition and fitness answers, the coach gate, the pitch copy and the
+  escalation, all live and device-verified. **Free-user coaching cost is $0**; break-even 2.02% -> 1.03%.
+  Detail and every rejected option: **`PLAN.md` 4.13** -- do not copy any of it here.
+  ⏳ Residuals, none blocking: category-specific pitch tails, and conversational coverage past 26% (4.15).
+  ❌ **`PLAN.md` 4.11(a)** (capture the words Otto did not recognise) **was built, tested and REMOVED the
+  same day: it collects people's names.** "No user id" does not mean "no personal data" when the words are
+  the data. `privacy.html` is untouched and still accurate. (b) shipped instead: a thumbs-down now names the
+  exact canned answer, which needs no policy change.
 - ✅ **[SHIPPED 2026-08-07] AI VOICING BECAME A SUPPORTER FEATURE.** Free users get the deterministic
   coaching copy on all six coach surfaces; Supporters get it written from their own numbers. Biggest change
   to the free/paid line since launch planning began: break-even 2.97% -> 2.02%.

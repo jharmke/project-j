@@ -24,6 +24,15 @@ places, three of them stale, and decisions made off the stale copy.
 |---|---|---|
 | 🔴 **Break-even conversion** | **RUN `node scripts/cost-model.js`** | It prints every table with its assumptions |
 
+📉 **2026-08-09 MILESTONE, recorded because PLAN says log the figure at real milestones only.** The Otto
+coach gate shipped and a free user's coaching question no longer reaches the AI at all.
+**Free active user $1.86 -> $0.93/yr. Break-even 2.02% -> 1.03% at 12-month Supporters, 1.63% at 6-month.**
+⚠️ **STILL RUN THE SCRIPT.** Those three figures are a snapshot of one milestone, not a source. The model
+gained a `gateOttoFree` dial the same day and the annual-price proration bug was fixed that morning, so
+anything written down before 2026-08-09 is wrong in both directions.
+⚠️ **Subscriber lifetime remains the biggest unmeasured assumption and did not move.** RevenueCat confirmed
+2026-08-09 that nobody has ever paid, so nobody has ever churned (7.3).
+
 🔴 **DO NOT WRITE A BREAK-EVEN NUMBER INTO THIS FILE AGAIN.** Replaced 2026-08-05 after an audit found
 **eight** different figures across PLAN, the roadmap and `SPEC_cost_model.md` (1.3 / 1.6 / 1.9 / 2.63 / 2.8 /
 2.93 / 3.73 / 3.92 / 5.14%), with this table telling everyone to "quote this one".

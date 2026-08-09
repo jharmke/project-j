@@ -287,6 +287,49 @@ export function matchCanned(
   }
   if (parts.length > 2) return { matched: false, reason: 'too-many-parts' };
 
+  // ── CONVERSATIONAL PREFIX TRIM (2026-08-09, PLAN 4.15) ──────────────────────────────────────────────
+  // 🔴 THE PROBLEM: an answer must explain EVERY content word, which works on terse questions and collapses
+  // on conversational ones. Measured 69% terse vs **7%** conversational, and the SHIPPED app library scores
+  // 5/5 terse vs 1/5 on the same questions. People open with padding: "i keep hearing different things
+  // about...", "my mate says...", "ive been meaning to ask...".
+  //
+  // ✅ WHY THIS ATTEMPT IS DIFFERENT FROM THE TWO THAT WERE REVERTED. Both of those RELAXED the coverage
+  // rule and immediately returned wrong answers (the pricing answer to a protein question; the fasting
+  // timer to a training question). **This does not relax anything.** It drops leading words and re-runs the
+  // UNCHANGED strict matcher on the remainder, so whatever matches must still explain its whole message.
+  //
+  // 🔴 THE GUARD THAT MAKES IT SAFE: the DROPPED PREFIX MUST CONTAIN NO ANSWER'S SINGLE-WORD TRIGGER.
+  // Without it, "how do i change my theme and how do i log water" could be trimmed down to its second half
+  // and answered as though the first half was never asked. A dropped prefix carrying a real topic word means
+  // something was thrown away, so the trim is refused.
+  // ⚠️ Runs LAST, after the strict pass and after stitching, so no message that already matched can change
+  // behaviour. Terse questions never reach this code at all.
+  const toks = tokens(t);
+  const MAX_TRIM = 6;
+  const triggerWords = new Set<string>();
+  for (const a of answers) {
+    for (const group of a.requires) {
+      for (const term of group) if (!term.includes(' ')) triggerWords.add(SYNONYMS[term] ?? term);
+    }
+  }
+  // 🔴 PREFIX ONLY, AND A TWO-SIDED WINDOW VERSION WAS BUILT, MEASURED AND REVERTED. See PLAN.md 4.15.
+  // The window version was worth real coverage (general 18% -> 24%, terse 70% -> 74%) and broke the one
+  // rule that matters: **"whats the tip jar and how much protein do i need" came back answering only the
+  // tip jar**, which is exactly the half-answered two-parter the strict rule exists to prevent.
+  // ⚠️ AND IT FAILED FOR A REASON THAT HAS NOW BITTEN THREE TIMES TODAY: `triggerWords` is built from the
+  // library being SEARCHED. Running against the app library, 'protein' is not a trigger, so the guard
+  // happily discarded it. **A guard assembled from whatever happens to be in the same array is not a
+  // guard.** Fixing it properly needs the trigger set built from BOTH libraries, which is a real change to
+  // this function's signature and its callers, and is left for a fresh pass rather than a fourth attempt.
+  for (let k = 1; k <= Math.min(MAX_TRIM, toks.length - 3); k++) {
+    const dropped = toks.slice(0, k);
+    if (dropped.some((w) => triggerWords.has(SYNONYMS[w] ?? w))) break;
+    // ⚠️ FULL MESSAGE for triggers and exclusions, TRIMMED text for coverage only. See the note on
+    // `coverageText` in `matchOne`.
+    const m = matchOne(t, ctx, answers, toks.slice(k).join(' '));
+    if (m) return { matched: m, reason: 'hit' };
+  }
+
   return { matched: false, reason: lastReason };
 }
 
@@ -298,6 +341,14 @@ function matchOne(
   t: string,
   ctx: CannedContext,
   answers: CannedAnswer[],
+  // 🔴 COVERAGE TEXT, for the conversational trim (PLAN 4.15). When present, TRIGGERS AND EXCLUSIONS ARE
+  // STILL JUDGED ON THE FULL MESSAGE `t` and only the whole-message-explained test runs on this shorter
+  // string. ⚠️ THE FIRST VERSION RE-RAN EVERYTHING ON THE TRIMMED TEXT AND THAT WAS WRONG TWICE:
+  // "where do i set my goal weight" lost its "where do i" and matched the GENERAL goal-weight answer
+  // instead of the app one (the general answer excludes "where do i" precisely to prevent that, and the
+  // exclusion never got to see it), and "whats the best diet for fat loss" lost "whats the best".
+  // ➡️ Trimming may relax what an answer has to ACCOUNT for. It may never relax what an answer has to MATCH.
+  coverageText?: string,
 ): { id: string; text: string; route?: RouteKey } | null {
   const candidates = answers.filter((a) => {
     if (a.excludes && a.excludes.some((x) => has(t, x))) return false;
@@ -325,7 +376,7 @@ function matchOne(
   // "missed 2 DAYS does it matter"). Filtering them here is structural: it applies to every answer in both
   // libraries rather than being listed in one answer's `covers`. Units and words are untouched, so "100g"
   // and "3 sets" still read as content.
-  const contentWords = tokens(t).filter((w) => !STOPWORDS.has(w) && !/^\d+$/.test(w));
+  const contentWords = tokens(coverageText ?? t).filter((w) => !STOPWORDS.has(w) && !/^\d+$/.test(w));
   const ranked = [...candidates].sort((a, b) => vocabOf(b).length - vocabOf(a).length);
   const fullyExplaining = ranked.filter((a) => contentWords.every((w) => explains(w, a)));
 

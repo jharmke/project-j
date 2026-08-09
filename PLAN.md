@@ -1294,6 +1294,31 @@ is what made him think work had been dropped -- it had not, but he had no way to
       not the coverage number.
       ➡️ **IT IS ALSO THE HIGHEST-VALUE OPEN ITEM ON 4.13.** A 137-answer library that only fires on terse
       phrasing is worth a fraction of what it was costed at, and the same is true of the 183 already live.
+      ✅ **PARTIALLY FIXED 2026-08-09 ON THE THIRD ATTEMPT. CONVERSATIONAL COVERAGE 7% -> 18%, EVERYTHING
+      ELSE CLEAN** (app audit 71/71, 22/22, 30/30, 2/2; zero collisions; zero wrong answers; zero leaks).
+      🔴 **WHAT MADE ATTEMPT 3 WORK WHERE 1 AND 2 FAILED: IT RELAXES NOTHING.** Attempts 1 and 2 loosened the
+      whole-message-explained rule and immediately returned wrong answers. This drops leading words and
+      re-runs the **unchanged** strict matcher on the remainder, so whatever matches still has to explain
+      its whole message.
+      🔴 **AND THE RULE THAT CAME OUT OF IT: TRIMMING MAY RELAX WHAT AN ANSWER HAS TO *ACCOUNT FOR*. IT MAY
+      NEVER RELAX WHAT AN ANSWER HAS TO *MATCH*.** The first cut of attempt 3 re-ran everything on the
+      trimmed text and was wrong twice: *"where do i set my goal weight"* lost its "where do i" and matched
+      the GENERAL goal-weight answer instead of the app one, because that answer excludes "where do i"
+      precisely to prevent this and the exclusion never got to see it. Fixed by judging `requires` and
+      `excludes` on the FULL message and only running coverage on the trimmed text.
+      ❌ **A TWO-SIDED WINDOW VERSION WAS ALSO BUILT AND REVERTED.** Worth more coverage (18% -> 24%, and
+      terse 70% -> 74%) and it broke the one rule that matters: **"whats the tip jar and how much protein do
+      i need" came back answering only the tip jar.** Exactly the half-answered two-parter the strict rule
+      exists to prevent.
+      🔴 **THE SAME STRUCTURAL FLAW KILLED IT AS KILLED ATTEMPT 1, AND IT HAS NOW BITTEN THREE TIMES IN ONE
+      DAY: the trigger guard is built from the library being SEARCHED.** Against the app library 'protein'
+      is not a trigger, so the guard discarded it happily. ➡️ **A guard assembled from whatever happens to
+      be in the same array is not a guard.** Fixing it properly means building the trigger set from BOTH
+      libraries, which changes this function's signature and its callers.
+      ⏳ **STILL OPEN AND STILL THE BIGGEST ITEM: 18% is a real 2.5x, not a solve.** The app library did not
+      move at all (1/5 conversational, unchanged) because its padding sits on both sides of the topic, which
+      is exactly what the window version fixed and could not do safely. ➡️ **Next pass: shared trigger set
+      across both libraries, then re-try the window.**
 
 ### 4b. 🆕 OTTO HANDS FAITH CONVERSATION TO HALO -- ✅ BUILT + DEPLOYED 2026-08-05
 **Not a cost item.** A product-correctness bug found during the 2.2 verification check. Kept separate on

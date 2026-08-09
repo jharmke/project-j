@@ -93,7 +93,10 @@ const NUTRITION_CORE: CannedAnswer[] = [
     // broken, the answer just quietly costs money.**
     excludes: ['how fast', 'how quick', 'how quickly', 'how soon', 'how rapidly', 'how long', 'per week',
                'a week', 'rate', 'realistic', 'goal weight', 'plateau', 'stall', 'build muscle',
-               'at the same time', 'recomp', 'what is a', 'whats a', 'what does', 'define', 'mean'],
+               'at the same time', 'recomp', 'what is a', 'whats a', 'what does', 'define', 'mean',
+               // ⚠️ DIET-CHOICE QUESTIONS BELONG TO `gen.best_diet`. "whats the best diet for fat loss"
+               // was landing here, which answers a question they did not ask.
+               'best diet', 'which diet', 'what diet', 'keto', 'paleo', 'vegan', 'carnivore', 'fasting'],
     // ⚠️ MINDFUL BRANCH. Mindful suppresses deficit maths and weight-loss prescriptions, so the standard
     // wording ("bigger deficits", direct address) is reframed as observation. Nothing is withheld: the
     // real range still appears, per Justin's honest-numbers rule.
@@ -1019,7 +1022,11 @@ const DIETS: CannedAnswer[] = [
   {
     id: 'gen.best_diet',
     requires: [['best diet', 'which diet', 'what diet', 'diet is best', 'diet should i', 'right diet']],
-    covers: ['for me', 'work', 'works', 'pick', 'choose', 'follow', 'good', 'better', 'compare'],
+    // ⚠️ A "which diet" question almost always names a GOAL ("best diet for fat loss"), so the goal words
+    // have to be accounted for here or the whole-message test hands the question to the deficit answer.
+    covers: ['for me', 'work', 'works', 'pick', 'choose', 'follow', 'good', 'better', 'compare',
+             'fat loss', 'fat', 'loss', 'weight loss', 'lose weight', 'muscle', 'gain', 'health',
+             'results', 'beginner'],
     answer:
       "The one you can stay on. Compared head to head over a year the named diets land in roughly the same place, because they all end up creating a deficit. Adherence is the variable that separates them, so pick by what fits your life rather than by the mechanism.",
   },

@@ -24,6 +24,7 @@ import { recordUsage, recordHistorySample, recordCannedOutcome } from './aiUsage
 import { routeCoachOrSupport } from './ottoCoachRouting';
 import { matchCanned } from './ottoCannedMatcher';
 import { CANNED_ANSWERS } from './ottoCannedAnswers';
+import { GENERAL_ANSWERS } from './ottoGeneralAnswers';
 
 // NOTE: admin.initializeApp() is already called once in index.ts. Do NOT call it again here.
 //
@@ -423,7 +424,38 @@ export const appCompanion = onCall(
     // ⚠️ GATE ON `ridersOnThisMessage`, NEVER ON `suffix` -- see the note where it is built. Testing `suffix`
     // switches this whole feature off and nothing on screen looks wrong.
     if (ridersOnThisMessage.length === 0) {
-      const canned = matchCanned(message, { supporter, faithTier, styleMode }, CANNED_ANSWERS);
+      const cannedCtx = { supporter, faithTier, styleMode };
+      const appHit = matchCanned(message, cannedCtx, CANNED_ANSWERS);
+
+      // ── PLAN.md 4.13: the GENERAL nutrition/fitness library ──────────────────────────────────────
+      // 🔴 FREE USERS ONLY, AND THAT IS THE WHOLE POINT OF 4.13. A Supporter pays for answers written
+      // against their own numbers; handing them a generic pre-written one would be a downgrade, not a
+      // saving. (This is the opposite call from the APP library, which serves both: there the canned
+      // answer is EXACT and instant, so a Supporter gains from it.)
+      const genHit = supporter
+        ? ({ matched: false } as ReturnType<typeof matchCanned>)
+        : matchCanned(message, cannedCtx, GENERAL_ANSWERS);
+
+      // 🔴 TIEBREAK WITH THE ROUTER, AND ONLY ON A COLLISION.
+      // ⚠️ THE ORIGINAL PLAN WAS TO HARD-SPLIT: route first, then search ONE library. **MEASURED AND
+      // REJECTED 2026-08-09.** The router sent 4 of 18 real fitness questions to the app side ("is keto
+      // any good", "how do i stay consistent", "do detox teas work", "is bmi accurate") and 1 of 8 app
+      // questions to the fitness side. Splitting on that loses every one of them outright, ~20% of
+      // coverage, from a change meant to improve things.
+      // ⚠️ **The router's "zero dangerous misroutes" record does not mean what it looks like here.**
+      // Dangerous there meant an APP question reaching a manual-less Otto. A fitness question landing on
+      // the Support side was harmless in that design and is fatal in this one. Same measurement, different
+      // question being asked of it.
+      // ✅ So both libraries are always searched and the router only arbitrates when BOTH match, where it
+      // cannot cost coverage. Verified it calls the two real leak cases correctly: "how much protein should
+      // i be eating" and "should i train fasted" both come back as coaching, so the fitness answer wins.
+      let canned = appHit;
+      if (appHit.matched && genHit.matched) {
+        canned = routeCoachOrSupport(message).coachOnly ? genHit : appHit;
+      } else if (genHit.matched) {
+        canned = genHit;
+      }
+
       if (canned.matched) {
         recordCannedOutcome('otto', uid, 'hit');
         return {

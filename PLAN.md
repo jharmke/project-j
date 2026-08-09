@@ -1169,6 +1169,28 @@ is what made him think work had been dropped -- it had not, but he had no way to
       ⚠️ **AND THE SYSTEM PROMPT'S MEDICAL GUARDRAIL DOES NOT REACH A CANNED ANSWER**, since the model is
       never called. It is carried by hand in how each answer is written. ✅ Justin's call: **no new
       disclaimer text**, it is already in 25+ files including Otto's own prompt.
+      ✅ **STEP 4 DONE 2026-08-09: THE LIBRARY IS WIRED IN.** `appCompanion.ts` now searches BOTH libraries.
+      | message | free user | Supporter |
+      |---|---|---|
+      | fitness question | canned answer, **zero cost** | falls through to the AI |
+      | app question | canned answer | canned answer |
+      🔴 **THE FITNESS LIBRARY IS FREE-USERS-ONLY, and that is the opposite call from the APP library.**
+      A Supporter pays for answers written against their own numbers, so a generic pre-written one is a
+      downgrade, not a saving. The app library serves both because there the canned answer is EXACT and
+      instant, so a Supporter gains from it.
+      ❌ **THE HARD SPLIT WAS PROPOSED, MEASURED AND REJECTED THE SAME DAY.** The plan was to let
+      `ottoCoachRouting.ts` pick ONE library. Measured: it sends **4 of 18 real fitness questions to the app
+      side** ("is keto any good", "how do i stay consistent", "do detox teas work", "is bmi accurate") and 1
+      of 8 app questions the other way. Splitting loses every one of those outright, ~20% of coverage, from
+      a change meant to help.
+      🔴 **AND THE REASON IS WORTH KEEPING: the router's "zero dangerous misroutes" record does not mean what
+      it looks like here.** Dangerous there meant an APP question reaching a manual-less Otto. A fitness
+      question landing on the Support side was harmless in THAT design and is fatal in THIS one. **Same
+      measurement, different question being asked of it.** ➡️ Check what a metric was measuring before
+      reusing it.
+      ✅ **SO BOTH LIBRARIES ARE ALWAYS SEARCHED AND THE ROUTER ONLY BREAKS A TIE**, where it cannot cost
+      coverage. Verified it calls both real leak cases correctly ("how much protein should i be eating" and
+      "should i train fasted" both return coaching), so the fitness answer wins those.
       ⚠️ **COUNT MOVED: the topic sweep estimated ~198, the library landed at 141.** Not skipped work
       (internal duplicates, three cut as near-duplicates of existing app answers, several topics collapsed),
       but **worth reconciling against the original sweep before calling it complete.**

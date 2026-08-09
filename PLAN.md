@@ -1608,10 +1608,21 @@ Read per call, changeable without an App Store update.
 - [ ] ⏸️ **7.3 PINNED 2026-08-07 by Justin. Investigated, not started. VERIFY WE CAN MEASURE ACTIVES,
       CONVERSION AND RETENTION. BEFORE LAUNCH.**
       🔬 **WHAT THE 2026-08-07 INVESTIGATION FOUND, so nobody re-derives it:**
-      1. **Conversion + churn: the plumbing EXISTS.** `react-native-purchases` is installed and
-         `revenueCatWebhook.ts` is deployed, so RevenueCat should report both. ➡️ **The whole task is Justin
-         opening the dashboard** and confirming what it actually reports and how it counts a conversion.
-         ⚠️ The 7-day promotional grants may muddy that definition; check specifically.
+      1. ✅ **CHECKED IN THE DASHBOARD 2026-08-09. THE PLUMBING WORKS AND THE NUMBER IS A TRAP.**
+         RevenueCat has **53 customers, 12 "paid subscribers", 0 trialing, and $0 total revenue.** Nothing is
+         disconnected: customers and entitlements are flowing through exactly as they should.
+         🔴 **BUT "12 PAID SUBSCRIBERS" IS NOT 12 PAYING PEOPLE, AND $0 REVENUE IS THE PROOF.** Those are the
+         TestFlight testers locked as Supporters plus first-week grants, all comped, every one showing
+         "Set to cancel". **RevenueCat counts a GRANTED entitlement as a paid subscriber.**
+         ➡️ **SO THE CONVERSION FIGURE ON THAT SCREEN IS FICTION UNTIL SOMEBODY ACTUALLY BUYS SOMETHING.**
+         Read naively it is 12/53 = 23%, which would be the most flattering and most wrong number in the
+         whole project. **Never quote it.** The warning this item already carried about promotional grants
+         muddying the definition was correct and is now confirmed.
+         ⚠️ **CHURN CANNOT BE MEASURED AT ALL YET**: nobody has ever paid, so nobody has ever cancelled.
+         Subscriber lifetime therefore remains the single biggest unmeasured assumption in
+         `scripts/cost-model.js`, exactly as it was this morning.
+         ➡️ **NOTHING TO BUILD OR FIX. Re-check after the first real purchases**, and expect the first
+         honest conversion reading to need the comped accounts filtered out.
       2. 🔴 **"ACTIVES: NOTHING MEASURES IT" WAS WRONG. CORRECTED 2026-08-09 -- IT IS ALREADY MEASURABLE
          FROM DATA THE APP ALREADY COLLECTS, AND NOTHING NEEDS BUILDING OR INSTRUMENTING.**
          The original finding was true only of ANALYTICS PACKAGES (no Firebase Analytics, no Amplitude, no

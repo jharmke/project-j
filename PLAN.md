@@ -1021,6 +1021,26 @@ is what made him think work had been dropped -- it had not, but he had no way to
       recognise so those answers can be improved.* See [[app_store_compliance]].
       ⚠️ **NOT URGENT AND USELESS TODAY** -- with one user it collects nothing. It only starts paying at real
       traffic, so build it any time before launch.
+      ✅ **(b) BUILT + DEPLOYED 2026-08-09. A THUMBS-DOWN NOW NAMES THE ANSWER.** The server always computed
+      the canned answer's id and threw it away, so a thumbs-down could say "that reply was poor" and never
+      WHICH of 321 answers wrote it. It now rides back on the response, onto the message, and into the
+      report: `type` becomes `Otto canned answer (gen.protein_target)` and the body leads with the id.
+      ✅ **THE GATE'S OWN REPLIES ARE TAGGED TOO** (`gate.no-answer`, `gate.own-data`) **and a thumbs-down
+      there is the most useful of the lot: it means a free user was SOLD TO when they wanted HELPING**,
+      which is exactly the failure 4.15's coverage number exists to reduce. The faith handoff is tagged by
+      tier as well.
+      🔴 **CHOSEN OVER (a) DELIBERATELY, AND THE PRIVACY POLICY IS WHY. (a) CANNOT BE BUILT AS WRITTEN.**
+      `public/privacy.html` already promises, of Otto and Halo: *"Your conversations are NOT OTHERWISE SENT
+      TO US OR STORED ON OUR SERVERS, and we never review a conversation you have not reported."* Section 7
+      also lists usage telemetry under Data We Do Not Collect. **Capturing unrecognised words from messages
+      nobody reported contradicts a promise already made to live users**, so (a) is not an addition to the
+      policy, it is an AMENDMENT, and that is Justin's call rather than a build task.
+      ➡️ **(b) needs no policy change at all**: it rides on a report the user chose to send, which section 2
+      already covers. ⚠️ **Justin's instinct to write the privacy line BEFORE building was what surfaced
+      this.** Building first would have produced a feature the policy forbids.
+      ⏳ **(a) STAYS OPEN, with evidence required first.** If thumbs-down volume proves too thin once there
+      is real traffic, amending the policy is defensible, and by then there would be a measured reason.
+      (Original note follows.)
       **(b) 👍👎 THE THUMBS NOW CARRY REAL WEIGHT (Justin's point).** Otto's replies already have thumbs up
       and down. Until today a thumbs-down meant "the model wrote something poor", which is hard to act on.
       **A thumbs-down on a CANNED answer is different: it points at one specific piece of text we wrote, and

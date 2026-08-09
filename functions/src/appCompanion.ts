@@ -466,6 +466,7 @@ export const appCompanion = onCall(
         used: cap.used,
         cap: dailyCap,
         pitched: false,
+        cannedId: `faith.handoff${faithHandoffRepeat ? '.repeat' : ''}.${faithTier}`,
       };
     }
     // ── PLAN.md 4.8: CANNED ANSWER. No API call at all, so this reply costs ZERO. ──────────────────────
@@ -528,6 +529,15 @@ export const appCompanion = onCall(
           used: cap.used,
           cap: dailyCap,
           pitched: false,
+          // 🔴 PLAN.md 4.11(b). The id was always computed here and thrown away, so a thumbs-down could say
+          // "this reply was wrong" and never WHICH of 321 answers wrote it. Returning it makes a thumbs-down
+          // on a canned answer point at one specific piece of text we wrote, which is the highest-signal
+          // feedback in the app and costs nothing to collect.
+          // ⚠️ NO PRIVACY CHANGE, DELIBERATELY. `privacy.html` already covers a reported exchange and
+          // promises conversations are "not otherwise sent to us or stored on our servers". Passively
+          // capturing unrecognised words would contradict that promise; this rides on a report the user
+          // chose to send, so it needs no amendment. See PLAN 4.11.
+          cannedId: canned.matched.id,
         };
       }
       recordCannedOutcome('otto', uid, 'miss');
@@ -570,6 +580,10 @@ export const appCompanion = onCall(
           used: cap.used,
           cap: dailyCap,
           pitched: false,
+          // ⚠️ The gate's own replies are taggable too, and a thumbs-down here is the MOST useful of the
+          // lot: it means a free user was sold to when they wanted helping, which is the exact failure
+          // 4.15's coverage number is trying to reduce.
+          cannedId: `gate.${kind}`,
         };
       }
     } else {

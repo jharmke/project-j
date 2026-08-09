@@ -135,7 +135,10 @@ function stripInlineFormatting(text: string): string {
 }
 
 type Role = 'user' | 'assistant' | 'system' | 'crisis';
-type Msg = { role: Role; text: string; feedback?: 'up' | 'down'; routes?: string[]; tutorials?: string[]; dayJump?: DayRef };
+// ⚠️ `cannedId` (PLAN.md 4.11b) is present ONLY when the reply came from a pre-written answer rather than
+// the model. It is what turns a thumbs-down from "that reply was poor", which is hard to act on, into
+// "THIS specific piece of text we wrote is wrong", which names the entry to fix.
+type Msg = { role: Role; text: string; feedback?: 'up' | 'down'; routes?: string[]; tutorials?: string[]; dayJump?: DayRef; cannedId?: string };
 
 // Replace [[route:key]] tokens with the route's plain label inline (so the sentence still reads
 // naturally) and collect the recognized keys so the client can render tappable pills below the
@@ -541,12 +544,18 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
   // The QUESTION is sent alongside the reply on purpose -- a flagged answer is meaningless without
   // knowing what was asked. Fire-and-forget: a failed send must never block the UI or lose the tap,
   // and the user has already been thanked.
-  const saveReport = async (userMessage: string, reply: string) => {
+  // ⚠️ `cannedId` (PLAN.md 4.11b) is included when the reply was PRE-WRITTEN rather than model-generated.
+  // A thumbs-down on a model reply means "the model wrote something poor", which is hard to act on. A
+  // thumbs-down on a canned answer names one specific piece of text WE wrote, which is either wrong, stale
+  // or badly worded, and can be fixed in one edit. It also arrives with the phrasing that reached it, which
+  // is the only honest source of how real people ask things.
+  // ⚠️ The `type` changes with it so these are filterable in the inbox without opening them.
+  const saveReport = async (userMessage: string, reply: string, cannedId?: string) => {
     try {
       if (!auth.currentUser) return;
       await addDoc(collection(db, 'users', auth.currentUser.uid, 'app_feedback'), {
-        type: 'Otto reply',
-        description: `QUESTION:\n${userMessage || '(none captured)'}\n\nOTTO'S REPLY:\n${reply}`,
+        type: cannedId ? `Otto canned answer (${cannedId})` : 'Otto reply',
+        description: `${cannedId ? `CANNED ANSWER: ${cannedId}\n\n` : ''}QUESTION:\n${userMessage || '(none captured)'}\n\nOTTO'S REPLY:\n${reply}`,
         photoUrl: null,
         userName: auth.currentUser.displayName ?? '',
         userEmail: auth.currentUser.email ?? '',
@@ -569,7 +578,7 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
       for (let k = index - 1; k >= 0; k--) {
         if (messages[k].role === 'user') { userMessage = messages[k].text; break; }
       }
-      saveReport(userMessage, cur.text);
+      saveReport(userMessage, cur.text, cur.cannedId);
     }
     showToast(newVal === 'up' ? 'Thanks for the feedback' : 'Thanks, this helps improve Otto', undefined, 'success');
   };
@@ -786,7 +795,7 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
           !pitchedRef.current);
       const callable = httpsCallable(getFunctions(app), 'appCompanion');
       const res = await callable({ message: text, history, styleMode, faithTier, userContext, dataSnapshot, freeContext, pitchRequested, pitchAsked, mayDecline, capsWorkout, workoutCut, undereating, undereatingFollowUp, faithHandoff, faithHandoffRepeat });
-      const data = (res.data ?? {}) as { ok?: boolean; reply?: string; crisis?: boolean; message?: string; used?: number; cap?: number; pitched?: boolean };
+      const data = (res.data ?? {}) as { ok?: boolean; reply?: string; crisis?: boolean; message?: string; used?: number; cap?: number; pitched?: boolean; cannedId?: string };
 
       if (typeof data.used === 'number' && typeof data.cap === 'number') {
         persistQuota(data.used, data.cap);
@@ -824,7 +833,7 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
         const dayJump = isDayRecall(text) || aboutSleep
           ? (resolveDayRef(text, new Date(), aboutSleep) ?? undefined)
           : undefined;
-        setMessages(prev => [...prev, { role: 'assistant', text: stripInlineFormatting(finalText), routes, tutorials, dayJump }]);
+        setMessages(prev => [...prev, { role: 'assistant', text: stripInlineFormatting(finalText), routes, tutorials, dayJump, cannedId: data.cannedId }]);
       } else if (data.message) {
         setSending(false);
         setMessages(prev => [...prev, { role: 'system', text: data.message! }]);

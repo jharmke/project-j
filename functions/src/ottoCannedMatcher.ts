@@ -508,6 +508,26 @@ function matchOne(
   return null;
 }
 
+/**
+ * PLAN.md 4.11(a). The content words in a message that NO answer in either library accounts for.
+ *
+ * ⚠️ REUSES THE MATCHER'S OWN VOCABULARY AND STOPWORDS RATHER THAN A SECOND LIST. A separate word list
+ * would drift from the one that decides matches, and then the words collected would not be the words that
+ * caused the miss. That is the same class of bug as the guard that matched words differently from the
+ * matcher it guarded ("notification" vs "notifications").
+ * ⚠️ Synonyms are applied first, so a user typing "cals" is not recorded as an unknown word when the
+ * matcher already understands it.
+ */
+export function unknownContentWords(message: string, allAnswers: CannedAnswer[]): string[] {
+  const t = normalise(message).split(' ').map((w) => SYNONYMS[w] ?? w).join(' ');
+  const vocab: string[] = [];
+  for (const a of allAnswers) vocab.push(...a.requires.flat(), ...(a.covers ?? []));
+  const known = (w: string) => vocab.some((term) => (term.includes(' ')
+    ? term.split(' ').some((part) => has(w, part))
+    : has(w, term)));
+  return tokens(t).filter((w) => !STOPWORDS.has(w) && !/^\d+$/.test(w) && !known(w));
+}
+
 function hit(a: CannedAnswer, ctx: CannedContext): CannedResult {
   const text = typeof a.answer === 'function' ? a.answer(ctx) : a.answer;
   return { matched: { id: a.id, text, route: a.route }, reason: 'hit' };

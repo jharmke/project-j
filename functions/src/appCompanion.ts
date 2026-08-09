@@ -541,6 +541,20 @@ export const appCompanion = onCall(
         };
       }
       recordCannedOutcome('otto', uid, 'miss');
+      // 🔴 PLAN.md 4.11(a) WAS BUILT HERE ON 2026-08-09, TESTED, AND REMOVED BEFORE IT EVER SHIPPED.
+      // The idea: keep the words no answer accounted for, so the library improves on evidence instead of
+      // guessing. The design stored ONE document per word with a count and NO user id, which I argued made
+      // attribution impossible.
+      // ❌ **IT COLLECTS PEOPLE'S NAMES.** Run against "my name is justin harmke and i am 34" it returned
+      // `["justin","harmke"]`. The identity filter rejected digits, @ and dots; a first name is plain
+      // lowercase letters and walks straight through. **"No user id" does not mean "no personal data" when
+      // the words themselves are the data.**
+      // ➡️ The guard that would fix it is the one PLAN specified and I talked myself out of: only keep a
+      // word once SEVERAL DIFFERENT accounts have typed it, which no single person's name ever reaches.
+      // That requires tracking which accounts contributed a word, i.e. exactly the person-to-word link the
+      // design existed to avoid, at least until the threshold is met. **That is a real design problem, not
+      // a filter to widen.** Do not rebuild this without solving it, and do not amend `privacy.html` for it
+      // until it is solved.
 
       // ── PLAN.md 4.13 STEP 5: THE COACH GATE. A free user's coaching question never reaches the AI. ──
       // 🔴 THIS IS WHERE THE MONEY IS, and the 137-answer library above is what stops it feeling brutal.

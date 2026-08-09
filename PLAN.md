@@ -994,6 +994,26 @@ is what made him think work had been dropped -- it had not, but he had no way to
       **THE PROBLEM THEY SOLVE:** canned coverage measured **~60% on three independent corpora** (4.8), and
       more corpora written by me will keep landing at 60%. **I cannot guess my way to the phrasings real
       people use.** Everything below is about replacing my imagination with evidence.
+      🔴 **(a) WAS BUILT, TESTED AND REMOVED ON 2026-08-09 BEFORE IT SHIPPED OR THE POLICY WAS TOUCHED.
+      JUSTIN HAD ALREADY SAID YES. IT COLLECTS PEOPLE'S NAMES.**
+      The design stored ONE document per unrecognised word holding the word and a count, with **no user id
+      at all**, which I argued made attribution impossible and made the "seen by several accounts" guard in
+      the original spec unnecessary. **That argument was wrong and one test killed it:** run against
+      *"my name is justin harmke and i am 34"* it returned **`["justin","harmke"]`**. The identity filter
+      rejected digits, `@` and dots; a first name is plain lowercase letters and walks straight through.
+      ➡️ **"NO USER ID" DOES NOT MEAN "NO PERSONAL DATA" WHEN THE WORDS THEMSELVES ARE THE DATA.**
+      ➡️ **The guard that fixes it is the one the spec specified and I talked myself out of:** only keep a
+      word once SEVERAL DIFFERENT accounts have typed it, which no individual's name ever reaches. That
+      needs tracking which accounts contributed a word, i.e. **exactly the person-to-word link the design
+      existed to avoid**, at least until the threshold is met. **A real design problem, not a filter to
+      widen.**
+      ⚠️ **DO NOT REBUILD WITHOUT SOLVING THAT, AND DO NOT AMEND `privacy.html` UNTIL IT IS SOLVED.** The
+      policy still says "we never review a conversation you have not reported" and that is still true.
+      ✅ **`unknownContentWords()` in `ottoCannedMatcher.ts` SURVIVES and is correct**: it reuses the
+      matcher's own vocabulary and stopwords, so the words it reports are genuinely the ones that caused the
+      miss. The hard part is solved; the storage is not.
+      ✅ **(b) SHIPPED INSTEAD and needs no policy change at all.** See below.
+      (Original note follows.)
       **(a) 🔑 KEYWORD CAPTURE ON A MISS.** When a canned answer does NOT fire and the message goes to Otto,
       flag it and keep the words we did not recognise. Justin's framing, and it is narrower and safer than
       mine was: it never touches every message, only app questions we failed on, which is roughly one

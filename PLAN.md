@@ -1054,6 +1054,40 @@ is what made him think work had been dropped -- it had not, but he had no way to
       🔴 **THE THING THAT CHANGES EVERYTHING ELSE: A MISS BECOMES USER-VISIBLE.** Today an unmatched question
       falls through to Otto invisibly. Here it lands on a Supporter-pointed answer. **So coverage stops being
       a cost question and becomes a product question**, which is why 4.11(a) was escalated above.
+      🔴 **LOCKED, JUSTIN 2026-08-08: EVERY SUPPORTER-POINTED MESSAGE CARRIES A SUPPORT BADGE / BUTTON THAT
+      OPENS THE SUPPORT THE MISSION PAGE. "No exceptions."**
+      ⚠️ **THE BUTTON DOES NOT EXIST YET AND IS A SMALL BUILD (Justin: "it takes 2 seconds").** Verified
+      2026-08-08 in `utils/companionRoutes.ts`: there is **no route key for the Support the Mission page at
+      all.** `nav.membership` uses `route: 'profile'` (lands on the Profile TAB), and `mission` is NOT it --
+      it points at `/mission`, labelled "What makes this app different", the app's philosophy screen.
+      ➡️ Add a new key pointing at the membership/Support the Mission screen.
+      ✅ **DECIDED 2026-08-08: THE BUTTON LABEL IS "See what Supporters get".** Rejected: putting "tap below
+      to see all perks" in the message copy. Labels live once per route in `companionRoutes.ts`, so the
+      label sells in every pitch without adding a word to any of the ~50 variants, and Justin's premium copy
+      standard rules out narrating the UI.
+      ⚠️ **A DELIBERATE BREAK FROM HOUSE STYLE.** Every other label is a plain destination name ("Goals
+      settings", "Sleep", "Profile tab"). This one is benefit-phrased because its job is selling.
+      ✅ **ALSO DECIDED: TWO POOLS, NOT ONE.** (A) the question needed their numbers -- name specifically
+      what the plan reads ("your own intake across the week"); (B) we simply had no answer -- Otto says he
+      is not sure rather than that he lacks a prepared answer. **Case A voice is APPROVED; case B is not
+      landing yet after four drafts.**
+      ✅ **AND ON A REPEAT MISS THE SELL ESCALATES, IT DOES NOT BACK OFF (Justin's call, reversing my
+      recommendation).** Someone hitting the wall three times is the most engaged user in the app; that is
+      the moment to make the case properly, not to go quiet.
+      ✅ **ALL 33 LINES OF COPY ARE WRITTEN AND APPROVED (2026-08-08/09). THEY LIVE IN `SPEC_otto.md`,
+      section "SUPPORTER-POINTED REPLY COPY" -- do not copy any of them back into this file.**
+      24 case A tails (4 categories x 3, standard + Mindful) and 9 case B opener/closer combinations.
+      That section also carries **the six voice rules it cost ~25 rejected drafts to find**, which are the
+      most reusable thing to come out of this and must be read before writing any further Otto copy.
+      🔴 **THE THIRD OUTCOME WAS JUSTIN'S CATCH AND IT IS LOAD-BEARING: A PURELY GENERAL QUESTION GETS NO
+      PITCH AT ALL.** "How much protein should I eat" is answered and nothing is sold; only "am I eating
+      enough protein" earns the tail. My framing had been "needs their numbers = pitch", which would have
+      pitched on general questions too.
+      ✅ **AND THE SIGNAL THAT SPLITS THEM ALREADY EXISTED:** `OWN_DATA_SIGNALS` in `ottoCannedMatcher.ts`
+      literally contains `am i eating`. Built for a different job (stopping "how many custom foods do I
+      have" matching the plan's LIMIT); no new work needed. It is a keyword list so it will miss phrasings,
+      but **it fails toward NOT pitching**, which is the harmless direction.
+      ⏳ **STILL UNWRITTEN: the escalated repeat-miss copy.**
       **OPEN, NOT DECIDED:** what the miss/pitch answer actually says; whether accuracy is protected by
       splitting the library in two and letting `ottoCoachRouting.ts` pick which half to search (proposed,
       unmeasured); the Mindful second versions (~25 of the topics collide with Mindful's rules against

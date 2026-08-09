@@ -1720,3 +1720,122 @@ THIRD copy of the app knowledge to keep in sync -- and the two existing copies h
 - NIH minimums + MyFitnessPal's implementation: https://support.myfitnesspal.com/hc/en-us/articles/360032626031-A-Message-about-MyFitnessPal-s-updated-nutrition-goals
 - MFP warning trigger (1000 W / 1200 M net): https://community.myfitnesspal.com/en/discussion/10739478/warning-about-being-under-my-minimum
 - MFP net calorie definition: https://support.myfitnesspal.com/hc/en-us/articles/360032274432-Can-I-customize-my-nutritional-goals
+
+---
+
+# 🆕 SUPPORTER-POINTED REPLY COPY (locked 2026-08-08/09)
+
+⚠️ **THE HEADER OF THIS FILE IS STALE.** It still says "Otto today is fully free with no tiering". Since
+then his free cap went to 5/day (PLAN 3.1), canned answers shipped live (PLAN 4.8) and Coach/Support
+routing shipped (PLAN 4.9). Status and ranking live in `PLAN.md` 4.13; this section is the COPY only.
+
+**WHAT THIS IS FOR.** Under PLAN 4.13 a free user's fitness question is answered from a pre-written library
+instead of an AI call. This is what Otto says when the pre-written answer cannot finish the job.
+
+## THE THREE OUTCOMES, AND THE RULE THAT PICKS BETWEEN THEM (Justin, 2026-08-08)
+| the question | example | what Otto does |
+|---|---|---|
+| **General** | "How much protein should I eat?" | Answer it. **NO PITCH.** |
+| **About their own data (case A)** | "Am I eating enough protein?" | Answer it generally, **then a pitch tail** |
+| **We have no answer (case B)** | anything uncovered | **Opener + closer**, standalone |
+
+✅ **THE SIGNAL ALREADY EXISTS AND NEEDED NO NEW WORK:** `OWN_DATA_SIGNALS` in `ottoCannedMatcher.ts`
+already contains `am i eating`, `am i hitting`, `whats my`, `on pace` and the rest. Built to stop the
+matcher answering "how many custom foods do I have" with the plan's LIMIT; the same signal separates a
+personal question from a general one here.
+⚠️ **It is a keyword list, so it WILL miss phrasings** ("do I get enough protein", "should I be eating
+more"). See [[feedback_detectors_are_brittle]]. ➡️ **It fails in the SAFE direction: a miss means NO
+pitch**, so the user still gets a good general answer and only the sell is lost. Nobody is ever pitched
+for asking a general question, which is the failure that would actually matter.
+
+## 🔴 THE VOICE RULES. ~25 DRAFTS WERE REJECTED FINDING THESE. READ BEFORE WRITING MORE COPY.
+1. **FIRST PERSON ABOUT OTTO, never third person about a tier.** "where I can answer" survived; "Supporters
+   get a real answer" and "get an answer to whatever they ask" were cut. Otto talks about what HE can do,
+   never about what a customer segment receives.
+2. **NEVER EXPLAIN THE HEDGE.** "I am not sure, and I do not want to guess" reads as an AI tic. People say
+   they do not know and stop.
+3. **BANNED:** intensifiers ("genuinely", "truthfully"), folksy ("that one stumps me", "you have me there"),
+   self-aware machine talk ("I do not have a prepared answer"), Otto narrating his own feelings ("and I do
+   not love it"), metaphors ("takes the lid off").
+4. ✅ **"NEARLY" IS JUSTIN'S OWN WORD AND IT STAYS.** Even a Supporter's Otto has limits; the qualifier is
+   what keeps the promise honest.
+5. **THE BENEFIT MUST BE CONCRETE.** Vague benefits ("dig into", "work through it with you", "think
+   properly") were rejected every time. Case A names what is READ; case B names the absence of a limit.
+6. **NO DASHES OF ANY KIND** (house rule, shared with `ottoCannedAnswers.ts`).
+
+## 🔘 EVERY ONE OF THESE CARRIES THE BUTTON. "No exceptions." (Justin, 2026-08-08)
+Label: **"See what Supporters get"**, set once in `utils/companionRoutes.ts`.
+⚠️ **THE ROUTE KEY DOES NOT EXIST YET.** There is no key for the Support the Mission page. `nav.membership`
+uses `route: 'profile'` (lands on the Profile TAB) and `mission` points at `/mission`, the philosophy
+screen. **Add the key and verify the destination before any of this ships.**
+❌ **REJECTED: "tap below to see all perks" in the message copy.** Cheap filler, and the label does that job
+in every variant for free.
+
+## CASE B -- WE HAVE NO ANSWER. Opener + closer, 9 combinations.
+**OPENERS:** "Honestly, I am not sure on that one." / "Good question, and I am not sure." / "I am not
+certain on that one."
+**CLOSERS:** "With the Supporter plan I can take on nearly anything you ask." / "With the Supporter plan I
+can help with nearly anything you want to know." / "The Supporter plan is where I can answer nearly
+whatever you bring me."
+⚠️ **`pickVariant` (in `utils/smartTipsCopy.ts`) rotates a FLAT list**, so opener x closer mixing needs
+either 9 pre-written full lines or a small change to how the pool is assembled. Decide at build time.
+⚠️ **CASE B IS ONE POOL FOR THE WHOLE APP**, not per category: on a miss we often do not know the topic.
+That is why it needs 9 and not 3.
+✅ **ON A REPEAT MISS THE SELL ESCALATES, IT DOES NOT BACK OFF** (Justin's call, reversing the original
+recommendation). Someone hitting the wall three times is the most engaged user in the app. **Copy for the
+escalated version is NOT written yet.**
+
+## CASE A -- THE QUESTION NEEDED THEIR OWN NUMBERS. Tail only; a real answer comes first.
+**Worked example of the whole reply:**
+> **Them:** Am I eating enough protein?
+> **Otto:** Most people doing resistance training land somewhere around 0.7 to 1g per pound of bodyweight.
+> Under a deficit it matters more, because protein is what protects muscle while you lose. **Reading your
+> own intake across the week is part of the Supporter plan, and that is where I could tell you where you
+> actually land.** `[See what Supporters get]`
+
+### NUTRITION -- standard
+1. "Reading your own intake across the week is part of the Supporter plan, and that is where I could tell you where you actually land."
+2. "What I cannot do on the free plan is look at what you have actually logged. That comes with the Supporter membership."
+3. "Whether that is true for you specifically is something I could answer on the Supporter plan, where I can read your own numbers."
+
+### NUTRITION -- Mindful
+1. "Looking at your own intake across the week is part of the Supporter plan."
+2. "What I cannot do on the free plan is look at what you have actually logged. That comes with the Supporter membership."
+3. "Noticing how that has looked for you lately is something I could do on the Supporter plan, where I can read your own numbers."
+
+### TRAINING -- standard
+1. "Looking at what you have actually been training is part of the Supporter plan, and that is where I could tell you how it lines up."
+2. "What I cannot do on the free plan is read your own sessions back. That comes with the Supporter membership."
+3. "Whether that fits how you are actually training is something I could answer on the Supporter plan, where I can see your logged workouts."
+
+### TRAINING -- Mindful
+1. "Looking at what you have actually been training is part of the Supporter plan."
+2. "What I cannot do on the free plan is read your own sessions back. That comes with the Supporter membership."
+3. "Seeing how training has been going for you is something I could do on the Supporter plan."
+
+### SLEEP AND RECOVERY -- standard
+1. "Reading your own nights and finding the pattern in them comes with the Supporter membership."
+2. "What I cannot do on the free plan is look at how you have actually been sleeping. That is part of the Supporter plan."
+3. "Whether that is what is happening for you is something I could answer on the Supporter plan, where I can read your own sleep and recovery."
+
+### SLEEP AND RECOVERY -- Mindful
+1. "Reading your own nights and noticing the pattern in them comes with the Supporter membership."
+2. "What I cannot do on the free plan is look at how you have actually been sleeping. That is part of the Supporter plan."
+3. "Seeing how rest has been going for you is something I could do on the Supporter plan."
+
+### WEIGHT AND PROGRESS -- standard
+1. "Reading your own weight trend is part of the Supporter plan, and that is where I could tell you what yours is actually doing."
+2. "What I cannot do on the free plan is look at how your own weight has moved. That comes with the Supporter membership."
+3. "Whether that is what yours is doing is something I could answer on the Supporter plan, where I can read your own history."
+
+### WEIGHT AND PROGRESS -- Mindful
+1. "Looking at your own weight history is part of the Supporter plan."
+2. "What I cannot do on the free plan is see how yours has moved over time. That comes with the Supporter membership."
+3. "Following how that has gone for you is something I could do on the Supporter plan."
+
+⚠️ **ONLY WEIGHT AND PROGRESS IS GENUINELY DIFFERENT IN MINDFUL.** "What yours is actually doing" becomes
+"following how that has gone". Training and sleep barely move, because Mindful's rules are about deficit
+maths and weight prescriptions, not about training or rest. **Kept as separate pools anyway (Justin's
+call): a shared pool is the kind of thing that quietly breaks when someone edits one line.**
+
+**TOTAL: 24 case A tails + 9 case B combinations = 33 lines.**

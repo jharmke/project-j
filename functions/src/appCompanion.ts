@@ -410,7 +410,23 @@ export const appCompanion = onCall(
     // ⚠️ DERIVED FROM THE ARRAY ON PURPOSE, not restated as a boolean: add a new conditional rider above and
     // this gate counts it automatically. A hand-written `safeguardActive || capsWorkout || ...` would silently
     // fall out of date the first time someone adds a sixth block.
-    const ridersOnThisMessage = suffixParts.filter(p => p !== REPLY_SHAPE_BLOCK);
+    // 🔴 PITCH_REQUIRED_BLOCK NO LONGER BLOCKS A CANNED ANSWER (2026-08-09, PLAN 4.13).
+    // ⚠️ IT USED TO, AND JUSTIN'S DEVICE TEST IS WHAT EXPOSED THE COST. He asked four questions: "how much
+    // protein" came back instantly from the library, and "is creatine worth it" and "how many rest days"
+    // both went to the AI at full price even though both have perfectly good canned answers. The only
+    // difference was that the app had decided those messages were pitch moments.
+    // ➡️ **That trade was fine when canned answers were app paths only. With 137 fitness answers behind the
+    // gate, every pitch moment now throws away a free answer AND pays for an AI one.**
+    // ✅ SAFE, AND VERIFIED IN THE CODE RATHER THAN ASSUMED: the pitch slot is spent lazily. `recordPitch`
+    // runs only after a reply is generated AND only if the model actually mentioned the plan (see the
+    // `pitched` calculation near the end of this function). The canned path returns `pitched: false` and
+    // never calls it, so the slot is NOT consumed and the pitch simply lands on a later message.
+    // 🔴 EVERY OTHER RIDER STILL BLOCKS, and the distinction is deliberate: the faith handoff, the
+    // undereating safeguard, the workout cap and the decline watch are all SAFETY or CORRECTNESS. A pitch
+    // is marketing. Losing a pitch for one message costs a mention; swallowing a safeguard costs more.
+    const ridersOnThisMessage = suffixParts.filter(
+      (p) => p !== REPLY_SHAPE_BLOCK && p !== PITCH_REQUIRED_BLOCK,
+    );
     // ── PLAN.md 4.8: CANNED ANSWER. No API call at all, so this reply costs ZERO. ──────────────────────
     // 🔴 POSITION IS LOAD-BEARING, TWICE OVER.
     //  1. AFTER the cap increment above, because Justin's call is that a canned answer still spends a

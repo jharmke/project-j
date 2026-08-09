@@ -9,6 +9,7 @@ import {
   buildCompanionManual,
   COACH_NO_MANUAL_BLOCK,
   buildFaithHandoffBlock,
+  faithHandoffReply,
   buildCompanionVolatileSplit,
   PITCH_REQUIRED_BLOCK,
   buildWorkoutCapBlock,
@@ -428,6 +429,38 @@ export const appCompanion = onCall(
     const ridersOnThisMessage = suffixParts.filter(
       (p) => p !== REPLY_SHAPE_BLOCK && p !== PITCH_REQUIRED_BLOCK,
     );
+
+    // ── PLAN.md 4.14: THE FAITH HANDOFF IS SERVED DIRECTLY. No API call. ────────────────────────────────
+    // 🔴 THE REPLY WAS ALWAYS A FIXED SENTENCE AND WE WERE PAYING A FULL PRICE MESSAGE TO PRODUCE IT.
+    // Otto read his entire prompt and emitted text already written in this file. Justin watched it happen on
+    // device on 2026-08-09: "I'm struggling with my faith right now" came back word for word, and cost.
+    // ✅ **AND CANNING IT GUARANTEES THE WORDING, WHICH IS WORTH MORE THAN THE MONEY.** "Reply word for word"
+    // is an instruction to a MODEL, and on this project a prompt instruction has lost to the model's own
+    // inclination three times (Halo's two locked voice rules, Otto's no-guess rule inventing a limit, and
+    // the invented "supplement tracker" the same day as this). A served string cannot paraphrase.
+    // ✅ It also gains a BUTTON, which the AI reply could never carry: the words describe where the gold
+    // cross button is, and now the reply can just take them there.
+    //
+    // ⚠️ GUARDED SO IT CANNOT SWALLOW ANYTHING. It fires only when the faith handoff is the ONLY thing the
+    // app decided must ride on this message. If the undereating safeguard, a workout cap or the decline
+    // watch is also active, the message goes the long way exactly as before.
+    // ⚠️ THE GUARD IS DERIVED FROM THE ARRAY, not restated as booleans, for the same reason the comment
+    // above says: a hand-written `!safeguardActive && !capsWorkout && ...` silently falls out of date the
+    // first time somebody adds a sixth rider.
+    // ⚠️ The cap has already been incremented above, so a handoff still spends a message. That matches
+    // Justin's ruling that a canned answer spends one, and is what the old AI-written handoff did too.
+    const faithBlockText = faithHandoff ? buildFaithHandoffBlock(faithTier, faithHandoffRepeat) : '';
+    if (faithHandoff && ridersOnThisMessage.every((p) => p === faithBlockText)) {
+      const handoff = faithHandoffReply(faithTier, faithHandoffRepeat);
+      recordCannedOutcome('otto', uid, 'hit');
+      return {
+        ok: true,
+        reply: handoff.route ? `${handoff.text} [[route:${handoff.route}]]` : handoff.text,
+        used: cap.used,
+        cap: dailyCap,
+        pitched: false,
+      };
+    }
     // ── PLAN.md 4.8: CANNED ANSWER. No API call at all, so this reply costs ZERO. ──────────────────────
     // 🔴 POSITION IS LOAD-BEARING, TWICE OVER.
     //  1. AFTER the cap increment above, because Justin's call is that a canned answer still spends a

@@ -114,9 +114,45 @@ function tierTail(tier: FaithTier): string {
 // to ACT on cannot live in the system half. See [[feedback_measure_dont_ask_justin]].
 // ⚠️ THE COPY IS FIXED, NOT PARAPHRASED. Same reason the undereating safeguard's lines are fixed: this is a
 // boundary, and a boundary the model rewrites each time is a boundary that drifts.
+/**
+ * 🔴 THE THREE HANDOFF SENTENCES, DEFINED ONCE (PLAN.md 4.14). They are used TWICE: as the exact words the
+ * prompt orders the model to produce, and as the text served directly when the reply is short-circuited.
+ * ⚠️ DEFINED HERE RATHER THAN TYPED INTO BOTH PLACES ON PURPOSE. Two copies of a sentence is two chances
+ * for it to drift, and the whole point of short-circuiting is that the user sees the SAME words either way.
+ */
+export const FAITH_HANDOFF_TEXT = {
+  normal: "That one's Halo's rather than mine. She's the gold cross button on the Faith tab, and it's exactly what she's built for.",
+  nrn: "That's Halo's side of the app rather than mine. She's the faith companion, and she's turned off on your account right now. You can turn her back on in Settings, under Faith and Style.",
+  repeat: "Still Halo's area rather than mine.",
+} as const;
+
+/**
+ * The handoff reply and the button that should ride with it, served WITHOUT an API call (PLAN.md 4.14).
+ * 🔴 THE BUTTON DIFFERS BY TIER AND JUSTIN CAUGHT WHY. A "Not Right Now" user does not HAVE a Faith tab, so
+ * sending them there sends them to a screen that is not on their phone. Their sentence already tells them
+ * to go to Settings, so their button goes to the same place the words do.
+ * 🔴 AND A REPEAT TO A NOT-RIGHT-NOW USER GETS NO BUTTON AT ALL. The repeat variant exists precisely so that
+ * somebody who opted out is not shown "here is how to turn her on" three times over; the code comment below
+ * calls it a sales pitch aimed at the one person who explicitly opted out. A button on every repeat would
+ * quietly undo that.
+ */
+export function faithHandoffReply(
+  faithTier: FaithTier,
+  repeat: boolean,
+): { text: string; route?: 'faith' | 'faith_style' } {
+  if (repeat) {
+    return faithTier === 'notrightnow'
+      ? { text: FAITH_HANDOFF_TEXT.repeat }
+      : { text: FAITH_HANDOFF_TEXT.repeat, route: 'faith' };
+  }
+  return faithTier === 'notrightnow'
+    ? { text: FAITH_HANDOFF_TEXT.nrn, route: 'faith_style' }
+    : { text: FAITH_HANDOFF_TEXT.normal, route: 'faith' };
+}
+
 const FAITH_HANDOFF_BLOCK = `(FAITH QUESTION. This one is Halo's, not yours. Do NOT answer it, do not give your own view, do not quote or paraphrase scripture, and do not offer encouragement about it. Reply with ONLY this, warmly and word for word:
 
-"That one's Halo's rather than mine. She's the gold cross button on the Faith tab, and it's exactly what she's built for."
+"${FAITH_HANDOFF_TEXT.normal}"
 
 Nothing before it, nothing after it.)`;
 
@@ -129,7 +165,7 @@ Nothing before it, nothing after it.)`;
 // anyone because it never sends them somewhere empty. It says nothing whatsoever about belief.
 const FAITH_HANDOFF_BLOCK_NRN = `(FAITH QUESTION, and this person has faith features turned OFF. Do NOT answer it, do not give your own view, do not quote or paraphrase scripture, and do not nudge them toward belief in any way. Reply with ONLY this, warmly and word for word:
 
-"That's Halo's side of the app rather than mine. She's the faith companion, and she's turned off on your account right now. You can turn her back on in Settings, under Faith and Style."
+"${FAITH_HANDOFF_TEXT.nrn}"
 
 Nothing before it, nothing after it.)`;
 
@@ -139,7 +175,7 @@ Nothing before it, nothing after it.)`;
 // the full block once per conversation and this one after, the same way the Supporter pitch already works.
 const FAITH_HANDOFF_BLOCK_REPEAT = `(FAITH QUESTION again. Same rule: do NOT answer it, no view of your own, no scripture. Reply with ONLY this, word for word:
 
-"Still Halo's area rather than mine."
+"${FAITH_HANDOFF_TEXT.repeat}"
 
 Nothing before it, nothing after it.)`;
 

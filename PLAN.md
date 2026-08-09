@@ -1249,8 +1249,24 @@ is what made him think work had been dropped -- it had not, but he had no way to
       ⚠️ Detector measured ~81% (4b), so this covers the ~19% it misses. Costs almost nothing: Halo is ~3%
       of a free user's bill, and under 4.14 the handoff reply itself becomes free.
 
-- [ ] **4.14 🆕 THE FAITH HANDOFF REPLY SHOULD BE A CANNED ANSWER. Found 2026-08-09 while deciding 4.13's
-      faith rule. NOT BUILT. Logged separately per the side-findings rule so 4.13 is not held hostage to it.**
+- [x] **4.14 ✅ BUILT + DEPLOYED 2026-08-09. THE FAITH HANDOFF IS SERVED DIRECTLY, WITH NO API CALL.**
+      ✅ **JUSTIN WATCHED IT COST MONEY ON DEVICE FIRST.** His faith test returned the handoff sentence word
+      for word at full price, which is the evidence this was worth doing.
+      ✅ **THREE SENTENCES NOW DEFINED ONCE** (`FAITH_HANDOFF_TEXT`) and used twice: as the words the prompt
+      orders the model to produce, and as the text served directly. Two copies of a sentence is two chances
+      to drift, and the whole point is that the user sees the same words either way.
+      ✅ **BUTTONS BY TIER, VERIFIED ON ALL FIVE CASES:** rooted and exploring get the Faith tab; **Not Right
+      Now gets Settings > Faith & Style, NOT the Faith tab they do not have**; a repeat to a Not Right Now
+      user gets **no button at all**, because the repeat variant exists precisely so somebody who opted out
+      is not shown "here is how to turn her on" three times.
+      ⚠️ **GUARDED SO IT CANNOT SWALLOW ANYTHING.** It fires only when the handoff is the ONLY rider on the
+      message. Safeguard, workout cap or decline watch active and it goes the long way exactly as before.
+      The guard is derived from the rider array, not restated as booleans, so a sixth rider counts itself.
+      🔴 **AND THE WORDING IS NOW GUARANTEED, WHICH IS WORTH MORE THAN THE MONEY.** "Reply word for word" is
+      an instruction to a MODEL, and on this project a prompt instruction has lost to the model's own
+      inclination FOUR times now: Halo's two locked voice rules, Otto's no-guess rule inventing a limit, and
+      the invented "supplement tracker" found the same day. A served string cannot paraphrase.
+      (Original finding follows.)
       **THE FINDING.** When Otto hands a faith message to Halo he emits a HARDCODED sentence, but producing
       it costs a FULL AI CALL: he is billed to read his whole prompt and then output text we already wrote.
       ⚠️ **And the canned matcher is deliberately switched OFF when a faith handoff is riding** (PLAN 4.8

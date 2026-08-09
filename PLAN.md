@@ -1056,11 +1056,27 @@ is what made him think work had been dropped -- it had not, but he had no way to
       a cost question and becomes a product question**, which is why 4.11(a) was escalated above.
       🔴 **LOCKED, JUSTIN 2026-08-08: EVERY SUPPORTER-POINTED MESSAGE CARRIES A SUPPORT BADGE / BUTTON THAT
       OPENS THE SUPPORT THE MISSION PAGE. "No exceptions."**
-      ⚠️ **THE BUTTON DOES NOT EXIST YET AND IS A SMALL BUILD (Justin: "it takes 2 seconds").** Verified
-      2026-08-08 in `utils/companionRoutes.ts`: there is **no route key for the Support the Mission page at
-      all.** `nav.membership` uses `route: 'profile'` (lands on the Profile TAB), and `mission` is NOT it --
-      it points at `/mission`, labelled "What makes this app different", the app's philosophy screen.
-      ➡️ Add a new key pointing at the membership/Support the Mission screen.
+      ✅ **STEP 1 BUILT 2026-08-09: THE `support` ROUTE KEY AND BUTTON EXIST.** `utils/companionRoutes.ts`
+      gains `support -> /support` labelled **"See what Supporters get"**, and `ROUTE_KEYS` in
+      `ottoCannedMatcher.ts` gains `'support'` (26 -> 27).
+      ✅ **VERIFIED END TO END, not assumed:** a canned answer's `route` is appended to the reply text as
+      `[[route:key]]` (`appCompanion.ts:431`), the client resolves it against `COMPANION_ROUTES`, renders the
+      pill, and `openRoute` fades the chat and calls `onClose()` BEFORE navigating. That last part is
+      load-bearing: a documented bug had `/support` pushed with the sheet still mounted, leaving the chat
+      sitting on top of the page it had just opened.
+      ✅ `_canned_audit.cjs` passes (183 answers, 0 wrong, 0 assertion failures) and the functions package
+      typechecks clean. Nothing iterates `COMPANION_ROUTES`, so the new key cannot surface by accident.
+      🔴 **`support` IS DELIBERATELY *NOT* IN THE MODEL'S KEY LIST** (`companionSystemPrompt.ts`, TAPPABLE
+      SCREEN LINKS). Giving Otto the key would let him drop a Become-a-Supporter pill whenever he liked,
+      which is exactly what the "never nag" rule forbids: `AssistantChat.tsx` states the free-user nudge
+      appears ONLY at the wall, never mid-conversation, never to a Supporter, never on Halo.
+      ➡️ Canned answers name their route in a FIELD, so a pitch answer uses it without the model ever being
+      able to. **The two lists are deliberately out of sync. Do not "fix" that.** No `ROUTE_TRIGGERS` entry
+      either, for the same reason.
+      ⚠️ **NOT DEPLOYED, deliberately: nothing uses the key yet**, so the server change is inert until the
+      pitch answers land in step 4.
+      ⚠️ Historical, both checked before adding: `nav.membership` still uses `route: 'profile'` (lands on the
+      Profile TAB), and `mission` is NOT the paywall, it points at `/mission`, the philosophy screen.
       ✅ **DECIDED 2026-08-08: THE BUTTON LABEL IS "See what Supporters get".** Rejected: putting "tap below
       to see all perks" in the message copy. Labels live once per route in `companionRoutes.ts`, so the
       label sells in every pitch without adding a word to any of the ~50 variants, and Justin's premium copy

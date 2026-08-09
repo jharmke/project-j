@@ -18,12 +18,24 @@
 
 import type { FaithTier, StyleMode } from './companionSystemPrompt';
 
-/** The 26 route keys Otto is allowed to emit. Asserted in the test harness; inventing one is a bug. */
+/**
+ * The 27 route keys a CANNED ANSWER may carry. Asserted in the test harness; inventing one is a bug.
+ *
+ * 🔴 THIS LIST IS A SUPERSET OF THE ONE THE MODEL SEES, AND THAT IS DELIBERATE. DO NOT "SYNC" THEM.
+ * The model's list lives in `companionSystemPrompt.ts` (TAPPABLE SCREEN LINKS) and tells Otto which
+ * [[route:key]] tokens he may emit himself. `support` is HERE and deliberately NOT THERE.
+ * ⚠️ Reason (2026-08-09, PLAN 4.13): giving the model a `support` key would let Otto drop a
+ * Become-a-Supporter pill whenever he felt like it, which is exactly the mid-conversation nagging the
+ * "never nag" rule forbids. `AssistantChat.tsx` states it: the free-user nudge appears ONLY at the wall
+ * (1 left / none left), never mid-conversation, never to a Supporter, never on Halo.
+ * ➡️ Canned answers name their route in a FIELD, so a pitch answer can use `support` without the model
+ * ever being able to.
+ */
 export const ROUTE_KEYS = [
   'appearance', 'goals', 'faith_style', 'health', 'vacation', 'notifications', 'settings',
   'sleep_hub', 'recovery_hub', 'achievements', 'challenges', 'comparison', 'evr', 'bible',
   'prayer', 'plans', 'journal', 'mission', 'body', 'pr_home', 'home', 'workout', 'log',
-  'stats', 'profile', 'faith',
+  'stats', 'profile', 'faith', 'support',
 ] as const;
 export type RouteKey = (typeof ROUTE_KEYS)[number];
 

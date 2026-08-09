@@ -37,6 +37,17 @@ export const COMPANION_ROUTES: Record<string, CompanionRoute> = {
   body:          { path: '/body-measurements',                             label: 'Body Measurements' },
   pr_home:       { path: '/workout-library', params: { openPRs: 'true' },  label: 'All PRs' },
 
+  // 🔴 THE SUPPORTER PITCH BUTTON (added 2026-08-09, PLAN 4.13). `/support` is the Support the Mission
+  // screen (app/support.tsx, "the reframed paywall"), already the target of every other upgrade path in
+  // the app.
+  // ⚠️ THE LABEL IS DELIBERATELY BENEFIT-PHRASED, breaking the house style of every other row here
+  // (destination names: "Goals settings", "Sleep", "Profile tab"). Justin's call: this is the one button
+  // whose job is selling, and the label does that work in every pitch variant without adding a word to
+  // any of them. The rejected alternative was "tap below to see all perks" inside the message copy.
+  // ⚠️ NOT in the model's key list in functions/src/companionSystemPrompt.ts, on purpose. See the note on
+  // ROUTE_KEYS in functions/src/ottoCannedMatcher.ts: the model must never be able to pitch unprompted.
+  support:       { path: '/support',                                        label: 'See what Supporters get' },
+
   // Tabs
   home:          { path: '/(tabs)',                                         label: 'Home' },
   workout:       { path: '/(tabs)/workout',                                 label: 'Workout tab' },

@@ -25,6 +25,7 @@ import { routeCoachOrSupport } from './ottoCoachRouting';
 import { matchCanned } from './ottoCannedMatcher';
 import { CANNED_ANSWERS } from './ottoCannedAnswers';
 import { GENERAL_ANSWERS } from './ottoGeneralAnswers';
+import { buildPitchReply } from './ottoPitchCopy';
 
 // NOTE: admin.initializeApp() is already called once in index.ts. Do NOT call it again here.
 //
@@ -485,6 +486,47 @@ export const appCompanion = onCall(
         };
       }
       recordCannedOutcome('otto', uid, 'miss');
+
+      // ── PLAN.md 4.13 STEP 5: THE COACH GATE. A free user's coaching question never reaches the AI. ──
+      // 🔴 THIS IS WHERE THE MONEY IS, and the 137-answer library above is what stops it feeling brutal.
+      // Without the library every coaching question would land here; with it, only the uncovered ones do.
+      // ⚠️ **COVERAGE STOPS BEING A COST QUESTION AT THIS LINE.** Below it the AI is never called either
+      // way, so the library's hit rate decides how often a free user is HELPED rather than SOLD TO. That is
+      // a product judgement now, not a spreadsheet one.
+      //
+      // ✅ FAITH IS PROTECTED FOR FREE, WITH NO CODE HERE. This whole block only runs when
+      // `ridersOnThisMessage` is empty, and the faith handoff is one of those riders. A faith message can
+      // never reach this gate. (PLAN 4.13's faith-fails-open rule, satisfied structurally.)
+      // ⚠️ FAILS OPEN BY DESIGN: `routeCoachOrSupport` sends roughly 4 in 18 real fitness questions to the
+      // Support side, and those still get an AI answer. That costs money and never costs the user anything,
+      // which is the correct direction for a wrong guess.
+      // ⚠️ `pitched: false` DELIBERATELY. The weekly pitch budget exists to stop Otto NAGGING; this is not a
+      // nag bolted onto an answer, it IS the answer. Spending a budget slot here would silence the
+      // spontaneous pitches the budget was built for.
+      // ⏳ NOT BUILT YET: the escalated second-miss copy and the category-specific Case A tails. Both need
+      // conversation state or the personal-question-to-general-answer mapping. See SPEC_otto.md.
+      // ⚠️ OWN-DATA QUESTIONS ARE GATED TOO, EVEN THOUGH THE ROUTER CALLS THEM SUPPORT. "Am i eating enough
+      // protein" was reaching the AI, and that call was pure waste: `FREE_TIER_BLOCK` tells a free Otto he
+      // has NO logged food, training, sleep or averages for this user, so he could never have answered it.
+      // We were paying for him to say so. This is exactly the case A scenario the copy was written for.
+      // 🔴 AND THE ROUTER'S OWN REASON IS WHAT SEPARATES THE TWO KINDS OF "MY" QUESTION. Gating on the
+      // matcher's own-data verdict alone was wrong: **"how many custom foods do i have" got pitched**, and
+      // that is a saved-item count, not coaching data. The router already tells them apart and was measured
+      // doing it: `own-data` for "am i eating enough protein", `app-term` for "how many recipes have i made".
+      const route = routeCoachOrSupport(message);
+      const ownData = (appHit.reason === 'own-data' || genHit.reason === 'own-data')
+        && route.reason === 'own-data';
+      if (!supporter && (ownData || route.coachOnly)) {
+        const kind = ownData ? 'own-data' : 'no-answer';
+        recordCannedOutcome('otto', uid, 'gated');
+        return {
+          ok: true,
+          reply: `${buildPitchReply(kind, message)} [[route:support]]`,
+          used: cap.used,
+          cap: dailyCap,
+          pitched: false,
+        };
+      }
     } else {
       recordCannedOutcome('otto', uid, 'blocked');
     }

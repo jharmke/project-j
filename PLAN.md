@@ -1169,6 +1169,31 @@ is what made him think work had been dropped -- it had not, but he had no way to
       ⚠️ **AND THE SYSTEM PROMPT'S MEDICAL GUARDRAIL DOES NOT REACH A CANNED ANSWER**, since the model is
       never called. It is carried by hand in how each answer is written. ✅ Justin's call: **no new
       disclaimer text**, it is already in 25+ files including Otto's own prompt.
+      ✅ **STEP 5 DONE 2026-08-09: THE COACH GATE IS LIVE. A FREE USER'S COACHING QUESTION NEVER REACHES
+      THE AI.** Library hits answer it for zero; library misses get the Supporter line from
+      `functions/src/ottoPitchCopy.ts`. **Coaching cost for free users is now zero, not reduced.**
+      🔴 **AND THIS IS WHAT REFRAMES 4.15. COVERAGE STOPS BEING A COST QUESTION AT THIS LINE.** Below the
+      gate the AI is never called either way, so the library's hit rate decides how often a free user is
+      HELPED rather than SOLD TO. That is a product judgement now, not a spreadsheet one.
+      ✅ **FAITH IS PROTECTED WITH NO CODE.** The gate sits inside the `ridersOnThisMessage.length === 0`
+      block and the faith handoff is one of those riders, so a faith message can never reach it.
+      ✅ **OWN-DATA QUESTIONS ARE GATED TOO** ("am i eating enough protein"). That call was pure waste:
+      `FREE_TIER_BLOCK` tells a free Otto he has no logged food, training or averages, so he could never
+      have answered it and we were paying for him to say so.
+      🔴 **BUT ONLY WHEN THE ROUTER'S REASON IS `own-data`, AND THAT DISTINCTION WAS FOUND BY TESTING.**
+      Gating on the matcher's verdict alone pitched **"how many custom foods do i have"**, which is a
+      saved-item count and not coaching data. The router already separates them (`own-data` vs `app-term`).
+      ⚠️ **FAILS OPEN:** the router sends roughly 4 in 18 fitness questions to the Support side and those
+      still get an AI answer. Costs money, never costs the user anything. Correct direction for a wrong guess.
+      ⚠️ **`pitched: false` DELIBERATELY.** The weekly pitch budget exists to stop Otto NAGGING; this is not
+      a nag bolted onto an answer, it IS the answer. Spending a slot here would silence the spontaneous
+      pitches the budget was built for.
+      🔬 **NEW METER COUNTER: `cannedGated`.** `cannedGated` against `cannedHit` is the honest measure of how
+      often a free user is sold to rather than helped, and it is the real count of conversion moments.
+      ⏳ **NOT BUILT: the escalated second-miss copy, and the CATEGORY-SPECIFIC case A tails.** The three
+      shipped case A lines are category-neutral because serving the right tail needs a personal question
+      mapped onto its general answer ("am i eating enough protein" -> the protein answer), which does not
+      exist yet. The four category sets in `SPEC_otto.md` are written and waiting on that.
       ✅ **STEP 4 DONE 2026-08-09: THE LIBRARY IS WIRED IN.** `appCompanion.ts` now searches BOTH libraries.
       | message | free user | Supporter |
       |---|---|---|

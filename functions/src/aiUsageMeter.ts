@@ -132,10 +132,25 @@ export function recordUsage(
  * assistant, which would need `privacy.html` updated first. The gap gets closed by reading the knowledge
  * base instead of reading users. **Easy to add, awkward to explain later.**
  */
-export function recordCannedOutcome(feature: string, uid: string, outcome: 'hit' | 'miss' | 'blocked'): void {
+/**
+ * ⚠️ `gated` ADDED 2026-08-09 (PLAN 4.13 step 5) and it is the most product-relevant of the four.
+ * It counts the times a FREE user asked a coaching question, the library had no answer, and the coach gate
+ * returned the Supporter line instead of calling the AI.
+ * ➡️ **cannedGated against cannedHit is the honest measure of how often a free user is SOLD TO rather than
+ * HELPED**, which after the gate is what the library's coverage actually decides. It is also the real
+ * count of conversion moments, and it arrives with production traffic rather than from a corpus I wrote.
+ */
+export function recordCannedOutcome(
+  feature: string,
+  uid: string,
+  outcome: 'hit' | 'miss' | 'blocked' | 'gated',
+): void {
   try {
     if (!uid) return;
-    const key = outcome === 'hit' ? 'cannedHit' : outcome === 'miss' ? 'cannedMiss' : 'cannedBlocked';
+    const key = outcome === 'hit' ? 'cannedHit'
+      : outcome === 'miss' ? 'cannedMiss'
+        : outcome === 'gated' ? 'cannedGated'
+          : 'cannedBlocked';
     const inc = admin.firestore.FieldValue.increment;
     const date = todayKey();
     admin.firestore().collection('ai_cost').doc(`${uid}_${date}`)

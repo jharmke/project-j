@@ -1075,9 +1075,24 @@ is what made him think work had been dropped -- it had not, but he had no way to
       either, for the same reason.
       ⚠️ **NOT DEPLOYED, deliberately: nothing uses the key yet**, so the server change is inert until the
       pitch answers land in step 4.
-      🔨 **STEP 2 IN PROGRESS 2026-08-09: `functions/src/ottoGeneralAnswers.ts`, 70 of 138 written.**
-      Nutrition core (12), nutrition rest (14), training (14), sleep and recovery (14), weight and
-      progress (16). Separate library from `ottoCannedAnswers.ts`;
+      ✅ **STEP 2 COMPLETE 2026-08-09: `functions/src/ottoGeneralAnswers.ts`, 137 ANSWERS, ALL CHECKS ZERO.**
+      Nutrition (26), training (14), sleep and recovery (14), weight and progress (16), myths (7), gym (9),
+      named diets (9), labels (6), drinks (5), consistency (12), injury (4), population (4), goals (3),
+      safety (8). Separate library from `ottoCannedAnswers.ts`;
+      🔴 **THE SAFETY DESIGN IS VERIFIED, AND THIS IS THE RESULT THAT MATTERED MOST.** All three of these
+      correctly match NOTHING and fall through to the AI, which carries the `[[CRISIS]]` instruction:
+      *"i get dizzy and my chest hurts"*, *"i feel dizzy and short of breath"*, and **"my chest hurts when i
+      run"** -- the exact phrasing `faithCrisis.ts` does NOT catch. A canned answer reaching that message
+      would have been the worst failure this feature could produce.
+      🔴 **A SECOND SHIPPED-CODE FIX: "IS KETO WORTH IT" WAS BEING REFUSED.** The bare-pronoun guard rejects
+      any message of four tokens or fewer ending in "it", so every *"is X worth it"* question went to Otto
+      at full price. **That is one of the commonest shapes in fitness.** Exempted `worth it`, the same way
+      "do i have to" was already exempted as an obligation rather than a possession. Corpora unchanged.
+      ⚠️ **ONE LESSON DOMINATED THE BUILD AND IS NOW RULE E IN THE FILE HEADER: there is no stemmer.**
+      `covers` must list every word form. Four separate misses came from exactly this and NONE were visible
+      from reading the answer, which looks complete and simply never fires: 'lifting' without 'lift',
+      'eating' without 'eat', 'calories' without 'calorie', 'lifting' again in the dizziness entry. Time and
+      unit tokens ('6pm', 'oz') count as content words too and must appear somewhere.
       ⚠️ **COUNT DROPPED 141 -> 138 FROM THREE MERGES, ALL FOUND WHILE WRITING TRIGGERS AND ALL THE SAME
       MISTAKE: two spec entries whose ANSWERS said the same thing.** "Is soreness necessary" + "what does
       soreness mean"; "what is a plateau" + "what do I do about a plateau"; "can I lose fat and build muscle

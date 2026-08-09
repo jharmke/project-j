@@ -210,7 +210,15 @@ export function matchCanned(
   // ⚠️ ONLY ON A SHORT MESSAGE. The held-out run refused 'i typed my weight wrong how do i fix it' and
   // 'the text is too small how do i fix it' as context-dependent. Both name their subject perfectly well;
   // the trailing 'it' refers to something INSIDE the same sentence, not to the previous turn.
-  if (BARE_PRONOUN.test(t) && tokens(t).length <= 4) return { matched: false, reason: 'context-dependent' };
+  // ⚠️ THIRD EXEMPTION, ADDED 2026-08-09 (PLAN 4.13), same family as the two below: "IS KETO WORTH IT" was
+  // refused as context-dependent. It is four tokens and ends in "it", but that "it" is bound to the subject
+  // named in the same sentence, exactly like "do i have to" is an obligation rather than a possession.
+  // ⚠️ "Is X worth it" is one of the commonest shapes in fitness questions ("is creatine worth it", "is a
+  // trainer worth it"), and every one of them was being sent to Otto at full price.
+  const worthIt = /\bworth it\s*\??$/.test(t);
+  if (BARE_PRONOUN.test(t) && !worthIt && tokens(t).length <= 4) {
+    return { matched: false, reason: 'context-dependent' };
+  }
 
   // 🔴 THEIR OWN DATA IS NEVER CANNABLE. See OWN_DATA_SIGNALS.
   // ⚠️ TWO EXEMPTIONS, BOTH FOUND BY THE AUDIT. A HOW-TO is never a data question however many time words

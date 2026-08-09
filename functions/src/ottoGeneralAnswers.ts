@@ -30,6 +30,13 @@
 //     only, which is a finite list with an end. Justin's line, 2026-08-08.
 //  D. Possessive/own-data questions ("am I eating enough protein") are already declined by
 //     OWN_DATA_SIGNALS inside the matcher, so `excludes` here does NOT need to restate them.
+//  E. 🔴 LIST BOTH WORD FORMS IN `covers`: eat AND eating, lift AND lifting, run AND running. There is no
+//     stemmer. This caused three separate `unexplained-remainder` misses in a row while building
+//     ("what shoes should i wear to LIFT" had only 'lifting'; "is it bad to EAT carbs at night" had only
+//     'eating'). ⚠️ The failure is invisible from the answer text: the entry looks complete and simply
+//     never fires on half the phrasings. Same family as the "ordinary filler" misses in PLAN 4.8.
+//  F. Time and unit tokens are content words to this matcher, not filler: '6pm', 'oz', 'lbs', 'grams' all
+//     have to appear somewhere or the whole-message test fails on an otherwise perfect match.
 
 import type { CannedAnswer } from './ottoCannedMatcher';
 
@@ -796,10 +803,658 @@ const WEIGHT_PROGRESS: CannedAnswer[] = [
   },
 ];
 
+// ─────────────────────────────────────────────────────────────────────────────
+// MYTHS
+// ✅ The highest-value entries after SAFETY: these are the questions where a confidently wrong answer
+// actively harms someone, and they all have settled answers that never go stale.
+// ─────────────────────────────────────────────────────────────────────────────
+const MYTHS: CannedAnswer[] = [
+  {
+    id: 'gen.spot_reduction',
+    requires: [['belly fat', 'spot reduce', 'spot reduction', 'target fat', 'lose fat from', 'tone my stomach',
+                'flatten my stomach', 'love handles', 'stubborn area', 'stubborn fat', 'arm fat', 'thigh fat']],
+    covers: ['how do i', 'can i', 'exercise', 'workout', 'ab', 'abs', 'crunches', 'burn', 'target', 'get rid of'],
+    answer:
+      "No. Spot reduction is not a thing, and no exercise burns fat from the area it works. Fat comes off in the order your body decides, which is largely genetic, and the stomach is often last. Core work builds the muscle underneath, it does not uncover it.",
+  },
+  {
+    id: 'gen.muscle_to_fat',
+    requires: [['turn to fat', 'turns to fat', 'turn into fat', 'becomes fat', 'muscle turns']],
+    covers: ['does', 'will', 'my', 'muscle', 'stop', 'quit', 'if i'],
+    answer:
+      "No. They are different tissues and neither converts into the other. What happens when people stop training is that muscle shrinks from disuse while activity and appetite stay the same, so fat increases at the same time. Two things happening at once, not one becoming the other.",
+  },
+  {
+    id: 'gen.starvation_mode',
+    requires: [['starvation mode', 'metabolism is broken', 'broken metabolism', 'damaged my metabolism',
+                'metabolic damage', 'body holding on', 'holding onto fat']],
+    covers: ['is', 'real', 'am i in', 'what is', 'does', 'exist', 'eating too little', 'not eating enough'],
+    answer:
+      "Not in the way it is usually described. Your body does not hold onto fat because you ate too little. What does happen is that prolonged dieting lowers your burn somewhat, through less spontaneous movement and a smaller body to carry. That is real but modest, and it does not stop weight loss.",
+  },
+  {
+    id: 'gen.carbs_at_night',
+    requires: [['carb', 'carbs', 'carbohydrate'], ['after 6', 'after 7', 'after 8', 'at night', 'before bed',
+                                                   'late', 'evening', 'nighttime']],
+    // ⚠️ THE CLOCK TOKENS ARE LOAD-BEARING. "Are carbs after 6PM bad" failed the whole-message test purely
+    // because "6pm" was listed nowhere, which reads as a rules failure and is really a vocabulary gap.
+    covers: ['bad', 'are', 'is it', 'okay', 'ok', 'fat', 'store', 'avoid', 'should i', 'after', 'pm',
+             '6pm', '7pm', '8pm', '9pm', '10pm', 'evening', 'night', 'bed', 'eat', 'eating'],
+    answer:
+      "No. Your body does not check the clock. Total intake across the day is what matters. Evening carbs get blamed because evening is when unplanned eating usually happens.",
+  },
+  {
+    id: 'gen.sweating',
+    requires: [['sweat', 'sweating', 'sweat more', 'sweaty']],
+    covers: ['burn', 'burning', 'fat', 'mean', 'means', 'more', 'harder', 'good', 'workout', 'sauna suit',
+             'does', 'is'],
+    excludes: ['sauna', 'cold plunge', 'hydrat', 'water'],
+    answer:
+      "No. Sweat is temperature regulation, not a measure of effort or fat loss. A hot room makes you sweat more without burning more. Any weight lost during a sweaty session is water and returns when you drink.",
+  },
+  {
+    id: 'gen.detox',
+    requires: [['detox', 'cleanse', 'juice cleanse', 'flush out', 'reset my body']],
+    covers: ['work', 'works', 'worth', 'should i', 'do', 'good', 'need', 'help'],
+    answer:
+      "Not for what they claim. Your liver and kidneys handle that continuously and do not need help from a juice. People often feel better on one because they stopped eating badly for a few days, which is the actual change.",
+  },
+  {
+    id: 'gen.fat_burners',
+    requires: [['fat burner', 'fat burners', 'waist trainer', 'sweat belt', 'diet pill', 'diet pills',
+                'skinny tea', 'weight loss pill']],
+    covers: ['work', 'works', 'worth', 'should i', 'good', 'safe', 'help', 'do'],
+    answer:
+      "Fat burners are mostly caffeine with a markup, and the effect is small enough that it will not decide anything. Waist trainers change your shape while worn and nothing after. Neither touches what actually drives fat loss.",
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GYM PRACTICALITIES
+// ─────────────────────────────────────────────────────────────────────────────
+const GYM: CannedAnswer[] = [
+  {
+    id: 'gen.bulky',
+    requires: [['bulky', 'too big', 'too muscular', 'look manly', 'get huge', 'bulk up by accident']],
+    covers: ['will', 'make me', 'lifting', 'weights', 'am i going to', 'worried', 'afraid'],
+    excludes: ['bulking', 'surplus', 'how much should i eat'],
+    answer:
+      "No, and this is the most common worry in the gym. Building noticeable size takes years of deliberate training and eating for it, and it does not happen by accident. Lifting is what gives you shape while losing weight, rather than just ending up smaller.",
+  },
+  {
+    id: 'gen.what_to_wear',
+    requires: [['what should i wear', 'what to wear', 'gym clothes', 'clothes to the gym', 'outfit']],
+    covers: ['wear', 'clothing', 'gym', 'workout'],
+    excludes: ['shoes', 'trainers', 'sneakers', 'lifting shoes', 'fit better'],
+    answer:
+      "Whatever you can move in and are not thinking about. Comfort and being able to see your own form beat anything else.",
+  },
+  {
+    id: 'gen.shoes',
+    requires: [['shoes', 'sneakers', 'trainers', 'footwear', 'barefoot']],
+    covers: ['what', 'which', 'best', 'lift', 'lifting', 'lifts', 'running', 'run', 'should i', 'wear',
+             'flat', 'squat', 'gym', 'training', 'workout', 'deadlift'],
+    answer:
+      "For lifting, a flat and firm sole gives you a stable base. Running shoes are cushioned, which is what you want for running and works against you under a heavy bar. Anything flat works fine to start.",
+  },
+  {
+    id: 'gen.equipment',
+    requires: [['equipment', 'what do i need to start', 'dumbbells', 'home gym', 'gear', 'buy']],
+    covers: ['need', 'start', 'starting', 'beginner', 'minimum', 'what', 'should i', 'worth', 'essential'],
+    excludes: ['belt', 'straps', 'sleeves', 'spotter', 'shoes', 'app', 'watch'],
+    answer:
+      "Less than you think. A pair of adjustable dumbbells covers an enormous amount at home, and a gym membership covers the rest. Everything else stays optional for a long time.",
+  },
+  {
+    id: 'gen.gym_anxiety',
+    requires: [['intimidated', 'intimidating', 'nervous about the gym', 'scared of the gym', 'gym anxiety',
+                'embarrassed', 'people watching', 'everyone is looking', 'self conscious']],
+    covers: ['gym', 'feel', 'i am', 'im', 'how do i', 'get over', 'help'],
+    answer:
+      "Almost everyone is at first, and nearly nobody is watching. Going at a quieter hour helps, and so does turning up with a plan so you are not deciding what to do while standing there. It wears off faster than you expect.",
+  },
+  {
+    id: 'gen.trainer',
+    requires: [['personal trainer', 'a trainer', 'coach', 'hire someone', 'pt sessions']],
+    covers: ['need', 'should i', 'worth', 'get', 'hire', 'help', 'good idea'],
+    excludes: ['coaching mode', 'coaching style', 'my coach', 'smart tip'],
+    answer:
+      "A few sessions to learn the main lifts is money well spent for most beginners, more for the technique than the motivation. It is not required. If you go this route, a handful of focused sessions usually beats an open ended commitment.",
+  },
+  {
+    id: 'gen.cardio_order',
+    requires: [['cardio'], ['before or after', 'after or before', 'first', 'order', 'then weights',
+                            'then lifting', 'before weights', 'after weights', 'before lifting', 'after lifting']],
+    covers: ['should i', 'do', 'which', 'same session', 'better'],
+    answer:
+      "After, if you are lifting for strength or size, since cardio first leaves you with less to give the part that matters most. If cardio is your priority, flip it. Separate days beat either if your schedule allows.",
+  },
+  {
+    id: 'gen.exercise_order',
+    requires: [['what order', 'which order', 'order should i', 'order of exercises', 'compound first',
+                'isolation first', 'order to do']],
+    covers: ['exercises', 'lifts', 'workout', 'should i', 'does it matter', 'best'],
+    excludes: ['cardio'],
+    answer:
+      "Hardest first, generally. Compound lifts while you are fresh, isolation work after. If one thing matters most to you right now, do that first regardless of what the usual order says.",
+  },
+  {
+    id: 'gen.need_a_gym',
+    requires: [['need a gym', 'without a gym', 'no gym', 'at home', 'home workouts', 'bodyweight only',
+                'gym membership']],
+    covers: ['do i', 'can i', 'work', 'enough', 'good', 'results', 'train'],
+    excludes: ['equipment', 'dumbbells', 'what do i need to start'],
+    answer:
+      "No. Bodyweight training and a couple of dumbbells take most people a long way, especially in the first year. A gym gives you heavier loading and more variety, which starts to matter more as you progress.",
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NAMED DIETS. Finite by nature: there are perhaps ten famous ones, which is why they belong here while
+// per-food rulings ("is white rice bad") never can.
+// ─────────────────────────────────────────────────────────────────────────────
+const DIETS: CannedAnswer[] = [
+  {
+    id: 'gen.keto',
+    requires: [['keto', 'ketogenic', 'ketosis']],
+    covers: ['what is', 'whats', 'work', 'works', 'worth', 'should i', 'good', 'try', 'diet', 'do',
+             'better', 'effective', 'safe', 'bad'],
+    answer:
+      "Very low carb, high fat, enough to shift your body toward burning fat for fuel. It works for the people it suits, and the weight lost is the same weight lost on any deficit. The tradeoffs are that hard training often suffers without carbs, and it is socially restrictive, which is why adherence is the usual failure point rather than the science.",
+  },
+  {
+    id: 'gen.paleo',
+    requires: [['paleo', 'paleolithic', 'caveman diet']],
+    covers: ['what is', 'whats', 'work', 'works', 'worth', 'should i', 'good', 'try', 'diet', 'do', 'better'],
+    answer:
+      "Built around foods available before agriculture: meat, fish, vegetables, fruit, nuts. No grains, legumes or dairy. The food quality tends to be good and people often eat less without trying. The historical reasoning behind it is shaky, though that does not stop it working for people who enjoy eating that way.",
+  },
+  {
+    id: 'gen.plant_based',
+    requires: [['vegan', 'vegetarian', 'plant based', 'plant-based', 'meatless', 'no meat']],
+    covers: ['what is', 'work', 'works', 'can i', 'build muscle', 'protein', 'enough', 'should i', 'diet',
+             'good', 'healthy', 'gains', 'get'],
+    answer:
+      "Both work fine for training and body composition. The thing to watch is protein, since plant sources are generally lower and less complete, so hitting a target takes more deliberate planning. Worth keeping an eye on B12, iron and omega 3 as well, and worth a conversation with a dietitian if you are going fully plant based.",
+  },
+  {
+    id: 'gen.mediterranean',
+    requires: [['mediterranean']],
+    covers: ['what is', 'whats', 'work', 'works', 'worth', 'should i', 'good', 'try', 'diet', 'healthy',
+             'best', 'evidence'],
+    answer:
+      "Vegetables, fish, olive oil, legumes, whole grains, not much processed food. It has the strongest long term health evidence of any named diet by a wide margin. It is less a weight loss protocol than a way of eating, which is probably why it lasts.",
+  },
+  {
+    id: 'gen.carnivore',
+    requires: [['carnivore', 'meat only', 'all meat diet', 'lion diet']],
+    covers: ['what is', 'whats', 'work', 'works', 'worth', 'should i', 'good', 'try', 'diet', 'safe', 'healthy'],
+    answer:
+      "Animal foods only. The evidence base is thin and it eliminates entire food groups including all fiber. Some people report feeling well on it, largely because it is extremely restrictive and they end up eating less. Worth talking to a doctor before going down that road, especially long term.",
+  },
+  {
+    id: 'gen.whole30',
+    requires: [['whole30', 'whole 30', 'elimination diet']],
+    covers: ['what is', 'whats', 'work', 'works', 'worth', 'should i', 'good', 'try', 'diet', 'do'],
+    answer:
+      "Thirty days without sugar, alcohol, grains, legumes and dairy, then a structured reintroduction. It is designed as an elimination protocol to spot what does not agree with you, not as a weight loss diet, though people usually lose some. The reintroduction is the part most people skip and the part that carries the value.",
+  },
+  {
+    id: 'gen.low_carb',
+    requires: [['low carb', 'low-carb', 'lowcarb', 'cutting carbs', 'cut carbs', 'no carb']],
+    covers: ['work', 'works', 'worth', 'should i', 'good', 'better', 'diet', 'try', 'best', 'why'],
+    excludes: ['keto', 'net carb', 'at night', 'after 6'],
+    answer:
+      "Works for plenty of people, mostly because cutting a whole category means eating less overall. Carbs are not causing weight gain by themselves. If you train hard, going very low tends to cost you in the gym before it gains you anything.",
+  },
+  {
+    id: 'gen.best_diet',
+    requires: [['best diet', 'which diet', 'what diet', 'diet is best', 'diet should i', 'right diet']],
+    covers: ['for me', 'work', 'works', 'pick', 'choose', 'follow', 'good', 'better', 'compare'],
+    answer:
+      "The one you can stay on. Compared head to head over a year the named diets land in roughly the same place, because they all end up creating a deficit. Adherence is the variable that separates them, so pick by what fits your life rather than by the mechanism.",
+  },
+  {
+    id: 'gen.need_a_diet',
+    requires: [['need to diet', 'need a diet', 'have to diet', 'follow a diet', 'be on a diet', 'go on a diet']],
+    covers: ['do i', 'should i', 'must i', 'without', 'just', 'instead'],
+    excludes: ['best', 'which', 'what diet', 'break'],
+    answer:
+      "No. A named diet is a set of rules that makes eating less feel automatic, which helps some people and feels like a cage to others. Plenty of people do well tracking loosely and eating mostly whole food.",
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LABELS AND TRACKING (the general skill, not the app's own logging screens)
+// ─────────────────────────────────────────────────────────────────────────────
+const LABELS: CannedAnswer[] = [
+  {
+    id: 'gen.read_label',
+    requires: [['nutrition label', 'food label', 'read a label', 'reading labels', 'nutrition facts',
+                'the label', 'panel']],
+    covers: ['how do i', 'read', 'reading', 'understand', 'what', 'look at', 'daily value', 'percent'],
+    excludes: ['scan', 'barcode', 'accurate', 'serving size'],
+    answer:
+      "Check the serving size first, because everything else on the panel refers to it and it is often smaller than what you would actually eat. Then calories, then protein. The percent daily values are based on a 2,000 calorie diet, which may be nothing like your target.",
+  },
+  {
+    id: 'gen.serving_size',
+    requires: [['serving size', 'servings', 'a serving', 'portion size', 'per serving']],
+    covers: ['what is', 'whats', 'mean', 'means', 'how', 'decide', 'chosen', 'realistic', 'why'],
+    excludes: ['log', 'change the', 'edit', 'custom food', 'create'],
+    answer:
+      "The portion the manufacturer chose for the label, not a recommendation. It is often smaller than a realistic portion, so a package holding two and a half servings is easy to read as one.",
+  },
+  {
+    id: 'gen.label_accuracy',
+    requires: [['label'], ['accurate', 'accuracy', 'correct', 'right', 'trust', 'off by', 'wrong']],
+    // ⚠️ Both number forms, per rule E in the header. "Are CALORIE labels accurate" missed on the singular.
+    covers: ['calorie', 'calories', 'are', 'how', 'the', 'numbers', 'percent', 'labels', 'food'],
+    answer:
+      "Close but not exact. Regulations allow a margin, commonly cited at around twenty percent, and rounding rules let small amounts be listed as zero. Over a week it evens out for most people.",
+  },
+  {
+    id: 'gen.tracking_accuracy',
+    requires: [['tracking', 'counting', 'logging'], ['accurate', 'accuracy', 'correct', 'trust', 'off by',
+                                                     'precise', 'exact', 'reliable']],
+    covers: ['how', 'is', 'calorie', 'calories', 'my', 'really', 'does it matter', 'food', 'macros'],
+    excludes: ['label', 'raw', 'cooked'],
+    answer:
+      "Usually within ten to twenty percent for someone tracking carefully, and further off than people think for someone eyeballing it. The value is not perfect precision, it is consistency: the same method over time shows you the trend even if the absolute number is a little off.",
+  },
+  {
+    id: 'gen.raw_or_cooked',
+    requires: [['raw or cooked', 'cooked or raw', 'before or after cooking', 'weigh it raw', 'weigh raw',
+                'weigh cooked', 'dry or cooked']],
+    covers: ['do i', 'should i', 'weigh', 'weighing', 'measure', 'log', 'food', 'meat', 'rice', 'pasta',
+             'which', 'difference'],
+    answer:
+      "Raw is more consistent, since cooking changes water content and therefore weight. A hundred grams of raw chicken is not a hundred grams of cooked chicken. Pick one and stay with it, and make sure the entry you log matches which one you used.",
+  },
+  {
+    id: 'gen.track_restaurant',
+    requires: [['restaurant', 'eating out', 'takeout', 'take out', 'fast food', 'chain'],
+               ['track', 'tracking', 'log', 'logging', 'estimate', 'count', 'guess', 'accurate']],
+    covers: ['how do i', 'what', 'should i', 'food', 'meal', 'calories'],
+    answer:
+      "Use the chain's published numbers if they exist, and pick the closest generic entry if they do not. Restaurant portions and cooking fats both run higher than people estimate, so rounding up lands closer than rounding down.",
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DRINKS
+// ─────────────────────────────────────────────────────────────────────────────
+const DRINKS: CannedAnswer[] = [
+  {
+    id: 'gen.coffee',
+    requires: [['coffee', 'caffeine', 'espresso']],
+    covers: ['dehydrat', 'dehydrating', 'water', 'count', 'counts', 'bad', 'how much', 'too much', 'sleep',
+             'affect', 'okay', 'ok', 'does', 'is'],
+    excludes: ['energy drink', 'pre workout', 'creatine'],
+    answer:
+      "Not meaningfully. Caffeine has a mild diuretic effect but the fluid in the coffee more than covers it, so normal intake counts toward your water. Where coffee does matter is sleep, since caffeine has a long half life and an afternoon cup can still be in your system at bedtime.",
+  },
+  {
+    id: 'gen.diet_soda',
+    requires: [['diet soda', 'diet coke', 'zero sugar', 'artificial sweetener', 'sweeteners', 'aspartame',
+                'sucralose', 'stevia']],
+    covers: ['bad', 'okay', 'ok', 'safe', 'drink', 'affect', 'cravings', 'weight', 'should i', 'is', 'are'],
+    answer:
+      "Fine for most people, and a useful tool if it stops you drinking the sugared version. The claims that it drives weight gain have not held up well. If you notice it drives cravings for you personally, that is worth acting on, but it is not a general rule.",
+  },
+  {
+    id: 'gen.sports_drinks',
+    requires: [['sports drink', 'gatorade', 'powerade', 'electrolyte drink', 'electrolytes']],
+    covers: ['need', 'do i', 'should i', 'worth', 'good', 'when', 'during', 'after', 'workout', 'water'],
+    answer:
+      "Built for sessions long or hot enough to lose real salt and fluid, roughly over an hour of hard work. For a normal gym session they are sugar you did not need. Water covers most training.",
+  },
+  {
+    id: 'gen.energy_drinks',
+    requires: [['energy drink', 'energy drinks', 'monster', 'red bull', 'celsius', 'pre workout', 'preworkout']],
+    covers: ['bad', 'okay', 'ok', 'safe', 'need', 'should i', 'work', 'worth', 'how much', 'drink'],
+    excludes: ['coffee', 'creatine', 'protein powder'],
+    answer:
+      "Mostly caffeine and sugar, or caffeine and sweetener in the zero versions. They work as a pre workout and carry the same sleep caveat as coffee. Worth knowing your total caffeine across the day rather than counting drinks.",
+  },
+  {
+    id: 'gen.smoothies_juice',
+    requires: [['smoothie', 'smoothies', 'juice', 'juicing', 'fruit juice']],
+    covers: ['bad', 'good', 'healthy', 'okay', 'ok', 'should i', 'better', 'fiber', 'calories', 'filling',
+             'is', 'are', 'drink'],
+    excludes: ['cleanse', 'detox'],
+    answer:
+      "Both are easy to drink far more of than you would ever eat. Juice loses the fiber entirely, and a smoothie keeps it but still goes down fast, so neither fills you the way whole fruit would. They are not bad, they are just easy to underestimate.",
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONSISTENCY AND MINDSET
+// ⚠️ These are already observational in tone, so almost none need a Mindful branch. That is not an
+// oversight: Mindful's rules govern deficit maths and weight-loss prescriptions, which these never touch.
+// ─────────────────────────────────────────────────────────────────────────────
+const CONSISTENCY: CannedAnswer[] = [
+  {
+    id: 'gen.stay_consistent',
+    requires: [['consistent', 'consistency', 'stick to it', 'stick with it', 'stay on track', 'keep going',
+                'keep it up', 'discipline myself']],
+    covers: ['how do i', 'stay', 'be', 'more', 'help', 'struggle', 'cant', 'hard'],
+    excludes: ['fall off', 'back on track', 'motivation vs', 'habit', 'burnout'],
+    answer:
+      "Make the standard low enough that a bad week still clears it. Most people set a plan for their best self, then miss it, and the miss feels like failure and ends the whole thing. A plan you can hit at your worst is worth more than one you can hit at your best.",
+  },
+  {
+    id: 'gen.fell_off',
+    requires: [['fell off', 'fallen off', 'fall off', 'week off', 'took a break', 'stopped for a week',
+                'been slacking', 'gave up for', 'off the wagon']],
+    covers: ['what if', 'i', 'ruined', 'undone', 'lost', 'progress', 'start over', 'restart', 'bad'],
+    excludes: ['back on track', 'miss a workout', 'long break'],
+    answer:
+      "Nothing meaningful happened physically. A week does not undo months, and most of what comes back is water and habit rather than fat. The damage is almost always the story people tell themselves about it, not the week.",
+  },
+  {
+    id: 'gen.build_habit',
+    requires: [['habit', 'habits', 'routine going', 'make it stick', 'automatic']],
+    covers: ['how do i', 'build', 'form', 'create', 'start', 'keep', 'new', 'stick', 'long'],
+    excludes: ['workout routine', 'save a routine', 'program', 'sleep routine'],
+    answer:
+      "Attach it to something you already do reliably, and keep the first version small enough that skipping feels sillier than doing it. Consistency comes from lowering the friction, not from wanting it more.",
+  },
+  {
+    id: 'gen.motivation',
+    requires: [['motivation', 'motivated', 'discipline', 'willpower', 'lazy', 'cant be bothered']],
+    covers: ['how do i', 'find', 'get', 'stay', 'lack', 'lacking', 'vs', 'versus', 'or', 'more', 'no',
+             'have', 'got', 'zero', 'none', 'lost', 'losing', 'any'],
+    excludes: ['coaching mode', 'discipline mode', 'style'],
+    answer:
+      "Motivation is what gets you started and it is not reliable. Discipline is really just a system: a set time, a plan you do not have to think about, and a standard low enough to hold on a bad day. When people say they lack discipline they usually lack a system.",
+  },
+  {
+    id: 'gen.all_or_nothing',
+    requires: [['all or nothing', 'ruined the day', 'ruined my day', 'blew it', 'blown it', 'wrote off',
+                'might as well', 'screwed up today']],
+    covers: ['thinking', 'i', 'feel', 'why', 'stop', 'help', 'so'],
+    answer:
+      "The most expensive habit in fitness. One off plan meal becomes a written off day, which becomes a written off week. Nothing about one meal requires the rest to follow it. The next choice is always available.",
+  },
+  {
+    id: 'gen.back_on_track',
+    requires: [['back on track', 'get back into it', 'get back to it', 'restart', 'start again',
+                'start over', 'getting back']],
+    covers: ['how do i', 'after', 'break', 'best way', 'again'],
+    answer:
+      "Do the next ordinary thing rather than something dramatic. People try to atone with a punishing week and it rarely survives contact with real life. Log the next meal, do the next session, and let the average pull itself back.",
+  },
+  {
+    id: 'gen.tracking_burnout',
+    requires: [['sick of tracking', 'tired of logging', 'hate logging', 'hate tracking', 'tracking burnout',
+                'obsessed with tracking', 'chore', 'exhausting to log', 'burnt out on tracking']],
+    covers: ['i am', 'im', 'feel', 'should i stop', 'quit', 'take a break', 'help'],
+    answer:
+      "Common, and worth taking seriously. If logging has become a chore you dread, loosening it beats quitting entirely: track protein and calories only, or track weekdays. The goal was awareness, not a perfect record.",
+  },
+  {
+    id: 'gen.comparing',
+    requires: [['comparing myself', 'compare myself', 'everyone else', 'other people are', 'social media',
+                'instagram', 'someone else is']],
+    covers: ['how do i stop', 'why', 'feel', 'better than me', 'faster', 'progress'],
+    answer:
+      "You are seeing their result and not their years, their genetics, or what it cost them. The only comparison with any information in it is against your own earlier self.",
+  },
+  {
+    id: 'gen.set_a_goal',
+    requires: [['set a goal', 'setting goals', 'what goal', 'goal should i set', 'good goal', 'realistic goal']],
+    covers: ['how do i', 'pick', 'choose', 'what', 'kind of', 'type'],
+    // ⚠️ Setting the app's own goals (calorie, water, step) is an APP question in the other library.
+    excludes: ['calorie goal', 'water goal', 'step goal', 'sleep goal', 'macro goal', 'goal weight',
+               'where do i', 'change my'],
+    answer:
+      "Pick something you control. You control sessions completed, meals logged, steps taken. You do not directly control the number on the scale, which moves on its own schedule. Outcome goals are fine to hold, but the ones you act on should be behaviors.",
+  },
+  {
+    id: 'gen.slow_results',
+    requires: [['slow progress', 'progress is slow', 'results are slow', 'going so slow', 'taking forever',
+                'not fast enough', 'discouraged']],
+    covers: ['why', 'is my', 'feel', 'normal', 'should i', 'change', 'wrong'],
+    excludes: ['plateau', 'stalled', 'stuck', 'how long until'],
+    answer:
+      "Slow is what real progress looks like most of the time. Visible changes arrive in steps rather than smoothly, with long flat stretches between them. Check that the trend over a month is moving rather than judging by the week.",
+  },
+  {
+    id: 'gen.track_forever',
+    requires: [['track forever', 'log forever', 'count forever', 'rest of my life', 'always have to track',
+                'do this forever']],
+    covers: ['do i', 'have to', 'will i', 'need to', 'stop', 'ever'],
+    answer:
+      "No. Most people track closely for a while, learn what portions and meals actually look like, then loosen off. Coming back to it when things drift is a common pattern, and a reasonable one.",
+  },
+  {
+    id: 'gen.social_pressure',
+    requires: [['family', 'friends', 'my wife', 'my husband', 'my partner', 'social pressure',
+                'people give me', 'party', 'holidays', 'thanksgiving', 'christmas']],
+    covers: ['eat', 'eating', 'with', 'how do i', 'handle', 'deal', 'pressure', 'judge', 'awkward', 'meal'],
+    excludes: ['restaurant', 'takeout', 'menu', 'track'],
+    answer:
+      "Decide before you go rather than at the table, and do not announce it. Most pressure comes from people feeling judged by your choices, which drops away when you make them quietly. One meal with people you love is not the problem.",
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INJURY PREVENTION (general, non-medical). Anything clinical belongs in SAFETY below.
+// ─────────────────────────────────────────────────────────────────────────────
+const INJURY: CannedAnswer[] = [
+  {
+    id: 'gen.avoid_injury',
+    requires: [['avoid injury', 'prevent injury', 'get injured', 'getting hurt', 'injury prevention',
+                'stay injury free', 'not get hurt']],
+    covers: ['how do i', 'what', 'tips', 'safe', 'safely', 'lifting', 'training'],
+    excludes: ['around an injury', 'already injured', 'my injury', 'joint pain', 'doctor'],
+    answer:
+      "Progress gradually, respect technique when you are tired, and warm up. Most gym injuries come from adding load faster than tissue adapts, or from chasing a number with form that has already broken down. Sleep and recovery matter here too, since fatigue is when technique slips.",
+  },
+  {
+    id: 'gen.good_vs_bad_pain',
+    requires: [['good pain', 'bad pain', 'normal pain', 'pain or soreness', 'soreness or pain',
+                'difference between pain']],
+    covers: ['what is', 'whats', 'the', 'tell', 'know', 'difference', 'vs', 'versus'],
+    answer:
+      "Muscle burn during a set and general soreness after are normal. Sharp pain, pain in a joint, pain that gets worse as you continue, or anything lingering well beyond a few days is not. That is a stop and get it looked at, not a push through.",
+  },
+  {
+    id: 'gen.belt_straps',
+    requires: [['lifting belt', 'a belt', 'straps', 'wrist wraps', 'knee sleeves', 'sleeves', 'gloves',
+                'lifting gear']],
+    covers: ['need', 'do i', 'should i', 'worth', 'when', 'use', 'help', 'good'],
+    excludes: ['equipment to start', 'dumbbells', 'shoes'],
+    answer:
+      "None of them are required. A belt helps on heavy squats and deadlifts by giving your core something to brace against, straps help when your grip fails before the target muscle does, and sleeves are mostly comfort and warmth. All are tools for specific situations rather than things a beginner needs.",
+  },
+  {
+    id: 'gen.spotter',
+    requires: [['spotter', 'spot me', 'training alone', 'lifting alone', 'safety bars', 'get stuck under']],
+    covers: ['need', 'do i', 'should i', 'when', 'bench', 'squat', 'safe', 'without'],
+    answer:
+      "For heavy barbell bench pressing, yes, or use safety bars in a rack. For most other lifts you can bail safely without one. If you train alone, staying a rep or two away from failure on anything that can pin you is the sensible habit.",
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POPULATION
+// ─────────────────────────────────────────────────────────────────────────────
+const POPULATION: CannedAnswer[] = [
+  {
+    id: 'gen.menopause',
+    requires: [['menopause', 'perimenopause', 'menopausal', 'hormonal changes']],
+    covers: ['training', 'exercise', 'weight', 'harder', 'affect', 'affects', 'what', 'how', 'should i',
+             'muscle', 'bone'],
+    answer:
+      "Hormonal changes through this period commonly affect body composition, recovery and sleep, and many people find the same effort produces different results than it used to. Resistance training and protein become more important rather than less, particularly for bone density and muscle. This is worth a conversation with a doctor who knows your history, since the individual picture varies a lot.",
+  },
+  {
+    id: 'gen.age_recovery',
+    requires: [['older', 'my age', 'getting older', 'over 40', 'over 50', 'over 60', 'too old', 'age']],
+    covers: ['recovery', 'recover', 'slower', 'harder', 'start', 'train', 'still', 'can i', 'does', 'affect'],
+    excludes: ['teenager', 'teen', 'kid', 'menopause'],
+    answer:
+      "Somewhat, though less than commonly assumed, and much of the difference tracks sleep, stress and training history rather than age itself. The practical change is usually needing a bit more warm up, a bit more recovery between hard sessions, and more attention to sleep. Training does not stop working.",
+  },
+  {
+    id: 'gen.teenager',
+    requires: [['teenager', 'teen', 'my son', 'my daughter', 'kid', 'child', '15 year old', '16 year old',
+                'stunt growth', 'stunt their growth']],
+    covers: ['lift', 'lifting', 'train', 'training', 'safe', 'okay', 'ok', 'should', 'weights', 'can'],
+    answer:
+      "Resistance training is safe for teenagers with proper technique and sensible loading, and the old idea that it stunts growth is not supported. Technique before weight matters even more at that stage. Worth getting proper coaching early rather than learning from videos.",
+  },
+  {
+    id: 'gen.gluten_free',
+    requires: [['gluten', 'gluten free', 'gluten-free', 'coeliac', 'celiac']],
+    covers: ['healthier', 'better', 'should i', 'need', 'avoid', 'bad', 'is', 'cut out', 'why'],
+    answer:
+      "Not unless you have coeliac disease or a diagnosed sensitivity, in which case it is essential. For everyone else it removes nothing harmful, and gluten free versions of processed foods are often no better nutritionally. People sometimes feel better on it because they cut back on processed food at the same time.",
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GOAL SETTING
+// ─────────────────────────────────────────────────────────────────────────────
+const GOALS: CannedAnswer[] = [
+  {
+    id: 'gen.bulk_or_cut',
+    requires: [['bulk or cut', 'cut or bulk', 'bulk first', 'cut first', 'which first', 'lose first',
+                'gain first']],
+    covers: ['should i', 'do i', 'what', 'order', 'start with', 'better'],
+    answer:
+      "If you are carrying enough body fat that you would want to lose some regardless, start there, since it is easier to build afterward and you will see the muscle you already have. If you are already lean and want size, build. Most people bounce between the two too quickly to get anywhere with either.",
+  },
+  {
+    id: 'gen.cut_length',
+    requires: [['how long should a cut', 'how long to cut', 'length of a cut', 'how long should i diet',
+                'how long to diet', 'diet break']],
+    covers: ['last', 'be', 'weeks', 'months', 'should i', 'take', 'when to stop', 'maintenance'],
+    answer:
+      "Eight to sixteen weeks is a common range, then a period at maintenance before deciding whether to continue. Very long deficits wear people down, and adherence usually breaks before the physiology does. Planning the end at the start makes it far easier to hold.",
+  },
+  {
+    id: 'gen.switch_goals',
+    requires: [['switch goals', 'change goals', 'change my goal', 'new goal', 'switch to', 'time to change']],
+    covers: ['when', 'should i', 'how do i know', 'from', 'bored'],
+    excludes: ['calorie goal', 'water goal', 'step goal', 'sleep goal', 'goal weight', 'where do i',
+               'macro goal'],
+    answer:
+      "When you have reached the goal, when progress has stalled for a month with honest logging, or when your life has changed enough that the goal no longer fits. Switching because you are bored is the common one, and it is usually the wrong reason.",
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🔴 SAFETY. The highest-value entries in the library.
+// ✅ Canning these IS the safeguard, not a limitation: the model is never called, so it cannot improvise
+// medical advice on the topics where improvising is worst. The system prompt's medical guardrail does NOT
+// reach a canned answer (rule B in the header), so the deferral is written by hand into every one.
+// 🔴 CHEST PAIN HAS NO ENTRY, DELIBERATELY. See rule A. `utils/faithCrisis.ts` catches it client-side, and
+// an answer here catching a phrasing IT misses would fire first and hand an emergency a calm reply.
+// ─────────────────────────────────────────────────────────────────────────────
+const SAFETY: CannedAnswer[] = [
+  {
+    id: 'gen.train_around_injury',
+    requires: [['injury', 'injured', 'hurt my', 'pulled a', 'strained', 'torn', 'sprained', 'tweaked'],
+               ['train', 'training', 'workout', 'work out', 'lift', 'exercise', 'around', 'still', 'with']],
+    covers: ['can i', 'should i', 'how do i', 'safe', 'okay', 'ok', 'my', 'back', 'shoulder', 'knee'],
+    excludes: ['avoid injury', 'prevent injury', 'injury free'],
+    answer:
+      "That one needs someone who can actually see it. Working around an injury is normal and often possible, but what is safe depends on what the injury is, and guessing at that from a chat is how a small problem becomes a long one. A physio or doctor can tell you what to avoid and what is fine, and that answer is worth having before you train through anything.",
+  },
+  {
+    id: 'gen.see_a_doctor',
+    requires: [['see a doctor', 'go to the doctor', 'need a doctor', 'worth seeing someone',
+                'should i get checked', 'get it checked']],
+    covers: ['do i', 'should i', 'when', 'about', 'worth it'],
+    answer:
+      "If you are asking, usually yes. That is not a dodge. The cost of a checked out worry is an appointment, and the cost of an unchecked one can be a great deal more. Anything persistent, worsening, or new and unexplained is worth a professional look.",
+  },
+  {
+    id: 'gen.medical_condition',
+    requires: [['diabetes', 'diabetic', 'thyroid', 'pcos', 'high blood pressure', 'heart condition',
+                'medical condition', 'health condition', 'asthma', 'arthritis', 'ibs', 'crohns',
+                'kidney', 'liver disease', 'cancer']],
+    covers: ['can i', 'should i', 'safe', 'train', 'training', 'exercise', 'workout', 'eat', 'diet',
+             'with', 'affect', 'okay', 'ok'],
+    answer:
+      "Exercise is beneficial for most conditions, and what is safe for you specifically is a medical question rather than a fitness one. Your doctor can tell you what to avoid and at what intensity, and many conditions have specific guidance worth having. Once you have that, we can work within it.",
+  },
+  {
+    id: 'gen.medication',
+    requires: [['medication', 'medicine', 'prescription', 'my meds', 'beta blocker', 'antidepressant',
+                'blood thinner', 'statin', 'birth control']],
+    covers: ['affect', 'affects', 'training', 'exercise', 'workout', 'safe', 'can i', 'should i', 'with',
+             'while', 'heart rate'],
+    excludes: ['supplement interact', 'creatine'],
+    answer:
+      "Some medications affect heart rate, blood pressure, hydration, temperature regulation or how you recover, which changes what training feels like and sometimes what is sensible. That is a question for your doctor or pharmacist, who knows what you are taking and why. Not something to work out by trial and error.",
+  },
+  {
+    id: 'gen.pregnancy',
+    requires: [['pregnant', 'pregnancy', 'expecting', 'postpartum', 'post partum', 'breastfeeding',
+                'nursing', 'trying to conceive']],
+    covers: ['can i', 'should i', 'safe', 'train', 'training', 'exercise', 'workout', 'lift', 'eat',
+             'diet', 'calories', 'while'],
+    answer:
+      "Exercise during pregnancy is generally encouraged, and the specifics depend on your history, your stage and your own doctor's guidance. Recommendations have changed a lot and vary case by case, so this is one to take to the professional looking after you rather than to general advice.",
+  },
+  {
+    id: 'gen.joint_pain',
+    requires: [['joint pain', 'my knee hurts', 'my shoulder hurts', 'my back hurts', 'knees hurt',
+                'elbow pain', 'hip pain', 'lower back pain', 'wrist pain']],
+    // ⚠️ The exercise names are needed: "my knee hurts WHEN I SQUAT" left 'squat' unexplained and missed.
+    covers: ['what', 'should i', 'do', 'train', 'training', 'through', 'why', 'normal', 'stop', 'rest',
+             'hurt', 'hurts', 'hurting', 'pain', 'painful', 'knee', 'knees', 'shoulder', 'back', 'hip',
+             'elbow', 'wrist', 'squat', 'squats', 'deadlift', 'bench', 'press', 'run', 'running',
+             'lift', 'lifting', 'when'],
+    // 🔴 CHEST AND BREATHING TERMS ARE EXCLUDED FROM EVERY SAFETY ANSWER. See rule A in the header.
+    excludes: ['chest', 'breath', 'breathing', 'dizzy', 'faint', 'heart'],
+    answer:
+      "Joint pain is different from muscle soreness and is worth taking seriously rather than training through. Sometimes it is technique or load and sometimes it is not, and telling those apart needs someone who can watch you move. Back off the movement causing it and get it looked at, particularly if it persists past a week or two.",
+  },
+  {
+    id: 'gen.supplement_interaction',
+    requires: [['supplement'], ['medication', 'medicine', 'prescription', 'interact', 'interaction',
+                                'my meds', 'safe with', 'mix with']],
+    covers: ['can i', 'is it', 'take', 'taking', 'together', 'while', 'ask'],
+    answer:
+      "Real interactions exist and some are significant. A pharmacist is the right person to ask and will usually check for free, faster than a doctor's appointment. Worth doing before starting anything new rather than after.",
+  },
+  {
+    id: 'gen.dizziness',
+    requires: [['dizzy', 'dizziness', 'lightheaded', 'light headed', 'faint', 'fainted', 'vision went',
+                'saw stars', 'nearly passed out']],
+    covers: ['why', 'what', 'should i', 'do', 'during', 'after', 'training', 'workout', 'gym', 'normal',
+             'stop', 'lift', 'lifting', 'lifts', 'exercise', 'run', 'running', 'stand', 'standing',
+             'when', 'sometimes', 'get', 'feel', 'felt'],
+    // 🔴 THE MOST IMPORTANT `excludes` IN THE LIBRARY. Dizziness WITH chest discomfort or breathing trouble
+    // is not a fitness question. `faithCrisis.ts` catches the clear phrasings client-side, but if it misses
+    // one, this answer must NOT be the thing that catches it: a calm "sit down and rest" reply to a cardiac
+    // event is the worst failure this feature could produce. Unmatched, it falls through to the AI, which
+    // carries the [[CRISIS]] instruction.
+    excludes: ['chest', 'breath', 'breathing', 'heart', 'arm', 'jaw', 'sweating cold', 'clammy'],
+    answer:
+      "Stop when it happens, sit down, and do not push on through. Occasional lightheadedness from standing up quickly or training with very little food is common, but dizziness that is repeated, severe, or comes alongside anything else is a reason to get checked rather than to work around. If it comes with any chest discomfort or trouble breathing, treat that as urgent and get help immediately.",
+  },
+];
+
 export const GENERAL_ANSWERS: CannedAnswer[] = [
   ...NUTRITION_CORE,
   ...NUTRITION_REST,
   ...TRAINING,
   ...SLEEP_RECOVERY,
   ...WEIGHT_PROGRESS,
+  ...MYTHS,
+  ...GYM,
+  ...DIETS,
+  ...LABELS,
+  ...DRINKS,
+  ...CONSISTENCY,
+  ...INJURY,
+  ...POPULATION,
+  ...GOALS,
+  ...SAFETY,
 ];

@@ -1782,8 +1782,33 @@ either 9 pre-written full lines or a small change to how the pool is assembled. 
 ⚠️ **CASE B IS ONE POOL FOR THE WHOLE APP**, not per category: on a miss we often do not know the topic.
 That is why it needs 9 and not 3.
 ✅ **ON A REPEAT MISS THE SELL ESCALATES, IT DOES NOT BACK OFF** (Justin's call, reversing the original
-recommendation). Someone hitting the wall three times is the most engaged user in the app. **Copy for the
-escalated version is NOT written yet.**
+recommendation). Someone hitting the wall twice is the most engaged user in the app.
+
+### ESCALATED REPEAT-MISS COPY (3) -- written and approved 2026-08-09
+Fires on the SECOND case B miss in one conversation, in place of the standard opener + closer.
+1. "That is twice now. With the Supporter plan I can take on nearly anything you ask, and it is $9.99 a month."
+2. "Second one I am not certain on. With the Supporter plan I can help with nearly anything you want to know, for $9.99 a month."
+3. "That is twice. The Supporter plan is where I can answer nearly whatever you bring me, and it is $9.99 a month."
+
+✅ **THE PRICE STAYS IN THE LINE (Justin, 2026-08-09), not just on the button.** Someone who has hit the
+wall twice is already weighing whether to pay, and $9.99 is smaller than most people assume before looking.
+⚠️ **Built only from CLOSERS ALREADY APPROVED above**, with a short lead naming the repeat. That was
+deliberate: the case B voice took ~25 rejected drafts to find, so the escalated version reuses it rather
+than reopening it.
+⚠️ **REQUIRES CONVERSATION STATE** (how many misses so far this chat). The chat's in-memory `messages` list
+already exists and is wiped when the sheet closes, which is the right lifetime for this. See PLAN 4.8
+hole 3, where the same mechanism settled the canned-answer history question.
+✅ **THIRD MISS AND BEYOND: DROP THE SALES SENTENCE, KEEP THE BUTTON (Justin, 2026-08-09).** Otto says only
+that he is not sure; the `[See what Supporters get]` button still renders.
+> "I am not certain on that one either." `[See what Supporters get]`
+⚠️ **THIS IS NOT THE "BACK OFF" THAT WAS REJECTED FOR THE SECOND MISS.** By the third, the case has been
+made twice and the button shown twice. A third sales line carries no new information and is the thing that
+makes an app feel cheap. **The reasoning is different at each step and both calls are Justin's.**
+✅ **THE FREE CAP SHRINKS THIS DECISION AND IS WHY THE SIMPLEST OPTION WINS.** At 5 messages a day, a user
+on their third miss has TWO left, so the conversation self-limits regardless of what we do here.
+❌ **REJECTED: asking them what they are actually trying to work out.** Genuinely more useful, and it was
+the interesting option, but it needs Otto to handle whatever comes back (another miss, or an AI call) inside
+a two-message window. Real work for a narrow window. **Revisit if the free cap is ever raised.**
 
 ## CASE A -- THE QUESTION NEEDED THEIR OWN NUMBERS. Tail only; a real answer comes first.
 **Worked example of the whole reply:**

@@ -56,8 +56,8 @@ returned (house rule, `ottoCannedAnswers.ts`).
 
 ⚠️ **BANNED WORD THAT KEPT SLIPPING IN: "genuinely".** It is on the intensifier list in `SPEC_otto.md`.
 Three instances were caught and removed during drafting. **Grep for it at merge time.**
-⚠️ **~25 answers need MINDFUL versions**, marked 🟣 below. Heaviest in WEIGHT AND PROGRESS, which is the
-category Mindful exists to handle differently. Not yet written.
+✅ **7 answers need MINDFUL versions, marked 🟣 below. WRITTEN 2026-08-09, section at the bottom.**
+🔴 An earlier "~25" here was a guess and was WRONG. The audit is in that section.
 
 ---
 
@@ -528,6 +528,37 @@ safeguard rather than a limitation.
 **❌ CHEST PAIN HAS NO ANSWER HERE, DELIBERATELY.** See rule 1 at the top of this file.
 
 ---
+
+## 🟣 MINDFUL VERSIONS (7) -- written and approved 2026-08-09
+
+🔴 **AN EARLIER ESTIMATE OF "~25" IN THIS FILE AND IN PLAN WAS WRONG. IT IS 7.** Audited rather than
+guessed: Mindful's rules are about deficit maths, weight-loss prescriptions and judgment language, and most
+of the library never touches any of those. The CONSISTENCY answers are already observational, and "scale is
+not moving but clothes fit better" is arguably MORE Mindful than the standard version.
+✅ **NOTHING IS WITHHELD FROM A MINDFUL USER.** Justin's honest-numbers rule holds: they still get the real
+range. What changes is framing. "Should" becomes "most people find", direct address softens, and the
+weigh-in answer opens the door to not weighing at all.
+
+**How much should I eat to lose weight**
+> Most people find a gap of around 300 to 500 calories a day below what they burn is one they can live with, which usually works out around half a pound to a pound a week. Larger gaps move faster on paper and tend to be harder to sustain.
+
+**What is a calorie deficit**
+> Eating fewer calories than your body uses, so the difference comes from stored energy. That is the mechanism behind weight changing, whatever approach is wrapped around it.
+
+**How much protein should I eat**
+> Most people training regularly land somewhere around 0.7 to 1g per pound of bodyweight. It matters most when you are eating less than you burn, since protein is what protects muscle. Below about 0.5g per pound is where most people notice the difference.
+
+**How fast should I lose weight**
+> Around half a percent to one percent of bodyweight a week is the range most people find workable, roughly one to two pounds for many. Faster than that and more of what comes off tends to be muscle, and it is generally harder to hold onto.
+
+**How often should I weigh myself**
+> There is no requirement to weigh at all. If you do, daily readings are most useful as a weekly average rather than as individual numbers, since the day to day movement is mostly water. Weekly works just as well, and some people are better off not tracking it.
+
+**Setting a realistic goal weight**
+> A weight you have lived at comfortably before is usually a better reference than a number picked from anywhere else. It is worth holding loosely too, since how you feel at a given weight varies a lot with how much muscle you carry, and the number on its own says less than people expect.
+
+**What do I do about a plateau**
+> A month without movement is worth a look rather than a reaction. Intake often drifts upward without anyone noticing, so that is the first thing to check. If everything has been consistent, small adjustments are the usual next step rather than large ones.
 
 ## COUNT AND THE HONEST GAP
 **141 answers written.** 140 general + 1 ("do I eat back exercise calories") that belongs in the app library.

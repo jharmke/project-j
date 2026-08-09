@@ -1107,8 +1107,12 @@ is what made him think work had been dropped -- it had not, but he had no way to
       but **worth reconciling against the original sweep before calling it complete.**
       **OPEN, NOT DECIDED:** what the miss/pitch answer actually says; whether accuracy is protected by
       splitting the library in two and letting `ottoCoachRouting.ts` pick which half to search (proposed,
-      unmeasured); the Mindful second versions (~25 of the topics collide with Mindful's rules against
-      deficit maths and weight-loss prescriptions); and the exclusion list below.
+      unmeasured); and the exclusion list below.
+      ✅ **MINDFUL VERSIONS DONE 2026-08-09: SEVEN, not the "~25" this file used to say.** That number was a
+      guess; the audit is in `SPEC_otto_general_answers.md`. Mindful's rules cover deficit maths,
+      weight-loss prescriptions and judgment language, and most of the library never touches any of them.
+      ✅ **ESCALATED REPEAT-MISS COPY DONE**, 3 lines in `SPEC_otto.md`, price included in the line at
+      Justin's call. 🟡 Third-miss behaviour still undecided.
       🔴 **HARD REQUIREMENT, JUSTIN 2026-08-08: DISORDERED-EATING-ADJACENT QUESTIONS GET A REAL, CARING,
       PRE-WRITTEN ANSWER -- NOT A NUMBER AND NOT A REFUSAL.** "How little can I eat", "how do I lose 20lb in
       a month". A pre-written target there is the app handing out a harmful number with no judgement in the
@@ -1118,10 +1122,57 @@ is what made him think work had been dropped -- it had not, but he had no way to
       ⚠️ **RISK TO WATCH IS COLLISIONS, NOT COVERAGE.** The matcher's zero-wrong-answers record was set on
       183 answers in ONE domain. At ~380 across two very different domains that record proves much less.
       ⚠️ Every answer needs the CLAUDE.md health disclaimer.
-      ⚠️ **FAITH MUST NOT BE CAUGHT BY ANY OF THIS.** A faith message with no app noun ("I'm struggling to
-      trust God right now") lands on `coach-by-elimination` in `ottoCoachRouting.ts` and would be gated.
-      The faith handoff must be checked FIRST and must fail OPEN. Detector measured ~81% (4b), so it does
-      not fully cover the case on its own.
+      ✅ **FAITH FAILS OPEN. DECIDED 2026-08-09.** A faith message with no app noun ("I'm struggling to trust
+      God right now") lands on `coach-by-elimination` in `ottoCoachRouting.ts` and would otherwise be gated,
+      so a free user opening up about their faith would be pitched. Against CLAUDE.md outright.
+      ➡️ **THE RULE: the coach gate never fires on a message the faith handoff flagged, and when the faith
+      check is UNSURE the message is treated as faith.** Faith fails open; everything else fails closed.
+      🔴 **AND THE FRAMING OF THIS WAS WRONG FOR TWO MESSAGES UNTIL JUSTIN CAUGHT IT. "Otto answers it" IS
+      NOT WHAT HAPPENS.** `FAITH_HANDOFF_BLOCK` instructs him: *"This one is Halo's, not yours. Do NOT answer
+      it, do not give your own view, do not quote or paraphrase scripture."* He returns ONE fixed sentence
+      pointing at Halo. **He never coaches on faith at all**, so failing open means "send them to Halo", not
+      "let Otto answer".
+      ⚠️ Detector measured ~81% (4b), so this covers the ~19% it misses. Costs almost nothing: Halo is ~3%
+      of a free user's bill, and under 4.14 the handoff reply itself becomes free.
+
+- [ ] **4.14 🆕 THE FAITH HANDOFF REPLY SHOULD BE A CANNED ANSWER. Found 2026-08-09 while deciding 4.13's
+      faith rule. NOT BUILT. Logged separately per the side-findings rule so 4.13 is not held hostage to it.**
+      **THE FINDING.** When Otto hands a faith message to Halo he emits a HARDCODED sentence, but producing
+      it costs a FULL AI CALL: he is billed to read his whole prompt and then output text we already wrote.
+      ⚠️ **And the canned matcher is deliberately switched OFF when a faith handoff is riding** (PLAN 4.8
+      wiring), so it can never catch this today.
+      **THREE WINS, AND COST IS THE SMALLEST OF THEM:**
+      1. **Zero instead of a full AI call.**
+      2. 🔴 **GUARANTEED WORDING.** "Reply word for word" is an INSTRUCTION TO A MODEL, and on this project a
+         prompt instruction has lost to the model's own inclination **three times** (Halo's two locked voice
+         rules, 2.5; Otto's no-guess rule inventing a limit, 4.9). **A canned answer cannot paraphrase.**
+         Nothing guarantees that sentence survives intact today.
+      3. **A jump button.** The reply DESCRIBES where the gold cross button is and cannot take them there.
+      **🔴 FOUR THINGS THAT MUST NOT BE MISSED:**
+      1. **It is THREE replies, not one:** normal, Not Right Now, and repeat. `faithTier` is already in
+         `CannedContext` so the first two are the existing branch pattern. **`repeat` is NOT and must be added.**
+      2. **The ordering guard exists precisely to block this.** Inverting it for faith is a real change, and
+         the thing to watch is the CAP rider: if this is their last message of the day, that warning must
+         still get through.
+      3. **THIS DOES NOT IMPROVE DETECTION.** The ~19% miss is a separate client-side check. Canning the
+         reply and widening the detector are two different jobs and it would be easy to ship one and believe
+         the other was handled.
+      4. **Mixed messages** ("struggling with my faith and how do I log water") drop the app half today. A
+         canned version behaves identically. Not a regression, but it becomes a deliberate choice.
+      **🔘 BUTTONS, AND JUSTIN CAUGHT THE ONE THAT MATTERS:**
+      | user | reply | button |
+      |---|---|---|
+      | Rooted / Exploring, first | "That one's Halo's rather than mine..." | `faith` (Faith tab) |
+      | **Not Right Now, first** | unchanged: "...she's turned off on your account right now. You can turn her back on in Settings, under Faith and Style." | **`faith_style`, NOT the Faith tab** |
+      | Rooted / Exploring, repeat | "Still Halo's area rather than mine." | `faith`, harmless |
+      | **Not Right Now, repeat** | same | 🔴 **NONE** |
+      ⚠️ **THE LAST ROW IS LOAD-BEARING.** The repeat variant exists so someone who opted out does not get the
+      full "here is how to turn her on" line three times; the code comment calls it *"a sales pitch aimed at
+      the one person who explicitly opted out."* **A faith button on every repeat quietly undoes that.**
+      🔴 **A CODE CHANGE THIS EXPOSES: `route` is a PLAIN FIELD, not a function**, while `answer` can be a
+      function branching on tier. So one entry cannot send two tiers to two destinations. Either two entries
+      (which then collide on the same triggers) or `route` must accept a function. **Small, but without it
+      the Not Right Now case cannot be built correctly.**
 
 ### 4b. 🆕 OTTO HANDS FAITH CONVERSATION TO HALO -- ✅ BUILT + DEPLOYED 2026-08-05
 **Not a cost item.** A product-correctness bug found during the 2.2 verification check. Kept separate on

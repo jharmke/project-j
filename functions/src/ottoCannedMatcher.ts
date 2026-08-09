@@ -337,16 +337,23 @@ export function matchCanned(
   // app library sat at 1/5 no matter how the cap was raised.
   // ✅ Principled rather than a patch: a stopword carries no topic by definition, so discarding one cannot
   // be discarding a topic. Anything genuinely topical is not in STOPWORDS.
-  const triggerWords = new Set<string>();
+  const triggerSet = new Set<string>();
   for (const a of allAnswers) {
     for (const group of a.requires) {
       for (const term of group) {
         if (term.includes(' ')) continue;
         const canonical = SYNONYMS[term] ?? term;
-        if (!STOPWORDS.has(canonical)) triggerWords.add(canonical);
+        if (!STOPWORDS.has(canonical)) triggerSet.add(canonical);
       }
     }
   }
+  const triggerList = [...triggerSet];
+  // 🔴 MATCHED WITH `has`, NOT WITH SET MEMBERSHIP, AND THAT DISTINCTION IS A REAL BUG THIS CAUGHT.
+  // `has` already understands plural and gerund forms (`\bterm(s|es|ing|ed)?\b`); a Set lookup does not.
+  // The app library registers 'notification' and a user typed "how do i stop NOTIFICATIONS at night", so
+  // the guard did not see a topic, allowed it through, and the message matched the EATING LATE answer.
+  // ⚠️ Any guard that matches words differently from the matcher it is guarding will leak exactly there.
+  const isTopic = (w: string) => triggerList.some((term) => has(w, term));
   // 🔴 PREFIX ONLY, AND A TWO-SIDED WINDOW VERSION WAS BUILT, MEASURED AND REVERTED. See PLAN.md 4.15.
   // The window version was worth real coverage (general 18% -> 24%, terse 70% -> 74%) and broke the one
   // rule that matters: **"whats the tip jar and how much protein do i need" came back answering only the
@@ -365,7 +372,7 @@ export function matchCanned(
       if (start === 0 && end === toks.length) continue;      // untrimmed already failed above
       if (toks.length - (end - start) > MAX_TRIM) continue;  // never discard more than MAX_TRIM in total
       const dropped = [...toks.slice(0, start), ...toks.slice(end)];
-      if (dropped.some((w) => triggerWords.has(SYNONYMS[w] ?? w))) continue;
+      if (dropped.some((w) => isTopic(SYNONYMS[w] ?? w))) continue;
       windows.push(toks.slice(start, end).join(' '));
     }
   }
@@ -376,6 +383,13 @@ export function matchCanned(
     const m = matchOne(t, ctx, answers, w);
     if (m) return { matched: m, reason: 'hit' };
   }
+
+  // ── LAST RESORT: tolerate a few non-topic words rather than nothing. ────────────────────────────────
+  // ⚠️ Runs only after the strict pass, the stitch and every window have failed, so it can never change a
+  // message that already matched. See the `tolerateTriggers` note in `matchOne` for why the two earlier
+  // versions of this leaked and what stops it now.
+  const tolerant = matchOne(t, ctx, answers, undefined, isTopic);
+  if (tolerant) return { matched: tolerant, reason: 'hit' };
 
   return { matched: false, reason: lastReason };
 }
@@ -396,6 +410,16 @@ function matchOne(
   // exclusion never got to see it), and "whats the best diet for fat loss" lost "whats the best".
   // ➡️ Trimming may relax what an answer has to ACCOUNT for. It may never relax what an answer has to MATCH.
   coverageText?: string,
+  /**
+   * 🔴 TOLERANT MODE (PLAN.md 4.15). Allows a bounded number of content words to go unexplained, but ONLY
+   * words that are not a topic anywhere in either library. Pass the shared trigger vocabulary to enable it.
+   * ⚠️ TWO EARLIER VERSIONS OF THIS SHIPPED NOTHING BECAUSE THEY LEAKED. Both lacked the guards that now
+   * exist: attempt 1's trigger set was built from the searched library only, so 'protein' was invisible and
+   * "how much protein should i be eating" returned the PRICING answer; attempt 2 added a ratio rule and
+   * still let "should i train fasted" reach the app's FASTING TIMER, because 'train' was not recognised as
+   * a topic either. With the shared vocabulary both of those words are topics and both leaks are blocked.
+   */
+  isTopic?: (w: string) => boolean,
 ): { id: string; text: string; route?: RouteKey } | null {
   const candidates = answers.filter((a) => {
     if (a.excludes && a.excludes.some((x) => has(t, x))) return false;
@@ -459,6 +483,27 @@ function matchOne(
   //    FASTING TIMER answer.** Coaching question, app feature. Cross-library collisions went 0 -> 3.
   // ➡️ Both attempts raised conversational coverage substantially (7% -> 35% and 7% -> 22%) and both broke
   // the one number that must never move. **Coverage is worth nothing bought with wrong answers.**
+  // ── TOLERANT PASS. Only when the caller supplies the shared trigger vocabulary. ──────────────────────
+  if (isTopic) {
+    const MAX_UNEXPLAINED = 4;
+    const ok = ranked.filter((a) => {
+      const unexplained = contentWords.filter((w) => !explains(w, a));
+      const explained = contentWords.length - unexplained.length;
+      if (unexplained.length === 0 || unexplained.length > MAX_UNEXPLAINED) return false;
+      // 🔴 THE ANSWER MUST CARRY THE MESSAGE, NOT SCRAPE IT. Without this, an answer whose `requires` are
+      // satisfied by a generic phrase ("how much") explains NOTHING and still wins.
+      if (explained === 0 || explained < unexplained.length) return false;
+      // 🔴 AND NOTHING LEFT UNEXPLAINED MAY BE A TOPIC ANYWHERE IN EITHER LIBRARY. This is the guard both
+      // earlier attempts were missing. A leftover topic word means the message was about something else too.
+      return unexplained.every((w) => !isTopic(canon(w)));
+    });
+    if (ok.length === 1) {
+      const a = ok[0];
+      return { id: a.id, text: typeof a.answer === 'function' ? a.answer(ctx) : a.answer, route: a.route };
+    }
+    if (ok.length > 1) { lastReason = 'ambiguous-tie'; return null; }
+  }
+
   lastReason = 'unexplained-remainder';
   return null;
 }

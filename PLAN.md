@@ -1390,11 +1390,28 @@ is what made him think work had been dropped -- it had not, but he had no way to
       event. One missing letter. Both safety answers now list every form, and
       🔬 **`_general_cross.cjs` GAINED A PERMANENT CRISIS-ADJACENT ASSERTION: 10 phrasings `faithCrisis.ts`
       does NOT catch, all of which must match nothing. Currently 0/10 matched. Add to that list, never trim it.**
-      ⏳ **STILL NOT SOLVED: 23% means most rambling questions still get sold to rather than helped.** The
-      three remaining app-library misses carry real content words in the padding ("dinner", "every week"),
-      which the trim cannot discard and coverage cannot explain. ➡️ That is the next idea, and it is a
-      different one: not trimming, but letting an answer leave a bounded number of NON-TRIGGER content words
-      unexplained. Attempts 1 and 2 did that unguarded and broke; the guards now exist that they lacked.
+      ✅ **AND THE TOLERANT PASS FINALLY SHIPPED, ON THE THIRD DESIGN. 23% -> 26% CONVERSATIONAL, 74% -> 75%
+      TERSE, EVERY SAFETY AND COLLISION NUMBER STILL ZERO.** An answer may now leave up to four content
+      words unexplained, but only words that are not a topic ANYWHERE in either library, and only if it
+      explains at least as many as it leaves.
+      ✅ **BOTH EARLIER LEAKS ARE BLOCKED BY CONSTRUCTION NOW**, which is why this attempt survived where
+      1 and 2 did not: 'protein' and 'train' are topics the shared vocabulary can see, so the pricing answer
+      and the fasting timer can never win those messages again.
+      🔴 **AND IT CAUGHT A BUG IN THE GUARD ITSELF THAT IS WORTH MORE THAN THE FEATURE. THE GUARD MATCHED
+      WORDS DIFFERENTLY FROM THE MATCHER IT WAS GUARDING.** It used Set membership; `has()` understands
+      plural and gerund forms (`\bterm(s|es|ing|ed)?\b`). The app library registers 'notification', a user
+      typed **"how do i stop NOTIFICATIONS at night"**, the guard saw no topic and the message matched the
+      EATING LATE answer. ➡️ **Any guard that matches words differently from the thing it guards will leak
+      exactly there.** Now shares `has()`.
+      📉 **FULL 4.15 RESULT ACROSS THE DAY: conversational 7% -> 26% (3.7x), terse 69% -> 75%, app library
+      1/5 -> 2/5, and zero wrong answers, zero collisions and zero unsafe matches throughout.**
+      ⏳ **STILL NOT SOLVED, AND THE REMAINING MISSES ARE A DIFFERENT SHAPE.** "I make the same dinner every
+      week is there a way to save it as a recipe" carries real content words in its padding ('dinner',
+      'week') that are topics elsewhere, so neither trimming nor tolerance may discard them. **That is
+      correct behaviour, not a bug** -- those words genuinely could belong to another question. Beating it
+      needs the matcher to weigh which topic the message is ABOUT, which is a different kind of change.
+      ➡️ **Do not attempt that without production phrasings (4.11a).** Four designs have now been measured
+      here and the two that looked cleverest are the two that leaked.
 
 ### 4b. 🆕 OTTO HANDS FAITH CONVERSATION TO HALO -- ✅ BUILT + DEPLOYED 2026-08-05
 **Not a cost item.** A product-correctness bug found during the 2.2 verification check. Kept separate on

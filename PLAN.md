@@ -1088,6 +1088,23 @@ is what made him think work had been dropped -- it had not, but he had no way to
       have" matching the plan's LIMIT); no new work needed. It is a keyword list so it will miss phrasings,
       but **it fails toward NOT pitching**, which is the harmless direction.
       ⏳ **STILL UNWRITTEN: the escalated repeat-miss copy.**
+      ✅ **THE LIBRARY ITSELF IS WRITTEN AND APPROVED 2026-08-09: 141 ANSWERS, in `SPEC_otto_general_answers.md`.**
+      Do not copy any of them here. Nutrition, training, sleep and recovery, weight and progress, myths, gym
+      practicalities, named diets, labels, drinks, consistency, injury prevention, population, goal setting
+      and safety. **Verified mechanically: 141 answer lines, zero dashes of any kind.**
+      🔴 **THE MOST IMPORTANT RULE THE DRAFTING PASS PRODUCED: NOTHING IN THE CRISIS-ADJACENT SPACE GETS A
+      CANNED ANSWER.** `utils/faithCrisis.ts` matches `chest pain`, heart attack, stroke and seizure
+      CLIENT-SIDE before the server is called. The danger is the phrasings it MISSES ("my chest hurts when I
+      run" does not match): today those fall through to the AI, which carries the `[[CRISIS]]` instruction,
+      but **a canned answer catching "chest hurts" would fire FIRST and hand a possible emergency a calm
+      "see a doctor sometime" reply.** Chest pain deliberately has no answer; the dizziness answer must
+      `exclude` chest and breathing terms.
+      ⚠️ **AND THE SYSTEM PROMPT'S MEDICAL GUARDRAIL DOES NOT REACH A CANNED ANSWER**, since the model is
+      never called. It is carried by hand in how each answer is written. ✅ Justin's call: **no new
+      disclaimer text**, it is already in 25+ files including Otto's own prompt.
+      ⚠️ **COUNT MOVED: the topic sweep estimated ~198, the library landed at 141.** Not skipped work
+      (internal duplicates, three cut as near-duplicates of existing app answers, several topics collapsed),
+      but **worth reconciling against the original sweep before calling it complete.**
       **OPEN, NOT DECIDED:** what the miss/pitch answer actually says; whether accuracy is protected by
       splitting the library in two and letting `ottoCoachRouting.ts` pick which half to search (proposed,
       unmeasured); the Mindful second versions (~25 of the topics collide with Mindful's rules against

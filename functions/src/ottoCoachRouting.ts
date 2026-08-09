@@ -193,6 +193,27 @@ const ENTITLEMENT_TERMS = [
 const SETTINGS_SIGNALS = ['change my', 'set my', 'update my', 'edit my', 'my goal', 'my target', 'delete', 'add a'];
 
 /**
+ * Words that name nothing. Used ONLY by the four-word floor at the bottom of this file, to tell a real
+ * short question ("is citrulline worth taking") from a fragment needing the previous turn ("what do you
+ * mean").
+ * ⚠️ KEEP THIS BORING AND SMALL, AND NOTE WHICH DIRECTION IS SAFE. A word added here makes a four-word
+ * message MORE likely to be read as a fragment and sent to Support, which costs money and harms nobody. A
+ * word wrongly LEFT OUT is the dangerous direction. Never add anything that could name a feature, a food,
+ * a supplement or a body part.
+ */
+const FUNCTION_WORDS = new Set([
+  'a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'am', 'do', 'does', 'did', 'doing',
+  'can', 'could', 'should', 'would', 'will', 'shall', 'may', 'might', 'must', 'i', 'me', 'my', 'mine',
+  'you', 'your', 'we', 'us', 'it', 'its', 'this', 'that', 'these', 'those', 'they', 'them',
+  'how', 'what', 'where', 'when', 'which', 'who', 'whats', 'wheres', 'hows', 'why',
+  'to', 'in', 'on', 'at', 'for', 'of', 'and', 'or', 'but', 'with', 'from', 'by', 'about', 'as',
+  'if', 'so', 'up', 'out', 'off', 'again', 'there', 'here', 'any', 'some', 'all', 'more', 'else',
+  'ok', 'okay', 'yeah', 'yes', 'no', 'now', 'then', 'just', 'really', 'mean', 'means', 'help',
+  'thing', 'stuff', 'one', 'get', 'got', 'go', 'know', 'tell', 'say', 'said', 'think', 'im', 'ive',
+  'dont', 'cant', 'wait', 'sorry', 'thanks', 'thank', 'hey', 'hi', 'hello', 'much', 'many',
+]);
+
+/**
  * Matches whole words with the endings people actually type, so `sync` catches `syncing` and `snack`
  * catches `snacking`. Multi-word terms match literally.
  * ⚠️ This is why `crash` is NOT a bare term below -- stemmed, it would swallow "why does my energy crash".
@@ -265,7 +286,22 @@ export function routeCoachOrSupport(message: string): CoachRouteResult {
   // above being comprehensive, which is why the platform/meta terms were added to APP_TERMS alongside this.
   // ⚠️ THE LENGTH FLOOR IS LOAD-BEARING. A short vague message ("one more thing", "wait what") carries no
   // evidence, and the next thing they type could be about anything. Those stay on Support.
-  if (t.split(' ').length >= 5) return { coachOnly: true, reason: 'coach-by-elimination' };
+  // 🔴 THE FLOOR IS FIVE WORDS, OR FOUR IF ONE OF THEM IS A REAL WORD (2026-08-09, PLAN 4.13).
+  // ⚠️ WHY IT MOVED. At a flat five, "is citrulline worth taking" and "is taurine worth taking" fell
+  // through to Support and reached the AI, so the coach gate never saw them and a free user got a paid
+  // answer to a question the gate exists to catch. "Is creatine worth it" worked only because 'creatine'
+  // happens to be a listed coaching word; an unknown supplement name is not, and there are thousands.
+  // ⚠️ A FLAT FOUR WAS MEASURED AND IS UNSAFE. It sent "what do you mean" and "help me out here" to a
+  // manual-less Otto, which is the one failure this router must never have. Both are fragments needing the
+  // previous turn, and neither carries a single word that names anything.
+  // ✅ SO THE TEST IS CONTENT, NOT LENGTH: at four words there must be at least one token that is not a
+  // function word. 'citrulline' passes, 'what do you mean' does not. Verified against all four router
+  // corpora at 0 dangerous.
+  const words = t.split(' ');
+  const hasContentWord = words.some((w) => !FUNCTION_WORDS.has(w));
+  if (words.length >= 5 || (words.length === 4 && hasContentWord)) {
+    return { coachOnly: true, reason: 'coach-by-elimination' };
+  }
 
   return { coachOnly: false, reason: 'no-coach-signal' };
 }

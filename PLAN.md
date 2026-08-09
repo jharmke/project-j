@@ -1226,6 +1226,23 @@ is what made him think work had been dropped -- it had not, but he had no way to
       pitches the budget was built for.
       🔬 **NEW METER COUNTER: `cannedGated`.** `cannedGated` against `cannedHit` is the honest measure of how
       often a free user is sold to rather than helped, and it is the real count of conversion moments.
+      🔴 **AND JUSTIN'S DEVICE TEST OF THE ESCALATION FOUND A HOLE IN THE GATE ITSELF, NOT IN THE COPY.**
+      He asked three supplement questions in a row; only the FIRST was gated. "Is citrulline worth taking"
+      and "is taurine worth taking" both reached the AI, so a free user got a paid answer to exactly the
+      kind of question the gate exists to catch, and the escalation could never fire because there was only
+      ever one gate.
+      ⚠️ **CAUSE: `ottoCoachRouting.ts` only called something coaching-by-elimination at FIVE words.** Those
+      two are four. "Is creatine worth it" worked only because 'creatine' happens to be a listed coaching
+      word, and there are thousands of supplement names that are not.
+      ❌ **A FLAT FOUR-WORD FLOOR WAS TRIED AND IS UNSAFE**, measured against the router's own corpora: it
+      sent "what do you mean" and "help me out here" to a manual-less Otto, which is the single failure that
+      router must never have.
+      ✅ **SO THE TEST IS CONTENT, NOT LENGTH: four words qualify if ONE of them is not a function word.**
+      'citrulline' passes, "what do you mean" does not. **All four router corpora re-run at 0 dangerous:
+      COACH 59/59, APP 60/60, DATA 20/20, AMBIGUOUS 15/15.**
+      ⚠️ The new `FUNCTION_WORDS` list has a safe direction and an unsafe one, stated in the file: adding a
+      word makes a four-word message more likely to be treated as a fragment (costs money, harms nobody);
+      leaving one out is the dangerous direction.
       ✅ **THE ESCALATION IS BUILT + DEPLOYED 2026-08-09.** First miss gets the opener/closer pair, the
       SECOND names the repeat and adds the price, the third and beyond drop the sales sentence entirely and
       keep only the button. **The count is read off the conversation the client already re-sends**, not

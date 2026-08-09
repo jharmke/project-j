@@ -285,3 +285,11 @@ console.log(`🔴 WRONG ANSWERS (must be 0): ${wrong + collWrong + leaked}`);
 console.log(`💰 misses (cost only): ${missed + stitchFail}`);
 console.log(`assertion failures: ${dashHits + routeHits + pathFails + mindfulHits}`);
 console.log('='.repeat(70) + '\n');
+
+// 🔴 EXIT CODE ADDED 2026-08-09. THIS FILE IS THE PRIMARY AUDIT AND IT ALWAYS EXITED 0, INCLUDING ON A
+// WRONG ANSWER OR A BROKEN ASSERTION. Run in a chain of six harnesses, a failure scrolled past and
+// nothing anywhere reported a problem. Every other harness already did this; the most important one did not.
+// ⚠️ Misses are NOT a failure: a miss costs $0.0054 and is today's behaviour. Wrong answers and assertion
+// failures (a dash, an invented route, a navigation path that no longer exists in the KB, a Mindful leak)
+// are the numbers that must be zero.
+process.exit(wrong + collWrong + leaked + dashHits + routeHits + pathFails + mindfulHits > 0 ? 1 : 0);

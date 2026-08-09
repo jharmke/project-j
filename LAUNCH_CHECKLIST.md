@@ -156,6 +156,17 @@ Every one of these is currently making the app more generous than it should be a
       backstop, not a launch number. Recalculate above expected real-user spend before going public.
 - [ ] **3.3 — Verify the webhook secret.** `REVENUECAT_WEBHOOK_TOKEN` is set and the endpoint 401s on a bad
       token (verified 2026-07-12). Re-confirm after any redeploy.
+- [ ] **3.4 — 🕐 SWITCH OTTO AND HALO TO THE 1-HOUR CACHE. Do it AT launch, not before.** `CACHE_TTL` in
+      `functions/src/aiProxy.ts`. Smart Coach is already on 1 hour (2026-08-05); the two companions are
+      deliberately still on 5 minutes.
+      ⚠️ **Flipping it early makes things WORSE, which is why it is a launch step and not a bug.** With one
+      user, Otto's traffic is bursty — two or three messages seconds apart, then hours of nothing — and those
+      already share a 5-minute cache, so an hour buys nothing and pays double to write it. Measured: two
+      back-to-back Otto messages cost $0.0357 at 5 minutes and $0.0556 at 1 hour. It flips the other way the
+      moment two conversations land within an hour, which real traffic guarantees.
+      ✅ No Anthropic beta header is needed for the 1-hour TTL (verified against the caching docs 2026-08-05).
+      ➡️ Cheaper still if PLAN 5.1 (the dials) lands first — then this is a config change, not a redeploy.
+      **Status and full derivation: `PLAN.md` 2.1b. Do not restate the numbers here.**
 
 ---
 

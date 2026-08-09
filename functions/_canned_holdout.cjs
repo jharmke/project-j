@@ -3,8 +3,29 @@
 // flatters (4.9 scored 100% on its tuned corpus and 81% on unseen phrasing). This is the honest number.
 const { CANNED_ANSWERS } = require('./lib/ottoCannedAnswers.js');
 const { matchCanned } = require('./lib/ottoCannedMatcher.js');
+// 🔴 FOURTH ARGUMENT ADDED 2026-08-09. WITHOUT IT THIS HARNESS WAS NOT TESTING THE APP.
+// PLAN 4.15 gave `matchCanned` a fourth parameter: every answer in BOTH libraries, used as the
+// conversational trim's guard vocabulary. `appCompanion.ts` passes it. This file did not, so the guard
+// could not see the OTHER library's topics and happily discarded them.
+// ⚠️ IT REPORTED TWO WRONG ANSWERS THAT THE REAL APP DOES NOT PRODUCE: "is fasting good for fat loss"
+// -> nav.fasting, and "how do i log a recipe and is white rice bad" -> nav.recipe. Both were artefacts of
+// this line. Verified against production arguments: both correctly decline.
+// ➡️ A harness that calls the thing it is testing differently from production measures nothing. It failed
+// in the noisy direction this time; it could just as easily have hidden a real leak.
+const { GENERAL_ANSWERS } = require('./lib/ottoGeneralAnswers.js');
+const ALL_ANSWERS = [...CANNED_ANSWERS, ...GENERAL_ANSWERS];
+// ⚠️ FAIL LOUDLY IF A LIBRARY DID NOT LOAD. An empty array would score a clean sheet of zero wrong
+// answers, which is the most dangerous possible false pass. Same reason `audit-tips-copy.cjs` exits 2
+// when its own parser matches nothing.
+if (!CANNED_ANSWERS.length || !GENERAL_ANSWERS.length) {
+  console.error('🔴 A LIBRARY FAILED TO LOAD. Run `npm run build` first. Refusing to report a score.');
+  process.exit(2);
+}
 const FREE = { supporter: false, faithTier: 'exploring', styleMode: 'balanced' };
-const M = (m) => matchCanned(m, FREE, CANNED_ANSWERS);
+// ⚠️ SEARCHES THE APP LIBRARY ONLY, DELIBERATELY. This is an app-library holdout, so "declined correctly"
+// means "no APP answer fired", NOT "Otto declined". Since PLAN 4.13 a free user's fitness question is
+// answered by the GENERAL library, which is covered by `_general_cross.cjs`.
+const M = (m) => matchCanned(m, FREE, CANNED_ANSWERS, ALL_ANSWERS);
 
 // Phrased differently on purpose: sloppier, shorter, more oblique.
 const SHOULD_MATCH = [
@@ -91,3 +112,7 @@ console.log(`\nmatched correctly: ${hit}/${SHOULD_MATCH.length} (${((hit / SHOUL
 console.log(`declined correctly: ${MUST_NOT.length - leaked}/${MUST_NOT.length}`);
 console.log(`🔴 WRONG ANSWERS (must be 0): ${wrong + leaked}`);
 console.log(`💰 misses (cost only): ${missed}\n`);
+// ⚠️ EXITS NON-ZERO ON A WRONG ANSWER. It used to always exit 0, so a leak scrolled past in a run of six
+// harnesses and nothing failed. A miss is deliberately NOT a failure: it costs $0.0054 and is today's
+// behaviour anyway. Only a wrong answer breaks the rule that must never move.
+process.exit(wrong + leaked > 0 ? 1 : 0);

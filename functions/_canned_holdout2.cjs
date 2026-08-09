@@ -2,8 +2,21 @@
 // ⚠️ Corpus 1 and the first held-out set are both burned now (tuned against). This is the honest number.
 const { CANNED_ANSWERS } = require('./lib/ottoCannedAnswers.js');
 const { matchCanned } = require('./lib/ottoCannedMatcher.js');
+// 🔴 FOURTH ARGUMENT ADDED 2026-08-09, same fix and same reason as `_canned_holdout.cjs`. PLAN 4.15's
+// shared trigger vocabulary is what stops the conversational trim discarding the other library's subject.
+// `appCompanion.ts` passes it; this file did not, so it was not testing the app.
+const { GENERAL_ANSWERS } = require('./lib/ottoGeneralAnswers.js');
+const ALL_ANSWERS = [...CANNED_ANSWERS, ...GENERAL_ANSWERS];
+// ⚠️ FAIL LOUDLY IF A LIBRARY DID NOT LOAD. An empty array scores zero wrong answers, which is the most
+// dangerous possible false pass.
+if (!CANNED_ANSWERS.length || !GENERAL_ANSWERS.length) {
+  console.error('🔴 A LIBRARY FAILED TO LOAD. Run `npm run build` first. Refusing to report a score.');
+  process.exit(2);
+}
 const FREE = { supporter: false, faithTier: 'exploring', styleMode: 'balanced' };
-const M = (m) => matchCanned(m, FREE, CANNED_ANSWERS);
+// ⚠️ SEARCHES THE APP LIBRARY ONLY, DELIBERATELY. "Declined correctly" means no APP answer fired, NOT
+// that Otto declined. Free users' fitness questions go to the general library (`_general_cross.cjs`).
+const M = (m) => matchCanned(m, FREE, CANNED_ANSWERS, ALL_ANSWERS);
 
 const SHOULD_MATCH = [
   ['how do i get a different colour scheme', 'nav.theme'],
@@ -77,3 +90,5 @@ console.log(`\nmatched correctly: ${hit}/${SHOULD_MATCH.length} (${((hit / SHOUL
 console.log(`declined correctly: ${MUST_NOT.length - leaked}/${MUST_NOT.length}`);
 console.log(`🔴 WRONG ANSWERS (must be 0): ${wrong + leaked}`);
 console.log(`💰 misses (cost only): ${missed}\n`);
+// ⚠️ EXITS NON-ZERO ON A WRONG ANSWER ONLY. A miss costs $0.0054 and is not a failure.
+process.exit(wrong + leaked > 0 ? 1 : 0);

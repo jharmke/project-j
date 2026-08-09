@@ -431,6 +431,8 @@ Detail: `SMART_COACH_SPEC.md`. Cost derivation: `SPEC_cost_model.md`.
       **Measured 2026-08-05: two back-to-back Otto messages cost $0.0357 at 5 minutes and $0.0556 at 1 hour,
       56% worse.** It flips the moment two conversations land within an hour, which real traffic guarantees.
       ➡️ **Switch at launch.** Make it a dial first (5.1) so it is a config change, not a deploy.
+      ✅ **ON `LAUNCH_CHECKLIST.md` AS 3.4 SINCE 2026-08-09**, next to the Anthropic spend cap, so it cannot
+      be lost in the launch rush. This item stays open here until the switch is actually made.
       ✅ **ANSWERED: the 1-hour TTL needs NO beta header.** `SPEC_otto_routing.md` carried that as an open
       question; verified against the current Anthropic caching docs 2026-08-05.
 - [x] **2.2 ✅ BUILT + DEPLOYED 2026-08-05.** The faith-tier tail is out of `buildCompanionStable`, which
@@ -1498,7 +1500,8 @@ is what made him think work had been dropped -- it had not, but he had no way to
       1/5 -> 2/5, AND EVERY SAFETY AND COLLISION NUMBER STILL ZERO.**
       🔴 **THE FIX WAS THE SHARED TRIGGER SET, AS PREDICTED.** `matchCanned` takes a fourth argument, every
       answer in BOTH libraries, used only as the trim's guard vocabulary. `appCompanion.ts` passes it and so
-      does every harness. **The "whats the tip jar and how much protein do i need" leak is gone**, because
+      does every harness. 🔴 **THAT LAST CLAIM WAS FALSE AND WAS FOUND 2026-08-09 -- see 4.16.** Two of the
+      six harnesses never passed it. **The "whats the tip jar and how much protein do i need" leak is gone**, because
       'protein' is now a topic the guard can see even while the APP library is the one being searched.
       🔴 **AND THE THING THAT ACTUALLY UNBLOCKED IT WAS NOT THE CAP. STOPWORDS HAD TO BE EXCLUDED FROM THE
       GUARD.** Some answers legitimately use a common verb as a single-word trigger: **'ask', 'work' and
@@ -1534,6 +1537,37 @@ is what made him think work had been dropped -- it had not, but he had no way to
       needs the matcher to weigh which topic the message is ABOUT, which is a different kind of change.
       ➡️ **Do not attempt that without production phrasings (4.11a).** Four designs have now been measured
       here and the two that looked cleverest are the two that leaked.
+
+- [x] **4.16 ✅ THE MEASURING INSTRUMENTS WERE AUDITED AND FIXED BEFORE 4.11(c) STARTED, 2026-08-09.**
+      No app code changed and nothing was deployed. Found while taking a baseline, not by looking for it.
+      🔴 **TWO OF THE SIX HARNESSES WERE NOT TESTING THE APP.** `_canned_holdout.cjs` and
+      `_canned_holdout2.cjs` called `matchCanned` with THREE arguments, so 4.15's shared trigger vocabulary
+      defaulted to the app library alone and the trim's guard could not see the general library's topics.
+      **`_canned_holdout.cjs` was reporting two wrong answers that the real app does not produce**
+      (*"is fasting good for fat loss"* -> `nav.fasting`, *"how do i log a recipe and is white rice bad"* ->
+      `nav.recipe`). Verified against production arguments: both correctly decline. Now 54/54 and 22/22.
+      ⚠️ **It failed in the LOUD direction this time. The same defect hides real leaks just as easily**, and
+      these two files are the app library's only held-out corpora.
+      🔴 **`_general_holdout2.cjs` COUNTED ANY MATCH AS A HIT.** Its own header calls its score "the only
+      number in the whole build that means anything" and it had no expected answer ids, so **coverage bought
+      with wrong answers would have read as a win** -- the precise failure 4.15 reverted two designs to
+      avoid. All 74 now carry an expected id, chosen by reading the question against the library rather than
+      by recording today's output, with `null` on five where more than one answer is genuinely defensible.
+      🔴 **AND IT IMMEDIATELY FOUND ONE, PRE-EXISTING AND SHIPPED: *"i see people my age way further ahead"*
+      returns `gen.age_recovery`**, which answers warm-ups and recovery between hard sessions to somebody
+      who is discouraged by comparison. `gen.comparing` cannot fire: it lists "everyone else" and "compare
+      myself" and not this shape. **Not dangerous, not fixed, awaiting Justin** -- fixing it is a library
+      change, and adding a trigger to make one holdout sentence pass is the corpus-fitting this project has
+      been burned by four times.
+      ✅ **`_canned_audit.cjs` NOW EXITS NON-ZERO.** The primary audit always exited 0, including on a wrong
+      answer or a broken assertion, so in a run of six harnesses a failure scrolled past silently. Every
+      other harness already did this; the most important one did not.
+      ✅ Both fixed files now refuse to report a score at all if a library fails to load (exit 2), and
+      `_general_holdout2.cjs` refuses to run if an expected id does not exist in the library.
+      📉 **CORRECTED BASELINE, and only one number moved:** app holdout 1 **54/54, 22/22, 0 wrong** (was 2
+      phantom wrong); app holdout 2 **30/42 71%, 21/21, 0 wrong**; general holdout 1 unchanged; general
+      holdout 2 **19/74 26%, 1 wrong (the one above), 0 leaks**; cross-library **0 collisions, 0 unsafe,
+      0/10 crisis-adjacent**; audit **71/71, 22/22, 30/30, 2/2, 0 wrong, 0 assertion failures**.
 
 ### 4b. 🆕 OTTO HANDS FAITH CONVERSATION TO HALO -- ✅ BUILT + DEPLOYED 2026-08-05
 **Not a cost item.** A product-correctness bug found during the 2.2 verification check. Kept separate on

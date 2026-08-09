@@ -1241,6 +1241,38 @@ is what made him think work had been dropped -- it had not, but he had no way to
       (which then collide on the same triggers) or `route` must accept a function. **Small, but without it
       the Not Right Now case cannot be built correctly.**
 
+- [ ] **4.15 🔴 THE CANNED MATCHER COLLAPSES ON CONVERSATIONAL PHRASING, AND THIS AFFECTS THE 183 ANSWERS
+      ALREADY SHIPPED. Found 2026-08-09. NOT FIXED: two designs were built, measured and reverted.**
+      🔬 **THE MEASUREMENT.** A holdout written in a conversational register scored **7%**; the same
+      questions asked tersely scored **69%**. Then the same test on the LIVE app library, same question
+      twice each:
+      | | terse | conversational |
+      |---|---:|---:|
+      | 183 shipped app answers | **5/5** | **1/5** |
+      *"how do i change my theme"* hits. *"ive been meaning to ask how do i change the theme in here"* misses.
+      🔴 **SO THE ~60% COVERAGE ON RECORD (4.8) WAS MEASURED ON TERSE PHRASING ONLY AND OVERSTATES WHAT REAL
+      USERS GET.** Every corpus on this project is written "how do i X". Nobody had ever tested a
+      conversational message against the matcher. **This has been shipping since 2026-08-07.**
+      **THE CAUSE.** An answer is accepted only if it explains EVERY content word. Terse questions are
+      nothing but topic words; conversational ones are mostly padding ("i keep hearing different things
+      about...", "my mate says...", "i was looking for this earlier and..."), and no answer will ever list
+      those words.
+      ❌ **ATTEMPT 1: tolerate unexplained words unless one is another answer's single-word trigger.**
+      Coverage 7% -> 35%. **Broke it: "how much protein should i be eating" returned the PRICING answer.**
+      The money answer's `requires` contain "how much"; protein and eating were merely tolerated.
+      ➡️ **The lesson worth keeping: a guard assembled from whatever happens to be in the same array is not
+      a guard.** It was built from the library being searched, and the app library has no 'protein' trigger.
+      ❌ **ATTEMPT 2: as above, plus "must explain at least as many words as it leaves unexplained".**
+      Coverage 7% -> 22%. Killed the pricing leak, produced another: **"should i train fasted" returned the
+      app's FASTING TIMER answer.** Cross-library collisions went 0 -> 3.
+      ➡️ **BOTH REVERTED. Coverage bought with wrong answers is worth nothing**, and this is the one number
+      that must never move. Everything is back to: app audit 71/71, 22/22, 30/30, 2/2; zero collisions.
+      ⚠️ **DO NOT REBUILD THIS AT THE END OF A SESSION.** It is a real design problem (how much of a message
+      must an answer account for?) and it needs its own pass with the must-not-match corpora as the target,
+      not the coverage number.
+      ➡️ **IT IS ALSO THE HIGHEST-VALUE OPEN ITEM ON 4.13.** A 137-answer library that only fires on terse
+      phrasing is worth a fraction of what it was costed at, and the same is true of the 183 already live.
+
 ### 4b. 🆕 OTTO HANDS FAITH CONVERSATION TO HALO -- ✅ BUILT + DEPLOYED 2026-08-05
 **Not a cost item.** A product-correctness bug found during the 2.2 verification check. Kept separate on
 purpose so it does not hide inside the cost work.

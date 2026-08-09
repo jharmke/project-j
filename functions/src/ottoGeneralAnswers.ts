@@ -91,9 +91,9 @@ const NUTRITION_CORE: CannedAnswer[] = [
     // to pick, sending a very common question to Otto at full price. Found by testing real phrasings, not
     // by the probe check, which reported only that something was odd. **Ties are silent: nothing looks
     // broken, the answer just quietly costs money.**
-    excludes: ['how fast', 'how quickly', 'how long', 'per week', 'a week', 'rate', 'realistic',
-               'goal weight', 'plateau', 'stall', 'build muscle', 'at the same time', 'recomp',
-               'what is a', 'whats a', 'what does', 'define', 'mean'],
+    excludes: ['how fast', 'how quick', 'how quickly', 'how soon', 'how rapidly', 'how long', 'per week',
+               'a week', 'rate', 'realistic', 'goal weight', 'plateau', 'stall', 'build muscle',
+               'at the same time', 'recomp', 'what is a', 'whats a', 'what does', 'define', 'mean'],
     // ⚠️ MINDFUL BRANCH. Mindful suppresses deficit maths and weight-loss prescriptions, so the standard
     // wording ("bigger deficits", direct address) is reframed as observation. Nothing is withheld: the
     // real range still appears, per Justin's honest-numbers rule.
@@ -655,8 +655,13 @@ const SLEEP_RECOVERY: CannedAnswer[] = [
 const WEIGHT_PROGRESS: CannedAnswer[] = [
   {
     id: 'gen.rate_of_loss',
-    requires: [['lose', 'losing', 'loss', 'drop'], ['how fast', 'how quickly', 'how long', 'per week',
-                                                    'a week', 'rate', 'realistic', 'safe', 'healthy']],
+    // ⚠️ ALL THE SPEED FORMS. 'how quickly' was listed and 'how quick' was not, so "how QUICK can i lose
+    // weight" fell through to the how-much-to-eat answer and returned the WRONG answer, not just a miss.
+    // ⚠️ Made worse by 'quick' being a stopword: the coverage test stopped seeing it as a signal at all.
+    // Rule E again, and this time it cost accuracy rather than coverage.
+    requires: [['lose', 'losing', 'loss', 'drop'], ['how fast', 'how quick', 'how quickly', 'how soon',
+                                                    'how rapidly', 'how long', 'per week', 'a week',
+                                                    'rate', 'realistic', 'safe', 'healthy']],
     covers: ['weight', 'fat', 'pounds', 'lbs', 'kg', 'should i', 'expect', 'week'],
     excludes: ['gain', 'muscle', 'log', 'record', 'goal weight', 'plateau', 'results', 'see results'],
     // ⚠️ MINDFUL: "should" becomes "most people find", direct address softened. The real range still lands.

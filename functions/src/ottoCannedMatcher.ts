@@ -89,6 +89,17 @@ const STOPWORDS = new Set([
   'fastest', 'quickest', 'easiest', 'simplest', 'other', 'one', 'make', 'give', 'access', 'everything',
   'look', 'over', 'into', 'back', 'stop', 'keep', 'let', 'him', 'her', 'me', 'us', 'thats',
   'counts', 'number', 'wrong', 'fix', 'typed', 'still', 'ever', 'even',
+  // ⚠️ SECOND FILLER PASS, 2026-08-09 (PLAN 4.13). The general-library holdout scored 57% and TWO THIRDS
+  // of the misses were `unexplained-remainder`: the right answer was found and then thrown away because one
+  // ordinary word was unaccounted for. "whats a GOOD amount of protein", "do vitamins do ANYTHING",
+  // "should i stretch FIRST", "is fasting WORTH TRYING", "how QUICK can i lose weight".
+  // 🔴 THIS IS THE SANCTIONED FIX AND THE PER-ANSWER ONE IS NOT: adding each miss to a specific answer's
+  // `covers` would fit the test, which is exactly what made the first corpus worthless. Everything here is
+  // generic filler that names no feature and no topic.
+  'good', 'anything', 'something', 'nothing', 'worth', 'try', 'trying', 'first', 'quick', 'quickly',
+  'lately', 'recently', 'while', 'too', 'going', 'gone', 'have', 'has', 'had', 'per', 'lot', 'bit',
+  'kind', 'sort', 'anyone', 'someone', 'people', 'supposed', 'actually', 'basically', 'literally',
+  'help', 'helps', 'better', 'worse', 'sure', 'guess', 'think', 'wondering', 'curious',
 ]);
 
 /**
@@ -115,6 +126,14 @@ const SYNONYMS: Record<string, string> = {
   // not fitted: British users type these constantly and no answer will ever list both forms.
   colour: 'color', colours: 'color', favourite: 'favorite', favourites: 'favorite',
   customise: 'customize', personalise: 'personalize', organise: 'organize',
+  // ⚠️ ADDED 2026-08-09 (PLAN 4.13) for the general fitness library. All generic abbreviations that no
+  // answer will ever list in full, not fixes aimed at one test sentence.
+  cals: 'calories', cal: 'calories', kcal: 'calories', kcals: 'calories',
+  doc: 'doctor', docs: 'doctor', physio: 'doctor', gp: 'doctor',
+  lbs: 'pounds', lb: 'pounds', kilos: 'kg', kilograms: 'kg',
+  // 🔴 NOTE FOR ANYONE ADDING FITNESS TRIGGERS: `big -> size` and `holiday -> vacation` above are LIVE and
+  // will rewrite a user's words before your `requires` ever sees them. "can you get BIG vegan" arrives as
+  // "get SIZE vegan". List the canonical form, not the one the user typed.
 };
 
 /** Curly apostrophes, punctuation, and the way people actually type. See [[detectors-are-brittle]]. */
@@ -302,7 +321,11 @@ function matchOne(
       : has(word, term)));
   };
 
-  const contentWords = tokens(t).filter((w) => !STOPWORDS.has(w));
+  // ⚠️ BARE NUMBERS CARRY NO TOPIC and were blocking otherwise perfect matches ("why am i sore for 3 DAYS",
+  // "missed 2 DAYS does it matter"). Filtering them here is structural: it applies to every answer in both
+  // libraries rather than being listed in one answer's `covers`. Units and words are untouched, so "100g"
+  // and "3 sets" still read as content.
+  const contentWords = tokens(t).filter((w) => !STOPWORDS.has(w) && !/^\d+$/.test(w));
   const ranked = [...candidates].sort((a, b) => vocabOf(b).length - vocabOf(a).length);
   const fullyExplaining = ranked.filter((a) => contentWords.every((w) => explains(w, a)));
 
@@ -316,6 +339,28 @@ function matchOne(
     lastReason = 'ambiguous-tie';
     return null;
   }
+
+  // 🔴 A TOLERANT SECOND PASS WAS BUILT HERE ON 2026-08-09, MEASURED TWICE, AND REVERTED BOTH TIMES.
+  // FULL FINDING AND THE TWO FAILED DESIGNS: PLAN.md 4.15. Do not rebuild it without reading that item.
+  //
+  // THE PROBLEM IT WAS TRYING TO SOLVE IS REAL AND IS STILL OPEN. Requiring EVERY content word to be
+  // explained works on terse questions and collapses on conversational ones. MEASURED: a holdout written
+  // in a conversational register scored **7%**, where the same questions asked tersely scored 69%.
+  // ⚠️ **AND IT IS NOT A NEW-LIBRARY PROBLEM. The 183 SHIPPED app answers score 5/5 terse and 1/5
+  // conversational on identical questions** ("how do i change my theme" hits; "ive been meaning to ask how
+  // do i change the theme in here" misses). **So the ~60% coverage on record was measured on terse
+  // phrasing only and overstates what real users get.**
+  //
+  // ❌ ATTEMPT 1: tolerate unexplained words unless one is another answer's single-word trigger.
+  //    **"how much protein should i be eating" returned the PRICING answer.** The money answer's requires
+  //    contain "how much"; 'protein' and 'eating' were merely tolerated. The guard could not see it,
+  //    because it is built from the library being SEARCHED and the app library has no 'protein' trigger.
+  //    ➡️ **A guard assembled from whatever happens to be in the same array is not a guard.**
+  // ❌ ATTEMPT 2: as above, plus "the answer must explain at least as many words as it leaves unexplained".
+  //    Killed the pricing leak and produced a different one: **"should i train fasted" returned the app's
+  //    FASTING TIMER answer.** Coaching question, app feature. Cross-library collisions went 0 -> 3.
+  // ➡️ Both attempts raised conversational coverage substantially (7% -> 35% and 7% -> 22%) and both broke
+  // the one number that must never move. **Coverage is worth nothing bought with wrong answers.**
   lastReason = 'unexplained-remainder';
   return null;
 }

@@ -1075,6 +1075,28 @@ is what made him think work had been dropped -- it had not, but he had no way to
       either, for the same reason.
       ⚠️ **NOT DEPLOYED, deliberately: nothing uses the key yet**, so the server change is inert until the
       pitch answers land in step 4.
+      🔨 **STEP 2 IN PROGRESS 2026-08-09: `functions/src/ottoGeneralAnswers.ts`, 40 of 141 written.**
+      Nutrition core (12), nutrition rest (14), training (14). Separate library from `ottoCannedAnswers.ts`;
+      ✅ **`matchCanned` already takes the answer set as a PARAMETER, so the split needed no matcher change.**
+      🔬 **NEW HARNESS: `functions/_general_cross.cjs`, committed.** Four checks, all currently ZERO/green:
+      app questions reaching a fitness answer, fitness questions reaching an app answer, coverage of an
+      unbiased corpus, and **internal collisions between general answers**.
+      ✅ **ITS CORPORA ARE LIFTED VERBATIM OUT OF `_canned_audit.cjs`**, where they were written months
+      earlier for the OPPOSITE purpose. That is the one thing hand-tuned triggers cannot be fitted to, which
+      is exactly what made three earlier corpora worthless. It also exits 2 if its parser matches nothing.
+      🔴 **TESTING AFTER 12 ANSWERS INSTEAD OF 141 PAID FOR ITSELF IMMEDIATELY.** Two structural faults were
+      found that would otherwise have been baked into every one of the 141:
+      1. **A quantity word was required on top of the topic** ("how much", "grams", "target"), so the
+         PLAINEST phrasing anyone uses missed. "How do I lose weight" matched nothing. ➡️ **The topic is the
+         discriminator and `excludes` is the collision breaker; the quantity word was doing no work.**
+      2. **A three-part `requires` on the eat-around-training answer** demanded before/after, so "should I
+         train FASTED" (which names no time) missed. ➡️ Food word + training word is the identifying pair.
+      🔴 **AND A SILENT TIE CLASS THE PROBE CHECK COULD NOT SEE.** "What is a calorie deficit" matched BOTH
+      the definition answer and the how-much-to-eat answer, so the matcher correctly refused to pick and a
+      very common question went to Otto at full price. Same for surplus. **Ties look like nothing is wrong;
+      they just quietly cost money.** Fixed with definition-shape excludes (`what is a`, `whats a`,
+      `what does`, `define`, `mean`) on both size answers. **Found by testing real phrasings, not by the
+      mechanical probe.**
       ⚠️ Historical, both checked before adding: `nav.membership` still uses `route: 'profile'` (lands on the
       Profile TAB), and `mission` is NOT the paywall, it points at `/mission`, the philosophy screen.
       ✅ **DECIDED 2026-08-08: THE BUTTON LABEL IS "See what Supporters get".** Rejected: putting "tap below

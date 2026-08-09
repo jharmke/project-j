@@ -1232,6 +1232,23 @@ is what made him think work had been dropped -- it had not, but he had no way to
       ✅ **SO BOTH LIBRARIES ARE ALWAYS SEARCHED AND THE ROUTER ONLY BREAKS A TIE**, where it cannot cost
       coverage. Verified it calls both real leak cases correctly ("how much protein should i be eating" and
       "should i train fasted" both return coaching), so the fitness answer wins those.
+      ✅ **RECONCILED 2026-08-09. 148/148 APPROVED ANSWERS ARE REACHABLE.** New harness
+      `functions/_general_reconcile.cjs`, committed: it lifts every question heading out of
+      `SPEC_otto_general_answers.md` and asserts each one matches something.
+      🔴 **IT FOUND ONE APPROVED ANSWER THAT EXISTED ONLY IN THE SPEC AND NOBODY COULD REACH.** "Do I eat
+      back exercise calories" was written, approved, verified against the code, flagged as belonging in the
+      APP library rather than the general one, and then never moved. **An approved answer living only in a
+      spec is invisible from every side**: the general library never had it, the app library never knew
+      about it, and no other harness looks across that boundary. Now shipped as `con.eatbackcalories`
+      (184 app answers), with the mandatory Mindful branch since net calories are hidden in that mode.
+      🔴 **AND WRITING IT EXPOSED A GAP IN THE KB: EVERY SETTINGS SECTION STATED ITS PATH EXCEPT HEALTH.**
+      Appearance, Faith & Style, Goals, Help, Notifications and Vacation Mode all had one. The staleness
+      check refuses any answer naming a path the KB does not contain, so an answer about burn accuracy
+      literally could not say where to go. **Not false, just absent, and the gap got filled** -- the same
+      shape as the incomplete-KB failure on 2026-08-07.
+      ⚠️ **A HIT IN THIS HARNESS PROVES ALMOST NOTHING and the file says so out loud.** The spec headings are
+      the canonical phrasings the triggers were written against, so 148/148 is the minimum bar, not
+      evidence. The honest numbers remain the holdouts: 75% terse, 26% conversational.
       ⚠️ **COUNT MOVED: the topic sweep estimated ~198, the library landed at 141.** Not skipped work
       (internal duplicates, three cut as near-duplicates of existing app answers, several topics collapsed),
       but **worth reconciling against the original sweep before calling it complete.**

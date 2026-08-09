@@ -323,6 +323,29 @@ const NAV: CannedAnswer[] = [
       "Profile > Settings > Notifications > Customize Notifications, then Daily Limit. It caps the optional nudges. Streak protection, summaries and water still come through, because those are the ones worth keeping.",
   },
   {
+    // 🔴 ADDED 2026-08-09. It was written and approved in `SPEC_otto_general_answers.md`, flagged there as
+    // belonging in THIS library rather than the general one, and then never moved. The reconciliation
+    // harness (`_general_reconcile.cjs`) found it: 147 of 148 approved answers were reachable and this was
+    // the one nobody could get. ⚠️ An approved answer living only in a spec is invisible from every side.
+    id: 'con.eatbackcalories',
+    requires: [['eat back', 'eat them back', 'earn back', 'add back', 'exercise calories', 'burned calories',
+                'calories i burned', 'active calories'],
+               ['eat', 'back', 'count', 'add', 'should i', 'do i']],
+    covers: ['exercise', 'workout', 'burn', 'burned', 'net', 'calories', 'calorie', 'my', 'them', 'again',
+             'target', 'goal', 'does', 'how'],
+    route: 'health',
+    // ⚠️ MINDFUL BRANCH IS MANDATORY HERE, not stylistic: net calories are HIDDEN in Mindful, and the
+    // canned-answer harness asserts that no answer names them without one.
+    // ✅ Every fact below was verified in code 2026-08-09, not taken from a comment: the net-calorie rule
+    // from `tooltipRegistry.ts`, the active-half-only rule from the KB, and the 100/90/80/70 options from
+    // `settings.tsx`. The setting's on-screen heading is "Active Calorie Accuracy"; the section's collapsed
+    // subtitle calls it "Burn Accuracy", which is why the heading is the wording used here.
+    answer: (c) =>
+      c.styleMode === 'mindful'
+        ? 'On days with activity data, GoodForge already accounts for what you burned when it looks at your day, so your training is counted rather than something you add back by hand. If you think your watch overstates the burn, Active Calorie Accuracy at Profile > Settings > Health lets you scale it to 90, 80 or 70 percent. That correction applies to the active half only, since your resting burn is a formula off your own weight, age and sex and there is nothing there to correct.'
+        : 'On days with activity data, GoodForge judges your day on net calories: your food minus your active burn minus the resting burn your body has earned. So your training is already counted rather than something you add back by hand. If you think your watch overstates the burn, Active Calorie Accuracy at Profile > Settings > Health lets you scale it to 90, 80 or 70 percent. That correction applies to the active half only, since your resting burn is a formula off your own weight, age and sex and there is nothing there to correct.',
+  },
+  {
     id: 'nav.membership',
     requires: [['membership', 'support the mission', 'subscribe', 'upgrade', 'tip jar']],
     covers: ['where', 'how', 'support', 'plan', 'become', 'join', 'manage'],

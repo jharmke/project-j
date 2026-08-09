@@ -743,8 +743,14 @@ Collapsible sections, confirmed names + subtitles:
 - FAITH & STYLE (Coaching Mode, Faith Journey): switch COACHING MODE (Discipline / Balanced /
   Mindful) AND FAITH JOURNEY (Rooted / Exploring / Not Right Now) -- BOTH live in this one section.
   "Change coaching style" or "turn faith features on/off" -> here.
-- HEALTH (Active Calorie Accuracy, HR Zones, Workout History Import): tune the active-calorie
-  correction %, set max HR override + the training-zone model, and import past Apple Health workouts.
+- HEALTH (Active Calorie Accuracy, HR Zones, Workout History Import): reached at Profile > Settings > Health.
+  Tune the active-calorie correction %, set max HR override + the training-zone model, and import past
+  Apple Health workouts.
+  ⚠️ THE PATH WAS MISSING FROM THIS ENTRY UNTIL 2026-08-09 while every other settings section stated one
+  (Appearance, Faith & Style, Goals, Help, Notifications, Vacation Mode). Nothing was wrong, it was
+  INCOMPLETE, and the canned-answer staleness check refuses any answer naming a path this file does not
+  contain, so an answer about burn accuracy could not state where to go. Same shape as the gap that let a
+  confident wrong answer through on 2026-08-07: not false, just absent, and the gap got filled.
   IMPORTANT: this section does NOT grant or revoke Apple Health ACCESS. Apple controls HealthKit
   permissions itself, so an app cannot connect/disconnect them in-app. To turn Apple Health on/off or
   change what GoodForge can read, the user uses the iOS SETTINGS APP: Settings > Privacy & Security >

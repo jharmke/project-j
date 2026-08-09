@@ -93,6 +93,31 @@ cached** -- both returned `cacheRead 0, cacheWrite 0`.
 the app was opened before the meter deployed, so that day's tips were already generated and the dedup
 returned early. **The first Home-tab open on a fresh day is the clean test.**
 
+- [x] **0.2 ✅ BUILT + DEPLOYED 2026-08-09. `functions/src/aiCostRollup.ts`, the project's FIRST scheduled
+      function.** Nightly at 03:00 UTC it rolls `ai_cost` dailies older than **90 days** into one document
+      per user per month (`ai_cost_monthly/{uid}_{YYYY-MM}`) and deletes them. Rolled up, not just deleted:
+      the long-run trend is the whole point of having a meter, so only day-level granularity is lost.
+      🔴 **A TRANSACTION PER DOCUMENT, NOT A BATCH, AND THAT IS THE WHOLE SAFETY ARGUMENT.** The increment
+      and the delete are ATOMIC. There is no window where a daily has been added to the month but still
+      exists (a re-run would double-count it) and none where it has been deleted without being counted.
+      ⚠️ **A batched write CANNOT give that**: the increments would land, the deletes could fail, and the
+      next night would count the same days again, **inflating the only cost record the project has,
+      invisibly**. Throughput is irrelevant for a nightly job against old data; correctness is not.
+      ✅ **IT REFUSES TO DELETE ANYTHING IT CANNOT FILE.** A document with no uid or a malformed date is
+      left exactly where it is and logged every night until somebody looks. Losing a row is worse than
+      keeping an untidy one.
+      ✅ **DEPLOYED INERT, ON PURPOSE.** The meter only started 2026-08-05, so nothing is within 90 days of
+      the cutoff and the first runs find zero documents. It begins working only once there is genuinely old
+      data, which is the safest way to introduce anything that deletes.
+      🔬 **THE SUMMING WAS PROVEN OFFLINE BEFORE DEPLOY, 9/9 checks** on realistic meter documents: totals
+      and per-feature counters add, nested `surfaces` maps merge, **the `model` string survives instead of
+      becoming NaN**, per-feature models stay distinct (Haiku vs Sonnet), `days` counts, and per-day
+      bookkeeping (`uid`, `date`, `updatedAt`) does not leak into the monthly document.
+      ⚠️ Bounded at 300 documents per run, so a first pass after a long gap takes several nights rather than
+      one transaction storm. Nothing expires in the meantime.
+      ⚠️ Touches `ai_cost` only, never `ai_usage*` (the caps and pitch budget). Blast radius of a bug here
+      is a wrong number in a report, never a lost cap or a granted entitlement.
+      (Original note follows.)
 - [ ] **0.2 🆕 THE METER HAS NO RETENTION RULE -- a gap WE created 2026-08-05.** It writes one Firestore
       document per user per day, forever. At 10,000 users that is **3.65 million documents a year** with
       nothing ever deleting them.

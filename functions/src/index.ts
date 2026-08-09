@@ -27,6 +27,11 @@ export { aiProxy } from './aiProxy';
 // thank-you can be hand-written. See revenueCatWebhook.ts.
 export { revenueCatWebhook } from './revenueCatWebhook';
 
+// PLAN.md 0.2. Nightly: rolls `ai_cost` dailies older than 90 days into one document per user per month
+// and deletes them, atomically. The FIRST scheduled function in this project. See aiCostRollup.ts for why
+// it uses a transaction per document rather than a batch.
+export { aiCostRollup } from './aiCostRollup';
+
 // The 7-day taste: grants a new account a time-boxed PROMOTIONAL Supporter entitlement, and records that
 // the account has had it so a reinstall cannot farm a second one. See firstWeek.ts.
 export { grantFirstWeek, revokeFirstWeek } from './firstWeek';

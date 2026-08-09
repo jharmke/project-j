@@ -47,6 +47,10 @@ const C = {
   priceMonthly: { v: 9.99,  src: 'Real price (SPEC_monetization).' },
   priceAnnual:  { v: 89.99, src: 'Real price.' },
   appleCut:     { v: 0.15,  src: "Small Business Program. Justin's instruction: ALWAYS 15%." },
+  // 🔴 THE APP'S REAL BEHAVIOUR SINCE 2026-08-09, so it is the DEFAULT rather than a scenario.
+  // A free user's coaching question to Otto never reaches the AI: it is answered from the 137-answer
+  // general library or with the Supporter line. Set to 0 to see the world before that shipped.
+  gateOttoFree: { v: 1,     src: 'MEASURED behaviour (PLAN 4.13 step 5), device-verified 2026-08-09.' },
   annualShare:  { v: 0.30,  src: 'ASSUMED share of Supporters choosing annual.' },
   activeRate:   { v: 0.30,  src: 'ASSUMED share of installs still active. ⚠️ CANCELS OUT of break-even.' },
 };
@@ -84,7 +88,19 @@ function monthlyAiCost(perDay, deflect, supporter = false) {
   const coachMo = coachOn
     ? v('coachTipsDay') * 30 * v('smartCoach') + v('coachOtherYr') / 12
     : 0;
-  return msgs * (1 - v('haloShare')) * ottoMsg(deflect)
+  // 🔴 AND SINCE 2026-08-09 A FREE USER'S OTTO *COACHING* HALF IS ALSO ZERO (PLAN.md 4.13 step 5).
+  // The coach gate answers a free user's coaching question from the 137-answer library or with the
+  // Supporter line, and neither touches the API. Only the SUPPORT half of Otto can still cost anything,
+  // and only the share of it the canned answers miss.
+  // ⚠️ THIS IS SEPARATE FROM `gateCoachFree`, WHICH GATES SMART COACH (the tips on Home, Sleep, Weekly and
+  // so on). Two different features, two different gates, both shipped, and conflating them would double
+  // count the saving.
+  // ⚠️ Supporters are untouched: they keep AI coaching from Otto, which is what they are paying for.
+  const ottoGated = !supporter && v('gateOttoFree') === 1;
+  const ottoPerMsg = ottoGated
+    ? Math.max(0, (1 - v('coachShare')) - deflect) * v('ottoSupport')
+    : ottoMsg(deflect);
+  return msgs * (1 - v('haloShare')) * ottoPerMsg
     + msgs * v('haloShare') * v('halo')
     + coachMo
     + v('estimatorMo') * v('estimator');

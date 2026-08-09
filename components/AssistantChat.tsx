@@ -59,14 +59,27 @@ const CRISIS_RED = '#cc3333';
 type StyleMode = 'discipline' | 'balanced' | 'mindful';
 type FaithTier = 'rooted' | 'exploring' | 'notrightnow';
 
+// 🔴 SPLIT BY MEMBERSHIP 2026-08-09 (PLAN 4.13). Two of the original five promised something a FREE user
+// can no longer get: "your numbers" and "how you're tracking" both invite exactly the question the coach
+// gate now answers with the Supporter line. **The greeting is the first thing anybody reads when they open
+// Otto, so it was the worst possible place to make a promise the next message breaks.**
+// ⚠️ The three shared ones are deliberately about the APP and about food/training/sleep in general, which
+// is what a free user genuinely gets: the app library answers the first and the 137-answer general library
+// answers the second.
 const GREETINGS = [
   "Hey, I'm Otto. What can I help you with?",
-  "Hi, Otto here. Question about the app, your numbers, or where to start? Ask away.",
   "What's on your mind, food, training, sleep, or finding your way around the app?",
-  "I'm here. Ask me how to do anything, or how you're tracking.",
-  "Ready when you are. What would you like to figure out?",
+  'Ready when you are. What would you like to figure out?',
 ];
-const pickGreeting = () => GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
+const GREETINGS_SUPPORTER = [
+  ...GREETINGS,
+  'Hi, Otto here. Question about the app, your numbers, or where to start? Ask away.',
+  "I'm here. Ask me how to do anything, or how you're tracking.",
+];
+const pickGreeting = (isSupporter: boolean) => {
+  const pool = isSupporter ? GREETINGS_SUPPORTER : GREETINGS;
+  return pool[Math.floor(Math.random() * pool.length)];
+};
 
 // Local cache of today's usage so the counter can show the moment the chat opens (the client
 // cannot read the server's ai_usage_companion counter, which is locked down by the rules). The
@@ -363,7 +376,13 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
   // surfaces (send button, brand dot) read fine across themes.
   const accent = theme.accentBlue;
 
-  const [messages, setMessages] = useState<Msg[]>(() => [{ role: 'assistant', text: pickGreeting() }]);
+  // ⚠️ MOVED UP FROM FURTHER DOWN THE COMPONENT. The greeting below is chosen in a `useState` initializer,
+  // which runs before any hook declared later in the body, so membership has to be read before it.
+  // Safe to reorder: `useMembership()` takes no arguments and depends on nothing declared in between, and
+  // React only requires that hook ORDER stay consistent between renders.
+  const { isSupporter } = useMembership();
+
+  const [messages, setMessages] = useState<Msg[]>(() => [{ role: 'assistant', text: pickGreeting(isSupporter) }]);
   const [input, setInput] = useState('');
   // Keyboard following. Identical to Halo's -- the full history of what failed and why lives in
   // CompanionChat and is worth reading before touching this. Short version: a useState height
@@ -560,7 +579,7 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
     Keyboard.dismiss();
     setInput('');
     setSending(false);
-    setMessages([{ role: 'assistant', text: pickGreeting() }]);
+    setMessages([{ role: 'assistant', text: pickGreeting(isSupporter) }]);
     // New conversation, new wall count. The weekly budget on the server is what stops this being a way to
     // farm pitches by starting fresh chats.
     wallCountRef.current = 0;
@@ -587,7 +606,6 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
     AsyncStorage.setItem(QUOTA_KEY, JSON.stringify({ date: utcDay(), used, cap })).catch(() => {});
   };
 
-  const { isSupporter } = useMembership();
   // Walls hit in THIS conversation. A ref, not state: nothing renders from it and it must not cause a
   // re-render mid-send. Resets with the chat, which is exactly what "once per conversation" means.
   const wallCountRef = useRef(0);

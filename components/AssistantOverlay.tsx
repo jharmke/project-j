@@ -137,7 +137,7 @@ export default function AssistantOverlay() {
           style={[styles.callout, { bottom: bottom + tabLift + barLift + FAB_DISC + 10, backgroundColor: theme.bgSheet, borderColor: theme.accentBlueBorder }]}
         >
           <Text style={[styles.calloutTitle, { color: theme.textPrimary }]}>Hey, I'm Otto</Text>
-          <Text style={[styles.calloutText, { color: theme.textSecondary }]}>Ask me how to do anything in the app, or how you're tracking. Tap to start.</Text>
+          <Text style={[styles.calloutText, { color: theme.textSecondary }]}>Ask me how to do anything in the app. Tap to start.</Text>
         </Pressable>
       )}
       <AssistantFAB bottom={bottom} lift={barLift} tabLift={tabLift} onPress={openChat} suppressed={suppressed} showBadge={unread > 0} />

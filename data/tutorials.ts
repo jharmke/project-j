@@ -67,8 +67,12 @@ export const TUTORIALS: Tutorial[] = [
         targetKey: 'meta_otto_fab',
         title: 'MEET OTTO',
         body: {
-          discipline: 'That\'s Otto, your assistant. Tap it any time to ask how something works or get straight answers about your data. No digging through menus.',
-          balanced: 'See that button? That\'s Otto. Tap it anytime to ask how something works or for help with your numbers. He knows the app and your data.',
+          // ⚠️ REWORDED 2026-08-09 (PLAN 4.13). These promised "straight answers about your data" and "help
+          // with your numbers", and the coach gate now answers exactly that question with the Supporter
+          // line for a free user. A tutorial cannot branch on membership, so both lines describe what is
+          // true for EVERYONE: Otto explains the app, and he answers food, training and sleep questions.
+          discipline: 'That\'s Otto, your assistant. Tap it any time to ask how something works, or for a straight answer on food, training and sleep. No digging through menus.',
+          balanced: 'See that button? That\'s Otto. Tap it anytime to ask how something works, or anything about food, training and sleep. He knows the app inside out.',
           mindful: 'That\'s Otto, here whenever you have a question. Ask him how something works, no rush. He\'s always around.',
         },
       },
@@ -134,9 +138,9 @@ export const TUTORIALS: Tutorial[] = [
         targetKey: 'meta_otto_fab',
         title: 'MEET OTTO',
         body: {
-          discipline: 'That\'s Otto, here whenever you have a question. Ask him how something works or how you\'re tracking, no rush. He\'s always around.',
-          balanced: 'That\'s Otto, here whenever you have a question. Ask him how something works or how you\'re tracking, no rush. He\'s always around.',
-          mindful: 'That\'s Otto, here whenever you have a question. Ask him how something works or how you\'re tracking, no rush. He\'s always around.',
+          discipline: 'That\'s Otto, here whenever you have a question. Ask him how something works, or anything about food, training and sleep. He\'s always around.',
+          balanced: 'That\'s Otto, here whenever you have a question. Ask him how something works, or anything about food, training and sleep. He\'s always around.',
+          mindful: 'That\'s Otto, here whenever you have a question. Ask him how something works, or anything about food, training and sleep. He\'s always around.',
         },
       },
       {

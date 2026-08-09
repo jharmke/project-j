@@ -1169,6 +1169,22 @@ is what made him think work had been dropped -- it had not, but he had no way to
       ⚠️ **AND THE SYSTEM PROMPT'S MEDICAL GUARDRAIL DOES NOT REACH A CANNED ANSWER**, since the model is
       never called. It is carried by hand in how each answer is written. ✅ Justin's call: **no new
       disclaimer text**, it is already in 25+ files including Otto's own prompt.
+      ✅ **THE COPY SWEEP, DONE 2026-08-09 AND DEVICE-CONFIRMED. THE GATE MADE EXISTING COPY FALSE.**
+      🔴 **OTTO'S GREETING WAS THE WORST OF IT, AND IT IS THE FIRST THING ANYBODY READS WHEN THEY OPEN HIM.**
+      Two of the five randomly-chosen greetings said *"your numbers"* and *"how you're tracking"*, which
+      invite precisely the question the coach gate now answers with the Supporter line. **A promise broken by
+      the very next message.** Now split: three shared greetings (the app, and food/training/sleep, both true
+      for everyone) plus the two data ones for Supporters only. Justin confirmed only the three appear.
+      ⚠️ **`useMembership()` HAD TO MOVE UP THE COMPONENT.** The greeting is chosen in a `useState`
+      initializer, which runs before any hook declared later in the body. Safe: it takes no arguments and
+      depends on nothing in between, and React only requires hook ORDER to stay consistent.
+      ✅ Also fixed: the Otto FAB callout (`AssistantOverlay.tsx`) said the same thing, and **four tutorial
+      lines** promised "straight answers about your data" and "help with your numbers". Tutorials cannot
+      branch on membership, so those now describe what is true for everyone.
+      ➡️ **THE LESSON, AND IT IS THE ONE THIS PROJECT KEEPS RELEARNING:** the gate shipped and four other
+      surfaces still described the old behaviour. **Checking before building the next thing is what found
+      it** -- the planned next task was the escalated pitch line, which would have been polish on top of a
+      false promise.
       ✅ **STEP 5 DONE 2026-08-09: THE COACH GATE IS LIVE. A FREE USER'S COACHING QUESTION NEVER REACHES
       THE AI.** Library hits answer it for zero; library misses get the Supporter line from
       `functions/src/ottoPitchCopy.ts`. **Coaching cost for free users is now zero, not reduced.**

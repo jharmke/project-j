@@ -1226,10 +1226,17 @@ is what made him think work had been dropped -- it had not, but he had no way to
       pitches the budget was built for.
       🔬 **NEW METER COUNTER: `cannedGated`.** `cannedGated` against `cannedHit` is the honest measure of how
       often a free user is sold to rather than helped, and it is the real count of conversion moments.
-      ⏳ **NOT BUILT: the escalated second-miss copy, and the CATEGORY-SPECIFIC case A tails.** The three
-      shipped case A lines are category-neutral because serving the right tail needs a personal question
-      mapped onto its general answer ("am i eating enough protein" -> the protein answer), which does not
-      exist yet. The four category sets in `SPEC_otto.md` are written and waiting on that.
+      ✅ **THE ESCALATION IS BUILT + DEPLOYED 2026-08-09.** First miss gets the opener/closer pair, the
+      SECOND names the repeat and adds the price, the third and beyond drop the sales sentence entirely and
+      keep only the button. **The count is read off the conversation the client already re-sends**, not
+      stored: `countPriorGates` in `ottoPitchCopy.ts`. Verified by simulating the real round trip (token
+      stripped, whitespace collapsed, fed back as history) rather than testing the pools in isolation.
+      ✅ **OWN-DATA NEVER ESCALATES.** "I cannot see what you have logged" is true every time and repeating
+      it does not make Otto look bad; only the "I do not know that one" case gets worse by repetition.
+      ⏳ **STILL NOT BUILT: the CATEGORY-SPECIFIC case A tails.** The three shipped case A lines are
+      category-neutral because serving the right tail needs a personal question mapped onto its general
+      answer ("am i eating enough protein" -> the protein answer), which does not exist yet. The four
+      category sets in `SPEC_otto.md` are written and waiting on that.
       ✅ **STEP 4 DONE 2026-08-09: THE LIBRARY IS WIRED IN.** `appCompanion.ts` now searches BOTH libraries.
       | message | free user | Supporter |
       |---|---|---|

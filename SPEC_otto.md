@@ -1784,7 +1784,20 @@ That is why it needs 9 and not 3.
 ✅ **ON A REPEAT MISS THE SELL ESCALATES, IT DOES NOT BACK OFF** (Justin's call, reversing the original
 recommendation). Someone hitting the wall twice is the most engaged user in the app.
 
-### ESCALATED REPEAT-MISS COPY (3) -- written and approved 2026-08-09
+### ESCALATED REPEAT-MISS COPY (3) -- ✅ BUILT + DEPLOYED 2026-08-09, `functions/src/ottoPitchCopy.ts`
+🔴 **THE COUNT IS READ OFF THE CONVERSATION, NOT STORED.** Otto has no server-side memory, but the client
+re-sends the recent turns on every message, so `countPriorGates` just counts how many assistant turns are
+one of the known pitch lines. A stored counter would need a Firestore write on every miss and a rule for
+when it resets; the chat's own list is wiped when the sheet closes, which is exactly what "once per
+conversation" should mean. Same mechanism PLAN 4.8 used for the canned-answer history question.
+⚠️ **The comparison is NORMALISED on both sides** (whitespace collapsed, lowercased). The client strips the
+`[[route:support]]` token and runs the reply through a formatter before storing it; neither touches these
+lines today, but an exact match would silently return 0 forever if that ever changed, and the escalation
+would just never fire with nothing on screen looking wrong.
+✅ **VERIFIED BY SIMULATING THE REAL ROUND TRIP**, not the pools in isolation: token stripped, whitespace
+collapsed, fed back as history. Three misses in a row produce first / escalated / quiet correctly.
+✅ **OWN-DATA NEVER ESCALATES.** "I cannot see what you have logged" is true every time and repeating it
+does not make Otto look bad. Only the "I do not know that one" case gets worse by repetition.
 Fires on the SECOND case B miss in one conversation, in place of the standard opener + closer.
 1. "That is twice now. With the Supporter plan I can take on nearly anything you ask, and it is $9.99 a month."
 2. "Second one I am not certain on. With the Supporter plan I can help with nearly anything you want to know, for $9.99 a month."
@@ -1798,9 +1811,11 @@ than reopening it.
 ⚠️ **REQUIRES CONVERSATION STATE** (how many misses so far this chat). The chat's in-memory `messages` list
 already exists and is wiped when the sheet closes, which is the right lifetime for this. See PLAN 4.8
 hole 3, where the same mechanism settled the canned-answer history question.
-✅ **THIRD MISS AND BEYOND: DROP THE SALES SENTENCE, KEEP THE BUTTON (Justin, 2026-08-09).** Otto says only
-that he is not sure; the `[See what Supporters get]` button still renders.
-> "I am not certain on that one either." `[See what Supporters get]`
+✅ **THIRD MISS AND BEYOND: DROP THE SALES SENTENCE, KEEP THE BUTTON (Justin, 2026-08-09). BUILT.** Otto
+says only that he is not sure; the `[See what Supporters get]` button still renders. Three variants, so a
+long unlucky conversation does not repeat one line:
+> "I am not certain on that one either." / "That one I am not sure about either." /
+> "Not one I can help with either, I am afraid." `[See what Supporters get]`
 ⚠️ **THIS IS NOT THE "BACK OFF" THAT WAS REJECTED FOR THE SECOND MISS.** By the third, the case has been
 made twice and the button shown twice. A third sales line carries no new information and is the thing that
 makes an app feel cheap. **The reasoning is different at each step and both calls are Justin's.**

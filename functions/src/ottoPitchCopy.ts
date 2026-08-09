@@ -57,14 +57,48 @@ function pick<T>(pool: T[], seed: string): T {
   return pool[h % pool.length];
 }
 
+/**
+ * SECOND miss in one conversation. 🔴 THE SELL ESCALATES, IT DOES NOT BACK OFF (Justin, 2026-08-08,
+ * reversing my recommendation). Somebody who has hit the wall twice is the most engaged person in the app,
+ * so this is the moment to make the case properly rather than go quiet.
+ * ⚠️ Built from CLOSERS ALREADY APPROVED above, with a short lead naming the repeat. That was deliberate:
+ * the case B voice took ~25 rejected drafts to find and reopening it would have cost that again.
+ * ✅ The price is in the line, not just on the button (Justin's call): somebody at their second wall is
+ * already weighing whether to pay, and $9.99 is smaller than most people assume before they look.
+ */
+const ESCALATED = [
+  'That is twice now. With the Supporter plan I can take on nearly anything you ask, and it is $9.99 a month.',
+  'Second one I am not certain on. With the Supporter plan I can help with nearly anything you want to know, for $9.99 a month.',
+  'That is twice. The Supporter plan is where I can answer nearly whatever you bring me, and it is $9.99 a month.',
+];
+
+/**
+ * THIRD miss and beyond. 🔴 DROP THE SALES SENTENCE, KEEP THE BUTTON (Justin, 2026-08-08).
+ * ⚠️ THIS IS NOT THE "BACK OFF" THAT WAS REJECTED FOR THE SECOND MISS, and the two calls only look
+ * contradictory out of context. By the third, the case has been made twice and the button shown twice; a
+ * third sales line carries no new information and is the thing that makes an app feel cheap.
+ * ✅ The free cap is what makes this the right call: at 5 messages a day somebody on their third miss has
+ * TWO left, so the conversation self-limits regardless of what is said here.
+ */
+const QUIET = [
+  'I am not certain on that one either.',
+  'That one I am not sure about either.',
+  'Not one I can help with either, I am afraid.',
+];
+
 export type PitchKind = 'no-answer' | 'own-data';
 
 /**
  * The reply a free user gets instead of an AI coaching answer.
  * `seed` should be the user's message, so the same question reads the same way twice.
  */
-export function buildPitchReply(kind: PitchKind, seed: string): string {
+export function buildPitchReply(kind: PitchKind, seed: string, priorGates = 0): string {
+  // ⚠️ OWN-DATA NEVER ESCALATES. "I cannot see what you have logged" is true every time and repeating it
+  // does not make Otto look bad, so there is nothing to escalate away from. Only the "I do not know that
+  // one" case gets worse by repetition.
   if (kind === 'own-data') return pick(OWN_DATA, seed);
+  if (priorGates >= 2) return pick(QUIET, seed);
+  if (priorGates === 1) return pick(ESCALATED, seed);
   // Opener and closer are seeded separately so the 3x3 grid is actually reachable.
   return `${pick(OPENERS, seed)} ${pick(CLOSERS, seed + '.')}`;
 }
@@ -73,4 +107,33 @@ export function buildPitchReply(kind: PitchKind, seed: string): string {
 export const ALL_PITCH_LINES = [
   ...OPENERS.flatMap((o) => CLOSERS.map((c) => `${o} ${c}`)),
   ...OWN_DATA,
+  ...ESCALATED,
+  ...QUIET,
 ];
+
+/**
+ * How many times this conversation has already been gated.
+ *
+ * 🔴 READ OFF THE CONVERSATION ITSELF RATHER THAN STORED ANYWHERE. Otto has no server-side memory between
+ * messages, and the client already re-sends the recent turns on every send, so the count is sitting right
+ * there. A stored counter would need a Firestore write on every miss and a rule for when it resets.
+ * ✅ The chat's in-memory list is wiped when the sheet closes, which is exactly the lifetime "once per
+ * conversation" should mean. Same mechanism PLAN 4.8 used to settle the canned-answer history question.
+ * ⚠️ MATCHES ON THE FULL LINE, not a fragment. The reply the client stores has the [[route:support]] token
+ * stripped out before display, so these compare cleanly against the pools above.
+ */
+export function countPriorGates(history: { role: string; content: string }[]): number {
+  // ⚠️ NORMALISED ON BOTH SIDES. The client runs a reply through `substituteRoutes` (which strips the
+  // [[route:support]] token) and then `stripInlineFormatting` before storing it. Neither touches these
+  // lines today, since they carry no markdown and no double spaces. But if that ever changed, an exact
+  // comparison would silently return 0 forever and the escalation would just never fire, with nothing on
+  // screen looking wrong. Same invisible-failure shape as the canned gate shipping inert for a day.
+  const norm = (s: string) => s.replace(/\s+/g, ' ').trim().toLowerCase();
+  const lines = new Set(ALL_PITCH_LINES.map(norm));
+  let n = 0;
+  for (const h of history) {
+    if (h.role !== 'assistant' || typeof h.content !== 'string') continue;
+    if (lines.has(norm(h.content))) n++;
+  }
+  return n;
+}

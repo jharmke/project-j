@@ -26,7 +26,7 @@ import { routeCoachOrSupport } from './ottoCoachRouting';
 import { matchCanned } from './ottoCannedMatcher';
 import { CANNED_ANSWERS } from './ottoCannedAnswers';
 import { GENERAL_ANSWERS } from './ottoGeneralAnswers';
-import { buildPitchReply } from './ottoPitchCopy';
+import { buildPitchReply, countPriorGates } from './ottoPitchCopy';
 
 /**
  * Every canned answer the assistant has, across both libraries. Used ONLY as the conversational trim's
@@ -573,10 +573,14 @@ export const appCompanion = onCall(
         && route.reason === 'own-data';
       if (!supporter && (ownData || route.coachOnly)) {
         const kind = ownData ? 'own-data' : 'no-answer';
+        // ⚠️ Read off the conversation the client already re-sends, not from stored state. See
+        // `countPriorGates`. The chat's list dies when the sheet closes, which is the right lifetime for
+        // "once per conversation".
+        const priorGates = countPriorGates(history as unknown as { role: string; content: string }[]);
         recordCannedOutcome('otto', uid, 'gated');
         return {
           ok: true,
-          reply: `${buildPitchReply(kind, message)} [[route:support]]`,
+          reply: `${buildPitchReply(kind, message, priorGates)} [[route:support]]`,
           used: cap.used,
           cap: dailyCap,
           pitched: false,

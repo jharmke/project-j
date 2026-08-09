@@ -70,7 +70,7 @@ export interface CannedAnswer {
  * explained. ⚠️ Adding a CONTENT word here is how a wrong answer gets through -- it would let that word go
  * unexplained. Keep this list boring.
  */
-const STOPWORDS = new Set([
+export const STOPWORDS = new Set([
   'i', 'me', 'my', 'mine', 'you', 'your', 'we', 'it', 'its', 'this', 'that', 'these', 'those',
   'a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'am', 'do', 'does', 'did', 'doing',
   'can', 'could', 'should', 'would', 'will', 'shall', 'may', 'might', 'must',
@@ -111,7 +111,7 @@ const STOPWORDS = new Set([
  * notified. Mapping the user's word onto the app's is a mechanism; adding each miss to a specific answer's
  * `covers` would be fitting the test, which is what made the first corpus worthless.
  */
-const SYNONYMS: Record<string, string> = {
+export const SYNONYMS: Record<string, string> = {
   wipe: 'clear', erase: 'clear', empty: 'clear',
   // ⚠️ put -> ADD, not 'log'. Mapping it to 'log' fixed 'where do i put my weight in' and immediately
   // broke 'how do i put a new graph on stats', because a graph is added, not logged. 'add' serves both.
@@ -153,8 +153,16 @@ function tokens(t: string): string[] {
   return t.split(' ').filter(Boolean);
 }
 
-/** Word-boundary match with the endings people type, so `recipe` catches `recipes`. */
-function has(t: string, term: string): boolean {
+/**
+ * Word-boundary match with the endings people type, so `recipe` catches `recipes`.
+ *
+ * ⚠️ EXPORTED FOR OFFLINE TOOLING (PLAN 4.11c) ALONGSIDE `STOPWORDS` and `SYNONYMS`. Nothing about the
+ * matcher's behaviour changes. The vocabulary-derivation script must decide "does this text contain this
+ * term" and "is this word a topic" using EXACTLY these, never a second copy: on 2026-08-09 a guard that
+ * used Set membership where the matcher used `has()` leaked on the single word "notifications".
+ * ➡️ If you are about to write your own word matcher or stopword list, import these instead.
+ */
+export function has(t: string, term: string): boolean {
   return term.includes(' ')
     ? t.includes(term)
     : new RegExp(`\\b${term}(s|es|ing|ed)?\\b`).test(t);

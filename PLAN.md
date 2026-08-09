@@ -1106,6 +1106,45 @@ is what made him think work had been dropped -- it had not, but he had no way to
       rather than the conversation. Nothing else to build.
       ⚠️ **DO (a) AND (b) AFTER the knowledge-base vocabulary idea below**, which needs no user data at all
       and may close much of the gap for free.
+      ❌ **(c) BUILT, MEASURED AND REJECTED 2026-08-09. IT IS WORTH ONE QUESTION IN SEVENTY-FOUR, AND THE
+      MEASUREMENT FOUND WHY -- THE PREMISE IS TRUE AND IRRELEVANT.** Nothing was written to any answer
+      library and no production code changed: the matcher takes the answer set as a parameter, so the whole
+      thing was measured by patching the libraries IN MEMORY (`_derive_vocab.cjs`, `_vocab_preload.cjs`).
+      **There was nothing to revert, which is the difference between this and the three designs 4.15 had to
+      back out.**
+      | source | conversational (of 74) | everything else |
+      |---|---:|---|
+      | baseline | 19 | -- |
+      | KB -> 184 app answers (this item, as written) | **19, no change at all** | unchanged |
+      | each general answer's own text -> 137 `gen.*` answers (the sibling idea) | **20** | unchanged |
+      ✅ **ZERO wrong answers, zero collisions, zero unsafe matches, and every other corpus unmoved** (app
+      audit 71/71, holdouts 54/54 and 30/42, terse 58/77). It is safe. It just does nothing.
+      🔴 **WHY, AND THIS IS THE FINDING WORTH KEEPING: 62% OF CONVERSATIONAL MISSES NEVER REACH THE COVERAGE
+      TEST AT ALL.** Tallied on the 55 misses: **34 `no-match`** (no answer's `requires` fired, so the answer
+      was never a candidate), **18 `unexplained-remainder`** (fired, then failed to explain the message),
+      3 own-data. **Vocabulary only touches those 18.** The other 34 need `requires` widened, which is the
+      half that feeds the trim's guard and returns wrong answers.
+      🔴 **AND THE 18 ARE BLOCKED BY WORDS NO KNOWLEDGE BASE WILL EVER CONTAIN.** Printed them: *hearing,
+      told, things, reason, tub, came, most, mentioned, badly, buckets, class, colleague, suffer, four*.
+      **They are not feature words, they are the words people wrap a question in.** The KB describes the app
+      richly, exactly as the idea assumed, and the app is not what is missing.
+      ➡️ **SO 4.11(a) IS NOT JUST THE BEST ROUTE LEFT, IT IS NOW MEASURED AS THE ONLY ONE.** Real phrasing is
+      the only source that contains this vocabulary. Recorded here so nobody re-proposes deriving it.
+      🔬 **THREE STRUCTURAL FILLER CLASSES WERE THEN MEASURED TOO** (`_filler_preload.cjs`), since the
+      blocking words are generic: spelled-out numbers (finishing the existing digit filter), reported speech
+      (*my coach mentioned, someone told me*), and other people (*my mate, my colleague*).
+      **Numbers: no change. People: no change. Reported speech: +2 coverage AND A WRONG ANSWER** --
+      *"ive stopped eating meat will my training suffer"* returned the eat-around-your-workout answer once
+      'suffer' became filler. ❌ **All three dropped. Fourth time in two days that buying coverage this way
+      has produced a wrong answer.**
+      ✅ **THE TRIGGER CHECK IN THAT SCRIPT PAID FOR ITSELF ON THE FIRST RUN** by refusing seven "obviously
+      topicless" number words and four person words: **'one' and 'three' (one rep max), 'six', 'hundred' and
+      'triple' (the Triple Digits achievement), 'half', and 'wife' / 'husband' / 'friends' / 'everyone'
+      (the social-pressure and comparison answers, where who is pressuring you IS the subject).** A number
+      word is usually topicless. Usually is not a rule.
+      ⚠️ **`has`, `STOPWORDS` and `SYNONYMS` are now EXPORTED from `ottoCannedMatcher.ts`** so tooling cannot
+      fork its own word list. Non-behavioural. The three scripts are kept as re-runnable experiments.
+      (Original idea follows.)
       **(c) 📚 BUILD EACH ANSWER'S VOCABULARY FROM THE KNOWLEDGE BASE instead of by hand.** Today the words
       each answer recognises are hand-listed by me, which is the guessing. The KB already describes every
       feature far more richly. **Zero privacy exposure, no user data, no doc changes.** ⚠️ Wider vocabulary

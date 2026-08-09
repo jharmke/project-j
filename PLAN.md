@@ -1372,10 +1372,29 @@ is what made him think work had been dropped -- it had not, but he had no way to
       is not a trigger, so the guard discarded it happily. ➡️ **A guard assembled from whatever happens to
       be in the same array is not a guard.** Fixing it properly means building the trigger set from BOTH
       libraries, which changes this function's signature and its callers.
-      ⏳ **STILL OPEN AND STILL THE BIGGEST ITEM: 18% is a real 2.5x, not a solve.** The app library did not
-      move at all (1/5 conversational, unchanged) because its padding sits on both sides of the topic, which
-      is exactly what the window version fixed and could not do safely. ➡️ **Next pass: shared trigger set
-      across both libraries, then re-try the window.**
+      ✅ **THE WINDOW VERSION NOW SHIPS SAFELY. 7% -> 23% CONVERSATIONAL, 69% -> 74% TERSE, APP LIBRARY
+      1/5 -> 2/5, AND EVERY SAFETY AND COLLISION NUMBER STILL ZERO.**
+      🔴 **THE FIX WAS THE SHARED TRIGGER SET, AS PREDICTED.** `matchCanned` takes a fourth argument, every
+      answer in BOTH libraries, used only as the trim's guard vocabulary. `appCompanion.ts` passes it and so
+      does every harness. **The "whats the tip jar and how much protein do i need" leak is gone**, because
+      'protein' is now a topic the guard can see even while the APP library is the one being searched.
+      🔴 **AND THE THING THAT ACTUALLY UNBLOCKED IT WAS NOT THE CAP. STOPWORDS HAD TO BE EXCLUDED FROM THE
+      GUARD.** Some answers legitimately use a common verb as a single-word trigger: **'ask', 'work' and
+      'where' are all in there.** Treating those as topics meant the guard refused to discard the very words
+      conversational padding is MADE of, so *"ive been meaning to ASK how do i change the theme in here"*
+      could never be trimmed however high the cap went. A stopword carries no topic by definition, so
+      discarding one cannot be discarding a topic. **Raising the cap 6 -> 10 alone changed nothing.**
+      🔴 **A SAFETY EXCLUSION WAS SILENTLY BROKEN AND THE HOLDOUT CAUGHT IT.** The dizziness answer excluded
+      `breath` and the matcher matches WHOLE WORDS, so **"i went dizzy and could not BREATHE properly" fired
+      it** and would have returned a calm "sit down and rest" to somebody describing a possible cardiac
+      event. One missing letter. Both safety answers now list every form, and
+      🔬 **`_general_cross.cjs` GAINED A PERMANENT CRISIS-ADJACENT ASSERTION: 10 phrasings `faithCrisis.ts`
+      does NOT catch, all of which must match nothing. Currently 0/10 matched. Add to that list, never trim it.**
+      ⏳ **STILL NOT SOLVED: 23% means most rambling questions still get sold to rather than helped.** The
+      three remaining app-library misses carry real content words in the padding ("dinner", "every week"),
+      which the trim cannot discard and coverage cannot explain. ➡️ That is the next idea, and it is a
+      different one: not trimming, but letting an answer leave a bounded number of NON-TRIGGER content words
+      unexplained. Attempts 1 and 2 did that unguarded and broke; the guards now exist that they lacked.
 
 ### 4b. 🆕 OTTO HANDS FAITH CONVERSATION TO HALO -- ✅ BUILT + DEPLOYED 2026-08-05
 **Not a cost item.** A product-correctness bug found during the 2.2 verification check. Kept separate on

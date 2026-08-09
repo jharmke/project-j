@@ -24,6 +24,9 @@ const { CANNED_ANSWERS } = require('./lib/ottoCannedAnswers.js');
 const { matchCanned } = require('./lib/ottoCannedMatcher.js');
 
 const FREE = { supporter: false, faithTier: 'exploring', styleMode: 'balanced' };
+// PLAN.md 4.15: the trim's guard must see every topic in BOTH libraries, exactly as production does.
+const ALL_ANSWERS = [...CANNED_ANSWERS, ...GENERAL_ANSWERS];
+
 const src = fs.readFileSync('./_canned_audit.cjs', 'utf8');
 
 /** Pull an array literal out of the audit harness by name and eval it in isolation. */
@@ -60,7 +63,7 @@ console.log('='.repeat(70));
 const appQuestions = [...HITS.map((h) => h[0]), ...COLLISIONS.map((c) => c[0])];
 let collisions = 0;
 for (const q of appQuestions) {
-  const r = matchCanned(q, FREE, GENERAL_ANSWERS);
+  const r = matchCanned(q, FREE, GENERAL_ANSWERS, ALL_ANSWERS);
   if (r.matched) {
     console.log(`   🔴 COLLISION: "${q}"  ->  ${r.matched.id}`);
     collisions++;
@@ -72,7 +75,7 @@ console.log(`\n1. COLLISIONS (must be 0): ${collisions} of ${appQuestions.length
 // Already asserted inside _canned_audit.cjs corpus C, re-run here so one command covers both directions.
 let reverse = 0;
 for (const q of MUST_NOT) {
-  const r = matchCanned(q, FREE, CANNED_ANSWERS);
+  const r = matchCanned(q, FREE, CANNED_ANSWERS, ALL_ANSWERS);
   if (r.matched) { console.log(`   🔴 REVERSE: "${q}"  ->  ${r.matched.id}`); reverse++; }
 }
 console.log(`2. REVERSE collisions (must be 0): ${reverse} of ${MUST_NOT.length}`);
@@ -81,7 +84,7 @@ console.log(`2. REVERSE collisions (must be 0): ${reverse} of ${MUST_NOT.length}
 let hit = 0;
 const missed = [];
 for (const q of MUST_NOT) {
-  const r = matchCanned(q, FREE, GENERAL_ANSWERS);
+  const r = matchCanned(q, FREE, GENERAL_ANSWERS, ALL_ANSWERS);
   if (r.matched) hit++;
   else missed.push(q);
 }
@@ -103,7 +106,7 @@ let selfWrong = 0;
 let selfNone = 0;
 for (const a of GENERAL_ANSWERS) {
   const probe = a.requires.map((group) => group[0]).join(' ');
-  const r = matchCanned(probe, FREE, GENERAL_ANSWERS);
+  const r = matchCanned(probe, FREE, GENERAL_ANSWERS, ALL_ANSWERS);
   if (!r.matched) { selfNone++; console.log(`   ○ no match: ${a.id.padEnd(28)} probe "${probe}"`); continue; }
   if (r.matched.id !== a.id) {
     console.log(`   🔴 INTERNAL COLLISION: probe "${probe}" belongs to ${a.id} but matched ${r.matched.id}`);
@@ -112,7 +115,34 @@ for (const a of GENERAL_ANSWERS) {
 }
 console.log(`\n4. INTERNAL collisions (must be 0): ${selfWrong}   |   probes matching nothing: ${selfNone}`);
 
+// ── 5. 🔴 THE SAFETY ASSERTION. Nothing crisis-adjacent may EVER match. ──────────────────────────────
+// This exists because the exclusion silently failed once: the dizziness answer listed "breath" and the
+// matcher matches WHOLE WORDS, so **"i went dizzy and could not BREATHE properly" fired it** and returned
+// a calm "sit down and rest" to somebody describing a possible cardiac event. One missing letter.
+// ⚠️ `faithCrisis.ts` catches the clear phrasings CLIENT-SIDE, so everything here is deliberately a
+// phrasing it MISSES. Unmatched, these fall through to the AI, which carries the [[CRISIS]] instruction.
+// ⚠️ ADD TO THIS LIST, NEVER TRIM IT. A miss here costs a fraction of a cent. A hit could cost far more.
+const CRISIS_ADJACENT = [
+  'i went dizzy and could not breathe properly',
+  'i feel dizzy and short of breath',
+  'my chest hurts when i run',
+  'my chest feels tight when i climb stairs',
+  'i get dizzy and my chest hurts',
+  'felt dizzy and my heart was pounding',
+  'lightheaded and my arm went numb',
+  'dizzy and clammy after a set',
+  'my knee hurts and i cannot breathe',
+  'chest tightness during cardio',
+];
+let unsafe = 0;
+for (const q of CRISIS_ADJACENT) {
+  const r = matchCanned(q, FREE, GENERAL_ANSWERS, ALL_ANSWERS);
+  if (r.matched) { console.log(`   🔴 UNSAFE: "${q}"  ->  ${r.matched.id}`); unsafe++; }
+}
+console.log(`\n5. 🔴 CRISIS-ADJACENT (must be 0): ${unsafe} of ${CRISIS_ADJACENT.length} matched an answer`);
+
 console.log('\n' + '='.repeat(70));
+console.log(`🔴 UNSAFE MATCHES (must be 0): ${unsafe}`);
 console.log(`🔴 COLLISIONS (must be 0): ${collisions + reverse + selfWrong}`);
 console.log('='.repeat(70));
-process.exit(collisions + reverse + selfWrong > 0 ? 1 : 0);
+process.exit(collisions + reverse + selfWrong + unsafe > 0 ? 1 : 0);

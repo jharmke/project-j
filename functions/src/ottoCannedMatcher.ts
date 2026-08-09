@@ -100,6 +100,9 @@ const STOPWORDS = new Set([
   'lately', 'recently', 'while', 'too', 'going', 'gone', 'have', 'has', 'had', 'per', 'lot', 'bit',
   'kind', 'sort', 'anyone', 'someone', 'people', 'supposed', 'actually', 'basically', 'literally',
   'help', 'helps', 'better', 'worse', 'sure', 'guess', 'think', 'wondering', 'curious',
+  // ⚠️ 'ask' ADDED 2026-08-09. It is a generic verb that names nothing, and it appears in the single most
+  // common conversational opener there is: "ive been meaning to ASK...". It was blocking the trim.
+  'ask', 'asking', 'meaning', 'meant', 'supposed', 'trying', 'looking',
 ]);
 
 /**
@@ -209,6 +212,17 @@ export function matchCanned(
   message: string,
   ctx: CannedContext,
   answers: CannedAnswer[],
+  /**
+   * 🔴 EVERY ANSWER IN EVERY LIBRARY, for the conversational trim's guard (PLAN.md 4.15).
+   * ⚠️ THIS PARAMETER EXISTS BECAUSE THE SAME BUG KILLED THREE ATTEMPTS IN ONE DAY. The guard asks "does
+   * the text I am about to discard contain a real topic word?", and it was built from `answers` alone. So
+   * when the APP library was being searched, 'protein' was not a trigger and the guard cheerfully threw it
+   * away: **"whats the tip jar and how much protein do i need" came back answering only the tip jar.**
+   * ➡️ A guard assembled from whatever happens to be in the same array is not a guard. It has to know every
+   * topic the assistant can answer, not just the ones in the pool it is currently looking at.
+   * ⚠️ Defaults to `answers` so existing callers and harnesses behave exactly as before.
+   */
+  allAnswers: CannedAnswer[] = answers,
 ): CannedResult {
   // ⚠️ SYNONYMS ARE APPLIED TO THE MESSAGE, NOT JUST TO THE COVERAGE TEST. Doing it only in coverage was
   // half a fix: "how do i WIPE a meal" and "how do i look at an OLDER day" still failed, because the
@@ -305,11 +319,32 @@ export function matchCanned(
   // ⚠️ Runs LAST, after the strict pass and after stitching, so no message that already matched can change
   // behaviour. Terse questions never reach this code at all.
   const toks = tokens(t);
-  const MAX_TRIM = 6;
+  // ⚠️ RAISED 6 -> 10 (PLAN.md 4.15). At 6 the app library was stuck at 1/5 on conversational phrasing
+  // because real padding is longer than it looks: "ive been meaning to ask how do i change the theme IN
+  // HERE" needs five words off the front and two off the back, and the cap refused at seven.
+  // 🔴 THE CAP IS NOT WHAT MAKES THIS SAFE, and raising it is only defensible because the real guards are
+  // elsewhere: `requires` and `excludes` are still judged on the FULL message, and nothing may be discarded
+  // if it is a single-word trigger of ANY answer in EITHER library.
+  const MAX_TRIM = 10;
+  // ⚠️ BUILT FROM `allAnswers`, NOT `answers`. See the parameter note at the top of this function: this is
+  // the exact line that made the two-sided window unsafe three separate times.
+  // ⚠️ BUILT FROM `allAnswers`, NOT `answers`. See the parameter note at the top of this function: this is
+  // the exact line that made the two-sided window unsafe three separate times.
+  // 🔴 AND STOPWORDS ARE EXCLUDED FROM THE GUARD, WHICH IS WHAT FINALLY MADE THE TRIM WORK. Some answers
+  // legitimately use a common verb as a single-word trigger: 'ask', 'work' and 'where' are all in there.
+  // Treating those as topics meant the guard refused to discard the very words conversational padding is
+  // MADE of, so "ive been meaning to ASK how do i change the theme in here" could never be trimmed and the
+  // app library sat at 1/5 no matter how the cap was raised.
+  // ✅ Principled rather than a patch: a stopword carries no topic by definition, so discarding one cannot
+  // be discarding a topic. Anything genuinely topical is not in STOPWORDS.
   const triggerWords = new Set<string>();
-  for (const a of answers) {
+  for (const a of allAnswers) {
     for (const group of a.requires) {
-      for (const term of group) if (!term.includes(' ')) triggerWords.add(SYNONYMS[term] ?? term);
+      for (const term of group) {
+        if (term.includes(' ')) continue;
+        const canonical = SYNONYMS[term] ?? term;
+        if (!STOPWORDS.has(canonical)) triggerWords.add(canonical);
+      }
     }
   }
   // 🔴 PREFIX ONLY, AND A TWO-SIDED WINDOW VERSION WAS BUILT, MEASURED AND REVERTED. See PLAN.md 4.15.
@@ -321,12 +356,24 @@ export function matchCanned(
   // happily discarded it. **A guard assembled from whatever happens to be in the same array is not a
   // guard.** Fixing it properly needs the trigger set built from BOTH libraries, which is a real change to
   // this function's signature and its callers, and is left for a fresh pass rather than a fourth attempt.
-  for (let k = 1; k <= Math.min(MAX_TRIM, toks.length - 3); k++) {
-    const dropped = toks.slice(0, k);
-    if (dropped.some((w) => triggerWords.has(SYNONYMS[w] ?? w))) break;
-    // ⚠️ FULL MESSAGE for triggers and exclusions, TRIMMED text for coverage only. See the note on
+  // ⚠️ TWO-SIDED, because a prefix trim alone left the app library at 1/5 on conversational phrasing: its
+  // padding sits on BOTH sides of the topic ("i was looking for my personal records earlier and could not
+  // find them"). Windows are walked longest first, so the least aggressive trim that works is the one used.
+  const windows: string[] = [];
+  for (let start = 0; start <= MAX_TRIM; start++) {
+    for (let end = toks.length; end >= start + 3; end--) {
+      if (start === 0 && end === toks.length) continue;      // untrimmed already failed above
+      if (toks.length - (end - start) > MAX_TRIM) continue;  // never discard more than MAX_TRIM in total
+      const dropped = [...toks.slice(0, start), ...toks.slice(end)];
+      if (dropped.some((w) => triggerWords.has(SYNONYMS[w] ?? w))) continue;
+      windows.push(toks.slice(start, end).join(' '));
+    }
+  }
+  windows.sort((a, b) => b.length - a.length);
+  for (const w of windows) {
+    // ⚠️ FULL MESSAGE for triggers and exclusions, WINDOW for coverage only. See the note on
     // `coverageText` in `matchOne`.
-    const m = matchOne(t, ctx, answers, toks.slice(k).join(' '));
+    const m = matchOne(t, ctx, answers, w);
     if (m) return { matched: m, reason: 'hit' };
   }
 

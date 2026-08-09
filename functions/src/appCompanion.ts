@@ -28,6 +28,13 @@ import { CANNED_ANSWERS } from './ottoCannedAnswers';
 import { GENERAL_ANSWERS } from './ottoGeneralAnswers';
 import { buildPitchReply } from './ottoPitchCopy';
 
+/**
+ * Every canned answer the assistant has, across both libraries. Used ONLY as the conversational trim's
+ * trigger vocabulary (PLAN.md 4.15), never as a pool to match against: the two libraries are still
+ * searched separately so a fitness answer can never win an app question or the reverse.
+ */
+const ALL_ANSWERS = [...CANNED_ANSWERS, ...GENERAL_ANSWERS];
+
 // NOTE: admin.initializeApp() is already called once in index.ts. Do NOT call it again here.
 //
 // The GENERAL Companion assistant (NOT Halo). Same gatekeeping shape as faithCompanion, but a
@@ -475,7 +482,12 @@ export const appCompanion = onCall(
     // switches this whole feature off and nothing on screen looks wrong.
     if (ridersOnThisMessage.length === 0) {
       const cannedCtx = { supporter, faithTier, styleMode };
-      const appHit = matchCanned(message, cannedCtx, CANNED_ANSWERS);
+      // ⚠️ THE FOURTH ARGUMENT IS EVERY ANSWER IN BOTH LIBRARIES, and it is not optional in spirit even
+      // though it is in the signature. The conversational trim's guard uses it to decide whether the text
+      // it is about to discard carries a real topic. Pass one library and it will happily throw away the
+      // other library's subject: that is how "whats the tip jar and how much protein do i need" came back
+      // answering only the tip jar. See the note on `allAnswers` in `ottoCannedMatcher.ts`.
+      const appHit = matchCanned(message, cannedCtx, CANNED_ANSWERS, ALL_ANSWERS);
 
       // ── PLAN.md 4.13: the GENERAL nutrition/fitness library ──────────────────────────────────────
       // 🔴 FREE USERS ONLY, AND THAT IS THE WHOLE POINT OF 4.13. A Supporter pays for answers written
@@ -484,7 +496,7 @@ export const appCompanion = onCall(
       // answer is EXACT and instant, so a Supporter gains from it.)
       const genHit = supporter
         ? ({ matched: false } as ReturnType<typeof matchCanned>)
-        : matchCanned(message, cannedCtx, GENERAL_ANSWERS);
+        : matchCanned(message, cannedCtx, GENERAL_ANSWERS, ALL_ANSWERS);
 
       // 🔴 TIEBREAK WITH THE ROUTER, AND ONLY ON A COLLISION.
       // ⚠️ THE ORIGINAL PLAN WAS TO HARD-SPLIT: route first, then search ONE library. **MEASURED AND

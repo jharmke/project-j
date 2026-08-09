@@ -3,13 +3,18 @@
 const fs = require('fs');
 const { CANNED_ANSWERS } = require('./lib/ottoCannedAnswers.js');
 const { matchCanned, ROUTE_KEYS } = require('./lib/ottoCannedMatcher.js');
+// PLAN.md 4.15: the conversational trim's guard needs EVERY topic the assistant knows, not just this
+// library's. Passing one library is what let the trim discard the other library's subject, and this
+// harness is the thing that catches it, so it must call the matcher exactly as production does.
+const { GENERAL_ANSWERS } = require('./lib/ottoGeneralAnswers.js');
+const ALL_ANSWERS = [...CANNED_ANSWERS, ...GENERAL_ANSWERS];
 
 // ⚠️ COLLAPSE WHITESPACE. The KB wraps lines mid-path, so "Accessibility > Text Size" can sit across a
 // newline and a raw read reports a real path as missing. That is a harness bug, not a stale answer.
 const KB = fs.readFileSync('./src/assistantAppKnowledge.ts', 'utf8').toLowerCase().replace(/\s+/g, ' ');
 const FREE = { supporter: false, faithTier: 'exploring', styleMode: 'balanced' };
 const SUP = { supporter: true, faithTier: 'exploring', styleMode: 'balanced' };
-const M = (msg, ctx = FREE) => matchCanned(msg, ctx, CANNED_ANSWERS);
+const M = (msg, ctx = FREE) => matchCanned(msg, ctx, CANNED_ANSWERS, ALL_ANSWERS);
 const textOf = (a, ctx) => (typeof a.answer === 'function' ? a.answer(ctx) : a.answer);
 
 let fails = 0;

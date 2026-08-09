@@ -15,6 +15,10 @@
 
 const { GENERAL_ANSWERS } = require('./lib/ottoGeneralAnswers.js');
 const { matchCanned } = require('./lib/ottoCannedMatcher.js');
+const { CANNED_ANSWERS } = require('./lib/ottoCannedAnswers.js');
+// PLAN.md 4.15: the trim's guard must see every topic in BOTH libraries, exactly as production does.
+const ALL_ANSWERS = [...CANNED_ANSWERS, ...GENERAL_ANSWERS];
+
 const FREE = { supporter: false, faithTier: 'exploring', styleMode: 'balanced' };
 
 const SHOULD_MATCH = [
@@ -109,11 +113,11 @@ const MUST_NOT = [
 let hit = 0, miss = 0, leaked = 0;
 const misses = [], leaks = [];
 for (const q of SHOULD_MATCH) {
-  const r = matchCanned(q, FREE, GENERAL_ANSWERS);
+  const r = matchCanned(q, FREE, GENERAL_ANSWERS, ALL_ANSWERS);
   if (r.matched) hit++; else { miss++; misses.push(`${q}   (${r.reason})`); }
 }
 for (const q of MUST_NOT) {
-  const r = matchCanned(q, FREE, GENERAL_ANSWERS);
+  const r = matchCanned(q, FREE, GENERAL_ANSWERS, ALL_ANSWERS);
   if (r.matched) { leaked++; leaks.push(`${q}  ->  ${r.matched.id}`); }
 }
 

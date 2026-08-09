@@ -1427,7 +1427,11 @@ const SAFETY: CannedAnswer[] = [
              'elbow', 'wrist', 'squat', 'squats', 'deadlift', 'bench', 'press', 'run', 'running',
              'lift', 'lifting', 'when'],
     // 🔴 CHEST AND BREATHING TERMS ARE EXCLUDED FROM EVERY SAFETY ANSWER. See rule A in the header.
-    excludes: ['chest', 'breath', 'breathing', 'dizzy', 'faint', 'heart'],
+    // ⚠️ Same safety list as the dizziness answer, and for the same reason: "breath" does not catch
+    // "breathe". See the note there.
+    excludes: ['chest', 'breath', 'breathe', 'breathing', 'breathless', 'winded', 'wheeze', 'wheezing',
+               'gasping', 'gasp', 'dizzy', 'dizziness', 'lightheaded', 'faint', 'heart', 'palpitation',
+               'palpitations', 'numb', 'tingling'],
     answer:
       "Joint pain is different from muscle soreness and is worth taking seriously rather than training through. Sometimes it is technique or load and sometimes it is not, and telling those apart needs someone who can watch you move. Back off the movement causing it and get it looked at, particularly if it persists past a week or two.",
   },
@@ -1451,7 +1455,15 @@ const SAFETY: CannedAnswer[] = [
     // one, this answer must NOT be the thing that catches it: a calm "sit down and rest" reply to a cardiac
     // event is the worst failure this feature could produce. Unmatched, it falls through to the AI, which
     // carries the [[CRISIS]] instruction.
-    excludes: ['chest', 'breath', 'breathing', 'heart', 'arm', 'jaw', 'sweating cold', 'clammy'],
+    // 🔴 EVERY FORM OF EVERY WORD, AND THIS LIST IS SAFETY CRITICAL. The matcher matches WHOLE WORDS, not
+    // substrings, so "breath" did NOT catch **"i went dizzy and could not BREATHE properly"** and this
+    // answer fired on it. A calm "sit down and rest" reply to someone describing a possible cardiac event
+    // is the single worst thing this feature could do, and it was one missing letter away.
+    // ⚠️ Rule E in the header exists for coverage; here the same omission costs safety. Add forms
+    // generously and never trim this list.
+    excludes: ['chest', 'breath', 'breathe', 'breathing', 'breathless', 'winded', 'wheeze', 'wheezing',
+               'gasping', 'gasp', 'heart', 'palpitation', 'palpitations', 'racing', 'pounding',
+               'arm', 'jaw', 'sweating cold', 'clammy', 'numb', 'tingling'],
     answer:
       "Stop when it happens, sit down, and do not push on through. Occasional lightheadedness from standing up quickly or training with very little food is common, but dizziness that is repeated, severe, or comes alongside anything else is a reason to get checked rather than to work around. If it comes with any chest discomfort or trouble breathing, treat that as urgent and get help immediately.",
   },

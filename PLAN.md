@@ -1612,8 +1612,25 @@ Read per call, changeable without an App Store update.
          `revenueCatWebhook.ts` is deployed, so RevenueCat should report both. ➡️ **The whole task is Justin
          opening the dashboard** and confirming what it actually reports and how it counts a conversion.
          ⚠️ The 7-day promotional grants may muddy that definition; check specifically.
-      2. **Actives: NOTHING measures it. Zero analytics packages installed** (no Firebase Analytics, no
-         Amplitude, nothing) and no `logEvent` calls anywhere in the app.
+      2. 🔴 **"ACTIVES: NOTHING MEASURES IT" WAS WRONG. CORRECTED 2026-08-09 -- IT IS ALREADY MEASURABLE
+         FROM DATA THE APP ALREADY COLLECTS, AND NOTHING NEEDS BUILDING OR INSTRUMENTING.**
+         The original finding was true only of ANALYTICS PACKAGES (no Firebase Analytics, no Amplitude, no
+         `logEvent` anywhere), and that led to the wrong conclusion.
+         ✅ **`services/syncService.ts` writes `{ key, value, updatedAt }` to `users/{uid}/store/{key}` for
+         every synced `pj_*` key, and daily data is keyed `pj_YYYY-MM-DD`.** So a user who logged anything
+         on a given day already has a document proving it.
+         ➡️ **DAU = a `collectionGroup('store')` query for `key == 'pj_<date>'`. MAU = the same across 30
+         days.** No new field, no new collection, no scheduled function, and **no `privacy.html` change**:
+         this is the sync of the user's own data, which section 2 already covers in full.
+         ⚠️ **IT COUNTS PEOPLE WHO LOGGED, NOT PEOPLE WHO OPENED.** Somebody who opens the app, reads their
+         Home card and leaves does not appear. That is a NARROWER definition and arguably the more useful
+         one, but it is a choice and should be stated wherever the number is quoted.
+         ⚠️ **AND IT MEANS ITEM 3 BELOW OVERSTATES THE DAMAGE.** Gating did kill `ai_cost` as an accidental
+         proxy, but this was never a proxy: it is a direct measure and it was never affected.
+         ❌ **DO NOT ADD AN ANALYTICS SDK OR A `lastSeen` DOC FOR THIS.** A `lastSeen` write was designed and
+         then dropped once the existing data was found: it would have been new collection, and `privacy.html`
+         section 7 lists "usage telemetry" under Data We Do Not Collect, so it would have needed a policy
+         amendment to measure something already measurable.
       3. 🔴 **AND GATING BROKE THE ACCIDENTAL PROXY WE HAD, on the same day.** Until 2026-08-07 every free
          user who opened Home fired two Smart Coach calls, which wrote an `ai_cost` doc for that uid that
          day. That made `ai_cost` a near-perfect stand-in for daily actives that nobody designed.

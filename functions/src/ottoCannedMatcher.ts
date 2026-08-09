@@ -230,6 +230,19 @@ export function matchCanned(
   // each half is judged on its own, which is what a two-part question actually is.
   // ⚠️ LIMIT 2, and both halves must match on their own. Anything else falls through to the normal path,
   // so an innocent "and" ("sleep and recovery") costs nothing.
+  // 🔴 THE WHOLE MESSAGE IS TRIED FIRST, AND THIS ORDER WAS REVERSED ON 2026-08-09 (PLAN 4.13).
+  // It used to split on the connector BEFORE ever asking whether the whole message was one known question.
+  // That is fine for "how do i log food and how do i log water" and wrong for an IDIOM containing "and":
+  // **"can i lose fat AND build muscle at the same time"** was cut into "can i lose fat" (-> the
+  // how-much-to-eat answer) and "build muscle at the same time" (-> recomposition), and the user got a
+  // stitched "Two things:" reply to a single question that has one answer.
+  // ✅ SAFE BECAUSE OF A RULE THAT ALREADY EXISTS: `matchOne` rejects any answer that does not explain the
+  // WHOLE message (`unexplained-remainder`). So a genuine two-part question still cannot be half-answered
+  // by the whole-message pass; it fails that test and falls through to the split below exactly as before.
+  // ⚠️ Verified after the change: the audit's stitching corpus still passes 2/2 and corpus A 71/71.
+  const single = matchOne(t, ctx, answers);
+  if (single) return { matched: single, reason: 'hit' };
+
   const parts = t.split(/\s+(?:and|also|plus)\s+/);
   if (parts.length === 2 && parts.every((p) => tokens(p).length >= 3)) {
     const a = matchOne(parts[0], ctx, answers);
@@ -247,8 +260,6 @@ export function matchCanned(
   }
   if (parts.length > 2) return { matched: false, reason: 'too-many-parts' };
 
-  const single = matchOne(t, ctx, answers);
-  if (single) return { matched: single, reason: 'hit' };
   return { matched: false, reason: lastReason };
 }
 

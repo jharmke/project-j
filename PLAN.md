@@ -1075,8 +1075,22 @@ is what made him think work had been dropped -- it had not, but he had no way to
       either, for the same reason.
       ⚠️ **NOT DEPLOYED, deliberately: nothing uses the key yet**, so the server change is inert until the
       pitch answers land in step 4.
-      🔨 **STEP 2 IN PROGRESS 2026-08-09: `functions/src/ottoGeneralAnswers.ts`, 40 of 141 written.**
-      Nutrition core (12), nutrition rest (14), training (14). Separate library from `ottoCannedAnswers.ts`;
+      🔨 **STEP 2 IN PROGRESS 2026-08-09: `functions/src/ottoGeneralAnswers.ts`, 70 of 138 written.**
+      Nutrition core (12), nutrition rest (14), training (14), sleep and recovery (14), weight and
+      progress (16). Separate library from `ottoCannedAnswers.ts`;
+      ⚠️ **COUNT DROPPED 141 -> 138 FROM THREE MERGES, ALL FOUND WHILE WRITING TRIGGERS AND ALL THE SAME
+      MISTAKE: two spec entries whose ANSWERS said the same thing.** "Is soreness necessary" + "what does
+      soreness mean"; "what is a plateau" + "what do I do about a plateau"; "can I lose fat and build muscle
+      at once" + "body recomposition". The house rule is explicit that near-duplicates are how the wrong one
+      of hundreds gets returned. **Reading two answers side by side to write their triggers is what exposed
+      it; reading them a category apart in the spec did not.**
+      🔴 **A SHIPPED-CODE CHANGE CAME OUT OF THIS: `matchCanned` NOW TRIES THE WHOLE MESSAGE BEFORE SPLITTING
+      ON "and".** It used to split first, so the IDIOM "can i lose fat AND build muscle at the same time" was
+      cut in half and answered with a stitched "Two things:" reply to a single question.
+      ✅ **SAFE BECAUSE OF AN EXISTING RULE:** `matchOne` rejects any answer that does not explain the WHOLE
+      message, so a genuine two-part question still fails the whole-message pass and falls through to the
+      split exactly as before. ✅ **VERIFIED against the corpora guarding the 183 live answers: A 71/71,
+      B 22/22, C 30/30, stitching 2/2, all unchanged.**
       ✅ **`matchCanned` already takes the answer set as a PARAMETER, so the split needed no matcher change.**
       🔬 **NEW HARNESS: `functions/_general_cross.cjs`, committed.** Four checks, all currently ZERO/green:
       app questions reaching a fitness answer, fitness questions reaching an app answer, coverage of an

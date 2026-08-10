@@ -1959,6 +1959,53 @@ discussed before but i guess wasnt saved."* Decisions land here the moment they 
    ✅ **Otto always tags the equipment on exercises HE creates**, from the valid list, exactly like the 22
    muscle keys. No UI involved. The optional field only ever concerns hand-made exercises.
 
+**16. HE CAN BUILD A WEEK OR A MONTH, AND A MONTH IS THE SAME WEEK REPEATING. ✅ Justin, 2026-08-10.**
+   A **program** in this app is a 7-day SHAPE with `exercises: []` on every day (`PresetProgram` in
+   `workoutData.ts`), so the three layers are: program = the shape of the week, routine = a named set of
+   exercises, day = a dated day with real exercises in it. **"Build me a month" = one 7-day shape, a
+   DISTINCT routine per training day, repeating for four weeks.** What changes week to week is the weight on
+   the bar, which the user supplies.
+   ✅ **SHORTCUT WORTH TAKING: the app already ships Push/Pull/Legs and Upper/Lower as `PRESET_PROGRAMS`.**
+   "Decide together on a split" can mean Otto recommends an existing shape and only generates the routines
+   to fill it. Less invention, less to review.
+   ❌ **REJECTED: four weeks that progress on their own** (volume creeping, a week-4 deload). Otto would be
+   making progression calls without knowing how the sessions actually went. Revisit once real logged data
+   can drive it.
+   ⚠️ **THE REVIEW BURDEN IS THE REAL COST, NOT THE BUILD.** One routine is a glance; a 4-day split is four
+   routines to read before anything can be accepted. **Decision 9 (one screen, one action) has to survive
+   this** -- design the single-routine preview first and learn from it on device.
+
+**17. 🔬 RESEARCHED AT JUSTIN'S INSISTENCE, AND THE FIRST ANSWER WAS TOO ABSOLUTE. 2026-08-10.**
+   The claim made here was "repeating the same routine is simply correct". Justin asked for that to be
+   checked rather than trusted. **The evidence says systematic variation beats BOTH extremes.**
+   - **Random weekly rotation HINDERS adaptation** -- constant relearning of motor patterns and redundant
+     stimulus. So shuffling exercises every week, the thing that sounds smarter, is the harmful end.
+   - **Never changing anything indefinitely is also suboptimal.** The common structure is emphasising a set
+     of exercises for **2-3 mesocycles (a mesocycle is 4-8 weeks)** and then rotating.
+   - Running identical exercises and adding ~2% to the bar is enough on its own to drive new adaptation.
+   ✅ **SO A FOUR-WEEK REPEAT SITS COMFORTABLY IN THE MIDDLE OF THE EVIDENCE.** Decision 16 stands, now on
+   a researched basis rather than an asserted one.
+   ✅ **AND IT IS RIGHT FOR THIS APP SPECIFICALLY:** PRs key off the exercise NAME (`normalizeLiftName`) and
+   "you vs yesterday" compares a lift to the last time it was done. Weekly rotation would scatter history
+   across dozens of movements and quietly starve the app's core mechanic.
+   📚 Sources: systematic review, PubMed 35438660 and J Strength Cond Res 2022;36(6); plus mesocycle
+   periodization guidance. **If this is ever restated, cite them -- it is a health claim in a health app.**
+   🆕 **FUTURE FEATURE FALLING OUT OF THE RESEARCH, NOT FOR NOW:** after 2-3 months on the same block a
+   change is warranted, so the app could notice a program has gone stale and offer to refresh it.
+
+**18. OTTO MUST BE ABLE TO EXPLAIN THE REPETITION, AND MUST VARY IT ON REQUEST. Justin's condition on 16.**
+   - *"Why are my workouts the same every week?"* is a GENERAL FITNESS question, so it belongs in the
+     **137-answer general library** (4.13): free, instant, zero AI cost. The answer is that you repeat
+     movements so you can add weight to them, and if the exercises change every week there is nothing to
+     beat. ⚠️ **It must not be phrased as a limitation of the app.** See [[feedback_premium_copy_voice]].
+   - **If a user says they do not want the same thing every time, he varies it. No argument.** Preference
+     wins; the research objection is to random weekly churn, not to variety as such. The preview already
+     supports swapping, so this needs no new mechanism.
+   🟡 **NAMING, Justin's stated direction 2026-08-10, recorded as direction rather than locked because he
+   hedged ("idk"):** Otto names the routine from sensible generic templates ("Push A", "Chest & Triceps")
+   and the user can rename it whenever, exactly like a routine they made themselves. **No question asked at
+   build time**, per decision 9.
+
 **5. NEAR-DUPLICATE WORDING IS SETTLED AT THE PREVIEW.** When a user-named movement looks like an existing
    library entry, the preview asks once ("this looks like your Incline Bench Press, use that?"). It costs no
    new UI because the confirmation step already exists, and it puts the judgement on the person who knows

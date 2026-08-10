@@ -113,8 +113,13 @@ Every one of these is currently making the app more generous than it should be a
       - [x] `appCompanion.ts` — **10 free / 30 Supporter** (deployed). NOTE: 30, not the 25 originally locked —
         deliberate 2026-07-28. 3x free makes the perk read as real and it acts as a runaway backstop, not a
         product limit. Verified on device: a free account correctly showed "9 of 10 messages left today".
-      - [x] `faithCompanion.ts` — **25 / 25** (deployed). Verified on device: "24 of 25 messages left today".
-        No copy change was needed — the cap and its label already existed, only the number moved.
+      - [x] `faithCompanion.ts` — 🔴 **SUPERSEDED. HALO IS 10 FREE / 30 SUPPORTER, and has been since
+        2026-07-29.** Re-confirmed on device 2026-08-06: her counter reads "of 10 messages left today".
+        Deliberately NOT cut to 5 with Otto (Justin, 2026-08-05, `PLAN.md` 3.1) — free users get twice as
+        much of the faith companion as the fitness one, which is the app stating its identity.
+        (Original follows, kept for the reasoning.) **25 / 25** (deployed). Verified on device: "24 of 25
+        messages left today". No copy change was needed — the cap and its label already existed, only the
+        number moved.
       - [x] `services/aiMealEstimator.ts` — **5 free / 100 Supporter** (done 2026-07-28; client-side, ships with
         the next build, no redeploy). Justin chose 5 over the 3 the original code used. NOT VERIFIABLE IN A DEV
         BUILD: `DEV_UNLIMITED_ESTIMATES = __DEV__` grants unlimited whenever `__DEV__` is true, so this cap can
@@ -182,8 +187,20 @@ Every one of these is currently making the app more generous than it should be a
       any real revenue arrives.
 - [ ] **4.2 — App Store Connect API key (AuthKey).** Enables price sync, refund handling, and Apple→RevenueCat
       server notifications. Deferred during the build; needed for a healthy production subscription.
-- [ ] **4.3 — Product review screenshots + metadata** for the 6 IAP products (2 subs + 4 tips). Required by App
-      Review. Products currently show "Missing Metadata" / "Draft" — fine for sandbox, **not** for submission.
+- [ ] **4.3 — Product review screenshots + metadata** for the **7** IAP products: `supporter_monthly`,
+      `supporter_annual`, and **FIVE** tips (`tip_pitchin`, `tip_addfuel`, `tip_powerforward`,
+      `tip_backmission`, `tip_founder`). Required by App Review. Products currently show "Missing Metadata" /
+      "Draft" — fine for sandbox, **not** for submission.
+      🔴 **THIS SAID "6 IAP products (2 subs + 4 tips)" UNTIL 2026-08-09 AND WOULD HAVE COST YOU A PRODUCT.**
+      `tip_founder` ($49.99, the gold tile) was created in App Store Connect on 2026-07-27 and this file,
+      which is the single source of truth for launch prep, never learned about it. Prepare six and the
+      seventh goes to review unprepared. `project_j_roadmap.md` had it right at "all 7" the whole time.
+      🔴 **AND CHECK LOCALIZATION ON ALL SEVEN WHILE YOU ARE IN THERE, BECAUSE THIS EXACT PRODUCT HAS
+      ALREADY FAILED SILENTLY ONCE.** `tip_founder` shipped 2026-07-27 with no localization, which made
+      Apple treat it as invalid: the app asked the store for it, the store returned nothing, and the tile
+      toasted "Tips aren't available right now." **The status column read "Prepare for Submission" the whole
+      time, identical to the four working tips**, so the list view will not warn you. Full story:
+      `project_j_roadmap.md`, LAUNCH BLOCKERS.
 - [ ] **4.4 — Verify the subscription group ranking** is still Annual = Level 1, Monthly = Level 2, so an upgrade
       is immediate + prorated (set 2026-07-13, device-verified).
 

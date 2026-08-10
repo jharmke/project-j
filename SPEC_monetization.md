@@ -346,6 +346,21 @@ OPEN NOTES / IDEAS -- DO NOT LOSE:
 ---
 
 ## LOCKED DECISIONS (this thread -- 2026-07-11)
+
+🔴 **READ THIS BEFORE QUOTING ANY PRICE OUT OF THIS SECTION. Added 2026-08-09.**
+**Everything below is what was locked on 2026-07-11 and TWO OF ITS DECISIONS HAVE SINCE BEEN REVERSED.**
+The section is kept intact, and deliberately NOT rewritten, because it is a dated record of what was
+decided that day and editing the numbers would falsify it. But it is titled "LOCKED DECISIONS", which is
+exactly what somebody greps when they want the current price, so it needs this sign on the door.
+| It says | Actually |
+|---|---|
+| Price $6.99/month + $69.99/year | 🔴 **$9.99/month, $89.99/year since 2026-07-28.** Live source is RevenueCat; the app never hardcodes it (`app/support.tsx` reads `priceString` and only falls back to $9.99/$89.99 while the store loads). See "THE MODEL" further down, which is the live section. |
+| Four tip tiers, topping out at $24.99, "$29.99+ rejected" | 🔴 **Five tips. `tip_founder` at $49.99 was created 2026-07-27 and ships in the app** (`app/support.tsx`, the gold tile). So the rejection of anything above $29.99 did not hold either. |
+⚠️ **The $6.99 figure survived in twelve places in this file because the rule to "grep for the VALUE, not
+the feature name" was never run against it** -- this file was not in CLAUDE.md's ship-check table until
+2026-08-09. Everything else here (the badge, the tip labels, the no-free-trial call, the presentation
+rules) is still live.
+
 1. NAME = "Supporter" (LOCKED 2026-07-11). The single recurring paid tier is "Supporter." "Support the
    Mission" stays the paywall/screen name. One tier name, one entitlement, one product family.
    - "Patron" is NOT approved for anything. It is only PARKED as a possible name IF a higher recurring tier is
@@ -385,14 +400,29 @@ OPEN NOTES / IDEAS -- DO NOT LOSE:
      Comparison (the WHOLE tool -- all period presets AND Day-vs-Day): free locked, Supporter on. (EXPANDED
      2026-07-12 from just Day-vs-Day to the entire Comparison feature; gated at the comparison-report screen +
      the Stats entry card. Built 2026-07-12.)
-   - Smart Coach: 🔴 **AI VOICING IS SUPPORTER-ONLY. ✅ DECIDED 2026-08-07, ❌ NOT BUILT** (`PLAN.md` 1.9).
+   - Smart Coach: ✅ **AI VOICING IS SUPPORTER-ONLY. BUILT, DEVICE-VERIFIED, DEPLOYED AND SHIPPED 2026-08-07, all three steps** (`PLAN.md` 1.9, which is the live status).
      Free users get the full deterministic coaching copy from `utils/smartTipsCopy.ts`; Supporters get it
      written from their own numbers. **This is the single largest change to the free/paid line since launch
      planning began: ~$0.90/free active/yr, break-even 2.97% -> 2.02%.**
      ⚠️ **TWO THINGS THE OLD LINE HERE GOT WRONG.** It said "Sonnet" -- **Smart Coach runs on Haiku**
      (`utils/coachAI.ts`), the ESTIMATOR is the Sonnet one, so "biggest free-tier Sonnet exposure" was never
      true of this feature. And its proposed lever ("only the home tip auto-generates AI") is now moot.
-     ⚠️ Until the build lands, free users still get voicing. This line records an intention, not the app.
+     🔴 **THIS LINE SAID "NOT BUILT" AND "free users still get voicing" UNTIL 2026-08-09, TWO DAYS AFTER IT SHIPPED.** Identical to the failure the roadmap had and fixed on 2026-08-08; this file never got the same pass, because the ship check does not name it. It does now.
+   - 🆕 **OTTO'S COACHING SIDE: A FREE USER'S COACHING QUESTION NEVER REACHES THE AI. ✅ SHIPPED + DEVICE-
+     VERIFIED 2026-08-09** (`PLAN.md` 4.13, the live status). **This section had no idea this existed until
+     2026-08-09**, which is worth stating plainly: it is the largest change to the free tier this project
+     has made, and the document that defines free vs paid did not mention it for a day.
+     Free users still get nutrition, training, recovery and consistency guidance, and it is still free, but
+     it is served from a library of **137 pre-written general answers** rather than from the model. A
+     question the library does not cover gets a Supporter-pointed reply, always carrying a button to the
+     Support the Mission page (locked by Justin, "no exceptions"). Supporters are untouched: they keep AI
+     coaching from Otto, which is what they pay for. **Free-user coaching cost is $0.**
+     🔴 **SO COVERAGE IS A PRODUCT DECISION NOW, NOT A COST ONE.** Below the gate the AI is never called
+     either way, so the library's hit rate decides how often a free user is HELPED rather than SOLD TO.
+     Measured 2026-08-09 over 318 realistic questions: **73% answered free, 24% pointed at the Supporter
+     plan, 3% reach the AI.** Detail, the gap and every rejected fix: `PLAN.md` 4.13, 4.15, 4.17.
+     ⚠️ Faith is structurally protected and stays free: the Halo handoff is a rider, and the gate only runs
+     when no rider is attached, so a faith message can never reach it.
    - PHILOSOPHY: cheap Haiku features stay generous; the expensive Sonnet estimator is tighter-free / generous-paid.
      Supporter caps are HIGH but BOUNDED (never literally unlimited) so no single feature can run away; the rare
      max-everything whale (~$10-12/mo) is subsidized by the many light Supporters + the account-cap backstop.
@@ -2272,7 +2302,7 @@ off `appCompanion.ts`, `faithCompanion.ts` and `services/aiMealEstimator.ts`, no
   the faith companion than the fitness one is the app stating its identity). ⚠️ **But 10 vs 30 does mean
   faith is somewhat upcharged, which is not quite what CLAUDE.md says. That is a LIVE OPEN DECISION and it
   lives in `PLAN.md` 3.1, not here.** The only safe direction is RAISING free.
-- 🆕 **Smart Coach AI voicing: Supporter only. ✅ DECIDED 2026-08-07, ❌ NOT BUILT** (`PLAN.md` 1.9). Free
+- ✅ **Smart Coach AI voicing: Supporter only. SHIPPED + DEVICE-VERIFIED 2026-08-07** (`PLAN.md` 1.9). Free
   users get the full deterministic coaching copy; Supporters get it written from their own numbers.
   ⚠️ **DRAFT WORDING, NEEDS JUSTIN'S PASS BEFORE IT GOES IN ANY MODAL:** *"Coaching written from your numbers.
   Your coach reads your actual averages, your streaks and your trends, and tells you what they mean."*
@@ -2296,11 +2326,11 @@ Currently beta-inflated (see REVERT list). Final caps:
   saying "a Supporter does not get more of Halo than a free user", which is false today. Logged in 3.1.
 - Custom Reports: free locked (REPORTS_BETA_OPEN -> false), Supporter full.
 - Day-vs-Day: free locked, Supporter on.
-- 🆕 **Smart Coach AI voicing: ✅ DECIDED 2026-08-07 to be Supporter-only, ❌ NOT BUILT** (`PLAN.md` 1.9).
+- ✅ **Smart Coach AI voicing: Supporter-only. SHIPPED + DEVICE-VERIFIED 2026-08-07** (`PLAN.md` 1.9).
   ⚠️ **The old line here said "free for all, not gated; monitor as the top free-tier Sonnet cost."** It was
   right about the cost and that is exactly why it changed. **Smart Coach runs on Haiku, not Sonnet** (the
-  estimator is the Sonnet one), so that half was wrong when written. Until the build lands, free users still
-  get voicing and this line describes an intention, not the app.
+  estimator is the Sonnet one), so that half was wrong when written.
+  ⚠️ The "until the build lands" caveat that used to close this line was removed 2026-08-09: the build landed on 2026-08-07 and free users have not had voicing since.
 
 ## SUPPORTER BADGE / RECOGNITION (DECIDED 2026-07-11 -- full detail in LOCKED DECISIONS #5)
 - FORM: a warm one-time thank-you moment + a quiet persistent gold SPROUT badge on the avatar (+ gold ring),

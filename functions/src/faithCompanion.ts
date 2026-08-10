@@ -24,8 +24,19 @@ import { recordUsage } from './aiUsageMeter';
 
 const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
 
-// Messages per user per day, by tier. NOTE: Halo's two tiers are INTENTIONALLY EQUAL (locked design:
-// 25 free / 25 Supporter). Faith is never upcharged -- a Supporter does not get more of Halo than a
+// Messages per user per day, by tier. 🔴 LIVE VALUES ARE AT THE BOTTOM OF THIS BLOCK: FREE 10,
+// SUPPORTER 30. Everything between here and there is dated history, kept for the reasoning.
+//
+// ⚠️ THE PARAGRAPH BELOW DESCRIBED AN EQUAL 25/25 ALLOWANCE AND HAS BEEN WRONG SINCE 2026-07-29. It was
+// flagged in PLAN.md 3.1 on 2026-08-05 as "wrong today" and still read as the locked design on 2026-08-09,
+// which is how a reader who stops after three lines comes away with the opposite of what the code does.
+// Marked stale in place rather than deleted: the PRODUCT RULE in it is still true and still binding, and
+// it is only the NUMBERS and the word "equal" that died. Faith is never paywalled -- Halo is free for
+// everyone, every day, forever, and she never nudges anyone to pay. A Supporter simply gets a bigger daily
+// allowance, exactly like Otto.
+//
+// (SUPERSEDED 2026-07-29, kept for the reasoning.) NOTE: Halo's two tiers are INTENTIONALLY EQUAL (locked
+// design: 25 free / 25 Supporter). Faith is never upcharged -- a Supporter does not get more of Halo than a
 // free user does, and Halo never nudges anyone to pay. That is a product rule, not an oversight.
 // The tier lookup exists anyway so the shape matches Otto and can't drift.
 //
@@ -39,8 +50,8 @@ const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
 // much of the faith companion as the fitness one, which is the app stating its own identity, and she is
 // ~3% of a free user's AI bill so cutting her would have bought nothing.
 // ⚠️ DO NOT "FINISH 3.1" BY LOWERING THIS LATER. The mismatch with Otto is intentional.
-// ⚠️ THE COMMENT ABOVE ABOUT FAITH NEVER BEING UPCHARGED IS ALREADY OUT OF STEP WITH THIS CODE -- it
-// describes an equal free/Supporter allowance, and the constants below are 10 vs 30. That predates today.
+// ✅ THE OUT-OF-STEP COMMENT THIS USED TO WARN ABOUT IS NOW MARKED STALE AT THE TOP OF THIS BLOCK
+// (2026-08-09). It described an equal free/Supporter allowance while the constants say 10 vs 30.
 // Matched to Otto's on 2026-07-29 (free 10 / Supporter 30). Free was 25 and Supporter was ALSO 25, which
 // meant a paying user got literally nothing extra on Halo. Faith is still never paywalled -- Halo is free
 // for everyone, every day, forever; a Supporter just gets a bigger daily allowance, exactly like Otto.

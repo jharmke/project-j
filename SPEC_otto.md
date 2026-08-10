@@ -56,7 +56,18 @@ other AI on earth can do is act *inside* GoodForge against *this user's* data.
 | General sleep/recovery guidance ("why am I tired") | Built |
 | Coaching mode + faith tier awareness | Built, stays free |
 | Crisis screening | Built, stays free |
-| 10 messages/day | Built |
+| **5** messages/day | Built. 🔴 Was 10; cut to 5 on 2026-08-05 (`PLAN.md` 3.1) and this table still said 10 on 2026-08-09. |
+
+🔴 **THIS TABLE PREDATES THE COACH GATE AND THE THREE "GENERAL GUIDANCE" ROWS NO LONGER WORK THE WAY IT
+IMPLIES. Added 2026-08-09.** Since `PLAN.md` 4.13 shipped, **a free user's coaching question never reaches
+the AI at all.** Nutrition, training and sleep guidance still arrive, and they are still free, but they come
+from a library of 137 pre-written general answers rather than from the model. A question the library does
+not cover gets a Supporter-pointed reply instead of an answer.
+➡️ So "Built" is still true of the CAPABILITY and false of the MECHANISM, and the difference decides how a
+free user experiences a miss. **Coverage is a product question now, not a cost one.** Measured 2026-08-09:
+of 318 realistic questions, 73% are answered free, 24% are pointed at the Supporter plan and 3% reach the
+AI. Status, the library, the gate copy and every rejected option: `PLAN.md` 4.13, 4.15 and 4.17. Do not
+restate any of it here.
 
 ### SUPPORTER OTTO
 | Capability | Status |
@@ -106,7 +117,7 @@ Romanian deadlift", "incline or flat press") -- those are coaching, not the thin
   "a group like any other" in the morning. See WHAT COUNTS below -- cardio duration guidance is not a named
   exercise, so "back, bis, core and cardio" spends its two slots on BACK and BIS.
 - **Asking again is a NEW question and gets two more.** This is the accepted rephrasing loophole, and it
-  costs them one of their 10 daily messages. The ONLY thing to enforce is never more than two in a single
+  costs them one of their 5 daily messages (cut from 10 on 2026-08-05, `PLAN.md` 3.1). The ONLY thing to enforce is never more than two in a single
   reply. ⚠️ Note the interaction: "give me more" is also pitch trigger 1, so a user who pushes gets their two
   more AND, once per conversation, a mention of the plan. That is intended.
 - **A same-slot SWAP does not count as a third.** Count what they would PERFORM, not what he names.
@@ -788,7 +799,7 @@ Considered (mirroring the max-2-exercises rule) and rejected. The gap is already
 model complies unreliably with length limits so it would fire on some answers and not others (reads as
 broken, not tiered), and the saving is a couple hundred output tokens.
 ⚠️ Free Otto must NEVER interrogate the user for data he cannot see ("what's been going on lately?"). That
-burns one of their 10 daily messages to collect something he still cannot verify.
+burns one of their 5 daily messages to collect something he still cannot verify (cut from 10 on 2026-08-05).
 
 #### THE FOUR TRAPS
 **Trap 1 -- THE HALF PICTURE (the important one).** Free Otto knows the target and not the behaviour, and
@@ -1029,7 +1040,7 @@ identical wall, and the day-8 message would tell a four-month paying customer ab
   calls it good or bad, and never ranks or judges a body. This is a content rule, not a tiering rule -- a
   Supporter asking "is white rice bad" carries the same risk. Assembling foods into a meal or a day is an
   ARTIFACT and stays paid on both tiers until F exists.
-- **Walls COUNT against the 10/day cap.** Considered making them free; rejected because a wall reply is
+- **Walls COUNT against the free daily cap, which is 5/day, not the 10 this line stated until 2026-08-09.** Considered making them free; rejected because a wall reply is
   still a real API call, so free walls create an uncapped cost path, and a wall still answers them and hands
   over the right screen.
 

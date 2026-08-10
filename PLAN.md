@@ -1656,9 +1656,24 @@ is what made him think work had been dropped -- it had not, but he had no way to
       handoff never reaches the gate, which is why faith stays free), crisis, and conversation history (so
       every message is treated as a first offence and the escalation copy is never exercised).
 
-- [ ] **4.18 🔴🔴 THE SUPPORTER PAGE SELLS TWO FEATURES THAT DO NOT EXIST, AND SO DOES OTTO. FOUND
-      2026-08-09 DURING THE DOC ALIGNMENT AUDIT. NOT FIXED -- IT NEEDS JUSTIN'S CALL (build them, or change
-      the copy). This is a LAUNCH BLOCKER either way.**
+- [ ] **4.18 🔴 ITEMS E AND F (WORKOUT BUILDER, MEAL BUILDER) ARE THE LEAD SUPPORTER PERK ON FOUR USER-FACING
+      SURFACES AND ARE TRACKED NOWHERE EXCEPT ONE TABLE ROW EACH SAYING "needs a full spec". THAT IS THE
+      FINDING. Raised 2026-08-09.**
+      🔴 **CORRECTED 2026-08-10, AND THE CORRECTION MATTERS BECAUSE THE ORIGINAL WAS ALARMIST AND WRONG.**
+      This was first written up as "the Supporter page sells two features that do not exist", offering
+      Justin a choice between building them and rewriting the copy. **Justin's answer: E and F are shipping
+      before launch, and he was surprised anyone assumed otherwise.**
+      ➡️ **So there is NOTHING WRONG WITH THE COPY. It describes the product being launched**, nobody has
+      ever paid (RevenueCat, 2026-08-09), the tier is not on sale to the public, and if E and F ship as
+      planned every word of it is true on day one. **Do not "fix" that copy.** The original framing is kept
+      below only so the four surfaces stay listed in one place.
+      ⚠️ **WHAT IS ACTUALLY TRUE IS NARROWER AND STILL WORTH ACTING ON: the copy is a cheque E and F have to
+      cash before launch, and they are the least-tracked items in this file.** Every other Supporter perk is
+      built and verified. These two are one row each in the section 6 table, with no spec, no rank in the
+      queue, and no launch-blocker tag, while being the FIRST thing a user is told they get.
+      ➡️ **NEXT STEP IS THE SPEC, not a copy change.** Both rows have said "needs a full spec" since
+      2026-07-29.
+      (Original writeup follows, kept for the four surfaces it names.)
       **`app/support.tsx`, the FIRST perk in the list**, whose own code comment says it goes first "because
       building things is now the actual reason to subscribe":
       > **Otto Gets To Work.** He works from everything you've logged, and **builds workouts into your
@@ -1679,13 +1694,14 @@ is what made him think work had been dropped -- it had not, but he had no way to
       ✅ **NOBODY HAS BEEN CHARGED FOR IT.** RevenueCat confirmed 2026-08-09 that no one has ever paid, and
       all 11 TestFlight testers are comped Supporters. **The exposure is entirely in front of us**, which is
       exactly why this has to be settled before launch and not after.
-      ➡️ **TWO HONEST OPTIONS, JUSTIN'S CALL. Both are fine; shipping neither is not.**
-      1. **Build E and F before launch.** They were always meant to be the headline perk and the copy was
-         written for the app we intended to have.
-      2. **Change both copies to what the plan actually does today** and reinstate the promise when E and F
-         land. Five perks remain and every one of them is real.
-      ⚠️ **DO NOT "FIX" THIS BY SOFTENING THE WORDS ONLY ON THE SUPPORT SCREEN.** It is stated in two places
-      and Otto's is the one that will be quoted back at us, because a user asks him what the plan includes.
+      ✅ **RESOLVED 2026-08-10: OPTION 1 WAS ALWAYS THE PLAN.** E and F ship before launch, so the copy
+      stands and the work item is the SPEC. Option 2 (rewriting the copy) is recorded as considered and
+      rejected, and must not be revived while E and F are still on track.
+      ⚠️ **THE FOUR SURFACES ARE LISTED HERE FOR ONE REASON: if E or F ever slips past launch, all four have
+      to change together, and Otto's is the one that gets quoted back at us because users ask him what the
+      plan includes.** `app/support.tsx` (lead perk), `functions/src/companionSystemPrompt.ts` (item 1 of
+      the list he is told is complete), `app/onboarding/all-set.tsx`, and `components/FirstWeekEndedModal.tsx`
+      (which frames it as something they LOSE on day 8).
       ⚠️ **NOT FLAGGED ANYWHERE BEFORE TODAY.** Zero mentions in any doc. Both halves were individually
       correct in their own file (the perk copy read as a description, the specs read as a build list) and
       nobody had put them side by side. Same shape as every other drift found today.

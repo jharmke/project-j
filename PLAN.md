@@ -27,6 +27,7 @@ places, three of them stale, and decisions made off the stale copy.
 📉 **2026-08-09 MILESTONE, recorded because PLAN says log the figure at real milestones only.** The Otto
 coach gate shipped and a free user's coaching question no longer reaches the AI at all.
 **Free active user $1.86 -> $0.93/yr. Break-even 2.02% -> 1.03% at 12-month Supporters, 1.63% at 6-month.**
+🔴 **AND THE FIGURE IS A FLOOR, NOT A CEILING, SINCE 2026-08-10: THE COACH GATE HAS A HOLE (4.18 item 19).** A free user asking for exercises attaches the workout-cap rider, which bypasses the gate entirely and reaches the AI. `gateOttoFree=1` assumes that costs nothing. Decided to cut, not yet built.
 ⚠️ **STILL RUN THE SCRIPT.** Those three figures are a snapshot of one milestone, not a source. The model
 gained a `gateOttoFree` dial the same day and the annual-price proration bug was fixed that morning, so
 anything written down before 2026-08-09 is wrong in both directions.
@@ -2005,6 +2006,38 @@ discussed before but i guess wasnt saved."* Decisions land here the moment they 
    hedged ("idk"):** Otto names the routine from sensible generic templates ("Push A", "Chest & Triceps")
    and the user can rename it whenever, exactly like a routine they made themselves. **No question asked at
    build time**, per decision 9.
+
+**19. 🔴 THE COACH GATE HAS A HOLE AND FREE USERS ARE REACHING THE AI TODAY. FOUND 2026-08-10 WHILE DECIDING
+   THE FREE-USER EXPERIENCE FOR E. ✅ JUSTIN'S CALL: CUT IT, CANNED REPLY. NOT YET BUILT.**
+   🔴 **THE MECHANISM.** The gate only runs when nothing rides on the message:
+   `ridersOnThisMessage = suffixParts` minus the reply-shape and pitch blocks, then
+   `if (ridersOnThisMessage.length === 0) { canned answer, then the coach gate }`.
+   **`buildWorkoutCapBlock` IS A RIDER.** So a free user asking for exercises attaches the 2-exercise cap,
+   riders is non-empty, **the whole canned-and-gate section is skipped, and the message goes to the AI.**
+   🔴 **SO "A FREE USER'S COACHING QUESTION NEVER REACHES THE AI" (4.13) IS NOT FULLY TRUE**, and has not
+   been since 4.13 shipped. **Two decisions eight days apart are in conflict and the older one silently
+   wins:** 2026-08-01 said free Otto may give general training guidance capped at two exercises; 2026-08-09
+   said free coaching questions never reach the model. Nobody noticed because they were taken in different
+   contexts and the rider ordering resolves it invisibly.
+   ⚠️ **AND IT MEANS `scripts/cost-model.js` IS OPTIMISTIC.** `gateOttoFree=1` assumes free coaching costs
+   nothing; some of it still bills. The published $0.93/free-active/yr is a floor until this is closed.
+   ⚠️ **MY OWN TEST GOT THIS WRONG AND SAID "GATED".** `_free_user_stocktake.cjs` does not simulate riders
+   and says so in its header, and a workout request is precisely the case where that limitation bites. The
+   result was shown to Justin before being checked. **The header warning is not a substitute for reading the
+   call site.** See [[feedback_verify_the_call_site]].
+   ✅ **DECIDED, JUSTIN 2026-08-10: "canned reply cut it."** A free build request gets a canned answer, zero
+   AI: the relevant general answer if one fits, plus the line that building sessions into the Workout tab is
+   part of the Supporter plan, carrying the Support button every pitch already has.
+   ➡️ **IMPLEMENTATION DIRECTION (not built): the 2-exercise cap becomes moot for free users**, because they
+   no longer get an AI answer to a training question at all. Either stop attaching the cap rider for free
+   users, or stop letting it bypass the gate. ⚠️ **Do NOT simply delete the cap** -- confirm first whether
+   any free path still reaches the model with an exercise request; the cap is the only thing bounding it.
+   ⚠️ **THIS IS A REMOVAL, AND REMOVALS ARE THE ONE THING THAT CANNOT BE WALKED BACK** -- so it happens
+   BEFORE launch, exactly like Otto's 10 -> 5 cap. **There are no free users and nobody has ever paid, so it
+   costs nothing today.** See [[feedback_add_after_launch_not_remove]].
+   🟡 **ONE PHRASING STILL LEAKS AND IS NOT PART OF THIS FIX:** *"can you put a leg day in my workout tab"*
+   routes as `app-term`, not coaching, so it reaches the AI. Fails open, fractions of a cent, logged not
+   fixed.
 
 **5. NEAR-DUPLICATE WORDING IS SETTLED AT THE PREVIEW.** When a user-named movement looks like an existing
    library entry, the preview asks once ("this looks like your Incline Bench Press, use that?"). It costs no

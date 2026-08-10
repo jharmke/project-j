@@ -1886,6 +1886,79 @@ discussed before but i guess wasnt saved."* Decisions land here the moment they 
    ➡️ **Any future addition to this feature must justify itself against this rule.** If it adds a question,
    it needs to earn it or become an inline option.
 
+**10. 🔴 ITEM J NOW BLOCKS ITEM E. SEQUENCING CHANGED 2026-08-10.** J was always "the cheapest way to make
+   the workout builder safe"; it turns out to GATE it. **The library has no bodyweight exercises at all** --
+   J's own justification says *"there is no PUSH-UP... nothing bodyweight at all, so anyone training at home
+   has almost nothing to pick from."* So Otto literally cannot build a home workout today. **Build J first.**
+   ✅ **J's instruction-writing is visible work, verified:** `instructions` render in two places in
+   `app/workout-library.tsx`. Not wasted effort.
+
+**11. EQUIPMENT: SEVEN TICKS, FILLED BY A LOCATION PRESET, TAGGED ON THE LIBRARY. ✅ Justin, 2026-08-10.**
+   **Dumbbells · Barbell · Squat rack · Bench · Cables · Machines · Pull-up / dip bar**, plus one
+   **cardio equipment** tick.
+   🔴 **WHY EQUIPMENT AND NOT LOGGED HISTORY, WHICH WAS PROPOSED FIRST AND WAS WRONG.** The suggestion was
+   that Otto infer available kit from what the user has logged. **Justin killed it with two cases:** a brand
+   new user has nothing logged, and somebody who only does cardio has a history saying "no lifts", which is
+   silence rather than information. **History says what someone HAS done; it cannot say what they CAN do.**
+   ✅ **Counted, not guessed:** of 78 library exercises, 19 need a machine or cable (10 cable, 8 machine,
+   1 rowing machine); only **3** need a rack (bench press, incline bench, barbell squat) while 6 more need
+   only a barbell, which is why rack and barbell are SEPARATE ticks; pull-up bar gates 3 and dips 2, so they
+   share one tick.
+   ❌ **NO PER-MACHINE TICKS.** Only 8 exercises hang off the whole Machines tick, so a wrong suggestion is a
+   one-tap swap in the preview, not a data problem. Twenty checkboxes to avoid that is a bad trade.
+   ❌ **NO SEVEN CARDIO TICKS EITHER.** One cardio tick; when Otto needs to name a machine he uses one the
+   user has actually logged, otherwise he names none and says "cardio, your pick".
+   ✅ **The tags can ride the EXISTING enrich-on-load migration** (`app/workout-library.tsx` ~2145), which
+   already patches library entries with new fields using `e.field ?? def.field` and therefore never
+   overwrites a user's own edit. No new migration to invent.
+   ⚠️ **TAG WHILE ITEM J HAS THE FILE OPEN.** J adds ~64 entries to the same file; tagging separately later
+   is pure duplicated effort.
+
+**12. WHAT ITEM J SHIPS CHANGES, DECIDED 2026-08-10 WHILE SIZING THE EQUIPMENT TICKS.**
+   ❌ **CUT from J's "FULL BODY / FUNCTIONAL" section** (the roadmap already flagged it as the easiest to
+   cut): **sled push, battle ropes, medicine ball slam, Turkish get-up.** Each needs equipment almost nobody
+   has, and cutting them avoids adding ticks for one exercise apiece. Users can still create them by hand.
+   ✅ **KEPT: burpee and thruster** (no equipment), and **kettlebell swing** -- Justin: *"that is common
+   enough i see people use those like daily."* ➡️ Tagged **"dumbbell or kettlebell"** rather than earning an
+   eighth tick, since swings and goblet squats work with either. Revisit if kettlebell work grows.
+   ✅ **KEPT: Smith Machine Bench Press.** One exercise today, so folded under the **Machines** tick rather
+   than its own; any gym with machines has a Smith. Splits out later if more Smith variants are added.
+   ✅ Trap bar and landmine tag as **barbell** rather than inventing a tick each.
+
+**13. NO RULE ABOUT BODYWEIGHT AT A FULL GYM, DELIBERATELY.** Pull-ups, chin-ups and dips are among the best
+   movements available and belong in a gym back or arm day; nothing changes about them. The only odd
+   outcome would be push-ups on a full-gym chest day, which is a one-tap swap in the preview.
+   🔴 **DO NOT WRITE OTTO AN INSTRUCTION FOR THIS.** Every nuanced judgement rule given to the model on this
+   project has eventually been ignored, silently. Watch what he actually produces on device and add a
+   constraint only with evidence. See [[feedback_harnesses_cannot_see_the_model]].
+
+**14. A "HOME WORKOUT" REQUEST OVERRIDES THE PROFILE, AND ASKS NOTHING.** The equipment profile is a DEFAULT,
+   not a lock. *"Make me a home workout"* means bodyweight only; if they have kit at home they say so in the
+   request or fix it in the preview. Predictable beats clever, and it respects decision 9.
+
+**15. 🆕 NEW WORK ITEM: THE CREATE / EDIT EXERCISE FORM NEEDS AN UPGRADE. Justin, 2026-08-10.** Not part of
+   E's core loop but it lands in the same area and E adds a reason for it.
+   **Today the form collects FOUR things: name, type (lift/cardio), one required tag, an optional note.**
+   ✅ **ONE FORM, NOT TWO** (Justin asked): the "Create new exercise" link inside the Create Routine modal
+   only adds a movement to THAT routine and never writes to the library. Create and Edit share the modal.
+   ➡️ **What it needs:** instructions and primary/secondary muscles (currently **no user can view or edit
+   either through the UI at all**, on their own exercises or the built-ins), the optional equipment field
+   from decision 11, and a visual polish pass. Justin: *"its so plain now."*
+   🔴 **THE TRAP TO DESIGN AROUND: `saveExercise` does `{ ...ex, ...form }`.** Today that is safe only
+   BECAUSE the form has no instructions or muscles field, so editing a built-in cannot wipe its curated
+   content. **Add those fields naively and an empty input overwrites a built-in's instructions with blank.**
+   Read-then-merge, never replace. See CLAUDE.md's data-integrity rule.
+   ⚠️ **UNSET EQUIPMENT MEANS "AVAILABLE ANYWHERE", AND JUSTIN'S CONDITION IS THAT THIS MUST BE OBVIOUS** in
+   the form, not implied.
+   🔴 **AND THE REASON THE FIELD EXISTS AT ALL, because the first answer here was wrong.** The argument was
+   "if you created the exercise you can evidently do it, so no field is needed". **Justin pushed back and he
+   was right: that is true about the PERSON and blind about the PLACE.** Create "Hack Squat" at your gym,
+   ask for a home workout two weeks later, and an untagged exercise is "available anywhere". The person most
+   likely to create custom exercises is exactly the person who also trains at home, so it is the main case
+   rather than an edge one.
+   ✅ **Otto always tags the equipment on exercises HE creates**, from the valid list, exactly like the 22
+   muscle keys. No UI involved. The optional field only ever concerns hand-made exercises.
+
 **5. NEAR-DUPLICATE WORDING IS SETTLED AT THE PREVIEW.** When a user-named movement looks like an existing
    library entry, the preview asks once ("this looks like your Incline Bench Press, use that?"). It costs no
    new UI because the confirmation step already exists, and it puts the judgement on the person who knows

@@ -1783,7 +1783,7 @@ Read per call, changeable without an App Store update.
 | B | Otto free/paid split | direction locked, prompt/KB work outstanding |
 | C | Non-AI walls / paywalls / limits | ⚠️ header says NOT COMPLETE, but the 2026-08-03 commit says closed after audit. **Verify before trusting either.** |
 | D | 7-day taste | 🔴 **THIS ROW WAS WRONG. CORRECTED 2026-08-05 by Justin, who said he was "almost certain it is fully built" and was right.** `FirstWeekEndedModal.tsx` exists and is wired into `app/(tabs)/index.tsx`. It said "specced not built" and I quoted that back at him as an unbuilt conversion lever. **Verify what remains on it before planning around it.** |
-| E | Workout builder | 🔴 **DECISIONS BELOW THIS TABLE (2026-08-10). Spec not written yet.** |
+| E | Workout builder | 🔴 **SPECCED 2026-08-10: `SPEC_workout_builder.md`. Nothing built. Blocked on J. 9 open items in its section 9.** |
 | F | Meal builder | needs a full spec |
 | G | Calorie floor | ✅ complete + device-verified 2026-08-03 |
 | H | Cost routing | ⏸️ **PARKED** -- measured 73% fallback + 57 cache entries. See `SPEC_otto_routing.md` |
@@ -1795,7 +1795,11 @@ Read per call, changeable without an App Store update.
 | N | Launch-modal priority | ✅ complete + device-verified 2026-08-04 |
 | O | Smart Coach cost pass | ➡️ **SUPERSEDED by section 1 of this file.** Item O's numbers were wrong. |
 
-#### 🏗️ ITEM E (WORKOUT BUILDER) -- DECISIONS TAKEN 2026-08-10. NOT A SPEC. Justin's calls, recorded as made.
+#### 🏗️ ITEM E (WORKOUT BUILDER) -- DECISIONS TAKEN 2026-08-10.
+➡️ **THE DETAIL NOW LIVES IN `SPEC_workout_builder.md`, WRITTEN 2026-08-10.** Read that for the design,
+the open items and the traps. These entries are kept as the dated record of what was decided and when.
+⚠️ **Per this file's own rule 3, PLAN holds status and ranking and the spec holds detail.** If the two ever
+disagree on DESIGN, the spec wins; on STATUS, PLAN wins.
 ⚠️ **WRITTEN DOWN BECAUSE THE LAST TIME THIS WAS DISCUSSED IT WAS LOST.** Justin, 2026-08-10: *"ugh this was
 discussed before but i guess wasnt saved."* Decisions land here the moment they are made, spec or no spec.
 

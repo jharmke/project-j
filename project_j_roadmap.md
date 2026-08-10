@@ -3601,6 +3601,8 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 Every major feature has a SPEC_*.md in the repo root. Active ones tied to open work above:
 - Wearable / TDEE: SPEC_wearable_robustness.md | Otto hub: SPEC_otto_notifications.md | Push notifications: SPEC_notifications.md
 - Sleep/Recovery: SPEC_sleep.md, SPEC_recovery_coach.md, SPEC_hr_zones.md | Lifting: SPEC_lifting_log.md | Workout sessions: SPEC_workout_sessions.md
+- **Otto's workout builder (THE PLAN item E): `SPEC_workout_builder.md`** -- written 2026-08-10, nothing built,
+  blocked on item J. Status lives in `PLAN.md` item E; that file holds the design, 9 open items and 5 traps.
 - Nutrition: SPEC_nutrition.md, SPEC_calorie_goal_hit.md, SPEC_calorie_floor.md, SPEC_ai_meal_estimator.md | Day/Reports: SPEC_day_score_and_summary.md, SPEC_weekly_summary.md, SPEC_monthly_summary.md, SPEC_evr_redesign.md, SPEC_comparison_challenge.md, SPEC_custom_reports.md
 - Faith/Coach: SPEC_faith_ai.md, SPEC_faith_tab.md, SPEC_smart_tips.md, SMART_COACH_SPEC.md, TRIGGER_LIBRARY.md | Cards: SPEC_card_gradient.md | Vacation: SPEC_vacation_mode.md | Tutorials: tutorial_system_spec.md
 - Body: SPEC_body_measurements.md, SPEC_body_progress.md, SPEC_weight_history.md

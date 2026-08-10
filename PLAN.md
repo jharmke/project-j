@@ -1782,7 +1782,7 @@ Read per call, changeable without an App Store update.
 | B | Otto free/paid split | direction locked, prompt/KB work outstanding |
 | C | Non-AI walls / paywalls / limits | ⚠️ header says NOT COMPLETE, but the 2026-08-03 commit says closed after audit. **Verify before trusting either.** |
 | D | 7-day taste | 🔴 **THIS ROW WAS WRONG. CORRECTED 2026-08-05 by Justin, who said he was "almost certain it is fully built" and was right.** `FirstWeekEndedModal.tsx` exists and is wired into `app/(tabs)/index.tsx`. It said "specced not built" and I quoted that back at him as an unbuilt conversion lever. **Verify what remains on it before planning around it.** |
-| E | Workout builder | needs a full spec |
+| E | Workout builder | 🔴 **DECISIONS BELOW THIS TABLE (2026-08-10). Spec not written yet.** |
 | F | Meal builder | needs a full spec |
 | G | Calorie floor | ✅ complete + device-verified 2026-08-03 |
 | H | Cost routing | ⏸️ **PARKED** -- measured 73% fallback + 57 cache entries. See `SPEC_otto_routing.md` |
@@ -1793,6 +1793,52 @@ Read per call, changeable without an App Store update.
 | M | Dietary restrictions / allergies | ✅ complete + device-verified 2026-08-04 |
 | N | Launch-modal priority | ✅ complete + device-verified 2026-08-04 |
 | O | Smart Coach cost pass | ➡️ **SUPERSEDED by section 1 of this file.** Item O's numbers were wrong. |
+
+#### 🏗️ ITEM E (WORKOUT BUILDER) -- DECISIONS TAKEN 2026-08-10. NOT A SPEC. Justin's calls, recorded as made.
+⚠️ **WRITTEN DOWN BECAUSE THE LAST TIME THIS WAS DISCUSSED IT WAS LOST.** Justin, 2026-08-10: *"ugh this was
+discussed before but i guess wasnt saved."* Decisions land here the moment they are made, spec or no spec.
+
+**1. WHERE A BUILT WORKOUT GOES. Three destinations, in order.**
+   a. Any genuinely new movement becomes a **custom exercise in the library** (`LibraryExercise`).
+   b. The workout itself is saved as a **custom routine** (`Routine`, `pj_routines`, the "My Routines" list).
+   c. It is then placed on **a specific day the user agrees to: today or a future date.**
+   ✅ **ALL THREE MECHANISMS ALREADY EXIST**, which makes E far smaller than its table row suggested. The
+   library already creates custom exercises and routines, and the Workout tab already has a **"Load to N
+   Days"** picker with this-week / next-week navigation and past days disabled. Otto drives existing flows
+   behind a preview; he does not need new machinery, and what he produces is an ordinary routine and an
+   ordinary exercise the user can edit or delete like anything they made themselves.
+   ❌ **THE WEEKLY TEMPLATE IS OUT OF SCOPE.** Nothing recurring, nothing that quietly changes every Monday.
+   `programs[dateKey]` only.
+
+**2. WHICH EXERCISES HE MAY USE. The default is the library, and the escape hatch is the user.**
+   - Unprompted ("build me a chest and bicep workout") he picks **only from the existing library**.
+   - He may go outside it **only when the user names a movement themselves** ("include decline bench press
+     and low cable flies").
+   🔴 **WHY THIS IS THE RIGHT RULE AND NOT JUST A CONSERVATIVE ONE:** Otto never invents a movement on his
+   own initiative, so a near-duplicate can only ever appear when the USER typed the name, which is exactly
+   the moment they know what they meant. It makes the duplicate problem rare and self-limiting instead of
+   systemic.
+
+**3. HE MUST WRITE THE LIBRARY'S EXACT NAME, NEVER HIS OWN PHRASING. This one is load-bearing.**
+   🔴 **PRs are keyed by `normalizeLiftName` in `utils/liftPR.ts`, which is trim + lowercase + collapse
+   spaces AND NOTHING ELSE.** So *"Decline Bench"* and *"Decline Bench Press"* are two different exercises,
+   and so are *"Low Cable Fly"* and *"Low Cable Flies"* -- there is no plural handling. **Any wording
+   difference splits the user's lifting history in two, silently.**
+   ➡️ So the app hands Otto the **actual library names** and treats anything off-list as a NEW exercise
+   rather than a guess. **Identical pattern to the 22 muscle keys already specced for this feature**, where
+   the app supplies the valid list and drops anything not on it. Checkable in code, not a rule he has to
+   remember. See [[feedback_harnesses_cannot_see_the_model]]: a prompt rule has lost to the model five times.
+
+**4. THE PREVIEW IS INLINE IN THE CHAT AND REVISABLE BY TALKING.** He shows the workout in the conversation;
+   the user can add, remove or swap by replying. Accepting is still the confirmation (the locked E constraint
+   further up this file), so nothing is written until they agree.
+   ⏳ **OPEN, FLAGGED NOT SOLVED:** a draft revised over several turns has to survive across them, and Otto's
+   history is capped at 12 turns (4.5, measured, deliberately left at 12). Mechanics question for the spec.
+
+**5. NEAR-DUPLICATE WORDING IS SETTLED AT THE PREVIEW.** When a user-named movement looks like an existing
+   library entry, the preview asks once ("this looks like your Incline Bench Press, use that?"). It costs no
+   new UI because the confirmation step already exists, and it puts the judgement on the person who knows
+   what they meant. This is the practical stand-in for item K (lift-name aliases), which is unbuilt.
 
 ### 7. NOT AI, AND BIGGER THAN MOST OF THIS
 - [~] **7.1 Apple Small Business Program.** ⚠️ **APPLIED TWICE, NO RESPONSE** (2026-07-13 and 2026-07-29,

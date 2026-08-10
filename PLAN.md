@@ -1656,6 +1656,40 @@ is what made him think work had been dropped -- it had not, but he had no way to
       handoff never reaches the gate, which is why faith stays free), crisis, and conversation history (so
       every message is treated as a first offence and the escalation copy is never exercised).
 
+- [ ] **4.18 🔴🔴 THE SUPPORTER PAGE SELLS TWO FEATURES THAT DO NOT EXIST, AND SO DOES OTTO. FOUND
+      2026-08-09 DURING THE DOC ALIGNMENT AUDIT. NOT FIXED -- IT NEEDS JUSTIN'S CALL (build them, or change
+      the copy). This is a LAUNCH BLOCKER either way.**
+      **`app/support.tsx`, the FIRST perk in the list**, whose own code comment says it goes first "because
+      building things is now the actual reason to subscribe":
+      > **Otto Gets To Work.** He works from everything you've logged, and **builds workouts into your
+      > Workout tab and meals from food you actually eat.**
+      **And `companionSystemPrompt.ts`, item 1 of the list Otto is told is COMPLETE:**
+      > Otto builds things from what they have logged: workouts into their Workout tab, meals from food they
+      > actually eat.
+      🔴 **NEITHER IS BUILT.** Verified four ways, not assumed: the SUPPORTER OTTO table in `SPEC_otto.md`
+      lists both as **NOT BUILT**; PLAN section 6 lists **E (workout builder)** and **F (meal builder)** as
+      "needs a full spec"; `utils/companionWorkouts.ts` only ever READS `pj_workout_state`; and the only
+      tokens Otto can emit are `[[stat:` and `[[route:`, so **there is no write path from a conversation
+      into the app at all.**
+      ⚠️ **THE PROMPT SAYING IT CONTAINS THE RULE AGAINST IT, ONE LINE BELOW.** *"Naming a feature that does
+      not exist is a false claim about something people pay for."* Item 1 of the list it is guarding is that
+      false claim, so the rule cannot save us: Otto is not hallucinating here, **he is being told to say it.**
+      🔴 **AND IT IS THE LEAD PERK ON BOTH SURFACES**, not a footnote, so it is the main reason a user is
+      given to pay.
+      ✅ **NOBODY HAS BEEN CHARGED FOR IT.** RevenueCat confirmed 2026-08-09 that no one has ever paid, and
+      all 11 TestFlight testers are comped Supporters. **The exposure is entirely in front of us**, which is
+      exactly why this has to be settled before launch and not after.
+      ➡️ **TWO HONEST OPTIONS, JUSTIN'S CALL. Both are fine; shipping neither is not.**
+      1. **Build E and F before launch.** They were always meant to be the headline perk and the copy was
+         written for the app we intended to have.
+      2. **Change both copies to what the plan actually does today** and reinstate the promise when E and F
+         land. Five perks remain and every one of them is real.
+      ⚠️ **DO NOT "FIX" THIS BY SOFTENING THE WORDS ONLY ON THE SUPPORT SCREEN.** It is stated in two places
+      and Otto's is the one that will be quoted back at us, because a user asks him what the plan includes.
+      ⚠️ **NOT FLAGGED ANYWHERE BEFORE TODAY.** Zero mentions in any doc. Both halves were individually
+      correct in their own file (the perk copy read as a description, the specs read as a build list) and
+      nobody had put them side by side. Same shape as every other drift found today.
+
 ### 4b. 🆕 OTTO HANDS FAITH CONVERSATION TO HALO -- ✅ BUILT + DEPLOYED 2026-08-05
 **Not a cost item.** A product-correctness bug found during the 2.2 verification check. Kept separate on
 purpose so it does not hide inside the cost work.

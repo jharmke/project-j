@@ -321,32 +321,60 @@ cannot build a home workout today. **Build J first.**
 
 ---
 
-## 9. 🔴 OPEN — NOT DECIDED, DO NOT GUESS
+## 9. 🔴 OPEN — RANKED. WORK TOP DOWN.
 
-1. **SESSION SHAPE.** When Otto builds a chest day, is he aiming at a number of exercises, a rough duration,
-   or whatever the request implies? Without a rule, "build me a chest workout" could come back as three
-   movements or eleven.
-2. **THE PREVIEW AND THE WHOLE INLINE ADD FLOW.** What it looks like, how revision by talking actually reads,
-   what Accept looks like, what happens on Decline, and how the day picker appears inside a chat. **The
-   biggest open item and the one section 2.2 constrains.**
-3. **`DayProgram.muscles`.** A day carries its own display string ("Chest · Shoulders · Triceps") separate
-   from per-exercise muscle data. **Who fills it in when Otto builds a day?** Raised by Justin 2026-08-10.
-4. **The draft surviving revision across turns.** Otto's history is capped at 12 turns (PLAN 4.5, measured,
-   deliberately left there). A routine revised over several messages has to survive that.
-5. **How the library reaches Otto**, and what it costs in tokens. Names are mandatory (section 4); muscles,
-   equipment and tags may also be needed. This is a cached-prompt question as much as a design one.
-6. **Where the preview renders.** A chat-embedded card, and every modal rule in this project applies
-   (centred, no bottom sheets, `ToastRenderer` inside the modal).
-7. **Validation before save.** Dropping off-list muscle keys, off-list equipment, invalid tags and unknown
-   exercise names, and what the user sees when something is dropped.
-8. **Naming the routine.** 🟡 DIRECTION: Otto names it from generic templates ("Push A", "Chest & Triceps")
-   and the user can rename it whenever. Recorded as direction rather than locked because Justin hedged.
-9. **Mindful.** ✅ Already decided elsewhere: **identical in Mindful** — sets, reps and exercise order are
-   none of the three modes' business. Listed here so nobody re-opens it.
+🔴 **THIS LIST IS ORDERED AND THE ORDER IS THE POINT.** It was first written as an unranked bullet list and
+Justin caught it immediately: *"why give me a list of 9 that isnt in order of what we should do them in?
+thats how things get lost."* He is right, and it is the same discipline that makes `PLAN.md` a ranked queue
+rather than a pile. **Ranking is by DEPENDENCY, not by size:** anything that constrains another item comes
+first, so no decision has to be taken twice.
+
+**J = needs Justin's call. M = mechanics, I bring a proposal rather than a question.**
+
+| # | Item | Who | Why here |
+|---|---|---|---|
+| **1** | **SESSION SHAPE** | **J** | Small but it CONSTRAINS #2: a 4-exercise preview and an 11-exercise preview are different screens. Cheap to settle, and settling it late means redesigning the preview. |
+| **2** | **THE PREVIEW AND THE WHOLE INLINE ADD FLOW** | **J** | **The big one.** Everything from #3 to #5 hangs off what the preview actually IS. |
+| **3** | **Where the preview renders** | M | Falls straight out of #2 and is really its second half. |
+| **4** | **The draft surviving revision across turns** | M | Only answerable once #2 defines what "revising" means. |
+| **5** | **Validation before save, and what the user sees when something is dropped** | M | Needs a preview to show it in. |
+| **6** | **How the library reaches Otto, and the token cost** | M | Independent of the preview, so it can run in parallel, but it must land before any build. |
+| **7** | **Naming the routine** | **J** | Nearly settled already, just needs confirming. Small and independent. |
+| **8** | **`DayProgram.muscles`** | **J** | Small, independent, and the easiest thing in this document to forget. Numbered so it cannot be. |
+
+**1. SESSION SHAPE.** When Otto builds a chest day, is he aiming at a number of exercises, a rough duration,
+or whatever the request implies? Without a rule, "build me a chest workout" could come back as three
+movements or eleven.
+
+**2. THE PREVIEW AND THE WHOLE INLINE ADD FLOW.** What it looks like, how revision by talking actually reads,
+what Accept looks like, what happens on Decline, and how the day picker appears inside a chat.
+**Constrained by section 2.2 (one screen, one action) and by 6.3 (a 4-day split is four routines).**
+
+**3. WHERE THE PREVIEW RENDERS.** A chat-embedded card, and every modal rule in this project applies
+(centred, never a bottom sheet, `ToastRenderer` inside the modal).
+
+**4. THE DRAFT SURVIVING REVISION ACROSS TURNS.** Otto's history is capped at 12 turns (PLAN 4.5, measured,
+deliberately left there). A routine revised over several messages has to survive that.
+
+**5. VALIDATION BEFORE SAVE.** Dropping off-list muscle keys, off-list equipment, invalid tags and unknown
+exercise names, and what the user sees when something is dropped.
+
+**6. HOW THE LIBRARY REACHES OTTO**, and what it costs in tokens. Names are mandatory (section 4); muscles,
+equipment and tags may also be needed. A cached-prompt question as much as a design one.
+
+**7. NAMING THE ROUTINE.** 🟡 DIRECTION: Otto names it from generic templates ("Push A", "Chest & Triceps")
+and the user can rename it whenever. Recorded as direction rather than locked because Justin hedged.
+
+**8. `DayProgram.muscles`.** A day carries its own display string ("Chest · Shoulders · Triceps") separate
+from per-exercise muscle data. **Who fills it in when Otto builds a day?** Raised by Justin 2026-08-10.
+
+✅ **NOT OPEN, LISTED SO NOBODY RE-OPENS IT: Mindful.** Identical in Mindful — sets, reps and exercise order
+are none of the three modes' business. Decided before this spec existed.
 
 ⚠️ **THIS LIST WILL GROW WHEN THE BUILD STARTS, AND THAT IS EXPECTED.** Justin, 2026-08-10: *"need to double
 check after its built for more questions/open items too cause there is just no way thats it."* He has been
-right every time he has said that so far.
+right every time he has said that so far. **New items get RANKED INTO this table, never appended to the
+bottom.**
 
 ---
 

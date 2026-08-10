@@ -1608,6 +1608,54 @@ is what made him think work had been dropped -- it had not, but he had no way to
       holdout 2 **19/74 26%, 1 wrong (the one above), 0 leaks**; cross-library **0 collisions, 0 unsafe,
       0/10 crisis-adjacent**; audit **71/71, 22/22, 30/30, 2/2, 0 wrong, 0 assertion failures**.
 
+- [~] **4.17 🆕 THE FREE-USER STOCK-TAKE, 2026-08-09. `_free_user_stocktake.cjs`, 318 questions through the
+      REAL production path** (both libraries, the router tiebreak and the coach gate, copied from
+      `appCompanion.ts` rather than assumed). **Every other harness measures one library in isolation**, so
+      "coverage is 26%" and "coverage is 75%" were both true of different things and neither answered the
+      only question that matters.
+      | | answered free | **sold to** | reaches the AI |
+      |---|---:|---:|---:|
+      | app: corpus A (tuned) 71 | 100% | 0% | 0% |
+      | app: holdout 1, 54 | 100% | 0% | 0% |
+      | app: holdout 2, 42 | 71% | **10%** | 19% |
+      | fitness: terse, 77 | 75% | **23%** | 1% |
+      | fitness: conversational, 74 | 26% | **72%** | 3% |
+      | **all 318** | **73%** | **24%** | **3%** |
+      💰 **100 free-user questions cost $0.025 against $0.72 before the gate and the libraries, a 97% cut**,
+      which is the 4.13 saving confirmed end to end rather than per-component.
+      🔴 **AND IT FOUND A PRODUCT BUG THE COMPONENT TESTS COULD NOT SEE: FOUR APP QUESTIONS ARE SOLD TO.**
+      A free user asking *"where do i change how many steps im aiming for"* or *"how do i empty out lunch"*
+      gets pointed at the Supporter plan instead of being told where the setting is. The canned library
+      misses them, and `routeCoachOrSupport` then calls them coaching, so the gate fires.
+      ⚠️ **THIS IS A REGRESSION THE GATE INTRODUCED.** Before 4.13 those questions went to the AI and were
+      answered correctly. 4.13 reasoned carefully about the router failing the OTHER way (a fitness question
+      reaching the Support side still gets answered, so it fails open); **nobody checked an app question
+      landing on the coach side, where it fails CLOSED.**
+      ❌ **A FIX WAS PROPOSED, MEASURED AND REJECTED THE SAME HOUR. DO NOT REBUILD IT.** The idea was to
+      exempt app how-tos from the gate using the matcher's own `isHowTo` regex, which already exempts them
+      from the own-data refusal. **Against every corpus in the project it looked perfect: rescues 2, leaks 0
+      coaching questions, costs $0.0045 per 100 questions.** That number was reported to Justin.
+      🔴 **IT WAS WRONG, AND THE CORPORA ARE WHY. Twenty coaching questions written in how-to shape were
+      then tried, and ELEVEN of them would have been freed straight to the AI**: *how do i build muscle*,
+      *how do i get abs*, *how can i sleep better*, *how do i cut without losing muscle*, *how do i start
+      lifting*, *how do i train for a marathon*. **A rescue of 2 bought with 11 leaks, and the leak is free
+      AI coaching, which is the one thing the gate exists to prevent.**
+      ➡️ **THE LESSON IS THE CORPUS, NOT THE REGEX. Every corpus on this project was written to measure
+      COVERAGE, so not one of them contained an attack on the GATE.** "Leaks zero" meant "leaks zero of the
+      cases we happened to have". Same family as the trigger guard built from the wrong array.
+      ⚠️ **The obvious second idea is already dead too:** both the app questions and the coaching how-tos
+      report `app=no-match, gen=no-match`, so "did an app answer nearly fire" cannot separate them either.
+      🔒 **MADE PERMANENT: `_free_user_stocktake.cjs` now carries those 20 questions as a GATE INTEGRITY
+      section and reports how many reach the AI. Today 6 answered free, 11 gated, 3 reach the AI** (the
+      router's deliberate fail-open). **It is a number to WATCH, not to drive to zero** -- if it jumps after
+      a change to the gate or the router, that change is handing out free AI coaching.
+      ⏳ The other two (*"why is my burn already so big"*, *"is the navy body fat reliable"*) are NOT gate
+      bugs: both have real app answers (`con.burned`, `con.navybf`) that the matcher failed to reach. They
+      are ordinary coverage misses and belong to 4.15.
+      ⚠️ **WHAT THE STOCK-TAKE CANNOT SEE, and it is written at the top of the file:** riders (so the faith
+      handoff never reaches the gate, which is why faith stays free), crisis, and conversation history (so
+      every message is treated as a first offence and the escalation copy is never exercised).
+
 ### 4b. 🆕 OTTO HANDS FAITH CONVERSATION TO HALO -- ✅ BUILT + DEPLOYED 2026-08-05
 **Not a cost item.** A product-correctness bug found during the 2.2 verification check. Kept separate on
 purpose so it does not hide inside the cost work.

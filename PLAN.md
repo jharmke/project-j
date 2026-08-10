@@ -1835,6 +1835,57 @@ discussed before but i guess wasnt saved."* Decisions land here the moment they 
    ⏳ **OPEN, FLAGGED NOT SOLVED:** a draft revised over several turns has to survive across them, and Otto's
    history is capped at 12 turns (4.5, measured, deliberately left at 12). Mechanics question for the spec.
 
+**6. HE MERGES INTO A DAY, HE NEVER REPLACES IT. Justin's call, and the app already agrees with him.**
+   *"if i have a couple cardio or core exercises in there, then want otto to add a lift routine, then i
+   wouldnt want him removing what i have in there already, right?"*
+   🔴 **THE EXISTING "LOAD TO N DAYS" FLOW REPLACES THE DAY'S EXERCISE LIST WHOLESALE AND ASSIGNS FRESH IDS.
+   OTTO MUST NOT REUSE THOSE SEMANTICS.** That flow means "make this day BE this routine", which is a
+   different verb from "add this workout".
+   ✅ **MERGING IS ALREADY THE APP'S OWN CONVENTION:** when Apple Health imports a workout it MERGES into the
+   day and dedupes by UUID (`app/(tabs)/workout.tsx`). Replacing would make Otto the odd one out.
+   🔴 **AND REPLACING HAS A CONCRETE COST, NOT JUST AN AESTHETIC ONE: AN IMPORTED APPLE SESSION LIVES AS AN
+   EXERCISE IN THE DAY**, carrying `fromAppleHealth` and `appleHealthUUID`. Wiping the exercise list deletes
+   that session, loses its heart-rate link (fetched by UUID) and drops it out of the dedupe set that stops
+   it being re-imported. Logged sets are keyed by exercise id, so fresh ids orphan them too.
+   ➡️ **Merge by default, always. Replace only if the user explicitly asks, offered in the preview, never
+   the default.** See CLAUDE.md's data-integrity rule: read-then-merge, never replace from scratch.
+
+**7. APPLE WATCH LINKING IS UNAFFECTED, VERIFIED NOT ASSUMED.** An Apple strength session lands as its own
+   entry in the day alongside whatever Otto put there, and the app pulls its HR by UUID. Otto's routine is
+   ordinary exercises in an ordinary day, so nothing changes. ⚠️ **The only thing that would break it is
+   replacing the day's exercises, which decision 6 rules out. The two decisions protect each other.**
+
+**8. SUPERSETS: NEVER UNPROMPTED, OFFERED IN THE PREVIEW. ✅ Justin, 2026-08-10 ("A to D is fine").**
+   The data model supports them (`supersetGroup`; consecutive lifts sharing the id render as one block) and
+   grouping is two taps and fully reversible, so this was a taste decision rather than a risky one.
+   - **He supersets when ASKED and never on his own initiative.** ⚠️ Note **zero preset routines or programs
+     use supersets** -- nothing the app ships demonstrates one, so volunteering them would introduce a
+     training style the app itself does not.
+   - **Discoverability comes from the PREVIEW offering the pairing as a one-tap option**, not from Otto
+     imposing it.
+   ❌ **REJECTED: "a narrow rule, accessories only, never main compounds."** It sounds tidy and it is the
+   weakest option available, because it depends on the model applying a nuanced judgement every time and the
+   failure is silent. **A prompt rule has lost to the model five times on this project.** The chosen design
+   needs no rule Otto can forget: the app asks, not him. See [[feedback_harnesses_cannot_see_the_model]].
+   ⏳ **LATER, NOT NOW: mirror the user's own history** -- if their routines already use supersets he may,
+   if they never have he does not. Better long-term answer, it is a FACT the app hands him rather than a
+   judgement (the muscle-keys pattern, which is the one that holds here), and it slots in without changing
+   anything: it only decides whether the preview bothers offering.
+
+**9. 🔴 THE PREVIEW IS ONE SCREEN WITH ONE PRIMARY ACTION. IT IS NOT A QUESTIONNAIRE. Justin, 2026-08-10:**
+   *"i just want to be sure user isnt being asked 50 questions when trying to build a workout or meal."*
+   ⚠️ **THIS IS A CONSTRAINT ON EVERY DECISION ABOVE AND ON THE MEAL BUILDER (F) TOO.** Three separate
+   "ask in the preview" moments had accumulated across decisions 5, 6 and 8, and stacked as a sequence they
+   would be exactly the interrogation he is describing.
+   ➡️ **They are OPTIONS VISIBLE ON THE PREVIEW, not questions asked in turn.** In the ordinary case the
+   user is asked **nothing**: request a workout, look at it, tap Accept.
+   - Merge is the DEFAULT, so it is never a question.
+   - The superset is a tappable suggestion, not a prompt.
+   - The duplicate-name check appears **only** when the user personally named a movement that resembles one
+     they already own, which is rare and is precisely when they would want to be asked.
+   ➡️ **Any future addition to this feature must justify itself against this rule.** If it adds a question,
+   it needs to earn it or become an inline option.
+
 **5. NEAR-DUPLICATE WORDING IS SETTLED AT THE PREVIEW.** When a user-named movement looks like an existing
    library entry, the preview asks once ("this looks like your Incline Bench Press, use that?"). It costs no
    new UI because the confirmation step already exists, and it puts the judgement on the person who knows

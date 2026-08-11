@@ -69,6 +69,32 @@ caught BEFORE they are in the app. Cost: one extra tap.
 
 ✅ **The preview is inline in the chat and revisable by talking.** Add, remove or swap by replying.
 
+### 2.1b What the preview IS: an inline card under the bubble (open item 2, in progress)
+✅ **DECIDED 2026-08-10: a structured CARD, rendered inline in the conversation.**
+❌ **NOT free text with an Accept pill.** Five exercises with sets and reps is a small table; as prose it
+reads like a wall and looks nothing like the rest of the app. A card is also the only version where "swap
+the flies" has something visible to point at.
+❌ **NOT a modal or a new screen.** Justin: *"not free text, not a pop up modal. pure inline in the
+conversation."*
+
+✅ **AND IT SITS OUTSIDE THE BUBBLE, LIKE AN ATTACHMENT IN A TEXT THREAD** (Justin's framing).
+🔴 **THE LAYOUT ALREADY WORKS THIS WAY, VERIFIED IN `components/AssistantChat.tsx`.** An Otto reply is not
+one bubble, it is a COLUMN (`styles.replyCol`) beside the avatar:
+```
+[avatar]  ┌──────────────────────┐
+          │ bubble: his text     │   <- styles.bubble
+          └──────────────────────┘
+            ▸ route / tutorial pills   <- styles.pillRow, ALREADY outside the bubble
+            share  thumbs up  down     <- styles.actionRow, ALREADY outside the bubble
+```
+➡️ **The card becomes one more sibling in that column**, so this needs no fight with the existing layout.
+✅ **ORDER: bubble, then the routine card, then any pills, then the action row.** The card is the substance
+of the reply, pills are navigation AWAY from it, and share/thumbs stays last where it is everywhere else.
+🟡 **PROVISIONAL ON SEEING IT.** Justin, 2026-08-10: *"hard to say yes without seeing it but yes i think that
+is right."* **The order and the card's visual design get a real pass on device before they are locked.**
+This project's standard is that Justin's eyes decide visual questions and that dev-build judgement is about
+correctness, not feel.
+
 ### 2.2 🔴 THE ONE-SCREEN RULE (Justin, 2026-08-10)
 > *"i just want to be sure user isnt being asked 50 questions when trying to build a workout or meal."*
 

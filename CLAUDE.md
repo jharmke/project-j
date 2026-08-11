@@ -141,7 +141,15 @@ react-native-draggable-flatlist for drag and drop
 expo-haptics for haptic feedback
 react-native-svg for charts and donuts
 crypto-js + @types/crypto-js for HMAC-SHA1 OAuth 1.0a signing (FatSecret API)
-DM Sans + Bebas Neue fonts
+Fonts: FOUR INDEPENDENT ROLES, all defined in `typography.ts`. **Never hardcode a fontFamily string in a
+screen. Import `Type` and use the role.** Active faces (each is a one-line A/B swap at the top of that file):
+`Type.display` ClashDisplay (page titles) · `Type.num` Rajdhani, tabular (every value) · `Type.ui` Onest
+(labels, buttons, everything structural) · `Type.voice` Ranade, a slab (Otto, coach insight, verses)
+⚠️ **This replaced DM Sans + Bebas Neue + Lora.** Bebas was doing every job at every size, which is how a
+display face becomes wallpaper. Full reasoning in `SPEC_visual_refresh.md`.
+⚠️ **Ranade ships one FAMILY PER WEIGHT and iOS falls back SILENTLY on a miss, so three weight changes once
+produced zero pixels of difference.** The .ttf name tables are patched. If a weight change ever produces no
+visible effect again, suspect the FONT, not the design.
 Ionicons throughout (@expo/vector-icons)
 EAS bundle ID: com.jharmke.projectj, Team: 8A8F5933RX
 
@@ -257,7 +265,7 @@ pj_rate_prompt -- Rate Us prompt budget: { firstSeenAt, lastAskedAt, totalAsks }
 ## Design System
 Background: #0d0d0f
 Cards: #1a1a24, borderWidth: 0.5, borderColor: rgba(255,255,255,0.06), borderTopColor: rgba(255,255,255,0.1), borderRadius: 14, padding: 16
-Card labels: fontSize: 9, letterSpacing: 3, color: #666680, textTransform: uppercase, fontFamily: DMSans_700Bold
+Card labels: fontSize: 9, letterSpacing: 3, color: #666680, textTransform: uppercase, fontFamily: Type.uiBold
 Primary text: #e8e8f0
 Muted label color: #666680
 Muted green: #0d9268
@@ -266,7 +274,7 @@ Muted red: #cc3333
 Blue interactive: #3b82f6
 Input backgrounds: #13131e
 Progress bar backgrounds: #12121a
-Interactive buttons: backgroundColor: rgba(59,130,246,0.15), borderWidth: 1, borderColor: rgba(59,130,246,0.3), borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4, color: #3b82f6, fontSize: 12, fontFamily: DMSans_600SemiBold
+Interactive buttons: backgroundColor: rgba(59,130,246,0.15), borderWidth: 1, borderColor: rgba(59,130,246,0.3), borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4, color: #3b82f6, fontSize: 12, fontFamily: Type.uiSemibold
 Verse card: backgroundColor: #16162a, borderWidth: 1, borderColor: rgba(212,134,10,0.4)
 Macro colors: Protein #0d9268, Carbs #c47d1a, Fat #a83232
 Tag pills: backgroundColor t.color+'99', borderColor t.color, text color #ffffff -- applies everywhere pills render

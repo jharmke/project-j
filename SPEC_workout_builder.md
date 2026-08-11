@@ -63,13 +63,15 @@ user made by hand.
 and accepted, never written straight in.** He builds the whole thing including any new movement, shows it,
 and **nothing is saved**. Accept and the routine lands AND the exercise joins the library. Decline and
 nothing was created.
+⚠️ **"Accept" throughout this document is the CONCEPT, not the button label. The button says where the
+workout is going (`ADD TO THURSDAY`) -- see 2.1e.**
 ➡️ Accepting IS the confirmation, which is what solves the mid-build problem (does he stop and ask, or build
 then confess?). It also means a wrong exercise, bad set counts or a movement their gym does not have get
 caught BEFORE they are in the app. Cost: one extra tap.
 
 ✅ **The preview is inline in the chat and revisable by talking.** Add, remove or swap by replying.
 
-### 2.1b What the preview IS: an inline card under the bubble (open item 2, in progress)
+### 2.1b What the preview IS: an inline card under the bubble (open item 2) — ✅ CLOSED 2026-08-10
 ✅ **DECIDED 2026-08-10: a structured CARD, rendered inline in the conversation.**
 ❌ **NOT free text with an Accept pill.** Five exercises with sets and reps is a small table; as prose it
 reads like a wall and looks nothing like the rest of the app. A card is also the only version where "swap
@@ -95,7 +97,7 @@ is right."* **The order and the card's visual design get a real pass on device b
 This project's standard is that Justin's eyes decide visual questions and that dev-build judgement is about
 correctness, not feel.
 
-### 2.1c Who supplies the numbers on the card (open item 2, in progress)
+### 2.1c Who supplies the numbers on the card (open item 2) — ✅ CLOSED 2026-08-10
 Each row of the card is `Bench Press · 4 sets · 8-10 reps · 90s rest`. **Otto supplies the NAME. The question
 was where the numbers come from.**
 
@@ -128,6 +130,135 @@ anything.** The load is supplied by the person who knows how the last set felt.
 ⚠️ **VALIDATION IS WHAT MAKES "OTTO MAY ADJUST" SAFE** — sets a small integer, reps a number or a range,
 rest a duration. Open item 5 owns the detail.
 
+### 2.1d What the card shows (open item 2a) — ✅ CLOSED 2026-08-11
+✅ **DECIDED: it is the My Routines card, condensed.** That card already exists in `app/workout-library.tsx`
+and is already a title, a count, the exercise rows and ONE primary button, which is the exact shape 2a was
+asking for and a shape Justin has already approved on device.
+🔴 **THE REAL WIN IS NOT SAVED BUILD TIME. The preview looks like the thing it is about to become**, so
+Accept has no visual surprise on the other side of it.
+
+**KEPT from the library card:** the cyan top edge (`borderTopWidth: 1.5`), the striped exercise block, the
+blue/amber dot per row (lift vs cardio), one primary button at the bottom.
+
+**CHANGED, and each change has a reason:**
+| Change | Why |
+|---|---|
+| ❌ Pencil + trash icons dropped | Nothing is saved yet, so there is nothing to edit or delete. Frees the top-right corner. |
+| ❌ Tag pills dropped | Tags are a filing system for the LIBRARY. Whether Otto sets them at all is still open (section 5). One less row. |
+| ✅ Exercise count moved onto the TITLE ROW | Into the corner the icons vacated. Same information, one line less height. **Kept rather than dropped because five exercises is the locked session shape (3.7), so the count is how the user sees at a glance that Otto stuck to it.** |
+| ✅ Rows RESTACKED: name on top, numbers beneath | See below. This is the biggest change. |
+| ✅ Names may wrap to TWO LINES instead of truncating | Costs nothing on the ~95% of rows that never need it. |
+| ✅ Inner padding 16 → 12 | Buys back most of what the narrower column costs. |
+
+🔴 **THE RESTACK, AND WHY THE LIBRARY'S RIGHT-HAND COLUMN COULD NOT COME ACROSS.** The library renders
+`{sets}×{reps}` right-aligned and pinned. Justin, 2026-08-11: *"3x6-9 looks like a math equation idk."*
+**He is right, and his own screenshot proves it**: the library contains rows that render `3×20 total` and
+`3×30s each side`, which read like an abandoned equation rather than a value.
+➡️ **The numbers move to their own line under the name, written as words:** `3 sets · 30s each side`.
+✅ **Four things fall out of that one change, which is why it wins:**
+1. The name gets the ENTIRE row width, so wrapping almost never fires and truncation effectively never does.
+   **This matters more here than in My Routines: the preview is the one moment the user has to read the name
+   correctly.** `Cable Fly (Low to High)` and `Cable Fly (High to Low)` are BOTH in the library.
+2. The awkward values become sentences instead of equations.
+3. **REST FITS**, which resolved an open question in the other direction. See below.
+4. The widest rows stop being the ones squeezing the names.
+⚠️ **COST, accepted: the card gets taller.** Roughly 70pt for five exercises.
+
+✅ **REST IS ON THE CARD.** Briefly considered leaving rest off and, to compensate, **taking rest away from
+Otto entirely** so nothing could change invisibly. The restack made that unnecessary: there is room, so rest
+is shown, so Otto keeps the ability to adjust it (2.1c) and the user still sees what he did.
+🔴 **The principle worth keeping: any number Otto may adjust MUST be visible on the card.** A feature whose
+entire safety story is "you look at it first" cannot have a field that changes silently.
+
+**Longest name in the library: `Overhead Tricep Extension (Cable)`, 33 characters** (MEASURED, grep of the
+library data). It fits on one line in the chat column with very little to spare.
+
+### 2.1e Accept, and where the workout goes (open item 2b) — ✅ CLOSED 2026-08-11
+✅ **THE BUTTON NAMES ITS DESTINATION: `ADD TO THURSDAY`, `ADD TO TODAY`. Not `ACCEPT`.** Justin, 2026-08-11:
+*"is it clear what 'accept' does? like does that add the routine to today?"* It was not. It is now.
+
+✅ **THE DAY IS SETTLED BEFORE THE CARD RENDERS** — from the user's request if they named one, **today if they
+did not.** If the day is wrong the user says so, exactly like any other change (2.1f).
+❌ **NO DAY GRID IN THE CARD.** The existing "Load to N Days" picker is a multi-day grid with week navigation.
+🔴 **Section 2.2 bites hardest here and this was flagged as the single most likely place for this feature to
+become the form Justin said he did not want.** Naming the day on the button costs one word and removes the
+entire surface.
+
+🔴 **"ADD" IS DELIBERATELY NOT "LOAD", AND THE DISTINCTION IS LOAD-BEARING.** `LOAD ROUTINE` / `LOAD PROGRAM`
+in the library REPLACE the day's exercise list wholesale and assign fresh ids. **Otto merges (6.1).** Reusing
+the app's existing verb would promise the wrong behaviour — and per 6.1 that wrong behaviour deletes imported
+Apple Health sessions and orphans logged sets. **The label and the semantics have to agree.**
+
+✅ **THE BUTTON IS SMALLER THAN THE LIBRARY'S, AND CENTERED.** Justin, 2026-08-11: *"doesnt need to be a
+fulllll size button in a small space."* Same styling (tint, border, `ButtonShine`, letterspaced caps), hugging
+its label rather than running full width, ~30pt tall instead of 37.
+⚠️ **CENTERED, NOT RIGHT-ALIGNED.** Right-aligned was proposed and Justin rejected it on sight 2026-08-11.
+⚠️ **Visual size ≠ tap target: it needs `hitSlop` out to the 44x44pt minimum** (CLAUDE.md build standard).
+
+✅ **THE APP APPENDS A STANDING LINE TO OTTO'S MESSAGE**, it is not left to him to write:
+> *"Tell me if anything needs changing, or add it to your Thursday."*
+Justin asked for this ("Otto should preface these cards with like lmk how this looks"). **Serving it as a
+fixed string rather than a prompt rule is deliberate** — see [[feedback_harnesses_cannot_see_the_model]], a
+prompt rule has lost to the model five times on this project. It is also the whole discoverability problem
+for 2.1f solved in one sentence and zero UI.
+
+### 2.1f Revising by talking, and spent cards (open items 2c + 2d) — ✅ CLOSED 2026-08-11
+✅ **THERE IS NO SECOND BUTTON. Revision happens by TYPING** — *"swap the flies for dumbbell press"* — because
+the chat already has a text input at the bottom. **A "Change" button could only ever do one thing: put the
+cursor in that box.** Accept stays the single primary action, which is section 2.2 holding.
+
+✅ **A REVISION PRODUCES A NEW CARD BELOW. The old card is not edited in place.** Three reasons:
+1. **The chat cannot edit earlier messages today.** Justin flagged this as the expected wrinkle; it is real.
+2. 🔴 **The thread calls `scrollToEnd` on every content-size change** (`AssistantChat.tsx` line 931, and again
+   at line 452). **So the new card is exactly where the user is already looking.** Editing the old one in
+   place would change something off-screen and force a scroll UP to confirm their own request landed.
+3. The "stack of near-identical cards" mess is handled by the spent state below.
+
+✅ **DECLINE IS NOT A BUTTON EITHER. Ignoring the card IS declining it.** Nothing was saved, so there is
+nothing to undo: the user types something else, or closes the chat.
+🔴 **BUT 2d'S REAL WORRY WAS NEVER "how do I dismiss this", IT WAS "what if I scroll back and tap Accept a
+week later" — AND A DECLINE BUTTON DOES NOT SOLVE THAT AT ALL.** Someone who ignored the card was never going
+to tap Decline.
+
+✅ **THE ANSWER IS THE SPENT STATE. Only the newest card in a conversation is live.** As soon as a card is
+superseded or accepted it greys out and **its button is replaced by a label** stating what happened:
+`Replaced`, or `Added to Thursday`. It stays in the transcript so the user can see what they asked for, and
+it cannot be tapped.
+✅ **ONE MECHANISM CLOSES THREE QUESTIONS**: stale-Accept (2d), which card is real during a revision (2c), and
+what a declined card looks like (2d).
+⚠️ **COST, accepted: a long back-and-forth leaves a column of greyed cards behind it.** Fine. It is a
+transcript, and only one card is ever tappable.
+⏳ **The mechanics of keeping the live draft alive across turns is open item 4**, not this. This section owns
+only what the user SEES.
+
+### 2.1g 🔬 THE HEIGHT QUESTION, AND WHY IT POINTS THE OTHER WAY
+Justin, 2026-08-11: *"just need to make sure the card doesnt exceed the length of the chat screen."*
+**Measured rather than guessed.** Constants MEASURED from `AssistantChat.tsx`; screen size 393x852 ASSUMED
+(exact handset unconfirmed); everything else DERIVED.
+
+| | |
+|---|---|
+| Panel top offset | `insets.top + 96` (line 882) |
+| Panel height | 697pt |
+| Chrome (handle 19 + header 58 + quota 24 + input 50 + disclaimer 36 + home bar 34) | 221pt |
+| **Visible message area** | **~476pt** |
+| Otto's column width (393 − 32 padding − 26 avatar − 8 gap) | 327pt |
+| Card height, five exercises | ~331pt |
+| Whole reply block (bubble + card + action row) | ~445pt |
+
+🔴 **THE WORRY INVERTS ONCE `scrollToEnd` IS ACCOUNTED FOR. The newest content is PINNED TO THE BOTTOM, so
+the Accept button is always visible.** What scrolls off the TOP is Otto's message and, in the worst case, the
+routine name and the first exercise. One flick up recovers it, and it is how every chat on the phone behaves.
+➡️ **So the requirement is "Accept is always reachable", NOT "nothing scrolls".** The latter cannot be
+honoured anyway: **the app's own Large text setting breaks it** (`fontScale`, see `SPEC_accessibility.md`).
+➡️ Keeping Otto's message short when a card is attached is still worth doing, but it is now about landing on
+a card whose TITLE you can see, not about reaching the button. Lower priority than it looked.
+
+🖼️ **A to-scale mockup of all of the above was built and approved 2026-08-11** (three phones: ordinary case,
+stress case with the library's longest names, and a revision exchange showing the spent state). Rendered at
+true 393x852 in Light + Cyan using the app's real typefaces.
+⚠️ **It lives in a session scratchpad and is NOT a durable artifact.** This section is the record.
+
 ### 2.2 🔴 THE ONE-SCREEN RULE (Justin, 2026-08-10)
 > *"i just want to be sure user isnt being asked 50 questions when trying to build a workout or meal."*
 
@@ -136,7 +267,7 @@ rest a duration. Open item 5 owns the detail.
 exactly that interrogation.
 
 ➡️ **They are OPTIONS VISIBLE ON THE PREVIEW, not questions asked in turn.** In the ordinary case the user is
-asked **nothing**: request a workout, look at it, tap Accept.
+asked **nothing**: request a workout, look at it, tap the button (which says `ADD TO THURSDAY`, see 2.1e).
 - Merge is the DEFAULT, so it is never a question.
 - The superset is a tappable suggestion, not a prompt.
 - The duplicate-name check appears only when the user personally named a movement resembling one they own.
@@ -482,7 +613,8 @@ first, so no decision has to be taken twice.
 | # | Item | Who | Why here |
 |---|---|---|---|
 | ~~1~~ | ~~SESSION SHAPE~~ | -- | ✅ **CLOSED 2026-08-10. Five exercises, see section 3.7.** |
-| **2** | **THE PREVIEW AND THE INLINE ADD FLOW** 🟡 **IN PROGRESS** | **J** | **The big one.** 3 parts settled 2026-08-10, **4 left: 2a card contents, 2b accept + day picking, 2c revising by talking, 2d decline.** Everything from #3 to #5 hangs off it. |
+| ~~2~~ | ~~THE PREVIEW AND THE INLINE ADD FLOW~~ | -- | ✅ **CLOSED 2026-08-11. All seven parts. See 2.1b through 2.1g.** |
+| **9** | **THE PROGRAM CARD — what a multi-day build previews as** | **J** | 🆕 **ADDED 2026-08-11.** Inherits every decision in #2 and cannot be designed before it, so it ranks here. |
 | **3** | **Where the preview renders** | M | Falls straight out of #2 and is really its second half. |
 | **4** | **The draft surviving revision across turns** | M | Only answerable once #2 defines what "revising" means. |
 | **5** | **Validation before save, and what the user sees when something is dropped** | M | Needs a preview to show it in. |
@@ -490,36 +622,43 @@ first, so no decision has to be taken twice.
 | **7** | **Naming the routine** | **J** | Nearly settled already, just needs confirming. Small and independent. |
 | **8** | **`DayProgram.muscles`** | **J** | Small, independent, and the easiest thing in this document to forget. Numbered so it cannot be. |
 
+⚠️ **NUMBERING NOTE, 2026-08-11: ITEM 9 IS NEW AND IS RANKED SECOND DESPITE ITS NUMBER. NOTHING WAS
+RENUMBERED.** The numbers are stable IDs so that nothing Justin is already tracking moves under him; the ROW
+ORDER in the table above is the ranking. Required by CLAUDE.md ("if you renumber or reorganise anything
+Justin has been tracking, SAY SO and leave a mapping"). Items 3-8 are untouched and mean exactly what they
+meant before.
+
 **1. SESSION SHAPE.** When Otto builds a chest day, is he aiming at a number of exercises, a rough duration,
 or whatever the request implies? Without a rule, "build me a chest workout" could come back as three
 movements or eleven.
 
-**2. THE PREVIEW AND THE WHOLE INLINE ADD FLOW. 🟡 IN PROGRESS — three parts settled 2026-08-10, four left.**
-**Constrained by section 2.2 (one screen, one action) and by 6.3 (a 4-day split is four routines).**
+**2. THE PREVIEW AND THE WHOLE INLINE ADD FLOW. ✅ CLOSED 2026-08-11 — all seven parts.**
+➡️ **The decisions live in sections 2.1b through 2.1g.** Summary only, so this list stays a queue:
+- **2.1b** a structured CARD, not free text and not a modal, sitting OUTSIDE the bubble like an attachment
+- **2.1c** Otto supplies exercise NAMES, the app supplies sets/reps/rest from the library
+- **2.1d (2a)** the My Routines card condensed: no pencil/trash, no tag pills, count on the title row, rows
+  restacked with the numbers as words under the name, rest included, names may wrap to two lines
+- **2.1e (2b)** the button NAMES its destination (`ADD TO THURSDAY`), the day is settled before the card
+  renders, no day grid, "Add" deliberately not "Load", smaller and CENTERED, app appends a standing line
+- **2.1f (2c + 2d)** revision by TYPING with no second button, a new card below rather than an edit in
+  place, and the SPENT STATE (only the newest card is live) closing the stale-Accept hole
+- **2.1g** the height maths, and why `scrollToEnd` inverts the worry
 
-✅ **SETTLED SO FAR:** it is a structured CARD not free text and not a modal (2.1b) · it sits OUTSIDE the
-bubble like an attachment, order bubble → card → pills → actions, provisional on Justin seeing it (2.1b) ·
-Otto supplies exercise NAMES and the app supplies sets/reps/rest from the library, with Otto able to adjust
-within validated limits (2.1c).
-
-🔴 **STILL OPEN, IN THIS ORDER. THIS IS WHERE THE NEXT SESSION PICKS UP:**
-
-**2a. WHAT THE CARD SHOWS beyond the exercise rows.** A title? The target day? Total exercise count?
-Anything else? Small, and it comes first because 2b and 2c both sit on top of the answer.
-
-**2b. ACCEPT.** One button, or is the day chosen ON the card? The existing "Load to N Days" picker is a
-multi-day grid with week navigation and past days disabled (section 2) — **does that grid appear in the
-card, or does Accept use a sensible default like today and let the user move it after?**
-⚠️ Section 2.2 bites hardest here: a day grid inside a chat card is the most likely place for this to turn
-into a form.
-
-**2c. REVISING BY TALKING.** *"Swap the flies for dumbbell press."* **Does the existing card update in
-place, or does a new card appear below it?** ⚠️ **Expect a wrinkle here** — in-place editing of an earlier
-message is not something the chat does today, and a stack of near-identical cards is its own mess. Related
-to open item 4 (the draft surviving 12 turns) but not the same question.
-
-**2d. DECLINE.** Is there a visible way to dismiss the card, or does the user just ignore it and carry on?
-⚠️ If a card is never dismissed, what happens when they scroll back to it a week later and tap Accept?
+**9. 🆕 THE PROGRAM CARD — WHAT A MULTI-DAY BUILD PREVIEWS AS.** Raised by Justin 2026-08-11: *"is it clear
+when he builds a program also? does he also need to send a card or preview for that?"*
+🔴 **THIS WAS ALREADY FLAGGED IN PROSE (6.3) AND HAD NO NUMBER, WHICH ON THIS PROJECT IS HOW THINGS GET
+LOST.** 6.3 says he can build a week or a month, and warns in as many words: *"a 4-day split is four routines
+to read before anything can be accepted. Section 2.2 has to survive this. Design the single-routine preview
+first."* That instruction was followed — #2 is done — so this is now the next thing.
+- **The app already has a second card shape for this**: `PRESET_PROGRAMS` render in the library's Programs
+  tab as a name, a description, a row of per-day pills (`MON · PUSH`, `TUE · OFF`, colour-coded, rest days
+  greyed) and a `LOAD PROGRAM` button.
+- **The open question is what the chat version is.** One card with day pills that expands? A card per day?
+  Something that summarises and defers the detail?
+- ⚠️ **Section 2.2 is the whole difficulty.** Four routines is four sets of five exercises to review, and the
+  one-screen rule was written to stop exactly this.
+- ⚠️ **"Add" vs "Load" (2.1e) needs re-deciding here**, because a program lands on multiple days and the
+  merge-not-replace rule (6.1) has to hold on every one of them.
 
 **3. WHERE THE PREVIEW RENDERS.** A chat-embedded card, and every modal rule in this project applies
 (centred, never a bottom sheet, `ToastRenderer` inside the modal).

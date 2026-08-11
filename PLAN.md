@@ -1783,7 +1783,7 @@ Read per call, changeable without an App Store update.
 | B | Otto free/paid split | direction locked, prompt/KB work outstanding |
 | C | Non-AI walls / paywalls / limits | ⚠️ header says NOT COMPLETE, but the 2026-08-03 commit says closed after audit. **Verify before trusting either.** |
 | D | 7-day taste | 🔴 **THIS ROW WAS WRONG. CORRECTED 2026-08-05 by Justin, who said he was "almost certain it is fully built" and was right.** `FirstWeekEndedModal.tsx` exists and is wired into `app/(tabs)/index.tsx`. It said "specced not built" and I quoted that back at him as an unbuilt conversion lever. **Verify what remains on it before planning around it.** |
-| E | Workout builder | 🔴 **SPECCED 2026-08-10: `SPEC_workout_builder.md`. Nothing built. Blocked on J. 9 open items in its section 9.** |
+| E | Workout builder | 🔴 **SPECCED 2026-08-10: `SPEC_workout_builder.md`. Nothing built. Blocked on J.** Open items 1 and 2 CLOSED; **item 9 (the program card) ADDED 2026-08-11 and ranked second.** 7 open. |
 | F | Meal builder | needs a full spec |
 | G | Calorie floor | ✅ complete + device-verified 2026-08-03 |
 | H | Cost routing | ⏸️ **PARKED** -- measured 73% fallback + 57 cache entries. See `SPEC_otto_routing.md` |
@@ -1839,6 +1839,42 @@ discussed before but i guess wasnt saved."* Decisions land here the moment they 
    further up this file), so nothing is written until they agree.
    ⏳ **OPEN, FLAGGED NOT SOLVED:** a draft revised over several turns has to survive across them, and Otto's
    history is capped at 12 turns (4.5, measured, deliberately left at 12). Mechanics question for the spec.
+
+**4b. THE PREVIEW IS FULLY DESIGNED. ✅ CLOSED 2026-08-11 (spec open item 2, all seven parts).**
+   ➡️ **DETAIL LIVES IN `SPEC_workout_builder.md` SECTIONS 2.1b-2.1g.** Headlines only, per rule 3:
+   - **The card is the My Routines card, condensed** -- no pencil/trash (nothing is saved yet), no tag pills,
+     exercise count moved onto the title row. The preview looks like the thing it becomes.
+   - **Rows restacked**: name on its own line, `3 sets · 8-10 reps · 90s rest` beneath it as WORDS. Justin
+     rejected the library's right-aligned `3×6-9` on sight (*"looks like a math equation"*), and his own
+     screenshot proved it -- the library really renders `3×30s each side`. **Rest is shown, which means Otto
+     keeps the ability to adjust it: any number he may change MUST be visible on the card.**
+   - 🔴 **The button NAMES ITS DESTINATION -- `ADD TO THURSDAY`, not `ACCEPT`.** Justin: *"is it clear what
+     'accept' does?"* It was not. **The day is settled before the card renders; there is NO day grid**, which
+     was the most likely place this became the form he did not want. **"Add" is deliberately not "Load":**
+     the library's LOAD verb replaces a day wholesale, Otto merges (decision 6), and per that decision the
+     wrong verb would promise behaviour that deletes imported Apple Health sessions.
+   - **Smaller and CENTERED.** Right-aligned was proposed and rejected on sight. Needs `hitSlop` to 44pt.
+   - **No second button anywhere.** Revision is TYPING; a "Change" button could only put the cursor in the
+     text box that is already there. **Decline is not a button either -- ignoring the card IS declining it**,
+     because nothing was saved.
+   - 🔴 **THE SPENT STATE closes three questions with one mechanism.** Only the newest card is live;
+     superseded and accepted cards grey out and swap the button for `Replaced` / `Added to Thursday`. **2d's
+     real worry was never "how do I dismiss this", it was "what if I scroll back and tap Accept a week
+     later" -- and a Decline button does not solve that at all**, since anyone who ignored it never taps it.
+   - **The app APPENDS the standing line** (*"Tell me if anything needs changing, or add it to your
+     Thursday"*) rather than trusting Otto to write it. [[feedback_harnesses_cannot_see_the_model]].
+   ✅ **THE HEIGHT WORRY INVERTED ONCE MEASURED.** ~476pt of visible message area against a ~331pt card, but
+   the chat calls `scrollToEnd` on every content-size change, **so Accept is always pinned into view and it is
+   the TOP of the card that scrolls away.** ➡️ The requirement is "Accept is always reachable", never "nothing
+   scrolls" -- the latter cannot be honoured anyway, because the app's own Large text setting breaks it.
+
+**4c. 🆕 THE PROGRAM CARD IS NOW ITS OWN OPEN ITEM (spec item 9, ranked SECOND). Raised by Justin 2026-08-11.**
+   *"is it clear when he builds a program also? does he also need to send a card or preview for that?"*
+   🔴 **IT WAS ALREADY IN THE SPEC AS PROSE (6.3) WITH NO NUMBER, WHICH IS EXACTLY HOW THINGS GET LOST HERE.**
+   6.3 already warned that a 4-day split is four routines to read before anything can be accepted and said to
+   design the single-routine preview FIRST. That was done, so this is next.
+   ⚠️ **Nothing in the spec's open list was renumbered** -- item 9 is a new stable id sitting in rank position
+   two. Mapping noted in the spec under the table, per CLAUDE.md.
 
 **6. HE MERGES INTO A DAY, HE NEVER REPLACES IT. Justin's call, and the app already agrees with him.**
    *"if i have a couple cardio or core exercises in there, then want otto to add a lift routine, then i

@@ -144,7 +144,7 @@ blue/amber dot per row (lift vs cardio), one primary button at the bottom.
 | Change | Why |
 |---|---|
 | ❌ Pencil + trash icons dropped | Nothing is saved yet, so there is nothing to edit or delete. Frees the top-right corner. |
-| ❌ Tag pills dropped | Tags are a filing system for the LIBRARY. Whether Otto sets them at all is still open (section 5). One less row. |
+| ❌ Tag pills dropped | ✅ **Re-confirmed 2026-08-11, AFTER 6.6 decided Otto DOES tag routines.** They still stay off: the pills appear on the library's routine card and as pills + day-strip dots on the Workout tab **the moment it lands**, so the consequence is visible immediately after accepting and is two taps to change. Not worth the card's height. |
 | ✅ Exercise count moved onto the TITLE ROW | Into the corner the icons vacated. Same information, one line less height. **Kept rather than dropped because five exercises is the locked session shape (3.7), so the count is how the user sees at a glance that Otto stuck to it.** |
 | ✅ Rows RESTACKED: name on top, numbers beneath | See below. This is the biggest change. |
 | ✅ Names may wrap to TWO LINES instead of truncating | Costs nothing on the ~95% of rows that never need it. |
@@ -552,6 +552,51 @@ movements so you can add weight to them, and if the exercises change every week 
 ✅ **If a user says they do not want the same thing every time, he varies it. No argument.** The research
 objects to random weekly churn, not to variety. The preview already supports swapping.
 
+### 6.6 A DAY'S IDENTITY: focus, customLabel and tags — ✅ DECIDED 2026-08-11
+🔴 **THESE ARE THREE SEPARATE FIELDS ON `DayProgram` AND THEY ARE EASY TO CONFLATE. I DID, 2026-08-11, AND
+JUSTIN CAUGHT IT** (*"the label and the tag on the workout tab are not the same thing"*). Verified in code:
+
+| Field | What it is | Who fills it | Where the user SEES it |
+|---|---|---|---|
+| `focus` | The day's focus name | **Automatic.** Loading a routine sets `focus = routine.name` (`workout.tsx` ~2010) | The word after the day in the **Programs card pills** (`MON · PUSH` -- "PUSH" is `focus`, `workout-library.tsx` ~2956) and as a small label under each date in a **report** (`report.tsx` ~651). ⚠️ **NOT drawn anywhere on the Workout tab.** |
+| `customLabel` | Free text the user types | **The user only.** The "Add label..." field on the day header (`workout.tsx` ~2458), sharing an editor with `muscles` | The Workout tab day header. **This is the label Justin means when he says "the label".** |
+| `tags` | The coloured workout tags | **Automatic.** Loading a routine copies `tags = routine.tags` onto the day | **Pills under the day header (up to 6, two rows) AND small coloured dots on every day button in the week strip.** The dots are what make a week LOOK like a program. |
+
+✅ **OTTO TAGS THE ROUTINE, NOT THE DAY.** Justin asked whether Otto should assign the day tag the way the
+program feature does. He should -- but through the routine, because **loading a routine already copies its
+tags onto the day.** A tagged routine tags its day for free, down a path that already exists. Tagging days
+directly would be a second mechanism doing the same job.
+➡️ **`focus` needs no decision at all**: it is already set to the routine's name automatically.
+
+🔴 **HE MAY ONLY USE THE SIX LOCKED DEFAULT TAGS: `tag_push`, `tag_pull`, `tag_legs`, `tag_core`,
+`tag_cardio`, `tag_rest`.** Never a user-created tag, never a new one.
+**Justin found the problem and then found the answer himself:** *"a user can name the tags whatever they
+want, so Otto has no idea what to pick if they're named nonsense... nevermind, we have the locked
+default/preset tags."* **Verified rather than taken:** all six carry `locked: true`, the label field is
+`editable={!editingTag?.locked}`, the delete control is hidden for them, and they are re-merged into the
+user's tag list on every load so they always exist (`workout.tsx` ~865-890).
+✅ **AND HE PICKS BY ID, NOT LABEL** (`tag_push`, not "Push"), which closes even the legacy edge where an old
+install carries a renamed default. **Same pattern as the 22 muscle keys and the library exercise names: the
+app supplies the valid list, anything else is dropped.** Third time this spec has landed here.
+❌ **REJECTED: handing Otto the user's full tag list and letting him match by label.** Muscle keys are a fixed
+vocabulary with known meaning; user tag labels are arbitrary strings with unknown meaning. Matching on them
+is exactly the kind of thing that fails silently. See [[feedback_detectors_are_brittle]].
+➡️ If a user wants their own tag on the day, it is two taps on the Workout tab.
+
+🔴 **AND THIS IS WHY OTTO NEVER CREATES A "PROGRAM". A PROGRAM IN THIS APP HAS NO EXERCISES IN IT.**
+Verified: every `PRESET_PROGRAMS` day is `exercises: []`, and the program builder only ever writes `type`,
+`focus`, `color` and `tags` -- it preserves `exercises` and provides no way to add any (`workout-library.tsx`
+~1211-1220). **A program is a SHAPE for the week, not a set of workouts**, and `Load Program` writes
+`weeklyTemplate` + `activeProgramName`, which decision 1 already ruled out of scope as recurring.
+➡️ **So "Otto builds a program" means N routines placed on N specific dates, each date tagged.** The user
+gets a coloured, labelled week that reads exactly like a program week, with nothing recurring.
+⚠️ **PROGRAMS THEMSELVES ARE NOT GOING ANYWHERE, AND CUTTING THEM IS NOT ON THE TABLE.** Justin asked
+(*"are programs even worth having at this point?"*). They are load-bearing: the Workout tab resolves every
+day as `programs[dateKey] || weeklyTemplate[dayName] || BLANK_DAY`, so the template is the standing default
+for every future day; the Home screen reads it; and the achievement `workout_first_program` unlocks off
+`activeProgramName`. Removing it would change a day's fallback, alter the home card and orphan an achievement
+that may already be unlocked. See [[feedback_add_after_launch_not_remove]].
+
 ---
 
 ## 7. FREE VS SUPPORTER
@@ -614,7 +659,7 @@ first, so no decision has to be taken twice.
 |---|---|---|---|
 | ~~1~~ | ~~SESSION SHAPE~~ | -- | ✅ **CLOSED 2026-08-10. Five exercises, see section 3.7.** |
 | ~~2~~ | ~~THE PREVIEW AND THE INLINE ADD FLOW~~ | -- | ✅ **CLOSED 2026-08-11. All seven parts. See 2.1b through 2.1g.** |
-| **9** | **THE PROGRAM CARD — what a multi-day build previews as** | **J** | 🆕 **ADDED 2026-08-11.** Inherits every decision in #2 and cannot be designed before it, so it ranks here. |
+| **9** | **THE PROGRAM CARD — what a multi-day build previews as** 🟡 **IN PROGRESS** | **J** | 🆕 **ADDED 2026-08-11.** Part one closed same day (what a multi-day build IS — see 6.6). **Part two open: the REVIEW problem**, 3-4 routines to read before accepting. |
 | **3** | **Where the preview renders** | M | Falls straight out of #2 and is really its second half. |
 | **4** | **The draft surviving revision across turns** | M | Only answerable once #2 defines what "revising" means. |
 | **5** | **Validation before save, and what the user sees when something is dropped** | M | Needs a preview to show it in. |
@@ -650,15 +695,25 @@ when he builds a program also? does he also need to send a card or preview for t
 LOST.** 6.3 says he can build a week or a month, and warns in as many words: *"a 4-day split is four routines
 to read before anything can be accepted. Section 2.2 has to survive this. Design the single-routine preview
 first."* That instruction was followed — #2 is done — so this is now the next thing.
-- **The app already has a second card shape for this**: `PRESET_PROGRAMS` render in the library's Programs
-  tab as a name, a description, a row of per-day pills (`MON · PUSH`, `TUE · OFF`, colour-coded, rest days
-  greyed) and a `LOAD PROGRAM` button.
-- **The open question is what the chat version is.** One card with day pills that expands? A card per day?
-  Something that summarises and defers the detail?
-- ⚠️ **Section 2.2 is the whole difficulty.** Four routines is four sets of five exercises to review, and the
-  one-screen rule was written to stop exactly this.
-- ⚠️ **"Add" vs "Load" (2.1e) needs re-deciding here**, because a program lands on multiple days and the
-  merge-not-replace rule (6.1) has to hold on every one of them.
+✅ **PART ONE CLOSED 2026-08-11 -- WHAT A MULTI-DAY BUILD EVEN IS. See 6.6.** Otto never creates a `Program`
+object, because a program in this app has no exercises in it. He builds **N routines placed on N specific
+dates, each routine carrying one of the six LOCKED tags**, which the existing load path copies onto the day.
+The user gets a coloured, labelled week that reads like a program week, with nothing recurring. `focus` needs
+no decision (it is set from the routine name automatically) and `customLabel` stays the user's.
+❌ **The library's Programs card is NOT the model for the chat version**, since it describes a thing with
+nothing in it.
+
+🔴 **PART TWO IS STILL OPEN, AND IT IS THE HARD HALF: THE REVIEW PROBLEM.**
+- **A 3-day split is 3 routines and 15 exercises to read before anything can be accepted; a 4-day split is
+  20.** Section 2.2 (one screen, one action) was written to stop exactly this, and 6.3 flagged it as the real
+  cost of this feature: *"the review burden is the real cost, not the build."*
+- **The open question is what the chat shows.** One card per day, stacked? One summary card that expands? A
+  week-shaped card that defers the exercise detail until asked?
+- ⚠️ **The `ADD TO THURSDAY` button (2.1e) needs re-deciding here.** A multi-day build lands on several days,
+  and the merge-not-replace rule (6.1) has to hold on every one of them. One button for all of it, or one
+  per day?
+- ⚠️ **The spent state (2.1f) needs re-checking too**: if a user accepts three days and then revises the
+  fourth, what is live and what is spent?
 
 **3. WHERE THE PREVIEW RENDERS.** A chat-embedded card, and every modal rule in this project applies
 (centred, never a bottom sheet, `ToastRenderer` inside the modal).

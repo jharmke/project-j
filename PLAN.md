@@ -1876,6 +1876,29 @@ discussed before but i guess wasnt saved."* Decisions land here the moment they 
    ⚠️ **Nothing in the spec's open list was renumbered** -- item 9 is a new stable id sitting in rank position
    two. Mapping noted in the spec under the table, per CLAUDE.md.
 
+**4d. ✅ ITEM 9 PART ONE CLOSED 2026-08-11 THE SAME DAY. Detail in `SPEC_workout_builder.md` 6.6.**
+   🔴 **OTTO NEVER CREATES A "PROGRAM", BECAUSE A PROGRAM IN THIS APP HAS NO EXERCISES IN IT.** Verified, not
+   assumed: every `PRESET_PROGRAMS` day is `exercises: []`, and the program builder writes only type, focus,
+   colour and tags with no way to add an exercise. **A program is a SHAPE for the week**, and `Load Program`
+   writes `weeklyTemplate`, which decision 1 already ruled out as recurring.
+   ➡️ **"Otto builds a program" = N routines on N specific dates, each tagged.** The user gets a coloured,
+   labelled week that reads like a program week, with nothing recurring and no new object.
+   ⚠️ **PROGRAMS THEMSELVES STAY. Justin asked whether they are still worth having; cutting is not on the
+   table.** The Workout tab resolves every day as `programs[dateKey] || weeklyTemplate[dayName] || BLANK_DAY`,
+   so the template is the standing default for every future day; Home reads it; and `workout_first_program`
+   unlocks off `activeProgramName`. [[feedback_add_after_launch_not_remove]].
+   ✅ **THE DAY-TAG QUESTION, WHICH JUSTIN RAISED AND THEN ANSWERED HIMSELF.** He spotted that users can name
+   tags anything, so Otto could not know what to pick -- then realised the six DEFAULT tags are locked.
+   **Verified: all six carry `locked: true`, the label field is not editable, delete is hidden, and they are
+   re-merged on every load so they always exist.** Otto may use ONLY those six, **by ID (`tag_push`) not by
+   label**, which closes even the legacy case of a renamed default.
+   ➡️ **He tags the ROUTINE, not the day** -- loading a routine already copies its tags onto the day, so a
+   tagged routine tags its day for free down a path that already exists.
+   ⚠️ **I CONFLATED `focus`, `customLabel` AND `tags` AND JUSTIN CAUGHT IT** (*"the label and the tag on the
+   workout tab are not the same thing"*). They are three separate fields; the table in 6.6 is the record.
+   **`focus` is user-facing but NOT on the Workout tab** -- it is the word after the day in the Programs card
+   pills (`MON · PUSH`) and a label in reports, and it is already set from the routine name automatically.
+
 **6. HE MERGES INTO A DAY, HE NEVER REPLACES IT. Justin's call, and the app already agrees with him.**
    *"if i have a couple cardio or core exercises in there, then want otto to add a lift routine, then i
    wouldnt want him removing what i have in there already, right?"*

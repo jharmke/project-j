@@ -2612,6 +2612,12 @@ EVERYONE, NEVER a nudge (faith is never upcharged).
    empty labels that read as broken to TestFlight testers. HOLD the build until RC lands, then do layout + real
    values together. The FREE-state card stays the simple CTA (a free user has no subscription info to show).
    REMAINING: real purchases (RevenueCat) + the Supporter-STATE of the support screen itself.
+   ⚠️ **THIS LINE SAYS 2ND AND IT IS CORRECT AGAIN AS OF 2026-08-10, BUT IT WAS WRONG IN BETWEEN AND NOBODY
+   NOTICED.** Adding the Food & Allergies section (item M, 2026-08-04) inserted a section ABOVE Membership
+   and silently pushed it to 3rd, while this line kept saying 2nd. Justin moved it back on 2026-08-10
+   ("non negotiable"), so the doc and the app agree once more. ➡️ **If a new Profile section is ever added,
+   check this line: it states a POSITION, and a position is the kind of fact another feature can change
+   without touching this file.**
    PROFILE ENTRY BUILT 2026-07-11: a collapsible "Membership" ProfileSection (2nd, under Basic Info, default
    open), the sprout row wrapped in a card (bgInput + Verse-card amber-tint border rgba(212,134,10,0.4) + subtle
    shadow) to match Profile's boxed content; status keys off devProUnlocked, refreshed on focus.

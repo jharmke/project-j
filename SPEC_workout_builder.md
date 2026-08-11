@@ -132,6 +132,43 @@ patches library entries with new fields using `e.field ?? def.field` and therefo
 own edit. **No new migration to invent.**
 ⚠️ **TAG WHILE ITEM J HAS THE FILE OPEN.** J adds ~64 entries to the same file.
 
+### 3.2b The Workout Preferences profile section
+✅ **DECIDED 2026-08-10.** A new **third** `ProfileSection`, directly under Membership.
+
+🔴 **THE PRINCIPLE THAT PRODUCED IT, and it is the answer to "does Otto ask questions every time":**
+> **Anything Otto would ask on EVERY build is a setting, not a question.**
+If it varies per request, the user volunteers it or the preview fixes it. That is how this gets to **zero
+back-and-forth without a form**, which was Justin's requirement.
+
+**Contents:**
+| Setting | Why |
+|---|---|
+| **Equipment** (7 ticks + location preset) | Section 3.2 |
+| **Preferred cardio** | Lets Otto NAME a machine instead of "cardio, your pick" (3.3) |
+| **Session length** | Default is 5 (section 3.7); this is for someone who always wants 4 or 7 |
+| **Exercises to avoid** | Replaces an injuries field. See below |
+
+❌ **NOT IN IT: training days per week.** `trainingFrequency` already exists under Activity Level and feeds
+the calorie floor. **Duplicating it is exactly how two copies of a fact drift apart.**
+❌ **NOT IN IT: experience level.** Fuzzy, and Otto can hedge sensibly without it. Add only on request.
+
+✅ **"EXERCISES TO AVOID" REPLACES AN INJURIES FIELD, and that is a deliberate privacy call.** It handles
+both *"my knee is bad"* and *"I hate burpees"* with one control, and it is a PREFERENCE rather than a medical
+disclosure, so **no health data is collected and `privacy.html` needs no change.**
+⚠️ **Honest caveat:** an avoid list says WHAT to skip, not WHY, so Otto cannot be careful in adjacent ways
+(he will skip the squat but not know to go easy on the knee generally). Accepted for v1.
+✅ **UI: never show a list.** Empty by default, an "Add" that opens a **search over the library**, each pick
+becomes a chip. Same visual language as Food & Allergies directly above it, and it scales to ~143 exercises
+without ever rendering 143 of anything. Most users will have zero or two.
+
+⚠️ **THIS WILL BE THE CHIP-HEAVIEST SECTION ON THE TAB** (seven ticks, cardio, an avoid list), which makes it
+the worst-looking one under the existing complaint that Profile sections are not cards
+(`project_j_roadmap.md`, 2026-08-04). **It inherits the fix for free** -- one change to the shared
+`ProfileSection` component -- but it is an argument for doing the card pass at the same time.
+⚠️ **IT NEEDS ITS OWN (i)** (Justin: *"yes on the (i) wherever it is needed"*). The roadmap currently calls
+the Food & Allergies tooltip "the ONLY tooltip on the Profile tab" and carries a note to give the carded
+header a right-hand slot for it. **This makes it two.**
+
 ### 3.3 Cardio
 ✅ **DECIDED.** Lifts only unless asked. When asked, he can put a cardio piece at the start or end. **He never
 invents a machine**: he names one the user has logged, or says "cardio session before or after, your call".
@@ -160,6 +197,27 @@ only, and **asks nothing**. If they have kit at home they say so in the request 
 ⚠️ **BLOCKED ON ITEM J.** See section 8.
 
 ---
+
+### 3.7 Session shape
+✅ **DECIDED 2026-08-10: five exercises for a lift session.** Three or four for a core-only session, one for
+a cardio piece. **Whatever the user explicitly asks for wins.**
+🔢 **NOT AN INVENTED NUMBER. MEASURED against `PRESET_ROUTINES`:** every single lift routine the app ships is
+exactly **5** — Push Standard / Chest Focus / Shoulder Focus, Pull Standard / Back Focus / Bicep Focus, Legs
+Standard / Glute Focus / Quad Focus, Full Body Standard / Compound. Core Standard is 3, Core Intense 4, each
+cardio preset 1.
+➡️ **So Otto's routines sit next to the presets looking native rather than foreign**, and it sidesteps
+duration entirely: the app thinks in exercise count, not minutes, and Otto cannot know how long anyone rests.
+❌ **REJECTED: dropping to 4 to pre-empt "make it shorter".** That guesses at something that varies per
+person and per day, and shortening is already a one-line revision in the preview.
+⏳ **LATER, NOT NOW: match the length of the user's OWN routines.** Someone whose routines are all seven
+exercises gets seven, cold start falls back to 5. Same fact-not-judgement pattern as the superset idea.
+
+### 3.8 Warm-ups
+✅ **DECIDED 2026-08-10: Otto does NOT put warm-ups in the routine.** He may mention warming up in his reply.
+🔴 **THE REASON IS THE PR SYSTEM, NOT TASTE.** A warm-up added as an exercise becomes a real entry with
+logged sets, so an empty-bar set is treated as a lift attempt, and a name like "Warm-up" is not in the
+library so its info panel is dead (section 4). **It would quietly pollute the thing the app is built on.**
+⚠️ Also: none of the presets include warm-ups. All five entries in every preset are working movements.
 
 ## 4. NAMES: THE MOST DANGEROUS PART OF THIS FEATURE
 
@@ -333,7 +391,7 @@ first, so no decision has to be taken twice.
 
 | # | Item | Who | Why here |
 |---|---|---|---|
-| **1** | **SESSION SHAPE** | **J** | Small but it CONSTRAINS #2: a 4-exercise preview and an 11-exercise preview are different screens. Cheap to settle, and settling it late means redesigning the preview. |
+| ~~1~~ | ~~SESSION SHAPE~~ | -- | ✅ **CLOSED 2026-08-10. Five exercises, see section 3.7.** |
 | **2** | **THE PREVIEW AND THE WHOLE INLINE ADD FLOW** | **J** | **The big one.** Everything from #3 to #5 hangs off what the preview actually IS. |
 | **3** | **Where the preview renders** | M | Falls straight out of #2 and is really its second half. |
 | **4** | **The draft surviving revision across turns** | M | Only answerable once #2 defines what "revising" means. |

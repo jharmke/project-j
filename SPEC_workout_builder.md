@@ -482,7 +482,7 @@ first, so no decision has to be taken twice.
 | # | Item | Who | Why here |
 |---|---|---|---|
 | ~~1~~ | ~~SESSION SHAPE~~ | -- | ✅ **CLOSED 2026-08-10. Five exercises, see section 3.7.** |
-| **2** | **THE PREVIEW AND THE WHOLE INLINE ADD FLOW** | **J** | **The big one.** Everything from #3 to #5 hangs off what the preview actually IS. |
+| **2** | **THE PREVIEW AND THE INLINE ADD FLOW** 🟡 **IN PROGRESS** | **J** | **The big one.** 3 parts settled 2026-08-10, **4 left: 2a card contents, 2b accept + day picking, 2c revising by talking, 2d decline.** Everything from #3 to #5 hangs off it. |
 | **3** | **Where the preview renders** | M | Falls straight out of #2 and is really its second half. |
 | **4** | **The draft surviving revision across turns** | M | Only answerable once #2 defines what "revising" means. |
 | **5** | **Validation before save, and what the user sees when something is dropped** | M | Needs a preview to show it in. |
@@ -494,9 +494,32 @@ first, so no decision has to be taken twice.
 or whatever the request implies? Without a rule, "build me a chest workout" could come back as three
 movements or eleven.
 
-**2. THE PREVIEW AND THE WHOLE INLINE ADD FLOW.** What it looks like, how revision by talking actually reads,
-what Accept looks like, what happens on Decline, and how the day picker appears inside a chat.
+**2. THE PREVIEW AND THE WHOLE INLINE ADD FLOW. 🟡 IN PROGRESS — three parts settled 2026-08-10, four left.**
 **Constrained by section 2.2 (one screen, one action) and by 6.3 (a 4-day split is four routines).**
+
+✅ **SETTLED SO FAR:** it is a structured CARD not free text and not a modal (2.1b) · it sits OUTSIDE the
+bubble like an attachment, order bubble → card → pills → actions, provisional on Justin seeing it (2.1b) ·
+Otto supplies exercise NAMES and the app supplies sets/reps/rest from the library, with Otto able to adjust
+within validated limits (2.1c).
+
+🔴 **STILL OPEN, IN THIS ORDER. THIS IS WHERE THE NEXT SESSION PICKS UP:**
+
+**2a. WHAT THE CARD SHOWS beyond the exercise rows.** A title? The target day? Total exercise count?
+Anything else? Small, and it comes first because 2b and 2c both sit on top of the answer.
+
+**2b. ACCEPT.** One button, or is the day chosen ON the card? The existing "Load to N Days" picker is a
+multi-day grid with week navigation and past days disabled (section 2) — **does that grid appear in the
+card, or does Accept use a sensible default like today and let the user move it after?**
+⚠️ Section 2.2 bites hardest here: a day grid inside a chat card is the most likely place for this to turn
+into a form.
+
+**2c. REVISING BY TALKING.** *"Swap the flies for dumbbell press."* **Does the existing card update in
+place, or does a new card appear below it?** ⚠️ **Expect a wrinkle here** — in-place editing of an earlier
+message is not something the chat does today, and a stack of near-identical cards is its own mess. Related
+to open item 4 (the draft surviving 12 turns) but not the same question.
+
+**2d. DECLINE.** Is there a visible way to dismiss the card, or does the user just ignore it and carry on?
+⚠️ If a card is never dismissed, what happens when they scroll back to it a week later and tap Accept?
 
 **3. WHERE THE PREVIEW RENDERS.** A chat-embedded card, and every modal rule in this project applies
 (centred, never a bottom sheet, `ToastRenderer` inside the modal).

@@ -649,12 +649,23 @@ export default function ProfileScreen() {
           </View>
         </ProfileSection>
 
-        {/* THE PLAN item M -- SPEC_dietary_profile.md. Sits under Basic Info because it is a fact about
-            the person, not app behaviour (which is why it is here and not in Settings).
+        {/* Shared with Settings > Membership (components/MembershipCard) so the two can never drift.
+            ⚠️ MOVED UP TO SECOND, DIRECTLY UNDER BASIC INFO, 2026-08-10 AT JUSTIN'S EXPLICIT REQUEST
+            ("non negotiable"). It previously sat below Food & Allergies. The stagger delays below were
+            re-numbered to match the new order so the sections still cascade downward rather than out of
+            sequence. */}
+        <ProfileSection label="Membership" subtitle={isSupporter ? 'Supporter' : 'Support the Mission'} defaultOpen={true} theme={theme} entering={FadeInDown.delay(30).springify()}>
+          <View style={{ marginTop: 2 }}>
+            <MembershipCard />
+          </View>
+        </ProfileSection>
+
+        {/* THE PLAN item M -- SPEC_dietary_profile.md. A fact about the person, not app behaviour, which is
+            why it is here and not in Settings.
             ⚠️ NO PROMPT ANYWHERE. Deliberately not in onboarding: that flow is already six steps, and
             nothing acts on this until Otto can build meals (item F). Otto points at this section instead,
             once, when somebody raises a food issue and it is still empty. */}
-        <ProfileSection label="Food & Allergies" subtitle="What Otto should never suggest" theme={theme} entering={FadeInDown.delay(30).springify()}>
+        <ProfileSection label="Food & Allergies" subtitle="What Otto should never suggest" theme={theme} entering={FadeInDown.delay(60).springify()}>
           {/* ⚠️ THE ONLY (i) ON THE PROFILE TAB. It sits inline rather than in the section header because
               ProfileSection is shared by every section and has no slot for one; adding it there would put a
               tooltip affordance on five sections that do not have entries. One (i) per card still holds. */}
@@ -723,13 +734,6 @@ export default function ProfileScreen() {
             theme={theme}
             placeholder="Something else you avoid"
           />
-        </ProfileSection>
-
-        {/* Shared with Settings > Membership (components/MembershipCard) so the two can never drift. */}
-        <ProfileSection label="Membership" subtitle={isSupporter ? 'Supporter' : 'Support the Mission'} defaultOpen={true} theme={theme} entering={FadeInDown.delay(60).springify()}>
-          <View style={{ marginTop: 2 }}>
-            <MembershipCard />
-          </View>
         </ProfileSection>
 
         <View onLayout={e => { activityLevelY.current = e.nativeEvent.layout.y; }} />

@@ -95,6 +95,39 @@ is right."* **The order and the card's visual design get a real pass on device b
 This project's standard is that Justin's eyes decide visual questions and that dev-build judgement is about
 correctness, not feel.
 
+### 2.1c Who supplies the numbers on the card (open item 2, in progress)
+Each row of the card is `Bench Press · 4 sets · 8-10 reps · 90s rest`. **Otto supplies the NAME. The question
+was where the numbers come from.**
+
+✅ **DECIDED: the app supplies them, from the library, as the floor. Otto may adjust within validated limits
+when the request or the training goal calls for it.**
+
+❌ **REJECTED: Otto composing every field himself.** Every value becomes something the model can get wrong:
+a name slightly off kills the muscle map and splits PR history (section 4), and sets or reps can come back
+as "3-4ish" or blank. Under the chosen design the only thing he can get wrong is WHICH exercises, which is a
+judgement a human should see anyway and is exactly what the preview is for.
+
+✅ **THE LIBRARY'S NUMBERS ARE NOT ARBITRARY, WHICH IS WHY THEY ARE SAFE TO USE AS THE FLOOR.** Justin
+challenged this directly ("these cant just be random default numbers, there has to be some thought in
+there, no??"). Checked, and there is. The Push preset:
+```
+Bench Press             4 × 8-10   90s   <- compound, heavier, long rest
+Machine Shoulder Press  3 × 10-12  60s
+Cable Fly               3 × 12-15  45s
+Cable Lateral Raise     3 × 15     30s
+Tricep Pushdown         3 × 12     45s   <- isolation, lighter, short rest
+```
+Sets fall, reps climb and rest shortens from the big lift to the small work. Somebody designed that.
+
+🔴 **AND THE WEEK-TO-WEEK PROGRESSION IS THE WEIGHT, NOT THE REP SCHEME.** This is the same conclusion as
+6.3 and 6.4 arriving from a different direction: you keep the movements and the rep scheme and **add weight
+to the bar**, which is what drives adaptation and the only thing that lets the PR system and "you vs
+yesterday" tell you anything. **If the rep scheme moved every week too, nothing would be comparable to
+anything.** The load is supplied by the person who knows how the last set felt.
+
+⚠️ **VALIDATION IS WHAT MAKES "OTTO MAY ADJUST" SAFE** — sets a small integer, reps a number or a range,
+rest a duration. Open item 5 owns the detail.
+
 ### 2.2 🔴 THE ONE-SCREEN RULE (Justin, 2026-08-10)
 > *"i just want to be sure user isnt being asked 50 questions when trying to build a workout or meal."*
 
@@ -173,6 +206,37 @@ back-and-forth without a form**, which was Justin's requirement.
 | **Preferred cardio** | Lets Otto NAME a machine instead of "cardio, your pick" (3.3) |
 | **Session length** | Default is 5 (section 3.7); this is for someone who always wants 4 or 7 |
 | **Exercises to avoid** | Replaces an injuries field. See below |
+| **Training goal** | The only setting that changes the CONTENT of a workout rather than constraining it. See below |
+
+✅ **TRAINING GOAL, DECIDED 2026-08-10. Three options, label plus subtitle, rendered as pill rows like the
+Lifestyle options directly below them:**
+| Label | Subtitle |
+|---|---|
+| **Max Strength** | Heavier weight, fewer reps, longer rest. |
+| **Muscle Growth** *(default)* | Moderate weight and reps, moderate rest. |
+| **General Fitness** | Lighter weight, higher reps, shorter rest. |
+
+**Muscle Growth is the default because that is what every `PRESET_ROUTINES` entry already is.**
+🔴 **IT IS NOT A TRAINING VERSION OF BULK/CUT, AND THAT DISTINCTION IS THE POINT.** Justin asked whether
+Bulk/Cut would work as the labels. It would not, for two reasons:
+1. **The app already knows it.** `weightGoal` (lose_1, maintain, ...) plus pace lives in the Weight Goal
+   section. A second copy is how two facts drift apart.
+2. 🔴 **CUTTING SHOULD NOT CHANGE THE TRAINING MUCH.** Keeping the weight heavy while cutting is what
+   preserves muscle; switching to light weight and high reps "to get toned" is the classic mistake and is
+   backwards. **A chest day for someone cutting and someone bulking should look broadly the same.** What
+   differs is the food, which the app already handles. Same family of error as the Smart Coach copy that
+   told bulking users they were "at a deficit" (PLAN 1.9).
+⚠️ **THE LABELS TOOK THREE ATTEMPTS AND THE FIRST TWO WERE REJECTED FOR BEING VAGUE.** "Strength" and "Size"
+were rejected outright ("those are awful, so vague... strength and size feel the same"), and they are: both
+are abstract outcomes that read as synonyms to anyone who does not already know the difference. What fixed
+it was pairing an unambiguous OUTCOME label with a subtitle stating the actual mechanics. **Do not reword
+these back into one-word abstractions.**
+❌ **"Powerlifting Style / Bodybuilding Style" was offered and not taken**, though it solves the same
+problem: those are styles people can picture rather than outcomes that sound alike.
+
+⚠️ **NOTED WHILE CHECKING, NOT CHASED: `CLAUDE.md` lists a `fitnessGoal` key in `pj_settings` and there is
+no code behind it anywhere.** `weightGoal` is the real field. Small doc drift, logged here so it does not
+mislead the next person who goes looking for a goal setting.
 
 ❌ **NOT IN IT: training days per week.** `trainingFrequency` already exists under Activity Level and feeds
 the calorie floor. **Duplicating it is exactly how two copies of a fact drift apart.**

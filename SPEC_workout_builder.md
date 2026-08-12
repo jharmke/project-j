@@ -259,6 +259,54 @@ stress case with the library's longest names, and a revision exchange showing th
 true 393x852 in Light + Cyan using the app's real typefaces.
 ⚠️ **It lives in a session scratchpad and is NOT a durable artifact.** This section is the record.
 
+### 2.1h The multi-day card: collapsible days (open item 9 part two) — 🟡 DIRECTION SET 2026-08-12
+✅ **ONE CARD, WITH A COLLAPSED ROW PER TRAINING DAY. Justin's proposal** (*"cant we just make each routine
+collapsible or give them compact versions"*), and it is the right one.
+🟡 **RECORDED AS DIRECTION, NOT LOCKED.** Justin's sign-off was *"yeah think thats alright.."* -- agreement,
+not enthusiasm. **The visual gets a real pass on device before this is locked**, same standing as 2.1b.
+
+🔴 **WHY COLLAPSED IS THE RIGHT DEFAULT, AND NOT JUST THE COMPACT ONE.** On a multi-day build the thing being
+verified FIRST is the SHAPE -- Push Monday, Pull Wednesday, Legs Friday, rest where you want it. The twenty
+exercises only matter if the shape looks wrong. **Collapsed-by-default matches the actual review task: scan
+the week, open the one day you are unsure about.** Four stacked full cards force you to read all of it to
+find the part you cared about.
+
+✅ **THE COLLAPSED ROW IS THE PROGRAMS CARD'S DAY PILL, MADE OPENABLE.** Chevron, tag-coloured dot, the date,
+the focus, the exercise count. **Expanding reveals exactly the rows designed in 2.1d** -- nothing new is
+invented at either level.
+⚠️ **CORRECTION TO AN EARLIER STATEMENT: I said the Programs card was not the model for this (6.6). That is
+true of the card as a WHOLE, which describes a thing with no exercises in it -- but its DAY ROW is precisely
+the right collapsed state.**
+
+🔴 **THE ROW SHOWS A REAL DATE (`Mon Aug 17`), NEVER A BARE WEEKDAY.** Caught while drawing it, 2026-08-12.
+**A weekday on its own is exactly what a recurring weekly template looks like, and decision 1 ruled recurrence
+out of scope.** The date makes it unambiguous that this lands on three specific days and never returns.
+
+**MEASURED/DERIVED heights** (same basis as 2.1g): 3 days collapsed ~209pt, 4 days ~245pt, against ~476pt of
+visible message area — **the whole week fits on screen with room above it.** Opening one day adds ~185pt.
+✅ **IT SURVIVES 2.2: a collapsible is optional detail, not a question.** The user is still asked nothing.
+
+🔴 **BLOCKING DEPENDENCY, NOT A DETAIL: THE AUTO-SCROLL HAS TO BE FIXED FIRST.** Justin, 2026-08-12: *"we need
+to acknowledge that trap cause that is very sloppy. needs to be smooth as possible."*
+➡️ **The chat calls `scrollToEnd` on EVERY content-size change** (`AssistantChat.tsx` ~931). That is what
+usefully pins the button into view (2.1g) -- **but expanding a day changes content size too, so tapping
+Wednesday would throw the thread to the bottom, away from the thing just opened.**
+➡️ **The fix: auto-scroll on a NEW MESSAGE, not on any layout change.**
+⚠️ **This is SHARED CHAT BEHAVIOUR and is NOT a one-liner.** Halo's chat was given the same treatment in the
+same 2026-07-05 pass, and this panel's keyboard handling has its own history (`SPEC_keyboard_modals.md`).
+**Check it against Halo's chat AND the keyboard flow before touching it.** See
+[[feedback_read_full_context_before_debugging]] and [[feedback_verify_against_working_reference]].
+⚠️ **AND THE EXPAND ITSELF FOLLOWS THIS PROJECT'S RULE: never `maxHeight`.** Render off-screen, measure via
+`onLayout`, animate to the exact pixel height, two coordinated animations (CLAUDE.md). **Four of those inside
+a chat row is more animation machinery than anything else in the preview.**
+
+⏳ **STILL OPEN INSIDE ITEM 9, AND BOTH ARE FORCED BY THIS DESIGN:**
+1. **ONE button for the whole week, or one per day?** The mockup shows `ADD ALL 3 DAYS`. **Per-day buttons
+   would put three or four primary actions in one card, which is what 2.2 forbids** — but that is an argument,
+   not yet a decision.
+2. **What does the spent state (2.1f) mean across multiple days?** If the card is one unit it goes spent as a
+   unit, which would mean you never accept three days and then revise the fourth. Needs confirming.
+
 ### 2.2 🔴 THE ONE-SCREEN RULE (Justin, 2026-08-10)
 > *"i just want to be sure user isnt being asked 50 questions when trying to build a workout or meal."*
 
@@ -703,17 +751,19 @@ no decision (it is set from the routine name automatically) and `customLabel` st
 ❌ **The library's Programs card is NOT the model for the chat version**, since it describes a thing with
 nothing in it.
 
-🔴 **PART TWO IS STILL OPEN, AND IT IS THE HARD HALF: THE REVIEW PROBLEM.**
-- **A 3-day split is 3 routines and 15 exercises to read before anything can be accepted; a 4-day split is
-  20.** Section 2.2 (one screen, one action) was written to stop exactly this, and 6.3 flagged it as the real
-  cost of this feature: *"the review burden is the real cost, not the build."*
-- **The open question is what the chat shows.** One card per day, stacked? One summary card that expands? A
-  week-shaped card that defers the exercise detail until asked?
-- ⚠️ **The `ADD TO THURSDAY` button (2.1e) needs re-deciding here.** A multi-day build lands on several days,
-  and the merge-not-replace rule (6.1) has to hold on every one of them. One button for all of it, or one
-  per day?
-- ⚠️ **The spent state (2.1f) needs re-checking too**: if a user accepts three days and then revises the
-  fourth, what is live and what is spent?
+🟡 **PART TWO -- THE REVIEW PROBLEM -- HAS A DIRECTION AS OF 2026-08-12. SEE 2.1h.** A 4-day split is 20
+exercises to read before anything can be accepted, which is what 6.3 called the real cost of this feature.
+➡️ **ONE card with a COLLAPSED ROW PER DAY** (Justin's proposal), the row modelled on the Programs card's day
+pill, expanding into the 2.1d rows. Recorded as direction, not locked -- his sign-off was agreement rather
+than enthusiasm, so the visual gets a device pass.
+🔴 **BLOCKING DEPENDENCY: the chat's auto-scroll must be fixed first** (it fires on every content-size change,
+so expanding a day would throw the thread to the bottom). Shared behaviour with Halo's chat. Detail in 2.1h.
+
+⏳ **STILL OPEN INSIDE ITEM 9:**
+- **One button for the whole week, or one per day?** Per-day buttons put 3-4 primary actions in one card,
+  which 2.2 forbids -- an argument, not yet a decision.
+- **What does the spent state mean across multiple days?** If the card is one unit it goes spent as a unit.
+- ⚠️ **The merge-not-replace rule (6.1) has to hold on EVERY day the build lands on**, not just the first.
 
 **3. WHERE THE PREVIEW RENDERS.** A chat-embedded card, and every modal rule in this project applies
 (centred, never a bottom sheet, `ToastRenderer` inside the modal).

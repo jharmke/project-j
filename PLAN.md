@@ -1899,6 +1899,23 @@ discussed before but i guess wasnt saved."* Decisions land here the moment they 
    **`focus` is user-facing but NOT on the Workout tab** -- it is the word after the day in the Programs card
    pills (`MON · PUSH`) and a label in reports, and it is already set from the routine name automatically.
 
+**4e. 🟡 ITEM 9 PART TWO (THE REVIEW PROBLEM) HAS A DIRECTION, 2026-08-12. Detail in `SPEC_workout_builder.md`
+   2.1h.** **ONE card with a COLLAPSED ROW PER TRAINING DAY -- Justin's proposal**, the row modelled on the
+   Programs card's day pill (chevron, tag-coloured dot, date, focus, exercise count), expanding into the 2.1d
+   rows. **3 days collapsed is ~209pt against ~476pt of visible chat, so the whole week fits on screen.**
+   ➡️ **Collapsed is the right DEFAULT, not just the compact one:** what gets verified first on a multi-day
+   build is the SHAPE, and the 20 exercises only matter if the shape looks wrong.
+   🔴 **THE ROW SHOWS A REAL DATE (`Mon Aug 17`), NEVER A BARE WEEKDAY** -- caught while drawing it. A bare
+   weekday is exactly what a recurring template looks like, and decision 1 ruled recurrence out.
+   🔴 **BLOCKING DEPENDENCY, JUSTIN'S CALL: THE CHAT'S AUTO-SCROLL MUST BE FIXED BEFORE THIS IS BUILT.**
+   *"we need to acknowledge that trap cause that is very sloppy. needs to be smooth as possible."* It fires on
+   every content-size change, so expanding a day would throw the thread to the bottom, away from what was just
+   opened. **Shared with Halo's chat and tangled with the keyboard flow -- not a one-liner.**
+   🟡 **DIRECTION, NOT LOCKED.** His sign-off was *"yeah think thats alright.."* -- agreement, not enthusiasm.
+   The visual gets a device pass, same standing as the single-routine card.
+   ⏳ **TWO QUESTIONS LEFT IN ITEM 9:** one button for the week or one per day, and what the spent state means
+   across multiple days.
+
 **6. HE MERGES INTO A DAY, HE NEVER REPLACES IT. Justin's call, and the app already agrees with him.**
    *"if i have a couple cardio or core exercises in there, then want otto to add a lift routine, then i
    wouldnt want him removing what i have in there already, right?"*

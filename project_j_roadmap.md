@@ -2431,7 +2431,20 @@ are separate pre-submission checklists, NOT part of this menu.
        for a home workout two weeks later, and an untagged exercise counts as available anywhere. The person
        most likely to create custom exercises is the same person who also trains at home.
 
-  **J. EXPAND THE EXERCISE LIBRARY (79 -> ~143)** -- NEW 2026-07-30, came out of item A question 3.
+  **J. EXPAND THE EXERCISE LIBRARY (79 -> 139)** -- NEW 2026-07-30, came out of item A question 3.
+     🔬 **THE 60 ENTRIES ARE WRITTEN, 2026-08-13. NOT YET VERIFIED ON DEVICE.** `DEFAULT_LIBRARY` now holds
+     **139 entries** (79 + 60; the candidate list was 64 and PLAN 4.18 item 12 cut four). Every entry carries
+     its tag, default sets/reps/rest, primary/secondary muscles and 4 instruction steps in the existing voice.
+     ✅ **Checked mechanically:** 139 unique ids, **zero invalid muscle keys** against the 22 in
+     `components/MuscleMap.tsx`, **zero invalid tags** against the six locked ones, no double dashes.
+     ✅ **Existing users get them automatically and safely:** the loader already merges defaults the stored
+     library does not have (`newDefaults = DEFAULT_LIBRARY.filter(...)`), read-then-merge, no user edit
+     touched. ✅ **No effect on the 15-custom-exercise cap** -- it counts by IDENTITY against
+     `DEFAULT_LIBRARY`'s ids, never by arithmetic, which is exactly the trap the code comment warns about.
+     ⚠️ **Format notes worth keeping:** library holds are written into the reps STRING (`'30–45s hold'`) --
+     there is no `trackingType` on `LibraryExercise`, that field belongs to the day/routine exercise. And
+     **cardio entries are one-liners with no muscles and no instructions**, matching the 11 that shipped.
+     ⏳ **STILL TO DO:** device pass, and the equipment tags across all 139 (PLAN 4.18 item 11).
      WHY: every exercise that ships curated is one Otto never has to invent. This is the cheapest way to
      make the workout builder (E) safe. It also fixes real holes that exist today.
      ⚠️ **THE TWO GLARING OMISSIONS: there is no PUSH-UP and no DUMBBELL LATERAL RAISE.** Nothing bodyweight

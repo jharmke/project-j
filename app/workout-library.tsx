@@ -207,6 +207,94 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
       'Return to start with control.',
     ],
   },
+  {
+    id: 'l70', name: 'Push-Up', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '12–15', defaultRest: '60s',
+    primaryMuscles: ['chest'], secondaryMuscles: ['front_delt', 'triceps', 'abs'],
+    instructions: [
+      'Set hands slightly wider than shoulders, body in a straight line.',
+      'Lower until your chest is just above the floor.',
+      'Press back up without letting your hips sag or pike.',
+      'Keep your elbows angled back, not flared straight out.',
+    ],
+  },
+  {
+    id: 'l71', name: 'Incline Push-Up', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '12–15', defaultRest: '60s',
+    primaryMuscles: ['lower_chest', 'chest'], secondaryMuscles: ['front_delt', 'triceps'],
+    instructions: [
+      'Place your hands on a bench or box, wider than your shoulders.',
+      'Keep your body in one line from head to heels.',
+      'Lower your chest to the edge, then press back up.',
+      'The higher the surface, the easier the movement.',
+    ],
+  },
+  {
+    id: 'l72', name: 'Decline Push-Up', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
+    primaryMuscles: ['upper_chest', 'chest'], secondaryMuscles: ['front_delt', 'triceps', 'abs'],
+    instructions: [
+      'Set your feet on a bench with your hands on the floor.',
+      'Keep your hips level and your core braced.',
+      'Lower your chest to the floor under control.',
+      'Press back up without letting your lower back arch.',
+    ],
+  },
+  {
+    id: 'l73', name: 'Dumbbell Fly', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
+    primaryMuscles: ['chest'], secondaryMuscles: ['front_delt'],
+    instructions: [
+      'Lie on a flat bench holding a dumbbell above each shoulder.',
+      'Open your arms wide in an arc with a soft bend in the elbows.',
+      'Stop when you feel a stretch across your chest.',
+      'Bring the dumbbells back together over your chest.',
+    ],
+  },
+  {
+    id: 'l74', name: 'Floor Press', type: 'lift', tags: ['tag_push'],
+    defaultSets: '4', defaultReps: '8–10', defaultRest: '90s',
+    primaryMuscles: ['chest'], secondaryMuscles: ['triceps', 'front_delt'],
+    instructions: [
+      'Lie on the floor with knees bent and a dumbbell in each hand.',
+      'Lower until your upper arms rest lightly on the floor.',
+      'Pause for a beat, then press back to full extension.',
+      'The floor limits your range, which spares the shoulders.',
+    ],
+  },
+  {
+    id: 'l75', name: 'Landmine Press', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
+    primaryMuscles: ['front_delt', 'upper_chest'], secondaryMuscles: ['triceps', 'abs'],
+    instructions: [
+      'Hold the end of the barbell at shoulder height in one hand.',
+      'Stand square with your feet under your hips and core braced.',
+      'Press the bar up and slightly forward until your arm is straight.',
+      'Lower under control and repeat before switching sides.',
+    ],
+  },
+  {
+    id: 'l76', name: 'Cable Chest Press', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
+    primaryMuscles: ['chest'], secondaryMuscles: ['front_delt', 'triceps'],
+    instructions: [
+      'Set both pulleys to chest height and take a handle in each hand.',
+      'Step forward into a split stance with your chest up.',
+      'Press the handles forward until your arms are straight.',
+      'Return slowly and let your chest stretch at the back.',
+    ],
+  },
+  {
+    id: 'l77', name: 'Smith Machine Bench Press', type: 'lift', tags: ['tag_push'],
+    defaultSets: '4', defaultReps: '8–10', defaultRest: '90s',
+    primaryMuscles: ['chest'], secondaryMuscles: ['front_delt', 'triceps'],
+    instructions: [
+      'Set the bench so the bar sits over your mid-chest.',
+      'Grip slightly wider than your shoulders and unhook the bar.',
+      'Lower to your chest, then press back to full extension.',
+      'The fixed path lets you push closer to failure on your own.',
+    ],
+  },
   // ── SHOULDERS ──────────────────────────────────────────────────────────────
   {
     id: 'l17', name: 'Machine Shoulder Press', type: 'lift', tags: ['tag_push'],
@@ -274,6 +362,72 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
       'Lower with control. Keep bar close to body throughout.',
     ],
   },
+  {
+    id: 'l78', name: 'Dumbbell Lateral Raise', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
+    primaryMuscles: ['side_delt'], secondaryMuscles: ['traps'],
+    instructions: [
+      'Stand tall with a dumbbell in each hand at your sides.',
+      'Raise both arms out to the sides until level with your shoulders.',
+      'Lower under control instead of dropping.',
+      'Lead with your elbows and keep a soft bend throughout.',
+    ],
+  },
+  {
+    id: 'l79', name: 'Arnold Press', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
+    primaryMuscles: ['front_delt', 'side_delt'], secondaryMuscles: ['triceps', 'traps'],
+    instructions: [
+      'Start seated with dumbbells at chest height, palms facing you.',
+      'Rotate your palms outward as you press overhead.',
+      'Finish with your arms straight and palms facing forward.',
+      'Reverse the rotation on the way down.',
+    ],
+  },
+  {
+    id: 'l80', name: 'Front Raise', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
+    primaryMuscles: ['front_delt'], secondaryMuscles: ['upper_chest'],
+    instructions: [
+      'Hold a dumbbell in each hand in front of your thighs.',
+      'Raise one arm straight ahead to shoulder height.',
+      'Lower under control, then repeat with the other arm.',
+      'Keep your torso still so your shoulders do the work.',
+    ],
+  },
+  {
+    id: 'l81', name: 'Reverse Pec Deck', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
+    primaryMuscles: ['rear_delt'], secondaryMuscles: ['rhomboids', 'traps'],
+    instructions: [
+      'Sit facing the pad with your chest against it.',
+      'Take a handle in each hand with your arms nearly straight.',
+      'Open your arms wide until they are level with your shoulders.',
+      'Squeeze your shoulder blades, then return under control.',
+    ],
+  },
+  {
+    id: 'l82', name: 'Barbell Shrug', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '12–15', defaultRest: '60s',
+    primaryMuscles: ['traps'], secondaryMuscles: ['forearms'],
+    instructions: [
+      'Hold a barbell in front of your thighs with an overhand grip.',
+      'Lift your shoulders straight up toward your ears.',
+      'Pause at the top, then lower all the way down.',
+      'Do not roll your shoulders, straight up and straight down.',
+    ],
+  },
+  {
+    id: 'l83', name: 'Dumbbell Shrug', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '12–15', defaultRest: '60s',
+    primaryMuscles: ['traps'], secondaryMuscles: ['forearms'],
+    instructions: [
+      'Stand with a dumbbell in each hand at your sides.',
+      'Lift your shoulders straight up as high as they will go.',
+      'Hold for a beat at the top.',
+      'Lower fully so your traps get the whole range.',
+    ],
+  },
   // ── TRICEPS ────────────────────────────────────────────────────────────────
   {
     id: 'l21', name: 'Tricep Pushdown (Rope)', type: 'lift', tags: ['tag_push'],
@@ -328,6 +482,50 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
       'Lower until upper arms are parallel to floor, elbows tucked.',
       'Press back to full extension, squeezing triceps at top.',
       'Avoid shrugging at the top.',
+    ],
+  },
+  {
+    id: 'l84', name: 'Tricep Kickback', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
+    primaryMuscles: ['triceps'], secondaryMuscles: ['rear_delt'],
+    instructions: [
+      'Hinge forward with one hand braced on a bench.',
+      'Tuck your working elbow tight against your side.',
+      'Straighten your arm behind you until it is fully extended.',
+      'Keep your upper arm still, only the forearm moves.',
+    ],
+  },
+  {
+    id: 'l85', name: 'Bench Dip', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '10–15', defaultRest: '60s',
+    primaryMuscles: ['triceps'], secondaryMuscles: ['front_delt', 'lower_chest'],
+    instructions: [
+      'Sit on a bench and grip the edge beside your hips.',
+      'Slide forward so your weight is on your hands.',
+      'Bend your elbows to lower until they reach about 90 degrees.',
+      'Press back up and keep your shoulders down, away from your ears.',
+    ],
+  },
+  {
+    id: 'l86', name: 'Diamond Push-Up', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '8–12', defaultRest: '60s',
+    primaryMuscles: ['triceps'], secondaryMuscles: ['chest', 'front_delt'],
+    instructions: [
+      'Set your hands together under your chest, thumbs and fingers touching.',
+      'Hold your body in one straight line.',
+      'Lower your chest toward your hands with elbows tucked in.',
+      'Press back up without letting your hips drop.',
+    ],
+  },
+  {
+    id: 'l87', name: 'Single Arm Pushdown', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
+    primaryMuscles: ['triceps'], secondaryMuscles: [],
+    instructions: [
+      'Set a cable at head height and take the handle in one hand.',
+      'Tuck your elbow against your side and face the machine.',
+      'Push down until your arm is straight, then squeeze.',
+      'Let it rise slowly and keep your elbow pinned in place.',
     ],
   },
   // ── BACK ───────────────────────────────────────────────────────────────────
@@ -441,6 +639,94 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
       'Lower with control.',
     ],
   },
+  {
+    id: 'l88', name: 'Close Grip Lat Pulldown', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
+    primaryMuscles: ['lats'], secondaryMuscles: ['biceps', 'rhomboids'],
+    instructions: [
+      'Attach a close grip handle and sit with your thighs under the pad.',
+      'Take the handle with your palms facing each other.',
+      'Pull to your upper chest and drive your elbows down.',
+      'Let the bar rise slowly until your lats are fully stretched.',
+    ],
+  },
+  {
+    id: 'l89', name: 'Straight Arm Pulldown', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
+    primaryMuscles: ['lats'], secondaryMuscles: ['triceps', 'abs'],
+    instructions: [
+      'Stand facing a high cable with a bar at arms length.',
+      'Hinge slightly forward with a soft bend in your elbows.',
+      'Pull the bar down to your thighs, keeping your arms straight.',
+      'Return slowly and feel the stretch through your lats.',
+    ],
+  },
+  {
+    id: 'l90', name: 'Chest Supported Row', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '4', defaultReps: '10–12', defaultRest: '60s',
+    primaryMuscles: ['lats', 'rhomboids'], secondaryMuscles: ['biceps', 'rear_delt'],
+    instructions: [
+      'Lie face down on an incline bench with a dumbbell in each hand.',
+      'Let your arms hang straight below your shoulders.',
+      'Row the weights to your ribs, elbows close to your body.',
+      'The bench takes your lower back out of it entirely.',
+    ],
+  },
+  {
+    id: 'l91', name: 'Inverted Row', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '10–15', defaultRest: '60s',
+    primaryMuscles: ['lats', 'rhomboids'], secondaryMuscles: ['biceps', 'rear_delt', 'abs'],
+    instructions: [
+      'Set a bar at about hip height and lie underneath it.',
+      'Grip the bar and hang with your body in a straight line.',
+      'Pull your chest to the bar and squeeze your shoulder blades.',
+      'Walk your feet further out to make it harder.',
+    ],
+  },
+  {
+    id: 'l92', name: 'Assisted Pull-Up', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '8–12', defaultRest: '90s',
+    primaryMuscles: ['lats'], secondaryMuscles: ['biceps', 'rhomboids'],
+    instructions: [
+      'Set the assist weight and kneel or stand on the pad.',
+      'Take a grip slightly wider than your shoulders.',
+      'Pull until your chin clears the bar.',
+      'Lower all the way down and drop the assistance as you get stronger.',
+    ],
+  },
+  {
+    id: 'l93', name: 'Rack Pull', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '4', defaultReps: '6–8', defaultRest: '120s',
+    primaryMuscles: ['lower_back', 'traps'], secondaryMuscles: ['lats', 'glutes', 'forearms'],
+    instructions: [
+      'Set the bar on rack pins at about knee height.',
+      'Grip just outside your legs with your chest up.',
+      'Drive through your heels and stand tall, locking your hips.',
+      'Lower to the pins under control rather than dropping the bar.',
+    ],
+  },
+  {
+    id: 'l94', name: 'Dumbbell Pullover', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
+    primaryMuscles: ['lats'], secondaryMuscles: ['chest', 'triceps'],
+    instructions: [
+      'Lie on a bench holding one dumbbell above your chest.',
+      'Keep a soft bend in your elbows throughout.',
+      'Lower the weight back behind your head until you feel a stretch.',
+      'Pull it back over your chest without arching your lower back.',
+    ],
+  },
+  {
+    id: 'l95', name: 'Trap Bar Deadlift', type: 'lift', tags: ['tag_pull', 'tag_legs'],
+    defaultSets: '4', defaultReps: '6–8', defaultRest: '120s',
+    primaryMuscles: ['glutes', 'quads'], secondaryMuscles: ['hamstrings', 'traps', 'lower_back', 'forearms'],
+    instructions: [
+      'Stand inside the trap bar with your feet under your hips.',
+      'Hinge down and take both handles with a tall chest.',
+      'Drive through the floor and stand up, finishing with your hips through.',
+      'The neutral handles keep the load closer than a straight bar.',
+    ],
+  },
   // ── BICEPS ─────────────────────────────────────────────────────────────────
   {
     id: 'l3', name: 'Cable Curl', type: 'lift', tags: ['tag_pull'],
@@ -519,6 +805,28 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
       'Lower fully between each rep.',
     ],
   },
+  {
+    id: 'l96', name: 'Reverse Curl', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
+    primaryMuscles: ['forearms'], secondaryMuscles: ['biceps'],
+    instructions: [
+      'Hold a bar with an overhand grip at arms length.',
+      'Curl it up while keeping your elbows tucked at your sides.',
+      'Squeeze at the top with your knuckles facing up.',
+      'Lower slowly, this one needs less weight than it looks.',
+    ],
+  },
+  {
+    id: 'l97', name: 'Spider Curl', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '10–12', defaultRest: '45s',
+    primaryMuscles: ['biceps'], secondaryMuscles: ['forearms'],
+    instructions: [
+      'Lie chest down on an incline bench with your arms hanging free.',
+      'Hold a dumbbell in each hand with palms facing forward.',
+      'Curl up to your shoulders without swinging.',
+      'The angle removes momentum, so the biceps do all of it.',
+    ],
+  },
   // ── FOREARMS ───────────────────────────────────────────────────────────────
   {
     id: 'l48', name: 'Wrist Curl', type: 'lift', tags: ['tag_pull'],
@@ -551,6 +859,39 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
       'Stand tall — chest up, shoulders back, core braced.',
       'Walk for the prescribed distance or time.',
       'Grip strength, core stability, and trap endurance all trained simultaneously.',
+    ],
+  },
+  {
+    id: 'l98', name: 'Dead Hang', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '30–45s hold', defaultRest: '60s',
+    primaryMuscles: ['forearms'], secondaryMuscles: ['lats', 'traps'],
+    instructions: [
+      'Take an overhand grip on a pull-up bar, hands shoulder-width.',
+      'Hang with your arms straight and your shoulders active.',
+      'Hold for time, breathing steadily.',
+      'Step down before your grip fails completely.',
+    ],
+  },
+  {
+    id: 'l99', name: 'Wrist Roller', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '2–3 trips', defaultRest: '60s',
+    primaryMuscles: ['forearms'], secondaryMuscles: [],
+    instructions: [
+      'Hold the roller at chest height with both hands, arms straight ahead.',
+      'Wind the cord up by rolling the bar toward you.',
+      'Reverse the direction to lower the weight back down.',
+      'One trip up and back down is a rep.',
+    ],
+  },
+  {
+    id: 'l100', name: 'Plate Pinch', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '30s hold', defaultRest: '60s',
+    primaryMuscles: ['forearms'], secondaryMuscles: [],
+    instructions: [
+      'Pinch two plates together, smooth sides facing out.',
+      'Stand tall with the plates hanging at your side.',
+      'Hold for time without letting them slip.',
+      'Set them down deliberately rather than dropping them.',
     ],
   },
   // ── LEGS ───────────────────────────────────────────────────────────────────
@@ -719,6 +1060,138 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
       'Wider stance hits adductors and glutes more than conventional squat.',
     ],
   },
+  {
+    id: 'l101', name: 'Front Squat', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '4', defaultReps: '6–8', defaultRest: '120s',
+    primaryMuscles: ['quads'], secondaryMuscles: ['glutes', 'abs', 'lower_back'],
+    instructions: [
+      'Rest the bar across your front delts with your elbows high.',
+      'Stand with feet shoulder-width and your chest tall.',
+      'Squat down until your thighs are at least parallel.',
+      'Drive up while keeping your elbows from dropping.',
+    ],
+  },
+  {
+    id: 'l102', name: 'Goblet Squat', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
+    primaryMuscles: ['quads', 'glutes'], secondaryMuscles: ['abs', 'hamstrings'],
+    instructions: [
+      'Hold one dumbbell or kettlebell against your chest.',
+      'Set your feet a little wider than your hips.',
+      'Squat straight down, letting your elbows track inside your knees.',
+      'Stand back up and keep the weight tight to your chest throughout.',
+    ],
+  },
+  {
+    id: 'l103', name: 'Hack Squat', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '4', defaultReps: '8–12', defaultRest: '90s',
+    primaryMuscles: ['quads'], secondaryMuscles: ['glutes', 'hamstrings'],
+    instructions: [
+      'Set your back and shoulders against the pads.',
+      'Place your feet mid-platform, about shoulder-width.',
+      'Release the safeties and lower until your knees reach 90 degrees.',
+      'Press through your whole foot without locking your knees hard.',
+    ],
+  },
+  {
+    id: 'l104', name: 'Bodyweight Squat', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '3', defaultReps: '15–20', defaultRest: '45s',
+    primaryMuscles: ['quads', 'glutes'], secondaryMuscles: ['hamstrings', 'abs'],
+    instructions: [
+      'Stand with your feet about shoulder-width apart.',
+      'Reach your arms forward as you sit your hips back and down.',
+      'Go as deep as you can with your heels flat.',
+      'Stand tall and squeeze your glutes at the top.',
+    ],
+  },
+  {
+    id: 'l105', name: 'Step-Up', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '3', defaultReps: '10–12 each leg', defaultRest: '60s',
+    primaryMuscles: ['quads', 'glutes'], secondaryMuscles: ['hamstrings', 'calves'],
+    instructions: [
+      'Stand facing a box or bench at about knee height.',
+      'Place one whole foot on the box and drive through that heel.',
+      'Stand up without pushing off the back foot.',
+      'Lower under control and finish all reps before switching legs.',
+    ],
+  },
+  {
+    id: 'l106', name: 'Glute Bridge', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
+    primaryMuscles: ['glutes'], secondaryMuscles: ['hamstrings', 'abs'],
+    instructions: [
+      'Lie on your back with knees bent and feet flat, close to your hips.',
+      'Drive through your heels and lift your hips toward the ceiling.',
+      'Squeeze your glutes hard at the top and pause.',
+      'Lower slowly without letting your lower back take over.',
+    ],
+  },
+  {
+    id: 'l107', name: 'Good Morning', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '3', defaultReps: '8–12', defaultRest: '90s',
+    primaryMuscles: ['hamstrings', 'lower_back'], secondaryMuscles: ['glutes'],
+    instructions: [
+      'Set a light bar across your upper back as you would for a squat.',
+      'Soften your knees and keep your spine neutral.',
+      'Hinge at the hips and push them back until you feel your hamstrings.',
+      'Drive your hips forward to stand, this one stays light.',
+    ],
+  },
+  {
+    id: 'l108', name: 'Single Leg RDL', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '3', defaultReps: '8–10 each leg', defaultRest: '60s',
+    primaryMuscles: ['hamstrings', 'glutes'], secondaryMuscles: ['lower_back', 'abs'],
+    instructions: [
+      'Hold a dumbbell in one hand and stand on the opposite leg.',
+      'Hinge forward and let your free leg travel back as a counterweight.',
+      'Lower until you feel a stretch in the standing hamstring.',
+      'Return to standing without touching the floor between reps.',
+    ],
+  },
+  {
+    id: 'l109', name: 'Nordic Curl', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '3', defaultReps: '5–8', defaultRest: '90s',
+    primaryMuscles: ['hamstrings'], secondaryMuscles: ['glutes', 'calves'],
+    instructions: [
+      'Kneel on a pad with your ankles anchored under something solid.',
+      'Keep your hips locked so your body stays in one line.',
+      'Lower yourself forward as slowly as you can control.',
+      'Catch with your hands and push back up, this one is hard, expect few reps.',
+    ],
+  },
+  {
+    id: 'l110', name: 'Wall Sit', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '3', defaultReps: '30–60s hold', defaultRest: '60s',
+    primaryMuscles: ['quads'], secondaryMuscles: ['glutes', 'calves'],
+    instructions: [
+      'Set your back flat against a wall and walk your feet out.',
+      'Slide down until your knees are bent at about 90 degrees.',
+      'Keep your weight in your heels and your back against the wall.',
+      'Hold for time and breathe steadily rather than bracing.',
+    ],
+  },
+  {
+    id: 'l111', name: 'Calf Press on Leg Press', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '4', defaultReps: '12–15', defaultRest: '45s',
+    primaryMuscles: ['calves'], secondaryMuscles: [],
+    instructions: [
+      'Sit in the leg press with only the balls of your feet on the platform.',
+      'Release the safeties and let your heels drop for a full stretch.',
+      'Push the platform away by extending through your toes.',
+      'Pause at the top, your knees stay almost straight throughout.',
+    ],
+  },
+  {
+    id: 'l112', name: 'Box Jump', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '4', defaultReps: '5', defaultRest: '90s',
+    primaryMuscles: ['quads', 'glutes'], secondaryMuscles: ['calves', 'hamstrings'],
+    instructions: [
+      'Stand a short step back from a box you are confident clearing.',
+      'Dip at the hips and knees, then swing your arms and jump.',
+      'Land softly in a quarter squat with both feet fully on the box.',
+      'Step down rather than jumping down to save your knees.',
+    ],
+  },
   // ── CORE ───────────────────────────────────────────────────────────────────
   {
     id: 'l7', name: 'Cable Crunch', type: 'lift', tags: ['tag_core'],
@@ -852,6 +1325,128 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
       'Extend duration to increase difficulty.',
     ],
   },
+  {
+    id: 'l113', name: 'Crunch', type: 'lift', tags: ['tag_core'],
+    defaultSets: '3', defaultReps: '15–20', defaultRest: '30s',
+    primaryMuscles: ['abs'], secondaryMuscles: [],
+    instructions: [
+      'Lie on your back with knees bent and feet flat.',
+      'Rest your hands lightly by your ears, do not pull on your neck.',
+      'Curl your shoulders off the floor and squeeze your abs.',
+      'Lower under control, only the upper back leaves the floor.',
+    ],
+  },
+  {
+    id: 'l114', name: 'Sit-Up', type: 'lift', tags: ['tag_core'],
+    defaultSets: '3', defaultReps: '12–20', defaultRest: '45s',
+    primaryMuscles: ['abs'], secondaryMuscles: ['hip_flexors', 'obliques'],
+    instructions: [
+      'Lie on your back with your knees bent and feet anchored or flat.',
+      'Cross your arms on your chest.',
+      'Sit all the way up until your chest meets your thighs.',
+      'Lower with control rather than dropping back down.',
+    ],
+  },
+  {
+    id: 'l115', name: 'Mountain Climber', type: 'lift', tags: ['tag_core'],
+    defaultSets: '3', defaultReps: '30–45s', defaultRest: '45s',
+    primaryMuscles: ['abs'], secondaryMuscles: ['hip_flexors', 'front_delt', 'obliques'],
+    instructions: [
+      'Start in a push-up position with your hands under your shoulders.',
+      'Drive one knee toward your chest, then switch quickly.',
+      'Keep your hips low and level, do not let them bounce.',
+      'Work for time and hold the plank position throughout.',
+    ],
+  },
+  {
+    id: 'l116', name: 'Bird Dog', type: 'lift', tags: ['tag_core'],
+    defaultSets: '3', defaultReps: '10 each side', defaultRest: '30s',
+    primaryMuscles: ['abs', 'lower_back'], secondaryMuscles: ['glutes', 'obliques'],
+    instructions: [
+      'Start on all fours with your hands under your shoulders.',
+      'Extend one arm forward and the opposite leg straight back.',
+      'Hold for a beat with your hips square to the floor.',
+      'Return and switch sides, moving slowly rather than swinging.',
+    ],
+  },
+  {
+    id: 'l117', name: 'Superman', type: 'lift', tags: ['tag_core'],
+    defaultSets: '3', defaultReps: '12–15', defaultRest: '30s',
+    primaryMuscles: ['lower_back'], secondaryMuscles: ['glutes', 'rear_delt'],
+    instructions: [
+      'Lie face down with your arms stretched out in front of you.',
+      'Lift your arms, chest and legs off the floor together.',
+      'Hold at the top for a second and squeeze your lower back.',
+      'Lower everything back down under control.',
+    ],
+  },
+  {
+    id: 'l118', name: 'Pallof Press', type: 'lift', tags: ['tag_core'],
+    defaultSets: '3', defaultReps: '10–12 each side', defaultRest: '45s',
+    primaryMuscles: ['obliques', 'abs'], secondaryMuscles: ['front_delt'],
+    instructions: [
+      'Stand side-on to a cable set at chest height and hold the handle at your sternum.',
+      'Step out so there is tension pulling you toward the machine.',
+      'Press the handle straight out and resist the twist.',
+      'Bring it back to your chest, your torso should not rotate at all.',
+    ],
+  },
+  // ── FULL BODY / FUNCTIONAL ─────────────────────────────────────────────────
+  {
+    id: 'l119', name: 'Kettlebell Swing', type: 'lift', tags: ['tag_legs', 'tag_pull'],
+    defaultSets: '4', defaultReps: '12–15', defaultRest: '60s',
+    primaryMuscles: ['glutes', 'hamstrings'], secondaryMuscles: ['lower_back', 'abs', 'front_delt'],
+    instructions: [
+      'Stand with the bell a step in front of you and hinge to grip it.',
+      'Hike it back between your legs like a snap pass.',
+      'Snap your hips forward to float it to chest height.',
+      'This is a hip drive, not a front raise, your arms just hold on.',
+    ],
+  },
+  {
+    id: 'l120', name: "Farmer's Carry", type: 'lift', tags: ['tag_pull', 'tag_core'],
+    defaultSets: '3', defaultReps: '30–45s carry', defaultRest: '90s',
+    primaryMuscles: ['forearms', 'traps'], secondaryMuscles: ['abs', 'obliques', 'glutes'],
+    instructions: [
+      'Pick up a heavy dumbbell or kettlebell in each hand.',
+      'Stand tall with your shoulders back and your core braced.',
+      'Walk at a steady pace without leaning to either side.',
+      'Set the weights down deliberately when your grip is nearly done.',
+    ],
+  },
+  {
+    id: 'l121', name: 'Thruster', type: 'lift', tags: ['tag_legs', 'tag_push'],
+    defaultSets: '4', defaultReps: '8–10', defaultRest: '90s',
+    primaryMuscles: ['quads', 'front_delt'], secondaryMuscles: ['glutes', 'triceps', 'abs'],
+    instructions: [
+      'Hold two dumbbells at your shoulders with your elbows up.',
+      'Squat down to at least parallel.',
+      'Drive out of the bottom and use that momentum to press overhead.',
+      'Bring the weights back to your shoulders and go straight into the next rep.',
+    ],
+  },
+  {
+    id: 'l122', name: 'Burpee', type: 'lift', tags: ['tag_cardio', 'tag_legs'],
+    defaultSets: '4', defaultReps: '10–12', defaultRest: '60s',
+    primaryMuscles: ['quads', 'chest'], secondaryMuscles: ['front_delt', 'triceps', 'abs', 'glutes'],
+    instructions: [
+      'From standing, drop your hands to the floor and kick your feet back.',
+      'Lower your chest to the floor, then press back up.',
+      'Jump your feet back under you.',
+      'Stand and jump, then go straight into the next rep.',
+    ],
+  },
+  {
+    id: 'l123', name: 'Clean and Press', type: 'lift', tags: ['tag_legs', 'tag_push'],
+    defaultSets: '4', defaultReps: '5–6', defaultRest: '120s',
+    primaryMuscles: ['front_delt', 'quads'], secondaryMuscles: ['traps', 'glutes', 'lower_back', 'triceps'],
+    instructions: [
+      'Start with the bar over your mid-foot and grip just outside your legs.',
+      'Pull it up your body and drop under to catch it on your front delts.',
+      'Stand tall, then press it overhead until your arms are locked out.',
+      'Lower to your shoulders and then to the floor, this one rewards practice over load.',
+    ],
+  },
   // ── CARDIO ─────────────────────────────────────────────────────────────────
   { id: 'c1', name: 'Treadmill', type: 'cardio', tags: ['tag_cardio'] },
   { id: 'c2', name: 'Elliptical', type: 'cardio', tags: ['tag_cardio'] },
@@ -864,6 +1459,12 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
   { id: 'c9', name: 'Assault Bike', type: 'cardio', tags: ['tag_cardio'] },
   { id: 'c10', name: 'Swimming', type: 'cardio', tags: ['tag_cardio'] },
   { id: 'c11', name: 'Walking', type: 'cardio', tags: ['tag_cardio'] },
+  { id: 'c12', name: 'Hiking', type: 'cardio', tags: ['tag_cardio'] },
+  { id: 'c13', name: 'Outdoor Cycling', type: 'cardio', tags: ['tag_cardio'] },
+  { id: 'c14', name: 'Stair Climbing', type: 'cardio', tags: ['tag_cardio'] },
+  { id: 'c15', name: 'Yoga', type: 'cardio', tags: ['tag_cardio'] },
+  { id: 'c16', name: 'Pilates', type: 'cardio', tags: ['tag_cardio'] },
+  { id: 'c17', name: 'Sports', type: 'cardio', tags: ['tag_cardio'] },
 ];
 
 function fmtLibraryDay(dk: string | undefined): string {

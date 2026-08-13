@@ -1788,7 +1788,7 @@ Read per call, changeable without an App Store update.
 | G | Calorie floor | ✅ complete + device-verified 2026-08-03 |
 | H | Cost routing | ⏸️ **PARKED** -- measured 73% fallback + 57 cache entries. See `SPEC_otto_routing.md` |
 | I | Exercise editor | new, not started |
-| J | Expand exercise library (79 -> ~143) | new, not started |
+| J | Expand exercise library (79 -> 139) | 🔬 **THE 60 ENTRIES ARE WRITTEN 2026-08-13, NOT DEVICE-VERIFIED.** 4 of the 64 candidates were cut (4.18 item 12). Mechanically checked: 139 unique ids, zero invalid muscle keys or tags. **Still to do: device pass + the equipment tags across all 139 (4.18 item 11).** Detail in `project_j_roadmap.md` item J. |
 | K | Lift-name aliases | new, not started |
 | L | Undereating safeguard | ✅ complete + device-verified 2026-08-03 |
 | M | Dietary restrictions / allergies | ✅ complete + device-verified 2026-08-04 |

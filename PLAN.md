@@ -1783,7 +1783,7 @@ Read per call, changeable without an App Store update.
 | B | Otto free/paid split | direction locked, prompt/KB work outstanding |
 | C | Non-AI walls / paywalls / limits | ⚠️ header says NOT COMPLETE, but the 2026-08-03 commit says closed after audit. **Verify before trusting either.** |
 | D | 7-day taste | 🔴 **THIS ROW WAS WRONG. CORRECTED 2026-08-05 by Justin, who said he was "almost certain it is fully built" and was right.** `FirstWeekEndedModal.tsx` exists and is wired into `app/(tabs)/index.tsx`. It said "specced not built" and I quoted that back at him as an unbuilt conversion lever. **Verify what remains on it before planning around it.** |
-| E | Workout builder | 🔴 **SPECCED 2026-08-10: `SPEC_workout_builder.md`. Nothing built. Blocked on J.** Open items **1, 2, 7, 8, 9 CLOSED**; **3, 4 and 6 have written proposals** (spec 2.1l, 2.1k, 5.1). 🔴 **ONE left: item 5, validation.** ⚠️ **Item 6 surfaced a REAL BLOCKER: `pj_exercise_library` is only written by the Exercise Library screen, so a user who never opens it hands Otto an empty library.** |
+| E | Workout builder | 🟢 **FULLY DESIGNED 2026-08-13. `SPEC_workout_builder.md`. ALL 9 OPEN ITEMS ANSWERED. Nothing built. Blocked on J.** ⚠️ **Two things must be fixed BEFORE the build: the empty-library bug (spec 5.1) and the chat's auto-scroll (spec 2.1h).** Both are in the roadmap's NEXT UP. |
 | F | Meal builder | needs a full spec |
 | G | Calorie floor | ✅ complete + device-verified 2026-08-03 |
 | H | Cost routing | ⏸️ **PARKED** -- measured 73% fallback + 57 cache entries. See `SPEC_otto_routing.md` |

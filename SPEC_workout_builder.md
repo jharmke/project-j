@@ -705,6 +705,61 @@ build. **The two functions shipping today already carry this exposure.** A cap t
 recently-used movements over untouched defaults is the obvious answer, **but a wrong cap silently drops the
 exercise somebody wanted**, which is a real failure rather than a tidy-up. Flagged, not buried.
 
+### 5.2 VALIDATION BEFORE SAVE (open item 5) — ✅ PROPOSAL 2026-08-13
+✅ **THE PARSING PATTERN ALREADY SHIPS AND IT ALREADY FAILS SAFE. REUSE IT, DO NOT INVENT ONE.**
+`parseVoicedCards` in `utils/coachAI.ts` (~621) reads structured JSON out of a model reply: strips markdown
+code fences, slices from the first `{` to the last `}` so surrounding prose cannot break it, `JSON.parse`
+inside a try/catch, then **checks each item's shape before accepting it**. On ANY failure it returns null and
+the caller falls back to the deterministic cards, so the screen always renders.
+➡️ **Same three properties are exactly what this needs:** tolerant of prose around the JSON, never throws,
+and degrades to something correct rather than something broken.
+
+🔴 **THE GOVERNING RULE, AND IT REMOVES MOST OF THE "WHAT DOES THE USER SEE" PROBLEM:**
+➡️ ***THE CARD ONLY EVER SHOWS WHAT WILL ACTUALLY BE SAVED.*** Validation runs BEFORE the card renders, so
+anything dropped is simply not on it. **What you see is what you get, with no "we removed something" UI to
+design and nothing that can differ between the preview and the result.**
+⚠️ **This is the whole safety story of the feature holding together:** 2.1 says nothing is written until you
+agree, and that promise is only worth something if the thing you agreed to is the thing that saves.
+
+**FIELD BY FIELD. Every one is a WHITELIST the app owns — the fifth time this spec has landed there.**
+| Field | Valid | If invalid |
+|---|---|---|
+| **Exercise name** | Must match the user's library, compared with **`normalizeLiftName`** (`utils/liftPR.ts`) so matching agrees with the PR system | Off-list is a NEW custom exercise **only when the USER named it** (decision 2). **Invented unprompted: drop the exercise.** |
+| **Tag** | One of the six locked ids (6.6) | Drop it, then **derive from the exercises' own tags**. ⚠️ **A routine cannot end with no tag — the manual add form will not save without one.** If nothing can be derived, no card. |
+| **Muscle keys** | The 22 in `components/MuscleMap.tsx` | Drop the unknown keys, keep the rest |
+| **Equipment** | The seven ticks (PLAN 4.18 item 11) | Drop the unknown values |
+| **Sets** | A small positive integer | **Fall back to the library's value** |
+| **Reps** | A number, a range (`8-10`), or a hold duration | **Fall back to the library's value** |
+| **Rest** | A duration | **Fall back to the library's value** |
+| **Target date** | Today or later | See below |
+
+✅ **NUMBERS FALL BACK SILENTLY AND THAT IS CORRECT, NOT LAZY.** The app already owns sets/reps/rest (2.1c)
+and Otto only *adjusts* them, **so there is always a right answer to fall back to and nothing is lost.**
+Telling the user "he wrote 3-4ish so I used 3" is noise about a value they never saw.
+🔴 **BUT AN EXERCISE IS NOT A FIELD.** Dropping one changes the workout, so it must never happen invisibly
+behind a card claiming otherwise — which the governing rule above already prevents, because the card is built
+from the validated draft.
+
+✅ **IF TOO LITTLE SURVIVES, THERE IS NO CARD AT ALL.** Parse failure, or fewer exercises left than a workout
+should be (3.7 locks five), and **Otto's reply degrades to ordinary text**. Same shape as
+`voiceDiagnosticCards` returning its cards unchanged when voicing fails. **A missing card is a normal
+answer; a half-empty card is a bug the user has to interpret.**
+
+🔴 **PAST DATES — HANDED HERE BY ITEM 9, AND IT NEEDS NO NEW UI.** A card built for three dates can sit in the
+thread for a week; the grey-out (2.1j) only fires on supersede or accept, so an untouched card stays live
+while its dates age.
+➡️ **Check the dates BOTH when the card renders AND at the moment Accept is tapped** (the second is the one
+that matters — the card can be on screen when a date rolls over).
+➡️ **If any target date has passed, the card greys itself out with the label `Dates have passed`.** Reuses
+the existing greyed-out mechanism exactly, so there is nothing new to build and nothing new to learn.
+⚠️ **The library's own day picker already disables past days**, so refusing is consistent with what the app
+does everywhere else. **Silently writing workouts onto days that already went by is worse than refusing.**
+
+⚠️ **VALIDATION IS THE ONLY THING STANDING BETWEEN THE MODEL AND THE USER'S DATA, SO IT IS TESTED LIKE A
+DETECTOR, NOT EYEBALLED** — malformed payloads generated in bulk and run through the validator, per
+[[feedback_detectors_are_brittle]]. ⚠️ **And a harness cannot prove what the model actually emits**; that only
+shows up on device. See [[feedback_harnesses_cannot_see_the_model]].
+
 ---
 
 ## 6. WHERE IT LANDS
@@ -945,7 +1000,7 @@ first, so no decision has to be taken twice.
 | ~~6~~ | ~~How the library reaches Otto~~ | M | ✅ **PROPOSAL WRITTEN 2026-08-13, see 5.1.** The pipe already exists on both tiers; the work is the TRIGGER. 🔴 **Surfaced a real blocker: `pj_exercise_library` does not exist until the user opens the Exercise Library screen.** |
 | ~~4~~ | ~~The draft surviving revision across turns~~ | M | ✅ **PROPOSAL WRITTEN 2026-08-13, see 2.1k.** 🔴 **The premise was wrong: the draft never rides history, so the 12-turn cap cannot touch it.** It lives on the message object client-side and is re-sent on the per-message tail. |
 | ~~3~~ | ~~Where the preview renders~~ | M | ✅ **PROPOSAL WRITTEN 2026-08-13, see 2.1l.** A sibling in Otto's reply column, its own component file. ⚠️ **The modal rules on the old note do not apply — there is no modal.** `ToastRenderer` is already mounted in the panel. |
-| **5** | **Validation before save, and what the user sees when something is dropped** | M | Last because it needs to know what Otto sends (#6) and where the draft lives (#4). Also now owns the past-dates problem from item 9. |
+| ~~5~~ | ~~Validation before save~~ | M | ✅ **PROPOSAL WRITTEN 2026-08-13, see 5.2.** Reuses the shipped `parseVoicedCards` pattern. 🔴 **Governing rule: the card only ever shows what will actually be saved**, which removes the "what does the user see when something is dropped" problem entirely. |
 
 ⚠️ **NUMBERING NOTE. NOTHING HAS EVER BEEN RENUMBERED. THE NUMBERS ARE STABLE IDS; THE ROW ORDER IS THE
 RANKING.** Required by CLAUDE.md ("if you renumber or reorganise anything Justin has been tracking, SAY SO
@@ -1024,8 +1079,14 @@ client-side (where `routes`, `tutorials` and `dayJump` already live) and is re-s
 when the user asks for a change. **Lifetime is the conversation**, which is correct rather than a limitation:
 persisting it would re-open the stale-card hole the grey-out exists to close.
 
-**5. VALIDATION BEFORE SAVE.** Dropping off-list muscle keys, off-list equipment, invalid tags and unknown
-exercise names, and what the user sees when something is dropped.
+**5. VALIDATION BEFORE SAVE. ✅ PROPOSAL WRITTEN 2026-08-13 — see 5.2.** Reuses `parseVoicedCards`
+(`utils/coachAI.ts`), which already reads structured JSON out of a model reply, never throws, and degrades to
+the deterministic version on any failure.
+🔴 **THE GOVERNING RULE ANSWERS THE "what does the user see when something is dropped" HALF BY REMOVING IT:
+the card only ever shows what will actually be SAVED**, because validation runs before it renders. Numbers
+fall back to the library silently (there is always a right answer). Too little survives and there is **no
+card at all** — Otto's reply degrades to ordinary text. **Past dates grey the card out** with the existing
+mechanism, checked both on render and at the moment Accept is tapped.
 
 **6. HOW THE LIBRARY REACHES OTTO. ✅ PROPOSAL WRITTEN 2026-08-13 — see 5.1.** The pipe already exists on both
 tiers (`buildExerciseNamesIfRelevant` for free, `buildPRContextIfRelevant` for Supporters), riding the

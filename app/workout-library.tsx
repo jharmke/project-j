@@ -1106,7 +1106,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
   },
   {
     id: 'l105', name: 'Step-Up', type: 'lift', tags: ['tag_legs'],
-    defaultSets: '3', defaultReps: '10–12 each leg', defaultRest: '60s',
+    defaultSets: '3', defaultReps: '10–12 each', defaultRest: '60s',
     primaryMuscles: ['quads', 'glutes'], secondaryMuscles: ['hamstrings', 'calves'],
     instructions: [
       'Stand facing a box or bench at about knee height.',
@@ -1139,7 +1139,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
   },
   {
     id: 'l108', name: 'Single Leg RDL', type: 'lift', tags: ['tag_legs'],
-    defaultSets: '3', defaultReps: '8–10 each leg', defaultRest: '60s',
+    defaultSets: '3', defaultReps: '8–10 each', defaultRest: '60s',
     primaryMuscles: ['hamstrings', 'glutes'], secondaryMuscles: ['lower_back', 'abs'],
     instructions: [
       'Hold a dumbbell in one hand and stand on the opposite leg.',
@@ -1401,17 +1401,6 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
       'Hike it back between your legs like a snap pass.',
       'Snap your hips forward to float it to chest height.',
       'This is a hip drive, not a front raise, your arms just hold on.',
-    ],
-  },
-  {
-    id: 'l120', name: "Farmer's Carry", type: 'lift', tags: ['tag_pull', 'tag_core'],
-    defaultSets: '3', defaultReps: '30–45s carry', defaultRest: '90s',
-    primaryMuscles: ['forearms', 'traps'], secondaryMuscles: ['abs', 'obliques', 'glutes'],
-    instructions: [
-      'Pick up a heavy dumbbell or kettlebell in each hand.',
-      'Stand tall with your shoulders back and your core braced.',
-      'Walk at a steady pace without leaning to either side.',
-      'Set the weights down deliberately when your grip is nearly done.',
     ],
   },
   {

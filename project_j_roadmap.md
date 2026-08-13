@@ -2431,12 +2431,26 @@ are separate pre-submission checklists, NOT part of this menu.
        for a home workout two weeks later, and an untagged exercise counts as available anywhere. The person
        most likely to create custom exercises is the same person who also trains at home.
 
-  **J. EXPAND THE EXERCISE LIBRARY (79 -> 139)** -- NEW 2026-07-30, came out of item A question 3.
-     🔬 **THE 60 ENTRIES ARE WRITTEN, 2026-08-13. NOT YET VERIFIED ON DEVICE.** `DEFAULT_LIBRARY` now holds
-     **139 entries** (79 + 60; the candidate list was 64 and PLAN 4.18 item 12 cut four). Every entry carries
+  **J. EXPAND THE EXERCISE LIBRARY (79 -> 138)** -- NEW 2026-07-30, came out of item A question 3.
+     🔬 **THE 59 ENTRIES ARE WRITTEN, 2026-08-13. NOT YET VERIFIED ON DEVICE.** `DEFAULT_LIBRARY` now holds
+     **138 entries** (79 + 59; the candidate list was 64, PLAN 4.18 item 12 cut four, and one more was cut on
+     audit — see the duplicate note below). Every entry carries
      its tag, default sets/reps/rest, primary/secondary muscles and 4 instruction steps in the existing voice.
-     ✅ **Checked mechanically:** 139 unique ids, **zero invalid muscle keys** against the 22 in
-     `components/MuscleMap.tsx`, **zero invalid tags** against the six locked ones, no double dashes.
+     ✅ **Checked mechanically:** 138 unique ids, **zero invalid muscle keys** against the 22 in
+     `components/MuscleMap.tsx`, **zero invalid tags** against the six locked ones, zero double dashes, zero
+     smart quotes, and every rep range on the en dash convention (`8–10`) with no stray hyphen ranges.
+     🔴 **THE AUDIT CAUGHT A REAL DUPLICATE AND IT IS THE EXACT FAILURE SECTION 4 OF THE BUILDER SPEC WARNS
+     ABOUT.** `Farmer's Carry` was ALREADY in the library as `l50`, and the approved candidate list had it
+     again -- so a second copy went in as `l120` and was removed. **Two entries with the same name split a
+     user's PR history silently**, because `normalizeLiftName` is trim + lowercase + collapse spaces and
+     nothing else.
+     ⚠️ **WHY THE FIRST CHECK MISSED IT: `l50` is written with DOUBLE quotes** (`name: "Farmer's Carry"`,
+     because of the apostrophe) **and the first grep only looked for single-quoted names.** Any future
+     name-collision check has to handle both quote styles, and should compare on `normalizeLiftName`, not on
+     raw text. A near-duplicate pass (same words, any order) was also run and found nothing else.
+     ⚠️ **The 18 em dashes in instruction text are all PRE-EXISTING**, none in the new entries. CLAUDE.md's
+     rule is about the double dash `--`, of which there are zero; flagged only so nobody re-finds them and
+     assumes they arrived with this batch.
      ✅ **Existing users get them automatically and safely:** the loader already merges defaults the stored
      library does not have (`newDefaults = DEFAULT_LIBRARY.filter(...)`), read-then-merge, no user edit
      touched. ✅ **No effect on the 15-custom-exercise cap** -- it counts by IDENTITY against

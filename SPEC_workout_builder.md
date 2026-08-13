@@ -202,7 +202,10 @@ fixed string rather than a prompt rule is deliberate** — see [[feedback_harnes
 prompt rule has lost to the model five times on this project. It is also the whole discoverability problem
 for 2.1f solved in one sentence and zero UI.
 
-### 2.1f Revising by talking, and spent cards (open items 2c + 2d) — ✅ CLOSED 2026-08-11
+### 2.1f Revising by talking, and greyed-out cards (open items 2c + 2d) — ✅ CLOSED 2026-08-11
+⚠️ **PLAIN LANGUAGE, DELIBERATELY.** This was written up as "the spent state" and Justin's reaction was
+*"wtf is spent????"*. **It is the GREYED-OUT card: the button becomes a label and it cannot be tapped.**
+Do not reintroduce the jargon. See [[feedback_plain_english_findings]].
 ✅ **THERE IS NO SECOND BUTTON. Revision happens by TYPING** — *"swap the flies for dumbbell press"* — because
 the chat already has a text input at the bottom. **A "Change" button could only ever do one thing: put the
 cursor in that box.** Accept stays the single primary action, which is section 2.2 holding.
@@ -212,7 +215,7 @@ cursor in that box.** Accept stays the single primary action, which is section 2
 2. 🔴 **The thread calls `scrollToEnd` on every content-size change** (`AssistantChat.tsx` line 931, and again
    at line 452). **So the new card is exactly where the user is already looking.** Editing the old one in
    place would change something off-screen and force a scroll UP to confirm their own request landed.
-3. The "stack of near-identical cards" mess is handled by the spent state below.
+3. The "stack of near-identical cards" mess is handled by the greyed-out state below.
 
 ✅ **DECLINE IS NOT A BUTTON EITHER. Ignoring the card IS declining it.** Nothing was saved, so there is
 nothing to undo: the user types something else, or closes the chat.
@@ -220,7 +223,7 @@ nothing to undo: the user types something else, or closes the chat.
 week later" — AND A DECLINE BUTTON DOES NOT SOLVE THAT AT ALL.** Someone who ignored the card was never going
 to tap Decline.
 
-✅ **THE ANSWER IS THE SPENT STATE. Only the newest card in a conversation is live.** As soon as a card is
+✅ **THE ANSWER IS THE GREYED-OUT STATE. Only the newest card in a conversation is live.** As soon as a card is
 superseded or accepted it greys out and **its button is replaced by a label** stating what happened:
 `Replaced`, or `Added to Thursday`. It stays in the transcript so the user can see what they asked for, and
 it cannot be tapped.
@@ -255,7 +258,7 @@ honoured anyway: **the app's own Large text setting breaks it** (`fontScale`, se
 a card whose TITLE you can see, not about reaching the button. Lower priority than it looked.
 
 🖼️ **A to-scale mockup of all of the above was built and approved 2026-08-11** (three phones: ordinary case,
-stress case with the library's longest names, and a revision exchange showing the spent state). Rendered at
+stress case with the library's longest names, and a revision exchange showing the greyed-out state). Rendered at
 true 393x852 in Light + Cyan using the app's real typefaces.
 ⚠️ **It lives in a session scratchpad and is NOT a durable artifact.** This section is the record.
 
@@ -323,7 +326,7 @@ on the card, and decision 8 (supersets) already established "the preview offers 
 designed pattern.
 
 ❌ **REJECTED: one button PER DAY.** Three or four primary actions in one card is what 2.2 exists to prevent,
-and it makes the spent state something we have to invent rules for rather than something obvious.
+and it makes the greyed-out state something we have to invent rules for rather than something obvious.
 
 ⚠️ **BUILD NOTES:**
 - **Uncheck everything and the button needs its dim/inactive state** (CLAUDE.md build standard).
@@ -336,9 +339,21 @@ free user one of their 5 daily questions. **Wrong: section 7 makes the builder S
 never sees this card at all.** Justin caught it (*"this is a paid feature... are we not aligned here???"*).
 Supporters are capped at 30/day, not unlimited. **The decision stands on reliability and latency.**
 
-⏳ **ONE QUESTION LEFT IN ITEM 9: what does the spent state (2.1f) mean across multiple days?** If the card is
-one unit it goes spent as a unit, which would mean you never accept three days and then revise the fourth.
-Needs confirming.
+### 2.1j The week card greys out as a UNIT — ✅ DECIDED 2026-08-13
+✅ **Uncheck Friday, tap `ADD 2 DAYS`, and the WHOLE card greys out**, its button replaced by the label
+`Added 2 of 3 days`. **Friday does not stay live.** If the user wants Friday later they ask, and get a fresh
+card with a current date on it.
+
+❌ **REJECTED: greying out only the days that landed and leaving Friday tappable.** That leaves a card sitting
+in the history with a live button on it whose date keeps getting older — **which is the exact hole the
+grey-out exists to close** (2.1f). A half-live card is a stale card wearing a disguise.
+⚠️ **COST, accepted: changing your mind about Friday costs a message.** Same trade as everywhere else here —
+the fast path serves the common case, the slow path re-derives safely.
+🟡 **Justin's pick was "i guess one"** — decided, but the least confident call in item 9. **If it feels wrong
+in use, this is the one to revisit**, and the alternative is written above so it does not have to be
+re-derived.
+
+✅ **ITEM 9 IS CLOSED.**
 
 ### 2.2 🔴 THE ONE-SCREEN RULE (Justin, 2026-08-10)
 > *"i just want to be sure user isnt being asked 50 questions when trying to build a workout or meal."*
@@ -740,7 +755,7 @@ first, so no decision has to be taken twice.
 |---|---|---|---|
 | ~~1~~ | ~~SESSION SHAPE~~ | -- | ✅ **CLOSED 2026-08-10. Five exercises, see section 3.7.** |
 | ~~2~~ | ~~THE PREVIEW AND THE INLINE ADD FLOW~~ | -- | ✅ **CLOSED 2026-08-11. All seven parts. See 2.1b through 2.1g.** |
-| **9** | **THE PROGRAM CARD — what a multi-day build previews as** 🟡 **IN PROGRESS** | **J** | 🆕 **ADDED 2026-08-11.** Part one closed same day (what a multi-day build IS — see 6.6). **Part two open: the REVIEW problem**, 3-4 routines to read before accepting. |
+| ~~9~~ | ~~THE PROGRAM CARD~~ | -- | ✅ **CLOSED 2026-08-13.** Added and closed inside three days. See 6.6 (what a multi-day build is) and 2.1h/2.1i/2.1j (the card, the checkmarks, the grey-out). |
 | **3** | **Where the preview renders** | M | Falls straight out of #2 and is really its second half. |
 | **4** | **The draft surviving revision across turns** | M | Only answerable once #2 defines what "revising" means. |
 | **5** | **Validation before save, and what the user sees when something is dropped** | M | Needs a preview to show it in. |
@@ -767,7 +782,7 @@ movements or eleven.
 - **2.1e (2b)** the button NAMES its destination (`ADD TO THURSDAY`), the day is settled before the card
   renders, no day grid, "Add" deliberately not "Load", smaller and CENTERED, app appends a standing line
 - **2.1f (2c + 2d)** revision by TYPING with no second button, a new card below rather than an edit in
-  place, and the SPENT STATE (only the newest card is live) closing the stale-Accept hole
+  place, and the GREYED-OUT STATE (only the newest card is live) closing the stale-Accept hole
 - **2.1g** the height maths, and why `scrollToEnd` inverts the worry
 
 **9. 🆕 THE PROGRAM CARD — WHAT A MULTI-DAY BUILD PREVIEWS AS.** Raised by Justin 2026-08-11: *"is it clear
@@ -794,12 +809,14 @@ so expanding a day would throw the thread to the bottom). Shared behaviour with 
 
 ✅ **ONE BUTTON, WITH CHECKMARKS PER DAY — DECIDED 2026-08-13, see 2.1i.** Typing changes content, tapping
 changes scope. Per-day buttons rejected.
+✅ **THE CARD GREYS OUT AS A UNIT — DECIDED 2026-08-13, see 2.1j.** `Added 2 of 3 days`; unpicked days do not
+stay live.
 
-⏳ **STILL OPEN INSIDE ITEM 9:**
-- **What does the spent state mean across multiple days?** If the card is one unit it goes spent as a unit.
-- ⚠️ **The merge-not-replace rule (6.1) has to hold on EVERY day the build lands on**, not just the first.
-- ⚠️ **Handed to open item 5:** a card built for "Mon/Wed/Fri" and accepted a week later points at dates that
-  have already passed. The library's own day picker disables past days; **accept-time validation has to catch
+✅ **ITEM 9 CLOSED 2026-08-13.** Two things it hands to other items:
+- ⚠️ **To the BUILD, not to an open item: the merge-not-replace rule (6.1) has to hold on EVERY day the build
+  lands on**, not just the first.
+- ⚠️ **To open item 5:** a card built for three dates and accepted a week later points at days that have
+  already passed. The library's own day picker disables past days; **accept-time validation has to catch
   this**, because silently adding workouts to days that already went by is worse than refusing.
 
 **3. WHERE THE PREVIEW RENDERS.** A chat-embedded card, and every modal rule in this project applies

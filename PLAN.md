@@ -1783,7 +1783,7 @@ Read per call, changeable without an App Store update.
 | B | Otto free/paid split | direction locked, prompt/KB work outstanding |
 | C | Non-AI walls / paywalls / limits | ⚠️ header says NOT COMPLETE, but the 2026-08-03 commit says closed after audit. **Verify before trusting either.** |
 | D | 7-day taste | 🔴 **THIS ROW WAS WRONG. CORRECTED 2026-08-05 by Justin, who said he was "almost certain it is fully built" and was right.** `FirstWeekEndedModal.tsx` exists and is wired into `app/(tabs)/index.tsx`. It said "specced not built" and I quoted that back at him as an unbuilt conversion lever. **Verify what remains on it before planning around it.** |
-| E | Workout builder | 🔴 **SPECCED 2026-08-10: `SPEC_workout_builder.md`. Nothing built. Blocked on J.** Open items 1 and 2 CLOSED; **item 9 (the program card) ADDED 2026-08-11 and ranked second.** 7 open. |
+| E | Workout builder | 🔴 **SPECCED 2026-08-10: `SPEC_workout_builder.md`. Nothing built. Blocked on J.** Open items **1, 2 and 9 CLOSED** (the whole preview, single-day and multi-day). **6 open: 3, 4, 5, 6, 7, 8 — all but 7 and 8 are MECHANICS, not Justin's calls.** |
 | F | Meal builder | needs a full spec |
 | G | Calorie floor | ✅ complete + device-verified 2026-08-03 |
 | H | Cost routing | ⏸️ **PARKED** -- measured 73% fallback + 57 cache entries. See `SPEC_otto_routing.md` |
@@ -1857,7 +1857,7 @@ discussed before but i guess wasnt saved."* Decisions land here the moment they 
    - **No second button anywhere.** Revision is TYPING; a "Change" button could only put the cursor in the
      text box that is already there. **Decline is not a button either -- ignoring the card IS declining it**,
      because nothing was saved.
-   - 🔴 **THE SPENT STATE closes three questions with one mechanism.** Only the newest card is live;
+   - 🔴 **THE GREYED-OUT STATE closes three questions with one mechanism.** Only the newest card is live;
      superseded and accepted cards grey out and swap the button for `Replaced` / `Added to Thursday`. **2d's
      real worry was never "how do I dismiss this", it was "what if I scroll back and tap Accept a week
      later" -- and a Decline button does not solve that at all**, since anyone who ignored it never taps it.
@@ -1913,8 +1913,23 @@ discussed before but i guess wasnt saved."* Decisions land here the moment they 
    opened. **Shared with Halo's chat and tangled with the keyboard flow -- not a one-liner.**
    🟡 **DIRECTION, NOT LOCKED.** His sign-off was *"yeah think thats alright.."* -- agreement, not enthusiasm.
    The visual gets a device pass, same standing as the single-routine card.
-   ⏳ **TWO QUESTIONS LEFT IN ITEM 9:** one button for the week or one per day, and what the spent state means
-   across multiple days.
+**4f. ✅ ITEM 9 CLOSED 2026-08-13. Detail in `SPEC_workout_builder.md` 2.1i and 2.1j.**
+   ✅ **ONE BUTTON, WITH A CHECKMARK PER DAY, ALL CHECKED BY DEFAULT.** Label follows the selection
+   (`ADD ALL 3 DAYS` -> `ADD 2 DAYS`). **Justin's proposal, after I argued for talking-only. He was right.**
+   🔴 **THE REASON IS RELIABILITY, NOT CONVENIENCE: asking Otto to drop a day makes the model REGENERATE THE
+   WEEK**, and he can come back with more changed than was asked for. A checkbox is deterministic.
+   ➡️ **The principle that stops this contradicting "no second button": TYPING CHANGES CONTENT, TAPPING
+   CHANGES SCOPE.** The Change button died because it did nothing the text input did not; a checkbox does
+   something the input can only do slowly and less safely.
+   ✅ **THE CARD GREYS OUT AS A UNIT** -- `Added 2 of 3 days`, unpicked days do not stay live, because a
+   half-live card is a stale card wearing a disguise. 🟡 Justin's pick was *"i guess one"*: **the least
+   confident call in item 9, and the one to revisit if it feels wrong in use.**
+   ⚠️ **I MADE A COST ARGUMENT FOR THE CHECKMARKS AND WITHDREW IT. DO NOT RESURRECT IT.** I claimed they saved
+   a free user one of their 5 daily questions; **section 7 makes the builder Supporter-only, so a free user
+   never sees the card.** Justin: *"this is a paid feature... are we not alligned here???"* **Read section 7
+   before arguing tier economics about this feature.** See [[feedback_verify_the_call_site]].
+   ⚠️ **"THE SPENT STATE" WAS MY JARGON AND IT LANDED BADLY** (*"wtf is spent????"*). It is **the greyed-out
+   card**. Renamed throughout both files. See [[feedback_plain_english_findings]].
 
 **6. HE MERGES INTO A DAY, HE NEVER REPLACES IT. Justin's call, and the app already agrees with him.**
    *"if i have a couple cardio or core exercises in there, then want otto to add a lift routine, then i

@@ -355,6 +355,71 @@ re-derived.
 
 ✅ **ITEM 9 IS CLOSED.**
 
+### 2.1k Where the draft LIVES (open item 4) — ✅ PROPOSAL 2026-08-13
+🔴 **THE PREMISE OF THIS ITEM TURNS OUT TO BE WRONG, WHICH IS THE WHOLE ANSWER.** It was written as *"a
+routine revised over several messages has to survive Otto's 12-turn history cap"* (PLAN 4.5). **It never
+rides history, so the cap cannot touch it.**
+➡️ **Verified:** the server filters `data.history` to entries with a **string `text`** and maps them to
+`{role, content}` (`functions/src/appCompanion.ts` ~325-332). **No structured field travels in history at
+all.** `MAX_HISTORY_TURNS = 12` is irrelevant to the draft.
+
+✅ **THE DRAFT LIVES ON THE MESSAGE OBJECT, CLIENT-SIDE, AND THE PATTERN ALREADY EXISTS.** `Msg` in
+`components/AssistantChat.tsx` (~141) is already
+`{ role, text, feedback?, routes?, tutorials?, dayJump?, cannedId? }` — **structured extras carried beside
+the text.** A `draft?` field is one more of the same. The card has to render from it anyway.
+
+✅ **ON A REVISION THE CLIENT RE-SENDS THE LIVE DRAFT** as a context block on the per-message tail, exactly
+like the exercise library (5.1) and the other on-demand datasets.
+➡️ **So Otto is handed the exact current routine rather than reconstructing it from his own prose** — which
+matters because 2.1b puts the routine in a structured CARD and leaves his bubble as one short line, so the
+routine is not in his text to reconstruct from.
+✅ **There is never any ambiguity about WHICH draft:** 2.1j makes only the newest card live, so exactly one
+is ever a candidate.
+
+✅ **LIFETIME: THE CONVERSATION. Verified, not assumed.** `AssistantChat` is mounted permanently with
+`visible={open}` driving the Modal (`components/AssistantOverlay.tsx` ~144), so **the draft survives closing
+and reopening the panel.** `messages` is `useState` only and is never persisted, so it dies on **app restart**
+or on the header's **new-chat / refresh button**.
+✅ **THAT IS THE RIGHT BEHAVIOUR, NOT A LIMITATION.** An unaccepted draft should not outlive its
+conversation, and persisting one would **reintroduce the exact stale-card problem the grey-out exists to
+prevent** (2.1f/2.1j) — a live button pointing at dates that keep ageing, now surviving restarts.
+❌ **REJECTED: persisting drafts to storage.** Buys a rare recovery, costs a new storage key and re-opens a
+closed hole.
+✅ **NO WARNING ON new-chat either.** Nothing was saved, so clearing the thread is the same as ignoring the
+card, which 2.1f already established is a legitimate decline.
+
+ℹ️ **NOT A SECURITY CONCERN, checked:** the draft being client-held means a modified client could tamper with
+it, but accepting only ever writes the user's OWN local routines and days, which they can already edit
+freely. The tier gate is enforced server-side (section 7) and Supporters are uncapped on routine creation, so
+there is nothing to gain.
+
+### 2.1l Where the card actually renders (open item 3) — ✅ PROPOSAL 2026-08-13
+✅ **IT IS A SIBLING IN OTTO'S REPLY COLUMN, NOT A MODAL.** 2.1b already established the layout and verified
+it: an Otto reply is a COLUMN (`styles.replyCol`) beside the avatar, and the route pills and the share/thumbs
+row are ALREADY siblings outside the bubble. **The card is one more sibling.** Locked order: bubble → card →
+pills → actions.
+➡️ **It renders from `m.draft` on the message object** (2.1k), inside the existing `MountFade` wrapper, so it
+inherits the entrance animation every other message already has.
+
+✅ **A NEW COMPONENT FILE, NOT MORE OF `AssistantChat.tsx`.** That file is already past 1,200 lines and owns
+the panel, the keyboard, the quota, the gate, the pitch and the notification panel. **The card is
+self-contained** — it takes a draft and two callbacks (accept, toggle a day) — so it has no reason to live
+in there.
+
+⚠️ **THE PROJECT'S MODAL RULES DO NOT APPLY HERE, AND THAT IS WORTH SAYING OUT LOUD.** The original note on
+this item said "every modal rule applies: centred, never a bottom sheet, `ToastRenderer` inside the modal".
+**There is no modal — the card is inline** (2.1b rejected a modal explicitly). Centring and bottom-sheet
+rules are about modals and are irrelevant.
+✅ **The ONE rule that does carry over is already satisfied: `<ToastRenderer />` is ALREADY mounted inside the
+chat panel** (`AssistantChat.tsx` ~1113) and `showToast` is already in use there for thumbs feedback. **So
+accepting a card can fire its toast and it will draw above the chat's native window layer** with nothing new
+to wire.
+✅ **AND IT MUST FIRE ONE**, per CLAUDE.md's toast-on-save standard: no silent saves. `Added to Thursday`.
+
+⚠️ **TWO THINGS THIS ITEM INHERITS AND MUST NOT DROP:** the collapse animation follows this project's rule
+(**never `maxHeight`** — measure via `onLayout`, animate to an exact pixel height, 2.1h), and **the chat's
+auto-scroll must be fixed first** or expanding a day throws the thread to the bottom (2.1h, blocking).
+
 ### 2.2 🔴 THE ONE-SCREEN RULE (Justin, 2026-08-10)
 > *"i just want to be sure user isnt being asked 50 questions when trying to build a workout or meal."*
 
@@ -878,8 +943,8 @@ first, so no decision has to be taken twice.
 | ~~8~~ | ~~`DayProgram.muscles`~~ | -- | ✅ **CLOSED 2026-08-13. Otto leaves it empty — no screen draws it. See 6.6.** |
 | ~~7~~ | ~~Naming the routine~~ | -- | ✅ **CLOSED 2026-08-13. Derived from the six locked tags + the date. See 6.7.** 🔴 **NOTHING ON THIS LIST NEEDS JUSTIN ANY MORE — the rest are mechanics.** |
 | ~~6~~ | ~~How the library reaches Otto~~ | M | ✅ **PROPOSAL WRITTEN 2026-08-13, see 5.1.** The pipe already exists on both tiers; the work is the TRIGGER. 🔴 **Surfaced a real blocker: `pj_exercise_library` does not exist until the user opens the Exercise Library screen.** |
-| **4** | **The draft surviving revision across turns** | M | The architectural one: where the draft LIVES decides both items after it. |
-| **3** | **Where the preview renders** | M | Falls straight out of #4. |
+| ~~4~~ | ~~The draft surviving revision across turns~~ | M | ✅ **PROPOSAL WRITTEN 2026-08-13, see 2.1k.** 🔴 **The premise was wrong: the draft never rides history, so the 12-turn cap cannot touch it.** It lives on the message object client-side and is re-sent on the per-message tail. |
+| ~~3~~ | ~~Where the preview renders~~ | M | ✅ **PROPOSAL WRITTEN 2026-08-13, see 2.1l.** A sibling in Otto's reply column, its own component file. ⚠️ **The modal rules on the old note do not apply — there is no modal.** `ToastRenderer` is already mounted in the panel. |
 | **5** | **Validation before save, and what the user sees when something is dropped** | M | Last because it needs to know what Otto sends (#6) and where the draft lives (#4). Also now owns the past-dates problem from item 9. |
 
 ⚠️ **NUMBERING NOTE. NOTHING HAS EVER BEEN RENUMBERED. THE NUMBERS ARE STABLE IDS; THE ROW ORDER IS THE
@@ -943,11 +1008,21 @@ stay live.
   already passed. The library's own day picker disables past days; **accept-time validation has to catch
   this**, because silently adding workouts to days that already went by is worse than refusing.
 
-**3. WHERE THE PREVIEW RENDERS.** A chat-embedded card, and every modal rule in this project applies
-(centred, never a bottom sheet, `ToastRenderer` inside the modal).
+**3. WHERE THE PREVIEW RENDERS. ✅ PROPOSAL WRITTEN 2026-08-13 — see 2.1l.** A sibling in Otto's reply column
+(where the pills and the share/thumbs row already live), rendered from `m.draft`, in **its own component
+file** rather than inside the 1,200-line `AssistantChat.tsx`.
+⚠️ **THIS ITEM ORIGINALLY SAID "every modal rule applies: centred, never a bottom sheet, `ToastRenderer`
+inside the modal". THAT WAS WRITTEN BEFORE 2.1b REJECTED A MODAL. There is no modal**, so centring and
+bottom-sheet rules do not apply. ✅ The one rule that carries is already satisfied: `ToastRenderer` is
+already mounted inside the chat panel, so accepting can fire its toast with nothing new to wire.
 
-**4. THE DRAFT SURVIVING REVISION ACROSS TURNS.** Otto's history is capped at 12 turns (PLAN 4.5, measured,
-deliberately left there). A routine revised over several messages has to survive that.
+**4. THE DRAFT SURVIVING REVISION ACROSS TURNS. ✅ PROPOSAL WRITTEN 2026-08-13 — see 2.1k.**
+🔴 **THE PREMISE WAS WRONG AND THAT IS THE ANSWER.** This was written as "a routine revised over several
+messages has to survive the 12-turn history cap". **It never rides history** — the server filters history to
+entries with a string `text` — **so the cap cannot touch it.** The draft lives on the message object
+client-side (where `routes`, `tutorials` and `dayJump` already live) and is re-sent on the per-message tail
+when the user asks for a change. **Lifetime is the conversation**, which is correct rather than a limitation:
+persisting it would re-open the stale-card hole the grey-out exists to close.
 
 **5. VALIDATION BEFORE SAVE.** Dropping off-list muscle keys, off-list equipment, invalid tags and unknown
 exercise names, and what the user sees when something is dropped.

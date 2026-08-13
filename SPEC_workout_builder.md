@@ -657,6 +657,13 @@ JUSTIN CAUGHT IT** (*"the label and the tag on the workout tab are not the same 
 | `focus` | The day's focus name | **Automatic.** Loading a routine sets `focus = routine.name` (`workout.tsx` ~2010) | The word after the day in the **Programs card pills** (`MON · PUSH` -- "PUSH" is `focus`, `workout-library.tsx` ~2956) and as a small label under each date in a **report** (`report.tsx` ~651). ⚠️ **NOT drawn anywhere on the Workout tab.** |
 | `customLabel` | Free text the user types | **The user only.** The "Add label..." field on the day header (`workout.tsx` ~2458), sharing an editor with `muscles` | The Workout tab day header. **This is the label Justin means when he says "the label".** |
 | `tags` | The coloured workout tags | **Automatic.** Loading a routine copies `tags = routine.tags` onto the day | **Pills under the day header (up to 6, two rows) AND small coloured dots on every day button in the week strip.** The dots are what make a week LOOK like a program. |
+| `muscles` | A plain muscle sentence, e.g. `Chest · Shoulders · Triceps` | Ships with `PRESET_PROGRAMS`; also written by the day label editor | 🔴 **NOWHERE. NO SCREEN DRAWS IT** (open item 8, searched every screen 2026-08-13). Its only reader is Otto's own snapshot, as a THIRD fallback behind `customLabel` and `focus` (`utils/companionWorkouts.ts` ~133), so it almost never surfaces even there. |
+
+⚠️ **`muscles` IS NOT THE TAG, AND THE TWO GET CONFUSED.** Justin, 2026-08-13: *"confused what this muscle
+string is. arent their tags im really confused."* **On `Push / Pull / Legs` Monday, FIVE things are stored:**
+type `lift`, focus `Push` (**visible** -- the "PUSH" in the `MON · PUSH` pill), colour blue (**visible** --
+why the pill is blue), tag `tag_push` (**visible** -- the Workout tab pills and day-strip dots), and
+`muscles: 'Chest · Shoulders · Triceps'` (**invisible**). Explain it that way, never by field name.
 
 ✅ **OTTO TAGS THE ROUTINE, NOT THE DAY.** Justin asked whether Otto should assign the day tag the way the
 program feature does. He should -- but through the routine, because **loading a routine already copies its
@@ -678,6 +685,20 @@ app supplies the valid list, anything else is dropped.** Third time this spec ha
 vocabulary with known meaning; user tag labels are arbitrary strings with unknown meaning. Matching on them
 is exactly the kind of thing that fails silently. See [[feedback_detectors_are_brittle]].
 ➡️ If a user wants their own tag on the day, it is two taps on the Workout tab.
+
+✅ **OPEN ITEM 8 CLOSED 2026-08-13: OTTO LEAVES `muscles` EMPTY.** He never writes it.
+1. **Nothing reads it**, so writing it buys nothing today.
+2. **`focus` already names the day automatically and IS visible**, so the day is identified without it.
+3. 🔴 **If that string is ever put on screen later, Otto-written text would appear retroactively in a surface
+   nobody designed for it** -- the kind of thing that surfaces months later looking like a bug.
+➡️ **If the muscle sentence SHOULD be visible somewhere, that is its own piece of design with its own
+decisions. The builder must not quietly start populating it as a side effect.**
+
+⚠️ **SEPARATE, LOGGED NOT FIXED: the day label editor silently eats half of what you type.** It takes ONE
+text field, splits on `·`, puts the first half in `customLabel` and the second in `muscles`
+(`workout.tsx` ~3207-3211) -- **but the header only ever renders `customLabel`** (~2458). So typing
+`Push · Chest, Shoulders` stores "Chest, Shoulders" somewhere the user can never see again. **Not part of
+item 8 and not the builder's problem;** raised to the roadmap's NEXT UP as its own small item.
 
 🔴 **AND THIS IS WHY OTTO NEVER CREATES A "PROGRAM". A PROGRAM IN THIS APP HAS NO EXERCISES IN IT.**
 Verified: every `PRESET_PROGRAMS` day is `exercises: []`, and the program builder only ever writes `type`,
@@ -756,18 +777,23 @@ first, so no decision has to be taken twice.
 | ~~1~~ | ~~SESSION SHAPE~~ | -- | ✅ **CLOSED 2026-08-10. Five exercises, see section 3.7.** |
 | ~~2~~ | ~~THE PREVIEW AND THE INLINE ADD FLOW~~ | -- | ✅ **CLOSED 2026-08-11. All seven parts. See 2.1b through 2.1g.** |
 | ~~9~~ | ~~THE PROGRAM CARD~~ | -- | ✅ **CLOSED 2026-08-13.** Added and closed inside three days. See 6.6 (what a multi-day build is) and 2.1h/2.1i/2.1j (the card, the checkmarks, the grey-out). |
-| **3** | **Where the preview renders** | M | Falls straight out of #2 and is really its second half. |
-| **4** | **The draft surviving revision across turns** | M | Only answerable once #2 defines what "revising" means. |
-| **5** | **Validation before save, and what the user sees when something is dropped** | M | Needs a preview to show it in. |
-| **6** | **How the library reaches Otto, and the token cost** | M | Independent of the preview, so it can run in parallel, but it must land before any build. |
-| **7** | **Naming the routine** | **J** | Nearly settled already, just needs confirming. Small and independent. |
-| **8** | **`DayProgram.muscles`** | **J** | Small, independent, and the easiest thing in this document to forget. Numbered so it cannot be. |
+| ~~8~~ | ~~`DayProgram.muscles`~~ | -- | ✅ **CLOSED 2026-08-13. Otto leaves it empty — no screen draws it. See 6.6.** |
+| **7** | **Naming the routine** | **J** | 🔜 **NEXT.** Nearly settled already, just needs confirming. Small, independent, and the LAST thing on this list that needs Justin. |
+| **6** | **How the library reaches Otto, and the token cost** | M | **Gates the build** and carries the only real unknowns left. Independent of everything, so it cannot be blocked — and if it comes back awkward, better to know before the rest is designed around it. |
+| **4** | **The draft surviving revision across turns** | M | The architectural one: where the draft LIVES decides both items after it. |
+| **3** | **Where the preview renders** | M | Falls straight out of #4. |
+| **5** | **Validation before save, and what the user sees when something is dropped** | M | Last because it needs to know what Otto sends (#6) and where the draft lives (#4). Also now owns the past-dates problem from item 9. |
 
-⚠️ **NUMBERING NOTE, 2026-08-11: ITEM 9 IS NEW AND IS RANKED SECOND DESPITE ITS NUMBER. NOTHING WAS
-RENUMBERED.** The numbers are stable IDs so that nothing Justin is already tracking moves under him; the ROW
-ORDER in the table above is the ranking. Required by CLAUDE.md ("if you renumber or reorganise anything
-Justin has been tracking, SAY SO and leave a mapping"). Items 3-8 are untouched and mean exactly what they
-meant before.
+⚠️ **NUMBERING NOTE. NOTHING HAS EVER BEEN RENUMBERED. THE NUMBERS ARE STABLE IDS; THE ROW ORDER IS THE
+RANKING.** Required by CLAUDE.md ("if you renumber or reorganise anything Justin has been tracking, SAY SO
+and leave a mapping"). Every item still means exactly what it meant when it was written.
+- **2026-08-11:** item 9 added new, ranked second.
+- **2026-08-13:** the remaining items **RE-RANKED at Justin's request** ("go through and decide order for
+  me"). **New order: 7, 6, 4, 3, 5.** Was 3, 4, 5, 6, 7, 8.
+  ➡️ **7 first** because it is the last item needing Justin at all — clearing it empties his side of the list.
+  ➡️ **6 second** because it gates the build and holds the only real unknowns; it is independent, so it can
+  never be blocked, and an awkward answer there would reshape what comes after.
+  ➡️ **4 before 3 and 5** because where the draft LIVES is the architectural call both of them sit on.
 
 **1. SESSION SHAPE.** When Otto builds a chest day, is he aiming at a number of exercises, a rough duration,
 or whatever the request implies? Without a rule, "build me a chest workout" could come back as three
@@ -834,8 +860,11 @@ equipment and tags may also be needed. A cached-prompt question as much as a des
 **7. NAMING THE ROUTINE.** 🟡 DIRECTION: Otto names it from generic templates ("Push A", "Chest & Triceps")
 and the user can rename it whenever. Recorded as direction rather than locked because Justin hedged.
 
-**8. `DayProgram.muscles`.** A day carries its own display string ("Chest · Shoulders · Triceps") separate
-from per-exercise muscle data. **Who fills it in when Otto builds a day?** Raised by Justin 2026-08-10.
+**8. `DayProgram.muscles`. ✅ CLOSED 2026-08-13 — OTTO LEAVES IT EMPTY. See 6.6.** Raised by Justin
+2026-08-10 as "who fills in the day's display string". **The answer changed the question: no screen draws it.**
+It is a plain muscle sentence stored on the day, separate from the tag and from the focus word, and its only
+reader is Otto's own snapshot as a third fallback. ⚠️ **It is NOT the tag** — Justin was rightly confused by
+that; 6.6 has the five-values-on-one-day breakdown to explain it with next time.
 
 ✅ **NOT OPEN, LISTED SO NOBODY RE-OPENS IT: Mindful.** Identical in Mindful — sets, reps and exercise order
 are none of the three modes' business. Decided before this spec existed.

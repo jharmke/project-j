@@ -3187,6 +3187,15 @@ are separate pre-submission checklists, NOT part of this menu.
   hand-rolled card spread it -- then "make cards deeper" is one number, not a 40-site hunt. The FULL fix is
   migrating cards to `<GradientCard>`, but that needs GradientCard's OWN hardcoded '#000' @0.12 shadow
   fixed first or every card gets worse, and each card passes different props, so it is a real refactor.
+- [QUICK WIN, found 2026-08-13] **The Workout tab's "Add label" box silently eats half of what you type.**
+  It takes ONE text field and splits it on a `·`: the first half becomes the day's label, the second half
+  becomes the day's muscle string. **But the day header only ever renders the label**, and no screen anywhere
+  draws the muscle string. So typing `Push · Chest, Shoulders` stores "Chest, Shoulders" where the user can
+  never see it again, with nothing telling them that happened. `app/(tabs)/workout.tsx` (the save handler in
+  the label modal writes both fields; the header renders only `customLabel`).
+  ➡️ Either stop splitting and store the whole string as the label, or show the second half somewhere. **The
+  second option is a design question, not a fix** -- the muscle string is currently drawn on zero screens.
+  Found while closing `SPEC_workout_builder.md` open item 8, which decided Otto never writes that field.
 - [QUICK WIN, found 2026-07-15, PARTIAL] **Otto (+ Halo?) FAB placement audit.** The floating companion FAB
   sits bottom-left on many stack screens and can overlap the last card's content when the page has no
   bottom padding. FIXED so far: sleep.tsx + achievements.tsx (paddingBottom bumped to `insets.bottom + 96`),

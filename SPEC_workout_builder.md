@@ -300,12 +300,45 @@ same 2026-07-05 pass, and this panel's keyboard handling has its own history (`S
 `onLayout`, animate to the exact pixel height, two coordinated animations (CLAUDE.md). **Four of those inside
 a chat row is more animation machinery than anything else in the preview.**
 
-⏳ **STILL OPEN INSIDE ITEM 9, AND BOTH ARE FORCED BY THIS DESIGN:**
-1. **ONE button for the whole week, or one per day?** The mockup shows `ADD ALL 3 DAYS`. **Per-day buttons
-   would put three or four primary actions in one card, which is what 2.2 forbids** — but that is an argument,
-   not yet a decision.
-2. **What does the spent state (2.1f) mean across multiple days?** If the card is one unit it goes spent as a
-   unit, which would mean you never accept three days and then revise the fourth. Needs confirming.
+### 2.1i Picking which days: checkmarks, not talking — ✅ DECIDED 2026-08-13
+✅ **ONE BUTTON, and each day row carries a CHECKMARK. All checked by default.** The button's label follows
+the selection: `ADD ALL 3 DAYS` → `ADD 2 DAYS`.
+**Justin's proposal** (*"is adding like checkmarks to only pick certain days an option?"*) after I argued for
+talking-only. He was right.
+
+🔴 **THE REASON IS RELIABILITY, NOT CONVENIENCE. "Drop Friday" makes the model REGENERATE THE WEEK.** A typed
+revision is a round trip in which Otto rebuilds the card, and he can come back with more changed than was
+asked for — a different exercise on Monday, a renamed routine, a reordered day. **A checkbox is
+deterministic.** On a project that already records a prompt rule losing to the model five times, letting him
+re-derive an entire week to remove one day is the risky path. See [[feedback_harnesses_cannot_see_the_model]].
+✅ **Latency, independently:** unchecking is instant; typing it is a round trip with a typing indicator, for a
+change with no ambiguity in it.
+
+🔴 **THE PRINCIPLE THAT KEEPS THIS FROM CONTRADICTING 2.1f'S "NO SECOND BUTTON":**
+➡️ **Typing changes CONTENT** (swap the flies, make it shorter). **Tapping changes SCOPE** (which days).
+**Different jobs.** The Change button was killed because it did nothing the text input did not; a checkbox
+does something the input can only do slowly, and less safely.
+✅ **AND IT SURVIVES 2.2 ON THE SPEC'S OWN PRECEDENT:** 2.2 bans questions asked IN TURN, not options visible
+on the card, and decision 8 (supersets) already established "the preview offers a one-tap option" as the
+designed pattern.
+
+❌ **REJECTED: one button PER DAY.** Three or four primary actions in one card is what 2.2 exists to prevent,
+and it makes the spent state something we have to invent rules for rather than something obvious.
+
+⚠️ **BUILD NOTES:**
+- **Uncheck everything and the button needs its dim/inactive state** (CLAUDE.md build standard).
+- 🔴 **EACH ROW NOW HAS TWO TAP TARGETS** — the checkbox, and the row itself to expand. **Both need their own
+  44pt area and enough visual separation that a user does not expand a day when meaning to drop it.** This is
+  the part that gets checked on device.
+
+⚠️ **A COST ARGUMENT WAS MADE FOR THIS AND THEN WITHDRAWN. Do not resurrect it.** I argued checkmarks saved a
+free user one of their 5 daily questions. **Wrong: section 7 makes the builder Supporter-only, so a free user
+never sees this card at all.** Justin caught it (*"this is a paid feature... are we not aligned here???"*).
+Supporters are capped at 30/day, not unlimited. **The decision stands on reliability and latency.**
+
+⏳ **ONE QUESTION LEFT IN ITEM 9: what does the spent state (2.1f) mean across multiple days?** If the card is
+one unit it goes spent as a unit, which would mean you never accept three days and then revise the fourth.
+Needs confirming.
 
 ### 2.2 🔴 THE ONE-SCREEN RULE (Justin, 2026-08-10)
 > *"i just want to be sure user isnt being asked 50 questions when trying to build a workout or meal."*
@@ -759,11 +792,15 @@ than enthusiasm, so the visual gets a device pass.
 🔴 **BLOCKING DEPENDENCY: the chat's auto-scroll must be fixed first** (it fires on every content-size change,
 so expanding a day would throw the thread to the bottom). Shared behaviour with Halo's chat. Detail in 2.1h.
 
+✅ **ONE BUTTON, WITH CHECKMARKS PER DAY — DECIDED 2026-08-13, see 2.1i.** Typing changes content, tapping
+changes scope. Per-day buttons rejected.
+
 ⏳ **STILL OPEN INSIDE ITEM 9:**
-- **One button for the whole week, or one per day?** Per-day buttons put 3-4 primary actions in one card,
-  which 2.2 forbids -- an argument, not yet a decision.
 - **What does the spent state mean across multiple days?** If the card is one unit it goes spent as a unit.
 - ⚠️ **The merge-not-replace rule (6.1) has to hold on EVERY day the build lands on**, not just the first.
+- ⚠️ **Handed to open item 5:** a card built for "Mon/Wed/Fri" and accepted a week later points at dates that
+  have already passed. The library's own day picker disables past days; **accept-time validation has to catch
+  this**, because silently adding workouts to days that already went by is worse than refusing.
 
 **3. WHERE THE PREVIEW RENDERS.** A chat-embedded card, and every modal rule in this project applies
 (centred, never a bottom sheet, `ToastRenderer` inside the modal).

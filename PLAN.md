@@ -2058,28 +2058,23 @@ discussed before but i guess wasnt saved."* Decisions land here the moment they 
    not a lock. *"Make me a home workout"* means bodyweight only; if they have kit at home they say so in the
    request or fix it in the preview. Predictable beats clever, and it respects decision 9.
 
-**15. 🆕 NEW WORK ITEM: THE CREATE / EDIT EXERCISE FORM NEEDS AN UPGRADE. Justin, 2026-08-10.** Not part of
-   E's core loop but it lands in the same area and E adds a reason for it.
-   **Today the form collects FOUR things: name, type (lift/cardio), one required tag, an optional note.**
-   ✅ **ONE FORM, NOT TWO** (Justin asked): the "Create new exercise" link inside the Create Routine modal
-   only adds a movement to THAT routine and never writes to the library. Create and Edit share the modal.
-   ➡️ **What it needs:** instructions and primary/secondary muscles (currently **no user can view or edit
-   either through the UI at all**, on their own exercises or the built-ins), the optional equipment field
-   from decision 11, and a visual polish pass. Justin: *"its so plain now."*
-   🔴 **THE TRAP TO DESIGN AROUND: `saveExercise` does `{ ...ex, ...form }`.** Today that is safe only
-   BECAUSE the form has no instructions or muscles field, so editing a built-in cannot wipe its curated
-   content. **Add those fields naively and an empty input overwrites a built-in's instructions with blank.**
-   Read-then-merge, never replace. See CLAUDE.md's data-integrity rule.
-   ⚠️ **UNSET EQUIPMENT MEANS "AVAILABLE ANYWHERE", AND JUSTIN'S CONDITION IS THAT THIS MUST BE OBVIOUS** in
-   the form, not implied.
-   🔴 **AND THE REASON THE FIELD EXISTS AT ALL, because the first answer here was wrong.** The argument was
-   "if you created the exercise you can evidently do it, so no field is needed". **Justin pushed back and he
-   was right: that is true about the PERSON and blind about the PLACE.** Create "Hack Squat" at your gym,
-   ask for a home workout two weeks later, and an untagged exercise is "available anywhere". The person most
-   likely to create custom exercises is exactly the person who also trains at home, so it is the main case
-   rather than an edge one.
-   ✅ **Otto always tags the equipment on exercises HE creates**, from the valid list, exactly like the 22
-   muscle keys. No UI involved. The optional field only ever concerns hand-made exercises.
+**15. THE CREATE / EDIT EXERCISE FORM NEEDS AN UPGRADE. Justin, 2026-08-10.** Not part of E's core loop but
+   it lands in the same area and E adds a reason for it.
+   🔴 **DETAIL MOVED OUT 2026-08-13. IT LIVES IN `project_j_roadmap.md` ITEM I ("EXERCISE EDITOR"), WHICH IS
+   NOW THE ONE PLACE THIS WORK IS DESCRIBED.** This entry had grown into a second overlapping copy of item I
+   -- the same form, described twice in two files, which is exactly the duplication this file exists to end.
+   **Status only from here on; read item I for what to build.**
+   ➡️ **Headline:** the form collects four things today (name, type, one tag, a note) and needs instructions,
+   primary/secondary muscles, the optional equipment field from decision 11, and a visual polish pass.
+   ⚠️ **Its landmine, kept here because it is the kind of thing that gets missed: `saveExercise` does
+   `{ ...ex, ...form }`, so adding an instructions or muscles field naively lets an empty input wipe a
+   built-in's curated content.** Read-then-merge.
+   ⚠️ **ALSO STILL UNDECIDED IN ITEM I, and it touches E: the data has 22 muscle keys but the SVG draws only
+   ~14 regions**, so several keys share a picture and tapping a second one in the same group changes nothing
+   on screen. Marked "decide at build time" since 2026-07-30. **Otto fills muscles from the same 22 keys.**
+   ✅ **E'S OWN PART, WHICH IS NOT ITEM I'S: Otto always tags the equipment on exercises HE creates**, from
+   the valid list, exactly like the 22 muscle keys. No UI involved. The form's optional field only ever
+   concerns hand-made exercises.
 
 **16. HE CAN BUILD A WEEK OR A MONTH, AND A MONTH IS THE SAME WEEK REPEATING. ✅ Justin, 2026-08-10.**
    A **program** in this app is a 7-day SHAPE with `exercises: []` on every day (`PresetProgram` in

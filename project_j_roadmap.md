@@ -2408,6 +2408,29 @@ are separate pre-submission checklists, NOT part of this menu.
      ✅ Editing is not creating, so a free user over the 15-custom-exercise cap can still edit everything
      they have. Consistent with the content rule from item A question 2.
 
+     🔴 **MERGED IN FROM `PLAN.md` 4.18 ITEM 15 ON 2026-08-13. THIS IS NOW THE ONE PLACE THIS WORK IS
+     DESCRIBED.** Item 15 was added 2026-08-10 for the same form and had grown into a second, overlapping
+     copy -- exactly the duplication PLAN.md exists to end. **PLAN 4.18 item 15 is now a pointer to here.**
+     • **THE FORM COLLECTS FOUR THINGS TODAY:** name, type (lift/cardio), one required tag, an optional note.
+       No user can view or edit instructions or muscles through the UI at all, on their own exercises OR on
+       the built-ins.
+     • ✅ **ONE FORM, NOT TWO** (Justin asked 2026-08-10). Create and Edit share the modal. The "Create new
+       exercise" link inside the Create Routine modal is a different thing: it only adds a movement to THAT
+       routine and never writes `pj_exercise_library`.
+     • **ALSO NEEDS THE OPTIONAL EQUIPMENT FIELD** from the seven-tick vocabulary (`PLAN.md` 4.18 item 11),
+       and **a visual polish pass** -- Justin: *"its so plain now."*
+     • 🔴 **THE TRAP TO DESIGN AROUND, CONFIRMED IN CODE 2026-08-13: `saveExercise` does `{ ...ex, ...form }`**
+       (`app/workout-library.tsx` ~2563). **That is safe ONLY because the form has no instructions or muscles
+       field today. Add them naively and an empty input overwrites a built-in's curated instructions with
+       blank.** Read-then-merge, never replace. CLAUDE.md data-integrity rule.
+     • ⚠️ **UNSET EQUIPMENT MEANS "AVAILABLE ANYWHERE", AND JUSTIN'S CONDITION IS THAT THIS IS OBVIOUS IN THE
+       FORM**, not implied.
+     • 🔴 **WHY THE EQUIPMENT FIELD EXISTS AT ALL, because the first answer was wrong.** The argument was "if
+       you created the exercise you can evidently do it, so no field is needed". **Justin pushed back and was
+       right: that is true about the PERSON and blind about the PLACE.** Create "Hack Squat" at your gym, ask
+       for a home workout two weeks later, and an untagged exercise counts as available anywhere. The person
+       most likely to create custom exercises is the same person who also trains at home.
+
   **J. EXPAND THE EXERCISE LIBRARY (79 -> ~143)** -- NEW 2026-07-30, came out of item A question 3.
      WHY: every exercise that ships curated is one Otto never has to invent. This is the cheapest way to
      make the workout builder (E) safe. It also fixes real holes that exist today.

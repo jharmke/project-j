@@ -3187,6 +3187,15 @@ are separate pre-submission checklists, NOT part of this menu.
   hand-rolled card spread it -- then "make cards deeper" is one number, not a 40-site hunt. The FULL fix is
   migrating cards to `<GradientCard>`, but that needs GradientCard's OWN hardcoded '#000' @0.12 shadow
   fixed first or every card gets worse, and each card passes different props, so it is a real refactor.
+- 🔴 **[FOUND 2026-08-13, BLOCKS THE WORKOUT BUILDER] `pj_exercise_library` does not exist until the user
+  opens the Exercise Library screen.** That screen's load effect is **the only writer in the app** -- it
+  seeds `DEFAULT_LIBRARY` when the key is missing and merges new defaults in when it is present. The Workout
+  tab reads the key and never seeds it. **So a brand-new user who goes straight to Otto and asks for a
+  workout hands him an EMPTY exercise library**, and he has no way to know that is why he has nothing to pick
+  from. Also means the two exercise-name context blocks that ship TODAY (`utils/companionPRs.ts`) send
+  nothing for that user. ➡️ Seed from somewhere every user passes through, or seed on read. ⚠️ **Read-then-
+  merge if this is touched** -- the existing loader deliberately never overwrites a user's edits. Full
+  detail: `SPEC_workout_builder.md` 5.1.
 - [QUICK WIN, found 2026-08-13] **The Workout tab's "Add label" box silently eats half of what you type.**
   It takes ONE text field and splits it on a `·`: the first half becomes the day's label, the second half
   becomes the day's muscle string. **But the day header only ever renders the label**, and no screen anywhere

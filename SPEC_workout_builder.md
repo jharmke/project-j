@@ -580,6 +580,66 @@ aliases), which is unbuilt.**
   the last session went or how they feel today. **Weight is the one field where being wrong hurts someone.**
   When ASKED, he answers from real history instead.
 
+### 5.1 HOW THE LIBRARY REACHES OTTO (open item 6) — ✅ PROPOSAL 2026-08-13
+✅ **THE MECHANISM ALREADY EXISTS. THIS IS AN EXTENSION, NOT A NEW PIPE.** Verified in code, not assumed.
+
+**What ships today, on BOTH tiers, by two different routes:**
+| Tier | Function | What it sends |
+|---|---|---|
+| Free | `buildExerciseNamesIfRelevant` (`utils/companionPRs.ts` ~60) | The union of `pj_exercise_library` names + every exercise scheduled in `programs`/`weeklyTemplate` |
+| Supporter | `buildPRContextIfRelevant` (same file, ~132) | The same union, **plus** PR'd lift names |
+⚠️ **I NEARLY GOT THIS WRONG:** the free builder sits in the `else` branch of `AssistantChat.tsx` ~733 and
+looks tier-exclusive. **It is not — the Supporter path builds the same union inside the PR block.** Read both
+branches before describing this.
+
+✅ **DELIVERY: the PER-MESSAGE block, never the cached one.** It rides `volatile.tail` in
+`functions/src/appCompanion.ts` (~665), the uncached block that only carries what a given message needs.
+🔴 **DO NOT MOVE IT INTO THE CACHED USER BLOCK.** The library is per-user and changes the moment somebody
+creates a custom exercise — **inside the cache marker, one new exercise rewrites the whole cached copy and
+the NEXT unrelated message pays a full cold write.** On-demand pays full price only on build messages.
+
+🔴 **THE ACTUAL WORK IS THE TRIGGER, AND IT IS THE RISKIEST PART.** Both routes gate on `messageWantsPRs`,
+which fires on PR words **or on the message naming one of the user's own exercises**. ⚠️ ***"Build me a push
+day" trips NEITHER*** — it names no exercise and mentions no PR. **So today a build request would reach Otto
+with no library at all.**
+➡️ Needs a build-intent trigger, and per [[feedback_detectors_are_brittle]] it is **measured in bulk against
+generated phrasings before it ships, never hand-checked.** The exercise cap detector caught 13 of 60
+realistic asks. Always `['’]` on apostrophes.
+
+🔴 **BLOCKER FOUND WHILE CHECKING THIS, AND IT IS NOT A DESIGN QUESTION: `pj_exercise_library` DOES NOT EXIST
+UNTIL THE USER OPENS THE EXERCISE LIBRARY SCREEN.** That screen's load effect (`app/workout-library.tsx`
+~2138-2160) is **the only writer in the app**; it seeds `DEFAULT_LIBRARY` when the key is missing and merges
+new defaults in when it is present. **The Workout tab reads the key and never seeds it** (`workout.tsx` ~903).
+➡️ **So a brand-new Supporter who goes straight to Otto and asks for a workout hands him an EMPTY list**, and
+he has no way to know that is why. **Must be fixed before the builder ships**: seed the library from a place
+every user passes through, or have the builder's context seed it on read.
+⚠️ **Read-then-merge if this is touched** — the existing loader deliberately never overwrites a user's edits
+(`e.instructions ?? def.instructions`). See CLAUDE.md's data-integrity rule.
+
+✅ **PAYLOAD: name + tag, and equipment once item J adds it. Nothing else.**
+| Sent | Why |
+|---|---|
+| **Name** | Mandatory. Section 4: he must write the library's EXACT name or PR history splits. **The list must come from the USER's stored library, not `DEFAULT_LIBRARY`** — it carries their customs and their renames. |
+| **Tag** | He cannot pick a push movement for a push day without it. Also feeds 6.6 (routine tags) and 6.7 (names). |
+| **Equipment** | Once J lands. Drives the home / no-machines cases (3.2). |
+| ❌ Sets / reps / rest | **The app supplies them** (2.1c). Sending them invites him to edit them. |
+| ❌ Muscles | The tag already drives selection. 22 keys × 139 entries for no decision he makes. |
+| ❌ Instructions | Never needed to PICK a movement. The single biggest block in the file. |
+
+**SIZE, at the ~139 exercises item J leaves behind** (DERIVED from the real strings; today's library is
+**79**, item J adds 64 minus the 4 cut in PLAN decision 12):
+| Payload | Today (79) | At ~139 |
+|---|---|---|
+| Names only | ~390 tok | ~690 tok |
+| **Name + tag** | ~545 tok | **~970 tok** |
+| Name + tag + equipment | -- | ~1,310 tok |
+
+⏳ **ONE THING DELIBERATELY NOT DECIDED HERE: the list is UNBOUNDED.** It reads the user's library, and
+**Supporters have no cap on custom exercises** (section 7), so somebody with 400 customs sends 400 every
+build. **The two functions shipping today already carry this exposure.** A cap that prefers customs and
+recently-used movements over untouched defaults is the obvious answer, **but a wrong cap silently drops the
+exercise somebody wanted**, which is a real failure rather than a tidy-up. Flagged, not buried.
+
 ---
 
 ## 6. WHERE IT LANDS
@@ -817,7 +877,7 @@ first, so no decision has to be taken twice.
 | ~~9~~ | ~~THE PROGRAM CARD~~ | -- | ✅ **CLOSED 2026-08-13.** Added and closed inside three days. See 6.6 (what a multi-day build is) and 2.1h/2.1i/2.1j (the card, the checkmarks, the grey-out). |
 | ~~8~~ | ~~`DayProgram.muscles`~~ | -- | ✅ **CLOSED 2026-08-13. Otto leaves it empty — no screen draws it. See 6.6.** |
 | ~~7~~ | ~~Naming the routine~~ | -- | ✅ **CLOSED 2026-08-13. Derived from the six locked tags + the date. See 6.7.** 🔴 **NOTHING ON THIS LIST NEEDS JUSTIN ANY MORE — the rest are mechanics.** |
-| **6** | **How the library reaches Otto, and the token cost** | M | **Gates the build** and carries the only real unknowns left. Independent of everything, so it cannot be blocked — and if it comes back awkward, better to know before the rest is designed around it. |
+| ~~6~~ | ~~How the library reaches Otto~~ | M | ✅ **PROPOSAL WRITTEN 2026-08-13, see 5.1.** The pipe already exists on both tiers; the work is the TRIGGER. 🔴 **Surfaced a real blocker: `pj_exercise_library` does not exist until the user opens the Exercise Library screen.** |
 | **4** | **The draft surviving revision across turns** | M | The architectural one: where the draft LIVES decides both items after it. |
 | **3** | **Where the preview renders** | M | Falls straight out of #4. |
 | **5** | **Validation before save, and what the user sees when something is dropped** | M | Last because it needs to know what Otto sends (#6) and where the draft lives (#4). Also now owns the past-dates problem from item 9. |
@@ -892,8 +952,14 @@ deliberately left there). A routine revised over several messages has to survive
 **5. VALIDATION BEFORE SAVE.** Dropping off-list muscle keys, off-list equipment, invalid tags and unknown
 exercise names, and what the user sees when something is dropped.
 
-**6. HOW THE LIBRARY REACHES OTTO**, and what it costs in tokens. Names are mandatory (section 4); muscles,
-equipment and tags may also be needed. A cached-prompt question as much as a design one.
+**6. HOW THE LIBRARY REACHES OTTO. ✅ PROPOSAL WRITTEN 2026-08-13 — see 5.1.** The pipe already exists on both
+tiers (`buildExerciseNamesIfRelevant` for free, `buildPRContextIfRelevant` for Supporters), riding the
+per-message uncached block. **Payload: name + tag, plus equipment once J lands — ~970 tokens at ~139
+exercises.** The real work is a **build-intent trigger**, because *"build me a push day"* trips neither
+existing detector.
+🔴 **AND IT FOUND A BLOCKER THAT IS NOT A DESIGN QUESTION: `pj_exercise_library` is only ever written by the
+Exercise Library screen**, so a user who has never opened it gives Otto an empty library. Must be fixed
+before the builder ships.
 
 **7. NAMING THE ROUTINE. ✅ CLOSED 2026-08-13. See 6.7.** Superseded the old direction ("Push A",
 "Chest & Triceps", model-composed). **Names are DERIVED from the six locked tags plus the date, never written

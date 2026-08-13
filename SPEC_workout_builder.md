@@ -714,6 +714,44 @@ for every future day; the Home screen reads it; and the achievement `workout_fir
 `activeProgramName`. Removing it would change a day's fallback, alter the home card and orphan an achievement
 that may already be unlocked. See [[feedback_add_after_launch_not_remove]].
 
+### 6.7 NAMES: routine, day word, week title (open item 7) — ✅ CLOSED 2026-08-13
+🔴 **EVERY NAME IS DERIVED FROM THE SIX LOCKED TAGS. OTTO WRITES NONE OF THEM.** Fifth time this spec has
+landed on "the app supplies it, the model does not" (after exercise names, muscle keys, tags and the numbers).
+
+| What | Format | Example |
+|---|---|---|
+| **Routine name** (saved in My Routines) | tag words + `·` + the date it is for | `Push · Aug 17`, `Legs + Core · Aug 21`, `Cardio · Aug 14` |
+| **The day's focus word** | tag words only, NO date | `Push`, `Legs + Core` |
+| **Week card title** (multi-day builds) | tag words joined with ` / ` | `Push / Pull / Legs`, `Upper / Lower` |
+
+✅ **TWO OR MORE TAGS JOIN WITH ` + `, WHICH IS THE APP'S OWN EXISTING IDIOM** -- `PRESET_PROGRAMS` already
+ships `FRI · LEGS + CORE`. Nothing new invented.
+
+🔴 **THE ROUTINE NAME AND THE DAY'S FOCUS WORD ARE DELIBERATELY DIFFERENT STRINGS.** The existing load path
+copies `focus = routine.name`, which would put the date into the focus word. **Otto's accept path is its own
+write anyway** (it MERGES; the existing Load REPLACES, decision 6.1), **so it sets both fields independently.**
+➡️ **Why the focus word must stay short:** it renders as a one-line 10.5pt label under a date in reports
+(`report.tsx` ~651, `numberOfLines={1}`) and it is the first fallback in Otto's own snapshot.
+⚠️ **CORRECTION, so the wrong reason does not get quoted back later:** I first justified this by saying a long
+name would wreck the `MON · PUSH` pill. **That pill is on the PROGRAMS card, and Otto never creates a program,
+so his days never render there.** The report row is the real reason. Same decision, better reason.
+
+✅ **THE DATE MAKES ROUTINES DISTINGUISHABLE WITHOUT A COUNTER**, which is the point -- every accepted build
+saves a routine permanently, so three weeks of asking for a push day yields `Push · Aug 17`, `Push · Aug 24`,
+`Push · Sep 2` on the shelf instead of three things called the same thing.
+⚠️ **Accepted wrinkle: the date is a made-on stamp**, so reloading `Push · Aug 17` in September reads a little
+archival. Fine -- it is exactly what makes three of them tellable apart.
+
+❌ **REJECTED: `Push A`, `Push B`.** Letters look like a program variant and imply a system the app does not
+have. ❌ **REJECTED: Otto composing something descriptive** (`Chest & Triceps Builder`). More informative, but
+it is free text from the model, which is what this spec has spent every other decision avoiding.
+
+✅ **THE WEEK CARD TITLE WAS A GAP NOBODY HAD NOTICED**, found while writing worked examples 2026-08-13: the
+multi-day card has a heading, it is not a routine name, and item 7 as written never covered it. **It is
+display-only and never saved**, since Otto creates no program object. Closed inside item 7 rather than given
+its own number, because it is the same mechanism and it is answered, not deferred.
+✅ **The user can rename anything, whenever.** Unchanged from the original direction.
+
 ---
 
 ## 7. FREE VS SUPPORTER
@@ -778,7 +816,7 @@ first, so no decision has to be taken twice.
 | ~~2~~ | ~~THE PREVIEW AND THE INLINE ADD FLOW~~ | -- | ✅ **CLOSED 2026-08-11. All seven parts. See 2.1b through 2.1g.** |
 | ~~9~~ | ~~THE PROGRAM CARD~~ | -- | ✅ **CLOSED 2026-08-13.** Added and closed inside three days. See 6.6 (what a multi-day build is) and 2.1h/2.1i/2.1j (the card, the checkmarks, the grey-out). |
 | ~~8~~ | ~~`DayProgram.muscles`~~ | -- | ✅ **CLOSED 2026-08-13. Otto leaves it empty — no screen draws it. See 6.6.** |
-| **7** | **Naming the routine** | **J** | 🔜 **NEXT.** Nearly settled already, just needs confirming. Small, independent, and the LAST thing on this list that needs Justin. |
+| ~~7~~ | ~~Naming the routine~~ | -- | ✅ **CLOSED 2026-08-13. Derived from the six locked tags + the date. See 6.7.** 🔴 **NOTHING ON THIS LIST NEEDS JUSTIN ANY MORE — the rest are mechanics.** |
 | **6** | **How the library reaches Otto, and the token cost** | M | **Gates the build** and carries the only real unknowns left. Independent of everything, so it cannot be blocked — and if it comes back awkward, better to know before the rest is designed around it. |
 | **4** | **The draft surviving revision across turns** | M | The architectural one: where the draft LIVES decides both items after it. |
 | **3** | **Where the preview renders** | M | Falls straight out of #4. |
@@ -857,8 +895,9 @@ exercise names, and what the user sees when something is dropped.
 **6. HOW THE LIBRARY REACHES OTTO**, and what it costs in tokens. Names are mandatory (section 4); muscles,
 equipment and tags may also be needed. A cached-prompt question as much as a design one.
 
-**7. NAMING THE ROUTINE.** 🟡 DIRECTION: Otto names it from generic templates ("Push A", "Chest & Triceps")
-and the user can rename it whenever. Recorded as direction rather than locked because Justin hedged.
+**7. NAMING THE ROUTINE. ✅ CLOSED 2026-08-13. See 6.7.** Superseded the old direction ("Push A",
+"Chest & Triceps", model-composed). **Names are DERIVED from the six locked tags plus the date, never written
+by Otto.** Routine `Push · Aug 17`, day focus word `Push`, week card title `Push / Pull / Legs`.
 
 **8. `DayProgram.muscles`. ✅ CLOSED 2026-08-13 — OTTO LEAVES IT EMPTY. See 6.6.** Raised by Justin
 2026-08-10 as "who fills in the day's display string". **The answer changed the question: no screen draws it.**

@@ -1783,7 +1783,7 @@ Read per call, changeable without an App Store update.
 | B | Otto free/paid split | direction locked, prompt/KB work outstanding |
 | C | Non-AI walls / paywalls / limits | ⚠️ header says NOT COMPLETE, but the 2026-08-03 commit says closed after audit. **Verify before trusting either.** |
 | D | 7-day taste | 🔴 **THIS ROW WAS WRONG. CORRECTED 2026-08-05 by Justin, who said he was "almost certain it is fully built" and was right.** `FirstWeekEndedModal.tsx` exists and is wired into `app/(tabs)/index.tsx`. It said "specced not built" and I quoted that back at him as an unbuilt conversion lever. **Verify what remains on it before planning around it.** |
-| E | Workout builder | 🔴 **SPECCED 2026-08-10: `SPEC_workout_builder.md`. Nothing built. Blocked on J.** Open items **1, 2, 8 and 9 CLOSED** (the whole preview, single-day and multi-day, plus `muscles`). **5 open, RE-RANKED 2026-08-13 at Justin's request: 7, 6, 4, 3, 5.** Only **7** still needs Justin; the rest are mechanics. |
+| E | Workout builder | 🔴 **SPECCED 2026-08-10: `SPEC_workout_builder.md`. Nothing built. Blocked on J.** Open items **1, 2, 7, 8 and 9 CLOSED** — the entire preview, single-day and multi-day, plus naming and `muscles`. 🔴 **4 open (6, 4, 3, 5) and NONE OF THEM NEEDS JUSTIN: they are all mechanics.** |
 | F | Meal builder | needs a full spec |
 | G | Calorie floor | ✅ complete + device-verified 2026-08-03 |
 | H | Cost routing | ⏸️ **PARKED** -- measured 73% fallback + 57 cache entries. See `SPEC_otto_routing.md` |
@@ -1930,6 +1930,32 @@ discussed before but i guess wasnt saved."* Decisions land here the moment they 
    before arguing tier economics about this feature.** See [[feedback_verify_the_call_site]].
    ⚠️ **"THE SPENT STATE" WAS MY JARGON AND IT LANDED BADLY** (*"wtf is spent????"*). It is **the greyed-out
    card**. Renamed throughout both files. See [[feedback_plain_english_findings]].
+
+**4g. ✅ ITEMS 8 AND 7 CLOSED 2026-08-13. THE SPEC'S OPEN LIST NO LONGER NEEDS JUSTIN AT ALL.**
+   Remaining items 6, 4, 3 and 5 are mechanics. **Re-ranked at his request to 7, 6, 4, 3, 5; nothing was
+   renumbered, the mapping is under the table in the spec.**
+   ✅ **ITEM 8 (`DayProgram.muscles`): Otto leaves it EMPTY. No screen anywhere draws that field** -- it ships
+   with the presets and the day label editor writes it, but its only reader is Otto's own snapshot as a THIRD
+   fallback. Writing a field nothing reads buys nothing, and if it is ever put on screen later, Otto-written
+   text would appear retroactively in a surface nobody designed for it.
+   ⚠️ **Justin was confused about what that field even was** (*"arent their tags im really confused"*), and
+   fairly -- I had been naming schema fields instead of describing screens. **Spec 6.6 now carries a
+   five-values-on-one-day breakdown showing which are visible and which is not. Explain it that way.**
+   ✅ **ITEM 7 (NAMING): every name is DERIVED from the six locked tags. Otto writes none of them.**
+   Routine `Push · Aug 17` · day focus word `Push` (no date) · week card title `Push / Pull / Legs`. Two or
+   more tags join with ` + `, **which is the app's own existing idiom** (`FRI · LEGS + CORE` ships today).
+   ➡️ **The date is what makes routines distinguishable without a counter** -- every accepted build saves one
+   permanently, so three push days become `Push · Aug 17`, `Push · Aug 24`, `Push · Sep 2`.
+   ➡️ **Routine name and focus word are DIFFERENT strings on purpose.** The existing load path copies
+   `focus = routine.name`; Otto's accept path is its own write anyway (he merges, Load replaces), so it sets
+   both independently. **Fifth time this spec has landed on "the app supplies it, the model does not."**
+   ✅ **A GAP WAS FOUND WHILE WRITING WORKED EXAMPLES: nothing said where the WEEK CARD'S TITLE came from.**
+   Same mechanism (tag words joined with ` / `), display-only, never saved. **Closed inside item 7 rather than
+   given a new number, because it is answered rather than deferred.**
+   ⚠️ **A CORRECTION IS RECORDED IN 6.7 SO THE WRONG REASON IS NOT QUOTED BACK:** I justified the short focus
+   word by saying a long name would wreck the `MON · PUSH` pill. **That pill is on the PROGRAMS card and Otto
+   never creates a program, so his days never render there.** The real reason is the one-line 10.5pt report
+   row. Same decision, better reason.
 
 **6. HE MERGES INTO A DAY, HE NEVER REPLACES IT. Justin's call, and the app already agrees with him.**
    *"if i have a couple cardio or core exercises in there, then want otto to add a lift routine, then i
@@ -2097,10 +2123,12 @@ discussed before but i guess wasnt saved."* Decisions land here the moment they 
    - **If a user says they do not want the same thing every time, he varies it. No argument.** Preference
      wins; the research objection is to random weekly churn, not to variety as such. The preview already
      supports swapping, so this needs no new mechanism.
-   🟡 **NAMING, Justin's stated direction 2026-08-10, recorded as direction rather than locked because he
-   hedged ("idk"):** Otto names the routine from sensible generic templates ("Push A", "Chest & Triceps")
-   and the user can rename it whenever, exactly like a routine they made themselves. **No question asked at
-   build time**, per decision 9.
+   ❌ **NAMING -- THIS 2026-08-10 DIRECTION WAS SUPERSEDED 2026-08-13. DO NOT BUILD IT. See 4g and spec 6.7.**
+   It said Otto names the routine from generic templates ("Push A", "Chest & Triceps"). **Both are now
+   explicitly rejected:** letters imply a program-variant system the app does not have, and a descriptive
+   name is free text from the model. **Names are DERIVED from the six locked tags plus the date**
+   (`Push · Aug 17`). ✅ Still true from this entry: the user can rename it whenever, and **no question is
+   asked at build time**, per decision 9.
 
 **19. 🔴 THE COACH GATE HAS A HOLE AND FREE USERS ARE REACHING THE AI TODAY. FOUND 2026-08-10 WHILE DECIDING
    THE FREE-USER EXPERIENCE FOR E. ✅ JUSTIN'S CALL: CUT IT, CANNED REPLY. NOT YET BUILT.**

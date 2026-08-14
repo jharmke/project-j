@@ -3258,8 +3258,10 @@ are separate pre-submission checklists, NOT part of this menu.
   hand-rolled card spread it -- then "make cards deeper" is one number, not a 40-site hunt. The FULL fix is
   migrating cards to `<GradientCard>`, but that needs GradientCard's OWN hardcoded '#000' @0.12 shadow
   fixed first or every card gets worse, and each card passes different props, so it is a real refactor.
-- 🔬 **[FIXED IN CODE 2026-08-13, NOT DEVICE-VERIFIED] `pj_exercise_library` did not exist until the user
-  opened the Exercise Library screen.**
+- ✅ **[SHIPPED 2026-08-13] `pj_exercise_library` did not exist until the user opened the Exercise Library
+  screen.** ⚠️ **Justin confirmed no regression (the (i) renders, the library loads), but he CANNOT verify the
+  fix itself — he is not in the broken state and never has been**, having opened that screen for months. The
+  bug only ever hit a user who had never been in there. **A true verification needs a fresh install.**
   ✅ **THE FIX:** the screen's seed-or-merge logic is now an exported `ensureExerciseLibrarySeeded()` in
   `app/workout-library.tsx`, called once at startup from `app/_layout.tsx` **inside the post-`runRestoreGate`
   block, alongside `applyVacation` and `ensureRatePromptInitialized`** -- so it can never write defaults into
@@ -3284,8 +3286,8 @@ are separate pre-submission checklists, NOT part of this menu.
   nothing for that user. ➡️ Seed from somewhere every user passes through, or seed on read. ⚠️ **Read-then-
   merge if this is touched** -- the existing loader deliberately never overwrites a user's edits. Full
   detail: `SPEC_workout_builder.md` 5.1.
-- 🔬 **[CHANGED 2026-08-13, NEEDS JUSTIN'S EYES] The exercise (i) on the Workout tab did not match any other
-  (i) in the app.** Justin: *"why does it look like that and not like all of the other (i) in the entire
+- ✅ **[SHIPPED 2026-08-13, DEVICE-VERIFIED — Justin: "looks fine"] The exercise (i) on the Workout tab did
+  not match any other (i) in the app.** Justin: *"why does it look like that and not like all of the other (i) in the entire
   app?"* It was `information-circle-OUTLINE` in `theme.textDim` via plain `Ionicons`, while **every other (i)
   is the FILLED circle through `GradientIcon` in the accent colour** (`components/TooltipIcon.tsx`) -- and
   the pencil on that very same row is `GradientIcon` at `textMuted`, so it was the odd one out on its own row

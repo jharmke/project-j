@@ -426,7 +426,11 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
     // Let the expand animation lay out before measuring, or the row is still at its collapsed height.
     setTimeout(() => {
       try {
-        const inner = sv.getInnerViewNode?.();
+        // ⚠️ `getInnerViewRef()` FIRST, and this is the whole bug. On the New Architecture (Fabric)
+        // `measureLayout` must be given a REF TO A NATIVE COMPONENT; the legacy `getInnerViewNode()`
+        // returns a numeric node handle and throws "must be called with a ref to a native component".
+        // The node-handle form is kept only as a fallback for the old renderer.
+        const inner = sv.getInnerViewRef?.() ?? sv.getInnerViewNode?.();
         if (!inner) return;
         node.measureLayout(
           inner,

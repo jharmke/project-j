@@ -401,6 +401,9 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
 
   const anim = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<ScrollView>(null);
+  // 🔴 What the last auto-scroll was FOR. See the note on `onContentSizeChange` below: the scroll must
+  // follow the CONVERSATION changing, not the content merely being re-laid-out.
+  const lastScrollKeyRef = useRef('');
   const inputRef = useRef<TextInput>(null);
   const dragY = useSharedValue(0);
 
@@ -924,11 +927,31 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
               </View>
             </GestureDetector>
 
+            {/* 🔴 THE SCROLL FOLLOWS THE CONVERSATION CHANGING, NOT EVERY LAYOUT CHANGE. See
+                `onContentSizeChange` below. It used to be an unconditional `scrollToEnd`, which was fine
+                while a thread could only ever grow by gaining a message. It stops being fine the moment
+                anything inside can RESIZE: the workout builder's preview card has collapsible day rows, and
+                expanding one would fire this and throw the user to the bottom of the thread, away from the
+                row they just opened. Justin, 2026-08-13: "that is very sloppy. needs to be smooth as
+                possible."
+                ➡️ The gate is the message COUNT plus whether the typing dots are up -- together the only two
+                things that mean "there is new conversation to look at". A pure re-layout leaves the key
+                unchanged and is ignored.
+                ⚠️ THE KEYBOARD IS UNAFFECTED AND NEEDS NOTHING HERE: it runs its own `scrollToEnd` from the
+                keyboardWillShow listener, deliberately after a beat so the new padding has laid out.
+                ⚠️ HALO'S CHAT (`CompanionChat.tsx` ~792) KEEPS THE UNCONDITIONAL VERSION, ON PURPOSE.
+                Nothing in her thread can resize, so she has no bug to fix, and changing shared-looking code
+                for symmetry alone is its own risk. Do NOT "restore consistency" by reverting this. */}
             <ScrollView
               ref={scrollRef}
               style={{ flex: 1 }}
               contentContainerStyle={{ padding: 16, paddingBottom: 8 }}
-              onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
+              onContentSizeChange={() => {
+                const key = `${messages.length}:${sending ? 1 : 0}`;
+                if (key === lastScrollKeyRef.current) return;
+                lastScrollKeyRef.current = key;
+                scrollRef.current?.scrollToEnd({ animated: true });
+              }}
               keyboardShouldPersistTaps="handled"
             >
               {messages.map((m, i) => {

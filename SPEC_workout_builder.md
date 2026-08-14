@@ -290,7 +290,16 @@ out of scope.** The date makes it unambiguous that this lands on three specific 
 visible message area — **the whole week fits on screen with room above it.** Opening one day adds ~185pt.
 ✅ **IT SURVIVES 2.2: a collapsible is optional detail, not a question.** The user is still asked nothing.
 
-🔴 **BLOCKING DEPENDENCY, NOT A DETAIL: THE AUTO-SCROLL HAS TO BE FIXED FIRST.** Justin, 2026-08-12: *"we need
+🔬 **FIXED IN CODE 2026-08-13, NOT YET DEVICE-VERIFIED.** `onContentSizeChange` now scrolls only when the
+CONVERSATION changed, gated on message count + whether the typing dots are up. A pure re-layout (a day row
+expanding) leaves the key unchanged and is ignored.
+✅ **THE KEYBOARD NEEDED NOTHING:** it already runs its own `scrollToEnd` from the `keyboardWillShow`
+listener, so the two paths were never the same mechanism.
+✅ **HALO'S CHAT DELIBERATELY LEFT ALONE.** `CompanionChat.tsx` ~792 has the identical unconditional handler,
+but nothing in her thread can resize, so there is no bug there and changing shared-looking code for symmetry
+alone is its own risk. **The code carries a "do not restore consistency by reverting this" note.**
+
+🔴 **THE ORIGINAL FINDING, KEPT AS THE RECORD. Justin, 2026-08-12:** *"we need
 to acknowledge that trap cause that is very sloppy. needs to be smooth as possible."*
 ➡️ **The chat calls `scrollToEnd` on EVERY content-size change** (`AssistantChat.tsx` ~931). That is what
 usefully pins the button into view (2.1g) -- **but expanding a day changes content size too, so tapping

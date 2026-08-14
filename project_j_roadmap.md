@@ -3284,6 +3284,18 @@ are separate pre-submission checklists, NOT part of this menu.
   nothing for that user. ➡️ Seed from somewhere every user passes through, or seed on read. ⚠️ **Read-then-
   merge if this is touched** -- the existing loader deliberately never overwrites a user's edits. Full
   detail: `SPEC_workout_builder.md` 5.1.
+- 🔬 **[CHANGED 2026-08-13, NEEDS JUSTIN'S EYES] The exercise (i) on the Workout tab did not match any other
+  (i) in the app.** Justin: *"why does it look like that and not like all of the other (i) in the entire
+  app?"* It was `information-circle-OUTLINE` in `theme.textDim` via plain `Ionicons`, while **every other (i)
+  is the FILLED circle through `GradientIcon` in the accent colour** (`components/TooltipIcon.tsx`) -- and
+  the pencil on that very same row is `GradientIcon` at `textMuted`, so it was the odd one out on its own row
+  too. **Outline on the faintest grey token is exactly what CLAUDE.md's "filled variants only, never outline,
+  too faint on light themes" rule warns about.**
+  ✅ **NOW: `GradientIcon` + filled `information-circle` + `theme.textMuted`, size unchanged at 14.**
+  ⚠️ **Deliberately QUIETER than a real `TooltipIcon` (accent + pulse): this icon repeats on EVERY exercise
+  row**, so accent colour on a 5-exercise day would be five shouting circles. If it now reads too quiet
+  still, the next step is the accent colour, not a bigger size.
+  ⚠️ **`GradientIcon` takes name/size/color ONLY -- no `style` prop.** The -2 nudge moved to a wrapper View.
 - [QUICK WIN, found 2026-08-13] **The Workout tab's "Add label" box silently eats half of what you type.**
   It takes ONE text field and splits it on a `·`: the first half becomes the day's label, the second half
   becomes the day's muscle string. **But the day header only ever renders the label**, and no screen anywhere

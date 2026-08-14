@@ -2087,8 +2087,19 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
               ) : (
                 <GradientTitle title={ex.name} color={theme.textSecondary} style={styles.exerciseName} numberOfLines={1} />
               )}
+              {/* ⚠️ FILLED variant, GradientIcon, textMuted -- matching the pencil on this same row.
+                  It was `information-circle-OUTLINE` in `textDim` via plain Ionicons, which made it the odd
+                  one out on its own row AND app-wide (every other (i) is the filled circle through
+                  GradientIcon), and outline-on-faintest-grey is exactly what CLAUDE.md's "filled variants
+                  only, never outline, too faint on light themes" rule warns about. Justin spotted it
+                  2026-08-13. Kept QUIETER than a real TooltipIcon on purpose: this repeats on EVERY exercise
+                  row, so accent colour + pulse would be five shouting circles on a leg day.
+                  ⚠️ GradientIcon takes name/size/color ONLY, no style prop, so the -2 nudge that used to sit
+                  on the icon lives on the wrapper View. */}
               {exerciseLibrary.find((e: any) => e.name === ex.name && (e.instructions?.length || e.primaryMuscles?.length)) ? (
-                <Ionicons name="information-circle-outline" size={14} color={theme.textDim} style={{ marginLeft: -2 }} />
+                <View style={{ marginLeft: -2 }}>
+                  <GradientIcon name="information-circle" size={14} color={theme.textMuted} />
+                </View>
               ) : null}
             </TouchableOpacity>
             {ex.fromAppleHealth && (

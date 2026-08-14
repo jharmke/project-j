@@ -67,12 +67,11 @@ type Props = {
   draft: WorkoutDraft;
   /** Called with the dateKeys the user still has checked. */
   onAccept?: (dateKeys: string[]) => void;
-  /** 🔴 Asks the host (the chat) to scroll a just-expanded day into view.
-   *  Passed the day row's node and the height about to be revealed below it.
+  /** 🔴 Asks the host (the chat) to scroll a just-expanded day into view, passing the day row's node.
    *  ⚠️ The chat's auto-scroll deliberately IGNORES layout changes now (it used to fling you to the bottom
    *  of the thread), so an expanding day has to ask for the scroll explicitly. Without this the content
    *  simply grows off-screen and nothing follows it. */
-  onRevealDay?: (node: any, revealHeight: number) => void;
+  onRevealDay?: (node: any) => void;
 };
 
 const rowText = (ex: PreviewExercise) =>
@@ -331,7 +330,7 @@ function DayRow({
   checked: boolean;
   onToggleOpen: () => void;
   onToggleChecked: () => void;
-  onRevealDay?: (node: any, revealHeight: number) => void;
+  onRevealDay?: (node: any) => void;
   renderExercise: (ex: PreviewExercise, i: number) => React.ReactNode;
 }) {
   const { theme } = useTheme();
@@ -353,7 +352,7 @@ function DayRow({
       useNativeDriver: false, // height is a layout prop; the native driver cannot carry it
     }).start();
     // Only on OPEN. Collapsing shrinks the thread and never hides anything, so it needs no scroll.
-    if (to === 1) onRevealDay?.(rowRef.current, contentH);
+    if (to === 1) onRevealDay?.(rowRef.current);
   };
 
   const dim = used || !checked;

@@ -406,39 +406,35 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
   // 🔴 What the last auto-scroll was FOR. See the note on `onContentSizeChange` below: the scroll must
   // follow the CONVERSATION changing, not the content merely being re-laid-out.
   const lastScrollKeyRef = useRef('');
-  // Live scroll position and viewport height, for `revealDay` below. Cheap: two ref writes, no re-render.
-  const scrollYRef = useRef(0);
-  const viewportHRef = useRef(0);
-
   // 🔴 SCROLL A JUST-EXPANDED WORKOUT DAY INTO VIEW.
   // The auto-scroll deliberately ignores layout changes (it used to fling the thread to the bottom), so an
   // expanding day has to ask for this explicitly -- otherwise the content grows off-screen and nothing
   // follows it. Justin, 2026-08-13.
-  // ➡️ THE RULE, chosen so it is predictable rather than clever: if the opened day and its exercises
-  // already fit on screen, do NOTHING. If they do not, put that day row near the TOP of the viewport,
-  // which reveals as much of it as possible and never jumps to the bottom of the conversation.
-  // ⚠️ `measureLayout` against the ScrollView's inner node gives Y in CONTENT coordinates, which is exactly
-  // what `scrollTo` wants. If that node is unavailable the whole thing no-ops, degrading to today's
-  // behaviour rather than to a wrong scroll.
-  const revealDay = (node: any, revealHeight: number) => {
+  //
+  // ➡️ THE RULE: the opened day always moves to just below the top of the viewport. Unconditional.
+  //
+  // ⚠️ THIS USED TO BE "ONLY SCROLL IF IT DOES NOT ALREADY FIT", AND THAT WAS THE BUG. Deciding whether it
+  // fits needs the CURRENT scroll offset, which only arrives via `onScroll` -- i.e. only after the user has
+  // scrolled by hand. Fresh, or after a programmatic scroll, the tracked value was stale, so the check
+  // guessed. Justin, 2026-08-13: *"it works like sometimes? if I'm scrolled as far down as possible it
+  // doesn't, but if I scroll up at all it will."* That is exactly a stale offset. **Predictable beats
+  // clever here: a rule with no hidden state cannot behave differently depending on what you did before.**
+  // iOS clamps the target, so asking to scroll past the end is already a no-op.
+  //
+  // ⚠️ `measureLayout` needs `getInnerViewRef()` on the New Architecture -- the legacy `getInnerViewNode()`
+  // returns a numeric handle and throws "must be called with a ref to a native component". It gives Y in
+  // CONTENT coordinates, which is what `scrollTo` wants. Unavailable -> no-op, never a wrong scroll.
+  const revealDay = (node: any) => {
     const sv: any = scrollRef.current;
     if (!node || !sv) return;
     // Let the expand animation lay out before measuring, or the row is still at its collapsed height.
     setTimeout(() => {
       try {
-        // ⚠️ `getInnerViewRef()` FIRST, and this is the whole bug. On the New Architecture (Fabric)
-        // `measureLayout` must be given a REF TO A NATIVE COMPONENT; the legacy `getInnerViewNode()`
-        // returns a numeric node handle and throws "must be called with a ref to a native component".
-        // The node-handle form is kept only as a fallback for the old renderer.
         const inner = sv.getInnerViewRef?.() ?? sv.getInnerViewNode?.();
         if (!inner) return;
         node.measureLayout(
           inner,
-          (_x: number, y: number, _w: number, h: number) => {
-            const viewportBottom = scrollYRef.current + viewportHRef.current;
-            if (y + h + revealHeight <= viewportBottom) return; // already fully visible, leave it alone
-            sv.scrollTo({ y: Math.max(0, y - 12), animated: true });
-          },
+          (_x: number, y: number) => sv.scrollTo({ y: Math.max(0, y - 12), animated: true }),
           () => {},
         );
       } catch {}
@@ -1009,9 +1005,6 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
                 lastScrollKeyRef.current = key;
                 scrollRef.current?.scrollToEnd({ animated: true });
               }}
-              onScroll={e => { scrollYRef.current = e.nativeEvent.contentOffset.y; }}
-              onLayout={e => { viewportHRef.current = e.nativeEvent.layout.height; }}
-              scrollEventThrottle={16}
               keyboardShouldPersistTaps="handled"
             >
               {messages.map((m, i) => {

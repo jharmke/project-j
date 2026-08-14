@@ -28,6 +28,7 @@ import { backfillAllPhotos } from '../utils/foodPhotos';
 import { markLaunchFinished } from '../utils/launchSplashGate';
 import { applyVacation } from '../utils/vacationMode';
 import { ensureRatePromptInitialized } from '../utils/ratingPrompt';
+import { ensureExerciseLibrarySeeded } from './workout-library';
 import { checkOttoPrompts } from '../utils/ottoPrompts';
 import * as Notifications from 'expo-notifications';
 import { setupNotificationHandler } from '../services/notifications';
@@ -169,6 +170,11 @@ function RootLayoutNav() {
         // auto-expire a finished one) so the cloud mirror lands too.
         applyVacation().catch(() => {});
         ensureRatePromptInitialized().catch(() => {}); // stamp firstSeenAt once, after any real restore has landed
+        // 🔴 Seed pj_exercise_library. The Exercise Library SCREEN used to be the only writer in the app, so
+        // a user who had never opened it had no stored library at all: the Workout tab's exercise info icon
+        // never appeared and Otto's exercise-name context sent nothing. Placed HERE, after the restore gate,
+        // for the same reason as the two calls above -- it must never write defaults ahead of a real restore.
+        ensureExerciseLibrarySeeded().catch(() => {});
         checkOttoPrompts().catch(() => {}); // populate/clear the Rate Us fallback + Feedback Otto cards
         // Cold launch into Home: play the condensed logo cinematic over the hand-off. Show
         // the custom splash FIRST and let it hide the native splash itself once it has painted

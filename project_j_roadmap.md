@@ -3258,8 +3258,25 @@ are separate pre-submission checklists, NOT part of this menu.
   hand-rolled card spread it -- then "make cards deeper" is one number, not a 40-site hunt. The FULL fix is
   migrating cards to `<GradientCard>`, but that needs GradientCard's OWN hardcoded '#000' @0.12 shadow
   fixed first or every card gets worse, and each card passes different props, so it is a real refactor.
-- 🔴 **[FOUND 2026-08-13, BLOCKS THE WORKOUT BUILDER] `pj_exercise_library` does not exist until the user
-  opens the Exercise Library screen.** That screen's load effect is **the only writer in the app** -- it
+- 🔬 **[FIXED IN CODE 2026-08-13, NOT DEVICE-VERIFIED] `pj_exercise_library` did not exist until the user
+  opened the Exercise Library screen.**
+  ✅ **THE FIX:** the screen's seed-or-merge logic is now an exported `ensureExerciseLibrarySeeded()` in
+  `app/workout-library.tsx`, called once at startup from `app/_layout.tsx` **inside the post-`runRestoreGate`
+  block, alongside `applyVacation` and `ensureRatePromptInitialized`** -- so it can never write defaults into
+  an empty local library ahead of a cloud restore landing. The screen now calls the same function, so there
+  is ONE implementation rather than two. Idempotent: a second run finds no changes and does not write.
+  🔴 **AND IT CAUGHT A SECOND DEFECT INTRODUCED THE SAME DAY BY THE EQUIPMENT TAGS: the enrich step did not
+  patch `equipment`.** Every user with an existing stored library would have kept 79 untagged entries forever
+  while only the 59 new ones carried equipment -- **so Otto would have read their entire existing gym as
+  "available anywhere".** `equipment` is now in the patch list, still read-then-merge (`e.x ?? def.x`).
+  ⚠️ **TO VERIFY ON DEVICE:** kill the app, reopen, and WITHOUT visiting the Exercise Library check that the
+  (i) info icon appears next to an exercise on the Workout tab. That icon is the visible symptom.
+  ⚠️ **Minor accepted cost:** `_layout` now imports `app/workout-library`, so that module is evaluated at
+  startup. No circular import (verified: nothing in its chain imports `_layout`), and `settings.tsx` already
+  imports from the same path. The tidy long-term home for `DEFAULT_LIBRARY` is still `workoutData.ts`.
+
+  **The original finding, kept as the record:** `pj_exercise_library` did not exist until the user
+  opened the Exercise Library screen. That screen's load effect is **the only writer in the app** -- it
   seeds `DEFAULT_LIBRARY` when the key is missing and merges new defaults in when it is present. The Workout
   tab reads the key and never seeds it. **So a brand-new user who goes straight to Otto and asks for a
   workout hands him an EMPTY exercise library**, and he has no way to know that is why he has nothing to pick

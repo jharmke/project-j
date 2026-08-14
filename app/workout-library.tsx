@@ -86,6 +86,11 @@ interface LibraryExercise {
   instructions?: string[];
   primaryMuscles?: string[];
   secondaryMuscles?: string[];
+  // Kit this movement NEEDS. 🔴 ABSENT MEANS "AVAILABLE ANYWHERE", not "unknown" -- 42 of the 138
+  // built-ins carry nothing at all, which is the point. Fixed vocabulary:
+  // dumbbells | barbell | rack | bench | cables | machines | pullup_dip | cardio_machine.
+  // See SPEC_workout_builder.md 3.2 and 3.2c.
+  equipment?: string[];
 }
 
 const makeId = () => Math.random().toString(36).substr(2, 9);
@@ -1456,6 +1461,60 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
   { id: 'c17', name: 'Sports', type: 'cardio', tags: ['tag_cardio'] },
 ];
 
+/**
+ * Seed-or-merge `pj_exercise_library`, and return the merged list.
+ *
+ * 🔴 EXPORTED AND CALLED AT APP STARTUP (`app/_layout.tsx`) BECAUSE THIS SCREEN USED TO BE THE ONLY
+ * WRITER IN THE APP. Until a user opened the Exercise Library once, the key did not exist -- so the
+ * Workout tab's exercise info (i) icon never appeared, and BOTH of Otto's exercise-name context blocks
+ * (`utils/companionPRs.ts`) sent nothing, leaving him unable to tell a real exercise from an invented
+ * one. It would also have left the workout builder with nothing to build from. Found 2026-08-13.
+ *
+ * ⚠️ MUST RUN AFTER THE RESTORE GATE. `_layout` calls it in the post-`runRestoreGate` block, alongside
+ * `applyVacation` and `ensureRatePromptInitialized`, so it can never write defaults into an empty local
+ * library ahead of a cloud restore landing.
+ *
+ * ✅ READ-THEN-MERGE, NEVER REPLACE. Existing entries keep every field the user has set (`e.x ?? def.x`);
+ * only genuinely missing fields are filled and only genuinely new defaults are appended. Idempotent:
+ * a second run finds no changes and does not write.
+ */
+export async function ensureExerciseLibrarySeeded(): Promise<LibraryExercise[]> {
+  const saved = await AsyncStorage.getItem('pj_exercise_library');
+  if (!saved) {
+    await storageSet('pj_exercise_library', JSON.stringify(DEFAULT_LIBRARY));
+    return DEFAULT_LIBRARY;
+  }
+  const parsed: LibraryExercise[] = JSON.parse(saved);
+  const savedIds = new Set(parsed.map(e => e.id));
+  const newDefaults = DEFAULT_LIBRARY.filter(e => !savedIds.has(e.id));
+  // Enrich existing entries with new fields without overwriting user customizations.
+  // ⚠️ `equipment` IS IN THIS LIST DELIBERATELY. It was added 2026-08-13 and, without it, every user who
+  // already had a stored library would keep 79 untagged entries forever while only the new ones carried
+  // equipment -- so Otto would read their whole existing gym as "available anywhere".
+  const enriched = parsed.map(e => {
+    const def = DEFAULT_LIBRARY.find(d => d.id === e.id);
+    if (!def) return e;
+    const needsPatch =
+      (!e.instructions && def.instructions) ||
+      (!e.primaryMuscles && def.primaryMuscles) ||
+      (!e.tags && def.tags) ||
+      (!e.equipment && def.equipment);
+    if (!needsPatch) return e;
+    return {
+      ...e,
+      instructions: e.instructions ?? def.instructions,
+      primaryMuscles: e.primaryMuscles ?? def.primaryMuscles,
+      secondaryMuscles: e.secondaryMuscles ?? def.secondaryMuscles,
+      tags: e.tags ?? def.tags,
+      equipment: e.equipment ?? def.equipment,
+    };
+  });
+  const merged = [...enriched, ...newDefaults];
+  const hasChanges = newDefaults.length > 0 || enriched.some((e, i) => e !== parsed[i]);
+  if (hasChanges) await storageSet('pj_exercise_library', JSON.stringify(merged));
+  return merged;
+}
+
 function fmtLibraryDay(dk: string | undefined): string {
   if (!dk) return '';
   const today = new Date();
@@ -2727,27 +2786,7 @@ export default function WorkoutLibraryScreen() {
   useEffect(() => {
     const load = async () => {
       try {
-        const saved = await AsyncStorage.getItem('pj_exercise_library');
-        if (saved) {
-          const parsed: LibraryExercise[] = JSON.parse(saved);
-          const savedIds = new Set(parsed.map(e => e.id));
-          const newDefaults = DEFAULT_LIBRARY.filter(e => !savedIds.has(e.id));
-          // Enrich existing entries with new fields (instructions, muscles, tags) without overwriting user customizations
-          const enriched = parsed.map(e => {
-            const def = DEFAULT_LIBRARY.find(d => d.id === e.id);
-            if (!def) return e;
-            const needsPatch = (!e.instructions && def.instructions) || (!e.primaryMuscles && def.primaryMuscles) || (!e.tags && def.tags);
-            if (!needsPatch) return e;
-            return { ...e, instructions: e.instructions ?? def.instructions, primaryMuscles: e.primaryMuscles ?? def.primaryMuscles, secondaryMuscles: e.secondaryMuscles ?? def.secondaryMuscles, tags: e.tags ?? def.tags };
-          });
-          const merged = [...enriched, ...newDefaults];
-          setLibrary(merged);
-          const hasChanges = newDefaults.length > 0 || enriched.some((e, i) => e !== parsed[i]);
-          if (hasChanges) await storageSet('pj_exercise_library', JSON.stringify(merged));
-        } else {
-          setLibrary(DEFAULT_LIBRARY);
-          await storageSet('pj_exercise_library', JSON.stringify(DEFAULT_LIBRARY));
-        }
+        setLibrary(await ensureExerciseLibrarySeeded());
       } catch (e) {
         console.log('Load error', e);
       }

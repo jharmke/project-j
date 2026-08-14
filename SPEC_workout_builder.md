@@ -736,8 +736,14 @@ with no library at all.**
 generated phrasings before it ships, never hand-checked.** The exercise cap detector caught 13 of 60
 realistic asks. Always `['’]` on apostrophes.
 
-🔴 **BLOCKER FOUND WHILE CHECKING THIS, AND IT IS NOT A DESIGN QUESTION: `pj_exercise_library` DOES NOT EXIST
-UNTIL THE USER OPENS THE EXERCISE LIBRARY SCREEN.** That screen's load effect (`app/workout-library.tsx`
+🔬 **FIXED IN CODE 2026-08-13, NOT YET DEVICE-VERIFIED.** The seed-or-merge is now an exported
+`ensureExerciseLibrarySeeded()` called once at startup from `app/_layout.tsx`, inside the post-restore-gate
+block so it can never write ahead of a cloud restore. The screen calls the same function, so there is one
+implementation. **It also caught a same-day defect: the enrich step was not patching `equipment`, which would
+have left every existing user's 79 entries untagged and read as "available anywhere" by Otto.**
+
+🔴 **THE ORIGINAL FINDING, KEPT AS THE RECORD: `pj_exercise_library` DID NOT EXIST
+UNTIL THE USER OPENED THE EXERCISE LIBRARY SCREEN.** That screen's load effect (`app/workout-library.tsx`
 ~2138-2160) is **the only writer in the app**; it seeds `DEFAULT_LIBRARY` when the key is missing and merges
 new defaults in when it is present. **The Workout tab reads the key and never seeds it** (`workout.tsx` ~903).
 ➡️ **So a brand-new Supporter who goes straight to Otto and asks for a workout hands him an EMPTY list**, and

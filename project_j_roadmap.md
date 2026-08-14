@@ -2385,6 +2385,16 @@ are separate pre-submission checklists, NOT part of this menu.
      creates and gets one wrong, the user is stuck with a confidently wrong diagram forever.
      **This editor is the seatbelt that makes Otto pre-filling safe**, and it is worth building on its own
      merits regardless of Otto (Justin's instinct, and he was right -- an earlier framing had this backwards).
+     ⚠️ **BUILD ORDER CHANGED 2026-08-13: THIS NO LONGER BLOCKS E, IT NOW COMES AFTER IT.** The "blocks Otto"
+     claim above is still TRUE but much narrower than it reads: Otto only creates an exercise when the USER
+     names a movement he does not have, the library is now 138 rather than 79, and what goes wrong is a wrong
+     PICTURE rather than corrupted data (a wrong NAME is the serious one and section 4's exact-name rule
+     already handles it). **E is the last unbuilt thing standing between the Supporter tier and what it
+     promises on four screens.** 🔴 **The swap is conditional: E must ship with the preview card showing
+     MUSCLES AND INSTRUCTIONS for a newly-created exercise**, which is far cheaper than this editor and puts
+     the check where every other check in that feature lives. Full reasoning: `SPEC_workout_builder.md` 8.1.
+     ✅ **Still worth building on its own merits and that has not changed** -- nobody can edit instructions or
+     muscles on ANY exercise today, including all 138 built-ins.
      BUILD NOTES:
      • **Instructions:** simple editable step list (the built-ins run ~4 short lines each).
      • **Muscle picker: THREE states per muscle** (off / primary / secondary) because the data and the

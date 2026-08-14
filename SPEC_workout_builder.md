@@ -148,6 +148,7 @@ blue/amber dot per row (lift vs cardio), one primary button at the bottom.
 | ✅ Exercise count moved onto the TITLE ROW | Into the corner the icons vacated. Same information, one line less height. **Kept rather than dropped because five exercises is the locked session shape (3.7), so the count is how the user sees at a glance that Otto stuck to it.** |
 | ✅ Rows RESTACKED: name on top, numbers beneath | See below. This is the biggest change. |
 | ✅ Names may wrap to TWO LINES instead of truncating | Costs nothing on the ~95% of rows that never need it. |
+| 🆕 **A NEW exercise's row ALSO shows its muscles and instructions** | **ADDED 2026-08-13, see 8.1.** For a movement being permanently added to the library, those are the two fields most likely to be wrong and the only two the user would otherwise never see before accepting. **NEW exercises only** — library rows stay plain, since their data is curated and re-showing it every time would bloat every card for nothing. |
 | ✅ Inner padding 16 → 12 | Buys back most of what the narrower column costs. |
 
 🔴 **THE RESTACK, AND WHY THE LIBRARY'S RIGHT-HAND COLUMN COULD NOT COME ACROSS.** The library renders
@@ -1025,6 +1026,10 @@ server-side from its own membership record, so a modified client cannot switch i
 
 ## 8. DEPENDENCIES AND SEQUENCING
 
+✅ **RESOLVED 2026-08-13: J's DATA IS WRITTEN (138 entries, equipment tagged), so E IS NO LONGER BLOCKED ON
+IT.** What remains on J is a content spot-check on device, which does not gate the build. The original
+finding is kept below because it is the reason J happened at all.
+
 🔴 **ITEM J NOW BLOCKS ITEM E.** J was always "the cheapest way to make the workout builder safe"; it turns
 out to GATE it. **The library has no bodyweight exercises at all** — J's own justification says *"there is no
 PUSH-UP... nothing bodyweight at all, so anyone training at home has almost nothing to pick from."* Otto
@@ -1041,6 +1046,38 @@ cannot build a home workout today. **Build J first.**
 - ✅ Trap bar and landmine tag as **barbell**.
 
 **Item K (lift-name aliases) is unbuilt** and section 4's preview check is the practical stand-in.
+
+### 8.1 🔴 BUILD ORDER — CHANGED 2026-08-13. E NOW COMES BEFORE ITEM I.
+⚠️ **THIS REVERSES A RECORDED POSITION AND THE OLD ONE IS KEPT SO NOBODY RE-DERIVES IT.** The roadmap's item I
+says the exercise editor *"blocks Otto: if he pre-fills muscles/instructions on an exercise he creates and
+gets one wrong, the user is stuck with a confidently wrong diagram forever."* **That is still true. It is just
+much narrower than it reads.** Justin agreed to the change 2026-08-13 (*"ok i guess we can do your order"*).
+
+**✅ NEW ORDER: the two blocking bugs → J (done) → E → item I.**
+
+🔴 **WHY E MOVED AHEAD:**
+1. **Otto only creates an exercise when the USER names a movement he does not have** (decision 2). He never
+   invents one unprompted, so the exposure is one narrow path, not a general risk.
+2. **The library is now 138, not 79**, so an off-library ask is rarer than when that note was written.
+3. **What goes wrong is a wrong PICTURE, not corrupted data.** A wrong NAME splits PR history and is serious
+   — and that is already handled by section 4's exact-name rule. A wrong muscle map is cosmetic and
+   recoverable.
+4. **E is the last unbuilt thing standing between the Supporter tier and what it already promises on four
+   user-facing surfaces** (section 0).
+
+🔴 **BUT E ONLY MOVES AHEAD IF IT CARRIES THIS, OTHERWISE THE SEATBELT IS REMOVED AND NOT REPLACED:**
+➡️ **THE PREVIEW CARD MUST SHOW MUSCLES AND INSTRUCTIONS FOR A NEWLY-CREATED EXERCISE.**
+🔴 **THIS IS A REAL HOLE IN 2.1d AND IT WAS FOUND WHILE ARGUING THE BUILD ORDER.** The card shows name, sets,
+reps and rest. **So for a brand-new exercise — the one thing being permanently added to the user's library —
+the two fields most likely to be wrong are the exact two the user never sees before accepting.**
+- Applies to **new exercises only**. Library exercises keep the plain row from 2.1d; their data is curated
+  and re-showing it on every card would bloat every workout for nothing.
+- It is **much cheaper than building the editor**, and it puts the check exactly where this spec puts every
+  other check: in the preview, before anything is written.
+
+✅ **ITEM I IS STILL WORTH BUILDING ON ITS OWN MERITS, WHICH WAS JUSTIN'S ORIGINAL INSTINCT AND IS CORRECT:**
+**nobody can edit instructions or muscles on ANY exercise today, including all 138 built-ins.** Moving it
+after E changes when it happens, not whether.
 
 ---
 

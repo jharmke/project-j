@@ -1783,7 +1783,7 @@ Read per call, changeable without an App Store update.
 | B | Otto free/paid split | direction locked, prompt/KB work outstanding |
 | C | Non-AI walls / paywalls / limits | ⚠️ header says NOT COMPLETE, but the 2026-08-03 commit says closed after audit. **Verify before trusting either.** |
 | D | 7-day taste | 🔴 **THIS ROW WAS WRONG. CORRECTED 2026-08-05 by Justin, who said he was "almost certain it is fully built" and was right.** `FirstWeekEndedModal.tsx` exists and is wired into `app/(tabs)/index.tsx`. It said "specced not built" and I quoted that back at him as an unbuilt conversion lever. **Verify what remains on it before planning around it.** |
-| E | Workout builder | 🟢 **FULLY DESIGNED 2026-08-13. `SPEC_workout_builder.md`. ALL 9 OPEN ITEMS ANSWERED. Nothing built. Blocked on J.** ⚠️ **Two things must be fixed BEFORE the build: the empty-library bug (spec 5.1) and the chat's auto-scroll (spec 2.1h).** Both are in the roadmap's NEXT UP. |
+| E | Workout builder | 🟢 **FULLY DESIGNED 2026-08-13. `SPEC_workout_builder.md`. ALL 9 OPEN ITEMS ANSWERED. Nothing built.** ✅ **J's data is DONE, so E is no longer blocked on it.** ⚠️ **Two bugs must be fixed BEFORE the build: the empty-library bug (spec 5.1) and the chat's auto-scroll (spec 2.1h)**, both in the roadmap's NEXT UP. 🔴 **BUILD ORDER CHANGED 2026-08-13: E now comes BEFORE item I, conditional on the preview showing muscles + instructions for a NEW exercise. See spec 8.1.** |
 | F | Meal builder | needs a full spec |
 | G | Calorie floor | ✅ complete + device-verified 2026-08-03 |
 | H | Cost routing | ⏸️ **PARKED** -- measured 73% fallback + 57 cache entries. See `SPEC_otto_routing.md` |
@@ -2007,6 +2007,12 @@ discussed before but i guess wasnt saved."* Decisions land here the moment they 
      they already own, which is rare and is precisely when they would want to be asked.
    ➡️ **Any future addition to this feature must justify itself against this rule.** If it adds a question,
    it needs to earn it or become an inline option.
+
+**10. ✅ RESOLVED 2026-08-13: J'S DATA IS WRITTEN (138 entries + equipment), SO E IS NO LONGER BLOCKED ON IT.**
+   What remains on J is a device spot-check of the content, which does not gate the build. **And the order
+   changed again the same day: E now comes BEFORE item I** (spec 8.1), conditional on the preview showing
+   muscles and instructions for a newly-created exercise. The original finding is kept below as the record of
+   why J happened at all.
 
 **10. 🔴 ITEM J NOW BLOCKS ITEM E. SEQUENCING CHANGED 2026-08-10.** J was always "the cheapest way to make
    the workout builder safe"; it turns out to GATE it. **The library has no bodyweight exercises at all** --

@@ -505,14 +505,36 @@ PULL EXERCISE, AND IT IS `Wrist Roller`.** Counted, not guessed:
 pull in the library (Pull-Up, Chin-Up, Inverted Row, Hanging Leg Raise, Dead Hang) correctly needs a bar.
 🔴 **BUT IT MEANS OTTO CANNOT BUILD A BODYWEIGHT PULL DAY, AND ITEM J'S WHOLE JUSTIFICATION WAS "he cannot
 build a home workout today".** For a user with no bar, he can do push, legs, core and cardio and nothing else.
-➡️ **NEEDS A DECISION BEFORE E SHIPS. Three options, none taken yet:**
-1. **Accept it** — Otto builds push/legs/core for that user and says plainly that pulling needs a bar or a
-   band. Honest, zero build, and arguably correct.
-2. **Add no-equipment pulling** — towel rows on a door frame, prone Y-T-W raises, reverse snow angels. Real
-   movements, but they are OUTSIDE the 64 Justin approved on 2026-07-30, so they need his sign-off.
-3. **Add a `bands` tick** — resistance bands are the actual answer to home pulling, cost nothing, and are the
-   one obvious gap in the seven. **This is the option I would put first**, but it is a NINTH tick and the
-   tick list was deliberately kept short, so it is Justin's call, not mine.
+✅ **DECIDED 2026-08-13: ACCEPT IT. No new tick, no new exercises.** 🟡 Justin's sign-off was *"i guess???"* --
+recorded as decided, but it is a low-confidence one; the rejected options are kept below so it does not have
+to be re-derived.
+
+🔴 **WHAT DECIDED IT: THE GAP IS ONLY THE LITERALLY-ZERO-EQUIPMENT CASE.** Counted against the real tags:
+| Setup | Pull exercises available |
+|---|---:|
+| Nothing at all | **1** (Wrist Roller) |
+| **+ a doorway pull-up bar** | **5** (Pull-Up, Chin-Up, Inverted Row, Dead Hang, Wrist Roller) |
+| + dumbbells | 8 |
+| Home gym (dumbbells + bar + bench) | 18 |
+| Apartment gym | 11 |
+➡️ **ONE TICK FIXES IT AND THAT TICK IS ALREADY ONE OF THE SEVEN.** A doorway bar takes pull from 1 to 5 and
+push from 4 to 6. **Every realistic home setup already works.**
+✅ **AND THE ESCAPE HATCH IS ALREADY IN THE DESIGN:** decision 2 lets Otto go outside the library when the
+USER names a movement, so somebody who wants towel rows asks for them and gets one created.
+
+❌ **REJECTED: a `bands` tick — AND THE REASON I FIRST RECOMMENDED IT WAS WRONG.** I called it "costs
+nothing". **It does not: the library has ZERO band exercises, so a ninth tick would tag nothing and change
+nothing.** It needs the tick AND a set of new band movements, which are outside the 64 approved 2026-07-30.
+That is option 2 plus extra work, not a cheap fix. **Do not re-propose it without the exercises attached.**
+❌ **REJECTED: adding no-equipment pulling** (towel rows, prone Y-T-W raises). Real movements, but outside the
+approved 64 and unnecessary once the pull-up bar tick is understood as the answer.
+
+🔴 **THE ONE THING ACCEPTING REQUIRES, BECAUSE OTHERWISE THE FAILURE IS SILENT.** Validation (5.2) renders NO
+CARD when too few exercises survive — **so a bodyweight-only user asking for a pull day would get nothing at
+all, with no explanation.** ➡️ **Otto must say the true and useful thing instead: pulling needs something to
+pull against, and a doorway bar is the cheapest fix.** That points at a tick they can switch on, rather than
+apologising. ⚠️ **Not a prompt rule — this is a known, detectable state** (zero-equipment profile + a pull
+request), so the app should serve the line. See [[feedback_harnesses_cannot_see_the_model]].
 
 ⚠️ **JUDGEMENT CALLS MADE WHILE TAGGING, LISTED BECAUSE THEY ARE ARGUABLE AND SHOULD NOT LOOK LIKE FACTS:**
 - **Incline / Decline Push-Up, Step-Up, Box Jump: left UNTAGGED.** They need an elevated surface, but stairs,

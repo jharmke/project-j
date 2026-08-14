@@ -2039,11 +2039,18 @@ discussed before but i guess wasnt saved."* Decisions land here the moment they 
    cardio_machine 6. **Detail and the seven arguable judgement calls: `SPEC_workout_builder.md` 3.2c.**
    🔴 **AND THE AUDIT FOUND A PRODUCT GAP THAT NEEDS JUSTIN BEFORE E SHIPS: A BODYWEIGHT-ONLY USER HAS EXACTLY
    ONE PULL EXERCISE, AND IT IS `Wrist Roller`.** Push 4, legs 11, core 15, cardio 12, **pull 1**.
-   ⚠️ **It is physics, not a tagging error** -- pulling needs something to pull against. **But item J's whole
-   justification was "Otto cannot build a home workout today", and for a user with no bar he still cannot
-   build a pull day.** ➡️ Options in 3.2c; **the one I would put first is a NINTH tick for resistance bands**,
-   which is the real answer to home pulling and costs nothing -- but the tick list was deliberately kept
-   short, so it is his call.
+   ✅ **DECIDED SAME DAY: ACCEPT IT. No new tick, no new exercises.** 🟡 Sign-off was *"i guess???"*, so it is
+   a low-confidence decision; the rejected options are kept in 3.2c.
+   🔴 **WHAT DECIDED IT: the gap is ONLY the literally-zero-equipment case.** A doorway pull-up bar -- already
+   one of the seven ticks -- takes pull from 1 to 5 and push from 4 to 6. Dumbbells alone give 8. **Every
+   realistic home setup already works.** Plus decision 2 already lets a user name a movement and have Otto
+   create it.
+   ⚠️ **I RECOMMENDED THE BANDS TICK AND I WAS WRONG. Do not re-propose it without the exercises attached.**
+   I called it "costs nothing"; **the library has ZERO band exercises, so the tick alone would change
+   nothing.** It needs new movements too, which are outside the 64 approved 2026-07-30.
+   🔴 **ONE THING ACCEPTING REQUIRES: validation renders NO CARD when too little survives, so that user would
+   get silence.** Otto must instead say pulling needs something to pull against and a doorway bar is the
+   cheapest fix. **Served by the app, not left to the prompt** -- it is a detectable state.
 
 **12. WHAT ITEM J SHIPS CHANGES, DECIDED 2026-08-10 WHILE SIZING THE EQUIPMENT TICKS.**
    ❌ **CUT from J's "FULL BODY / FUNCTIONAL" section** (the roadmap already flagged it as the easiest to

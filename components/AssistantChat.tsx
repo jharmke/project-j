@@ -427,7 +427,8 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
   const revealDay = (node: any) => {
     const sv: any = scrollRef.current;
     if (!node || !sv) return;
-    // Let the expand animation lay out before measuring, or the row is still at its collapsed height.
+    // ⚠️ The caller already waits for the expand animation to COMPLETE before calling this (see the note in
+    // RoutinePreviewCard's `toggle`). This short delay only lets the final layout pass settle.
     setTimeout(() => {
       try {
         const inner = sv.getInnerViewRef?.() ?? sv.getInnerViewNode?.();
@@ -438,7 +439,7 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
           () => {},
         );
       } catch {}
-    }, 90);
+    }, 32);
   };
   const inputRef = useRef<TextInput>(null);
   const dragY = useSharedValue(0);

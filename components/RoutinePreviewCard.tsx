@@ -350,9 +350,15 @@ function DayRow({
       duration: 220,
       easing: to ? Easing.out(Easing.cubic) : Easing.in(Easing.cubic),
       useNativeDriver: false, // height is a layout prop; the native driver cannot carry it
-    }).start();
-    // Only on OPEN. Collapsing shrinks the thread and never hides anything, so it needs no scroll.
-    if (to === 1) onRevealDay?.(rowRef.current);
+      // 🔴 THE REVEAL RUNS IN THE COMPLETION CALLBACK, NOT ALONGSIDE THE ANIMATION, AND THAT IS THE WHOLE
+      // POINT. It was fired 90ms into a 220ms animation, so the scroll was measured and clamped against a
+      // content height still mid-growth. The scroll target was right; the MAXIMUM it was allowed to reach
+      // was not. And the further down the card a day sat, the more of the growth was still pending, so the
+      // clamp bit harder -- which is exactly what Justin saw: "if I open the top one it scrolls all the way
+      // down, but mon or wed scroll progressively less" (2026-08-13).
+      // ➡️ By completion the height is final, so `scrollTo` clamps against the real end of the content.
+      // ⚠️ Only on OPEN. Collapsing shrinks the thread and can never hide anything, so it needs no scroll.
+    }).start(() => { if (to === 1) onRevealDay?.(rowRef.current); });
   };
 
   const dim = used || !checked;

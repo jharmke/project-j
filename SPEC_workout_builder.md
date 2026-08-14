@@ -290,7 +290,8 @@ out of scope.** The date makes it unambiguous that this lands on three specific 
 visible message area — **the whole week fits on screen with room above it.** Opening one day adds ~185pt.
 ✅ **IT SURVIVES 2.2: a collapsible is optional detail, not a question.** The user is still asked nothing.
 
-🔬 **FIXED IN CODE 2026-08-13, NOT YET DEVICE-VERIFIED.** `onContentSizeChange` now scrolls only when the
+✅ **FIXED AND DEVICE-VERIFIED 2026-08-13** (Justin: *"tested. think its fine"*). `onContentSizeChange` now
+scrolls only when the
 CONVERSATION changed, gated on message count + whether the typing dots are up. A pure re-layout (a day row
 expanding) leaves the key unchanged and is ignored.
 ✅ **THE KEYBOARD NEEDED NOTHING:** it already runs its own `scrollToEnd` from the `keyboardWillShow`

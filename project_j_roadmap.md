@@ -3286,6 +3286,18 @@ are separate pre-submission checklists, NOT part of this menu.
   nothing for that user. ➡️ Seed from somewhere every user passes through, or seed on read. ⚠️ **Read-then-
   merge if this is touched** -- the existing loader deliberately never overwrites a user's edits. Full
   detail: `SPEC_workout_builder.md` 5.1.
+- 🔬 **[BUILT 2026-08-13, NEEDS JUSTIN'S EYES] WORKOUT BUILDER STAGE 1: the preview card renders.**
+  `components/RoutinePreviewCard.tsx` + `components/routinePreviewFixtures.ts`, wired into Otto's chat as a
+  sibling of his bubble (order: bubble → card → pills → actions). **Drawing only — Otto is not involved yet.**
+  ➡️ **TO SEE IT: type `pj:card` into Otto.** Variants: `pj:card week` (three collapsible days),
+  `pj:card long` (worst-case names), `pj:card new` (a brand-new exercise showing its muscles + instructions),
+  `pj:card used` (the greyed-out state), `pj:card none` (no card at all).
+  ⚠️ **THE TRIGGER SHIPS RATHER THAN SITTING BEHIND `__DEV__`, ON PURPOSE.** The day-row expand animates a
+  MEASURED PIXEL HEIGHT (`useNativeDriver: false`), which this project only trusts on a RELEASE build — so
+  the trigger has to exist in TestFlight. Nothing is saved from a preview and nobody types `pj:card` by
+  accident. **Remove it before App Store submission** (add to `LAUNCH_CHECKLIST.md` when E is done).
+  **WHAT TO LOOK AT:** does it read right at real size · is the checkbox easy to hit WITHOUT expanding the
+  row (two targets on one row, the known risk) · does the expand feel smooth · do long names wrap sensibly.
 - ✅ **[SHIPPED 2026-08-13, DEVICE-VERIFIED — Justin: "looks fine"] The exercise (i) on the Workout tab did
   not match any other (i) in the app.** Justin: *"why does it look like that and not like all of the other (i) in the entire
   app?"* It was `information-circle-OUTLINE` in `theme.textDim` via plain `Ionicons`, while **every other (i)

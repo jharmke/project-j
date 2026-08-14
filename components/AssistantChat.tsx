@@ -39,6 +39,8 @@ import { TUTORIAL_TRIGGERS, TUTORIAL_ROUTE_OVERLAP } from '../utils/companionTut
 import { useTutorial } from '../context/TutorialContext';
 import { TAB_TUTORIALS } from '../data/tutorials';
 import { ToastRenderer, useToast } from './Toast';
+import RoutinePreviewCard, { type WorkoutDraft } from './RoutinePreviewCard';
+import { makeDevDraft } from './routinePreviewFixtures';
 import GradientTitle from './GradientTitle';
 import HeaderIconButton from './HeaderIconButton';
 import { useTheme } from '../theme';
@@ -138,7 +140,7 @@ type Role = 'user' | 'assistant' | 'system' | 'crisis';
 // ⚠️ `cannedId` (PLAN.md 4.11b) is present ONLY when the reply came from a pre-written answer rather than
 // the model. It is what turns a thumbs-down from "that reply was poor", which is hard to act on, into
 // "THIS specific piece of text we wrote is wrong", which names the entry to fix.
-type Msg = { role: Role; text: string; feedback?: 'up' | 'down'; routes?: string[]; tutorials?: string[]; dayJump?: DayRef; cannedId?: string };
+type Msg = { role: Role; text: string; feedback?: 'up' | 'down'; routes?: string[]; tutorials?: string[]; dayJump?: DayRef; cannedId?: string; draft?: WorkoutDraft };
 
 // Replace [[route:key]] tokens with the route's plain label inline (so the sentence still reads
 // naturally) and collect the recognized keys so the client can render tappable pills below the
@@ -671,6 +673,23 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
     setMessages(prev => [...prev, { role: 'user', text }]);
     setInput('');
 
+    // ─── DEV: drop a canned workout preview, no network, no cost ───────────────────────────────────
+    // `pj:card`, `pj:card week`, `pj:card long`, `pj:card new`, `pj:card used`, `pj:card none`.
+    // ⚠️ Ships on purpose rather than sitting behind __DEV__: the day-row expand animates a measured pixel
+    // height (useNativeDriver:false), and this project only trusts that kind of animation on a RELEASE
+    // build -- so the trigger has to exist in TestFlight. Nothing is saved from a preview, and nobody
+    // types `pj:card` by accident. See components/routinePreviewFixtures.ts.
+    if (/^pj:card\b/i.test(text)) {
+      const draft = makeDevDraft(text.replace(/^pj:card\b/i, ''));
+      setMessages(prev => [
+        ...prev,
+        draft
+          ? { role: 'assistant', text: "Here's a workout. Tell me if anything needs changing, or add it to your week.", draft }
+          : { role: 'assistant', text: 'Nothing valid survived, so there is no card. This is the fallback.' },
+      ]);
+      return;
+    }
+
     // Client-side crisis short-circuit: never route a crisis to the AI; show the vetted hardcoded
     // response instantly, offline-safe.
     if (screenForCrisis(text).isCrisis) {
@@ -1008,6 +1027,12 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
                     <OttoAvatar accent={accent} />
                     <View style={styles.replyCol}>
                     <View style={[styles.bubble, styles.assistantBubble, styles.replyBubble]}>{body}</View>
+                    {/* The workout preview sits OUTSIDE the bubble, like an attachment in a text thread --
+                        one more sibling in the column the pills and the action row already live in.
+                        ⚠️ ORDER IS LOCKED: bubble → card → pills → actions. The card is the substance of the
+                        reply, pills navigate AWAY from it, share/thumbs stays last as it is everywhere.
+                        Spec 2.1b/2.1l. */}
+                    {m.draft && <RoutinePreviewCard draft={m.draft} />}
                     {((m.routes && m.routes.length > 0) || (m.tutorials && m.tutorials.length > 0) || m.dayJump) && (
                       <View style={styles.pillRow}>
                         {/* The day jump leads: it is the most specific answer to "what did I do on X". Its

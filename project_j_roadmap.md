@@ -2432,7 +2432,11 @@ are separate pre-submission checklists, NOT part of this menu.
        most likely to create custom exercises is the same person who also trains at home.
 
   **J. EXPAND THE EXERCISE LIBRARY (79 -> 138)** -- NEW 2026-07-30, came out of item A question 3.
-     🔬 **THE 59 ENTRIES ARE WRITTEN, 2026-08-13. NOT YET VERIFIED ON DEVICE.** `DEFAULT_LIBRARY` now holds
+     🔬 **THE 59 ENTRIES ARE WRITTEN, 2026-08-13. JUSTIN CONFIRMED THEY APPEAR ON DEVICE ("i see them").**
+     ⚠️ **THAT CONFIRMS THEY RENDER, NOT THAT THE CONTENT IS RIGHT.** The instruction text and muscle mapping
+     on individual entries have not been read by a human. 🔴 **AND THERE IS NO IN-APP WAY TO FIX EITHER --
+     the exercise editor is item I and is not built** -- so a wrong instruction or muscle map is stuck until
+     it ships. Worth a spot-check of a few entries before launch. `DEFAULT_LIBRARY` now holds
      **138 entries** (79 + 59; the candidate list was 64, PLAN 4.18 item 12 cut four, and one more was cut on
      audit — see the duplicate note below). Every entry carries
      its tag, default sets/reps/rest, primary/secondary muscles and 4 instruction steps in the existing voice.

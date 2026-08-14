@@ -2033,8 +2033,17 @@ discussed before but i guess wasnt saved."* Decisions land here the moment they 
    ✅ **The tags can ride the EXISTING enrich-on-load migration** (`app/workout-library.tsx` ~2145), which
    already patches library entries with new fields using `e.field ?? def.field` and therefore never
    overwrites a user's own edit. No new migration to invent.
-   ⚠️ **TAG WHILE ITEM J HAS THE FILE OPEN.** J adds ~64 entries to the same file; tagging separately later
-   is pure duplicated effort.
+   ✅ **DONE IN CODE 2026-08-13, all 138 entries, same session as item J as intended.** `equipment?: string[]`
+   on `LibraryExercise`; **absent means "available anywhere", not "unknown"** (42 entries carry nothing).
+   MEASURED at 138: dumbbells 27 · barbell 24 · bench 20 · cables 16 · machines 15 · rack 7 · pullup_dip 7 ·
+   cardio_machine 6. **Detail and the seven arguable judgement calls: `SPEC_workout_builder.md` 3.2c.**
+   🔴 **AND THE AUDIT FOUND A PRODUCT GAP THAT NEEDS JUSTIN BEFORE E SHIPS: A BODYWEIGHT-ONLY USER HAS EXACTLY
+   ONE PULL EXERCISE, AND IT IS `Wrist Roller`.** Push 4, legs 11, core 15, cardio 12, **pull 1**.
+   ⚠️ **It is physics, not a tagging error** -- pulling needs something to pull against. **But item J's whole
+   justification was "Otto cannot build a home workout today", and for a user with no bar he still cannot
+   build a pull day.** ➡️ Options in 3.2c; **the one I would put first is a NINTH tick for resistance bands**,
+   which is the real answer to home pulling and costs nothing -- but the tick list was deliberately kept
+   short, so it is his call.
 
 **12. WHAT ITEM J SHIPS CHANGES, DECIDED 2026-08-10 WHILE SIZING THE EQUIPMENT TICKS.**
    ❌ **CUT from J's "FULL BODY / FUNCTIONAL" section** (the roadmap already flagged it as the easiest to

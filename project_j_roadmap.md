@@ -2462,7 +2462,13 @@ are separate pre-submission checklists, NOT part of this menu.
      ⚠️ **Format notes worth keeping:** library holds are written into the reps STRING (`'30–45s hold'`) --
      there is no `trackingType` on `LibraryExercise`, that field belongs to the day/routine exercise. And
      **cardio entries are one-liners with no muscles and no instructions**, matching the 11 that shipped.
-     ⏳ **STILL TO DO:** device pass, and the equipment tags across all 139 (PLAN 4.18 item 11).
+     ✅ **EQUIPMENT TAGS DONE 2026-08-13, all 138 entries** (PLAN 4.18 item 11), in the same session as
+     intended so the file was only touched once. `equipment?: string[]` on `LibraryExercise`, fixed
+     vocabulary, **absent means "available anywhere"**. Detail: `SPEC_workout_builder.md` 3.2c.
+     🔴 **THE TAGGING AUDIT FOUND A GAP THAT NEEDS JUSTIN: a bodyweight-only user has ONE pull exercise, and
+     it is `Wrist Roller`.** Push 4, legs 11, core 15, cardio 12, pull 1. Physics rather than a data error,
+     but Otto still cannot build a home pull day. **A ninth tick for resistance bands is the likeliest fix.**
+     ⏳ **STILL TO DO:** the content spot-check on device (instructions + muscle maps), and the bands call.
      WHY: every exercise that ships curated is one Otto never has to invent. This is the cheapest way to
      make the workout builder (E) safe. It also fixes real holes that exist today.
      ⚠️ **THE TWO GLARING OMISSIONS: there is no PUSH-UP and no DUMBBELL LATERAL RAISE.** Nothing bodyweight

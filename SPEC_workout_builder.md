@@ -481,7 +481,49 @@ actually logged; otherwise he names none and says "cardio, your pick".
 ✅ **The tags ride the EXISTING enrich-on-load migration** (`app/workout-library.tsx` ~line 2145), which
 patches library entries with new fields using `e.field ?? def.field` and therefore never overwrites a user's
 own edit. **No new migration to invent.**
-⚠️ **TAG WHILE ITEM J HAS THE FILE OPEN.** J adds ~64 entries to the same file.
+
+### 3.2c ✅ TAGGED IN CODE 2026-08-13. All 138 entries.
+**The vocabulary is FIXED and lives on `LibraryExercise.equipment?: string[]`:**
+`dumbbells` · `barbell` · `rack` · `bench` · `cables` · `machines` · `pullup_dip` · `cardio_machine`
+🔴 **ABSENT MEANS "AVAILABLE ANYWHERE", NOT "UNKNOWN".** 42 of 138 carry nothing at all, which is the point:
+the field only ever names kit a movement genuinely NEEDS.
+
+**MEASURED after tagging** (was estimated against 78 entries in the table above; these are the real numbers
+at 138): dumbbells 27 · barbell 24 · bench 20 · cables 16 · machines 15 · rack 7 · pullup_dip 7 ·
+cardio_machine 6.
+
+🔴 **THE AUDIT FOUND A REAL PRODUCT GAP AND IT IS NOT A DATA ERROR: A BODYWEIGHT-ONLY USER HAS EXACTLY ONE
+PULL EXERCISE, AND IT IS `Wrist Roller`.** Counted, not guessed:
+| Tag | Exercises a bodyweight-only user can be given |
+|---|---:|
+| Core | 15 |
+| Cardio | 12 |
+| Legs | 11 |
+| Push | 4 |
+| **Pull** | **1 (Wrist Roller)** |
+⚠️ **THIS IS PHYSICS, NOT AN OVERSIGHT** — pulling needs something to pull against, and every real bodyweight
+pull in the library (Pull-Up, Chin-Up, Inverted Row, Hanging Leg Raise, Dead Hang) correctly needs a bar.
+🔴 **BUT IT MEANS OTTO CANNOT BUILD A BODYWEIGHT PULL DAY, AND ITEM J'S WHOLE JUSTIFICATION WAS "he cannot
+build a home workout today".** For a user with no bar, he can do push, legs, core and cardio and nothing else.
+➡️ **NEEDS A DECISION BEFORE E SHIPS. Three options, none taken yet:**
+1. **Accept it** — Otto builds push/legs/core for that user and says plainly that pulling needs a bar or a
+   band. Honest, zero build, and arguably correct.
+2. **Add no-equipment pulling** — towel rows on a door frame, prone Y-T-W raises, reverse snow angels. Real
+   movements, but they are OUTSIDE the 64 Justin approved on 2026-07-30, so they need his sign-off.
+3. **Add a `bands` tick** — resistance bands are the actual answer to home pulling, cost nothing, and are the
+   one obvious gap in the seven. **This is the option I would put first**, but it is a NINTH tick and the
+   tick list was deliberately kept short, so it is Justin's call, not mine.
+
+⚠️ **JUDGEMENT CALLS MADE WHILE TAGGING, LISTED BECAUSE THEY ARE ARGUABLE AND SHOULD NOT LOOK LIKE FACTS:**
+- **Incline / Decline Push-Up, Step-Up, Box Jump: left UNTAGGED.** They need an elevated surface, but stairs,
+  a couch or a chair all work, so tagging `bench` would wrongly exclude them from home workouts.
+- **Walking Lunges, Reverse Lunge, Sumo Squat, Calf Raise (Standing): left UNTAGGED**, since all four are
+  commonly done with no load at all.
+- **Ab Wheel Rollout and Wrist Roller: left UNTAGGED.** Both need a specific cheap tool that no tick covers.
+- **Kettlebell Swing tagged `dumbbells`**, per PLAN 4.18 item 12's "dumbbell or kettlebell" decision.
+- **Smith Machine Bench Press tagged `machines` + `bench`**, per item 12 folding Smith under Machines.
+- **Lat pulldowns and seated rows tagged `cables`, not `machines`**, matching how the original count split them.
+- **Plate Pinch tagged `barbell`**, on the basis that plates come with a barbell setup.
 
 ### 3.2b The Workout Preferences profile section
 ✅ **DECIDED 2026-08-10.** A new **third** `ProfileSection`, directly under Membership.

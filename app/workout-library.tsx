@@ -98,7 +98,7 @@ const makeId = () => Math.random().toString(36).substr(2, 9);
 export const DEFAULT_LIBRARY: LibraryExercise[] = [
   // ── CHEST ──────────────────────────────────────────────────────────────────
   {
-    id: 'l2', name: 'Bench Press', type: 'lift', tags: ['tag_push'],
+    id: 'l2', name: 'Bench Press', type: 'lift', tags: ['tag_push'], equipment: ['barbell', 'rack', 'bench'],
     defaultSets: '4', defaultReps: '8–10', defaultRest: '90s',
     primaryMuscles: ['chest'], secondaryMuscles: ['front_delt', 'triceps'],
     instructions: [
@@ -109,7 +109,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l15', name: 'Machine Chest Press', type: 'lift', tags: ['tag_push'],
+    id: 'l15', name: 'Machine Chest Press', type: 'lift', tags: ['tag_push'], equipment: ['machines'],
     defaultSets: '4', defaultReps: '10–12', defaultRest: '60s',
     primaryMuscles: ['chest'], secondaryMuscles: ['front_delt', 'triceps'],
     instructions: [
@@ -120,7 +120,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l5', name: 'Cable Fly (Low to High)', type: 'lift', tags: ['tag_push'],
+    id: 'l5', name: 'Cable Fly (Low to High)', type: 'lift', tags: ['tag_push'], equipment: ['cables'],
     defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
     primaryMuscles: ['lower_chest', 'front_delt'], secondaryMuscles: ['abs'],
     instructions: [
@@ -131,7 +131,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l22', name: 'Incline Bench Press (Barbell)', type: 'lift', tags: ['tag_push'],
+    id: 'l22', name: 'Incline Bench Press (Barbell)', type: 'lift', tags: ['tag_push'], equipment: ['barbell', 'rack', 'bench'],
     defaultSets: '4', defaultReps: '8–10', defaultRest: '90s',
     primaryMuscles: ['upper_chest'], secondaryMuscles: ['front_delt', 'triceps'],
     instructions: [
@@ -142,7 +142,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l23', name: 'Decline Bench Press', type: 'lift', tags: ['tag_push'],
+    id: 'l23', name: 'Decline Bench Press', type: 'lift', tags: ['tag_push'], equipment: ['barbell', 'rack', 'bench'],
     defaultSets: '3', defaultReps: '8–10', defaultRest: '90s',
     primaryMuscles: ['lower_chest'], secondaryMuscles: ['front_delt', 'triceps'],
     instructions: [
@@ -153,7 +153,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l24', name: 'Incline Dumbbell Press', type: 'lift', tags: ['tag_push'],
+    id: 'l24', name: 'Incline Dumbbell Press', type: 'lift', tags: ['tag_push'], equipment: ['dumbbells', 'bench'],
     defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
     primaryMuscles: ['upper_chest'], secondaryMuscles: ['front_delt', 'triceps'],
     instructions: [
@@ -164,7 +164,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l25', name: 'Dumbbell Bench Press', type: 'lift', tags: ['tag_push'],
+    id: 'l25', name: 'Dumbbell Bench Press', type: 'lift', tags: ['tag_push'], equipment: ['dumbbells', 'bench'],
     defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
     primaryMuscles: ['chest'], secondaryMuscles: ['front_delt', 'triceps'],
     instructions: [
@@ -175,7 +175,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l26', name: 'Dips (Chest)', type: 'lift', tags: ['tag_push'],
+    id: 'l26', name: 'Dips (Chest)', type: 'lift', tags: ['tag_push'], equipment: ['pullup_dip'],
     defaultSets: '3', defaultReps: '8–12', defaultRest: '60s',
     primaryMuscles: ['chest', 'lower_chest'], secondaryMuscles: ['triceps', 'front_delt'],
     instructions: [
@@ -186,7 +186,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l27', name: 'Pec Deck Machine', type: 'lift', tags: ['tag_push'],
+    id: 'l27', name: 'Pec Deck Machine', type: 'lift', tags: ['tag_push'], equipment: ['machines'],
     defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
     primaryMuscles: ['chest'], secondaryMuscles: ['front_delt'],
     instructions: [
@@ -197,7 +197,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l28', name: 'Cable Fly (High to Low)', type: 'lift', tags: ['tag_push'],
+    id: 'l28', name: 'Cable Fly (High to Low)', type: 'lift', tags: ['tag_push'], equipment: ['cables'],
     defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
     primaryMuscles: ['chest', 'upper_chest'], secondaryMuscles: ['front_delt'],
     instructions: [
@@ -241,7 +241,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l73', name: 'Dumbbell Fly', type: 'lift', tags: ['tag_push'],
+    id: 'l73', name: 'Dumbbell Fly', type: 'lift', tags: ['tag_push'], equipment: ['dumbbells', 'bench'],
     defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
     primaryMuscles: ['chest'], secondaryMuscles: ['front_delt'],
     instructions: [
@@ -252,7 +252,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l74', name: 'Floor Press', type: 'lift', tags: ['tag_push'],
+    id: 'l74', name: 'Floor Press', type: 'lift', tags: ['tag_push'], equipment: ['dumbbells'],
     defaultSets: '4', defaultReps: '8–10', defaultRest: '90s',
     primaryMuscles: ['chest'], secondaryMuscles: ['triceps', 'front_delt'],
     instructions: [
@@ -263,7 +263,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l75', name: 'Landmine Press', type: 'lift', tags: ['tag_push'],
+    id: 'l75', name: 'Landmine Press', type: 'lift', tags: ['tag_push'], equipment: ['barbell'],
     defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
     primaryMuscles: ['front_delt', 'upper_chest'], secondaryMuscles: ['triceps', 'abs'],
     instructions: [
@@ -274,7 +274,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l76', name: 'Cable Chest Press', type: 'lift', tags: ['tag_push'],
+    id: 'l76', name: 'Cable Chest Press', type: 'lift', tags: ['tag_push'], equipment: ['cables'],
     defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
     primaryMuscles: ['chest'], secondaryMuscles: ['front_delt', 'triceps'],
     instructions: [
@@ -285,7 +285,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l77', name: 'Smith Machine Bench Press', type: 'lift', tags: ['tag_push'],
+    id: 'l77', name: 'Smith Machine Bench Press', type: 'lift', tags: ['tag_push'], equipment: ['machines', 'bench'],
     defaultSets: '4', defaultReps: '8–10', defaultRest: '90s',
     primaryMuscles: ['chest'], secondaryMuscles: ['front_delt', 'triceps'],
     instructions: [
@@ -297,7 +297,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
   },
   // ── SHOULDERS ──────────────────────────────────────────────────────────────
   {
-    id: 'l17', name: 'Machine Shoulder Press', type: 'lift', tags: ['tag_push'],
+    id: 'l17', name: 'Machine Shoulder Press', type: 'lift', tags: ['tag_push'], equipment: ['machines'],
     defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
     primaryMuscles: ['front_delt', 'side_delt'], secondaryMuscles: ['triceps'],
     instructions: [
@@ -308,7 +308,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l6', name: 'Cable Lateral Raise', type: 'lift', tags: ['tag_push'],
+    id: 'l6', name: 'Cable Lateral Raise', type: 'lift', tags: ['tag_push'], equipment: ['cables'],
     defaultSets: '3', defaultReps: '15', defaultRest: '30s',
     primaryMuscles: ['side_delt'], secondaryMuscles: ['traps'],
     instructions: [
@@ -319,7 +319,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l29', name: 'Barbell Overhead Press', type: 'lift', tags: ['tag_push'],
+    id: 'l29', name: 'Barbell Overhead Press', type: 'lift', tags: ['tag_push'], equipment: ['barbell'],
     defaultSets: '4', defaultReps: '6–10', defaultRest: '90s',
     primaryMuscles: ['front_delt', 'side_delt'], secondaryMuscles: ['triceps', 'traps'],
     instructions: [
@@ -330,7 +330,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l30', name: 'Dumbbell Shoulder Press', type: 'lift', tags: ['tag_push'],
+    id: 'l30', name: 'Dumbbell Shoulder Press', type: 'lift', tags: ['tag_push'], equipment: ['dumbbells'],
     defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
     primaryMuscles: ['front_delt', 'side_delt'], secondaryMuscles: ['triceps'],
     instructions: [
@@ -341,7 +341,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l31', name: 'Rear Delt Fly (Dumbbell)', type: 'lift', tags: ['tag_pull'],
+    id: 'l31', name: 'Rear Delt Fly (Dumbbell)', type: 'lift', tags: ['tag_pull'], equipment: ['dumbbells'],
     defaultSets: '3', defaultReps: '15', defaultRest: '30s',
     primaryMuscles: ['rear_delt'], secondaryMuscles: ['rhomboids', 'traps'],
     instructions: [
@@ -352,7 +352,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l32', name: 'Upright Row (Barbell)', type: 'lift', tags: ['tag_push'],
+    id: 'l32', name: 'Upright Row (Barbell)', type: 'lift', tags: ['tag_push'], equipment: ['barbell'],
     defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
     primaryMuscles: ['side_delt', 'traps'], secondaryMuscles: ['biceps'],
     instructions: [
@@ -363,7 +363,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l78', name: 'Dumbbell Lateral Raise', type: 'lift', tags: ['tag_push'],
+    id: 'l78', name: 'Dumbbell Lateral Raise', type: 'lift', tags: ['tag_push'], equipment: ['dumbbells'],
     defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
     primaryMuscles: ['side_delt'], secondaryMuscles: ['traps'],
     instructions: [
@@ -374,7 +374,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l79', name: 'Arnold Press', type: 'lift', tags: ['tag_push'],
+    id: 'l79', name: 'Arnold Press', type: 'lift', tags: ['tag_push'], equipment: ['dumbbells'],
     defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
     primaryMuscles: ['front_delt', 'side_delt'], secondaryMuscles: ['triceps', 'traps'],
     instructions: [
@@ -385,7 +385,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l80', name: 'Front Raise', type: 'lift', tags: ['tag_push'],
+    id: 'l80', name: 'Front Raise', type: 'lift', tags: ['tag_push'], equipment: ['dumbbells'],
     defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
     primaryMuscles: ['front_delt'], secondaryMuscles: ['upper_chest'],
     instructions: [
@@ -396,7 +396,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l81', name: 'Reverse Pec Deck', type: 'lift', tags: ['tag_pull'],
+    id: 'l81', name: 'Reverse Pec Deck', type: 'lift', tags: ['tag_pull'], equipment: ['machines'],
     defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
     primaryMuscles: ['rear_delt'], secondaryMuscles: ['rhomboids', 'traps'],
     instructions: [
@@ -407,7 +407,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l82', name: 'Barbell Shrug', type: 'lift', tags: ['tag_pull'],
+    id: 'l82', name: 'Barbell Shrug', type: 'lift', tags: ['tag_pull'], equipment: ['barbell'],
     defaultSets: '3', defaultReps: '12–15', defaultRest: '60s',
     primaryMuscles: ['traps'], secondaryMuscles: ['forearms'],
     instructions: [
@@ -418,7 +418,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l83', name: 'Dumbbell Shrug', type: 'lift', tags: ['tag_pull'],
+    id: 'l83', name: 'Dumbbell Shrug', type: 'lift', tags: ['tag_pull'], equipment: ['dumbbells'],
     defaultSets: '3', defaultReps: '12–15', defaultRest: '60s',
     primaryMuscles: ['traps'], secondaryMuscles: ['forearms'],
     instructions: [
@@ -430,7 +430,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
   },
   // ── TRICEPS ────────────────────────────────────────────────────────────────
   {
-    id: 'l21', name: 'Tricep Pushdown (Rope)', type: 'lift', tags: ['tag_push'],
+    id: 'l21', name: 'Tricep Pushdown (Rope)', type: 'lift', tags: ['tag_push'], equipment: ['cables'],
     defaultSets: '3', defaultReps: '12', defaultRest: '45s',
     primaryMuscles: ['triceps'], secondaryMuscles: [],
     instructions: [
@@ -441,7 +441,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l18', name: 'Overhead Tricep Extension (Cable)', type: 'lift', tags: ['tag_push'],
+    id: 'l18', name: 'Overhead Tricep Extension (Cable)', type: 'lift', tags: ['tag_push'], equipment: ['cables'],
     defaultSets: '3', defaultReps: '12', defaultRest: '60s',
     primaryMuscles: ['triceps'], secondaryMuscles: [],
     instructions: [
@@ -452,7 +452,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l33', name: 'Skull Crushers (EZ Bar)', type: 'lift', tags: ['tag_push'],
+    id: 'l33', name: 'Skull Crushers (EZ Bar)', type: 'lift', tags: ['tag_push'], equipment: ['barbell', 'bench'],
     defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
     primaryMuscles: ['triceps'], secondaryMuscles: [],
     instructions: [
@@ -463,7 +463,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l34', name: 'Close Grip Bench Press', type: 'lift', tags: ['tag_push'],
+    id: 'l34', name: 'Close Grip Bench Press', type: 'lift', tags: ['tag_push'], equipment: ['barbell', 'rack', 'bench'],
     defaultSets: '3', defaultReps: '8–10', defaultRest: '90s',
     primaryMuscles: ['triceps'], secondaryMuscles: ['chest', 'front_delt'],
     instructions: [
@@ -474,7 +474,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l35', name: 'Dips (Tricep)', type: 'lift', tags: ['tag_push'],
+    id: 'l35', name: 'Dips (Tricep)', type: 'lift', tags: ['tag_push'], equipment: ['pullup_dip'],
     defaultSets: '3', defaultReps: '8–12', defaultRest: '60s',
     primaryMuscles: ['triceps'], secondaryMuscles: ['chest', 'front_delt'],
     instructions: [
@@ -485,7 +485,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l84', name: 'Tricep Kickback', type: 'lift', tags: ['tag_push'],
+    id: 'l84', name: 'Tricep Kickback', type: 'lift', tags: ['tag_push'], equipment: ['dumbbells', 'bench'],
     defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
     primaryMuscles: ['triceps'], secondaryMuscles: ['rear_delt'],
     instructions: [
@@ -496,7 +496,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l85', name: 'Bench Dip', type: 'lift', tags: ['tag_push'],
+    id: 'l85', name: 'Bench Dip', type: 'lift', tags: ['tag_push'], equipment: ['bench'],
     defaultSets: '3', defaultReps: '10–15', defaultRest: '60s',
     primaryMuscles: ['triceps'], secondaryMuscles: ['front_delt', 'lower_chest'],
     instructions: [
@@ -518,7 +518,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l87', name: 'Single Arm Pushdown', type: 'lift', tags: ['tag_push'],
+    id: 'l87', name: 'Single Arm Pushdown', type: 'lift', tags: ['tag_push'], equipment: ['cables'],
     defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
     primaryMuscles: ['triceps'], secondaryMuscles: [],
     instructions: [
@@ -530,7 +530,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
   },
   // ── BACK ───────────────────────────────────────────────────────────────────
   {
-    id: 'l12', name: 'Lat Pulldown (Wide Grip)', type: 'lift', tags: ['tag_pull'],
+    id: 'l12', name: 'Lat Pulldown (Wide Grip)', type: 'lift', tags: ['tag_pull'], equipment: ['cables'],
     defaultSets: '4', defaultReps: '10–12', defaultRest: '60s',
     primaryMuscles: ['lats'], secondaryMuscles: ['biceps', 'rear_delt'],
     instructions: [
@@ -541,7 +541,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l20', name: 'Seated Cable Row', type: 'lift', tags: ['tag_pull'],
+    id: 'l20', name: 'Seated Cable Row', type: 'lift', tags: ['tag_pull'], equipment: ['cables'],
     defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
     primaryMuscles: ['lats', 'rhomboids'], secondaryMuscles: ['biceps', 'rear_delt'],
     instructions: [
@@ -552,7 +552,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l4', name: 'Cable Face Pull', type: 'lift', tags: ['tag_pull'],
+    id: 'l4', name: 'Cable Face Pull', type: 'lift', tags: ['tag_pull'], equipment: ['cables'],
     defaultSets: '3', defaultReps: '15–20', defaultRest: '30s',
     primaryMuscles: ['rear_delt', 'rhomboids'], secondaryMuscles: ['traps', 'biceps'],
     instructions: [
@@ -563,7 +563,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l16', name: 'Machine Row', type: 'lift', tags: ['tag_pull'],
+    id: 'l16', name: 'Machine Row', type: 'lift', tags: ['tag_pull'], equipment: ['machines'],
     defaultSets: '3', defaultReps: '12', defaultRest: '45s',
     primaryMuscles: ['lats', 'rhomboids'], secondaryMuscles: ['biceps', 'rear_delt'],
     instructions: [
@@ -574,7 +574,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l36', name: 'Pull-Up', type: 'lift', tags: ['tag_pull'],
+    id: 'l36', name: 'Pull-Up', type: 'lift', tags: ['tag_pull'], equipment: ['pullup_dip'],
     defaultSets: '4', defaultReps: '6–10', defaultRest: '90s',
     primaryMuscles: ['lats'], secondaryMuscles: ['biceps', 'rear_delt'],
     instructions: [
@@ -585,7 +585,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l37', name: 'Chin-Up', type: 'lift', tags: ['tag_pull'],
+    id: 'l37', name: 'Chin-Up', type: 'lift', tags: ['tag_pull'], equipment: ['pullup_dip'],
     defaultSets: '3', defaultReps: '6–10', defaultRest: '90s',
     primaryMuscles: ['lats', 'biceps'], secondaryMuscles: ['rear_delt'],
     instructions: [
@@ -596,7 +596,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l38', name: 'Conventional Deadlift', type: 'lift', tags: ['tag_pull'],
+    id: 'l38', name: 'Conventional Deadlift', type: 'lift', tags: ['tag_pull'], equipment: ['barbell'],
     defaultSets: '4', defaultReps: '5', defaultRest: '2–3 min',
     primaryMuscles: ['lower_back', 'glutes', 'hamstrings'], secondaryMuscles: ['lats', 'traps', 'quads'],
     instructions: [
@@ -607,7 +607,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l40', name: 'Barbell Row (Bent Over)', type: 'lift', tags: ['tag_pull'],
+    id: 'l40', name: 'Barbell Row (Bent Over)', type: 'lift', tags: ['tag_pull'], equipment: ['barbell'],
     defaultSets: '4', defaultReps: '8–10', defaultRest: '90s',
     primaryMuscles: ['lats', 'rhomboids'], secondaryMuscles: ['biceps', 'rear_delt'],
     instructions: [
@@ -618,7 +618,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l41', name: 'Dumbbell Row (Single Arm)', type: 'lift', tags: ['tag_pull'],
+    id: 'l41', name: 'Dumbbell Row (Single Arm)', type: 'lift', tags: ['tag_pull'], equipment: ['dumbbells', 'bench'],
     defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
     primaryMuscles: ['lats', 'rhomboids'], secondaryMuscles: ['biceps'],
     instructions: [
@@ -629,7 +629,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l42', name: 'T-Bar Row', type: 'lift', tags: ['tag_pull'],
+    id: 'l42', name: 'T-Bar Row', type: 'lift', tags: ['tag_pull'], equipment: ['barbell'],
     defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
     primaryMuscles: ['lats', 'rhomboids'], secondaryMuscles: ['biceps', 'rear_delt'],
     instructions: [
@@ -640,7 +640,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l88', name: 'Close Grip Lat Pulldown', type: 'lift', tags: ['tag_pull'],
+    id: 'l88', name: 'Close Grip Lat Pulldown', type: 'lift', tags: ['tag_pull'], equipment: ['cables'],
     defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
     primaryMuscles: ['lats'], secondaryMuscles: ['biceps', 'rhomboids'],
     instructions: [
@@ -651,7 +651,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l89', name: 'Straight Arm Pulldown', type: 'lift', tags: ['tag_pull'],
+    id: 'l89', name: 'Straight Arm Pulldown', type: 'lift', tags: ['tag_pull'], equipment: ['cables'],
     defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
     primaryMuscles: ['lats'], secondaryMuscles: ['triceps', 'abs'],
     instructions: [
@@ -662,7 +662,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l90', name: 'Chest Supported Row', type: 'lift', tags: ['tag_pull'],
+    id: 'l90', name: 'Chest Supported Row', type: 'lift', tags: ['tag_pull'], equipment: ['dumbbells', 'bench'],
     defaultSets: '4', defaultReps: '10–12', defaultRest: '60s',
     primaryMuscles: ['lats', 'rhomboids'], secondaryMuscles: ['biceps', 'rear_delt'],
     instructions: [
@@ -673,7 +673,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l91', name: 'Inverted Row', type: 'lift', tags: ['tag_pull'],
+    id: 'l91', name: 'Inverted Row', type: 'lift', tags: ['tag_pull'], equipment: ['pullup_dip'],
     defaultSets: '3', defaultReps: '10–15', defaultRest: '60s',
     primaryMuscles: ['lats', 'rhomboids'], secondaryMuscles: ['biceps', 'rear_delt', 'abs'],
     instructions: [
@@ -684,7 +684,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l92', name: 'Assisted Pull-Up', type: 'lift', tags: ['tag_pull'],
+    id: 'l92', name: 'Assisted Pull-Up', type: 'lift', tags: ['tag_pull'], equipment: ['machines'],
     defaultSets: '3', defaultReps: '8–12', defaultRest: '90s',
     primaryMuscles: ['lats'], secondaryMuscles: ['biceps', 'rhomboids'],
     instructions: [
@@ -695,7 +695,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l93', name: 'Rack Pull', type: 'lift', tags: ['tag_pull'],
+    id: 'l93', name: 'Rack Pull', type: 'lift', tags: ['tag_pull'], equipment: ['barbell', 'rack'],
     defaultSets: '4', defaultReps: '6–8', defaultRest: '120s',
     primaryMuscles: ['lower_back', 'traps'], secondaryMuscles: ['lats', 'glutes', 'forearms'],
     instructions: [
@@ -706,7 +706,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l94', name: 'Dumbbell Pullover', type: 'lift', tags: ['tag_pull'],
+    id: 'l94', name: 'Dumbbell Pullover', type: 'lift', tags: ['tag_pull'], equipment: ['dumbbells', 'bench'],
     defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
     primaryMuscles: ['lats'], secondaryMuscles: ['chest', 'triceps'],
     instructions: [
@@ -717,7 +717,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l95', name: 'Trap Bar Deadlift', type: 'lift', tags: ['tag_pull', 'tag_legs'],
+    id: 'l95', name: 'Trap Bar Deadlift', type: 'lift', tags: ['tag_pull', 'tag_legs'], equipment: ['barbell'],
     defaultSets: '4', defaultReps: '6–8', defaultRest: '120s',
     primaryMuscles: ['glutes', 'quads'], secondaryMuscles: ['hamstrings', 'traps', 'lower_back', 'forearms'],
     instructions: [
@@ -729,7 +729,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
   },
   // ── BICEPS ─────────────────────────────────────────────────────────────────
   {
-    id: 'l3', name: 'Cable Curl', type: 'lift', tags: ['tag_pull'],
+    id: 'l3', name: 'Cable Curl', type: 'lift', tags: ['tag_pull'], equipment: ['cables'],
     defaultSets: '3', defaultReps: '12', defaultRest: '45s',
     primaryMuscles: ['biceps'], secondaryMuscles: ['forearms'],
     instructions: [
@@ -740,7 +740,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l10', name: 'Hammer Curl', type: 'lift', tags: ['tag_pull'],
+    id: 'l10', name: 'Hammer Curl', type: 'lift', tags: ['tag_pull'], equipment: ['dumbbells'],
     defaultSets: '3', defaultReps: '12', defaultRest: '45s',
     primaryMuscles: ['biceps'], secondaryMuscles: ['forearms'],
     instructions: [
@@ -751,7 +751,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l43', name: 'Dumbbell Curl', type: 'lift', tags: ['tag_pull'],
+    id: 'l43', name: 'Dumbbell Curl', type: 'lift', tags: ['tag_pull'], equipment: ['dumbbells'],
     defaultSets: '3', defaultReps: '12', defaultRest: '45s',
     primaryMuscles: ['biceps'], secondaryMuscles: ['forearms'],
     instructions: [
@@ -762,7 +762,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l44', name: 'EZ Bar Curl', type: 'lift', tags: ['tag_pull'],
+    id: 'l44', name: 'EZ Bar Curl', type: 'lift', tags: ['tag_pull'], equipment: ['barbell'],
     defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
     primaryMuscles: ['biceps'], secondaryMuscles: ['forearms'],
     instructions: [
@@ -773,7 +773,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l45', name: 'Preacher Curl', type: 'lift', tags: ['tag_pull'],
+    id: 'l45', name: 'Preacher Curl', type: 'lift', tags: ['tag_pull'], equipment: ['barbell', 'bench'],
     defaultSets: '3', defaultReps: '12', defaultRest: '45s',
     primaryMuscles: ['biceps'], secondaryMuscles: [],
     instructions: [
@@ -784,7 +784,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l46', name: 'Concentration Curl', type: 'lift', tags: ['tag_pull'],
+    id: 'l46', name: 'Concentration Curl', type: 'lift', tags: ['tag_pull'], equipment: ['dumbbells', 'bench'],
     defaultSets: '3', defaultReps: '12 each', defaultRest: '30s',
     primaryMuscles: ['biceps'], secondaryMuscles: [],
     instructions: [
@@ -795,7 +795,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l47', name: 'Incline Dumbbell Curl', type: 'lift', tags: ['tag_pull'],
+    id: 'l47', name: 'Incline Dumbbell Curl', type: 'lift', tags: ['tag_pull'], equipment: ['dumbbells', 'bench'],
     defaultSets: '3', defaultReps: '12', defaultRest: '45s',
     primaryMuscles: ['biceps'], secondaryMuscles: ['forearms'],
     instructions: [
@@ -806,7 +806,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l96', name: 'Reverse Curl', type: 'lift', tags: ['tag_pull'],
+    id: 'l96', name: 'Reverse Curl', type: 'lift', tags: ['tag_pull'], equipment: ['barbell'],
     defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
     primaryMuscles: ['forearms'], secondaryMuscles: ['biceps'],
     instructions: [
@@ -817,7 +817,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l97', name: 'Spider Curl', type: 'lift', tags: ['tag_pull'],
+    id: 'l97', name: 'Spider Curl', type: 'lift', tags: ['tag_pull'], equipment: ['dumbbells', 'bench'],
     defaultSets: '3', defaultReps: '10–12', defaultRest: '45s',
     primaryMuscles: ['biceps'], secondaryMuscles: ['forearms'],
     instructions: [
@@ -829,7 +829,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
   },
   // ── FOREARMS ───────────────────────────────────────────────────────────────
   {
-    id: 'l48', name: 'Wrist Curl', type: 'lift', tags: ['tag_pull'],
+    id: 'l48', name: 'Wrist Curl', type: 'lift', tags: ['tag_pull'], equipment: ['dumbbells'],
     defaultSets: '3', defaultReps: '15–20', defaultRest: '30s',
     primaryMuscles: ['forearms'], secondaryMuscles: [],
     instructions: [
@@ -840,7 +840,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l49', name: 'Reverse Wrist Curl', type: 'lift', tags: ['tag_pull'],
+    id: 'l49', name: 'Reverse Wrist Curl', type: 'lift', tags: ['tag_pull'], equipment: ['dumbbells'],
     defaultSets: '3', defaultReps: '15–20', defaultRest: '30s',
     primaryMuscles: ['forearms'], secondaryMuscles: [],
     instructions: [
@@ -851,7 +851,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l50', name: "Farmer's Carry", type: 'lift', tags: ['tag_core'],
+    id: 'l50', name: "Farmer's Carry", type: 'lift', tags: ['tag_core'], equipment: ['dumbbells'],
     defaultSets: '3', defaultReps: '40 yards', defaultRest: '60s',
     primaryMuscles: ['forearms', 'traps'], secondaryMuscles: ['abs', 'glutes', 'quads'],
     instructions: [
@@ -862,7 +862,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l98', name: 'Dead Hang', type: 'lift', tags: ['tag_pull'],
+    id: 'l98', name: 'Dead Hang', type: 'lift', tags: ['tag_pull'], equipment: ['pullup_dip'],
     defaultSets: '3', defaultReps: '30–45s hold', defaultRest: '60s',
     primaryMuscles: ['forearms'], secondaryMuscles: ['lats', 'traps'],
     instructions: [
@@ -884,7 +884,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l100', name: 'Plate Pinch', type: 'lift', tags: ['tag_pull'],
+    id: 'l100', name: 'Plate Pinch', type: 'lift', tags: ['tag_pull'], equipment: ['barbell'],
     defaultSets: '3', defaultReps: '30s hold', defaultRest: '60s',
     primaryMuscles: ['forearms'], secondaryMuscles: [],
     instructions: [
@@ -896,7 +896,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
   },
   // ── LEGS ───────────────────────────────────────────────────────────────────
   {
-    id: 'l1', name: 'Barbell Squat', type: 'lift', tags: ['tag_legs'],
+    id: 'l1', name: 'Barbell Squat', type: 'lift', tags: ['tag_legs'], equipment: ['barbell', 'rack'],
     defaultSets: '4', defaultReps: '8–10', defaultRest: '90s',
     primaryMuscles: ['quads', 'glutes'], secondaryMuscles: ['hamstrings', 'lower_back', 'abs'],
     instructions: [
@@ -907,7 +907,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l14', name: 'Leg Press', type: 'lift', tags: ['tag_legs'],
+    id: 'l14', name: 'Leg Press', type: 'lift', tags: ['tag_legs'], equipment: ['machines'],
     defaultSets: '4', defaultReps: '10–12', defaultRest: '90s',
     primaryMuscles: ['quads', 'glutes'], secondaryMuscles: ['hamstrings', 'calves'],
     instructions: [
@@ -918,7 +918,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l11', name: 'Hamstring Curl', type: 'lift', tags: ['tag_legs'],
+    id: 'l11', name: 'Hamstring Curl', type: 'lift', tags: ['tag_legs'], equipment: ['machines'],
     defaultSets: '3', defaultReps: '12', defaultRest: '45s',
     primaryMuscles: ['hamstrings'], secondaryMuscles: ['glutes', 'calves'],
     instructions: [
@@ -929,7 +929,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l13', name: 'Leg Extension (Machine)', type: 'lift', tags: ['tag_legs'],
+    id: 'l13', name: 'Leg Extension (Machine)', type: 'lift', tags: ['tag_legs'], equipment: ['machines'],
     defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
     primaryMuscles: ['quads'], secondaryMuscles: [],
     instructions: [
@@ -940,7 +940,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l9', name: 'Glute Kickback (Cable)', type: 'lift', tags: ['tag_legs'],
+    id: 'l9', name: 'Glute Kickback (Cable)', type: 'lift', tags: ['tag_legs'], equipment: ['cables'],
     defaultSets: '3', defaultReps: '15 each', defaultRest: '30s',
     primaryMuscles: ['glutes'], secondaryMuscles: ['hamstrings'],
     instructions: [
@@ -951,7 +951,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l51', name: 'Romanian Deadlift (RDL)', type: 'lift', tags: ['tag_legs'],
+    id: 'l51', name: 'Romanian Deadlift (RDL)', type: 'lift', tags: ['tag_legs'], equipment: ['barbell'],
     defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
     primaryMuscles: ['hamstrings', 'glutes'], secondaryMuscles: ['lower_back', 'calves'],
     instructions: [
@@ -962,7 +962,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l52', name: 'Hip Thrust (Barbell)', type: 'lift', tags: ['tag_legs'],
+    id: 'l52', name: 'Hip Thrust (Barbell)', type: 'lift', tags: ['tag_legs'], equipment: ['barbell', 'bench'],
     defaultSets: '4', defaultReps: '10–12', defaultRest: '60s',
     primaryMuscles: ['glutes'], secondaryMuscles: ['hamstrings'],
     instructions: [
@@ -973,7 +973,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l53', name: 'Bulgarian Split Squat', type: 'lift', tags: ['tag_legs'],
+    id: 'l53', name: 'Bulgarian Split Squat', type: 'lift', tags: ['tag_legs'], equipment: ['dumbbells', 'bench'],
     defaultSets: '3', defaultReps: '10–12 each', defaultRest: '60s',
     primaryMuscles: ['quads', 'glutes'], secondaryMuscles: ['hamstrings'],
     instructions: [
@@ -1017,7 +1017,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l57', name: 'Calf Raise (Seated)', type: 'lift', tags: ['tag_legs'],
+    id: 'l57', name: 'Calf Raise (Seated)', type: 'lift', tags: ['tag_legs'], equipment: ['machines'],
     defaultSets: '3', defaultReps: '15–20', defaultRest: '30s',
     primaryMuscles: ['calves'], secondaryMuscles: [],
     instructions: [
@@ -1028,7 +1028,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l58', name: 'Hip Abduction Machine', type: 'lift', tags: ['tag_legs'],
+    id: 'l58', name: 'Hip Abduction Machine', type: 'lift', tags: ['tag_legs'], equipment: ['machines'],
     defaultSets: '3', defaultReps: '15–20', defaultRest: '30s',
     primaryMuscles: ['hip_abductors', 'glutes'], secondaryMuscles: [],
     instructions: [
@@ -1039,7 +1039,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l59', name: 'Hip Adduction Machine', type: 'lift', tags: ['tag_legs'],
+    id: 'l59', name: 'Hip Adduction Machine', type: 'lift', tags: ['tag_legs'], equipment: ['machines'],
     defaultSets: '3', defaultReps: '15–20', defaultRest: '30s',
     primaryMuscles: ['hip_adductors'], secondaryMuscles: [],
     instructions: [
@@ -1061,7 +1061,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l101', name: 'Front Squat', type: 'lift', tags: ['tag_legs'],
+    id: 'l101', name: 'Front Squat', type: 'lift', tags: ['tag_legs'], equipment: ['barbell', 'rack'],
     defaultSets: '4', defaultReps: '6–8', defaultRest: '120s',
     primaryMuscles: ['quads'], secondaryMuscles: ['glutes', 'abs', 'lower_back'],
     instructions: [
@@ -1072,7 +1072,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l102', name: 'Goblet Squat', type: 'lift', tags: ['tag_legs'],
+    id: 'l102', name: 'Goblet Squat', type: 'lift', tags: ['tag_legs'], equipment: ['dumbbells'],
     defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
     primaryMuscles: ['quads', 'glutes'], secondaryMuscles: ['abs', 'hamstrings'],
     instructions: [
@@ -1083,7 +1083,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l103', name: 'Hack Squat', type: 'lift', tags: ['tag_legs'],
+    id: 'l103', name: 'Hack Squat', type: 'lift', tags: ['tag_legs'], equipment: ['machines'],
     defaultSets: '4', defaultReps: '8–12', defaultRest: '90s',
     primaryMuscles: ['quads'], secondaryMuscles: ['glutes', 'hamstrings'],
     instructions: [
@@ -1127,7 +1127,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l107', name: 'Good Morning', type: 'lift', tags: ['tag_legs'],
+    id: 'l107', name: 'Good Morning', type: 'lift', tags: ['tag_legs'], equipment: ['barbell'],
     defaultSets: '3', defaultReps: '8–12', defaultRest: '90s',
     primaryMuscles: ['hamstrings', 'lower_back'], secondaryMuscles: ['glutes'],
     instructions: [
@@ -1138,7 +1138,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l108', name: 'Single Leg RDL', type: 'lift', tags: ['tag_legs'],
+    id: 'l108', name: 'Single Leg RDL', type: 'lift', tags: ['tag_legs'], equipment: ['dumbbells'],
     defaultSets: '3', defaultReps: '8–10 each', defaultRest: '60s',
     primaryMuscles: ['hamstrings', 'glutes'], secondaryMuscles: ['lower_back', 'abs'],
     instructions: [
@@ -1171,7 +1171,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l111', name: 'Calf Press on Leg Press', type: 'lift', tags: ['tag_legs'],
+    id: 'l111', name: 'Calf Press on Leg Press', type: 'lift', tags: ['tag_legs'], equipment: ['machines'],
     defaultSets: '4', defaultReps: '12–15', defaultRest: '45s',
     primaryMuscles: ['calves'], secondaryMuscles: [],
     instructions: [
@@ -1194,7 +1194,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
   },
   // ── CORE ───────────────────────────────────────────────────────────────────
   {
-    id: 'l7', name: 'Cable Crunch', type: 'lift', tags: ['tag_core'],
+    id: 'l7', name: 'Cable Crunch', type: 'lift', tags: ['tag_core'], equipment: ['cables'],
     defaultSets: '3', defaultReps: '15', defaultRest: '30s',
     primaryMuscles: ['abs'], secondaryMuscles: ['obliques'],
     instructions: [
@@ -1238,7 +1238,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l62', name: 'Hanging Leg Raise', type: 'lift', tags: ['tag_core'],
+    id: 'l62', name: 'Hanging Leg Raise', type: 'lift', tags: ['tag_core'], equipment: ['pullup_dip'],
     defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
     primaryMuscles: ['abs'], secondaryMuscles: ['hip_flexors'],
     instructions: [
@@ -1381,7 +1381,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l118', name: 'Pallof Press', type: 'lift', tags: ['tag_core'],
+    id: 'l118', name: 'Pallof Press', type: 'lift', tags: ['tag_core'], equipment: ['cables'],
     defaultSets: '3', defaultReps: '10–12 each side', defaultRest: '45s',
     primaryMuscles: ['obliques', 'abs'], secondaryMuscles: ['front_delt'],
     instructions: [
@@ -1393,7 +1393,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
   },
   // ── FULL BODY / FUNCTIONAL ─────────────────────────────────────────────────
   {
-    id: 'l119', name: 'Kettlebell Swing', type: 'lift', tags: ['tag_legs', 'tag_pull'],
+    id: 'l119', name: 'Kettlebell Swing', type: 'lift', tags: ['tag_legs', 'tag_pull'], equipment: ['dumbbells'],
     defaultSets: '4', defaultReps: '12–15', defaultRest: '60s',
     primaryMuscles: ['glutes', 'hamstrings'], secondaryMuscles: ['lower_back', 'abs', 'front_delt'],
     instructions: [
@@ -1404,7 +1404,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l121', name: 'Thruster', type: 'lift', tags: ['tag_legs', 'tag_push'],
+    id: 'l121', name: 'Thruster', type: 'lift', tags: ['tag_legs', 'tag_push'], equipment: ['dumbbells'],
     defaultSets: '4', defaultReps: '8–10', defaultRest: '90s',
     primaryMuscles: ['quads', 'front_delt'], secondaryMuscles: ['glutes', 'triceps', 'abs'],
     instructions: [
@@ -1426,7 +1426,7 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   {
-    id: 'l123', name: 'Clean and Press', type: 'lift', tags: ['tag_legs', 'tag_push'],
+    id: 'l123', name: 'Clean and Press', type: 'lift', tags: ['tag_legs', 'tag_push'], equipment: ['barbell'],
     defaultSets: '4', defaultReps: '5–6', defaultRest: '120s',
     primaryMuscles: ['front_delt', 'quads'], secondaryMuscles: ['traps', 'glutes', 'lower_back', 'triceps'],
     instructions: [
@@ -1437,15 +1437,15 @@ export const DEFAULT_LIBRARY: LibraryExercise[] = [
     ],
   },
   // ── CARDIO ─────────────────────────────────────────────────────────────────
-  { id: 'c1', name: 'Treadmill', type: 'cardio', tags: ['tag_cardio'] },
-  { id: 'c2', name: 'Elliptical', type: 'cardio', tags: ['tag_cardio'] },
-  { id: 'c3', name: 'Stationary Bike', type: 'cardio', tags: ['tag_cardio'] },
-  { id: 'c4', name: 'Stairmaster', type: 'cardio', tags: ['tag_cardio'] },
+  { id: 'c1', name: 'Treadmill', type: 'cardio', tags: ['tag_cardio'], equipment: ['cardio_machine'] },
+  { id: 'c2', name: 'Elliptical', type: 'cardio', tags: ['tag_cardio'], equipment: ['cardio_machine'] },
+  { id: 'c3', name: 'Stationary Bike', type: 'cardio', tags: ['tag_cardio'], equipment: ['cardio_machine'] },
+  { id: 'c4', name: 'Stairmaster', type: 'cardio', tags: ['tag_cardio'], equipment: ['cardio_machine'] },
   { id: 'c5', name: 'Running (Outdoor)', type: 'cardio', tags: ['tag_cardio'] },
   { id: 'c6', name: 'HIIT', type: 'cardio', tags: ['tag_cardio'] },
-  { id: 'c7', name: 'Rowing Machine', type: 'cardio', tags: ['tag_cardio'] },
+  { id: 'c7', name: 'Rowing Machine', type: 'cardio', tags: ['tag_cardio'], equipment: ['cardio_machine'] },
   { id: 'c8', name: 'Jump Rope', type: 'cardio', tags: ['tag_cardio'] },
-  { id: 'c9', name: 'Assault Bike', type: 'cardio', tags: ['tag_cardio'] },
+  { id: 'c9', name: 'Assault Bike', type: 'cardio', tags: ['tag_cardio'], equipment: ['cardio_machine'] },
   { id: 'c10', name: 'Swimming', type: 'cardio', tags: ['tag_cardio'] },
   { id: 'c11', name: 'Walking', type: 'cardio', tags: ['tag_cardio'] },
   { id: 'c12', name: 'Hiking', type: 'cardio', tags: ['tag_cardio'] },

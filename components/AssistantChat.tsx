@@ -406,6 +406,40 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
   // 🔴 What the last auto-scroll was FOR. See the note on `onContentSizeChange` below: the scroll must
   // follow the CONVERSATION changing, not the content merely being re-laid-out.
   const lastScrollKeyRef = useRef('');
+  // Live scroll position and viewport height, for `revealDay` below. Cheap: two ref writes, no re-render.
+  const scrollYRef = useRef(0);
+  const viewportHRef = useRef(0);
+
+  // 🔴 SCROLL A JUST-EXPANDED WORKOUT DAY INTO VIEW.
+  // The auto-scroll deliberately ignores layout changes (it used to fling the thread to the bottom), so an
+  // expanding day has to ask for this explicitly -- otherwise the content grows off-screen and nothing
+  // follows it. Justin, 2026-08-13.
+  // ➡️ THE RULE, chosen so it is predictable rather than clever: if the opened day and its exercises
+  // already fit on screen, do NOTHING. If they do not, put that day row near the TOP of the viewport,
+  // which reveals as much of it as possible and never jumps to the bottom of the conversation.
+  // ⚠️ `measureLayout` against the ScrollView's inner node gives Y in CONTENT coordinates, which is exactly
+  // what `scrollTo` wants. If that node is unavailable the whole thing no-ops, degrading to today's
+  // behaviour rather than to a wrong scroll.
+  const revealDay = (node: any, revealHeight: number) => {
+    const sv: any = scrollRef.current;
+    if (!node || !sv) return;
+    // Let the expand animation lay out before measuring, or the row is still at its collapsed height.
+    setTimeout(() => {
+      try {
+        const inner = sv.getInnerViewNode?.();
+        if (!inner) return;
+        node.measureLayout(
+          inner,
+          (_x: number, y: number, _w: number, h: number) => {
+            const viewportBottom = scrollYRef.current + viewportHRef.current;
+            if (y + h + revealHeight <= viewportBottom) return; // already fully visible, leave it alone
+            sv.scrollTo({ y: Math.max(0, y - 12), animated: true });
+          },
+          () => {},
+        );
+      } catch {}
+    }, 90);
+  };
   const inputRef = useRef<TextInput>(null);
   const dragY = useSharedValue(0);
 
@@ -971,6 +1005,9 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
                 lastScrollKeyRef.current = key;
                 scrollRef.current?.scrollToEnd({ animated: true });
               }}
+              onScroll={e => { scrollYRef.current = e.nativeEvent.contentOffset.y; }}
+              onLayout={e => { viewportHRef.current = e.nativeEvent.layout.height; }}
+              scrollEventThrottle={16}
               keyboardShouldPersistTaps="handled"
             >
               {messages.map((m, i) => {
@@ -1032,7 +1069,7 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
                         ⚠️ ORDER IS LOCKED: bubble → card → pills → actions. The card is the substance of the
                         reply, pills navigate AWAY from it, share/thumbs stays last as it is everywhere.
                         Spec 2.1b/2.1l. */}
-                    {m.draft && <RoutinePreviewCard draft={m.draft} />}
+                    {m.draft && <RoutinePreviewCard draft={m.draft} onRevealDay={revealDay} />}
                     {((m.routes && m.routes.length > 0) || (m.tutorials && m.tutorials.length > 0) || m.dayJump) && (
                       <View style={styles.pillRow}>
                         {/* The day jump leads: it is the most specific answer to "what did I do on X". Its

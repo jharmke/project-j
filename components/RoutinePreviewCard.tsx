@@ -67,12 +67,18 @@ type Props = {
   draft: WorkoutDraft;
   /** Called with the dateKeys the user still has checked. */
   onAccept?: (dateKeys: string[]) => void;
+  /** 🔴 Asks the host (the chat) to scroll a just-expanded day into view.
+   *  Passed the day row's node and the height about to be revealed below it.
+   *  ⚠️ The chat's auto-scroll deliberately IGNORES layout changes now (it used to fling you to the bottom
+   *  of the thread), so an expanding day has to ask for the scroll explicitly. Without this the content
+   *  simply grows off-screen and nothing follows it. */
+  onRevealDay?: (node: any, revealHeight: number) => void;
 };
 
 const rowText = (ex: PreviewExercise) =>
   [ex.sets && `${ex.sets} sets`, ex.reps, ex.rest && `${ex.rest} rest`].filter(Boolean).join(' · ');
 
-export default function RoutinePreviewCard({ draft, onAccept }: Props) {
+export default function RoutinePreviewCard({ draft, onAccept, onRevealDay }: Props) {
   const { theme } = useTheme();
   const isMulti = draft.days.length > 1;
   const used = draft.status === 'used';
@@ -102,6 +108,14 @@ export default function RoutinePreviewCard({ draft, onAccept }: Props) {
 
   const ExerciseRow = ({ ex, i, inset }: { ex: PreviewExercise; i: number; inset?: boolean }) => (
     <View
+      // ⚠️ NESTED ROWS USE A DIFFERENT DEVICE FROM THE DAY ROWS, DELIBERATELY. Justin, 2026-08-13: the
+      // separators inside a day must not read like the ones BETWEEN days -- "this needs to feel like it
+      // only belongs to that day's section". So: day rows get full-width lines + an alternating stripe;
+      // exercises inside a day get INDENTED hairlines (they start at the text, not the card edge, because
+      // the wrapper is inset by 28) in the lighter `borderSubtle`, and NO stripe. Indentation is the
+      // signal that these are children of the row above.
+      // ✅ The grouping itself is already carried by the shared background tint the open day and its
+      // exercises inherit, so nothing more is needed to say "this belongs to Wednesday".
       style={{
         flexDirection: 'row',
         alignItems: 'flex-start',
@@ -109,8 +123,8 @@ export default function RoutinePreviewCard({ draft, onAccept }: Props) {
         paddingHorizontal: inset ? 0 : 10,
         paddingVertical: 7,
         backgroundColor: !inset && i % 2 === 0 ? theme.bgInset : 'transparent',
-        borderTopWidth: i > 0 && !inset ? 0.5 : 0,
-        borderTopColor: theme.borderCard,
+        borderTopWidth: i > 0 ? 0.5 : 0,
+        borderTopColor: inset ? theme.borderSubtle : theme.borderCard,
       }}
     >
       <View
@@ -123,8 +137,13 @@ export default function RoutinePreviewCard({ draft, onAccept }: Props) {
         }}
       />
       <View style={{ flex: 1, minWidth: 0 }}>
-        {/* Two lines, not one: truncating a name in the PREVIEW is how you lose an accept. */}
-        <Text style={{ fontSize: 12, lineHeight: 16, color: nameColor, fontFamily: Type.ui }} numberOfLines={2}>
+        {/* Two lines, not one: truncating a name in the PREVIEW is how you lose an accept.
+            ⚠️ SEMIBOLD 13 against the 10pt detail line beneath it. At regular 12 the two lines sat too
+            close in weight and the list read as one flat block (Justin, 2026-08-13). The hierarchy is
+            carried by WEIGHT AND SIZE, not colour -- accent was considered and rejected because every
+            accent-coloured thing on this card means "tappable" (the button, the checkboxes, the top edge)
+            and an exercise name is not. If it still reads flat, the next step is a darker grey. */}
+        <Text style={{ fontSize: 13, lineHeight: 17, color: nameColor, fontFamily: Type.uiSemibold }} numberOfLines={2}>
           {ex.name}
         </Text>
         {!!rowText(ex) && (
@@ -231,6 +250,7 @@ export default function RoutinePreviewCard({ draft, onAccept }: Props) {
                 onToggleChecked={() =>
                   setChecked(c => ({ ...c, [day.dateKey]: !c[day.dateKey] }))
                 }
+                onRevealDay={onRevealDay}
                 renderExercise={(ex, i) => <ExerciseRow key={i} ex={ex} i={i} inset />}
               />
             ))
@@ -301,6 +321,7 @@ function DayRow({
   checked,
   onToggleOpen,
   onToggleChecked,
+  onRevealDay,
   renderExercise,
 }: {
   day: PreviewDay;
@@ -310,12 +331,14 @@ function DayRow({
   checked: boolean;
   onToggleOpen: () => void;
   onToggleChecked: () => void;
+  onRevealDay?: (node: any, revealHeight: number) => void;
   renderExercise: (ex: PreviewExercise, i: number) => React.ReactNode;
 }) {
   const { theme } = useTheme();
   const [contentH, setContentH] = useState(0);
   const anim = useRef(new Animated.Value(0)).current;
   const measured = useRef(false);
+  const rowRef = useRef<View>(null);
 
   // ⚠️ NEVER maxHeight (CLAUDE.md). The content is always mounted so it can be measured by onLayout, the
   // wrapper animates to that exact pixel height, and overflow hides the rest.
@@ -329,12 +352,16 @@ function DayRow({
       easing: to ? Easing.out(Easing.cubic) : Easing.in(Easing.cubic),
       useNativeDriver: false, // height is a layout prop; the native driver cannot carry it
     }).start();
+    // Only on OPEN. Collapsing shrinks the thread and never hides anything, so it needs no scroll.
+    if (to === 1) onRevealDay?.(rowRef.current, contentH);
   };
 
   const dim = used || !checked;
 
   return (
     <View
+      ref={rowRef}
+      collapsable={false}
       style={{
         backgroundColor: index % 2 === 0 ? theme.bgInset : 'transparent',
         borderTopWidth: index > 0 ? 0.5 : 0,
